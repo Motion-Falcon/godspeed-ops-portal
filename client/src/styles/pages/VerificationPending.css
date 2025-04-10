@@ -1,0 +1,52 @@
+/* Verification Pending Page Styles */
+.centered-container {
+  display: flex;
+  min-height: 100vh;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--background);
+  padding: var(--spacing-6);
+}
+
+.centered-card {
+  position: relative;
+  max-width: 400px;
+  width: 100%;
+  background-color: var(--card);
+  border-radius: var(--border-radius);
+  box-shadow: var(--card-shadow);
+  padding: var(--spacing-6);
+  text-align: center;
+}
+
+.icon-circle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background-color: rgba(34, 197, 94, 0.1);
+  color: #22c55e;
+  margin: 0 auto var(--spacing-6);
+}
+
+.auth-card-title {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: var(--spacing-4);
+}
+
+.bold-text {
+  font-weight: 600;
+}
+
+.text-muted {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  margin-bottom: var(--spacing-4);
+}
+
+.card-actions {
+  margin-top: var(--spacing-6);
+} 

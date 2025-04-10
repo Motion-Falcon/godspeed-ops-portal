@@ -1,0 +1,106 @@
+/* Auth Showcase Page Styles */
+.showcase-container {
+  min-height: 100vh;
+  background-color: var(--background);
+  padding: 32px;
+}
+
+.showcase-title {
+  font-size: 1.875rem;
+  font-weight: bold;
+  margin-bottom: 32px;
+  text-align: center;
+  color: var(--text);
+}
+
+.showcase-section {
+  margin-bottom: 48px;
+}
+
+.showcase-section-title {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 16px;
+  color: var(--text);
+}
+
+.showcase-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 32px;
+}
+
+@media (min-width: 768px) {
+  .showcase-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .showcase-responsive-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1280px) {
+  .showcase-responsive-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.showcase-item {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.showcase-item-title {
+  font-size: 1.25rem;
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: var(--text);
+}
+
+.showcase-item-content {
+  background-color: var(--background);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.showcase-auth-example {
+  background-color: var(--card);
+  border-radius: 8px;
+  box-shadow: var(--card-shadow);
+  overflow: hidden;
+  height: 400px;
+  display: flex;
+}
+
+.example-column {
+  width: 50%;
+  padding: 16px;
+}
+
+.example-column.brand {
+  background-color: var(--card);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.example-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.example-card {
+  max-width: 320px;
+  margin: 0 auto;
+}
+
+.compact-card {
+  max-width: 260px;
+  margin: 0 auto;
+} 
