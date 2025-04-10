@@ -77,7 +77,7 @@ export function Signup() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit(onSubmit)}>
+          <form onSubmit={handleSubmit(onSubmit)} className={isLoading ? 'form-loading' : ''}>
             <div className="form-group">
               <label htmlFor="name" className="form-label">Name</label>
               <input
@@ -118,6 +118,7 @@ export function Signup() {
                   type="button"
                   className="password-toggle"
                   onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? (
                     <EyeOff className="icon" size={16} />
@@ -144,6 +145,7 @@ export function Signup() {
                   type="button"
                   className="password-toggle"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
                 >
                   {showConfirmPassword ? (
                     <EyeOff className="icon" size={16} />
@@ -159,19 +161,19 @@ export function Signup() {
 
             <button
               type="submit"
-              className="button"
+              className="button btn-hover-float"
               disabled={isLoading}
             >
               {isLoading ? (
                 <span className="loading-spinner"></span>
               ) : (
-                'Sign up'
+                'Sign Up'
               )}
             </button>
           </form>
 
           <div className="auth-footer">
-            Already have an account?{' '}
+            <span>Already have an account?</span>
             <Link
               to="/login"
               className="auth-link"
@@ -189,11 +191,11 @@ export function Signup() {
         </div>
         <div className="brand-content">
           <div className="brand-logo">
-            CN
+            <div className="logo-shape"></div>
           </div>
-          <h2 className="brand-title">Create your account</h2>
+          <h2 className="brand-title">Company <span className="gradient-text">Name</span></h2>
           <p className="brand-description">
-            Join our platform to access all features and tools for your business needs.
+            Transform your ideas into beautiful digital experiences with our comprehensive suite of tools and resources.
           </p>
         </div>
       </div>

@@ -7,7 +7,6 @@
 /* Component Styles */
 @import './components/alert.css';
 @import './components/button.css';
-@import './components/card.css';
 @import './components/form.css';
 @import './components/logo.css';
 @import './components/theme-toggle.css';

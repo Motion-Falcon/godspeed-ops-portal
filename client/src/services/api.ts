@@ -77,6 +77,30 @@ export const resetPasswordAPI = async (email: string) => {
   }
 };
 
+export const updatePasswordAPI = async (password: string) => {
+  try {
+    const response = await api.post('/api/auth/update-password', { password });
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(error.response.data.error || 'Password update failed');
+    }
+    throw error;
+  }
+};
+
+export const resendVerificationEmailAPI = async (email: string) => {
+  try {
+    const response = await api.post('/api/auth/resend-verification', { email });
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(error.response.data.error || 'Failed to resend verification email');
+    }
+    throw error;
+  }
+};
+
 export const fetchUserData = async () => {
   try {
     const response = await api.get('/api/auth/me');

@@ -6,13 +6,17 @@ import { Signup } from './pages/Signup';
 import { Login } from './pages/Login';
 import { VerificationPending } from './pages/VerificationPending';
 import { ForgotPassword } from './pages/ForgotPassword';
+import { ResetPassword } from './pages/ResetPassword';
 import { Dashboard } from './pages/Dashboard';
+import { GeometricShapes } from './components/GeometricShapes';
+import './styles/main.css';
 
 function App() {
   return (
     <ThemeProvider defaultTheme="system" storageKey="godspeed-theme">
       <AuthProvider>
         <Router>
+          <GeometricShapes />
           <Routes>
             {/* Public routes */}
             <Route element={<PublicRoute />}>
@@ -21,6 +25,9 @@ function App() {
               <Route path="/verification-pending" element={<VerificationPending />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
             </Route>
+
+            {/* Reset password route - accessible regardless of auth status */}
+            <Route path="/reset-password" element={<ResetPassword />} />
 
             {/* Protected routes */}
             <Route element={<ProtectedRoute />}>

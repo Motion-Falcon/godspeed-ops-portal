@@ -120,6 +120,63 @@ router.post('/reset-password', async (req, res) => {
   }
 });
 
+// Update password
+router.post('/update-password', async (req, res) => {
+  try {
+    const { password } = req.body;
+    
+    if (!password) {
+      return res.status(400).json({ error: 'New password is required' });
+    }
+
+    // This requires the user to have a valid session from the password reset link
+    const { error } = await supabase.auth.updateUser({
+      password: password,
+    });
+
+    if (error) {
+      return res.status(400).json({ error: error.message });
+    }
+
+    return res.status(200).json({
+      message: 'Password updated successfully',
+    });
+  } catch (error) {
+    console.error('Update password error:', error);
+    return res.status(500).json({ error: 'Failed to update password' });
+  }
+});
+
+// Resend verification email
+router.post('/resend-verification', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email,
+      options: {
+        emailRedirectTo: `${process.env.CLIENT_URL}/login`,
+      },
+    });
+
+    if (error) {
+      return res.status(400).json({ error: error.message });
+    }
+
+    return res.status(200).json({
+      message: 'Verification email has been resent. Please check your inbox.',
+    });
+  } catch (error) {
+    console.error('Resend verification error:', error);
+    return res.status(500).json({ error: 'Failed to resend verification email' });
+  }
+});
+
 // Get current user (protected route)
 router.get('/me', authenticateToken, async (req, res) => {
   try {
