@@ -79,7 +79,23 @@ export const resetPasswordAPI = async (email: string) => {
 
 export const updatePasswordAPI = async (password: string) => {
   try {
-    const response = await api.post('/api/auth/update-password', { password });
+    // Get the current session to ensure we have the latest token
+    const { data: sessionData } = await supabase.auth.getSession();
+    
+    if (!sessionData.session || !sessionData.session.access_token) {
+      throw new Error('No active session found for password update');
+    }
+    
+    // Create a temporary instance with the current token to ensure authorization
+    const tempApi = axios.create({
+      baseURL: API_URL,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${sessionData.session.access_token}`
+      }
+    });
+    
+    const response = await tempApi.post('/api/auth/update-password', { password });
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {

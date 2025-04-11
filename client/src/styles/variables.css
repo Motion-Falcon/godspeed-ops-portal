@@ -9,18 +9,19 @@
   --text-muted-light: #71717A;
   --text-muted-dark: #A1A1AA;
   
-  /* New gradient colors */
-  --gradient-purple: #8B5CF6;
-  --gradient-blue: #3B82F6;
+  /* New gradient colors - changed to yellow/amber tones */
+  --gradient-amber: #F59E0B;
+  --gradient-yellow: #FCD34D;
   
-  /* Background gradients */
-  --bg-gradient-light: linear-gradient(120deg, #F8F8F8, #EDF5FF, #F3EEFF);
-  --bg-gradient-dark: radial-gradient(circle at top right, #0A0A10, #191924 70%, #080810);
+  /* Background gradients - updated with yellow tones */
+  --bg-gradient-light: linear-gradient(120deg, #F8F8F8, #FFFBEB, #FEF3C7);
+  --bg-gradient-dark: radial-gradient(circle at top right, #0A0A10, #1C1917 70%, #080810);
   
-  --primary-light: #3B82F6;
-  --primary-dark: #8B5CF6;
-  --primary-hover-light: #2563EB;
-  --primary-hover-dark: #7C3AED;
+  /* Primary colors changed to yellow/amber */
+  --primary-light: #F59E0B;
+  --primary-dark: #FBBF24;
+  --primary-hover-light: #D97706;
+  --primary-hover-dark: #F59E0B;
   --border-light: #E4E4E7;
   --border-dark: #27272E;
   --input-bg-light: #FFFFFF;
@@ -54,9 +55,9 @@
   --font-size-body: 16px;
   --font-size-small: 14px;
   
-  /* Glow effects */
-  --glow-purple: 0 0 15px rgba(139, 92, 246, 0.4);
-  --glow-blue: 0 0 15px rgba(59, 130, 246, 0.4);
+  /* Glow effects - updated for yellow/amber */
+  --glow-amber: 0 0 15px rgba(245, 158, 11, 0.4);
+  --glow-yellow: 0 0 15px rgba(252, 211, 77, 0.4);
 }
 
 /* Dark Theme */
@@ -72,7 +73,7 @@
   --input-bg: var(--input-bg-dark);
   --danger: var(--danger-dark);
   --card-shadow: var(--card-shadow-dark);
-  --glow: var(--glow-purple);
+  --glow: var(--glow-amber);
 }
 
 /* Light Theme */
@@ -88,7 +89,7 @@
   --input-bg: var(--input-bg-light);
   --danger: var(--danger-light);
   --card-shadow: var(--card-shadow-light);
-  --glow: var(--glow-blue);
+  --glow: var(--glow-yellow);
 }
 
 /* Reset and Base Styles */

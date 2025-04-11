@@ -23,13 +23,13 @@
 
 .form-header .forgot-link {
   font-size: 0.75rem;
-  color: var(--color-primary);
+  color: var(--primary);
   text-decoration: none;
   transition: color var(--transition-normal);
 }
 
 .form-header .forgot-link:hover {
-  color: var(--color-primary-hover);
+  color: var(--primary-hover);
   text-decoration: none;
 }
 
@@ -38,7 +38,7 @@
   height: 48px;
   padding: 0 var(--spacing-4);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--border-radius);
   background-color: var(--input-bg);
   color: var(--text);
   font-size: 1rem;
@@ -52,17 +52,17 @@
 }
 
 .form-input:hover {
-  border-color: var(--color-primary);
+  border-color: var(--primary);
 }
 
 .form-input:focus {
   outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px rgba(var(--color-primary-rgb, 59, 130, 246), 0.2);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
 }
 
 .dark .form-input:focus {
-  box-shadow: 0 0 0 2px rgba(var(--color-primary-rgb, 139, 92, 246), 0.2);
+  box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.2);
 }
 
 .input-container {
@@ -80,11 +80,11 @@
   cursor: pointer;
   transition: color var(--transition-normal);
   padding: var(--spacing-1);
-  border-radius: var(--radius-full);
+  border-radius: 50%;
 }
 
 .password-toggle:hover {
-  color: var(--color-primary);
+  color: var(--primary);
 }
 
 .checkbox-container {
@@ -95,7 +95,7 @@
 
 .form-checkbox {
   margin-right: var(--spacing-2);
-  accent-color: var(--color-primary);
+  accent-color: var(--primary);
 }
 
 .checkbox-label {
@@ -123,7 +123,7 @@
 
 /* Form Focus State Animations */
 .form-group:focus-within .form-label {
-  color: var(--color-primary);
+  color: var(--primary);
 }
 
 /* Form Loading Animation */
@@ -146,4 +146,49 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+/* Links */
+a {
+  color: var(--primary);
+  text-decoration: none;
+  transition: color var(--transition-normal);
+}
+
+a:hover {
+  color: var(--primary-hover);
+  text-decoration: underline;
+}
+
+.auth-link {
+  color: var(--primary);
+  font-size: 0.875rem;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  transition: all var(--transition-normal);
+}
+
+.auth-link:hover {
+  color: var(--primary-hover);
+  text-decoration: none;
+  transform: translateY(-1px);
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  text-decoration: none;
+  margin-bottom: var(--spacing-4);
+  transition: all var(--transition-normal);
+}
+
+.back-link:hover {
+  color: var(--primary);
+  text-decoration: none;
+  transform: translateX(-2px);
 } 
