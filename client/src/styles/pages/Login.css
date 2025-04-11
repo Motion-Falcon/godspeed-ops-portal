@@ -92,7 +92,7 @@
   color: var(--text-muted);
   line-height: 1.6;
   max-width: 320px;
-  margin: 0 auto;
+  margin-bottom: 20px;
 }
 
 .form-container {

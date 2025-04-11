@@ -103,11 +103,16 @@ router.post('/reset-password', async (req, res) => {
       return res.status(400).json({ error: 'Email is required' });
     }
 
+    // Make sure we have the right clientURL with http/https
+    const clientURL = process.env.CLIENT_URL || 'http://localhost:5173';
+    
+    // Send password reset email with redirect
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${process.env.CLIENT_URL}/reset-password`,
+      redirectTo: `${clientURL}/reset-password`,
     });
 
     if (error) {
+      console.error('Password reset email error:', error);
       return res.status(400).json({ error: error.message });
     }
 
@@ -124,23 +129,92 @@ router.post('/reset-password', async (req, res) => {
 router.post('/update-password', async (req, res) => {
   try {
     const { password } = req.body;
+    const authHeader = req.headers.authorization;
+    const token = authHeader && authHeader.split(' ')[1];
     
     if (!password) {
       return res.status(400).json({ error: 'New password is required' });
     }
 
-    // This requires the user to have a valid session from the password reset link
-    const { error } = await supabase.auth.updateUser({
-      password: password,
-    });
-
-    if (error) {
-      return res.status(400).json({ error: error.message });
+    // Check if we have a token
+    if (!token) {
+      return res.status(401).json({ error: 'Authentication token is required for password reset' });
+    }
+    
+    // Get user ID from the token
+    const { data: userData, error: userError } = await supabase.auth.getUser(token);
+    
+    if (userError) {
+      console.error('User validation error:', userError);
+      return res.status(401).json({ error: 'Invalid or expired reset token' });
+    }
+    
+    if (!userData.user) {
+      console.error('No user found with token');
+      return res.status(401).json({ error: 'User not found' });
     }
 
-    return res.status(200).json({
-      message: 'Password updated successfully',
-    });
+    // Try with service role first (most reliable)
+    try {
+      const adminSupabase = createClient(
+        supabaseUrl, 
+        process.env.SUPABASE_SERVICE_KEY || '',
+        { 
+          auth: {
+            autoRefreshToken: false,
+            persistSession: false
+          }
+        }
+      );
+
+      const { error } = await adminSupabase.auth.admin.updateUserById(
+        userData.user.id,
+        { password }
+      );
+
+      if (!error) {
+        return res.status(200).json({
+          message: 'Password updated successfully',
+        });
+      }
+      
+      // If service role update failed, log the error and try fallback
+      console.error('Admin update failed:', error);
+    } catch (adminError) {
+      console.error('Admin client error:', adminError);
+    }
+
+    // Fallback to user context update
+    try {
+      // Create a client with the token
+      const userClient = createClient(
+        supabaseUrl,
+        supabaseKey,
+        {
+          global: {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          }
+        }
+      );
+      
+      const { error: userUpdateError } = await userClient.auth.updateUser({ 
+        password 
+      });
+      
+      if (userUpdateError) {
+        console.error('User update error:', userUpdateError);
+        return res.status(400).json({ error: userUpdateError.message });
+      }
+      
+      return res.status(200).json({
+        message: 'Password updated successfully',
+      });
+    } catch (userClientError) {
+      console.error('User client error:', userClientError);
+      return res.status(500).json({ error: 'Password update failed with user token' });
+    }
   } catch (error) {
     console.error('Update password error:', error);
     return res.status(500).json({ error: 'Failed to update password' });

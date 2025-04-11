@@ -143,16 +143,6 @@
   gap: var(--spacing-3);
 }
 
-.button.outline {
-  background-color: transparent;
-  border: 1px solid var(--border);
-  color: var(--text);
-}
-
-.button.outline:hover {
-  border-color: var(--primary);
-}
-
 .data-container {
   margin-top: 2rem;
   text-align: left;

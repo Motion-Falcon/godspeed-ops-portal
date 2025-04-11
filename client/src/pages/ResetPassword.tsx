@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { updatePasswordWithResetToken } from '../lib/auth';
 import { Eye, EyeOff, Check, AlertCircle } from 'lucide-react';
 import { ThemeToggle } from '../components/theme-toggle';
+import { supabase } from '../lib/supabaseClient';
 import '../styles/variables.css';
 import '../styles/pages/ForgotPassword.css';
 import '../styles/components/form.css';
@@ -38,47 +39,76 @@ export function ResetPassword() {
   const location = useLocation();
 
   useEffect(() => {
-    // Check for token processing - give Supabase time to redirect with tokens
-    const checkForTokens = () => {
-      console.log('Checking for tokens...');
-      console.log('URL hash:', location.hash);
-      console.log('URL search:', location.search);
-      
-      // Check if we have access and refresh tokens in the URL hash
+    // Check for token in URL hash or query params
+    const checkForTokens = async () => {
+      // Check URL hash for access_token
       const hashParams = new URLSearchParams(location.hash.substring(1));
       const accessToken = hashParams.get('access_token');
-      const refreshToken = hashParams.get('refresh_token');
-      const typeFromHash = hashParams.get('type');
+      const type = hashParams.get('type');
       
-      // Also check the query parameters
+      // Check URL query for initial recovery token
       const queryParams = new URLSearchParams(location.search);
-      const token = queryParams.get('token');
-      const typeFromQuery = queryParams.get('type');
+      const recoveryToken = queryParams.get('token');
+      const recoveryType = queryParams.get('type');
       
-      console.log('Hash params:', { accessToken: !!accessToken, refreshToken: !!refreshToken, type: typeFromHash });
-      console.log('Query params:', { token: !!token, type: typeFromQuery });
-      
-      if (accessToken && refreshToken) {
-        console.log('Found hash tokens, proceeding with reset');
+      if (accessToken && type === 'recovery') {
+        // We have a valid token in the hash
         setHasToken(true);
         setIsVerifying(false);
-      } else if (token && typeFromQuery === 'recovery') {
-        // If we have the initial token but not the processed tokens yet, 
-        // wait a bit longer and check again
-        console.log('Found initial token, waiting for Supabase redirect...');
-        setTimeout(checkForTokens, 2000); // Check again in 2 seconds
+      } else if (recoveryToken && recoveryType === 'recovery') {
+        // We have the initial token but Supabase is still processing the redirect
+        
+        // Direct validation attempt with the token from the URL
+        handleInitialToken(recoveryToken);
       } else {
-        // After multiple checks, if we still don't have tokens, show error
-        console.log('No valid tokens found after verification time');
+        // No tokens found in URL, check if we have a session already
+        
+        const { data } = await supabase.auth.getSession();
+        if (data.session) {
+          setHasToken(true);
+          setIsVerifying(false);
+        } else {
+          // No valid tokens or session found
+          setIsVerifying(false);
+          setError('Password reset link is invalid or has expired. Please request a new one.');
+        }
+      }
+    };
+    
+    // Process the token directly with Supabase
+    const handleInitialToken = async (token: string) => {
+      try {
+        // Create a session directly using the token
+        const { data, error } = await supabase.auth.verifyOtp({
+          token_hash: token,
+          type: 'recovery'
+        });
+        
+        if (error) {
+          // Even if token verification fails, check if we somehow have a session
+          const { data: sessionData } = await supabase.auth.getSession();
+          if (sessionData.session) {
+            setHasToken(true);
+            setIsVerifying(false);
+          } else {
+            setIsVerifying(false);
+            setError('Password reset link is invalid or has expired. Please request a new one.');
+          }
+        } else if (data && data.session) {
+          setHasToken(true);
+          setIsVerifying(false);
+        } else {
+          // If token seems valid but no session yet, wait a bit longer
+          setTimeout(checkForTokens, 2000);
+        }
+      } catch (err) {
         setIsVerifying(false);
-        setError('Password reset link is invalid or has expired. Please request a new one.');
+        setError('An error occurred while validating your reset link. Please try again.');
       }
     };
 
-    // Give Supabase a moment to process the token and redirect
-    // Increased initial timeout to 2 seconds
-    const timer = setTimeout(checkForTokens, 2000);
-    
+    // Start the token check process after a short delay
+    const timer = setTimeout(() => checkForTokens(), 1000);
     return () => clearTimeout(timer);
   }, [location]);
 
