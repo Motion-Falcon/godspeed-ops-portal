@@ -78,43 +78,34 @@ export const resetPasswordAPI = async (email: string) => {
 };
 
 export const updatePasswordAPI = async (password: string) => {
-  try {
-    // Get the current session to ensure we have the latest token
-    const { data: sessionData } = await supabase.auth.getSession();
-    
-    if (!sessionData.session || !sessionData.session.access_token) {
-      throw new Error('No active session found for password update');
-    }
-    
-    // Create a temporary instance with the current token to ensure authorization
-    const tempApi = axios.create({
-      baseURL: API_URL,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${sessionData.session.access_token}`
-      }
-    });
-    
-    const response = await tempApi.post('/api/auth/update-password', { password });
-    return response.data;
-  } catch (error) {
-    if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Password update failed');
-    }
-    throw error;
+  const token = await getAuthToken();
+  
+  if (!token) {
+    throw new Error('No authentication token available');
   }
+  
+  const response = await fetch(`${API_URL}/auth/update-password`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify({ password }),
+  });
+
+  return handleResponse(response);
 };
 
 export const resendVerificationEmailAPI = async (email: string) => {
-  try {
-    const response = await api.post('/api/auth/resend-verification', { email });
-    return response.data;
-  } catch (error) {
-    if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Failed to resend verification email');
-    }
-    throw error;
-  }
+  const response = await fetch(`${API_URL}/auth/resend-verification`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ email }),
+  });
+
+  return handleResponse(response);
 };
 
 export const fetchUserData = async () => {
@@ -136,6 +127,63 @@ export const fetchData = async () => {
   } catch (error) {
     console.error('Error fetching data:', error);
     throw error;
+  }
+};
+
+// Helper to handle common response patterns
+const handleResponse = async (response: Response) => {
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    const errorMessage = errorData.error || `API error: ${response.status}`;
+    throw new Error(errorMessage);
+  }
+  return response.json();
+};
+
+// Get auth token from Supabase
+const getAuthToken = async () => {
+  const { data } = await supabase.auth.getSession();
+  return data.session?.access_token;
+};
+
+// Check API and auth health
+export const checkApiHealth = async () => {
+  try {
+    // First check if we can fetch the token
+    const token = await getAuthToken();
+    if (!token) {
+      return { status: 'error', message: 'No valid authentication token' };
+    }
+    
+    // Check Supabase user validity
+    const { data, error } = await supabase.auth.getUser(token);
+    if (error || !data.user) {
+      return { 
+        status: 'error', 
+        message: 'Invalid Supabase token: ' + (error?.message || 'User not found') 
+      };
+    }
+    
+    // Check server API connection
+    const response = await fetch(`${API_URL}/health`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    
+    if (!response.ok) {
+      return { 
+        status: 'error', 
+        message: `API connection error: ${response.status}` 
+      };
+    }
+    
+    return { status: 'healthy', user: data.user.email };
+  } catch (error) {
+    return { 
+      status: 'error', 
+      message: error instanceof Error ? error.message : 'Unknown error checking API health' 
+    };
   }
 };
 

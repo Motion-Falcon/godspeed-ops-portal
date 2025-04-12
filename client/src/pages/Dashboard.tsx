@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { LogOut, User as UserIcon } from 'lucide-react';
+import { LogOut, User as UserIcon, UserCheck, Shield, Activity } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { logoutUser } from '../lib/auth';
 import { useNavigate } from 'react-router-dom';
 import { ThemeToggle } from '../components/theme-toggle';
+import { checkApiHealth } from '../services/api';
 import '../styles/variables.css';
 import '../styles/pages/Dashboard.css';
 import '../styles/components/button.css';
@@ -12,13 +13,15 @@ interface UserData {
   id: string;
   email: string | null | undefined;
   name: string;
+  userType: string;
   createdAt: string;
   lastSignIn: string;
 }
 
 export function Dashboard() {
-  const { user } = useAuth();
+  const { user, isAdmin, isRecruiter } = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [healthStatus, setHealthStatus] = useState<string | null>(null);
   const navigate = useNavigate();
   const [userData, setUserData] = useState<UserData | null>(null);
 
@@ -28,6 +31,7 @@ export function Dashboard() {
         id: user.id,
         email: user.email,
         name: user.user_metadata?.name || 'User',
+        userType: user.user_metadata?.user_type || 'jobseeker',
         createdAt: new Date(user.created_at).toLocaleDateString(),
         lastSignIn: user.last_sign_in_at 
           ? new Date(user.last_sign_in_at).toLocaleString() 
@@ -47,6 +51,20 @@ export function Dashboard() {
     }
   };
 
+  const handleCheckHealth = async () => {
+    setHealthStatus('Checking...');
+    try {
+      const result = await checkApiHealth();
+      if (result.status === 'healthy') {
+        setHealthStatus(`✅ Connection healthy: ${result.user}`);
+      } else {
+        setHealthStatus(`❌ Error: ${result.message}`);
+      }
+    } catch (error) {
+      setHealthStatus(`❌ Check failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
   if (!userData) {
     return (
       <div className="centered-container">
@@ -54,6 +72,20 @@ export function Dashboard() {
       </div>
     );
   }
+
+  // Get the role icon based on user type
+  const getRoleIcon = () => {
+    if (isAdmin) return <Shield className="role-icon admin" />;
+    if (isRecruiter) return <UserCheck className="role-icon recruiter" />;
+    return <UserIcon className="role-icon jobseeker" />;
+  };
+
+  // Get role name for display
+  const getRoleName = () => {
+    if (isAdmin) return 'Administrator';
+    if (isRecruiter) return 'Recruiter';
+    return 'Job Seeker';
+  };
 
   return (
     <div className="dashboard-container">
@@ -89,7 +121,13 @@ export function Dashboard() {
 
       {/* Main content */}
       <main className="dashboard-main">
-        <h1 className="dashboard-title">Welcome, {userData.name}!</h1>
+        <div className="dashboard-heading">
+          <h1 className="dashboard-title">Welcome, {userData.name}!</h1>
+          <div className="user-role-badge">
+            {getRoleIcon()}
+            <span>{getRoleName()}</span>
+          </div>
+        </div>
         <p className="dashboard-subtitle">
           Here's your account information
         </p>
@@ -110,6 +148,11 @@ export function Dashboard() {
               <div className="data-item">
                 <p className="data-label">Email Address</p>
                 <p className="data-value">{userData.email}</p>
+              </div>
+              
+              <div className="data-item">
+                <p className="data-label">User Role</p>
+                <p className="data-value">{getRoleName()}</p>
               </div>
               
               <div className="data-item">
@@ -141,6 +184,38 @@ export function Dashboard() {
               <button className="button outline" style={{ justifyContent: 'flex-start' }}>
                 Notification Settings
               </button>
+              
+              {/* Health check button */}
+              <button 
+                className="button outline" 
+                onClick={handleCheckHealth}
+                style={{ justifyContent: 'flex-start' }}
+              >
+                <Activity size={16} className="icon" />
+                Check Auth Status
+              </button>
+              
+              {healthStatus && (
+                <div className="health-status">
+                  {healthStatus}
+                </div>
+              )}
+              
+              {/* Admin-only actions */}
+              {isAdmin && (
+                <button className="button outline admin-action" style={{ justifyContent: 'flex-start' }}>
+                  <Shield size={16} className="icon" />
+                  Admin Dashboard
+                </button>
+              )}
+              
+              {/* Recruiter actions */}
+              {isRecruiter && (
+                <button className="button outline recruiter-action" style={{ justifyContent: 'flex-start' }}>
+                  <UserCheck size={16} className="icon" />
+                  Manage Job Listings
+                </button>
+              )}
             </div>
           </div>
         </div>

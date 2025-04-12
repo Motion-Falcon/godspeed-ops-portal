@@ -176,4 +176,50 @@
 
 .main-content {
   flex: 1;
+}
+
+.dashboard-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.user-role-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: var(--color-background-secondary);
+  padding: 0.5rem 1rem;
+  border-radius: 2rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+.role-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.role-icon.admin {
+  color: var(--color-primary);
+}
+
+.role-icon.recruiter {
+  color: var(--color-success);
+}
+
+.role-icon.jobseeker {
+  color: var(--color-info);
+}
+
+.admin-action {
+  border-color: var(--color-primary) !important;
+  color: var(--color-primary) !important;
+}
+
+.recruiter-action {
+  border-color: var(--color-success) !important;
+  color: var(--color-success) !important;
 } 

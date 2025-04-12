@@ -31,6 +31,14 @@ app.get('/', (req, res) => {
   res.json({ message: 'Server is running' });
 });
 
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'healthy',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Auth routes
 app.use('/api/auth', authRoutes);
 

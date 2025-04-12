@@ -25,12 +25,23 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
+    // Determine user type based on email
+    let userType = 'jobseeker'; // Default type
+    
+    // Check for recruiter email pattern
+    if (email.includes('@gmail')) {
+      userType = 'recruiter';
+    }
+    
+    // Admin users are handled separately via direct database assignments
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
           name,
+          user_type: userType,
         },
       },
     });

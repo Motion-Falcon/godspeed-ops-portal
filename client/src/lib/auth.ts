@@ -8,12 +8,21 @@ export const registerUser = async (
   password: string, 
   name: string
 ) => {
+  // Determine user type based on email
+  let userType = 'jobseeker'; // Default type
+  
+  // Check for recruiter email pattern
+  if (email.includes('@gmail')) {
+    userType = 'recruiter';
+  }
+  
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
       data: {
         name,
+        user_type: userType,
       },
     },
   });
@@ -48,8 +57,27 @@ export const loginUser = async (
 
 // Logout user
 export const logoutUser = async () => {
-  const { error } = await supabase.auth.signOut();
-  if (error) throw error;
+  try {
+    // First, call Supabase signOut to invalidate the session server-side
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+    
+    // Clear any localStorage items that might contain auth data
+    localStorage.removeItem('supabase.auth.token');
+    
+    // Clear any potential session cookies
+    document.cookie.split(";").forEach((c) => {
+      document.cookie = c
+        .replace(/^ +/, "")
+        .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+    });
+    
+    // Force reload to clear any in-memory state
+    window.location.reload();
+  } catch (error) {
+    console.error('Logout error:', error);
+    throw error;
+  }
 };
 
 // Get current user
