@@ -1,6 +1,6 @@
 .pdf-thumbnail-container {
   width: 100%;
-  height: 212px;
+  height: 424px;
   border: 1px solid #e0e0e0;
   border-radius: 4px;
   overflow: hidden;
@@ -118,7 +118,7 @@
   }
 }
 
-/* Responsive adjustments */
+/* Responsive adjustments
 @media (max-width: 768px) {
   .pdf-thumbnail-container {
     height: 180px;
@@ -129,4 +129,4 @@
   .pdf-thumbnail-container {
     height: 150px;
   }
-} 
+}  */

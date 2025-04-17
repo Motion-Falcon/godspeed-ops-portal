@@ -63,8 +63,8 @@ const PDFThumbnail: React.FC<PDFThumbnailProps> = ({ pdfUrl, onClick }) => {
             renderTextLayer={false}
             renderAnnotationLayer={false}
             className="pdf-thumbnail-page"
-            width={150}
-            height={212} // Approximately A4 ratio
+            width={300} 
+            height={424}// Approximately A4 ratio
           />
         </Document>
       )}

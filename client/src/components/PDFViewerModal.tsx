@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { X } from 'lucide-react';
 import '../styles/components/PDFViewerModal.css';
@@ -23,6 +23,33 @@ const PDFViewerModal: React.FC<PDFViewerModalProps> = ({
   const [pageNumber, setPageNumber] = useState<number>(1);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [scale, setScale] = useState<number>(1.0);
+  const [windowSize, setWindowSize] = useState({
+    width: window.innerWidth,
+    height: window.innerHeight
+  });
+
+  // Effect to listen for window resize
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowSize({
+        width: window.innerWidth,
+        height: window.innerHeight
+      });
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Reset to first page whenever a new PDF is loaded
+  useEffect(() => {
+    if (pdfUrl) {
+      setPageNumber(1);
+      setLoading(true);
+      setError(null);
+    }
+  }, [pdfUrl]);
 
   // Function to handle successful document loading
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
@@ -42,6 +69,17 @@ const PDFViewerModal: React.FC<PDFViewerModalProps> = ({
   const goToPrevPage = () => setPageNumber(prev => Math.max(prev - 1, 1));
   const goToNextPage = () => setPageNumber(prev => Math.min(prev + 1, numPages || 1));
 
+  // Functions to zoom in/out
+  const zoomIn = () => setScale(prev => Math.min(prev + 0.1, 2.0));
+  const zoomOut = () => setScale(prev => Math.max(prev - 0.1, 0.5));
+  const resetZoom = () => setScale(1.0);
+
+  // Calculate optimal width
+  const calculateWidth = () => {
+    const maxWidth = Math.min(windowSize.width * 0.8, 800);
+    return maxWidth * scale;
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -49,6 +87,11 @@ const PDFViewerModal: React.FC<PDFViewerModalProps> = ({
       <div className="pdf-modal-content" onClick={e => e.stopPropagation()}>
         <div className="pdf-modal-header">
           <h3 className="pdf-modal-title">{documentName}</h3>
+          <div className="pdf-modal-zoom-controls">
+            <button className="pdf-zoom-button" onClick={zoomOut} title="Zoom out">-</button>
+            <button className="pdf-zoom-button" onClick={resetZoom} title="Reset zoom">100%</button>
+            <button className="pdf-zoom-button" onClick={zoomIn} title="Zoom in">+</button>
+          </div>
           <button className="pdf-modal-close-btn" onClick={onClose}>
             <X size={20} />
           </button>
@@ -81,7 +124,8 @@ const PDFViewerModal: React.FC<PDFViewerModalProps> = ({
                 renderTextLayer={false}
                 renderAnnotationLayer={false}
                 className="pdf-page"
-                width={Math.min(window.innerWidth * 0.8, 800)}
+                width={calculateWidth()}
+                scale={scale}
               />
             </Document>
           )}

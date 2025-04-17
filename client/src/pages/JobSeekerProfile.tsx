@@ -78,6 +78,11 @@ const decodePath = (path: string | undefined): string | undefined => {
   return path ? path.replace(/&#x2F;/g, '/') : undefined;
 };
 
+// Type for our PDF cache
+interface PDFCache {
+  [key: string]: string | null;
+}
+
 export function JobSeekerProfile() {
   const [profile, setProfile] = useState<FullJobseekerProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -88,6 +93,8 @@ export function JobSeekerProfile() {
   const [selectedPdfUrl, setSelectedPdfUrl] = useState<string | null>(null);
   const [selectedPdfName, setSelectedPdfName] = useState<string>('Document');
   const [isPdfModalOpen, setIsPdfModalOpen] = useState<boolean>(false);
+  const [pdfCache, setPdfCache] = useState<PDFCache>({});
+  const [loadingPdfs, setLoadingPdfs] = useState<boolean>(false);
   const { id } = useParams<{ id: string }>();
   const { isAdmin, isRecruiter } = useAuth();
   const navigate = useNavigate();
@@ -118,6 +125,42 @@ export function JobSeekerProfile() {
       fetchProfile();
     }
   }, [id, isAdmin, isRecruiter, navigate]);
+
+  // Effect to load all PDFs once profile is loaded and has documents
+  useEffect(() => {
+    if (profile?.documents && profile.documents.length > 0) {
+      const loadAllPdfs = async () => {
+        setLoadingPdfs(true);
+        const newCache: PDFCache = {};
+        
+        try {
+          // Process all documents in parallel
+          await Promise.all(
+            // Use optional chaining to safely access documents
+            profile.documents?.map(async (doc) => {
+              if (doc.documentPath) {
+                try {
+                  const signedUrl = await getSignedUrl(doc.documentPath);
+                  newCache[doc.documentPath] = signedUrl;
+                } catch (err) {
+                  console.error(`Error getting signed URL for ${doc.documentPath}:`, err);
+                  newCache[doc.documentPath] = null;
+                }
+              }
+            }) || []
+          );
+          
+          setPdfCache(newCache);
+        } catch (err) {
+          console.error('Error loading PDFs:', err);
+        } finally {
+          setLoadingPdfs(false);
+        }
+      };
+      
+      loadAllPdfs();
+    }
+  }, [profile?.documents]);
 
   const handleStatusUpdate = async (newStatus: 'verified' | 'rejected' | 'pending') => {
     if (!profile || !id) return;
@@ -207,12 +250,21 @@ export function JobSeekerProfile() {
     }
 
     try {
-      const signedUrl = await getSignedUrl(documentPath);
+      // Use the cached signed URL if available
+      const signedUrl = pdfCache[documentPath] || await getSignedUrl(documentPath);
       
       if (signedUrl) {
         setSelectedPdfUrl(signedUrl);
         setSelectedPdfName(documentFileName || 'Document');
         setIsPdfModalOpen(true);
+        
+        // Cache the URL if not already cached
+        if (!pdfCache[documentPath]) {
+          setPdfCache({
+            ...pdfCache,
+            [documentPath]: signedUrl
+          });
+        }
       } else {
         throw new Error('Could not generate preview URL.');
       }
@@ -235,32 +287,47 @@ export function JobSeekerProfile() {
     setDownloadError(null);
 
     try {
-      // Decode the path before using it
-      const decodedPath = decodePath(documentPath);
+      // Use cached URL if available or get a new one
+      let signedUrl = pdfCache[documentPath];
       
-      console.log(`Download requested for path: '${documentPath}'`); 
-      console.log(`Using decoded path: '${decodedPath}'`); 
+      if (!signedUrl) {
+        // Decode the path before using it
+        const decodedPath = decodePath(documentPath);
+        
+        console.log(`Download requested for path: '${documentPath}'`); 
+        console.log(`Using decoded path: '${decodedPath}'`); 
 
-      if (!decodedPath) {
-        throw new Error("Document path is missing or invalid.");
+        if (!decodedPath) {
+          throw new Error("Document path is missing or invalid.");
+        }
+
+        // Generate a signed URL (expires in 300 seconds)
+        const { data, error } = await supabase.storage
+          .from('jobseeker-documents')
+          .createSignedUrl(decodedPath, 300); // 5 minutes expiry
+
+        if (error) {
+          console.error("Supabase download URL error:", error);
+          throw error;
+        }
+
+        signedUrl = data?.signedUrl || null;
+        
+        // Cache the URL
+        if (signedUrl) {
+          setPdfCache({
+            ...pdfCache,
+            [documentPath]: signedUrl
+          });
+        }
       }
 
-      // Generate a signed URL (expires in 300 seconds)
-      const { data, error } = await supabase.storage
-        .from('jobseeker-documents')
-        .createSignedUrl(decodedPath, 300); // 5 minutes expiry
-
-      if (error) {
-        console.error("Supabase download URL error:", error);
-        throw error;
-      }
-
-      if (data?.signedUrl) {
-        console.log("Download URL generated:", data.signedUrl);
+      if (signedUrl) {
+        console.log("Download URL generated:", signedUrl);
         
         // Create a temporary anchor element to trigger download
         const downloadLink = document.createElement('a');
-        downloadLink.href = data.signedUrl;
+        downloadLink.href = signedUrl;
         
         // Use the documentFileName if provided, otherwise extract from path or use a default
         let filename = 'document.pdf';
@@ -512,6 +579,12 @@ export function JobSeekerProfile() {
                 <p>{downloadError}</p>
               </div>
             )}
+            {loadingPdfs && (
+              <div className="loading-pdfs">
+                <div className="pdf-loading-spinner"></div>
+                <p>Loading document previews...</p>
+              </div>
+            )}
             {(profile?.documents && profile.documents.length > 0) ? (
               <div className="document-list">
                 {profile.documents.map((doc: DocumentRecord, index: number) => (
@@ -527,13 +600,13 @@ export function JobSeekerProfile() {
                         <div className="document-actions">
                           <button 
                             onClick={() => handlePreviewDocument(doc.documentPath, doc.documentFileName)} 
-                            className="small-button"
+                            className="button primary"
                           >
                             <Eye size={16} /> Preview
                           </button>
                           <button 
                             onClick={() => handleDownloadDocument(doc.documentPath, doc.id, doc.documentFileName)} 
-                            className="small-button"
+                            className="button primary"
                             disabled={downloadingDocId === doc.id}
                           >
                             {downloadingDocId === doc.id ? (
@@ -553,7 +626,7 @@ export function JobSeekerProfile() {
                     <div className="document-preview">
                       {doc.documentPath ? (
                         <PDFThumbnail 
-                          pdfUrl={doc.documentPath}
+                          pdfUrl={pdfCache[doc.documentPath] || null}
                           onClick={() => handlePreviewDocument(doc.documentPath, doc.documentFileName)}
                         />
                       ) : (

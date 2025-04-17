@@ -1,7 +1,7 @@
 /* JobseekerProfile.css */
 
 .profile-create-container {
-  max-width: 900px;
+  max-width: 1100px;
   margin: 2rem auto;
   padding: 0 1rem;
 }
@@ -101,7 +101,7 @@
   box-shadow: var(--shadow-md);
   border: 1px solid var(--color-border);
   margin-bottom: 2rem;
-  max-width: 800px;
+  max-width: 1000px;
   margin-left: auto;
   margin-right: auto;
 }
@@ -851,6 +851,7 @@ select.form-input {
 .document-item {
   display: grid;
   grid-template-columns: 70% 30%;
+  height: fit-content;
   align-items: stretch;
   padding: 0;
   background-color: rgba(0, 0, 0, 0.02);
@@ -898,8 +899,10 @@ select.form-input {
 
 .document-actions {
   display: flex;
+  flex-direction: column;
   gap: 8px;
   margin-top: 10px;
+  width: 30%;
 }
 
 .document-preview {
@@ -907,6 +910,7 @@ select.form-input {
   display: flex;
   justify-content: center;
   align-items: center;
+  height: fit-content;
 }
 
 /* Document preview placeholder - shown when no preview is available */
@@ -963,10 +967,15 @@ select.form-input {
   .document-item {
     grid-template-columns: 1fr;
     grid-template-rows: auto auto;
+    height: auto;
   }
   
   .document-preview {
     min-height: 150px;
+  }
+  .document-actions {
+    flex-direction: row;
+    width: 90%;
   }
 }
 
@@ -1019,15 +1028,35 @@ select.form-input {
   background-color: rgba(220, 53, 69, 0.2);
 }
 
-/* Small button styles for document actions */
-.small-button {
-  font-size: 12px;
-  padding: 5px 10px;
+/* Loading PDFs indicator */
+.loading-pdfs {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 5px;
+  justify-content: center;
+  padding: 20px;
+  border-radius: 6px;
+  background-color: rgba(0, 0, 0, 0.02);
+  margin-bottom: 15px;
+  text-align: center;
 }
 
-.small-button svg {
-  flex-shrink: 0;
+.pdf-loading-spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid rgba(0, 0, 0, 0.1);
+  border-radius: 50%;
+  border-top-color: var(--color-primary, #3498db);
+  animation: spin 1s linear infinite;
+  margin-bottom: 8px;
+}
+
+/* Dark mode adjustments */
+.dark .loading-pdfs {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.dark .pdf-loading-spinner {
+  border-color: rgba(255, 255, 255, 0.1);
+  border-top-color: var(--color-primary, #3498db);
 } 
