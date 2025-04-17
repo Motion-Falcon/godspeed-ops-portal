@@ -74,11 +74,17 @@ const singleDocumentSchema = z.object({
     .refine(
       (file) => ALLOWED_FILE_TYPES.includes(file?.type),
       "Only .pdf files are accepted."
-    ).optional(),
+    ).optional(), // Keep optional initially to allow adding rows without immediate file selection
   documentNotes: z.string().optional(),
   documentPath: z.string().optional(), // For storing uploaded file path
   documentFileName: z.string().optional(), // For storing the file name when saving drafts
   id: z.string().optional(), // Unique identifier for each document
+}).refine(data => {
+  // File is required ONLY if a path doesn't already exist (meaning it's not uploaded yet)
+  return !!data.documentPath || !!data.documentFile;
+}, {
+  message: "Document file is required for new entries",
+  path: ["documentFile"], // Associate error with the file input
 });
 
 // Array of documents schema
@@ -227,37 +233,78 @@ export function ProfileCreate() {
   const saveDraft = async () => {
     try {
       setIsLoading(true);
+      setError(null); // Clear previous errors
       const formData = methods.getValues();
-      
-      // Create a deep copy of form data to avoid mutating the original
-      const draftData = JSON.parse(JSON.stringify(formData)) as JobseekerProfileFormData;
-      
-      // Convert documents for storage
-      if (draftData.documents && draftData.documents.length > 0) {
-        draftData.documents = draftData.documents.map(doc => {
-          const docCopy = { ...doc };
-          if (docCopy.documentFile) {
-            docCopy.documentFileName = (docCopy.documentFile as File).name;
-            // Ignore the variable intentionally
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            const { documentFile, ...docWithoutFile } = docCopy;
-            return docWithoutFile;
-          }
-          return docCopy;
-        });
+
+      // Check if user is authenticated - needed for file uploads
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        // If saving draft requires file upload, user must be logged in.
+        // Decide policy: prevent save or save without upload?
+        // For now, let's prevent save and show error.
+        throw new Error('User must be logged in to save draft with file uploads.');
       }
-      
-      // Save the draft
+
+      // Create a deep copy of form data to avoid mutating the original
+      const draftData = structuredClone(formData);
+
+      // Handle document uploads before saving draft
+      if (draftData.documents && draftData.documents.length > 0) {
+        for (const doc of draftData.documents) {
+          // Check if there's a file selected and it hasn't been uploaded yet (no path)
+          if (doc.documentFile instanceof File && !doc.documentPath) {
+            console.log(`Draft Save: Found file for document ID ${doc.id}, Type: ${doc.documentType}. Uploading...`);
+            const fileToUpload = doc.documentFile;
+            const fileExt = fileToUpload.name.split('.').pop();
+            const uniqueFileName = `${crypto.randomUUID()}.${fileExt}`;
+            const filePath = `${user.id}/${doc.documentType || 'uncategorized'}/${uniqueFileName}`;
+
+            console.log(`Draft Save: Uploading to Supabase path: ${filePath}`);
+
+            const { data: uploadData, error: uploadError } = await supabase.storage
+              .from('jobseeker-documents')
+              .upload(filePath, fileToUpload);
+
+            if (uploadError) {
+              console.error(`Draft Save: Supabase upload error for doc ${doc.id}:`, uploadError);
+              // Decide how to handle partial failure:
+              // Option 1: Throw error, stop draft save (current implementation)
+              throw new Error(`Failed to upload document '${fileToUpload.name}' during draft save: ${uploadError.message}`);
+              // Option 2: Log error, continue saving draft without path for this doc
+              // setError(`Failed to upload ${fileToUpload.name}. Draft saved without this file.`);
+              // doc.documentPath = undefined; // Ensure path is not set
+              // doc.documentFileName = fileToUpload.name; // Still save name
+            } else {
+              // Update document with path info
+              doc.documentPath = uploadData?.path || '';
+              doc.documentFileName = fileToUpload.name; // Store the original file name
+              console.log(`Draft Save: File uploaded successfully to ${doc.documentPath}`);
+            }
+          } else if (doc.documentFile && doc.documentPath) {
+             console.log(`Draft Save: File for document ID ${doc.id} already has a path (${doc.documentPath}), skipping upload.`);
+          } else {
+             console.log(`Draft Save: No new file selected for document ID ${doc.id}, skipping upload.`);
+          }
+
+          // Always remove the file object before saving the draft JSON
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const { documentFile, ...docWithoutFile } = doc;
+          Object.assign(doc, docWithoutFile); // Update the object in the array
+           doc.documentFile = undefined; // Explicitly set to undefined
+        }
+      }
+
+      // Save the potentially modified draft data (with documentPaths)
       const response = await saveDraftAPI({
         ...draftData,
         currentStep
       });
       console.log("Draft saved successfully:", response);
-      
+
       setIsLoading(false);
       // Show success message (using whatever toast system is available)
-      console.log("Draft saved successfully");
-      
+      console.log("Draft saved successfully (including file uploads if any)");
+
       return true;
     } catch (error) {
       setIsLoading(false);
@@ -439,182 +486,186 @@ export function ProfileCreate() {
         </div>
       )}
 
-      <div className="form-card">
-        <FormProvider {...methods}>
-          <form onSubmit={methods.handleSubmit(handleSubmit)} className={isLoading ? 'form-loading' : ''}>
-            <div className="form-content">
-              {renderStep()}
-            </div>
+      {isLoading ? (
+        <div className="loading-indicator">checking saved draft...</div>
+      ) : (
+        <div className="form-card">
+          <FormProvider {...methods}>
+            <form onSubmit={methods.handleSubmit(handleSubmit)} className={isLoading ? 'form-loading' : ''}>
+              <div className="form-content">
+                {renderStep()}
+              </div>
 
-            <div className="form-navigation">
-              {currentStep > 1 && (
-                <button 
-                  type="button" 
-                  className="button secondary"
-                  onClick={handleBack}
-                  disabled={isLoading}
-                >
-                  Back
-                </button>
-              )}
-              
-              <button
-                type="button"
-                className="button secondary draft-button"
-                onClick={() => saveDraft()}
-                disabled={isLoading}
-              >
-                Save Draft
-              </button>
-
-              {currentStep < totalSteps ? (
+              <div className="form-navigation">
+                {currentStep > 1 && (
+                  <button 
+                    type="button" 
+                    className="button secondary"
+                    onClick={handleBack}
+                    disabled={isLoading}
+                  >
+                    Back
+                  </button>
+                )}
+                
                 <button
                   type="button"
-                  className="button primary"
-                  onClick={async () => {
-                    // Get current values for debugging
-                    const values = methods.getValues();
-                    console.log("Current form values:", values);
-                    
-                    // Custom validation based on the current step
-                    let isValid = false;
+                  className="button secondary draft-button"
+                  onClick={() => saveDraft()}
+                  disabled={isLoading}
+                >
+                  Save Draft
+                </button>
 
-                    if (currentStep === 1) {
-                      // Special validation for step 1
-                      if (!values.licenseNumber && !values.passportNumber) {
-                        console.log("Missing required identification: Need either licenseNumber or passportNumber");
-                        methods.setError('licenseNumber', { 
-                          type: 'custom', 
-                          message: 'Either a license number or passport number is required' 
-                        });
-                        isValid = false;
-                      } else {
-                        // Trigger validation without storing the result
+                {currentStep < totalSteps ? (
+                  <button
+                    type="button"
+                    className="button primary"
+                    onClick={async () => {
+                      // Get current values for debugging
+                      const values = methods.getValues();
+                      console.log("Current form values:", values);
+                      
+                      // Custom validation based on the current step
+                      let isValid = false;
+
+                      if (currentStep === 1) {
+                        // Special validation for step 1
+                        if (!values.licenseNumber && !values.passportNumber) {
+                          console.log("Missing required identification: Need either licenseNumber or passportNumber");
+                          methods.setError('licenseNumber', { 
+                            type: 'custom', 
+                            message: 'Either a license number or passport number is required' 
+                          });
+                          isValid = false;
+                        } else {
+                          // Trigger validation without storing the result
+                          await methods.trigger();
+                          
+                          // Only consider fields for step 1 when determining validity
+                          const errors = methods.formState.errors;
+                          const step1ErrorFields = ['firstName', 'lastName', 'dob', 'email', 'mobile', 
+                            'licenseNumber', 'passportNumber', 'sinNumber', 'sinExpiry', 
+                            'businessNumber', 'corporationName'];
+                            
+                            // Check if any step 1 fields have errors
+                            const hasStep1Errors = step1ErrorFields.some(field => 
+                              Object.prototype.hasOwnProperty.call(errors, field));
+                              
+                            isValid = !hasStep1Errors;
+                        }
+                      } 
+                      else if (currentStep === 2 || currentStep === 3) {
+                        // Trigger all validation
                         await methods.trigger();
                         
-                        // Only consider fields for step 1 when determining validity
+                        // Only consider fields relevant to the current step
                         const errors = methods.formState.errors;
-                        const step1ErrorFields = ['firstName', 'lastName', 'dob', 'email', 'mobile', 
-                          'licenseNumber', 'passportNumber', 'sinNumber', 'sinExpiry', 
-                          'businessNumber', 'corporationName'];
+                        const step2Fields = ['street', 'city', 'province', 'postalCode'];
+                        const step3Fields = ['licenseType', 'experience', 'availability', 'manualDriving'];
+                        
+                        // Check if any fields for this step have errors
+                        const relevantFields = currentStep === 2 ? step2Fields : step3Fields;
+                        const hasStepErrors = relevantFields.some(field => 
+                          Object.prototype.hasOwnProperty.call(errors, field));
                           
-                          // Check if any step 1 fields have errors
-                          const hasStep1Errors = step1ErrorFields.some(field => 
-                            Object.prototype.hasOwnProperty.call(errors, field));
-                            
-                          isValid = !hasStep1Errors;
+                        isValid = !hasStepErrors;
                       }
-                    } 
-                    else if (currentStep === 2 || currentStep === 3) {
-                      // Trigger all validation
+                      else if (currentStep === 4) {
+                        // Trigger all validation
+                        await methods.trigger();
+                        
+                        // Only consider fields for step 4
+                        const errors = methods.formState.errors;
+                        const step4Fields = ['payrateType', 'billRate', 'payRate', 'paymentMethod'];
+                        
+                        // Check if any step 4 fields have errors
+                        const hasStep4Errors = step4Fields.some(field => 
+                          Object.prototype.hasOwnProperty.call(errors, field));
+                          
+                        isValid = !hasStep4Errors;
+                      }
+                      else {
+                        // Default validation for other steps
+                        isValid = await methods.trigger();
+                      }
+                      
+                      if (isValid) {
+                        handleContinue();
+                      } else {
+                        console.log("Validation failed for step", currentStep);
+                        // Display which fields have errors
+                        console.log("Errors:", methods.formState.errors);
+                        
+                        // This will help to trigger touched state on fields with errors
+                        // so that error messages will be displayed
+                        Object.keys(methods.formState.errors).forEach(fieldName => {
+                          try {
+                            methods.setError(fieldName as keyof JobseekerProfileFormData, { 
+                              type: 'validation',
+                              message: methods.formState.errors[fieldName as keyof typeof methods.formState.errors]?.message || ''
+                            });
+                          } catch (e) {
+                            console.log("Error setting field error state:", e);
+                          }
+                        });
+                      }
+                    }}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? <span className="loading-spinner"></span> : 'Continue'}
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    className="button primary"
+                    onClick={async (e) => {
+                      e.preventDefault();
+                      // Get current values for debugging
+                      const values = methods.getValues();
+                      console.log("Form values before submission:", values);
+                      
+                      // Trigger validation for all fields in the form
                       await methods.trigger();
                       
-                      // Only consider fields relevant to the current step
+                      // Check for any errors in the form
                       const errors = methods.formState.errors;
-                      const step2Fields = ['street', 'city', 'province', 'postalCode'];
-                      const step3Fields = ['licenseType', 'experience', 'availability', 'manualDriving'];
+                      console.log("Validation errors:", errors);
                       
-                      // Check if any fields for this step have errors
-                      const relevantFields = currentStep === 2 ? step2Fields : step3Fields;
-                      const hasStepErrors = relevantFields.some(field => 
-                        Object.prototype.hasOwnProperty.call(errors, field));
+                      // Check if form is valid (no errors)
+                      const isValid = Object.keys(errors).length === 0;
+                      
+                      if (isValid) {
+                        handleSubmit(methods.getValues());
+                      } else {
+                        console.log("Validation failed before submission");
+                        // Display which fields have errors
+                        console.log("Errors:", methods.formState.errors);
                         
-                      isValid = !hasStepErrors;
-                    }
-                    else if (currentStep === 4) {
-                      // Trigger all validation
-                      await methods.trigger();
-                      
-                      // Only consider fields for step 4
-                      const errors = methods.formState.errors;
-                      const step4Fields = ['payrateType', 'billRate', 'payRate', 'paymentMethod'];
-                      
-                      // Check if any step 4 fields have errors
-                      const hasStep4Errors = step4Fields.some(field => 
-                        Object.prototype.hasOwnProperty.call(errors, field));
-                        
-                      isValid = !hasStep4Errors;
-                    }
-                    else {
-                      // Default validation for other steps
-                      isValid = await methods.trigger();
-                    }
-                    
-                    if (isValid) {
-                      handleContinue();
-                    } else {
-                      console.log("Validation failed for step", currentStep);
-                      // Display which fields have errors
-                      console.log("Errors:", methods.formState.errors);
-                      
-                      // This will help to trigger touched state on fields with errors
-                      // so that error messages will be displayed
-                      Object.keys(methods.formState.errors).forEach(fieldName => {
-                        try {
-                          methods.setError(fieldName as keyof JobseekerProfileFormData, { 
-                            type: 'validation',
-                            message: methods.formState.errors[fieldName as keyof typeof methods.formState.errors]?.message || ''
-                          });
-                        } catch (e) {
-                          console.log("Error setting field error state:", e);
-                        }
-                      });
-                    }
-                  }}
-                  disabled={isLoading}
-                >
-                  {isLoading ? <span className="loading-spinner"></span> : 'Continue'}
-                </button>
-              ) : (
-                <button
-                  type="submit"
-                  className="button primary"
-                  onClick={async (e) => {
-                    e.preventDefault();
-                    // Get current values for debugging
-                    const values = methods.getValues();
-                    console.log("Form values before submission:", values);
-                    
-                    // Trigger validation for all fields in the form
-                    await methods.trigger();
-                    
-                    // Check for any errors in the form
-                    const errors = methods.formState.errors;
-                    console.log("Validation errors:", errors);
-                    
-                    // Check if form is valid (no errors)
-                    const isValid = Object.keys(errors).length === 0;
-                    
-                    if (isValid) {
-                      handleSubmit(methods.getValues());
-                    } else {
-                      console.log("Validation failed before submission");
-                      // Display which fields have errors
-                      console.log("Errors:", methods.formState.errors);
-                      
-                      // This will help to trigger touched state on fields with errors
-                      // so that error messages will be displayed
-                      Object.keys(methods.formState.errors).forEach(fieldName => {
-                        try {
-                          methods.setError(fieldName as keyof JobseekerProfileFormData, { 
-                            type: 'validation',
-                            message: methods.formState.errors[fieldName as keyof typeof methods.formState.errors]?.message || ''
-                          });
-                        } catch (e) {
-                          console.log("Error setting field error state:", e);
-                        }
-                      });
-                    }
-                  }}
-                  disabled={isLoading}
-                >
-                  {isLoading ? <span className="loading-spinner"></span> : 'Submit'}
-                </button>
-              )}
-            </div>
-          </form>
-        </FormProvider>
-      </div>
+                        // This will help to trigger touched state on fields with errors
+                        // so that error messages will be displayed
+                        Object.keys(methods.formState.errors).forEach(fieldName => {
+                          try {
+                            methods.setError(fieldName as keyof JobseekerProfileFormData, { 
+                              type: 'validation',
+                              message: methods.formState.errors[fieldName as keyof typeof methods.formState.errors]?.message || ''
+                            });
+                          } catch (e) {
+                            console.log("Error setting field error state:", e);
+                          }
+                        });
+                      }
+                    }}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? <span className="loading-spinner"></span> : 'Submit'}
+                  </button>
+                )}
+              </div>
+            </form>
+          </FormProvider>
+        </div>
+      )}
     </div>
   );
 } 

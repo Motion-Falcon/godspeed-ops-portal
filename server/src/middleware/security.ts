@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
-import csurf from 'csurf';
 import { v4 as uuidv4 } from 'uuid';
 
 // Rate limiting configuration
@@ -23,15 +22,6 @@ export const sensitiveRateLimiter = rateLimit({
   legacyHeaders: false,
   message: {
     error: 'Too many sensitive operations attempted. Please try again later.'
-  }
-});
-
-// CSRF protection
-export const csrfProtection = csurf({
-  cookie: {
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    httpOnly: true
   }
 });
 

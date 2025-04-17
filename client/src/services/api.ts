@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { supabase } from '../lib/supabaseClient';
+import { JobSeekerProfile, JobSeekerDetailedProfile } from '../types/jobseeker';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -291,6 +292,43 @@ export const checkApiHealth = async () => {
       status: 'error', 
       message: error instanceof Error ? error.message : 'Unknown error checking API health' 
     };
+  }
+};
+
+// Jobseeker API functions
+export const getJobseekerProfiles = async (): Promise<JobSeekerProfile[]> => {
+  try {
+    const response = await api.get('/api/jobseekers');
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(error.response.data.error || 'Failed to fetch jobseeker profiles');
+    }
+    throw error;
+  }
+};
+
+export const getJobseekerProfile = async (id: string): Promise<JobSeekerDetailedProfile> => {
+  try {
+    const response = await api.get(`/api/jobseekers/${id}`);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(error.response.data.error || 'Failed to fetch jobseeker profile');
+    }
+    throw error;
+  }
+};
+
+export const updateJobseekerStatus = async (id: string, status: 'pending' | 'verified' | 'rejected') => {
+  try {
+    const response = await api.put(`/api/jobseekers/${id}/status`, { status });
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(error.response.data.error || 'Failed to update jobseeker status');
+    }
+    throw error;
   }
 };
 

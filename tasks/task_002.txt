@@ -1,6 +1,6 @@
 # Task ID: 2
 # Title: Build Secure Document Upload and Storage System
-# Status: pending
+# Status: in-progress
 # Dependencies: 1
 # Priority: high
 # Description: Create a document upload system for credential verification that handles file uploads, storage, and basic metadata tracking with appropriate security measures for sensitive documents.

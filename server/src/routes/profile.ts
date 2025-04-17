@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { authenticateToken } from '../middleware/auth.js';
 import { createClient } from '@supabase/supabase-js';
-import { apiRateLimiter, sensitiveRateLimiter, csrfProtection, sanitizeInputs } from '../middleware/security.js';
+import { apiRateLimiter, sensitiveRateLimiter, sanitizeInputs } from '../middleware/security.js';
 import dotenv from 'dotenv';
 import { encrypt, decrypt } from '../utils/encryption.js';
 import { createLog } from '../utils/auditLogger.js';
@@ -37,7 +37,6 @@ const SENSITIVE_FIELDS = {
 router.post('/submit', 
   authenticateToken, 
   sanitizeInputs,
-  csrfProtection,
   sensitiveRateLimiter,
   async (req: Request, res: Response) => {
     try {
@@ -112,6 +111,8 @@ router.post('/submit',
         documents: encryptedData.documents || [],
         // Set verification status to pending
         verification_status: 'pending',
+        // Add the user ID of the creator
+        created_by_user_id: userId, 
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
@@ -249,7 +250,6 @@ router.get('/',
 router.patch('/:profileId/verify', 
   authenticateToken,
   sensitiveRateLimiter,
-  csrfProtection,
   async (req: Request, res: Response) => {
     try {
       if (!req.user || !req.user.id) {

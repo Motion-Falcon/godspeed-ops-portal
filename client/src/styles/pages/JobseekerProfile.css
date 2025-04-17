@@ -376,4 +376,394 @@ select.form-input {
 
 .form-step-container h2 {
   font-size: 1.5rem;
+}
+
+/* JobSeekerProfile Page Styles */
+.profile-container {
+  min-height: 100vh;
+  background-color: var(--background);
+  color: var(--text);
+}
+
+.profile-header {
+  background-color: var(--card);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: var(--spacing-4) var(--spacing-6);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.profile-header .header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
+  flex-wrap: wrap;
+  gap: var(--spacing-4);
+}
+
+.back-button {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-3);
+}
+
+.status-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--spacing-2);
+}
+
+.status-update-message {
+  font-size: 0.875rem;
+  padding: var(--spacing-2) var(--spacing-4);
+  border-radius: var(--border-radius);
+  background-color: var(--background-secondary);
+  animation: fadeInOut 3s ease-in-out;
+}
+
+@keyframes fadeInOut {
+  0% { opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.status-buttons {
+  display: flex;
+  gap: var(--spacing-2);
+}
+
+.profile-main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--spacing-6);
+}
+
+.loading-container, .error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  gap: var(--spacing-4);
+  text-align: center;
+  background-color: var(--card);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-6);
+  box-shadow: var(--card-shadow);
+  margin: var(--spacing-6);
+}
+
+.error-message {
+  color: var(--error);
+}
+
+.error-actions {
+  display: flex;
+  gap: var(--spacing-4);
+}
+
+.profile-overview {
+  background-color: var(--card);
+  border-radius: var(--border-radius);
+  box-shadow: var(--card-shadow);
+  overflow: hidden;
+  margin-bottom: var(--spacing-6);
+}
+
+.profile-banner {
+  height: 100px;
+  background-color: var(--primary);
+  position: relative;
+}
+
+.profile-status {
+  position: absolute;
+  top: var(--spacing-4);
+  right: var(--spacing-4);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  background-color: var(--card);
+  padding: var(--spacing-2) var(--spacing-3);
+  border-radius: 2rem;
+  box-shadow: var(--card-shadow);
+}
+
+.status-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.status-icon.verified {
+  color: var(--color-success);
+}
+
+.status-icon.rejected {
+  color: var(--color-error);
+}
+
+.status-icon.pending {
+  color: var(--color-warning);
+}
+
+.status-text {
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.status-text.verified {
+  color: var(--color-success);
+}
+
+.status-text.rejected {
+  color: var(--color-error);
+}
+
+.status-text.pending {
+  color: var(--color-warning);
+}
+
+.profile-details {
+  display: flex;
+  padding: var(--spacing-6);
+  gap: var(--spacing-4);
+  margin-top: -40px;
+}
+
+.profile-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background-color: var(--background-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 4px solid var(--card);
+  color: var(--text-muted);
+}
+
+.profile-info-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.profile-name {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.location {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.contact-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-4);
+  margin-top: var(--spacing-2);
+}
+
+.contact-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  font-size: 0.875rem;
+}
+
+.profile-bio {
+  padding: 0 var(--spacing-6) var(--spacing-6);
+  border-top: 1px solid var(--border);
+  margin-top: var(--spacing-4);
+  padding-top: var(--spacing-4);
+}
+
+.section-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-top: 0;
+  margin-bottom: var(--spacing-4);
+  color: var(--text);
+}
+
+.profile-content {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--spacing-6);
+}
+
+@media (min-width: 768px) {
+  .profile-content {
+    grid-template-columns: 1fr 2fr;
+  }
+  
+  .skills-section, .resume-section {
+    grid-column: 1;
+  }
+  
+  .experience-section, .education-section {
+    grid-column: 2;
+  }
+}
+
+.skills-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+}
+
+.skill-tag {
+  font-size: 0.875rem;
+  background-color: var(--background-secondary);
+  color: var(--text);
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+}
+
+.empty-section {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.experience-list, .education-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.experience-item, .education-item {
+  background-color: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-4);
+}
+
+.experience-header {
+  display: flex;
+  gap: var(--spacing-3);
+  margin-bottom: var(--spacing-3);
+}
+
+.experience-icon, .education-icon {
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.experience-title-container {
+  flex: 1;
+}
+
+.experience-title, .education-degree {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text);
+}
+
+.experience-company, .education-institution {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  margin: 0.25rem 0 0;
+}
+
+.experience-period {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin: 0;
+  white-space: nowrap;
+}
+
+.experience-description {
+  font-size: 0.875rem;
+  margin: 0;
+  color: var(--text);
+}
+
+.education-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+.education-details {
+  flex: 1;
+}
+
+.education-year {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin: 0;
+  white-space: nowrap;
+}
+
+.year-icon {
+  opacity: 0.7;
+}
+
+.resume-button {
+  display: inline-block;
+}
+
+@media screen and (max-width: 640px) {
+  .profile-header .header-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .status-actions {
+    width: 100%;
+    align-items: flex-start;
+  }
+  
+  .status-buttons {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .profile-details {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  
+  .profile-info-header {
+    align-items: center;
+  }
+  
+  .contact-info {
+    justify-content: center;
+  }
+  
+  .profile-content {
+    grid-template-columns: 1fr;
+  }
+  
+  .skills-section, .resume-section, .experience-section, .education-section {
+    grid-column: 1;
+  }
+}
+
+.loading-indicator {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px; /* Ensure it takes up some space */
+  font-size: 1.2rem;
+  color: var(--text-muted);
+  margin-top: 2rem;
+  margin-bottom: 2rem;
 } 

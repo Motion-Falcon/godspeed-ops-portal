@@ -56,4 +56,24 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
     console.error('Authentication error:', error);
     return res.status(500).json({ error: 'Authentication failed' });
   }
+};
+
+/**
+ * Middleware to check if the user is an admin or recruiter
+ */
+export const isAdminOrRecruiter = (req: Request, res: Response, next: NextFunction) => {
+  if (!req.user) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+
+  const userType = req.user.user_metadata?.user_type;
+  
+  if (userType === 'admin' || userType === 'recruiter') {
+    next();
+  } else {
+    return res.status(403).json({ 
+      error: 'Access denied', 
+      message: 'Only admins and recruiters can access this resource' 
+    });
+  }
 }; 

@@ -222,4 +222,24 @@
 .recruiter-action {
   border-color: var(--color-success) !important;
   color: var(--color-success) !important;
+}
+
+/* Job Seeker Dashboard specific styles */
+.card-subtitle {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  margin-top: var(--spacing-1);
+  margin-bottom: var(--spacing-4);
+}
+
+.recommendations-placeholder {
+  text-align: center;
+  padding: var(--spacing-6);
+  border-radius: var(--border-radius);
+  background-color: var(--background-secondary);
+}
+
+.recommendations-placeholder p {
+  margin-bottom: var(--spacing-4);
+  color: var(--text-muted);
 } 
