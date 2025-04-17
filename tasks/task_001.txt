@@ -1,0 +1,173 @@
+# Task ID: 1
+# Title: Implement Jobseeker Profile Creation with Security Measures
+# Status: in-progress
+# Dependencies: None
+# Priority: high
+# Description: Develop the 5-step profile creation flow for jobseekers with progressive disclosure form, save-as-draft capability, and all required fields, ensuring proper encryption and logging of sensitive personal information. Include post-submission verification workflow with appropriate status tracking and user redirection.
+# Details:
+Create a 5-step form using React Hook Form (7.51.3) with Zod (3.22.4) for validation. Implement the following sections:
+
+Step 1: Personal Info
+- First Name* (required)
+- Last Name* (required)
+- DOB* (required)
+- Email* (required)
+- Mobile* (required)
+- License Number/Passport Number (at least one required)
+- SIN
+- SIN Expiry
+- Business/HST/GST Number
+- Corporation Name/Number
+
+Step 2: Address
+- Street
+- City
+- Province
+- Postal Code
+
+Step 3: Qualifications
+- Work Preference
+- License Type* (dropdown: None/Forklifter/G/GZ/DZ/AZ/Walk-in Operator/Raymond Reach/Crown Reach/Auditor/GL/Clerk) (required)
+- Experience* (dropdown: 0-6 Months/6-12 Months/1-2 Years/2-3 Years/3-4 Years/4-5 Years/5+ Years) (required)
+- Manual driving? (Yes/No/N/A)
+- Availability* (Full-Time/Part-Time) (required)
+- Weekend availability (Yes/No)
+
+Step 4: Compensation
+- Payrate Type* (Hourly/Daily/Monthly) (required)
+- Bill Rate* (required)
+- Pay Rate* (required)
+- Payment Method* (Cash/Corporation-Cheque/Corporation-Direct Deposit/e-Transfer/etc.) (required)
+- HST/GST (dropdown percentages)
+- Cash Deduction (0-5%)
+- Overtime toggle
+- Overtime hours
+- Overtime Bill Rate
+- Overtime Pay Rate
+
+Step 5: Documents
+- Document Type* (dropdown with 10 options) (required)
+- Title
+- File Upload* (PDF only, 2MB max) (required)
+- Notes
+
+Implement save-as-draft functionality using Supabase (2.39.2) to store partial form data. Add progress tracking between steps to indicate completion status. Enable file uploads for document section with proper validation. Each step should have proper validation for all required fields (marked with *).
+
+Post-Submission Workflow:
+- After successful form submission, display a clear confirmation message indicating the profile is pending verification
+- Add a verification_status field to the jobseeker profile schema (possible values: 'pending', 'verified', 'rejected')
+- Implement conditional routing based on verification status:
+  * If profile is unverified: Show a 'Verification Pending' screen with appropriate messaging
+  * If profile is verified: Redirect user to the jobseeker dashboard
+
+Security Considerations:
+- Implement AES-256 encryption for PII (Personal Identifiable Information) including SIN, license numbers, and other sensitive data
+- Ensure all API communications use TLS 1.3
+- Create audit logs for profile creation and updates with proper PII masking
+- Implement proper input sanitization to prevent injection attacks
+- Follow the security guidelines from task 11 for data handling
+
+Follow the existing UI framework for design consistency.
+
+# Test Strategy:
+Create unit tests for form validation logic. Implement integration tests for the save-as-draft functionality. Test file upload features with various sizes and types to ensure constraints are properly enforced. Conduct usability testing to ensure the multi-step flow is intuitive with clear progress indication. Verify that all required fields are properly validated and that the form can be resumed from a saved draft state. Test encryption/decryption of sensitive fields to ensure data is properly protected. Verify audit logs are created for all profile operations with proper PII masking. Test for common security vulnerabilities including XSS and CSRF attacks.
+
+Additional tests for post-submission workflow:
+- Verify that the confirmation message appears after successful form submission
+- Test that the verification status is correctly set to 'pending' upon initial submission
+- Test conditional routing logic for different verification statuses
+- Ensure the 'Verification Pending' screen displays correctly for unverified profiles
+- Verify that verified users are properly redirected to the jobseeker dashboard
+- Test status transitions from 'pending' to 'verified' and ensure UI updates accordingly
+
+# Subtasks:
+## 1. Set up form state management and encryption utilities [done]
+### Dependencies: None
+### Description: Create the foundation for the multi-step form by implementing state management, form navigation, and security utilities for handling sensitive data.
+### Details:
+1. Set up React Hook Form with Zod schema validation for all form steps
+2. Create a form context to manage state across steps
+3. Implement the save-as-draft functionality with Supabase integration
+4. Develop AES-256 encryption/decryption utilities for PII data
+5. Create input sanitization helpers to prevent injection attacks
+6. Set up audit logging service for tracking form interactions with PII masking
+7. Configure form navigation with progress tracking between steps
+
+## 2. Implement Personal Information form (Step 1) [done]
+### Dependencies: 1.1
+### Description: Build the first step of the profile creation process focusing on personal information with proper validation and security measures.
+### Details:
+1. Create form fields for all required personal information (First Name, Last Name, DOB, Email, Mobile, etc.)
+2. Implement Zod validation schema for all fields with appropriate error messages
+3. Apply encryption to sensitive fields (SIN, License/Passport numbers)
+4. Add field-level validation for proper formatting (email, phone, ID numbers)
+5. Implement conditional validation for License/Passport Number (at least one required)
+6. Create UI components with proper accessibility attributes
+7. Connect to form context for state persistence
+8. Add save-as-draft trigger with encrypted storage of sensitive data
+
+## 3. Implement Address and Qualifications forms (Steps 2-3) [done]
+### Dependencies: 1.1, 1.2
+### Description: Develop the address and qualifications sections of the profile creation process with appropriate validation rules.
+### Details:
+1. Create address form fields (Street, City, Province, Postal Code) with validation
+2. Implement postal code format validation with Canadian standards
+3. Build qualifications form with all required dropdowns and toggles
+4. Create conditional logic for manual driving field based on license type
+5. Implement validation rules for required qualification fields
+6. Connect both forms to the central form context
+7. Ensure save-as-draft functionality works for both sections
+8. Update progress tracking when these sections are completed
+
+## 4. Implement Compensation form (Step 4) [done]
+### Dependencies: 1.1, 1.3
+### Description: Build the compensation section with dynamic fields and calculations based on user selections.
+### Details:
+1. Create form fields for all compensation-related information
+2. Implement conditional rendering for overtime fields based on toggle state
+3. Add validation for numeric fields (Bill Rate, Pay Rate) with appropriate ranges
+4. Create dynamic calculations between related fields where applicable
+5. Implement dropdown for payment method with all required options
+6. Add HST/GST percentage selector with validation
+7. Connect to form context for state management
+8. Ensure all required fields have proper validation rules
+
+## 5. Implement Document Upload functionality (Step 5) [done]
+### Dependencies: 1.1, 1.4
+### Description: Create the document upload section with file validation, storage integration, and metadata handling.
+### Details:
+1. Build document type dropdown with all 10 required options
+2. Implement file upload component with drag-and-drop support
+3. Add file validation for PDF format and 2MB size limit
+4. Create secure file storage integration with Supabase
+5. Implement file metadata tracking (type, name, size, upload date)
+6. Add notes field with character limit validation
+7. Create preview functionality for uploaded documents
+8. Implement proper error handling for failed uploads
+
+## 6. Implement form submission and verification workflow [done]
+### Dependencies: 1.1, 1.2, 1.3, 1.4, 1.5
+### Description: Create the final submission process with verification status tracking and appropriate user feedback.
+### Details:
+1. Implement final form submission handler with complete validation
+2. Create verification_status field in jobseeker profile schema
+3. Set up database triggers or hooks to initialize status as 'pending'
+4. Develop confirmation screen with clear messaging about verification process
+5. Implement conditional routing based on verification status
+6. Create 'Verification Pending' screen with appropriate messaging
+7. Set up redirection logic to jobseeker dashboard for verified profiles
+8. Add comprehensive error handling for submission failures
+
+## 7. Implement security measures and audit logging [done]
+### Dependencies: 1.1, 1.6
+### Description: Enhance the profile creation flow with comprehensive security measures and audit logging for compliance.
+### Details:
+1. Implement TLS 1.3 for all API communications
+2. Create detailed audit logs for all profile creation and update actions
+3. Implement PII masking in logs (e.g., showing only last 4 digits of SIN)
+4. Add rate limiting to prevent brute force attacks
+5. Implement CSRF protection for form submissions
+6. Create automated security tests to verify encryption implementation
+7. Add session timeout for inactive users
+8. Document all security measures implemented for compliance purposes
+

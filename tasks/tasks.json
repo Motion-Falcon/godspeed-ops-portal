@@ -1,0 +1,914 @@
+{
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Implement Jobseeker Profile Creation with Security Measures",
+      "description": "Develop the 5-step profile creation flow for jobseekers with progressive disclosure form, save-as-draft capability, and all required fields, ensuring proper encryption and logging of sensitive personal information. Include post-submission verification workflow with appropriate status tracking and user redirection.",
+      "status": "in-progress",
+      "dependencies": [],
+      "priority": "high",
+      "details": "Create a 5-step form using React Hook Form (7.51.3) with Zod (3.22.4) for validation. Implement the following sections:\n\nStep 1: Personal Info\n- First Name* (required)\n- Last Name* (required)\n- DOB* (required)\n- Email* (required)\n- Mobile* (required)\n- License Number/Passport Number (at least one required)\n- SIN\n- SIN Expiry\n- Business/HST/GST Number\n- Corporation Name/Number\n\nStep 2: Address\n- Street\n- City\n- Province\n- Postal Code\n\nStep 3: Qualifications\n- Work Preference\n- License Type* (dropdown: None/Forklifter/G/GZ/DZ/AZ/Walk-in Operator/Raymond Reach/Crown Reach/Auditor/GL/Clerk) (required)\n- Experience* (dropdown: 0-6 Months/6-12 Months/1-2 Years/2-3 Years/3-4 Years/4-5 Years/5+ Years) (required)\n- Manual driving? (Yes/No/N/A)\n- Availability* (Full-Time/Part-Time) (required)\n- Weekend availability (Yes/No)\n\nStep 4: Compensation\n- Payrate Type* (Hourly/Daily/Monthly) (required)\n- Bill Rate* (required)\n- Pay Rate* (required)\n- Payment Method* (Cash/Corporation-Cheque/Corporation-Direct Deposit/e-Transfer/etc.) (required)\n- HST/GST (dropdown percentages)\n- Cash Deduction (0-5%)\n- Overtime toggle\n- Overtime hours\n- Overtime Bill Rate\n- Overtime Pay Rate\n\nStep 5: Documents\n- Document Type* (dropdown with 10 options) (required)\n- Title\n- File Upload* (PDF only, 2MB max) (required)\n- Notes\n\nImplement save-as-draft functionality using Supabase (2.39.2) to store partial form data. Add progress tracking between steps to indicate completion status. Enable file uploads for document section with proper validation. Each step should have proper validation for all required fields (marked with *).\n\nPost-Submission Workflow:\n- After successful form submission, display a clear confirmation message indicating the profile is pending verification\n- Add a verification_status field to the jobseeker profile schema (possible values: 'pending', 'verified', 'rejected')\n- Implement conditional routing based on verification status:\n  * If profile is unverified: Show a 'Verification Pending' screen with appropriate messaging\n  * If profile is verified: Redirect user to the jobseeker dashboard\n\nSecurity Considerations:\n- Implement AES-256 encryption for PII (Personal Identifiable Information) including SIN, license numbers, and other sensitive data\n- Ensure all API communications use TLS 1.3\n- Create audit logs for profile creation and updates with proper PII masking\n- Implement proper input sanitization to prevent injection attacks\n- Follow the security guidelines from task 11 for data handling\n\nFollow the existing UI framework for design consistency.",
+      "testStrategy": "Create unit tests for form validation logic. Implement integration tests for the save-as-draft functionality. Test file upload features with various sizes and types to ensure constraints are properly enforced. Conduct usability testing to ensure the multi-step flow is intuitive with clear progress indication. Verify that all required fields are properly validated and that the form can be resumed from a saved draft state. Test encryption/decryption of sensitive fields to ensure data is properly protected. Verify audit logs are created for all profile operations with proper PII masking. Test for common security vulnerabilities including XSS and CSRF attacks.\n\nAdditional tests for post-submission workflow:\n- Verify that the confirmation message appears after successful form submission\n- Test that the verification status is correctly set to 'pending' upon initial submission\n- Test conditional routing logic for different verification statuses\n- Ensure the 'Verification Pending' screen displays correctly for unverified profiles\n- Verify that verified users are properly redirected to the jobseeker dashboard\n- Test status transitions from 'pending' to 'verified' and ensure UI updates accordingly",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Set up form state management and encryption utilities",
+          "description": "Create the foundation for the multi-step form by implementing state management, form navigation, and security utilities for handling sensitive data.",
+          "status": "done",
+          "dependencies": [],
+          "details": "1. Set up React Hook Form with Zod schema validation for all form steps\n2. Create a form context to manage state across steps\n3. Implement the save-as-draft functionality with Supabase integration\n4. Develop AES-256 encryption/decryption utilities for PII data\n5. Create input sanitization helpers to prevent injection attacks\n6. Set up audit logging service for tracking form interactions with PII masking\n7. Configure form navigation with progress tracking between steps"
+        },
+        {
+          "id": 2,
+          "title": "Implement Personal Information form (Step 1)",
+          "description": "Build the first step of the profile creation process focusing on personal information with proper validation and security measures.",
+          "status": "done",
+          "dependencies": [
+            1
+          ],
+          "details": "1. Create form fields for all required personal information (First Name, Last Name, DOB, Email, Mobile, etc.)\n2. Implement Zod validation schema for all fields with appropriate error messages\n3. Apply encryption to sensitive fields (SIN, License/Passport numbers)\n4. Add field-level validation for proper formatting (email, phone, ID numbers)\n5. Implement conditional validation for License/Passport Number (at least one required)\n6. Create UI components with proper accessibility attributes\n7. Connect to form context for state persistence\n8. Add save-as-draft trigger with encrypted storage of sensitive data"
+        },
+        {
+          "id": 3,
+          "title": "Implement Address and Qualifications forms (Steps 2-3)",
+          "description": "Develop the address and qualifications sections of the profile creation process with appropriate validation rules.",
+          "status": "done",
+          "dependencies": [
+            1,
+            2
+          ],
+          "details": "1. Create address form fields (Street, City, Province, Postal Code) with validation\n2. Implement postal code format validation with Canadian standards\n3. Build qualifications form with all required dropdowns and toggles\n4. Create conditional logic for manual driving field based on license type\n5. Implement validation rules for required qualification fields\n6. Connect both forms to the central form context\n7. Ensure save-as-draft functionality works for both sections\n8. Update progress tracking when these sections are completed"
+        },
+        {
+          "id": 4,
+          "title": "Implement Compensation form (Step 4)",
+          "description": "Build the compensation section with dynamic fields and calculations based on user selections.",
+          "status": "done",
+          "dependencies": [
+            1,
+            3
+          ],
+          "details": "1. Create form fields for all compensation-related information\n2. Implement conditional rendering for overtime fields based on toggle state\n3. Add validation for numeric fields (Bill Rate, Pay Rate) with appropriate ranges\n4. Create dynamic calculations between related fields where applicable\n5. Implement dropdown for payment method with all required options\n6. Add HST/GST percentage selector with validation\n7. Connect to form context for state management\n8. Ensure all required fields have proper validation rules"
+        },
+        {
+          "id": 5,
+          "title": "Implement Document Upload functionality (Step 5)",
+          "description": "Create the document upload section with file validation, storage integration, and metadata handling.",
+          "status": "done",
+          "dependencies": [
+            1,
+            4
+          ],
+          "details": "1. Build document type dropdown with all 10 required options\n2. Implement file upload component with drag-and-drop support\n3. Add file validation for PDF format and 2MB size limit\n4. Create secure file storage integration with Supabase\n5. Implement file metadata tracking (type, name, size, upload date)\n6. Add notes field with character limit validation\n7. Create preview functionality for uploaded documents\n8. Implement proper error handling for failed uploads"
+        },
+        {
+          "id": 6,
+          "title": "Implement form submission and verification workflow",
+          "description": "Create the final submission process with verification status tracking and appropriate user feedback.",
+          "status": "done",
+          "dependencies": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "details": "1. Implement final form submission handler with complete validation\n2. Create verification_status field in jobseeker profile schema\n3. Set up database triggers or hooks to initialize status as 'pending'\n4. Develop confirmation screen with clear messaging about verification process\n5. Implement conditional routing based on verification status\n6. Create 'Verification Pending' screen with appropriate messaging\n7. Set up redirection logic to jobseeker dashboard for verified profiles\n8. Add comprehensive error handling for submission failures"
+        },
+        {
+          "id": 7,
+          "title": "Implement security measures and audit logging",
+          "description": "Enhance the profile creation flow with comprehensive security measures and audit logging for compliance.",
+          "status": "done",
+          "dependencies": [
+            1,
+            6
+          ],
+          "details": "1. Implement TLS 1.3 for all API communications\n2. Create detailed audit logs for all profile creation and update actions\n3. Implement PII masking in logs (e.g., showing only last 4 digits of SIN)\n4. Add rate limiting to prevent brute force attacks\n5. Implement CSRF protection for form submissions\n6. Create automated security tests to verify encryption implementation\n7. Add session timeout for inactive users\n8. Document all security measures implemented for compliance purposes"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Build Secure Document Upload and Storage System",
+      "description": "Create a document upload system for credential verification that handles file uploads, storage, and basic metadata tracking with appropriate security measures for sensitive documents.",
+      "status": "pending",
+      "dependencies": [
+        1
+      ],
+      "priority": "high",
+      "details": "Implement a document upload component that supports multiple file types (PDF, JPG, PNG) with file size validation. Use Supabase storage for file management with proper encryption. Create a document metadata model that tracks: file type, upload date, verification status, expiration date (if applicable), and association with jobseeker profile. Implement a basic document listing interface that shows uploaded documents and their status. Add functionality to delete or replace documents.\n\nSecurity Considerations:\n- Implement server-side validation of file types to prevent malicious uploads\n- Scan uploaded files for malware before storage\n- Encrypt sensitive documents at rest using AES-256\n- Implement secure access controls for document retrieval\n- Create comprehensive audit logs for all document operations\n- Use signed URLs with short expiration times for document access\n- Implement proper logging with PII masking for document operations\n- Follow the security guidelines from task 11 for document handling",
+      "testStrategy": "Test file upload with various file types and sizes. Verify proper storage in Supabase. Test metadata creation and association with user profiles. Ensure proper error handling for failed uploads and invalid file types. Verify document listing and management functionality. Test encryption/decryption of documents to ensure they are properly protected. Verify audit logs are created for all document operations. Test for security vulnerabilities including file type spoofing and path traversal attacks. Validate that malware scanning is functioning correctly. Test document access controls to ensure only authorized users can access specific documents.",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Create Document Metadata Model and Database Structure",
+          "description": "Design and implement the database schema for document metadata tracking with proper relationships to user profiles",
+          "status": "pending",
+          "dependencies": [],
+          "details": "Create a document metadata model in the database that includes fields for: file type, original filename, storage path, upload date, verification status, expiration date, and association with jobseeker profile. Set up appropriate indexes and constraints. Implement database-level access controls and encryption configurations for the document metadata. Create migration scripts for the new tables and relationships."
+        },
+        {
+          "id": 2,
+          "title": "Implement Secure File Upload Component with Validation",
+          "description": "Build a frontend component for file uploads with client-side validation and a secure backend endpoint for receiving files",
+          "status": "pending",
+          "dependencies": [
+            1
+          ],
+          "details": "Create a React component that allows users to select and upload documents with drag-and-drop support. Implement client-side validation for file types (PDF, JPG, PNG) and size limits (suggest 10MB max). Build a secure API endpoint that receives files, performs server-side validation of file types and sizes, generates a unique filename, and prepares for storage. Implement CSRF protection and proper authentication checks on the endpoint. Return appropriate error messages for invalid files."
+        },
+        {
+          "id": 3,
+          "title": "Implement File Security Processing and Storage Integration",
+          "description": "Create a secure pipeline for processing uploaded files including malware scanning and encryption before storage",
+          "status": "pending",
+          "dependencies": [
+            2
+          ],
+          "details": "Integrate with a malware scanning service (like ClamAV) to check files before storage. Implement AES-256 encryption for files before uploading to Supabase storage. Create a file processing queue to handle these operations asynchronously if needed. Set up proper error handling and retry mechanisms. Configure Supabase storage buckets with appropriate access policies. Implement comprehensive logging with PII masking for all file operations. Ensure temporary files are securely deleted after processing."
+        },
+        {
+          "id": 4,
+          "title": "Build Document Listing and Management Interface",
+          "description": "Create a user interface to display uploaded documents with their metadata and status",
+          "status": "pending",
+          "dependencies": [
+            1,
+            3
+          ],
+          "details": "Implement a React component that lists all documents uploaded by the user, showing file type, name, upload date, verification status, and expiration date. Add filtering and sorting capabilities. Include document thumbnails where applicable. Implement proper loading states and error handling. Ensure the interface is accessible and responsive. Add pagination if supporting large numbers of documents."
+        },
+        {
+          "id": 5,
+          "title": "Implement Secure Document Retrieval and Viewing",
+          "description": "Create a secure system for retrieving and viewing uploaded documents with proper access controls",
+          "status": "pending",
+          "dependencies": [
+            3,
+            4
+          ],
+          "details": "Implement an API endpoint that generates short-lived signed URLs for document access. Create a document viewer component that works with different file types. Implement access control checks to ensure users can only access their own documents or documents they have permission to view. Add watermarking for sensitive documents if required. Implement audit logging for all document access events. Create a caching strategy that balances performance with security."
+        },
+        {
+          "id": 6,
+          "title": "Add Document Management Operations and Audit Logging",
+          "description": "Implement functionality to delete, replace, and manage documents with comprehensive audit logging",
+          "status": "pending",
+          "dependencies": [
+            4,
+            5
+          ],
+          "details": "Create API endpoints and UI components for deleting and replacing documents. Implement soft deletion to maintain audit records. For document replacement, maintain version history if appropriate. Create comprehensive audit logs for all document operations (upload, view, delete, replace) with appropriate user information and timestamps. Implement a secure cleanup process for deleted documents that ensures proper removal from storage. Add confirmation dialogs for destructive operations. Ensure all operations maintain the integrity of the document metadata model."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Develop Position Creation and Management with Security Controls",
+      "description": "Build the comprehensive job creation interface for recruiters, including all required fields and position lifecycle management, with appropriate security measures and audit logging.",
+      "status": "pending",
+      "dependencies": [
+        "4"
+      ],
+      "priority": "high",
+      "details": "Create a position creation form with the following structured sections:\n\nBasic Details:\n- Customer* (dropdown from client list) (required)\n- Title* (dropdown) (required)\n- Position Code\n- Start Date* (required)\n- Show on Job Portal* (Yes/No) (required)\n- Client Manager (auto-fill from client)\n- Sales Manager (auto-fill from client)\n- Position #\n- Description* (textarea) (required)\n\nAddress Details:\n- Auto-fill from client\n- Street Address* (required)\n- City* (required)\n- Province* (required)\n- Postal Code* (required)\n\nEmployment Categorization:\n- Employment Term* (Permanent/Contract/Temporary) (required)\n- Employment Type* (Full-Time/Part-Time) (required)\n- Position Category* (Admin/AZ/Amazon Driver/Cartage/DZ/Forklifter/General Labour/GZ/Perm Placements/Technician) (required)\n- Experience* (0-6 Months to 5+ Years) (required)\n\nDocuments Required:\n- Multiple checkboxes for:\n  - License\n  - Driver Abstract\n  - TDG Certificate\n  - SIN\n  - Immigration Status\n  - Passport\n  - CVOR\n  - Resume\n  - Articles of Incorporation\n  - Direct Deposit\n- At least one document must be selected (required)\n\nPosition Details:\n- Payrate Type* (Hourly/Daily/Monthly) (required)\n- No. of Positions* (required)\n- Regular Pay Rate* (required)\n- Markup%\n- Bill Rate* (required)\n\nOvertime:\n- Enable toggle\n- Hours threshold\n- Bill Rate\n- Pay Rate\n\nPayment & Billings:\n- Preferred Payment Method* (Cash/Cheque/Direct Deposit/e-Transfer/Corporation) (required)\n- Terms* (Due on Receipt/Net options) (required)\n\nNotes:\n- Notes* (textarea) (required)\n- Task\n- Assigned To (dropdown)\n- Proj. Comp. Date\n- Time\n\nImplement position lifecycle management with status tracking (open, filled, closed, on-hold). Add editing and duplication capabilities for positions. Include bulk actions for position management. Use React Hook Form with Zod for validation and Supabase for data storage.\n\nAdditional requirements:\n- Validate all required fields (marked with *)\n- Implement client data auto-fill functionality when a customer is selected\n- Calculate bill rate based on pay rate and markup percentage where applicable\n- Add draft saving capability\n\nSecurity Considerations:\n- Implement proper access controls to ensure only authorized recruiters can create/edit positions\n- Create comprehensive audit logs for all position operations\n- Ensure sensitive compensation information is properly encrypted\n- Implement input validation to prevent injection attacks\n- Add rate limiting for position creation/editing APIs\n- Follow the security guidelines from task 11 for data handling",
+      "testStrategy": "Validate that all required fields are properly enforced, especially the mandatory client association and document selection. Test the position lifecycle state transitions. Verify editing functionality preserves existing data. Test position duplication and bulk actions. Ensure the UI follows the established design patterns.\n\nSpecific test cases:\n- Verify auto-fill functionality when a customer is selected\n- Test calculation of bill rate based on pay rate and markup percentage\n- Verify that at least one document must be selected\n- Test draft saving capability\n- Test all required field validations\n- Test the overtime toggle and related fields\n\nSecurity testing:\n- Test access controls to verify only authorized users can create/edit positions\n- Verify audit logs are created for all position operations\n- Test encryption/decryption of sensitive compensation data\n- Test for common security vulnerabilities including XSS and CSRF attacks\n- Verify rate limiting functionality",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Create database schema and API endpoints for position management",
+          "description": "Design and implement the database schema for positions with all required fields and relationships. Create the necessary API endpoints for CRUD operations.",
+          "status": "pending",
+          "dependencies": [],
+          "details": "Create Supabase tables for positions with appropriate relationships to clients, users, and documents. Include all fields from the requirements (basic details, address, employment categorization, documents, position details, overtime, payment & billing, notes). Implement RLS policies for security. Create API endpoints for creating, reading, updating, and deleting positions. Implement proper error handling and input validation. Ensure sensitive fields like compensation data are properly encrypted. Set up rate limiting for position-related API endpoints."
+        },
+        {
+          "id": 2,
+          "title": "Implement position form UI with React Hook Form and Zod validation",
+          "description": "Build the multi-section position creation form UI with all required fields and client-side validation using React Hook Form and Zod.",
+          "status": "pending",
+          "dependencies": [
+            1
+          ],
+          "details": "Create a multi-step form with all sections from requirements (Basic Details, Address Details, Employment Categorization, Documents Required, Position Details, Overtime, Payment & Billings, Notes). Implement Zod schemas for validation of all required fields. Add conditional logic for field dependencies (e.g., overtime toggle showing/hiding related fields). Create reusable form components for each section. Implement draft saving functionality to allow users to save incomplete forms. Add form state management to handle the large number of fields efficiently."
+        },
+        {
+          "id": 3,
+          "title": "Develop client data auto-fill and dynamic calculations",
+          "description": "Implement functionality to auto-fill client data when a customer is selected and add dynamic calculations for bill rates based on pay rates and markup percentages.",
+          "status": "pending",
+          "dependencies": [
+            2
+          ],
+          "details": "Create a client data fetching mechanism that triggers when a customer is selected from the dropdown. Auto-populate address fields, client manager, and sales manager based on client data. Implement real-time calculation of bill rates based on pay rates and markup percentages. Add event listeners for pay rate and markup changes to update bill rates automatically. Implement debouncing for calculations to prevent excessive re-renders. Add validation to ensure calculated values are within acceptable ranges."
+        },
+        {
+          "id": 4,
+          "title": "Implement position lifecycle management and status tracking",
+          "description": "Create the position lifecycle management system with status tracking (open, filled, closed, on-hold) and implement position duplication functionality.",
+          "status": "pending",
+          "dependencies": [
+            1,
+            2
+          ],
+          "details": "Add status field to positions with appropriate states (open, filled, closed, on-hold). Create UI components for status changes with confirmation dialogs. Implement status change API endpoints with proper validation and authorization checks. Add position duplication functionality that creates a new position with data from an existing one but with a new ID and creation timestamp. Implement status-based filtering in the position list view. Create status change history tracking for audit purposes."
+        },
+        {
+          "id": 5,
+          "title": "Develop bulk actions and position management interface",
+          "description": "Create a position management dashboard with bulk action capabilities for efficient position management.",
+          "status": "pending",
+          "dependencies": [
+            4
+          ],
+          "details": "Build a position management dashboard with sortable and filterable columns. Implement multi-select functionality for positions. Create bulk actions including status changes, deletion, duplication, and assignment changes. Add confirmation dialogs for destructive bulk actions. Implement pagination and search functionality for the position list. Create position detail view with all information displayed in a user-friendly format. Add quick-edit capabilities for common fields directly from the list view."
+        },
+        {
+          "id": 6,
+          "title": "Implement comprehensive security controls and access management",
+          "description": "Add role-based access controls, input validation, and security measures to protect position data and operations.",
+          "status": "pending",
+          "dependencies": [
+            1,
+            4
+          ],
+          "details": "Implement role-based access controls to restrict position creation/editing to authorized recruiters only. Create middleware for validating user permissions before processing position-related requests. Add input sanitization to prevent XSS and injection attacks. Implement CSRF protection for all position form submissions. Create rate limiting for position API endpoints to prevent abuse. Add IP-based restrictions for sensitive operations. Ensure all client-side validation is duplicated on the server side. Follow security guidelines from task 11 for proper data handling and protection."
+        },
+        {
+          "id": 7,
+          "title": "Create comprehensive audit logging and reporting system",
+          "description": "Implement detailed audit logging for all position operations and create reporting capabilities for position data.",
+          "status": "pending",
+          "dependencies": [
+            1,
+            6
+          ],
+          "details": "Create an audit logging system that records all position-related operations (creation, updates, status changes, deletions). Log user information, timestamp, IP address, and specific changes made for each operation. Implement a secure storage mechanism for audit logs with appropriate retention policies. Create an audit log viewer for administrators with filtering and search capabilities. Add reporting functionality for positions including status reports, time-to-fill metrics, and position distribution by category. Implement export capabilities for position data and audit logs in common formats (CSV, PDF). Ensure audit logs cannot be modified or deleted by regular users."
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Implement Client/Employer Management with Data Protection",
+      "description": "Create a comprehensive client profile management system with robust data protection. The system must include a detailed Client Creation form with the following sections and fields:\n\n**Basic Details:**\n- Company Name* (required)\n- Billing Name* (required)\n- Short Code (3 letters)\n- List Name (dropdown: AA/AB/CANHIRE BRAMPTON/etc.)\n- Website\n- Client Manager (dropdown)\n- Sales Person (dropdown)\n- Accounting Person (dropdown)\n- Merge Invoice (checkbox)\n- Currency (CAD/USD)\n- Work Province (dropdown with provinces)\n\n**Contact Details:**\n- Contact Person Name 1* (required)\n- Email Address* (required)\n- Mobile* (required)\n- Contact Person Name 2\n- Email 2\n- Invoice CC (checkbox)\n- Mobile 2\n- Contact Person 3\n- Email 3\n- Invoice CC (checkbox)\n- Mobile 3\n- Dispatch Dept. Email\n- Invoice CC (checkbox)\n- Accounts Dept. Email\n- Invoice CC (checkbox)\n- Invoice Language (English/French)\n\n**Address Details:**\n- Street Address 1* (required)\n- City 1* (required)\n- Province 1* (required)\n- Postal Code 1* (required)\n- Street Address 2\n- City 2\n- Province 2\n- Postal Code 2\n- Street Address 3\n- City 3\n- Province 3\n- Postal Code 3\n\n**Payment & Billings:**\n- Preferred Payment Method (dropdown)\n- Terms (dropdown: Due on Receipt/Net 15/etc.)\n- Pay Cycle (dropdown: 1 Week Hold options)\n- Credit Limit (dropdown: 20,000/35,000/50,000)\n- Notes\n\n**Functional and Technical Requirements:**\n- All required fields (marked with *) must be validated\n- Email, phone number, and postal code fields require format validation\n- Data persistence must use Supabase\n- Use React Hook Form with Zod for schema-based validation and error handling[6][8][10]\n- UI must be consistent with existing components\n- Allow saving partial client information as draft\n\n**Security Considerations:**\n- Encrypt sensitive client financial and billing information using AES-256\n- Implement access controls based on recruiter roles\n- Create comprehensive audit logs for all client data operations\n- Ensure input validation to prevent injection attacks\n- Mask sensitive information in logs and displays\n- Follow security guidelines from task 11 for handling business-sensitive data\n\n**Other Features:**\n- Client dashboard showing activity timeline, communication history, financial summary, and position tracking\n- Client listing view for recruiters with search and filter capabilities\n\nAll features must be implemented in accordance with best practices for form validation, data security, and user experience.",
+      "status": "pending",
+      "dependencies": [],
+      "priority": "medium",
+      "details": "Develop a comprehensive Client Creation form with the specified sections and fields. Use React Hook Form and Zod to implement robust validation, including required fields and format checks for emails, phone numbers, and postal codes[6][8][10]. Integrate Supabase for data persistence and enable saving partial forms as drafts. Ensure the UI matches existing design components. Implement access controls, AES-256 encryption for sensitive data, audit logging, and data masking. The system must also provide a client dashboard (activity timeline, communication history, financial summary, position tracking) and a client listing view with search and filter for recruiters. All security and data protection requirements from task 11 must be followed.",
+      "testStrategy": "Test the Client Creation form for all required and optional fields, including validation for emails, phone numbers, and postal codes. Verify saving and retrieving drafts. Test Supabase integration for data persistence. Ensure the UI is consistent with existing components. Validate access controls for different recruiter roles. Confirm audit logs are generated for all client data operations. Test AES-256 encryption and decryption of sensitive data. Check that sensitive information is masked in logs and displays. Test the client dashboard for correct display of activity, communication, financials, and position tracking. Validate search and filter in the client listing view. Perform security testing for XSS, CSRF, and injection vulnerabilities.",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Create Client Form UI Components and Layout",
+          "description": "Design and implement the UI components for the client creation form with all required sections and fields",
+          "status": "pending",
+          "dependencies": [],
+          "details": "Create React components for each section of the client form (Basic Details, Contact Details, Address Details, Payment & Billings). Implement the form layout using a multi-step or tabbed interface. Build all input components including text fields, dropdowns, checkboxes with proper labeling and required field indicators. Ensure the UI is consistent with existing design components. This subtask focuses only on the visual components without validation or data persistence."
+        },
+        {
+          "id": 2,
+          "title": "Implement Form Validation with React Hook Form and Zod",
+          "description": "Set up form validation logic for all fields with appropriate validation rules and error handling",
+          "status": "pending",
+          "dependencies": [
+            1
+          ],
+          "details": "Integrate React Hook Form with Zod schema validation. Define validation schemas for all form sections with appropriate rules: required field validation for fields marked with *, email format validation, phone number format validation, postal code format validation. Implement error display and handling for each field. Add support for form state management including partial completion and draft saving. Ensure validation provides clear user feedback and maintains accessibility standards."
+        },
+        {
+          "id": 3,
+          "title": "Implement Data Persistence with Supabase and Security Features",
+          "description": "Create database schema and implement data persistence with encryption and security measures",
+          "status": "pending",
+          "dependencies": [
+            2
+          ],
+          "details": "Design and create the database schema in Supabase for client profiles. Implement data persistence functions for creating, updating, and retrieving client information. Apply AES-256 encryption for sensitive client financial and billing information. Implement input sanitization to prevent injection attacks. Create comprehensive audit logging for all client data operations. Set up data masking for sensitive information in logs and displays. Ensure all security guidelines from task 11 are followed for handling business-sensitive data."
+        },
+        {
+          "id": 4,
+          "title": "Develop Client Dashboard with Activity Timeline",
+          "description": "Create a comprehensive client dashboard showing key information and activity history",
+          "status": "pending",
+          "dependencies": [
+            3
+          ],
+          "details": "Design and implement a client dashboard that displays: activity timeline showing recent interactions, communication history with timestamps and content summaries, financial summary including payment status and history, and position tracking showing open and filled positions. Create data fetching and aggregation functions to populate the dashboard. Implement appropriate loading states and error handling. Ensure the dashboard maintains all security requirements while presenting a clear overview of client status and history."
+        },
+        {
+          "id": 5,
+          "title": "Build Client Listing View with Search and Filtering",
+          "description": "Implement a comprehensive view for recruiters to browse, search, and filter client records",
+          "status": "pending",
+          "dependencies": [
+            3
+          ],
+          "details": "Create a client listing page with a data table or card-based view. Implement search functionality that works across multiple client fields (name, contact, location, etc.). Add filtering capabilities based on key attributes (client manager, sales person, status, location, etc.). Include sorting options for different columns. Implement pagination for efficient data loading. Ensure the listing view respects access control permissions based on recruiter roles. Add quick-action buttons for common operations like viewing, editing, or contacting clients."
+        },
+        {
+          "id": 6,
+          "title": "Implement Role-Based Access Controls and Integration Testing",
+          "description": "Set up role-based permissions and conduct comprehensive integration testing",
+          "status": "pending",
+          "dependencies": [
+            3,
+            4,
+            5
+          ],
+          "details": "Implement access control mechanisms based on recruiter roles (admin, manager, recruiter, etc.). Define permission sets for different roles regarding client data access, editing capabilities, and sensitive information visibility. Create middleware to enforce these permissions across all client management features. Conduct comprehensive integration testing across all components: form submission with validation, data persistence with encryption, dashboard functionality, listing view with search and filters, and access controls. Fix any issues found during testing and ensure all components work together seamlessly."
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Build Candidate Matching System with Privacy Controls",
+      "description": "Develop the intelligent matching algorithm that connects jobseekers with appropriate positions based on primary and secondary criteria, ensuring proper data protection and privacy.",
+      "status": "pending",
+      "dependencies": [
+        1,
+        3
+      ],
+      "priority": "high",
+      "details": "Implement a matching algorithm that evaluates jobseekers against positions using: Primary criteria (70% weight): License type, experience level, availability; Secondary criteria (30% weight): Location, additional skills, schedule preferences. Calculate match percentage based on weighted criteria. Create a sorting mechanism for candidates based on match percentage. Implement the matching engine as a separate service that can be called via API. Store match results in Supabase for quick retrieval.\n\nSecurity Considerations:\n- Implement proper access controls for the matching API\n- Create audit logs for all matching operations\n- Ensure candidate data is properly protected during the matching process\n- Implement rate limiting for the matching API\n- Follow the security guidelines from task 11 for handling sensitive candidate data\n- Ensure matching results are only accessible to authorized recruiters",
+      "testStrategy": "Create test cases with various jobseeker profiles and positions to validate matching accuracy. Verify the weighting system works as expected. Test edge cases with partial matches. Benchmark performance with large datasets. Validate the sorting mechanism correctly orders candidates by match percentage. Test access controls to verify only authorized users can access matching results. Verify audit logs are created for all matching operations. Test for security vulnerabilities in the matching API. Validate that candidate data is properly protected throughout the matching process.",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Design and implement core matching algorithm",
+          "description": "Create the foundation of the matching algorithm that evaluates jobseekers against positions using weighted primary and secondary criteria.",
+          "status": "pending",
+          "dependencies": [],
+          "details": "Implement a function that takes candidate data and job requirements as input and calculates a match percentage. Primary criteria (70% weight): License type, experience level, availability. Secondary criteria (30% weight): Location, additional skills, schedule preferences. The algorithm should normalize scores within each criteria group, apply appropriate weights, and output a final percentage match score. Include unit tests to verify the algorithm works correctly with various input scenarios."
+        },
+        {
+          "id": 2,
+          "title": "Develop candidate sorting and filtering mechanism",
+          "description": "Create a system to sort and filter candidates based on match percentage and other relevant criteria.",
+          "status": "pending",
+          "dependencies": [
+            1
+          ],
+          "details": "Build upon the core matching algorithm to implement sorting functionality that ranks candidates by match percentage. Add filtering capabilities to allow refinement of results based on specific criteria (e.g., minimum match percentage, specific skills, location radius). Implement pagination for large result sets. Ensure the sorting mechanism can handle ties appropriately with configurable secondary sorting criteria. Include performance optimizations for handling large candidate pools."
+        },
+        {
+          "id": 3,
+          "title": "Create secure matching service API",
+          "description": "Develop a standalone service with API endpoints for the matching functionality with proper security controls.",
+          "status": "pending",
+          "dependencies": [
+            1,
+            2
+          ],
+          "details": "Implement a RESTful API service that exposes the matching algorithm. Create endpoints for: submitting match requests, retrieving match results, and managing matching criteria. Implement authentication using JWT tokens, role-based access control to restrict access to authorized users only, and input validation to prevent injection attacks. Add rate limiting to prevent abuse (e.g., max 100 requests per minute per user). Implement proper error handling with appropriate HTTP status codes and error messages that don't leak sensitive information."
+        },
+        {
+          "id": 4,
+          "title": "Implement data protection and privacy controls",
+          "description": "Ensure all candidate data is properly protected during the matching process with appropriate privacy measures.",
+          "status": "pending",
+          "dependencies": [
+            3
+          ],
+          "details": "Implement data minimization by only processing necessary candidate information for matching. Add data masking for sensitive fields when not needed for matching. Implement encryption for data in transit (HTTPS) and at rest (encrypted database fields). Create a privacy-preserving mechanism that allows initial matching without revealing full candidate details until explicitly requested by authorized recruiters. Add consent tracking to ensure candidates have opted in to matching. Implement data retention policies to automatically remove old match results after a configurable period."
+        },
+        {
+          "id": 5,
+          "title": "Develop audit logging and Supabase integration",
+          "description": "Create comprehensive audit logging for all matching operations and integrate with Supabase for result storage.",
+          "status": "pending",
+          "dependencies": [
+            3,
+            4
+          ],
+          "details": "Implement detailed audit logging that records all matching operations including: who initiated the match, when it occurred, what criteria were used, how many candidates were processed, and which candidates were viewed. Store logs in a tamper-evident format. Create a Supabase integration to store match results with appropriate table design for efficient retrieval. Implement a caching layer to improve performance for frequently accessed match results. Add a scheduled job to clean up old match results according to retention policies. Create admin dashboard components to view audit logs and monitor system usage."
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Develop Document Verification Center with Security Compliance",
+      "description": "Create the document verification workflow including manual review interface and status tracking, with appropriate security measures for handling sensitive identity documents.",
+      "status": "pending",
+      "dependencies": [
+        2
+      ],
+      "priority": "medium",
+      "details": "Build a document verification center for recruiters with a queue of pending documents. Implement a document review interface showing document details and preview. Create verification workflow with approval, rejection, and information request options. Add standardized rejection categories and feedback mechanisms. Implement verification history and audit trail. For this phase, focus on manual verification (AI-assisted verification will be added in a future phase). Use Supabase for data storage and status tracking.\n\nSecurity Considerations:\n- Implement strict access controls for document verification\n- Create comprehensive audit logs for all verification actions\n- Ensure document previews are served via secure, time-limited URLs\n- Implement secure document rendering that prevents download of original files\n- Add watermarking for document previews to prevent unauthorized use\n- Follow the security guidelines from task 11 for handling sensitive identity documents\n- Implement proper logging with PII masking for verification operations",
+      "testStrategy": "Test the document review interface with various document types. Verify the approval, rejection, and information request workflows. Test the audit trail to ensure all actions are properly logged. Validate that feedback is correctly associated with rejected documents. Test the notification system for status changes. Test access controls to verify only authorized users can access document verification. Verify audit logs are created for all verification operations. Test security of document previews to ensure they cannot be easily downloaded or copied. Validate that document watermarking is functioning correctly. Test for security vulnerabilities in the document verification workflow.",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Create Document Verification Database Schema and Access Controls",
+          "description": "Design and implement the database schema for document verification workflow with proper access controls and security measures",
+          "status": "pending",
+          "dependencies": [],
+          "details": "Using Supabase, create tables for: documents (with metadata, status, and secure URL fields), verification_history (for audit trail), verification_feedback (for rejection reasons and comments), and verification_access_logs. Implement Row Level Security (RLS) policies to ensure only authorized recruiters can access documents. Create database functions for secure document operations. Set up proper indexes for efficient querying. Implement database triggers to automatically generate audit logs for all document status changes. Ensure PII fields are properly encrypted at rest."
+        },
+        {
+          "id": 2,
+          "title": "Implement Secure Document Preview and Rendering System",
+          "description": "Build a secure document preview system that prevents unauthorized access and downloads while maintaining usability",
+          "status": "pending",
+          "dependencies": [
+            1
+          ],
+          "details": "Create a service to generate time-limited, signed URLs for document access. Implement a secure document viewer component that prevents download of original files and disables browser features like print and save. Add dynamic watermarking to document previews with viewer information and timestamp. Create a document rendering pipeline that converts uploaded documents to a secure format (e.g., watermarked PDFs or images). Implement caching mechanisms for rendered documents with appropriate TTL. Ensure all document access is logged with masked PII information."
+        },
+        {
+          "id": 3,
+          "title": "Build Document Verification Queue and Review Interface",
+          "description": "Create the main verification queue and detailed document review interface for recruiters",
+          "status": "pending",
+          "dependencies": [
+            1,
+            2
+          ],
+          "details": "Develop a paginated and filterable queue interface showing pending documents with key metadata. Implement the document review interface displaying document details, secure preview, and verification options. Create UI components for document approval, rejection (with standardized categories), and information requests. Add functionality to zoom, rotate, and navigate multi-page documents. Implement real-time status updates using Supabase subscriptions. Ensure all user actions in the interface are properly logged with appropriate PII masking. Add keyboard shortcuts for common verification actions to improve efficiency."
+        },
+        {
+          "id": 4,
+          "title": "Implement Verification Workflow and Status Tracking",
+          "description": "Build the complete verification workflow with status transitions and notifications",
+          "status": "pending",
+          "dependencies": [
+            3
+          ],
+          "details": "Implement the verification state machine with states: pending, approved, rejected, and information_requested. Create workflow actions for each possible state transition with appropriate validation. Build notification system to alert users of verification status changes. Implement verification history view showing all actions taken on a document with timestamps and actor information. Create dashboard widgets showing verification metrics and queue status. Add functionality to bulk process similar documents when appropriate. Ensure all state transitions are properly logged in the audit trail."
+        },
+        {
+          "id": 5,
+          "title": "Implement Comprehensive Audit Logging and Security Monitoring",
+          "description": "Create detailed audit logging system and security monitoring for the verification center",
+          "status": "pending",
+          "dependencies": [
+            4
+          ],
+          "details": "Implement comprehensive audit logging capturing all user actions, document access events, and state changes. Create an admin interface to review audit logs with filtering and search capabilities. Implement anomaly detection for suspicious verification patterns (e.g., unusual verification volume, odd-hour access). Add session tracking to detect and prevent unauthorized access attempts. Create regular security reports summarizing verification activities. Implement document access reports showing who viewed which documents and when. Ensure all logs properly mask PII data while maintaining usefulness for security monitoring. Add functionality to export audit logs for compliance purposes."
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Implement Jobseeker Dashboard with Privacy Protection",
+      "description": "Create the jobseeker dashboard interface showing matched positions, application status, and profile management, with appropriate security measures for personal data protection.",
+      "status": "pending",
+      "dependencies": [
+        1,
+        5
+      ],
+      "priority": "medium",
+      "details": "Develop a dashboard for jobseekers that displays: matched positions with match percentage, application status tracking (accepted, rejected, ongoing), and profile management options. Implement filtering and sorting for matched positions. Create a detailed view for each position showing all relevant information. Add functionality to apply for positions directly from the dashboard. Use React for the frontend and Supabase for data retrieval.\n\nSecurity Considerations:\n- Implement proper authentication and session management\n- Create audit logs for all dashboard activities\n- Ensure personal data is properly protected and encrypted\n- Implement rate limiting for dashboard APIs\n- Add CSRF protection for all form submissions\n- Follow the security guidelines from task 11 for handling personal data\n- Ensure proper input validation for all user inputs\n\nFollow the existing UI framework for design consistency.",
+      "testStrategy": "Test the dashboard with various user profiles and match scenarios. Verify filtering and sorting functionality. Test the application process from the dashboard. Ensure the UI is responsive and follows the established design patterns. Validate that match percentages and application statuses are correctly displayed. Test authentication and session management to ensure security. Verify audit logs are created for all dashboard activities. Test for common security vulnerabilities including XSS and CSRF attacks. Validate that personal data is properly protected and encrypted.",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Set up authentication and dashboard structure",
+          "description": "Implement the authentication system and basic dashboard layout for jobseekers with proper session management and security controls",
+          "status": "pending",
+          "dependencies": [],
+          "details": "Create the dashboard shell with React components including navigation, header, and content areas. Implement authentication using Supabase Auth with secure session management. Set up protected routes that require authentication. Implement audit logging for all dashboard activities. Configure CSRF protection for all form submissions. Set up rate limiting for dashboard APIs. Create the basic layout following the existing UI framework for design consistency."
+        },
+        {
+          "id": 2,
+          "title": "Implement matched positions display with filtering and sorting",
+          "description": "Create the matched positions section with match percentage indicators, filtering options, and sorting capabilities",
+          "status": "pending",
+          "dependencies": [
+            1
+          ],
+          "details": "Develop the matched positions component that fetches job data from Supabase with proper data encryption in transit. Display jobs with match percentage using visual indicators. Implement filtering by job attributes (location, salary, etc.) with input validation. Add sorting functionality (by match percentage, date posted, etc.). Create pagination for results. Ensure all API calls include proper authentication headers. Implement error handling for failed data fetches with user-friendly messages."
+        },
+        {
+          "id": 3,
+          "title": "Create detailed job view and application functionality",
+          "description": "Implement the detailed job view component and the ability to apply for positions directly from the dashboard",
+          "status": "pending",
+          "dependencies": [
+            2
+          ],
+          "details": "Build a modal or dedicated page component for detailed job information. Include all relevant job details with proper data sanitization. Create an application form with comprehensive input validation. Implement secure form submission with encrypted personal data transmission. Add confirmation dialogs and success/error notifications. Ensure all personal data is handled according to the security guidelines from task 11. Store application status in Supabase with appropriate access controls."
+        },
+        {
+          "id": 4,
+          "title": "Develop application status tracking system",
+          "description": "Create the interface for tracking application statuses (accepted, rejected, ongoing) with appropriate notifications",
+          "status": "pending",
+          "dependencies": [
+            3
+          ],
+          "details": "Build the application status tracking component that displays all user applications. Implement status indicators (accepted, rejected, ongoing) with appropriate styling. Create a real-time update system using Supabase subscriptions for status changes. Add filtering options for applications by status and date. Implement notifications for status changes. Ensure proper data access controls so users can only see their own applications. Add detailed view for each application with communication history."
+        },
+        {
+          "id": 5,
+          "title": "Implement profile management with privacy controls",
+          "description": "Create the profile management section with secure personal data handling and privacy settings",
+          "status": "pending",
+          "dependencies": [
+            1
+          ],
+          "details": "Develop the profile management component with editable fields for personal information. Implement proper data encryption for sensitive personal information. Create privacy settings that allow users to control what information is visible to employers. Add data export functionality for GDPR compliance. Implement secure password change functionality. Create account deletion option with proper data cleanup. Ensure all form submissions include input validation and sanitization. Add confirmation dialogs for sensitive actions. Implement proper error handling with user-friendly messages."
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "title": "Develop Recruiter Dashboard with Security Controls",
+      "description": "Build the recruiter dashboard showing position management, candidate matching, and document verification queues, with appropriate security measures and access controls.",
+      "status": "pending",
+      "dependencies": [
+        3,
+        5,
+        6
+      ],
+      "priority": "medium",
+      "details": "Create a comprehensive dashboard for recruiters with sections for: position management (create, edit, view status), candidate matching (view matched candidates for positions), document verification queue, and client management. Implement filtering and sorting for all sections. Add quick actions for common tasks. Create detailed views for positions, candidates, and documents. Use React for the frontend and Supabase for data retrieval.\n\nSecurity Considerations:\n- Implement role-based access controls for different dashboard sections\n- Create comprehensive audit logs for all recruiter actions\n- Ensure sensitive candidate and client data is properly protected\n- Implement proper session management with inactivity timeout\n- Add CSRF protection for all form submissions\n- Follow the security guidelines from task 11 for handling sensitive recruitment data\n- Implement data masking for sensitive information in displays\n\nFollow the existing UI framework for design consistency.",
+      "testStrategy": "Test the dashboard with various recruiter scenarios. Verify all sections display correct information. Test filtering and sorting functionality. Validate quick actions perform as expected. Ensure the UI is responsive and follows the established design patterns. Test navigation between detailed views. Test role-based access controls to verify only authorized users can access specific dashboard sections. Verify audit logs are created for all recruiter actions. Test for common security vulnerabilities including XSS and CSRF attacks. Validate that sensitive data is properly masked in displays.",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Implement Core Dashboard Structure with Position Management",
+          "description": "Create the foundational dashboard layout and implement the position management section with CRUD operations and security controls.",
+          "dependencies": [],
+          "details": "Implementation steps:\n1. Set up the basic dashboard layout with navigation, header, and content areas using React components\n2. Create the position management section with:\n   - List view of positions with filtering and sorting options\n   - Create/edit position forms with validation\n   - Position detail view with status information\n   - Quick action buttons for common tasks\n3. Implement initial security measures:\n   - Set up role-based access control structure for the dashboard\n   - Add CSRF protection for all position management forms\n   - Implement initial audit logging for position-related actions\n\nTesting approach:\n- Unit test React components for rendering and state management\n- Test CRUD operations against Supabase\n- Verify role-based access controls work correctly for position management\n- Test audit logging functionality for position actions\n- Ensure CSRF protection is working for all forms",
+          "status": "pending",
+          "parentTaskId": 8
+        },
+        {
+          "id": 2,
+          "title": "Develop Candidate Matching and Document Verification Sections",
+          "description": "Build the candidate matching and document verification queue sections with appropriate data masking and security controls.",
+          "dependencies": [
+            1
+          ],
+          "details": "Implementation steps:\n1. Create the candidate matching section:\n   - Implement view for matched candidates per position\n   - Add filtering and sorting capabilities\n   - Create detailed candidate view with masked sensitive information\n   - Implement quick actions for candidate processing\n2. Build the document verification queue:\n   - Create list view of documents pending verification\n   - Implement document preview functionality\n   - Add verification action buttons and status updates\n   - Set up document approval workflow\n3. Implement security measures for these sections:\n   - Apply data masking for sensitive candidate information\n   - Extend role-based access controls to these sections\n   - Add audit logging for candidate and document actions\n   - Implement proper error handling for sensitive operations\n\nTesting approach:\n- Test candidate matching algorithms and filtering\n- Verify document queue functionality and state transitions\n- Ensure sensitive data is properly masked in all views\n- Test role-based access controls for different user types\n- Verify audit logs capture all relevant actions",
+          "status": "pending",
+          "parentTaskId": 8
+        },
+        {
+          "id": 3,
+          "title": "Implement Client Management and Comprehensive Security Controls",
+          "description": "Add client management functionality and implement comprehensive security measures across the entire dashboard.",
+          "dependencies": [
+            1,
+            2
+          ],
+          "details": "Implementation steps:\n1. Develop the client management section:\n   - Create client listing with filtering and sorting\n   - Implement client detail view with associated positions\n   - Add client communication history and tracking\n   - Create client relationship management tools\n2. Implement comprehensive security measures across the dashboard:\n   - Complete session management with inactivity timeout\n   - Add comprehensive audit logging for all dashboard actions\n   - Implement final role-based access controls for all sections\n   - Set up data masking for all sensitive information\n   - Add security headers and response sanitization\n3. Perform integration and security testing:\n   - Test interactions between all dashboard sections\n   - Verify all security controls work together properly\n   - Conduct security review against requirements\n\nTesting approach:\n- Test client management functionality end-to-end\n- Verify session timeout and re-authentication works correctly\n- Test comprehensive audit logging across all dashboard actions\n- Conduct security testing for access controls and data protection\n- Perform integration testing across all dashboard sections\n- Verify all security requirements are met through manual testing",
+          "status": "pending",
+          "parentTaskId": 8
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "title": "Implement Secure Notification System",
+      "description": "Develop the email notification system for critical touchpoints in the recruitment process, with appropriate security measures for handling sensitive communication.",
+      "status": "pending",
+      "dependencies": [
+        1,
+        3,
+        6
+      ],
+      "priority": "low",
+      "details": "Create a notification service that sends email alerts for critical events: account verification, profile submission/approval, job matching and selection, application status changes, document verification updates. Implement email templates for each notification type. Create a notification queue system to handle high volume. Add tracking for email delivery status. Integrate with the existing authentication system for user email verification. Use a reliable email delivery service compatible with the Express.js backend.\n\nSecurity Considerations:\n- Ensure email templates do not contain sensitive personal information\n- Implement proper authentication for email verification links\n- Create audit logs for all notification events\n- Use secure email delivery protocols (TLS)\n- Implement rate limiting for email sending to prevent abuse\n- Follow the security guidelines from task 11 for handling communication data\n- Ensure email tracking does not compromise user privacy",
+      "testStrategy": "Test email delivery for each notification type. Verify templates render correctly with dynamic content. Test the notification queue under load. Validate email tracking functionality. Ensure all critical touchpoints trigger appropriate notifications. Test email delivery to various email providers. Verify that email templates do not contain sensitive personal information. Test authentication for email verification links. Verify audit logs are created for all notification events. Test rate limiting for email sending to prevent abuse.",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Create Email Templates and Notification Service Foundation",
+          "description": "Develop the core notification service structure and create secure email templates for all required notification types",
+          "status": "pending",
+          "dependencies": [],
+          "details": "Implement a notification service module that will handle all email communications. Create HTML/text email templates for each notification type (account verification, profile submission/approval, job matching, application status changes, document verification). Ensure templates follow security best practices by not embedding sensitive personal information directly in emails. Instead, use secure links to authenticated portal views. Implement template rendering with a secure templating engine (like Handlebars or EJS) that prevents injection attacks. Set up integration with a reliable email delivery service that supports TLS (like SendGrid, Mailgun, or AWS SES) and configure proper authentication for the service."
+        },
+        {
+          "id": 2,
+          "title": "Implement Notification Queue and Delivery System",
+          "description": "Build a robust queue system to handle high-volume email notifications with delivery tracking",
+          "status": "pending",
+          "dependencies": [
+            1
+          ],
+          "details": "Develop a notification queue system using a message broker (like Redis, RabbitMQ, or Bull) to handle high volumes of notifications. Implement retry logic for failed delivery attempts. Create a delivery status tracking system that records send attempts, delivery confirmations, and bounces without compromising user privacy. Implement rate limiting for email sending to prevent abuse (configure per-user and global rate limits). Set up a scheduled job to process the notification queue at appropriate intervals. Ensure the queue system is resilient to service restarts and can recover from failures. Add monitoring for queue health and delivery success rates."
+        },
+        {
+          "id": 3,
+          "title": "Integrate Authentication and Security Measures",
+          "description": "Connect the notification system with authentication and implement security features for email communications",
+          "status": "pending",
+          "dependencies": [
+            1,
+            2
+          ],
+          "details": "Integrate the notification service with the existing authentication system. Implement secure token generation for email verification links with appropriate expiration times. Create signed URLs for any action links in emails using JWT or similar technology. Implement proper validation of email verification tokens when users click links. Set up TLS for all email communications. Create a mechanism to verify email addresses before sending sensitive notifications. Implement IP-based and user-based rate limiting for verification requests. Add CSRF protection for any forms linked from emails. Ensure all email-related endpoints are properly authenticated and authorized."
+        },
+        {
+          "id": 4,
+          "title": "Implement Audit Logging and Privacy Controls",
+          "description": "Add comprehensive audit logging for notification events and ensure privacy compliance",
+          "status": "pending",
+          "dependencies": [
+            2,
+            3
+          ],
+          "details": "Create a detailed audit logging system that records all notification events (creation, queuing, sending, delivery status) with appropriate metadata but without storing sensitive content. Implement log rotation and retention policies compliant with data protection regulations. Add admin interfaces to view notification logs with appropriate access controls. Implement privacy controls that allow users to manage their notification preferences. Create a mechanism to purge notification data according to retention policies. Set up alerts for unusual notification patterns that might indicate abuse. Develop testing procedures to verify the security of the entire notification pipeline. Document the security measures implemented for the notification system for compliance purposes."
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "title": "Implement Administrator Role and Management with Enhanced Security",
+      "description": "Develop the administrator functionality including recruiter management and system-wide access, with enhanced security measures appropriate for privileged access.",
+      "status": "pending",
+      "dependencies": [
+        8
+      ],
+      "priority": "low",
+      "details": "Extend the existing authentication system to support the administrator role. Implement recruiter management functionality (view, create, delete recruiters). Create an admin dashboard with system-wide metrics and management tools. Add functionality to view and manage all recruiters, positions, and clients. Implement proper access controls to restrict functionality to admin users only. Ensure 2FA requirement for admin login. Use Supabase for role-based access control and data management.\n\nSecurity Considerations:\n- Implement strict access controls for administrator functions\n- Create comprehensive audit logs for all administrative actions\n- Enforce strong password policies for admin accounts\n- Implement IP-based restrictions for admin access\n- Add session timeout for admin sessions (shorter than regular users)\n- Follow the security guidelines from task 11 for handling administrative access\n- Implement alerts for suspicious admin activities\n- Ensure proper separation of duties for administrative functions",
+      "testStrategy": "Test role-based access control to ensure only admins can access restricted functionality. Verify recruiter management operations (view, create, delete). Test the admin dashboard with various data scenarios. Validate that 2FA is properly enforced for admin login. Ensure all admin actions are properly logged for audit purposes. Test access controls to verify only authorized administrators can access specific functions. Verify audit logs are created for all administrative actions. Test password policies for admin accounts. Validate IP-based restrictions for admin access. Test session timeout for admin sessions.",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Extend Authentication System for Administrator Role with Enhanced Security",
+          "description": "Modify the existing authentication system to support the administrator role with enhanced security measures including 2FA, strong password policies, and IP restrictions.",
+          "status": "pending",
+          "dependencies": [],
+          "details": "Update Supabase authentication to include an 'admin' role. Implement 2FA requirement for admin accounts using a library like 'otplib'. Create middleware to verify admin role for protected routes. Add IP-based access restrictions by storing allowed IP addresses in the database and checking incoming requests. Implement password policy enforcement requiring minimum 12 characters, special characters, numbers, and regular rotation. Configure shorter session timeouts (30 minutes) for admin users compared to regular users."
+        },
+        {
+          "id": 2,
+          "title": "Implement Comprehensive Audit Logging System for Administrative Actions",
+          "description": "Create a robust audit logging system that records all administrative actions with detailed information for security monitoring and compliance.",
+          "status": "pending",
+          "dependencies": [
+            1
+          ],
+          "details": "Design and implement an audit log database table with fields for timestamp, admin user, IP address, action type, affected resources, and before/after states. Create middleware to automatically log all administrative API calls. Implement a service to record sensitive operations with detailed context. Add functionality to detect and alert on suspicious patterns (multiple failed logins, unusual access times, bulk operations). Ensure logs cannot be modified or deleted, even by administrators. Create an admin-accessible interface to view and filter audit logs."
+        },
+        {
+          "id": 3,
+          "title": "Develop Recruiter Management Functionality",
+          "description": "Create the interface and backend functionality for administrators to view, create, edit, and delete recruiter accounts with proper access controls.",
+          "status": "pending",
+          "dependencies": [
+            1,
+            2
+          ],
+          "details": "Implement API endpoints for CRUD operations on recruiter accounts with admin-only access. Create UI components for listing recruiters with filtering and sorting capabilities. Develop forms for creating and editing recruiter details with validation. Implement confirmation workflows for sensitive operations like account deletion. Add functionality to temporarily suspend recruiter accounts. Ensure all actions are properly logged through the audit system. Apply the principle of least privilege by limiting what data is accessible and what operations can be performed."
+        },
+        {
+          "id": 4,
+          "title": "Build Admin Dashboard with System-wide Metrics and Management Tools",
+          "description": "Create a comprehensive dashboard for administrators with system-wide metrics, alerts, and management tools for positions and clients.",
+          "status": "pending",
+          "dependencies": [
+            1,
+            2
+          ],
+          "details": "Design and implement a dashboard UI with key metrics (active recruiters, open positions, client engagement, system usage). Create data visualization components for trends and patterns. Implement real-time alerts for critical events. Add management interfaces for viewing and managing all positions and clients in the system. Include bulk operations capabilities with appropriate safeguards. Create a system status section showing current configuration and security status. Ensure all components respect access control restrictions and log actions appropriately."
+        },
+        {
+          "id": 5,
+          "title": "Implement Separation of Duties and Security Alerting System",
+          "description": "Establish separation of duties for administrative functions and implement a security alerting system for suspicious activities.",
+          "status": "pending",
+          "dependencies": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "details": "Design and implement different admin privilege levels (e.g., user admin, system admin, security admin) to enforce separation of duties. Create approval workflows for highly sensitive operations requiring multiple admin approvals. Implement real-time alerting for suspicious activities via email, SMS, or in-app notifications. Add functionality to automatically lock accounts after suspicious activities. Create a security dashboard showing recent alerts and potential issues. Implement regular security reports summarizing administrative activities and potential concerns. Test the entire system with security-focused scenarios to verify proper implementation of all security measures."
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "title": "Implement Security and Logging Infrastructure",
+      "description": "Develop and integrate a comprehensive security and logging infrastructure that includes encryption, logging, monitoring, and audit trails to protect sensitive recruitment data.",
+      "details": "Implement a multi-layered security and logging system with the following components:\n\n1. API Encryption/Decryption Layer:\n   - Implement TLS 1.3 for all API communications\n   - Create data encryption utilities for PII and sensitive candidate information using AES-256\n   - Develop secure key management system with proper rotation policies\n   - Implement JWTs with appropriate expiration for authentication\n\n2. Comprehensive Logging System:\n   - Create a centralized logging service that captures events across all application components\n   - Implement structured logging with consistent format (timestamp, severity, component, message, context)\n   - Include different log levels (DEBUG, INFO, WARN, ERROR, FATAL)\n   - Ensure PII is properly masked in logs\n   - Implement log rotation and retention policies\n\n3. Security Monitoring and Threat Detection:\n   - Implement rate limiting to prevent brute force attacks\n   - Create IP-based blocking for suspicious activity\n   - Develop real-time alerts for security events (failed logins, permission violations)\n   - Implement OWASP recommended security headers\n   - Create dashboard for security event visualization\n\n4. Audit Trails:\n   - Track all CRUD operations on sensitive data (candidate profiles, interview feedback)\n   - Record user actions with timestamps and IP addresses\n   - Implement non-repudiation mechanisms\n   - Create audit log viewer for administrators with filtering capabilities\n   - Ensure audit logs are tamper-evident\n\nThe implementation should integrate with the existing authentication system and administrator functionality. All security measures should follow OWASP guidelines and GDPR/CCPA compliance requirements.",
+      "testStrategy": "Testing should verify both functionality and security aspects:\n\n1. API Encryption Testing:\n   - Verify TLS implementation using tools like SSL Labs\n   - Test encryption/decryption functions with various data types and sizes\n   - Validate key rotation doesn't break existing encrypted data\n   - Perform penetration testing to verify encryption cannot be bypassed\n\n2. Logging System Testing:\n   - Verify logs are generated for all critical operations\n   - Confirm PII masking works correctly in logs\n   - Test log rotation under high volume\n   - Validate logs contain all required fields\n   - Verify logs are properly stored and retrievable\n\n3. Security Monitoring Testing:\n   - Simulate attack scenarios (brute force, injection attempts)\n   - Verify alerts are triggered appropriately\n   - Test rate limiting functionality\n   - Validate IP blocking mechanisms\n   - Confirm security headers are properly implemented\n\n4. Audit Trail Testing:\n   - Verify all sensitive operations are recorded\n   - Test audit log retrieval and filtering\n   - Validate audit logs cannot be modified\n   - Test performance under high audit volume\n   - Verify compliance with regulatory requirements\n\nAdditionally, conduct a full security assessment including:\n- Static code analysis using tools like SonarQube\n- Dynamic application security testing\n- Dependency vulnerability scanning\n- Load testing to ensure security measures don't impact performance\n\nAll tests should be automated where possible and included in the CI/CD pipeline.",
+      "status": "pending",
+      "dependencies": [],
+      "priority": "high",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Implement TLS and API Encryption Layer",
+          "description": "Set up TLS 1.3 for all API communications and implement encryption utilities for sensitive data",
+          "status": "pending",
+          "dependencies": [],
+          "details": "1. Configure TLS 1.3 on all application endpoints\n2. Develop AES-256 encryption/decryption utilities for PII and sensitive data\n3. Create secure key storage mechanism with proper access controls\n4. Implement key rotation policies with configurable timeframes\n5. Write unit tests to verify encryption/decryption functionality\n6. Document the encryption standards and implementation details"
+        },
+        {
+          "id": 2,
+          "title": "Develop JWT Authentication System",
+          "description": "Implement JWT-based authentication with proper expiration, refresh mechanisms, and integration with existing auth system",
+          "status": "pending",
+          "dependencies": [
+            1
+          ],
+          "details": "1. Design JWT payload structure with necessary claims (sub, exp, iat, etc.)\n2. Implement JWT generation, validation, and refresh mechanisms\n3. Set up appropriate token expiration policies\n4. Create middleware for JWT verification on protected routes\n5. Integrate with existing authentication system\n6. Implement secure token storage on client-side\n7. Add revocation capabilities for logout and security incidents"
+        },
+        {
+          "id": 3,
+          "title": "Create Centralized Structured Logging Service",
+          "description": "Develop a comprehensive logging system with consistent format, appropriate log levels, and PII masking",
+          "status": "pending",
+          "dependencies": [
+            1
+          ],
+          "details": "1. Design structured log format with timestamp, severity, component, message, and context\n2. Implement logging service with different log levels (DEBUG, INFO, WARN, ERROR, FATAL)\n3. Create PII detection and masking functionality for logs\n4. Set up log aggregation from all application components\n5. Implement log rotation and retention policies\n6. Create logging client libraries for easy integration across services\n7. Add context propagation across service boundaries (correlation IDs)"
+        },
+        {
+          "id": 4,
+          "title": "Implement Security Monitoring and Rate Limiting",
+          "description": "Develop rate limiting, IP blocking, and security headers to prevent common attacks",
+          "status": "pending",
+          "dependencies": [
+            2,
+            3
+          ],
+          "details": "1. Implement rate limiting middleware with configurable thresholds\n2. Create IP-based blocking system for suspicious activity\n3. Set up OWASP recommended security headers (CSP, HSTS, etc.)\n4. Develop mechanisms to detect and prevent common attacks (XSS, CSRF, etc.)\n5. Create configuration system for security rules\n6. Implement graceful handling of rate-limited requests\n7. Add documentation for security measures implemented"
+        },
+        {
+          "id": 5,
+          "title": "Develop Comprehensive Audit Trail System",
+          "description": "Create a system to track and record all sensitive operations with user attribution and tamper-evidence",
+          "status": "pending",
+          "dependencies": [
+            3
+          ],
+          "details": "1. Design audit record schema with user, timestamp, IP address, action, and resource fields\n2. Implement middleware/hooks to capture CRUD operations on sensitive data\n3. Create tamper-evident storage for audit records (using hashing or digital signatures)\n4. Develop non-repudiation mechanisms\n5. Implement proper indexing for efficient audit log queries\n6. Ensure audit logs are backed up securely\n7. Add documentation for audit trail implementation"
+        },
+        {
+          "id": 6,
+          "title": "Create Security Alert and Notification System",
+          "description": "Implement real-time alerts for security events with appropriate notification channels",
+          "status": "pending",
+          "dependencies": [
+            3,
+            4
+          ],
+          "details": "1. Define security event types and severity levels\n2. Implement detection mechanisms for security events (failed logins, permission violations, etc.)\n3. Create notification system with multiple channels (email, SMS, dashboard)\n4. Develop alert throttling to prevent notification fatigue\n5. Implement alert acknowledgment and resolution tracking\n6. Create alert escalation policies based on severity and time\n7. Add documentation for security event handling procedures"
+        },
+        {
+          "id": 7,
+          "title": "Develop Admin Security Dashboard and Compliance Reports",
+          "description": "Create administrative interfaces for security monitoring, audit log viewing, and compliance reporting",
+          "status": "pending",
+          "dependencies": [
+            5,
+            6
+          ],
+          "details": "1. Design and implement security event visualization dashboard\n2. Create audit log viewer with filtering and search capabilities\n3. Develop compliance reports for GDPR/CCPA requirements\n4. Implement access controls for security administration features\n5. Create system health monitoring views\n6. Add export functionality for logs and reports\n7. Develop documentation for administrators on using security features\n8. Conduct security review of the entire implementation"
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "title": "Implement Jobseeker Profile Management and Editing Functionality",
+      "description": "Create a profile management section in the jobseeker dashboard that displays all user information and allows controlled editing with time restrictions, history tracking, and proper audit trails.",
+      "details": "Develop a comprehensive profile management system with the following components:\n\n1. Profile Display Section:\n   - Create a dedicated section in the jobseeker dashboard to display all user profile information\n   - Organize information in logical categories matching the profile creation flow\n   - Include visual indicators for verified/unverified information\n   - Display last edit date and next available edit date prominently\n\n2. Profile Editing Functionality:\n   - Implement an 'Edit Profile' button that is enabled/disabled based on edit restrictions\n   - Create a time-based restriction system allowing edits once per month\n   - Store the restriction period in a configurable setting (default: 30 days)\n   - Pre-populate edit forms with existing profile data\n   - Implement form validation consistent with profile creation\n   - Create a confirmation dialog before submitting changes\n\n3. Edit History and Audit System:\n   - Create a database structure to maintain full edit history\n   - Store previous values, new values, timestamp, and edit reason for each change\n   - Implement a system flag to mark profiles that require re-verification after edits\n   - Make re-verification requirement configurable by admin\n   - Create an admin-viewable audit log of all profile changes\n\n4. Integration Requirements:\n   - Connect to existing security system for proper authentication\n   - Implement comprehensive logging of all profile view and edit actions\n   - Ensure proper encryption of sensitive data during display and editing\n   - Maintain consistent UI/UX with the existing dashboard design\n\nTechnical Considerations:\n- Use the existing profile data model from the profile creation system\n- Implement proper state management to handle form data during editing\n- Create database triggers or hooks to update 'last_edited' and 'next_edit_date' fields\n- Ensure responsive design for all profile management screens",
+      "testStrategy": "Testing should verify all functional requirements and edge cases:\n\n1. Display Testing:\n   - Verify all profile fields are correctly displayed in the profile section\n   - Confirm proper formatting of dates, currency values, and other special field types\n   - Test responsive design across multiple device sizes\n\n2. Edit Restriction Testing:\n   - Verify users cannot edit profiles more frequently than the configured time period\n   - Test that the edit button is properly enabled/disabled based on time restrictions\n   - Confirm accurate display of next available edit date\n   - Test admin override of edit restrictions\n\n3. Edit Functionality Testing:\n   - Verify all form fields are correctly pre-populated with existing data\n   - Test validation of all edited fields\n   - Confirm proper handling of partial edits and form submission\n   - Verify confirmation dialog appears and functions correctly\n   - Test cancellation of edit process returns to view mode without changes\n\n4. History and Audit Testing:\n   - Verify all edits are properly recorded in history with correct before/after values\n   - Test that timestamps and user information are accurately logged\n   - Confirm re-verification flags are set correctly based on configuration\n   - Verify audit logs are complete and accessible to admins\n\n5. Security Testing:\n   - Test that unauthorized users cannot access profile editing\n   - Verify proper encryption of sensitive data during display and transmission\n   - Confirm all actions are properly logged for security audit\n   - Test against common web vulnerabilities (XSS, CSRF, etc.)\n\n6. Integration Testing:\n   - Verify seamless integration with existing dashboard UI\n   - Test interaction with notification system for edit confirmations\n   - Confirm proper functioning of the re-verification workflow if triggered",
+      "status": "pending",
+      "dependencies": [
+        1
+      ],
+      "priority": "medium",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Create Profile Display Section in Jobseeker Dashboard",
+          "description": "Develop a dedicated section in the jobseeker dashboard that displays all user profile information in organized categories with visual indicators for verification status and edit dates.",
+          "status": "pending",
+          "dependencies": [],
+          "details": "Implement a read-only profile view component that: 1) Fetches and displays all user profile data from the existing profile data model, 2) Organizes information into logical categories matching the profile creation flow (personal details, education, experience, skills, etc.), 3) Adds visual indicators (icons/badges) for verified vs. unverified information, 4) Shows last edit date and next available edit date prominently at the top of the profile, 5) Ensures responsive design for all screen sizes, and 6) Maintains UI/UX consistency with the existing dashboard design."
+        },
+        {
+          "id": 2,
+          "title": "Implement Edit Restriction System and Database Structure",
+          "description": "Create the database structure and backend logic to support profile editing with time-based restrictions and audit history tracking.",
+          "status": "pending",
+          "dependencies": [
+            1
+          ],
+          "details": "Extend the existing profile data model to include: 1) 'last_edited' and 'next_edit_date' fields, 2) Create a configurable setting for the restriction period (default: 30 days), 3) Develop database triggers or hooks to automatically update these fields when edits occur, 4) Create a separate 'profile_edit_history' table to store previous values, new values, timestamps, edit reasons, and user IDs for each change, 5) Add a system flag to mark profiles requiring re-verification after edits, and 6) Implement backend logic to check edit eligibility based on the time restriction."
+        },
+        {
+          "id": 3,
+          "title": "Build Profile Editing UI Components",
+          "description": "Develop the user interface components for profile editing, including edit forms, validation, and confirmation dialogs.",
+          "status": "pending",
+          "dependencies": [
+            1,
+            2
+          ],
+          "details": "Create UI components that: 1) Add an 'Edit Profile' button that is enabled/disabled based on time restrictions, 2) Implement edit forms for each profile section, pre-populated with existing data, 3) Apply the same validation rules used in profile creation, 4) Create a confirmation dialog that shows a summary of changes before submission, 5) Include a required field for 'reason for edit', 6) Add clear visual feedback when edits are not allowed due to time restrictions, showing when editing will be available again, and 7) Ensure all forms maintain responsive design and accessibility standards."
+        },
+        {
+          "id": 4,
+          "title": "Implement Profile Edit Submission and Processing Logic",
+          "description": "Develop the backend logic to process profile edit submissions, update the database, and maintain the audit trail.",
+          "status": "pending",
+          "dependencies": [
+            2,
+            3
+          ],
+          "details": "Implement backend functionality that: 1) Validates incoming edit requests against time-based restrictions, 2) Processes form submissions and validates data integrity, 3) Stores the previous profile state in the edit history table before applying changes, 4) Updates the main profile with new information, 5) Recalculates the next available edit date, 6) Sets re-verification flags based on admin configuration, 7) Implements comprehensive logging of all edit actions, and 8) Ensures proper encryption of sensitive data during processing."
+        },
+        {
+          "id": 5,
+          "title": "Create Admin Audit Interface and Integrate Security Features",
+          "description": "Develop an admin-viewable audit log for profile changes and integrate the profile management system with existing security features.",
+          "status": "pending",
+          "dependencies": [
+            4
+          ],
+          "details": "Complete the implementation by: 1) Creating an admin interface to view the complete edit history for any user profile, 2) Adding filtering and search capabilities to the audit log, 3) Implementing admin controls for configuring re-verification requirements and edit restriction periods, 4) Integrating with the existing authentication system to ensure proper access control, 5) Adding comprehensive security logging for all profile view and edit actions, 6) Testing the entire system for security vulnerabilities, and 7) Ensuring all sensitive data remains encrypted during display, editing, and storage."
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "title": "Implement Timesheet Creation and Submission Workflow",
+      "description": "Develop the core timesheet entry interface and submission process, allowing users to record work hours, differentiate between regular and overtime hours, and submit for approval.",
+      "details": "Create a responsive timesheet interface with the following components:\n\n1. **Timesheet Entry Interface**:\n   - Implement a weekly calendar view with daily hour entry fields\n   - Create input fields for regular hours and overtime hours with validation\n   - Add project/task selection dropdown connected to position data\n   - Include description/notes field for each time entry\n   - Implement running totals for daily and weekly hours\n\n2. **Submission Workflow**:\n   - Create a digital signature mechanism (e-signature or checkbox confirmation)\n   - Implement file upload functionality for supporting documents (receipts, work evidence)\n   - Add save draft functionality to allow partial completion\n   - Include a submission confirmation dialog with summary\n   - Store submission timestamp and user information\n\n3. **User Experience**:\n   - Implement form validation for required fields and logical hour entries\n   - Create intuitive navigation between days/weeks\n   - Add keyboard shortcuts for efficient data entry\n   - Implement autosave functionality to prevent data loss\n\nTechnical Requirements:\n- Use React components for the frontend interface\n- Implement proper state management for form data\n- Create RESTful API endpoints for saving/retrieving timesheet data\n- Ensure database schema supports all required fields and relationships\n- Integrate with existing position data from Task #3\n- Follow application security standards including input validation\n- Implement comprehensive error handling and user feedback",
+      "testStrategy": "1. **Unit Tests**:\n   - Test validation logic for hour entries (negative values, exceeding daily limits)\n   - Verify calculation of daily and weekly totals\n   - Test save/load functionality for draft timesheets\n   - Verify file upload functionality with various file types and sizes\n\n2. **Integration Tests**:\n   - Test complete submission workflow from creation to final submission\n   - Verify integration with position data from existing systems\n   - Test persistence of all timesheet data to the database\n   - Verify proper handling of concurrent edits\n\n3. **User Acceptance Testing**:\n   - Create test scenarios for different timesheet patterns (regular week, overtime, partial days)\n   - Test across different devices and screen sizes\n   - Verify accessibility compliance\n   - Test keyboard navigation and shortcuts\n\n4. **Performance Testing**:\n   - Measure load time for timesheet interface\n   - Test system performance with large attachments\n   - Verify response times when saving large timesheets\n\n5. **Security Testing**:\n   - Verify proper access controls for timesheet data\n   - Test for common vulnerabilities in file upload functionality\n   - Ensure sensitive timesheet data is properly protected",
+      "status": "pending",
+      "dependencies": [
+        3
+      ],
+      "priority": "high",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Create Database Schema and API Endpoints for Timesheet Data",
+          "description": "Design and implement the database schema and RESTful API endpoints required for storing and retrieving timesheet data",
+          "status": "pending",
+          "dependencies": [],
+          "details": "1. Design database schema with tables for timesheets, time entries, and supporting documents\n2. Create relationships between timesheet data and existing position data\n3. Implement fields for regular hours, overtime hours, descriptions, and submission status\n4. Develop RESTful API endpoints for CRUD operations on timesheets\n5. Implement proper error handling and validation at the API level\n6. Create documentation for API endpoints\n7. Write unit tests for API functionality"
+        },
+        {
+          "id": 2,
+          "title": "Implement Basic Timesheet Entry Interface",
+          "description": "Develop the core React components for the timesheet entry interface with weekly calendar view and time input fields",
+          "status": "pending",
+          "dependencies": [
+            1
+          ],
+          "details": "1. Create a responsive weekly calendar view component\n2. Implement daily hour entry fields for regular and overtime hours\n3. Add validation for hour inputs (non-negative, maximum limits)\n4. Create project/task selection dropdown connected to position data\n5. Implement description/notes field for each time entry\n6. Calculate and display running totals for daily and weekly hours\n7. Set up proper state management for form data\n8. Implement basic form validation"
+        },
+        {
+          "id": 3,
+          "title": "Develop Timesheet Navigation and User Experience Features",
+          "description": "Enhance the timesheet interface with navigation controls, keyboard shortcuts, and autosave functionality",
+          "status": "pending",
+          "dependencies": [
+            2
+          ],
+          "details": "1. Create intuitive navigation between days and weeks\n2. Implement previous/next week navigation\n3. Add date picker for jumping to specific weeks\n4. Implement keyboard shortcuts for efficient data entry (tab navigation, quick fills)\n5. Create autosave functionality to prevent data loss\n6. Add visual indicators for saved/unsaved changes\n7. Implement comprehensive error handling with user-friendly messages\n8. Ensure responsive design works across device sizes"
+        },
+        {
+          "id": 4,
+          "title": "Implement File Upload and Supporting Document Functionality",
+          "description": "Add the ability to upload and manage supporting documents such as receipts or work evidence",
+          "status": "pending",
+          "dependencies": [
+            2
+          ],
+          "details": "1. Create file upload component with drag-and-drop functionality\n2. Implement file type and size validation\n3. Add progress indicators for uploads\n4. Create thumbnail previews for uploaded images\n5. Implement document management (view, delete)\n6. Store file metadata in the database\n7. Implement secure file storage with appropriate access controls\n8. Add API endpoints for file operations"
+        },
+        {
+          "id": 5,
+          "title": "Develop Digital Signature and Draft Saving Functionality",
+          "description": "Implement the digital signature mechanism and ability to save timesheets as drafts",
+          "status": "pending",
+          "dependencies": [
+            2,
+            3
+          ],
+          "details": "1. Create a digital signature component (e-signature pad or checkbox confirmation)\n2. Implement signature validation and storage\n3. Add save draft functionality with appropriate database status\n4. Create a draft retrieval system\n5. Implement auto-draft saving at regular intervals\n6. Add visual indicators for draft status\n7. Create API endpoints for draft operations\n8. Ensure proper validation state for drafts vs. submissions"
+        },
+        {
+          "id": 6,
+          "title": "Complete Submission Workflow and Integration",
+          "description": "Finalize the timesheet submission process with confirmation dialog, validation, and integration with the approval system",
+          "status": "pending",
+          "dependencies": [
+            3,
+            4,
+            5
+          ],
+          "details": "1. Implement comprehensive pre-submission validation\n2. Create submission confirmation dialog with timesheet summary\n3. Store submission timestamp and user information\n4. Implement status tracking for submitted timesheets\n5. Create notification system for submission confirmation\n6. Add ability to view submission history\n7. Integrate with approval workflow (marking as pending approval)\n8. Implement final end-to-end testing of the complete workflow"
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "projectName": "Godspeed Recruitment Platform",
+    "totalTasks": 10,
+    "sourceFile": "scripts/PRD.txt",
+    "generatedAt": "2023-05-15"
+  }
+}
