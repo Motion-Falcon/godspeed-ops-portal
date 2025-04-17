@@ -74,7 +74,7 @@ const singleDocumentSchema = z.object({
     .refine(
       (file) => ALLOWED_FILE_TYPES.includes(file?.type),
       "Only .pdf files are accepted."
-    ),
+    ).optional(),
   documentNotes: z.string().optional(),
   documentPath: z.string().optional(), // For storing uploaded file path
   documentFileName: z.string().optional(), // For storing the file name when saving drafts
@@ -238,7 +238,10 @@ export function ProfileCreate() {
           const docCopy = { ...doc };
           if (docCopy.documentFile) {
             docCopy.documentFileName = (docCopy.documentFile as File).name;
-            delete docCopy.documentFile;
+            // Ignore the variable intentionally
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const { documentFile, ...docWithoutFile } = docCopy;
+            return docWithoutFile;
           }
           return docCopy;
         });
@@ -329,7 +332,10 @@ export function ProfileCreate() {
             console.log(`File uploaded successfully: ${doc.documentPath}`); // Debug log
             
             // Remove the file object before submission
-            delete doc.documentFile;
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const { documentFile, ...docWithoutFile } = doc;
+            Object.assign(doc, docWithoutFile);
+            doc.documentFile = undefined;
           }
         }
       }

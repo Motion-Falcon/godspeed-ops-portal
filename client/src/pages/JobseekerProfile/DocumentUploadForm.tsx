@@ -11,6 +11,12 @@ interface DocumentUploadFormProps {
   allFields: string[];
 }
 
+// Type for document field errors
+interface DocumentFieldError {
+  message: string;
+  type: string;
+}
+
 export function DocumentUploadForm({ allFields }: DocumentUploadFormProps) {
   const { register, setValue, control, formState } = useFormContext();
   const { errors: allErrors } = formState;
@@ -26,11 +32,16 @@ export function DocumentUploadForm({ allFields }: DocumentUploadFormProps) {
     return allFields.includes(fieldName) && allErrors[fieldName as keyof typeof allErrors];
   };
 
-  // Format file size helper
-  const formatFileSize = (size: number): string => {
-    if (size < 1024) return `${size} bytes`;
-    if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
-    return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+  // Helper to get document field error message safely
+  const getDocumentFieldError = (index: number, fieldName: string): string | undefined => {
+    if (!allErrors.documents) return undefined;
+    
+    // Access in a type-safe way
+    const documentsErrors = allErrors.documents as Record<string, Record<string, DocumentFieldError>>;
+    if (documentsErrors[index] && documentsErrors[index][fieldName]) {
+      return String(documentsErrors[index][fieldName].message);
+    }
+    return undefined;
   };
 
   // Handle file selection for a specific document
@@ -117,8 +128,10 @@ export function DocumentUploadForm({ allFields }: DocumentUploadFormProps) {
                 <option value="forklift_license">Forklift License</option>
                 <option value="other">Other</option>
               </select>
-              {allErrors.documents && allErrors.documents[index as any]?.documentType && (
-                <p className="error-message">{String(allErrors.documents[index as any]?.documentType?.message)}</p>
+              {getDocumentFieldError(index, 'documentType') && (
+                <p className="error-message">
+                  {getDocumentFieldError(index, 'documentType')}
+                </p>
               )}
             </div>
 
@@ -142,8 +155,10 @@ export function DocumentUploadForm({ allFields }: DocumentUploadFormProps) {
                 className="form-input-file"
                 accept=".pdf"
               />
-              {allErrors.documents && allErrors.documents[index as any]?.documentFile && (
-                <p className="error-message">{String(allErrors.documents[index as any]?.documentFile?.message)}</p>
+              {getDocumentFieldError(index, 'documentFile') && (
+                <p className="error-message">
+                  {getDocumentFieldError(index, 'documentFile')}
+                </p>
               )}
             </div>
           </div>

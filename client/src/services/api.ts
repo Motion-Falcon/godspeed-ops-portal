@@ -163,15 +163,18 @@ interface ProfileData {
   overtimeHours?: string;
   overtimeBillRate?: string;
   overtimePayRate?: string;
-  documentType?: string;
-  documentTitle?: string;
-  documentPath?: string;
-  documentFile?: File;
-  documentFileName?: string;
-  documentNotes?: string;
+  documents?: Array<{
+    documentType: string;
+    documentTitle?: string;
+    documentFile?: File;
+    documentPath?: string;
+    documentFileName?: string;
+    documentNotes?: string;
+    id?: string;
+  }>;
   currentStep?: number;
   // Use Record for additional properties with specific types
-  [key: string]: string | boolean | number | undefined | File;
+  [key: string]: string | boolean | number | undefined | File | Array<{[key: string]: string | boolean | number | undefined | File}>;
 }
 
 // Define response types
