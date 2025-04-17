@@ -5,6 +5,7 @@ import { ArrowLeft, User, CheckCircle, XCircle, Clock, FileText, Download } from
 import { getJobseekerProfile, updateJobseekerStatus } from '../services/api';
 import { DocumentRecord } from '../types/jobseeker';
 import '../styles/pages/JobSeekerProfile.css';
+import { supabase } from '../lib/supabaseClient';
 
 // Define a local comprehensive type reflecting the backend response
 // TODO: Move this to shared types (e.g., client/src/types/jobseeker.ts) and update JobSeekerDetailedProfile
@@ -47,6 +48,13 @@ interface FullJobseekerProfile {
   createdAt?: string | null;
   updatedAt?: string | null;
   createdById?: string | null; // Added field
+  creatorDetails?: {
+    id: string;
+    email: string;
+    name: string;
+    userType: string;
+    createdAt: string;
+  } | null; // New field for creator details
   // Add any other potential fields from the DB
 }
 
@@ -63,11 +71,18 @@ const getDisplayLocation = (profile: FullJobseekerProfile | null): string | unde
   return parts.length > 0 ? parts.join(', ') : undefined;
 };
 
+// Helper function to decode HTML entities for slashes
+const decodePath = (path: string | undefined): string | undefined => {
+  return path ? path.replace(/&#x2F;/g, '/') : undefined;
+};
+
 export function JobSeekerProfile() {
   const [profile, setProfile] = useState<FullJobseekerProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [updateStatus, setUpdateStatus] = useState<string | null>(null);
+  const [downloadingDocId, setDownloadingDocId] = useState<string | null>(null);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
   const { id } = useParams<{ id: string }>();
   const { isAdmin, isRecruiter } = useAuth();
   const navigate = useNavigate();
@@ -151,13 +166,70 @@ export function JobSeekerProfile() {
     return dateString;
   };
 
-  const handleDownloadDocument = (documentPath?: string | null) => {
+  const handleDownloadDocument = async (documentPath?: string | null, docId?: string, documentFileName?: string) => {
     if (!documentPath) {
-      alert('Document path is missing.');
+      setDownloadError('Document path is missing.');
+      setTimeout(() => setDownloadError(null), 3000);
       return;
     }
-    alert('Download functionality needs backend implementation (e.g., signed URLs or download endpoint).');
-    console.log("Attempting download for path:", documentPath);
+
+    // Set loading state for this specific document
+    setDownloadingDocId(docId || 'unknown');
+    setDownloadError(null);
+
+    try {
+      // Decode the path before using it
+      const decodedPath = decodePath(documentPath);
+      
+      console.log(`Download requested for path: '${documentPath}'`); 
+      console.log(`Using decoded path: '${decodedPath}'`); 
+
+      if (!decodedPath) {
+        throw new Error("Document path is missing or invalid.");
+      }
+
+      // Generate a signed URL (expires in 300 seconds)
+      const { data, error } = await supabase.storage
+        .from('jobseeker-documents')
+        .createSignedUrl(decodedPath, 300); // 5 minutes expiry
+
+      if (error) {
+        console.error("Supabase download URL error:", error);
+        throw error;
+      }
+
+      if (data?.signedUrl) {
+        console.log("Download URL generated:", data.signedUrl);
+        
+        // Create a temporary anchor element to trigger download
+        const downloadLink = document.createElement('a');
+        downloadLink.href = data.signedUrl;
+        
+        // Use the documentFileName if provided, otherwise extract from path or use a default
+        let filename = 'document.pdf';
+        if (documentFileName) {
+          filename = documentFileName;
+        } else {
+          const pathFilename = documentPath.split('/').pop();
+          if (pathFilename) filename = pathFilename;
+        }
+        
+        downloadLink.download = filename;
+        
+        // Append to body, click, and remove to trigger download
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+      } else {
+        throw new Error('Could not retrieve signed URL for download.');
+      }
+    } catch (err) {
+      console.error("Error in handleDownloadDocument:", err);
+      setDownloadError(err instanceof Error ? err.message : 'Could not download the document.');
+      setTimeout(() => setDownloadError(null), 5000); // Clear error after 5 seconds
+    } finally {
+      setDownloadingDocId(null); // Clear loading state
+    }
   };
 
   if (loading) {
@@ -292,52 +364,97 @@ export function JobSeekerProfile() {
         
         <div className="profile-content grid-container">
           <div className="personal-details-section section-card">
-            <h2 className="section-title">Personal & ID</h2>
-            {renderDetailItem('First Name', profile.firstName)}
-            {renderDetailItem('Last Name', profile.lastName)}
-            {renderDetailItem('Street', profile.street)}
-            {renderDetailItem('City', profile.city)}
-            {renderDetailItem('Province', profile.province)}
-            {renderDetailItem('Postal Code', profile.postalCode)}
-            {renderDetailItem('License Number', profile.licenseNumber)}
-            {renderDetailItem('Passport Number', profile.passportNumber)}
-            {renderDetailItem('SIN Number', profile.sinNumber)}
-            {renderDetailItem('SIN Expiry', formatDate(profile.sinExpiry))}
-            {renderDetailItem('Business Number', profile.businessNumber)}
-            {renderDetailItem('Corporation Name', profile.corporationName)}
-            {renderDetailItem('Profile Created By User ID', profile.createdById)}
+            <h2 className="section-title">Personal Information</h2>
+            <div className="detail-group">
+              {renderDetailItem('First Name', profile.firstName)}
+              {renderDetailItem('Last Name', profile.lastName)}
+              {renderDetailItem('Email', profile.email)}
+              {renderDetailItem('Mobile', profile.mobile)}
+              {renderDetailItem('Date of Birth', formatDate(profile.dob))}
+            </div>
           </div>
           
-          <div className="skills-qualifications-section section-card">
-            <h2 className="section-title">Skills & Qualifications</h2>
-            {renderDetailItem('Work Preference', profile.workPreference)}
-            {renderDetailItem('License Type', profile.licenseType)}
-            {renderDetailItem('Experience Summary', profile.experience)}
-            {renderDetailItem('Manual Driving', profile.manualDriving)}
-            {renderDetailItem('Availability', profile.availability)}
-            {renderDetailItem('Weekend Availability', profile.weekendAvailability)}
+          <div className="identification-section section-card">
+            <h2 className="section-title">Identification</h2>
+            <div className="detail-group">
+              {renderDetailItem('License Number', profile.licenseNumber)}
+              {renderDetailItem('Passport Number', profile.passportNumber)}
+              {renderDetailItem('SIN Number', profile.sinNumber)}
+              {renderDetailItem('SIN Expiry', formatDate(profile.sinExpiry))}
+              {renderDetailItem('Business Number', profile.businessNumber)}
+              {renderDetailItem('Corporation Name', profile.corporationName)}
+            </div>
+          </div>
+          
+          <div className="address-section section-card">
+            <h2 className="section-title">Address</h2>
+            <div className="detail-group">
+              {renderDetailItem('Street', profile.street)}
+              {renderDetailItem('City', profile.city)}
+              {renderDetailItem('Province', profile.province)}
+              {renderDetailItem('Postal Code', profile.postalCode)}
+            </div>
+          </div>
+          
+          <div className="qualifications-section section-card">
+            <h2 className="section-title">Qualifications</h2>
+            <div className="detail-group">
+              {renderDetailItem('Work Preference', profile.workPreference)}
+              {renderDetailItem('License Type', profile.licenseType)}
+              {renderDetailItem('Experience', profile.experience)}
+              {renderDetailItem('Manual Driving', profile.manualDriving)}
+              {renderDetailItem('Availability', profile.availability)}
+              {renderDetailItem('Weekend Availability', profile.weekendAvailability)}
+            </div>
           </div>
           
           <div className="compensation-section section-card">
             <h2 className="section-title">Compensation</h2>
-            {renderDetailItem('Payrate Type', profile.payrateType)}
-            {renderDetailItem('Bill Rate', profile.billRate)}
-            {renderDetailItem('Pay Rate', profile.payRate)}
-            {renderDetailItem('Payment Method', profile.paymentMethod)}
-            {renderDetailItem('HST/GST', profile.hstGst)}
-            {renderDetailItem('Cash Deduction', profile.cashDeduction)}
-            {renderDetailItem('Overtime Enabled', profile.overtimeEnabled)}
-            {profile.overtimeEnabled && (
-              <>
-                {renderDetailItem('Overtime Hours After', profile.overtimeHours)}
-                {renderDetailItem('Overtime Bill Rate', profile.overtimeBillRate)}
-                {renderDetailItem('Overtime Pay Rate', profile.overtimePayRate)}
-              </>
-            )}
+            <div className="detail-group">
+              {renderDetailItem('Payrate Type', profile.payrateType)}
+              {renderDetailItem('Bill Rate', profile.billRate)}
+              {renderDetailItem('Pay Rate', profile.payRate)}
+              {renderDetailItem('Payment Method', profile.paymentMethod)}
+              {renderDetailItem('HST/GST', profile.hstGst)}
+              {renderDetailItem('Cash Deduction', profile.cashDeduction)}
+              {renderDetailItem('Overtime Enabled', profile.overtimeEnabled)}
+              {profile.overtimeEnabled && (
+                <>
+                  {renderDetailItem('Overtime Hours After', profile.overtimeHours)}
+                  {renderDetailItem('Overtime Bill Rate', profile.overtimeBillRate)}
+                  {renderDetailItem('Overtime Pay Rate', profile.overtimePayRate)}
+                </>
+              )}
+            </div>
           </div>
           
+          <div className="meta-section section-card">
+            <h2 className="section-title">Meta Information</h2>
+            <div className="detail-group">
+              {renderDetailItem('Created At', formatDate(profile.createdAt))}
+              {renderDetailItem('Updated At', formatDate(profile.updatedAt))}
+              {profile.creatorDetails ? (
+                <>
+                  <h3 className="subsection-title">Created By</h3>
+                  {renderDetailItem('Name', profile.creatorDetails.name)}
+                  {renderDetailItem('Email', profile.creatorDetails.email)}
+                  {renderDetailItem('User Type', profile.creatorDetails.userType)}
+                  {renderDetailItem('Account Created', formatDate(profile.creatorDetails.createdAt))}
+                </>
+              ) : (
+                renderDetailItem('Created By User ID', profile.createdById)
+              )}
+            </div>
+          </div>
+          
+        </div>
           <div className="documents-section section-card">
             <h2 className="section-title">Uploaded Documents</h2>
+            {downloadError && (
+              <div className="error-message download-error">
+                <p>{downloadError}</p>
+              </div>
+            )}
             {(profile.documents && profile.documents.length > 0) ? (
               <div className="document-list">
                 {profile.documents.map((doc: DocumentRecord, index: number) => (
@@ -351,11 +468,14 @@ export function JobSeekerProfile() {
                     </div>
                     <button 
                       className="button icon-button secondary"
-                      onClick={() => handleDownloadDocument(doc.documentPath)}
-                      disabled={!doc.documentPath} 
-                      title={doc.documentPath ? "Download Document (Requires Backend Implementation)" : "Document path missing"}
+                      onClick={() => handleDownloadDocument(doc.documentPath, doc.id, doc.documentFileName)}
+                      disabled={!doc.documentPath || downloadingDocId === doc.id} 
+                      title={doc.documentPath ? "Download Document" : "Document path missing"}
                     >
-                      <Download size={16} />
+                      {downloadingDocId === doc.id ? 
+                        <span className="download-spinner"></span> : 
+                        <Download size={16} />
+                      }
                     </button>
                   </div>
                 ))}
@@ -365,7 +485,6 @@ export function JobSeekerProfile() {
             )}
           </div>
           
-        </div>
       </main>
     </div>
   );

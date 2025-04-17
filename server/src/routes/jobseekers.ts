@@ -57,6 +57,7 @@ interface DbJobseekerProfile {
   verification_status?: 'pending' | 'verified' | 'rejected';
   created_at: string;
   updated_at: string;
+  created_by_user_id?: string;
 }
 
 // Interface for the simplified JobSeekerProfile list view (matches frontend expectation)
@@ -199,6 +200,28 @@ router.get('/:id', async (req, res) => {
       const camelKey = key.replace(/_([a-z])/g, (m, p1) => p1.toUpperCase());
       formattedProfile[camelKey] = value;
     });
+    
+    // Fetch creator details if created_by_user_id exists
+    if (profile.created_by_user_id) {
+      try {
+        const { data: creatorData, error: creatorError } = await supabaseAdmin
+          .auth.admin.getUserById(profile.created_by_user_id);
+          
+        if (!creatorError && creatorData.user) {
+          // Add creator details to the formatted profile
+          formattedProfile.creatorDetails = {
+            id: creatorData.user.id,
+            email: creatorData.user.email,
+            name: creatorData.user.user_metadata?.name || 'Unknown',
+            userType: creatorData.user.user_metadata?.user_type || 'Unknown',
+            createdAt: creatorData.user.created_at
+          };
+        }
+      } catch (creatorError) {
+        console.error('Error fetching creator details:', creatorError);
+        // Don't fail the whole request if creator details can't be fetched
+      }
+    }
       
     res.json(formattedProfile);
 
