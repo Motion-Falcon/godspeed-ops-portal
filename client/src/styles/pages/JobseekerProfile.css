@@ -841,7 +841,7 @@ select.form-input {
   border-left: 3px solid var(--color-primary-light);
 }
 
-/* Document section styling */
+/* Document section with preview styling */
 .document-list {
   display: flex;
   flex-direction: column;
@@ -849,32 +849,104 @@ select.form-input {
 }
 
 .document-item {
-  display: flex;
-  align-items: flex-start;
-  padding: 10px;
+  display: grid;
+  grid-template-columns: 70% 30%;
+  align-items: stretch;
+  padding: 0;
   background-color: rgba(0, 0, 0, 0.02);
   border-radius: 6px;
   border-left: 3px solid var(--color-secondary);
+  overflow: hidden;
+  margin-bottom: 12px;
+  transition: box-shadow 0.2s ease;
+}
+
+.document-item:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.document-content {
+  padding: 10px;
+  display: flex;
+  align-items: flex-start;
 }
 
 .document-icon {
   margin-right: 12px;
   color: var(--color-secondary);
+  flex-shrink: 0;
 }
 
 .document-info {
   flex: 1;
+  min-width: 0; /* Ensure text truncation works properly */
 }
 
 .document-name {
   font-weight: 500;
   margin-bottom: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .document-type, .document-title, .document-notes {
   font-size: 14px;
   color: var(--color-text-secondary);
   margin-bottom: 2px;
+}
+
+.document-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.document-preview {
+  background-color: #f0f0f0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Document preview placeholder - shown when no preview is available */
+.document-preview-placeholder {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  padding: 20px;
+  background-color: #f0f0f0;
+  color: #777;
+  text-align: center;
+}
+
+.document-preview-placeholder-icon {
+  margin-bottom: 10px;
+  opacity: 0.6;
+}
+
+/* No documents message */
+.empty-documents {
+  text-align: center;
+  padding: 30px 0;
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
+/* Dark mode adjustments */
+.dark .document-item {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.dark .document-preview {
+  background-color: #2a2a2a;
+}
+
+.dark .document-preview-placeholder {
+  background-color: #2a2a2a;
+  color: #999;
 }
 
 /* Responsive adjustments */
@@ -886,6 +958,15 @@ select.form-input {
   .detail-item {
     padding-bottom: 12px;
     margin-bottom: 12px;
+  }
+  
+  .document-item {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+  }
+  
+  .document-preview {
+    min-height: 150px;
   }
 }
 
@@ -936,4 +1017,17 @@ select.form-input {
 /* Dark mode adjustments for download error */
 .dark .download-error {
   background-color: rgba(220, 53, 69, 0.2);
+}
+
+/* Small button styles for document actions */
+.small-button {
+  font-size: 12px;
+  padding: 5px 10px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.small-button svg {
+  flex-shrink: 0;
 } 

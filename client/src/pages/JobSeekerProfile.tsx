@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { ArrowLeft, User, CheckCircle, XCircle, Clock, FileText, Download } from 'lucide-react';
+import { ArrowLeft, User, CheckCircle, XCircle, Clock, FileText, Download, Eye, FileWarning } from 'lucide-react';
 import { getJobseekerProfile, updateJobseekerStatus } from '../services/api';
 import { DocumentRecord } from '../types/jobseeker';
-import '../styles/pages/JobSeekerProfile.css';
 import { supabase } from '../lib/supabaseClient';
+import PDFThumbnail from '../components/PDFThumbnail';
+import PDFViewerModal from '../components/PDFViewerModal';
+import '../styles/pages/JobSeekerProfile.css';
 
 // Define a local comprehensive type reflecting the backend response
 // TODO: Move this to shared types (e.g., client/src/types/jobseeker.ts) and update JobSeekerDetailedProfile
@@ -83,6 +85,9 @@ export function JobSeekerProfile() {
   const [updateStatus, setUpdateStatus] = useState<string | null>(null);
   const [downloadingDocId, setDownloadingDocId] = useState<string | null>(null);
   const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [selectedPdfUrl, setSelectedPdfUrl] = useState<string | null>(null);
+  const [selectedPdfName, setSelectedPdfName] = useState<string>('Document');
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState<boolean>(false);
   const { id } = useParams<{ id: string }>();
   const { isAdmin, isRecruiter } = useAuth();
   const navigate = useNavigate();
@@ -164,6 +169,58 @@ export function JobSeekerProfile() {
        console.warn(`Failed to parse date: ${dateString}`, e);
     }
     return dateString;
+  };
+
+  // Function to get signed URL for a document (for preview)
+  const getSignedUrl = async (documentPath: string): Promise<string | null> => {
+    try {
+      // Decode the path before using it
+      const decodedPath = decodePath(documentPath);
+      
+      if (!decodedPath) {
+        console.error("Cannot get signed URL: document path is missing or invalid.");
+        return null;
+      }
+
+      const { data, error } = await supabase.storage
+        .from('jobseeker-documents')
+        .createSignedUrl(decodedPath, 300); // 5 minutes expiry
+
+      if (error) {
+        console.error("Error creating signed URL:", error);
+        return null;
+      }
+
+      return data?.signedUrl || null;
+    } catch (err) {
+      console.error("Error in getSignedUrl:", err);
+      return null;
+    }
+  };
+
+  // Function to handle previewing a document
+  const handlePreviewDocument = async (documentPath?: string | null, documentFileName?: string | null) => {
+    if (!documentPath) {
+      setDownloadError('Document path is missing.');
+      setTimeout(() => setDownloadError(null), 3000);
+      return;
+    }
+
+    try {
+      const signedUrl = await getSignedUrl(documentPath);
+      
+      if (signedUrl) {
+        setSelectedPdfUrl(signedUrl);
+        setSelectedPdfName(documentFileName || 'Document');
+        setIsPdfModalOpen(true);
+      } else {
+        throw new Error('Could not generate preview URL.');
+      }
+    } catch (err) {
+      console.error("Error preparing document preview:", err);
+      setDownloadError(err instanceof Error ? err.message : 'Could not preview the document.');
+      setTimeout(() => setDownloadError(null), 5000);
+    }
   };
 
   const handleDownloadDocument = async (documentPath?: string | null, docId?: string, documentFileName?: string) => {
@@ -455,37 +512,74 @@ export function JobSeekerProfile() {
                 <p>{downloadError}</p>
               </div>
             )}
-            {(profile.documents && profile.documents.length > 0) ? (
+            {(profile?.documents && profile.documents.length > 0) ? (
               <div className="document-list">
                 {profile.documents.map((doc: DocumentRecord, index: number) => (
                   <div key={doc.id || index} className="document-item">
-                    <FileText size={18} className="document-icon" />
-                    <div className="document-info">
-                      <p className="document-name" title={doc.documentFileName}>{doc.documentFileName || 'Unnamed Document'}</p>
-                      <p className="document-type">Type: {doc.documentType}</p>
-                      {doc.documentTitle && <p className="document-title">Title: {doc.documentTitle}</p>}
-                      {doc.documentNotes && <p className="document-notes">Notes: {doc.documentNotes}</p>}
+                    <div className="document-content">
+                      <FileText size={18} className="document-icon" />
+                      <div className="document-info">
+                        <p className="document-name" title={doc.documentFileName}>{doc.documentFileName || 'Unnamed Document'}</p>
+                        <p className="document-type">Type: {doc.documentType}</p>
+                        {doc.documentTitle && <p className="document-title">Title: {doc.documentTitle}</p>}
+                        {doc.documentNotes && <p className="document-notes">Notes: {doc.documentNotes}</p>}
+                        
+                        <div className="document-actions">
+                          <button 
+                            onClick={() => handlePreviewDocument(doc.documentPath, doc.documentFileName)} 
+                            className="small-button"
+                          >
+                            <Eye size={16} /> Preview
+                          </button>
+                          <button 
+                            onClick={() => handleDownloadDocument(doc.documentPath, doc.id, doc.documentFileName)} 
+                            className="small-button"
+                            disabled={downloadingDocId === doc.id}
+                          >
+                            {downloadingDocId === doc.id ? (
+                              <>
+                                <span className="download-spinner"></span> Downloading...
+                              </>
+                            ) : (
+                              <>
+                                <Download size={16} /> Download
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                    <button 
-                      className="button icon-button secondary"
-                      onClick={() => handleDownloadDocument(doc.documentPath, doc.id, doc.documentFileName)}
-                      disabled={!doc.documentPath || downloadingDocId === doc.id} 
-                      title={doc.documentPath ? "Download Document" : "Document path missing"}
-                    >
-                      {downloadingDocId === doc.id ? 
-                        <span className="download-spinner"></span> : 
-                        <Download size={16} />
-                      }
-                    </button>
+                    
+                    <div className="document-preview">
+                      {doc.documentPath ? (
+                        <PDFThumbnail 
+                          pdfUrl={doc.documentPath}
+                          onClick={() => handlePreviewDocument(doc.documentPath, doc.documentFileName)}
+                        />
+                      ) : (
+                        <div className="document-preview-placeholder">
+                          <FileWarning size={24} className="document-preview-placeholder-icon" />
+                          <span>No preview available</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="empty-section">No documents uploaded.</p>
+              <p className="empty-documents">No documents uploaded.</p>
             )}
           </div>
           
       </main>
+      
+      {/* PDF Viewer Modal */}
+      <PDFViewerModal
+        pdfUrl={selectedPdfUrl}
+        documentName={selectedPdfName}
+        isOpen={isPdfModalOpen}
+        onClose={() => setIsPdfModalOpen(false)}
+      />
     </div>
   );
 } 
