@@ -130,6 +130,110 @@ export const fetchData = async () => {
   }
 };
 
+// Define Profile Data Types
+interface ProfileData {
+  firstName: string;
+  lastName: string;
+  dob: string;
+  email: string;
+  mobile: string;
+  licenseNumber?: string;
+  passportNumber?: string;
+  sinNumber?: string;
+  sinExpiry?: string;
+  businessNumber?: string;
+  corporationName?: string;
+  street?: string;
+  city?: string;
+  province?: string;
+  postalCode?: string;
+  workPreference?: string;
+  licenseType?: string;
+  experience?: string;
+  manualDriving?: 'Yes' | 'No' | 'NA';
+  availability?: 'Full-Time' | 'Part-Time';
+  weekendAvailability?: boolean;
+  payrateType?: 'Hourly' | 'Daily' | 'Monthly';
+  billRate?: string;
+  payRate?: string;
+  paymentMethod?: string;
+  hstGst?: string;
+  cashDeduction?: string;
+  overtimeEnabled?: boolean;
+  overtimeHours?: string;
+  overtimeBillRate?: string;
+  overtimePayRate?: string;
+  documentType?: string;
+  documentTitle?: string;
+  documentPath?: string;
+  documentFile?: File;
+  documentFileName?: string;
+  documentNotes?: string;
+  currentStep?: number;
+  // Use Record for additional properties with specific types
+  [key: string]: string | boolean | number | undefined | File;
+}
+
+// Define response types
+interface ProfileResponse {
+  profile: ProfileData;
+}
+
+interface DraftResponse {
+  draft: ProfileData | null;
+  currentStep: number;
+  lastUpdated: string | null;
+}
+
+// Profile API endpoints
+export const submitProfile = async (profileData: ProfileData) => {
+  try {
+    const response = await api.post('/api/profile/submit', profileData);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(error.response.data.error || 'Failed to submit profile');
+    }
+    throw error;
+  }
+};
+
+export const getProfile = async (): Promise<ProfileResponse> => {
+  try {
+    const response = await api.get('/api/profile');
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(error.response.data.error || 'Failed to fetch profile');
+    }
+    throw error;
+  }
+};
+
+export const saveDraft = async (draftData: Partial<ProfileData> & { currentStep?: number }) => {
+  try {
+    const response = await api.put('/api/profile/draft', draftData);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(error.response.data.error || 'Failed to save profile draft');
+    }
+    throw error;
+  }
+};
+
+export const getDraft = async (): Promise<DraftResponse> => {
+  try {
+    const response = await api.get('/api/profile/draft');
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(error.response.data.error || 'Failed to fetch profile draft');
+    }
+    throw error;
+  }
+};
+
 // Helper to handle common response patterns
 const handleResponse = async (response: Response) => {
   if (!response.ok) {

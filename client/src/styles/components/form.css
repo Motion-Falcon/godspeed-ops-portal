@@ -3,6 +3,8 @@
   margin-bottom: var(--spacing-6);
   position: relative;
   transition: all var(--transition-normal);
+  flex-grow: 1;
+  width: 100%;
 }
 
 .form-label {
@@ -12,6 +14,14 @@
   font-size: 0.875rem;
   color: var(--text-muted);
   transition: color var(--transition-normal);
+  min-height: 1.25rem;
+}
+
+/* Make asterisks in form labels red */
+.form-label[data-required="*"]::after {
+  content: "*";
+  color: var(--danger);
+  margin-left: 0.125rem;
 }
 
 .form-header {
@@ -33,36 +43,57 @@
   text-decoration: none;
 }
 
-.form-input {
+.form-input,
+.form-textarea,
+.form-select {
   width: 100%;
-  height: 48px;
-  padding: 0 var(--spacing-4);
+  min-height: 48px;
+  padding: var(--spacing-3) var(--spacing-4);
   border: 1px solid var(--border);
-  border-radius: var(--border-radius);
+  border-radius: var(--radius);
   background-color: var(--input-bg);
   color: var(--text);
   font-size: 1rem;
   transition: all var(--transition-normal);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-sm);
+  line-height: 1.5;
 }
 
-.form-input::placeholder {
+select.form-input, .form-select {
+  padding-right: 2.5rem;
+}
+
+.form-input::placeholder,
+.form-textarea::placeholder {
   color: var(--text-muted);
-  opacity: 0.5;
+  opacity: 0.6;
 }
 
-.form-input:hover {
+.form-input:hover,
+.form-textarea:hover,
+.form-select:hover {
   border-color: var(--primary);
 }
 
-.form-input:focus {
+.form-input:focus,
+.form-textarea:focus,
+.form-select:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+  box-shadow: 0 0 0 2px var(--color-primary-bg);
 }
 
-.dark .form-input:focus {
-  box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.2);
+.dark .form-input:focus,
+.dark .form-textarea:focus,
+.dark .form-select:focus {
+  box-shadow: 0 0 0 2px var(--color-primary-bg);
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 100px;
+  padding-top: var(--spacing-3);
+  padding-bottom: var(--spacing-3);
 }
 
 .input-container {

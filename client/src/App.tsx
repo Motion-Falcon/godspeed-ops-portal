@@ -5,9 +5,11 @@ import { ProtectedRoute, PublicRoute } from './components/ProtectedRoute';
 import { Signup } from './pages/Signup';
 import { Login } from './pages/Login';
 import { VerificationPending } from './pages/VerificationPending';
+import { ProfileVerificationPending } from './pages/ProfileVerificationPending';
 import { ForgotPassword } from './pages/ForgotPassword';
 import { ResetPassword } from './pages/ResetPassword';
 import { Dashboard } from './pages/Dashboard';
+import { ProfileCreate } from './pages/JobseekerProfile/ProfileCreate';
 import { GeometricShapes } from './components/GeometricShapes';
 import './styles/main.css';
 
@@ -23,6 +25,7 @@ function App() {
               <Route path="/signup" element={<Signup />} />
               <Route path="/login" element={<Login />} />
               <Route path="/verification-pending" element={<VerificationPending />} />
+              <Route path="/profile-verification-pending" element={<ProfileVerificationPending />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
             </Route>
 
@@ -32,6 +35,7 @@ function App() {
             {/* Protected routes */}
             <Route element={<ProtectedRoute />}>
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/profile/create" element={<ProfileCreate />} />
             </Route>
 
             {/* Redirects */}
