@@ -166,8 +166,12 @@ export function JobSeekerDashboard() {
                 Job Alerts
               </button>
               
-              <button className="button outline" style={{ justifyContent: 'flex-start' }}>
-                My Applications
+              <button 
+                className="button outline" 
+                style={{ justifyContent: 'flex-start' }}
+                onClick={() => navigate('/profile/create')}
+              >
+                Create Jobseeker Profiles
               </button>
               
               {/* Reset Password button */}

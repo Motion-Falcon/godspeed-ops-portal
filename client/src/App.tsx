@@ -28,12 +28,12 @@ function App() {
               <Route path="/signup" element={<Signup />} />
               <Route path="/login" element={<Login />} />
               <Route path="/verification-pending" element={<VerificationPending />} />
-              <Route path="/profile-verification-pending" element={<ProfileVerificationPending />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
             </Route>
 
-            {/* Reset password route - accessible regardless of auth status */}
+            {/* Routes accessible regardless of auth status */}
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/profile-verification-pending" element={<ProfileVerificationPending />} />
 
             {/* Protected routes */}
             <Route element={<ProtectedRoute />}>

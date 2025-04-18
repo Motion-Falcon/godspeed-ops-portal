@@ -10,9 +10,10 @@ interface PersonalInfoFormProps {
   currentStep: number;
   allFields: string[];
   onEmailAvailabilityChange?: (isAvailable: boolean | null) => void;
+  disableEmail?: boolean;
 }
 
-export function PersonalInfoForm({ allFields, onEmailAvailabilityChange }: PersonalInfoFormProps) {
+export function PersonalInfoForm({ allFields, onEmailAvailabilityChange, disableEmail = false }: PersonalInfoFormProps) {
   const { register, formState, watch, setError, clearErrors } = useFormContext<PersonalInfoFormData>();
   const { errors: allErrors } = formState;
   
@@ -32,6 +33,16 @@ export function PersonalInfoForm({ allFields, onEmailAvailabilityChange }: Perso
 
   // Effect to check email availability when the email changes
   useEffect(() => {
+    // If email is disabled (for jobseekers using their own email), skip validation
+    if (disableEmail) {
+      setEmailAvailabilityMessage(null);
+      setEmailAvailable(true); // Assume email is available since it's their own
+      if (onEmailAvailabilityChange) {
+        onEmailAvailabilityChange(true);
+      }
+      return;
+    }
+    
     // Clear any previous timeout
     if (emailTimeoutRef.current) {
       clearTimeout(emailTimeoutRef.current);
@@ -111,7 +122,7 @@ export function PersonalInfoForm({ allFields, onEmailAvailabilityChange }: Perso
     };
   // Disable the ESLint exhaustive-deps warning since we're handling dependencies manually
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [watchedEmail]); // Only re-run if the email changes
+  }, [watchedEmail, disableEmail]); // Added disableEmail as a dependency
 
   return (
     <div className="form-containerform-step-container">
@@ -170,13 +181,18 @@ export function PersonalInfoForm({ allFields, onEmailAvailabilityChange }: Perso
             className="form-input"
             placeholder="your.email@example.com"
             {...register('email')}
+            disabled={disableEmail}
+            readOnly={disableEmail}
           />
-          {emailAvailabilityMessage && (
+          {disableEmail && (
+            <p className="field-note">Email cannot be changed as it's linked to your account.</p>
+          )}
+          {!disableEmail && emailAvailabilityMessage && (
             <p className={`availability-message ${emailAvailable ? 'success' : 'error'}`}>
               {isCheckingEmail ? 'Checking...' : emailAvailabilityMessage}
             </p>
           )}
-          {shouldShowError('email') && (
+          {shouldShowError('email') && !disableEmail && (
             <p className="error-message">{allErrors.email?.message}</p>
           )}
         </div>

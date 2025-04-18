@@ -9,6 +9,7 @@ import { AddressQualificationsForm } from './AddressQualificationsForm';
 import { CompensationForm } from './CompensationForm';
 import { DocumentUploadForm } from './DocumentUploadForm';
 import { submitProfile, saveDraft as saveDraftAPI, getDraft, checkEmailAvailability } from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
 import '../../styles/components/form.css';
 import '../../styles/pages/JobseekerProfile.css';
 
@@ -147,6 +148,7 @@ export function ProfileCreate() {
   const [error, setError] = useState<string | null>(null);
   const [isEmailAvailable, setIsEmailAvailable] = useState<boolean | null>(null);
   const navigate = useNavigate();
+  const { isJobSeeker, user } = useAuth();
 
   // Initialize form methods with zod resolver
   const methods = useForm<JobseekerProfileFormData>({
@@ -158,7 +160,7 @@ export function ProfileCreate() {
       firstName: '',
       lastName: '',
       dob: '',
-      email: '',
+      email: isJobSeeker && user?.email ? user.email : '',
       mobile: '',
       licenseNumber: '',
       passportNumber: '',
@@ -210,6 +212,11 @@ export function ProfileCreate() {
         const { draft, currentStep: savedStep } = await getDraft();
         
         if (draft) {
+          // If user is a jobseeker, preserve their email
+          if (isJobSeeker && user?.email) {
+            draft.email = user.email;
+          }
+          
           // Set form values from draft
           methods.reset(draft);
           // Set current step
@@ -226,7 +233,7 @@ export function ProfileCreate() {
     };
     
     fetchDraft();
-  }, [methods]);
+  }, [methods, isJobSeeker, user]);
 
   // Reset email availability state when moving away from step 1
   useEffect(() => {
@@ -450,19 +457,21 @@ export function ProfileCreate() {
     setError(null);
     
     try {
-      // Check email availability before submission
-      try {
-        const result = await checkEmailAvailability(data.email);
-        if (!result.available) {
-          setError('This email is already in use. Please use a different email to continue.');
+      // Check email availability before submission - skip for jobseekers using their own email
+      if (!isJobSeeker) {
+        try {
+          const result = await checkEmailAvailability(data.email);
+          if (!result.available) {
+            setError('This email is already in use. Please use a different email to continue.');
+            setIsLoading(false);
+            return;
+          }
+        } catch (emailError) {
+          console.error('Error checking email availability:', emailError);
+          setError('Unable to verify email availability. Please try again.');
           setIsLoading(false);
           return;
         }
-      } catch (emailError) {
-        console.error('Error checking email availability:', emailError);
-        setError('Unable to verify email availability. Please try again.');
-        setIsLoading(false);
-        return;
       }
       
       // First save as a draft (without the file)
@@ -514,6 +523,13 @@ export function ProfileCreate() {
       // Submit the complete profile data to the server
       const response = await submitProfile(profileData);
 
+      // If the user is a jobseeker who created their own profile, redirect to verification pending page
+      if (isJobSeeker) {
+        navigate('/profile-verification-pending');
+        return;
+      }
+
+      // For recruiter-created profiles, continue with existing logic
       // Check if a new account was created (only relevant for recruiter-created profiles)
       if (response.accountCreated) {
         // Navigate to the account created page with credentials and profile
@@ -573,6 +589,7 @@ export function ProfileCreate() {
           currentStep={currentStep} 
           allFields={getStepFields(currentStep)} 
           onEmailAvailabilityChange={(isAvailable) => setIsEmailAvailable(isAvailable)}
+          disableEmail={isJobSeeker}
         />;
       case 2:
       case 3:
@@ -586,6 +603,7 @@ export function ProfileCreate() {
           currentStep={1} 
           allFields={getStepFields(1)}
           onEmailAvailabilityChange={(isAvailable) => setIsEmailAvailable(isAvailable)}
+          disableEmail={isJobSeeker}
         />;
     }
   };
