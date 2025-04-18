@@ -136,8 +136,6 @@ select.form-input, .form-select {
 .error-message {
   color: var(--danger);
   font-size: 0.75rem;
-  margin-top: var(--spacing-2);
-  animation: fadeIn 0.3s ease;
 }
 
 /* Form Animation */

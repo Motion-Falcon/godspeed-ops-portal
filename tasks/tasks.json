@@ -4,7 +4,7 @@
       "id": 1,
       "title": "Implement Jobseeker Profile Creation with Security Measures",
       "description": "Develop the 5-step profile creation flow for jobseekers with progressive disclosure form, save-as-draft capability, and all required fields, ensuring proper encryption and logging of sensitive personal information. Include post-submission verification workflow with appropriate status tracking and user redirection.",
-      "status": "in-progress",
+      "status": "done",
       "dependencies": [],
       "priority": "high",
       "details": "Create a 5-step form using React Hook Form (7.51.3) with Zod (3.22.4) for validation. Implement the following sections:\n\nStep 1: Personal Info\n- First Name* (required)\n- Last Name* (required)\n- DOB* (required)\n- Email* (required)\n- Mobile* (required)\n- License Number/Passport Number (at least one required)\n- SIN\n- SIN Expiry\n- Business/HST/GST Number\n- Corporation Name/Number\n\nStep 2: Address\n- Street\n- City\n- Province\n- Postal Code\n\nStep 3: Qualifications\n- Work Preference\n- License Type* (dropdown: None/Forklifter/G/GZ/DZ/AZ/Walk-in Operator/Raymond Reach/Crown Reach/Auditor/GL/Clerk) (required)\n- Experience* (dropdown: 0-6 Months/6-12 Months/1-2 Years/2-3 Years/3-4 Years/4-5 Years/5+ Years) (required)\n- Manual driving? (Yes/No/N/A)\n- Availability* (Full-Time/Part-Time) (required)\n- Weekend availability (Yes/No)\n\nStep 4: Compensation\n- Payrate Type* (Hourly/Daily/Monthly) (required)\n- Bill Rate* (required)\n- Pay Rate* (required)\n- Payment Method* (Cash/Corporation-Cheque/Corporation-Direct Deposit/e-Transfer/etc.) (required)\n- HST/GST (dropdown percentages)\n- Cash Deduction (0-5%)\n- Overtime toggle\n- Overtime hours\n- Overtime Bill Rate\n- Overtime Pay Rate\n\nStep 5: Documents\n- Document Type* (dropdown with 10 options) (required)\n- Title\n- File Upload* (PDF only, 2MB max) (required)\n- Notes\n\nImplement save-as-draft functionality using Supabase (2.39.2) to store partial form data. Add progress tracking between steps to indicate completion status. Enable file uploads for document section with proper validation. Each step should have proper validation for all required fields (marked with *).\n\nPost-Submission Workflow:\n- After successful form submission, display a clear confirmation message indicating the profile is pending verification\n- Add a verification_status field to the jobseeker profile schema (possible values: 'pending', 'verified', 'rejected')\n- Implement conditional routing based on verification status:\n  * If profile is unverified: Show a 'Verification Pending' screen with appropriate messaging\n  * If profile is verified: Redirect user to the jobseeker dashboard\n\nSecurity Considerations:\n- Implement AES-256 encryption for PII (Personal Identifiable Information) including SIN, license numbers, and other sensitive data\n- Ensure all API communications use TLS 1.3\n- Create audit logs for profile creation and updates with proper PII masking\n- Implement proper input sanitization to prevent injection attacks\n- Follow the security guidelines from task 11 for data handling\n\nFollow the existing UI framework for design consistency.",
@@ -104,7 +104,7 @@
           "id": 1,
           "title": "Create Document Metadata Model and Database Structure",
           "description": "Design and implement the database schema for document metadata tracking with proper relationships to user profiles",
-          "status": "pending",
+          "status": "done",
           "dependencies": [],
           "details": "Create a document metadata model in the database that includes fields for: file type, original filename, storage path, upload date, verification status, expiration date, and association with jobseeker profile. Set up appropriate indexes and constraints. Implement database-level access controls and encryption configurations for the document metadata. Create migration scripts for the new tables and relationships."
         },
@@ -112,7 +112,7 @@
           "id": 2,
           "title": "Implement Secure File Upload Component with Validation",
           "description": "Build a frontend component for file uploads with client-side validation and a secure backend endpoint for receiving files",
-          "status": "pending",
+          "status": "done",
           "dependencies": [
             1
           ],
@@ -122,7 +122,7 @@
           "id": 3,
           "title": "Implement File Security Processing and Storage Integration",
           "description": "Create a secure pipeline for processing uploaded files including malware scanning and encryption before storage",
-          "status": "pending",
+          "status": "done",
           "dependencies": [
             2
           ],
@@ -132,7 +132,7 @@
           "id": 4,
           "title": "Build Document Listing and Management Interface",
           "description": "Create a user interface to display uploaded documents with their metadata and status",
-          "status": "pending",
+          "status": "done",
           "dependencies": [
             1,
             3
@@ -143,7 +143,7 @@
           "id": 5,
           "title": "Implement Secure Document Retrieval and Viewing",
           "description": "Create a secure system for retrieving and viewing uploaded documents with proper access controls",
-          "status": "pending",
+          "status": "done",
           "dependencies": [
             3,
             4

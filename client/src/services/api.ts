@@ -332,4 +332,19 @@ export const updateJobseekerStatus = async (id: string, status: 'pending' | 'ver
   }
 };
 
+// Add this function with the other profile-related functions
+export const checkEmailAvailability = async (email: string): Promise<{ available: boolean; email: string }> => {
+  try {
+    const response = await api.get(`/api/profile/check-email`, {
+      params: { email }
+    });
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(error.response.data.error || 'Failed to check email availability');
+    }
+    throw error;
+  }
+};
+
 export default api; 

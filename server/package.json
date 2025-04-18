@@ -11,8 +11,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "create-admin": "ts-node src/scripts/create-admin.ts",
     "lint": "eslint \"src/**/*.{js,ts}\"",
-    "seed": "ts-node src/scripts/seedData.ts",
-    "migrate:documents": "psql -f src/db/migrations/03_documents_array.sql"
+    "seed": "ts-node src/scripts/seedData.ts"
   },
   "keywords": [],
   "author": "",

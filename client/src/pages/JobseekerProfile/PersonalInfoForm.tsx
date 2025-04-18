@@ -1,22 +1,117 @@
 import { useFormContext } from 'react-hook-form';
 import { personalInfoSchema } from './ProfileCreate';
 import { z } from 'zod';
+import { useState, useEffect, useRef } from 'react';
+import { checkEmailAvailability } from '../../services/api';
 
 type PersonalInfoFormData = z.infer<typeof personalInfoSchema>;
 
 interface PersonalInfoFormProps {
   currentStep: number;
   allFields: string[];
+  onEmailAvailabilityChange?: (isAvailable: boolean | null) => void;
 }
 
-export function PersonalInfoForm({ allFields }: PersonalInfoFormProps) {
-  const { register, formState } = useFormContext<PersonalInfoFormData>();
+export function PersonalInfoForm({ allFields, onEmailAvailabilityChange }: PersonalInfoFormProps) {
+  const { register, formState, watch, setError, clearErrors } = useFormContext<PersonalInfoFormData>();
   const { errors: allErrors } = formState;
+  
+  // Add state for email validation
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
+  const [emailAvailabilityMessage, setEmailAvailabilityMessage] = useState<string | null>(null);
+  const [emailAvailable, setEmailAvailable] = useState<boolean | null>(null);
+  
+  // Watch the email field for changes
+  const watchedEmail = watch('email');
+  const emailTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // Function to check if we should show an error for a specific field
   const shouldShowError = (fieldName: string) => {
     return allFields.includes(fieldName) && allErrors[fieldName as keyof typeof allErrors];
   };
+
+  // Effect to check email availability when the email changes
+  useEffect(() => {
+    // Clear any previous timeout
+    if (emailTimeoutRef.current) {
+      clearTimeout(emailTimeoutRef.current);
+    }
+    
+    // Don't do anything if the email is empty or invalid format
+    if (!watchedEmail || watchedEmail.length < 5 || !watchedEmail.includes('@')) {
+      setEmailAvailabilityMessage(null);
+      setEmailAvailable(null);
+      // Only call the callback if our state is actually changing to avoid render loops
+      if (emailAvailable !== null) {
+        if (onEmailAvailabilityChange) {
+          onEmailAvailabilityChange(null);
+        }
+      }
+      return;
+    }
+    
+    // Store the current email to compare later to avoid stale closures
+    const currentEmail = watchedEmail;
+    
+    setIsCheckingEmail(true);
+    setEmailAvailabilityMessage('Checking availability...');
+    
+    // Set a timeout to delay the API call (similar to debounce)
+    emailTimeoutRef.current = setTimeout(async () => {
+      // Skip the API call if the component has unmounted or email changed
+      if (currentEmail !== watchedEmail) {
+        return;
+      }
+      
+      try {
+        const result = await checkEmailAvailability(currentEmail);
+        
+        // Verify the email hasn't changed during the API call
+        if (currentEmail !== watchedEmail) {
+          return;
+        }
+        
+        setEmailAvailable(result.available);
+        
+        // Notify parent component about availability change
+        // Only if the value actually changed to prevent re-render loops
+        if (onEmailAvailabilityChange) {
+          onEmailAvailabilityChange(result.available);
+        }
+        
+        if (result.available) {
+          clearErrors('email');
+          setEmailAvailabilityMessage('✓ Email is available');
+        } else {
+          setError('email', { 
+            type: 'manual', 
+            message: 'This email is already in use by another profile' 
+          });
+          setEmailAvailabilityMessage('✗ Email is already in use');
+        }
+      } catch (error) {
+        console.error('Error checking email:', error);
+        setEmailAvailabilityMessage(null);
+        setEmailAvailable(null);
+        
+        // Only call if our value is changing to prevent loops
+        if (emailAvailable !== null && onEmailAvailabilityChange) {
+          onEmailAvailabilityChange(null);
+        }
+      } finally {
+        setIsCheckingEmail(false);
+      }
+    }, 500); // 500ms delay
+    
+    // Clean up timeout on unmount
+    return () => {
+      if (emailTimeoutRef.current) {
+        clearTimeout(emailTimeoutRef.current);
+      }
+    };
+  // Disable the ESLint exhaustive-deps warning since we're handling dependencies manually
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watchedEmail]); // Only re-run if the email changes
 
   return (
     <div className="form-containerform-step-container">
@@ -76,6 +171,11 @@ export function PersonalInfoForm({ allFields }: PersonalInfoFormProps) {
             placeholder="your.email@example.com"
             {...register('email')}
           />
+          {emailAvailabilityMessage && (
+            <p className={`availability-message ${emailAvailable ? 'success' : 'error'}`}>
+              {isCheckingEmail ? 'Checking...' : emailAvailabilityMessage}
+            </p>
+          )}
           {shouldShowError('email') && (
             <p className="error-message">{allErrors.email?.message}</p>
           )}

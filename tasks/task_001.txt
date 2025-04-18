@@ -1,6 +1,6 @@
 # Task ID: 1
 # Title: Implement Jobseeker Profile Creation with Security Measures
-# Status: in-progress
+# Status: done
 # Dependencies: None
 # Priority: high
 # Description: Develop the 5-step profile creation flow for jobseekers with progressive disclosure form, save-as-draft capability, and all required fields, ensuring proper encryption and logging of sensitive personal information. Include post-submission verification workflow with appropriate status tracking and user redirection.

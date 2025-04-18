@@ -8,7 +8,7 @@ import { PersonalInfoForm } from './PersonalInfoForm';
 import { AddressQualificationsForm } from './AddressQualificationsForm';
 import { CompensationForm } from './CompensationForm';
 import { DocumentUploadForm } from './DocumentUploadForm';
-import { submitProfile, saveDraft as saveDraftAPI, getDraft } from '../../services/api';
+import { submitProfile, saveDraft as saveDraftAPI, getDraft, checkEmailAvailability } from '../../services/api';
 import '../../styles/components/form.css';
 import '../../styles/pages/JobseekerProfile.css';
 
@@ -145,6 +145,7 @@ export function ProfileCreate() {
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isEmailAvailable, setIsEmailAvailable] = useState<boolean | null>(null);
   const navigate = useNavigate();
 
   // Initialize form methods with zod resolver
@@ -227,11 +228,85 @@ export function ProfileCreate() {
     fetchDraft();
   }, [methods]);
 
+  // Reset email availability state when moving away from step 1
+  useEffect(() => {
+    // Only execute this effect if the step changes
+    if (currentStep !== 1) {
+      // We only need to reset if it's not already null
+      if (isEmailAvailable !== null) {
+        setIsEmailAvailable(null); // Reset when moving to other steps
+      }
+    } else if (currentStep === 1) {
+      // If returning to step 1, only check if:
+      // 1. We have a valid email
+      // 2. We haven't checked already (isEmailAvailable is null)
+      const currentEmail = methods.getValues('email');
+      if (currentEmail && currentEmail.includes('@') && currentEmail.length > 5 && isEmailAvailable === null) {
+        // Use a flag to prevent duplicate calls
+        let isMounted = true;
+        
+        // Check email availability
+        const checkEmail = async () => {
+          try {
+            const result = await checkEmailAvailability(currentEmail);
+            // Only update state if component is still mounted
+            if (isMounted) {
+              setIsEmailAvailable(result.available);
+            }
+          } catch (error) {
+            console.error('Error checking email availability:', error);
+            // Only update state if component is still mounted
+            if (isMounted) {
+              setIsEmailAvailable(null);
+            }
+          }
+        };
+        
+        checkEmail();
+        
+        // Clean up function
+        return () => {
+          isMounted = false;
+        };
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentStep]); // Only depend on currentStep changes
+
   const totalSteps = 5;
 
   // Function to save form data to draft
   const saveDraft = async () => {
     try {
+      // Check email availability first if on first step
+      if (currentStep === 1) {
+        const email = methods.getValues('email');
+        if (email) {
+          // Only check if not already validated as available
+          if (isEmailAvailable !== true) {
+            try {
+              setIsLoading(true);
+              const result = await checkEmailAvailability(email);
+              setIsEmailAvailable(result.available);
+              
+              if (!result.available) {
+                setError('This email is already in use. Please use a different email to continue.');
+                setIsLoading(false);
+                return false;
+              }
+            } catch (emailError) {
+              console.error('Error checking email availability:', emailError);
+              setError('Unable to verify email availability. Please try again.');
+              setIsLoading(false);
+              return false;
+            }
+          }
+        } else {
+          setError('Email is required to save draft.');
+          return false;
+        }
+      }
+
       setIsLoading(true);
       setError(null); // Clear previous errors
       const formData = methods.getValues();
@@ -321,10 +396,44 @@ export function ProfileCreate() {
   // Function to handle "Continue" button click
   const handleContinue = async () => {
     if (currentStep < totalSteps) {
-      // Save current progress as draft
-      await saveDraft();
-      // Move to next step
-      setCurrentStep(prevStep => prevStep + 1);
+      // For the first step, explicitly verify email availability
+      if (currentStep === 1) {
+        const email = methods.getValues('email');
+        
+        if (email) {
+          try {
+            setIsLoading(true);
+            const result = await checkEmailAvailability(email);
+            setIsEmailAvailable(result.available);
+            
+            if (!result.available) {
+              setError('This email is already in use. Please use a different email to continue.');
+              setIsLoading(false);
+              return;
+            }
+            
+            // If email is available, proceed to save and continue
+            const saveSuccess = await saveDraft();
+            if (saveSuccess) {
+              setCurrentStep(prevStep => prevStep + 1);
+            }
+          } catch (error) {
+            console.error('Error checking email availability:', error);
+            setError('Unable to verify email availability. Please try again.');
+            setIsLoading(false);
+          }
+        } else {
+          // If no email provided, trigger validation errors
+          await methods.trigger('email');
+          setError('Email is required to continue.');
+        }
+      } else {
+        // For other steps, proceed with normal save and continue
+        const saveSuccess = await saveDraft();
+        if (saveSuccess) {
+          setCurrentStep(prevStep => prevStep + 1);
+        }
+      }
     }
   };
 
@@ -341,6 +450,21 @@ export function ProfileCreate() {
     setError(null);
     
     try {
+      // Check email availability before submission
+      try {
+        const result = await checkEmailAvailability(data.email);
+        if (!result.available) {
+          setError('This email is already in use. Please use a different email to continue.');
+          setIsLoading(false);
+          return;
+        }
+      } catch (emailError) {
+        console.error('Error checking email availability:', emailError);
+        setError('Unable to verify email availability. Please try again.');
+        setIsLoading(false);
+        return;
+      }
+      
       // First save as a draft (without the file)
       // We need the user ID for the file path
       const { data: { user } } = await supabase.auth.getUser();
@@ -426,7 +550,11 @@ export function ProfileCreate() {
   const renderStep = () => {
     switch (currentStep) {
       case 1:
-        return <PersonalInfoForm currentStep={currentStep} allFields={getStepFields(currentStep)} />;
+        return <PersonalInfoForm 
+          currentStep={currentStep} 
+          allFields={getStepFields(currentStep)} 
+          onEmailAvailabilityChange={(isAvailable) => setIsEmailAvailable(isAvailable)}
+        />;
       case 2:
       case 3:
         return <AddressQualificationsForm currentStep={currentStep} allFields={getStepFields(currentStep)} />;
@@ -435,7 +563,11 @@ export function ProfileCreate() {
       case 5:
         return <DocumentUploadForm currentStep={currentStep} allFields={getStepFields(currentStep)} />;
       default:
-        return <PersonalInfoForm currentStep={1} allFields={getStepFields(1)} />;
+        return <PersonalInfoForm 
+          currentStep={1} 
+          allFields={getStepFields(1)}
+          onEmailAvailabilityChange={(isAvailable) => setIsEmailAvailable(isAvailable)}
+        />;
     }
   };
 
@@ -486,6 +618,15 @@ export function ProfileCreate() {
         </div>
       )}
 
+      {currentStep === 1 && isEmailAvailable === false && !error && (
+        <div className="error-container">
+          <div className="error-message">
+            <i className="fas fa-exclamation-circle"></i>
+            <span>The email address is already in use. Please use a different email to continue.</span>
+          </div>
+        </div>
+      )}
+
       {isLoading ? (
         <div className="loading-indicator">checking saved draft...</div>
       ) : (
@@ -512,7 +653,8 @@ export function ProfileCreate() {
                   type="button"
                   className="button secondary draft-button"
                   onClick={() => saveDraft()}
-                  disabled={isLoading}
+                  disabled={isLoading || (currentStep === 1 && isEmailAvailable === false)}
+                  title={currentStep === 1 && isEmailAvailable === false ? 'Email is already in use. Please choose a different email.' : ''}
                 >
                   Save Draft
                 </button>
@@ -525,6 +667,12 @@ export function ProfileCreate() {
                       // Get current values for debugging
                       const values = methods.getValues();
                       console.log("Current form values:", values);
+                      
+                      // If on step 1 and email is not available, prevent continuing
+                      if (currentStep === 1 && isEmailAvailable === false) {
+                        setError('This email is already in use. Please use a different email to continue.');
+                        return;
+                      }
                       
                       // Custom validation based on the current step
                       let isValid = false;

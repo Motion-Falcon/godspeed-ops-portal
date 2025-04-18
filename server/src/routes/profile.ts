@@ -62,6 +62,26 @@ router.post('/submit',
         });
       }
 
+      // Check if the email already exists in jobseeker_profiles table
+      const { data: existingProfileByEmail, error: emailCheckError } = await supabase
+        .from('jobseeker_profiles')
+        .select('id, email')
+        .eq('email', profileData.email)
+        .maybeSingle();
+
+      if (emailCheckError) {
+        console.error('Error checking for existing email:', emailCheckError);
+        return res.status(500).json({ error: 'Failed to validate email uniqueness' });
+      }
+
+      // If we're creating a new profile and the email already exists, return an error
+      if (existingProfileByEmail) {
+        return res.status(409).json({ 
+          error: 'A profile with this email already exists',
+          field: 'email'
+        });
+      }
+
       // Encrypt sensitive data before storing
       const encryptedData = { ...profileData };
       Object.keys(SENSITIVE_FIELDS).forEach(field => {
@@ -72,11 +92,11 @@ router.post('/submit',
 
       // Prepare final profile data with proper field names
       const finalProfileData = {
-        user_id: userId,
+        user_id: userId, // This is now the creator's ID, not the unique identifier
         first_name: encryptedData.firstName,
         last_name: encryptedData.lastName,
         dob: encryptedData.dob,
-        email: encryptedData.email,
+        email: encryptedData.email, // This will be the unique identifier
         mobile: encryptedData.mobile,
         license_number: encryptedData.licenseNumber,
         passport_number: encryptedData.passportNumber,
@@ -111,18 +131,18 @@ router.post('/submit',
         documents: encryptedData.documents || [],
         // Set verification status to pending
         verification_status: 'pending',
-        // Add the user ID of the creator
+        // Add the user ID of the creator (typically a recruiter)
         created_by_user_id: userId, 
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
 
-      // Create or update profile in database
+      // Create a new profile in database - use insert instead of upsert
+      // since we've already checked for email uniqueness
       const { data, error } = await supabase
         .from('jobseeker_profiles')
-        .upsert([finalProfileData], { 
-          onConflict: 'user_id'
-        });
+        .insert([finalProfileData])
+        .select();
 
       if (error) {
         console.error('Error creating profile:', error);
@@ -416,6 +436,49 @@ router.get('/draft',
       });
     } catch (error) {
       console.error('Draft fetch error:', error);
+      return res.status(500).json({ error: 'An unexpected error occurred' });
+    }
+  }
+);
+
+/**
+ * Check if email is available (not already in use by a jobseeker profile)
+ * GET /api/profile/check-email
+ */
+router.get('/check-email', 
+  authenticateToken,
+  apiRateLimiter,
+  async (req: Request, res: Response) => {
+    try {
+      if (!req.user || !req.user.id) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      const { email } = req.query;
+      
+      if (!email || typeof email !== 'string') {
+        return res.status(400).json({ error: 'Email parameter is required' });
+      }
+      
+      // Check if the email already exists in jobseeker_profiles table
+      const { data: existingProfile, error: lookupError } = await supabase
+        .from('jobseeker_profiles')
+        .select('id')
+        .eq('email', email)
+        .maybeSingle();
+
+      if (lookupError) {
+        console.error('Error checking email availability:', lookupError);
+        return res.status(500).json({ error: 'Failed to check email availability' });
+      }
+
+      // Return availability status
+      return res.status(200).json({ 
+        available: !existingProfile,
+        email: email
+      });
+    } catch (error) {
+      console.error('Email check error:', error);
       return res.status(500).json({ error: 'An unexpected error occurred' });
     }
   }
