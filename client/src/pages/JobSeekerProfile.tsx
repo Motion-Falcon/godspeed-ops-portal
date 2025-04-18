@@ -167,9 +167,27 @@ export function JobSeekerProfile() {
     
     try {
       setUpdateStatus('Updating status...');
-      const { profile: updatedProfileData } = await updateJobseekerStatus(id, newStatus);
+      const response = await updateJobseekerStatus(id, newStatus);
       
-      setProfile(updatedProfileData);
+      // Check the structure of the response to find the correct property
+      console.log('Status update response:', response);
+      
+      // If response includes profile data with the updated status
+      if (response.profile) {
+        // Make sure we preserve the correct structure
+        setProfile({
+          ...profile,
+          ...response.profile,
+          verificationStatus: response.profile.status || response.profile.verificationStatus || newStatus
+        });
+      } else {
+        // If direct response or unknown structure, just update the local status
+        setProfile({
+          ...profile,
+          verificationStatus: newStatus
+        });
+      }
+      
       setUpdateStatus(`Profile status updated to ${newStatus}`);
       
       setTimeout(() => setUpdateStatus(null), 3000);
@@ -182,9 +200,9 @@ export function JobSeekerProfile() {
   };
 
   const getStatusIcon = () => {
-    if (!profile?.verificationStatus) return null;
+    const status = profile?.verificationStatus || 'pending';
     
-    switch (profile.verificationStatus) {
+    switch (status) {
       case 'verified':
         return <CheckCircle className="status-icon verified" />;
       case 'rejected':
@@ -192,7 +210,7 @@ export function JobSeekerProfile() {
       case 'pending':
         return <Clock className="status-icon pending" />;
       default:
-        return null;
+        return <Clock className="status-icon pending" />; // Default to pending icon
     }
   };
 
@@ -464,7 +482,7 @@ export function JobSeekerProfile() {
           <div className="profile-banner">
             <div className="profile-status">
               {getStatusIcon()}
-              <span className={`status-text ${profile.verificationStatus}`}>
+              <span className={`status-text ${profile.verificationStatus || 'pending'}`}>
                 {(profile.verificationStatus || 'pending').charAt(0).toUpperCase() + (profile.verificationStatus || 'pending').slice(1)}
               </span>
             </div>
