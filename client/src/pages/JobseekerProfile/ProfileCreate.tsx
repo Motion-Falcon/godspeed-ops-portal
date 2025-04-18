@@ -512,10 +512,29 @@ export function ProfileCreate() {
       }
 
       // Submit the complete profile data to the server
-      await submitProfile(profileData);
+      const response = await submitProfile(profileData);
 
-      // Navigate to verification pending page
-      navigate('/profile-verification-pending');
+      // Check if a new account was created (only relevant for recruiter-created profiles)
+      if (response.accountCreated) {
+        // Navigate to the account created page with credentials and profile
+        navigate('/profile-account-created', { 
+          state: { 
+            email: response.email,
+            password: response.password,
+            profile: response.profile,
+            accountCreated: true
+          }
+        });
+      } else {
+        // Navigate to account created page with just the profile data
+        navigate('/profile-account-created', { 
+          state: { 
+            email: profileData.email,
+            profile: response.profile,
+            accountCreated: false
+          }
+        });
+      }
     } catch (error) {
       console.error('Form submission error:', error); // Log detailed error
       if (error instanceof Error) {

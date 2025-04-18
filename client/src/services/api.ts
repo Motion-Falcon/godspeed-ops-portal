@@ -196,8 +196,16 @@ export const submitProfile = async (profileData: ProfileData) => {
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Failed to submit profile');
+      // Log the error details for debugging
+      console.error('Profile submission error details:', error.response.data);
+      
+      // Return a more specific error message if available
+      const errorMessage = error.response.data.error || 
+                          (error.response.status === 409 ? 'A profile with this email already exists' : 'Failed to submit profile');
+      
+      throw new Error(errorMessage);
     }
+    // For non-Axios errors, rethrow
     throw error;
   }
 };

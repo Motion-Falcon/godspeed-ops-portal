@@ -6,6 +6,7 @@ import dotenv from 'dotenv';
 import { encrypt, decrypt } from '../utils/encryption.js';
 import { createLog } from '../utils/auditLogger.js';
 import { ProfileData, Document, DbJobseekerProfile } from '../types.js';
+import crypto from 'crypto';
 
 dotenv.config();
 
@@ -82,6 +83,103 @@ router.post('/submit',
         });
       }
 
+      // Response data - will contain user creation info if needed
+      const responseData: {
+        success: boolean;
+        message: string;
+        accountCreated?: boolean;
+        email?: string;
+        password?: string;
+      } = {
+        success: true,
+        message: 'Profile created successfully'
+      };
+
+      // Check if a user account exists with the submitted email
+      let profileUserId = ""; // Default to empty string
+      try {
+        // Execute a custom SQL query to find a user with the given email
+        const { data: userByEmail, error: userLookupError } = await supabase.rpc(
+          'get_user_id_by_email',
+          { user_email: profileData.email }
+        );
+
+        if (userLookupError) {
+          console.error('Error looking up user by email:', userLookupError);
+          // Continue with profile creation using creator's ID
+        } else if (userByEmail && userByEmail !== null) {
+          // If a user with the provided email exists, use their ID
+          profileUserId = userByEmail;
+          console.log(`Found existing user account for email ${profileData.email}, using ID: ${profileUserId}`);
+        } else {
+          console.log(`No existing user account found for email ${profileData.email}, creating new account`);
+          
+          // Generate a random password that meets password validation requirements
+          const generateSecurePassword = () => {
+            // Ensure we have at least one of each required character type
+            const uppercaseLetter = String.fromCharCode(65 + Math.floor(Math.random() * 26)); // A-Z
+            const lowercaseLetter = String.fromCharCode(97 + Math.floor(Math.random() * 26)); // a-z
+            const number = Math.floor(Math.random() * 10).toString(); // 0-9
+            
+            // Generate 5 more random characters (can be any of uppercase, lowercase, or numbers)
+            const remainingLength = 5;
+            let remainingChars = '';
+            const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            
+            for (let i = 0; i < remainingLength; i++) {
+              remainingChars += characters.charAt(Math.floor(Math.random() * characters.length));
+            }
+            
+            // Combine all parts and shuffle
+            const unshuffled = uppercaseLetter + lowercaseLetter + number + remainingChars;
+            const shuffled = unshuffled.split('').sort(() => 0.5 - Math.random()).join('');
+            
+            return shuffled;
+          };
+          
+          // Replace the randomPassword generation with our new function
+          const randomPassword = generateSecurePassword();
+          
+          // Create a new user account
+          const { data: newUser, error: signupError } = await supabase.auth.signUp({
+            email: profileData.email,
+            password: randomPassword,
+            options: {
+              data: {
+                name: `${profileData.firstName} ${profileData.lastName}`,
+                user_type: 'jobseeker',
+              },
+            },
+          });
+          
+          if (signupError) {
+            console.error('Error creating user account:', signupError);
+            profileUserId = userId; // Fallback to creator's ID
+          } else if (newUser?.user) {
+            profileUserId = newUser.user.id;
+            console.log(`Created new user account with ID: ${profileUserId}`);
+            
+            // Add account information to the response
+            responseData.accountCreated = true;
+            responseData.email = profileData.email;
+            responseData.password = randomPassword;
+          } else {
+            console.error('User creation returned no user');
+            profileUserId = userId; // Fallback to creator's ID
+          }
+        }
+      } catch (userLookupError) {
+        console.error('Error looking up user by email:', userLookupError);
+        // Continue with profile creation using creator's ID
+        profileUserId = userId;
+      }
+      
+      // If no user ID is set, use creator's ID as fallback
+      if (!profileUserId) {
+        profileUserId = userId;
+        console.log(`Using creator's ID as fallback: ${profileUserId}`);
+      }
+
       // Encrypt sensitive data before storing
       const encryptedData = { ...profileData };
       Object.keys(SENSITIVE_FIELDS).forEach(field => {
@@ -92,7 +190,7 @@ router.post('/submit',
 
       // Prepare final profile data with proper field names
       const finalProfileData = {
-        user_id: userId, // This is now the creator's ID, not the unique identifier
+        user_id: profileUserId, // This is now the jobseeker's ID if found, or creator's ID if not
         first_name: encryptedData.firstName,
         last_name: encryptedData.lastName,
         dob: encryptedData.dob,
@@ -149,6 +247,8 @@ router.post('/submit',
         return res.status(500).json({ error: 'Failed to create profile' });
       }
 
+      console.log(`Profile created with user_id: ${profileUserId}, creator_id: ${userId}, email: ${profileData.email}`);
+
       // Create audit log for profile submission (with PII masking)
       await createLog({
         userId,
@@ -173,9 +273,10 @@ router.post('/submit',
         .delete()
         .eq('user_id', userId);
 
-      return res.status(200).json({ 
-        success: true, 
-        message: 'Profile created successfully' 
+      // Include the created profile data in the response
+      return res.status(200).json({
+        ...responseData,
+        profile: data && data.length > 0 ? data[0] : null
       });
     } catch (error) {
       console.error('Profile creation error:', error);

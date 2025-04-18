@@ -10,6 +10,7 @@ import { ForgotPassword } from './pages/ForgotPassword';
 import { ResetPassword } from './pages/ResetPassword';
 import { Dashboard } from './pages/Dashboard';
 import { ProfileCreate } from './pages/JobseekerProfile/ProfileCreate';
+import { ProfileAccountCreated } from './pages/JobseekerProfile/ProfileAccountCreated';
 import { JobSeekersList } from './pages/JobSeekersList';
 import { JobSeekerProfile } from './pages/JobSeekerProfile';
 import { GeometricShapes } from './components/GeometricShapes';
@@ -38,6 +39,7 @@ function App() {
             <Route element={<ProtectedRoute />}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/profile/create" element={<ProfileCreate />} />
+              <Route path="/profile-account-created" element={<ProfileAccountCreated />} />
               <Route path="/jobseekers" element={<JobSeekersList />} />
               <Route path="/jobseekers/:id" element={<JobSeekerProfile />} />
             </Route>
