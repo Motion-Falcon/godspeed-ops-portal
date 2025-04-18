@@ -98,7 +98,7 @@ export const updatePasswordAPI = async (password: string) => {
 };
 
 export const resendVerificationEmailAPI = async (email: string) => {
-  const response = await fetch(`${API_URL}/auth/resend-verification`, {
+  const response = await fetch(`${API_URL}/api/auth/resend-verification`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

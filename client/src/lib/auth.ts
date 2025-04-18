@@ -1,5 +1,5 @@
 import { supabase } from './supabaseClient';
-import type { User } from '@supabase/supabase-js';
+import type { User, AuthError } from '@supabase/supabase-js';
 import { resendVerificationEmailAPI, updatePasswordAPI } from '../services/api';
 
 // Register a new user
@@ -42,17 +42,40 @@ export const loginUser = async (
     password,
   });
   
-  if (error) throw error;
+  if (error) {
+    // Check specifically for the email_not_confirmed error
+    if (error.message === "Email not confirmed" || (error as AuthError).code === "email_not_confirmed") {
+      // Return a special response indicating email is not verified
+      return { 
+        user: null, 
+        session: null, 
+        emailVerified: false,
+        email // Return the email so we can use it for the verification page
+      };
+    }
+    // Otherwise throw the error as usual
+    throw error;
+  }
   
-  if (rememberMe) {
+  if (rememberMe && data.session) {
     // Configure persistent session (30 days)
     await supabase.auth.setSession({
-      access_token: data.session?.access_token || '',
-      refresh_token: data.session?.refresh_token || '',
+      access_token: data.session.access_token || '',
+      refresh_token: data.session.refresh_token || '',
     });
   }
   
-  return data;
+  return {
+    ...data,
+    emailVerified: true
+  };
+};
+
+// Check if user email is verified
+export const isEmailVerified = async () => {
+  const { data } = await supabase.auth.getUser();
+  // email_confirmed_at will be null if the email isn't verified
+  return !!data.user?.email_confirmed_at;
 };
 
 // Logout user
