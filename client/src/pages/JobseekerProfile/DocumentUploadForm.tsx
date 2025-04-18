@@ -327,6 +327,7 @@ function DocumentItem({
               {localPdfUrl && (
                 <>
                   <button 
+                    type="button"
                     onClick={handlePreviewFile} 
                     className="button primary"
                     disabled={isLoading || isPreviewLoading}
@@ -334,6 +335,7 @@ function DocumentItem({
                     <Eye size={16} /> Preview
                   </button>
                   <button 
+                    type="button"
                     onClick={handleReplaceFile} 
                     className="button secondary"
                     disabled={isLoading}

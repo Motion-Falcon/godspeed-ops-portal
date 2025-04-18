@@ -82,17 +82,32 @@ const PDFViewerModal: React.FC<PDFViewerModalProps> = ({
 
   if (!isOpen) return null;
 
+  // Prevent form submission if this modal is inside a form
+  const preventFormSubmission = (e: React.FormEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    return false;
+  };
+
   return (
-    <div className="pdf-modal-overlay" onClick={onClose}>
-      <div className="pdf-modal-content" onClick={e => e.stopPropagation()}>
+    <div 
+      className="pdf-modal-overlay" 
+      onClick={onClose}
+      onSubmit={preventFormSubmission}
+    >
+      <div 
+        className="pdf-modal-content" 
+        onClick={e => e.stopPropagation()}
+        onSubmit={preventFormSubmission}
+      >
         <div className="pdf-modal-header">
           <h3 className="pdf-modal-title">{documentName}</h3>
           <div className="pdf-modal-zoom-controls">
-            <button className="pdf-zoom-button" onClick={zoomOut} title="Zoom out">-</button>
-            <button className="pdf-zoom-button" onClick={resetZoom} title="Reset zoom">100%</button>
-            <button className="pdf-zoom-button" onClick={zoomIn} title="Zoom in">+</button>
+            <button type="button" className="pdf-zoom-button" onClick={zoomOut} title="Zoom out">-</button>
+            <button type="button" className="pdf-zoom-button" onClick={resetZoom} title="Reset zoom">100%</button>
+            <button type="button" className="pdf-zoom-button" onClick={zoomIn} title="Zoom in">+</button>
           </div>
-          <button className="pdf-modal-close-btn" onClick={onClose}>
+          <button type="button" className="pdf-modal-close-btn" onClick={onClose}>
             <X size={20} />
           </button>
         </div>
@@ -135,6 +150,7 @@ const PDFViewerModal: React.FC<PDFViewerModalProps> = ({
           <div className="pdf-modal-footer">
             <div className="pdf-pagination">
               <button 
+                type="button"
                 className="pdf-nav-button" 
                 onClick={goToPrevPage}
                 disabled={pageNumber <= 1}
@@ -145,6 +161,7 @@ const PDFViewerModal: React.FC<PDFViewerModalProps> = ({
                 Page {pageNumber} of {numPages}
               </span>
               <button 
+                type="button"
                 className="pdf-nav-button" 
                 onClick={goToNextPage}
                 disabled={pageNumber >= (numPages || 1)}
