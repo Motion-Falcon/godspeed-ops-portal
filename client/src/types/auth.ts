@@ -8,6 +8,7 @@ export interface AppUser extends User {
   user_metadata: {
     name: string;
     user_type: UserRole;
+    hasProfile?: boolean;
     [key: string]: unknown;
   };
 }
@@ -44,4 +45,12 @@ export function isRecruiter(user: User | null): boolean {
 // Check if user is jobseeker
 export function isJobSeeker(user: User | null): boolean {
   return getUserType(user) === 'jobseeker';
+}
+
+// Check if jobseeker has created a profile
+export function hasJobseekerProfile(user: User | null): boolean {
+  if (!user || !isJobSeeker(user)) return false;
+  
+  const metadata = user.user_metadata || {};
+  return !!metadata.hasProfile;
 } 

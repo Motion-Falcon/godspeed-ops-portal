@@ -2,7 +2,10 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '@supabase/supabase-js';
 import { getCurrentUser, onAuthStateChange, logoutUser } from '../lib/auth';
 import { supabase } from '../lib/supabaseClient';
-import { UserRole, getUserType, isAdmin, isRecruiter, isJobSeeker } from '../types/auth';
+import { UserRole, getUserType, isAdmin, isRecruiter, isJobSeeker, hasJobseekerProfile } from '../types/auth';
+
+// Define possible verification statuses
+export type VerificationStatus = 'pending' | 'verified' | 'rejected' | 'not_created';
 
 type AuthContextType = {
   user: User | null;
@@ -12,6 +15,9 @@ type AuthContextType = {
   isAdmin: boolean;
   isRecruiter: boolean;
   isJobSeeker: boolean;
+  profileVerificationStatus: VerificationStatus;
+  hasProfile: boolean;
+  refetchProfileStatus: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType>({
@@ -22,17 +28,110 @@ const AuthContext = createContext<AuthContextType>({
   isAdmin: false,
   isRecruiter: false,
   isJobSeeker: true,
+  profileVerificationStatus: 'not_created',
+  hasProfile: false,
+  refetchProfileStatus: async () => {},
 });
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [profileVerificationStatus, setProfileVerificationStatus] = useState<VerificationStatus>('not_created');
+  const [hasProfile, setHasProfile] = useState(false);
   
   // Compute user type and role flags
   const userType = getUserType(user);
   const isUserAdmin = isAdmin(user);
   const isUserRecruiter = isRecruiter(user);
   const isUserJobSeeker = isJobSeeker(user);
+  const userHasProfile = hasJobseekerProfile(user);
+
+  // Function to fetch jobseeker profile status
+  const fetchProfileStatus = async (userId: string) => {
+    if (!userId || !isUserJobSeeker) {
+      setProfileVerificationStatus('not_created');
+      setHasProfile(false);
+      return;
+    }
+
+    // First check if the user metadata indicates they have a profile
+    // This can help avoid unnecessary database calls
+    if (user?.user_metadata?.hasProfile) {
+      setHasProfile(true);
+    } else {
+      // Default to false until we confirm from the database
+      setHasProfile(false);
+    }
+
+    try {
+      const { data: profile, error } = await supabase
+        .from('jobseeker_profiles')
+        .select('verification_status')
+        .eq('user_id', userId)
+        .single();
+
+      if (error) {
+        console.error('Error fetching profile status:', error);
+        setProfileVerificationStatus('not_created');
+        setHasProfile(false);
+        
+        // If there was an error but user metadata indicates they have a profile,
+        // update the metadata to match reality
+        if (user?.user_metadata?.hasProfile) {
+          try {
+            await supabase.auth.updateUser({
+              data: { hasProfile: false }
+            });
+          } catch (metadataError) {
+            console.error('Error updating user metadata:', metadataError);
+          }
+        }
+        return;
+      }
+
+      if (profile) {
+        setHasProfile(true);
+        const status = profile.verification_status as VerificationStatus || 'pending';
+        setProfileVerificationStatus(status);
+        
+        // If database shows a profile exists but metadata doesn't reflect this, update it
+        if (!user?.user_metadata?.hasProfile) {
+          try {
+            await supabase.auth.updateUser({
+              data: { hasProfile: true }
+            });
+          } catch (metadataError) {
+            console.error('Error updating user metadata:', metadataError);
+          }
+        }
+      } else {
+        setProfileVerificationStatus('not_created');
+        setHasProfile(false);
+        
+        // If no profile found but metadata says one exists, update metadata
+        if (user?.user_metadata?.hasProfile) {
+          try {
+            await supabase.auth.updateUser({
+              data: { hasProfile: false }
+            });
+          } catch (metadataError) {
+            console.error('Error updating user metadata:', metadataError);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error in fetchProfileStatus:', error);
+      setProfileVerificationStatus('not_created');
+      setHasProfile(false);
+    }
+  };
+
+  // Public method to refetch profile status
+  const refetchProfileStatus = async () => {
+    if (user?.id) {
+      await fetchProfileStatus(user.id);
+    }
+  };
 
   // Validate token on startup and when user changes
   const validateToken = async (user: User | null) => {
@@ -66,6 +165,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return null;
     }
   };
+
+  // Update hasProfile from user metadata when user changes
+  useEffect(() => {
+    // Use hasProfile from metadata as initial value
+    if (user) {
+      const metadataHasProfile = !!user.user_metadata?.hasProfile;
+      setHasProfile(metadataHasProfile);
+    } else {
+      setHasProfile(false);
+    }
+  }, [user]);
+
+  // Fetch profile status when user changes
+  useEffect(() => {
+    if (user?.id && isUserJobSeeker) {
+      fetchProfileStatus(user.id);
+    } else if (!user || !isUserJobSeeker) {
+      setProfileVerificationStatus('not_created');
+      setHasProfile(false);
+    }
+  }, [user?.id, isUserJobSeeker]);
 
   useEffect(() => {
     // Check for existing user session
@@ -108,6 +228,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAdmin: isUserAdmin,
         isRecruiter: isUserRecruiter,
         isJobSeeker: isUserJobSeeker,
+        profileVerificationStatus,
+        hasProfile: userHasProfile || hasProfile, // Use both sources for redundancy
+        refetchProfileStatus,
       }}
     >
       {children}

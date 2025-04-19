@@ -4,9 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { apiRateLimiter, sensitiveRateLimiter, sanitizeInputs } from '../middleware/security.js';
 import dotenv from 'dotenv';
 import { encrypt, decrypt } from '../utils/encryption.js';
-import { createLog } from '../utils/auditLogger.js';
 import { ProfileData, Document, DbJobseekerProfile } from '../types.js';
-import crypto from 'crypto';
 
 dotenv.config();
 
@@ -148,6 +146,7 @@ router.post('/submit',
               data: {
                 name: `${profileData.firstName} ${profileData.lastName}`,
                 user_type: 'jobseeker',
+                hasProfile: true, // Set hasProfile flag for new users
               },
             },
           });
@@ -247,25 +246,25 @@ router.post('/submit',
         return res.status(500).json({ error: 'Failed to create profile' });
       }
 
-      console.log(`Profile created with user_id: ${profileUserId}, creator_id: ${userId}, email: ${profileData.email}`);
+      // Update user metadata to set hasProfile=true
+      try {
+        // Use the profileUserId to update the user metadata
 
-      // Create audit log for profile submission (with PII masking)
-      await createLog({
-        userId,
-        action: 'profile_submit',
-        details: {
-          email: profileData.email,
-          licenseNumber: profileData.licenseNumber ? 'PRESENT' : 'MISSING',
-          passportNumber: profileData.passportNumber ? 'PRESENT' : 'MISSING',
-          sinNumber: profileData.sinNumber ? 'PRESENT' : 'MISSING'
-        },
-        sensitiveFields: {
-          email: true,
-          licenseNumber: true,
-          passportNumber: true,
-          sinNumber: true
-        }
-      }, supabase);
+        // Update user metadata
+        await supabase.auth.admin.updateUserById(
+          profileUserId,
+          { 
+            user_metadata: { 
+              hasProfile: true 
+            } 
+          }
+        );
+      } catch (metadataError) {
+        // Log error but don't fail the profile creation
+        console.error('Error updating user metadata with hasProfile flag:', metadataError);
+      }
+
+      console.log(`Profile created with user_id: ${profileUserId}, creator_id: ${userId}, email: ${profileData.email}`);
 
       // If there was a draft, we can delete it now
       await supabase
@@ -299,15 +298,6 @@ router.get('/',
       }
 
       const userId = req.user.id;
-
-      // Create audit log for profile access
-      await createLog({
-        userId,
-        action: 'profile_access',
-        details: {
-          accessedBy: userId
-        }
-      }, supabase);
 
       // Get profile from database
       const { data, error } = await supabase
@@ -412,19 +402,6 @@ router.patch('/:profileId/verify',
         return res.status(404).json({ error: 'Profile not found' });
       }
 
-      // Create audit log for verification status change
-      await createLog({
-        userId: req.user.id,
-        action: 'profile_verification_update',
-        details: {
-          profileId,
-          previousStatus: 'pending', // Ideally we'd fetch this before update
-          newStatus: status,
-          updatedBy: req.user.id,
-          targetUserId: data[0].user_id
-        }
-      }, supabase);
-
       return res.status(200).json({ 
         success: true,
         message: `Profile verification status updated to ${status}` 
@@ -453,16 +430,6 @@ router.put('/draft',
       const userId = req.user.id;
       const draftData = req.body;
       const currentStep = req.body.currentStep || 1;
-
-      // Create audit log for draft save
-      await createLog({
-        userId,
-        action: 'profile_draft_save',
-        details: {
-          currentStep,
-          hasData: !!draftData
-        }
-      }, supabase);
 
       // Save draft to database
       const { data, error } = await supabase
@@ -520,15 +487,6 @@ router.get('/draft',
         console.error('Error fetching draft:', error);
         return res.status(500).json({ error: 'Failed to fetch draft' });
       }
-
-      // Create audit log for draft access
-      await createLog({
-        userId,
-        action: 'profile_draft_access',
-        details: {
-          draftExists: !!data
-        }
-      }, supabase);
 
       return res.status(200).json({ 
         draft: data ? data.form_data : null,
