@@ -39,6 +39,7 @@ export interface ProfileData {
   
   // Qualifications fields
   workPreference?: string;
+  bio?: string; // Brief professional description (max 100 chars)
   licenseType: string;
   experience: string;
   manualDriving: 'Yes' | 'No' | 'NA';
@@ -92,6 +93,7 @@ export interface DbJobseekerProfile {
   
   // Qualifications fields
   work_preference?: string;
+  bio?: string; // Brief professional description (max 100 chars)
   license_type: string;
   experience: string;
   manual_driving: string;

@@ -30,6 +30,7 @@ interface FullJobseekerProfile {
   province?: string | null;
   postalCode?: string | null;
   workPreference?: string | null;
+  bio?: string | null; // Brief professional description (max 100 chars)
   licenseType?: string | null;
   experience?: string | null;
   manualDriving?: 'NA' | 'Yes' | 'No' | null;
@@ -541,12 +542,13 @@ export function JobSeekerProfile() {
           <div className="qualifications-section section-card">
             <h2 className="section-title">Qualifications</h2>
             <div className="detail-group">
-              {renderDetailItem('Work Preference', profile.workPreference)}
-              {renderDetailItem('License Type', profile.licenseType)}
-              {renderDetailItem('Experience', profile.experience)}
-              {renderDetailItem('Manual Driving', profile.manualDriving)}
-              {renderDetailItem('Availability', profile.availability)}
-              {renderDetailItem('Weekend Availability', profile.weekendAvailability)}
+              {renderDetailItem('Work Preference', profile?.workPreference)}
+              {renderDetailItem('Bio', profile?.bio)}
+              {renderDetailItem('License Type', profile?.licenseType)}
+              {renderDetailItem('Experience', profile?.experience)}
+              {renderDetailItem('Manual Driving', profile?.manualDriving)}
+              {renderDetailItem('Availability', profile?.availability)}
+              {renderDetailItem('Weekend Availability', profile?.weekendAvailability)}
             </div>
           </div>
           

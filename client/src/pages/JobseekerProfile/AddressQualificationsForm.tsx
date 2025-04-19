@@ -94,17 +94,34 @@ export function AddressQualificationsForm({ currentStep, allFields }: AddressQua
           <p className="form-description">Please provide your qualifications and work preferences. Fields marked with * are required.</p>
 
           <div className="form-group">
-            <label htmlFor="workPreference" className="form-label">Work Preference</label>
+            <label htmlFor="workPreference" className="form-label" data-required="*">Work Preference</label>
             <input
               id="workPreference"
               type="text"
               className="form-input"
-              placeholder="E.g., Warehouse, Driving, Office"
+              placeholder="E.g., Warehouse, Driving, Office (minimum 10 characters)"
               {...register('workPreference')}
             />
             {shouldShowError('workPreference') && (
               <p className="error-message">{allErrors.workPreference?.message}</p>
             )}
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="bio" className="form-label" data-required="*">Brief Bio</label>
+            <textarea
+              id="bio"
+              className="form-input"
+              placeholder="Brief professional summary (100 characters minimum)"
+              minLength={100}
+              {...register('bio')}
+            />
+            {shouldShowError('bio') && (
+              <p className="error-message">{allErrors.bio?.message}</p>
+            )}
+            <p className="character-count">
+              <small>Maximum 100 characters</small>
+            </p>
           </div>
 
           <div className="form-group">

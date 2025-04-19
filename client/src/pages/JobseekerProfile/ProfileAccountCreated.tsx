@@ -23,6 +23,7 @@ interface JobseekerProfile {
   province?: string;
   postal_code?: string;
   work_preference?: string;
+  bio?: string;
   license_type?: string;
   experience?: string;
   manual_driving?: string;
@@ -302,6 +303,7 @@ export function ProfileAccountCreated() {
                 <div className="details-section">
                   <h3 className="section-title">Qualifications</h3>
                   {renderDetailItem('Work Preference', state.profile.work_preference)}
+                  {renderDetailItem('Bio', state.profile.bio)}
                   {renderDetailItem('License Type', state.profile.license_type)}
                   {renderDetailItem('Experience', state.profile.experience)}
                   {renderDetailItem('Manual Driving', state.profile.manual_driving)}

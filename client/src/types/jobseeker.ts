@@ -24,7 +24,7 @@ export interface JobSeekerProfile {
 export interface JobSeekerDetailedProfile extends JobSeekerProfile {
   phone?: string;
   updatedAt: string;
-  bio?: string;
+  bio?: string; // This will hold the jobseeker's brief professional description
   resume?: string; // This will hold the path to the resume document
   experience?: string; // The simplified experience string from the DB
   

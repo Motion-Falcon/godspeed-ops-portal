@@ -38,6 +38,7 @@ interface DbJobseekerProfile {
   province?: string;
   postal_code?: string;
   work_preference?: string;
+  bio?: string; // Brief professional description (max 100 chars)
   license_type?: string;
   experience?: string;
   manual_driving?: 'Yes' | 'No' | 'NA';

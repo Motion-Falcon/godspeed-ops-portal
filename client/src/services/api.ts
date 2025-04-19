@@ -301,6 +301,7 @@ interface ProfileData {
   province?: string;
   postalCode?: string;
   workPreference?: string;
+  bio?: string; // Brief professional description (max 100 chars)
   licenseType?: string;
   experience?: string;
   manualDriving?: 'Yes' | 'No' | 'NA';

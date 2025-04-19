@@ -40,7 +40,8 @@ export const addressQualificationsSchema = z.object({
   postalCode: z.string().min(1, { message: 'Postal code is required' }),
   
   // Qualifications fields
-  workPreference: z.string().optional(),
+  workPreference: z.string().min(10, { message: 'Work preference is required and must be at least 10 characters' }),
+  bio: z.string().max(100, { message: 'Bio must be 100 characters or less' }).min(1, { message: 'Bio is required' }),
   licenseType: z.string().min(1, { message: 'License type is required' }),
   experience: z.string().min(1, { message: 'Experience level is required' }),
   manualDriving: z.enum(['NA','Yes', 'No']),
@@ -147,7 +148,8 @@ const formSchema = z.object({
   city: z.string().min(1, { message: 'City is required' }),
   province: z.string().min(1, { message: 'Province is required' }),
   postalCode: z.string().min(1, { message: 'Postal code is required' }),
-  workPreference: z.string().optional(),
+  workPreference: z.string().min(10, { message: 'Work preference is required and must be at least 10 characters' }),
+  bio: z.string().min(100, { message: 'Bio is required and must be at least 100 characters' }),
   licenseType: z.string().min(1, { message: 'License type is required' }),
   experience: z.string().min(1, { message: 'Experience level is required' }),
   manualDriving: z.enum(['NA','Yes', 'No']),
@@ -678,7 +680,7 @@ export function ProfileCreate() {
       case 2:
         return ['street', 'city', 'province', 'postalCode'];
       case 3:
-        return ['licenseType', 'experience', 'availability', 'manualDriving', 'workPreference', 'weekendAvailability'];
+        return ['licenseType', 'experience', 'availability', 'manualDriving', 'workPreference', 'bio', 'weekendAvailability'];
       case 4:
         return ['payrateType', 'billRate', 'payRate', 'paymentMethod', 'hstGst', 'cashDeduction', 'overtimeEnabled', 'overtimeHours', 'overtimeBillRate', 'overtimePayRate'];
       case 5:

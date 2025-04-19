@@ -208,6 +208,7 @@ router.post('/submit',
         postal_code: encryptedData.postalCode,
         // Qualifications fields
         work_preference: encryptedData.workPreference,
+        bio: encryptedData.bio,
         license_type: encryptedData.licenseType,
         experience: encryptedData.experience,
         manual_driving: encryptedData.manualDriving,
