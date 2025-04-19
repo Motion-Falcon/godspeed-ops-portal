@@ -1,5 +1,5 @@
 import { useFormContext } from 'react-hook-form';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { z } from 'zod';
 
 // Will define this schema in ProfileCreate.tsx
@@ -24,7 +24,7 @@ interface CompensationFormProps {
 }
 
 export function CompensationForm({ allFields }: CompensationFormProps) {
-  const { register, watch, formState } = useFormContext<CompensationFormData>();
+  const { register, watch, formState, trigger } = useFormContext<CompensationFormData>();
   const { errors: allErrors } = formState;
   
   // Function to check if we should show an error for a specific field
@@ -38,9 +38,19 @@ export function CompensationForm({ allFields }: CompensationFormProps) {
   const overtimeEnabled = watch('overtimeEnabled');
 
   // Update state when overtimeEnabled changes
-  if (overtimeEnabled !== showOvertimeFields) {
-    setShowOvertimeFields(overtimeEnabled);
-  }
+  useEffect(() => {
+    if (overtimeEnabled !== showOvertimeFields) {
+      setShowOvertimeFields(overtimeEnabled);
+      
+      // If overtime was just enabled, trigger validation after a short delay
+      // to allow the UI to update first
+      if (overtimeEnabled) {
+        setTimeout(() => {
+          trigger(['overtimeHours', 'overtimeBillRate', 'overtimePayRate']);
+        }, 100);
+      }
+    }
+  }, [overtimeEnabled, showOvertimeFields, trigger]);
 
   return (
     <div className="form-step-container">
@@ -178,7 +188,7 @@ export function CompensationForm({ allFields }: CompensationFormProps) {
         {showOvertimeFields && (
           <div className="overtime-fields">
             <div className="form-group">
-              <label htmlFor="overtimeHours" className="form-label">Overtime Hours</label>
+              <label htmlFor="overtimeHours" className="form-label" data-required="*">Overtime Hours</label>
               <input
                 id="overtimeHours"
                 type="text"
@@ -193,7 +203,7 @@ export function CompensationForm({ allFields }: CompensationFormProps) {
 
             <div className="form-row">
               <div className="form-group">
-                <label htmlFor="overtimeBillRate" className="form-label">Overtime Bill Rate ($)</label>
+                <label htmlFor="overtimeBillRate" className="form-label" data-required="*">Overtime Bill Rate ($)</label>
                 <input
                   id="overtimeBillRate"
                   type="number"
@@ -209,7 +219,7 @@ export function CompensationForm({ allFields }: CompensationFormProps) {
               </div>
 
               <div className="form-group">
-                <label htmlFor="overtimePayRate" className="form-label">Overtime Pay Rate ($)</label>
+                <label htmlFor="overtimePayRate" className="form-label" data-required="*">Overtime Pay Rate ($)</label>
                 <input
                   id="overtimePayRate"
                   type="number"

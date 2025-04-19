@@ -11,7 +11,7 @@ import {
 import { supabase } from '../../lib/supabaseClient';
 import PDFThumbnail from '../../components/PDFThumbnail';
 import PDFViewerModal from '../../components/PDFViewerModal';
-import { FileText, Eye, Download, FileWarning, AlertCircle } from 'lucide-react';
+import { FileText, Eye, Download, FileWarning, AlertCircle, CheckCircle, Upload } from 'lucide-react';
 import '../../styles/components/form.css';
 import '../../styles/pages/JobseekerProfile.css';
 
@@ -72,6 +72,26 @@ const decodePath = (path: string | undefined): string | undefined => {
   return path ? path.replace(/&#x2F;/g, '/') : undefined;
 };
 
+// Add this function to render file status indicators
+const renderFileStatus = (doc: DocumentItemData) => {
+  if (doc.documentPath && doc.documentFileName) {
+    return (
+      <div className="file-status file-status-success">
+        <CheckCircle size={16} />
+        <span>Uploaded: {doc.documentFileName}</span>
+      </div>
+    );
+  } else if (doc.documentFile instanceof File) {
+    return (
+      <div className="file-status file-status-pending">
+        <Upload size={16} />
+        <span>File selected, will be uploaded when you save</span>
+      </div>
+    );
+  }
+  return null;
+};
+
 function DocumentItem({ 
   index, 
   control, 
@@ -95,6 +115,20 @@ function DocumentItem({
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [localPdfUrl, setLocalPdfUrl] = useState<string | null>(null);
+  
+  // Create an object that represents the current document data
+  const currentDoc = {
+    documentPath,
+    documentFileName,
+    documentType,
+    documentTitle,
+    documentFile,
+    documentNotes,
+    id: useWatch({ control, name: `documents.${index}.id` })
+  };
+  
+  // Check if we have a field error for the file
+  const hasFileError = !!getDocumentFieldError(index, 'documentFile');
 
   // Update local PDF URL when a new file is selected or from cache when document path changes
   useEffect(() => {
@@ -217,11 +251,7 @@ function DocumentItem({
     }
   };
 
-  // Display filename from either the selected file or saved filename
-  const displayFileName = documentFileName || (documentFile instanceof File ? documentFile.name : 'No file selected');
-
   // Check if this document has any validation errors
-  const hasFileError = getDocumentFieldError(index, 'documentFile') !== undefined;
   const hasTypeError = getDocumentFieldError(index, 'documentType') !== undefined;
   const hasAnyError = hasFileError || hasTypeError;
 
@@ -290,38 +320,26 @@ function DocumentItem({
           </div>
 
           <div className="document-file-section">
-            {/* We'll always have a hidden file input */}
-            <input
-              type="file"
-              id={`documentFile-${index}`}
-              onChange={handleFileChange} 
-              className="form-input-file-hidden"
-              accept=".pdf"
-              style={{ display: 'none' }}
-            />
-
-            {localPdfUrl ? (
-              <div className="document-uploaded-info">
-                <p className="document-name" title={displayFileName}>{displayFileName}</p>
-                {documentType && <p className="document-type">Type: {documentType}</p>}
-                {documentTitle && <p className="document-title">Title: {documentTitle}</p>}
-                {documentNotes && <p className="document-notes">Notes: {documentNotes}</p>}
-              </div>
-            ) : (
-              <div className="document-upload-placeholder">
-                <label 
-                  htmlFor={`documentFile-${index}`} 
-                  className={`button secondary file-upload-button${hasFileError ? ' error-button' : ''}`}
-                >
-                  Choose PDF File {hasFileError && '(Required)*'}
-                </label>
-                {hasFileError && (
-                  <p className="error-message file-missing-error">
-                    {getDocumentFieldError(index, 'documentFile') || 'A document file is required'}
-                  </p>
-                )}
-              </div>
-            )}
+            <div className="file-upload-container">
+              <input
+                id={`documentFile-${index}`}
+                type="file"
+                accept=".pdf"
+                className="form-input file-input"
+                onChange={(e) => {
+                  if (e.target.files && e.target.files.length > 0) {
+                    handleFileChange(e);
+                  }
+                }}
+                disabled={isLoading}
+              />
+              
+              {renderFileStatus(currentDoc)}
+              
+              {getDocumentFieldError(index, 'documentFile') && (
+                <p className="error-message">{getDocumentFieldError(index, 'documentFile')}</p>
+              )}
+            </div>
 
             <div className="document-actions">
               {localPdfUrl && (
@@ -349,11 +367,11 @@ function DocumentItem({
         </div>
       </div>
 
-      <div className="document-preview">
+      <div className="document-preview-container">
         {isPreviewLoading ? (
-          <div className="loading-pdfs">
-            <div className="pdf-loading-spinner"></div>
-            <p>Loading preview...</p>
+          <div className="document-preview-loading">
+            <span className="loading-spinner"></span>
+            <span>Loading preview...</span>
           </div>
         ) : localPdfUrl ? (
           <PDFThumbnail 
@@ -371,6 +389,8 @@ function DocumentItem({
             <span className="upload-note">Click to upload a PDF</span>
           </div>
         )}
+        
+        {renderFileStatus(currentDoc)}
       </div>
     </div>
   );

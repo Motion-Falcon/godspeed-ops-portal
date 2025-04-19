@@ -25,6 +25,8 @@ export function PersonalInfoForm({ allFields, onEmailAvailabilityChange, disable
   // Watch the email field for changes
   const watchedEmail = watch('email');
   const emailTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Add a ref to track the latest request
+  const latestRequestRef = useRef<number>(0);
   
   // Function to check if we should show an error for a specific field
   const shouldShowError = (fieldName: string) => {
@@ -64,23 +66,20 @@ export function PersonalInfoForm({ allFields, onEmailAvailabilityChange, disable
     // Store the current email to compare later to avoid stale closures
     const currentEmail = watchedEmail;
     
+    // Create a reference to the current request to track the latest
+    const requestId = Date.now();
+    latestRequestRef.current = requestId;
+    
     setIsCheckingEmail(true);
     setEmailAvailabilityMessage('Checking availability...');
     
     // Set a timeout to delay the API call (similar to debounce)
     emailTimeoutRef.current = setTimeout(async () => {
-      // Skip the API call if the component has unmounted or email changed
-      if (currentEmail !== watchedEmail) {
-        return;
-      }
-      
       try {
         const result = await checkEmailAvailability(currentEmail);
         
-        // Verify the email hasn't changed during the API call
-        if (currentEmail !== watchedEmail) {
-          return;
-        }
+        // Only update state if this is still the latest request
+        if (latestRequestRef.current !== requestId) return;
         
         setEmailAvailable(result.available);
         
@@ -101,6 +100,9 @@ export function PersonalInfoForm({ allFields, onEmailAvailabilityChange, disable
           setEmailAvailabilityMessage('✗ Email is already in use');
         }
       } catch (error) {
+        // Only update state if this is still the latest request
+        if (latestRequestRef.current !== requestId) return;
+        
         console.error('Error checking email:', error);
         setEmailAvailabilityMessage(null);
         setEmailAvailable(null);
@@ -110,7 +112,9 @@ export function PersonalInfoForm({ allFields, onEmailAvailabilityChange, disable
           onEmailAvailabilityChange(null);
         }
       } finally {
-        setIsCheckingEmail(false);
+        if (latestRequestRef.current === requestId) {
+          setIsCheckingEmail(false);
+        }
       }
     }, 500); // 500ms delay
     

@@ -57,9 +57,43 @@ export const compensationSchema = z.object({
   hstGst: z.string().optional(),
   cashDeduction: z.string().optional(),
   overtimeEnabled: z.boolean().default(false),
-  overtimeHours: z.string().optional(),
-  overtimeBillRate: z.string().optional(),
-  overtimePayRate: z.string().optional(),
+  overtimeHours: z.string()
+    .optional()
+    .superRefine((val, ctx) => {
+      // Get the form values to check if overtime is enabled
+      const formData = ctx.path[0] as unknown as JobseekerProfileFormData;
+      if (formData?.overtimeEnabled && !val) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Overtime hours is required when overtime is enabled',
+          path: [],
+        });
+      }
+    }),
+  overtimeBillRate: z.string()
+    .optional()
+    .superRefine((val, ctx) => {
+      const formData = ctx.path[0] as unknown as JobseekerProfileFormData;
+      if (formData?.overtimeEnabled && !val) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Overtime bill rate is required when overtime is enabled',
+          path: [],
+        });
+      }
+    }),
+  overtimePayRate: z.string()
+    .optional()
+    .superRefine((val, ctx) => {
+      const formData = ctx.path[0] as unknown as JobseekerProfileFormData;
+      if (formData?.overtimeEnabled && !val) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Overtime pay rate is required when overtime is enabled',
+          path: [],
+        });
+      }
+    }),
 });
 
 // Document Upload Schema
@@ -144,11 +178,27 @@ type JobseekerProfileFormData = z.infer<typeof formSchema>;
 
 export function ProfileCreate() {
   const [currentStep, setCurrentStep] = useState(1);
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isEmailAvailable, setIsEmailAvailable] = useState<boolean | null>(null);
   const navigate = useNavigate();
   const { isJobSeeker, user } = useAuth();
+  
+  // New loading states object to track different operations
+  const [loadingStates, setLoadingStates] = useState({
+    formLoading: true,     // Initial form loading
+    draftSaving: false,    // Saving draft
+    emailChecking: false,  // Checking email availability
+    submitting: false,     // Form submission
+    fileUploading: false   // File uploads
+  });
+
+  // Helper function to update specific loading state
+  const setLoading = (key: keyof typeof loadingStates, value: boolean) => {
+    setLoadingStates(prev => ({ ...prev, [key]: value }));
+  };
+
+  // Compute overall loading state
+  const isLoading = Object.values(loadingStates).some(state => state);
 
   // Initialize form methods with zod resolver
   const methods = useForm<JobseekerProfileFormData>({
@@ -204,11 +254,21 @@ export function ProfileCreate() {
     }
   });
 
+  // Helper function to scroll to first error
+  const scrollToError = () => {
+    setTimeout(() => {
+      const errorElement = document.querySelector('.error-message');
+      if (errorElement) {
+        errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 100); // Short delay to ensure DOM is updated
+  };
+
   // Fetch any existing draft on component mount
   useEffect(() => {
     const fetchDraft = async () => {
       try {
-        setIsLoading(true);
+        setLoading('formLoading', true);
         const { draft, currentStep: savedStep } = await getDraft();
         
         if (draft) {
@@ -228,7 +288,7 @@ export function ProfileCreate() {
         console.error('Error fetching draft:', error);
         // Non-critical error, don't show to user
       } finally {
-        setIsLoading(false);
+        setLoading('formLoading', false);
       }
     };
     
@@ -255,6 +315,7 @@ export function ProfileCreate() {
         // Check email availability
         const checkEmail = async () => {
           try {
+            setLoading('emailChecking', true);
             const result = await checkEmailAvailability(currentEmail);
             // Only update state if component is still mounted
             if (isMounted) {
@@ -265,6 +326,10 @@ export function ProfileCreate() {
             // Only update state if component is still mounted
             if (isMounted) {
               setIsEmailAvailable(null);
+            }
+          } finally {
+            if (isMounted) {
+              setLoading('emailChecking', false);
             }
           }
         };
@@ -278,9 +343,29 @@ export function ProfileCreate() {
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentStep]); // Only depend on currentStep changes
+  }, [currentStep]); 
 
   const totalSteps = 5;
+
+  // Centralized validation function for the current step
+  const validateCurrentStep = async () => {
+    const values = methods.getValues();
+    const currentFields = getStepFields(currentStep);
+    
+    // Trigger validation only for fields in the current step
+    const isValid = await methods.trigger(currentFields as Array<keyof JobseekerProfileFormData>);
+    
+    // Special case for step 1 (ID document requirement)
+    if (currentStep === 1 && isValid && !values.licenseNumber && !values.passportNumber) {
+      methods.setError('licenseNumber', { 
+        type: 'custom', 
+        message: 'Either a license number or passport number is required' 
+      });
+      return false;
+    }
+    
+    return isValid;
+  };
 
   // Function to save form data to draft
   const saveDraft = async () => {
@@ -292,20 +377,22 @@ export function ProfileCreate() {
           // Only check if not already validated as available
           if (isEmailAvailable !== true) {
             try {
-              setIsLoading(true);
+              setLoading('emailChecking', true);
               const result = await checkEmailAvailability(email);
               setIsEmailAvailable(result.available);
               
               if (!result.available) {
                 setError('This email is already in use. Please use a different email to continue.');
-                setIsLoading(false);
+                setLoading('emailChecking', false);
                 return false;
               }
             } catch (emailError) {
               console.error('Error checking email availability:', emailError);
               setError('Unable to verify email availability. Please try again.');
-              setIsLoading(false);
+              setLoading('emailChecking', false);
               return false;
+            } finally {
+              setLoading('emailChecking', false);
             }
           }
         } else {
@@ -314,7 +401,7 @@ export function ProfileCreate() {
         }
       }
 
-      setIsLoading(true);
+      setLoading('draftSaving', true);
       setError(null); // Clear previous errors
       const formData = methods.getValues();
 
@@ -322,8 +409,6 @@ export function ProfileCreate() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         // If saving draft requires file upload, user must be logged in.
-        // Decide policy: prevent save or save without upload?
-        // For now, let's prevent save and show error.
         throw new Error('User must be logged in to save draft with file uploads.');
       }
 
@@ -333,9 +418,11 @@ export function ProfileCreate() {
       // Handle document uploads before saving draft
       if (draftData.documents && draftData.documents.length > 0) {
         for (const doc of draftData.documents) {
-          // Check if there's a file selected and it hasn't been uploaded yet (no path)
+          // Only upload if it's a new file without a path
           if (doc.documentFile instanceof File && !doc.documentPath) {
             console.log(`Draft Save: Found file for document ID ${doc.id}, Type: ${doc.documentType}. Uploading...`);
+            setLoading('fileUploading', true);
+            
             const fileToUpload = doc.documentFile;
             const fileExt = fileToUpload.name.split('.').pop();
             const uniqueFileName = `${crypto.randomUUID()}.${fileExt}`;
@@ -349,13 +436,9 @@ export function ProfileCreate() {
 
             if (uploadError) {
               console.error(`Draft Save: Supabase upload error for doc ${doc.id}:`, uploadError);
-              // Decide how to handle partial failure:
-              // Option 1: Throw error, stop draft save (current implementation)
+              // Throw error, stop draft save
+              setLoading('fileUploading', false);
               throw new Error(`Failed to upload document '${fileToUpload.name}' during draft save: ${uploadError.message}`);
-              // Option 2: Log error, continue saving draft without path for this doc
-              // setError(`Failed to upload ${fileToUpload.name}. Draft saved without this file.`);
-              // doc.documentPath = undefined; // Ensure path is not set
-              // doc.documentFileName = fileToUpload.name; // Still save name
             } else {
               // Update document with path info
               doc.documentPath = uploadData?.path || '';
@@ -372,8 +455,9 @@ export function ProfileCreate() {
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const { documentFile, ...docWithoutFile } = doc;
           Object.assign(doc, docWithoutFile); // Update the object in the array
-           doc.documentFile = undefined; // Explicitly set to undefined
+          doc.documentFile = undefined; // Explicitly set to undefined
         }
+        setLoading('fileUploading', false);
       }
 
       // Save the potentially modified draft data (with documentPaths)
@@ -383,13 +467,12 @@ export function ProfileCreate() {
       });
       console.log("Draft saved successfully:", response);
 
-      setIsLoading(false);
+      setLoading('draftSaving', false);
       // Show success message (using whatever toast system is available)
       console.log("Draft saved successfully (including file uploads if any)");
 
       return true;
     } catch (error) {
-      setIsLoading(false);
       console.error("Error saving draft:", error);
       if (error instanceof Error) {
         setError(error.message);
@@ -397,25 +480,36 @@ export function ProfileCreate() {
         setError("An unexpected error occurred while saving draft");
       }
       return false;
+    } finally {
+      setLoading('draftSaving', false);
+      setLoading('fileUploading', false);
     }
   };
 
   // Function to handle "Continue" button click
   const handleContinue = async () => {
     if (currentStep < totalSteps) {
+      // Validate the current step
+      const isValid = await validateCurrentStep();
+      
+      if (!isValid) {
+        scrollToError();
+        return;
+      }
+      
       // For the first step, explicitly verify email availability
       if (currentStep === 1) {
         const email = methods.getValues('email');
         
         if (email) {
           try {
-            setIsLoading(true);
+            setLoading('emailChecking', true);
             const result = await checkEmailAvailability(email);
             setIsEmailAvailable(result.available);
             
             if (!result.available) {
               setError('This email is already in use. Please use a different email to continue.');
-              setIsLoading(false);
+              setLoading('emailChecking', false);
               return;
             }
             
@@ -427,7 +521,8 @@ export function ProfileCreate() {
           } catch (error) {
             console.error('Error checking email availability:', error);
             setError('Unable to verify email availability. Please try again.');
-            setIsLoading(false);
+          } finally {
+            setLoading('emailChecking', false);
           }
         } else {
           // If no email provided, trigger validation errors
@@ -444,32 +539,40 @@ export function ProfileCreate() {
     }
   };
 
-  // Function to handle "Back" button click
-  const handleBack = () => {
+  // Function to handle "Back" button click with option to save
+  const handleBack = async (saveBeforeBack = true) => {
     if (currentStep > 1) {
+      if (saveBeforeBack) {
+        // Optional save when going back
+        await saveDraft();
+      }
       setCurrentStep(prevStep => prevStep - 1);
     }
   };
 
   // Function to handle final form submission
   const handleSubmit = async (data: JobseekerProfileFormData) => {
-    setIsLoading(true);
+    setLoading('submitting', true);
     setError(null);
     
     try {
       // Check email availability before submission - skip for jobseekers using their own email
       if (!isJobSeeker) {
         try {
+          setLoading('emailChecking', true);
           const result = await checkEmailAvailability(data.email);
           if (!result.available) {
             setError('This email is already in use. Please use a different email to continue.');
-            setIsLoading(false);
+            setLoading('emailChecking', false);
+            setLoading('submitting', false);
             return;
           }
+          setLoading('emailChecking', false);
         } catch (emailError) {
           console.error('Error checking email availability:', emailError);
           setError('Unable to verify email availability. Please try again.');
-          setIsLoading(false);
+          setLoading('emailChecking', false);
+          setLoading('submitting', false);
           return;
         }
       }
@@ -486,6 +589,7 @@ export function ProfileCreate() {
       
       // Handle document file uploads if any exist
       if (profileData.documents && profileData.documents.length > 0) {
+        setLoading('fileUploading', true);
         // Process each document with a file
         for (const doc of profileData.documents) {
           if (doc.documentFile instanceof File) {
@@ -503,6 +607,7 @@ export function ProfileCreate() {
 
             if (uploadError) {
               console.error('Supabase upload error:', uploadError); // Log detailed error
+              setLoading('fileUploading', false);
               throw new Error(`Failed to upload document: ${uploadError.message}`);
             }
 
@@ -518,6 +623,7 @@ export function ProfileCreate() {
             doc.documentFile = undefined;
           }
         }
+        setLoading('fileUploading', false);
       }
 
       // Submit the complete profile data to the server
@@ -559,7 +665,8 @@ export function ProfileCreate() {
         setError('An unexpected error occurred during submission');
       }
     } finally {
-      setIsLoading(false);
+      setLoading('submitting', false);
+      setLoading('fileUploading', false);
     }
   };
 
@@ -608,7 +715,7 @@ export function ProfileCreate() {
     }
   };
 
-  // --- New Step Indicator Logic ---
+  // --- Step Indicator Logic ---
   const renderStepIndicator = () => {
     const steps = [];
     for (let i = 1; i <= totalSteps; i++) {
@@ -630,7 +737,26 @@ export function ProfileCreate() {
     }
     return <div className="step-indicator-new">{steps}</div>;
   };
-  // -----------------------------
+
+  // Render loading indicator based on specific loading states
+  const renderLoadingIndicator = () => {
+    if (loadingStates.formLoading) {
+      return <div className="loading-indicator">Loading saved draft...</div>;
+    }
+    if (loadingStates.fileUploading) {
+      return <div className="loading-indicator">Uploading files...</div>;
+    }
+    if (loadingStates.draftSaving) {
+      return <div className="loading-indicator">Saving draft...</div>;
+    }
+    if (loadingStates.submitting) {
+      return <div className="loading-indicator">Submitting profile...</div>;
+    }
+    if (loadingStates.emailChecking) {
+      return <div className="loading-indicator">Checking email availability...</div>;
+    }
+    return null;
+  };
 
   return (
     <div className="profile-create-container">
@@ -664,193 +790,70 @@ export function ProfileCreate() {
         </div>
       )}
 
-      {isLoading ? (
-        <div className="loading-indicator">checking saved draft...</div>
-      ) : (
-        <div className="form-card">
-          <FormProvider {...methods}>
-            <form onSubmit={methods.handleSubmit(handleSubmit)} className={isLoading ? 'form-loading' : ''}>
-              <div className="form-content">
-                {renderStep()}
-              </div>
+      {renderLoadingIndicator()}
 
-              <div className="form-navigation">
-                {currentStep > 1 && (
-                  <button 
-                    type="button" 
-                    className="button secondary"
-                    onClick={handleBack}
-                    disabled={isLoading}
-                  >
-                    Back
-                  </button>
-                )}
-                
+      <div className={`form-card ${isLoading ? 'form-loading' : ''}`}>
+        <FormProvider {...methods}>
+          <form 
+            onSubmit={methods.handleSubmit(
+              // On valid submission
+              (data) => handleSubmit(data),
+              // On validation error
+              (errors) => {
+                console.log("Validation errors:", errors);
+                scrollToError();
+              }
+            )} 
+            className={isLoading ? 'form-loading' : ''}
+          >
+            <div className="form-content">
+              {renderStep()}
+            </div>
+
+            <div className="form-navigation">
+              {currentStep > 1 && (
+                <button 
+                  type="button" 
+                  className="button secondary"
+                  onClick={() => handleBack(true)}
+                  disabled={isLoading}
+                >
+                  Back
+                </button>
+              )}
+              
+              <button
+                type="button"
+                className="button secondary draft-button"
+                onClick={() => saveDraft()}
+                disabled={isLoading || (currentStep === 1 && isEmailAvailable === false)}
+                title={currentStep === 1 && isEmailAvailable === false ? 'Email is already in use. Please choose a different email.' : ''}
+              >
+                {loadingStates.draftSaving ? <span className="loading-spinner"></span> : 'Save Draft'}
+              </button>
+
+              {currentStep < totalSteps ? (
                 <button
                   type="button"
-                  className="button secondary draft-button"
-                  onClick={() => saveDraft()}
-                  disabled={isLoading || (currentStep === 1 && isEmailAvailable === false)}
-                  title={currentStep === 1 && isEmailAvailable === false ? 'Email is already in use. Please choose a different email.' : ''}
+                  className="button primary"
+                  onClick={handleContinue}
+                  disabled={isLoading}
                 >
-                  Save Draft
+                  {isLoading ? <span className="loading-spinner"></span> : 'Continue'}
                 </button>
-
-                {currentStep < totalSteps ? (
-                  <button
-                    type="button"
-                    className="button primary"
-                    onClick={async () => {
-                      // Get current values for debugging
-                      const values = methods.getValues();
-                      console.log("Current form values:", values);
-                      
-                      // If on step 1 and email is not available, prevent continuing
-                      if (currentStep === 1 && isEmailAvailable === false) {
-                        setError('This email is already in use. Please use a different email to continue.');
-                        return;
-                      }
-                      
-                      // Custom validation based on the current step
-                      let isValid = false;
-
-                      if (currentStep === 1) {
-                        // Special validation for step 1
-                        if (!values.licenseNumber && !values.passportNumber) {
-                          console.log("Missing required identification: Need either licenseNumber or passportNumber");
-                          methods.setError('licenseNumber', { 
-                            type: 'custom', 
-                            message: 'Either a license number or passport number is required' 
-                          });
-                          isValid = false;
-                        } else {
-                          // Trigger validation without storing the result
-                          await methods.trigger();
-                          
-                          // Only consider fields for step 1 when determining validity
-                          const errors = methods.formState.errors;
-                          const step1ErrorFields = ['firstName', 'lastName', 'dob', 'email', 'mobile', 
-                            'licenseNumber', 'passportNumber', 'sinNumber', 'sinExpiry', 
-                            'businessNumber', 'corporationName'];
-                            
-                            // Check if any step 1 fields have errors
-                            const hasStep1Errors = step1ErrorFields.some(field => 
-                              Object.prototype.hasOwnProperty.call(errors, field));
-                              
-                            isValid = !hasStep1Errors;
-                        }
-                      } 
-                      else if (currentStep === 2 || currentStep === 3) {
-                        // Trigger all validation
-                        await methods.trigger();
-                        
-                        // Only consider fields relevant to the current step
-                        const errors = methods.formState.errors;
-                        const step2Fields = ['street', 'city', 'province', 'postalCode'];
-                        const step3Fields = ['licenseType', 'experience', 'availability', 'manualDriving'];
-                        
-                        // Check if any fields for this step have errors
-                        const relevantFields = currentStep === 2 ? step2Fields : step3Fields;
-                        const hasStepErrors = relevantFields.some(field => 
-                          Object.prototype.hasOwnProperty.call(errors, field));
-                          
-                        isValid = !hasStepErrors;
-                      }
-                      else if (currentStep === 4) {
-                        // Trigger all validation
-                        await methods.trigger();
-                        
-                        // Only consider fields for step 4
-                        const errors = methods.formState.errors;
-                        const step4Fields = ['payrateType', 'billRate', 'payRate', 'paymentMethod'];
-                        
-                        // Check if any step 4 fields have errors
-                        const hasStep4Errors = step4Fields.some(field => 
-                          Object.prototype.hasOwnProperty.call(errors, field));
-                          
-                        isValid = !hasStep4Errors;
-                      }
-                      else {
-                        // Default validation for other steps
-                        isValid = await methods.trigger();
-                      }
-                      
-                      if (isValid) {
-                        handleContinue();
-                      } else {
-                        console.log("Validation failed for step", currentStep);
-                        // Display which fields have errors
-                        console.log("Errors:", methods.formState.errors);
-                        
-                        // This will help to trigger touched state on fields with errors
-                        // so that error messages will be displayed
-                        Object.keys(methods.formState.errors).forEach(fieldName => {
-                          try {
-                            methods.setError(fieldName as keyof JobseekerProfileFormData, { 
-                              type: 'validation',
-                              message: methods.formState.errors[fieldName as keyof typeof methods.formState.errors]?.message || ''
-                            });
-                          } catch (e) {
-                            console.log("Error setting field error state:", e);
-                          }
-                        });
-                      }
-                    }}
-                    disabled={isLoading}
-                  >
-                    {isLoading ? <span className="loading-spinner"></span> : 'Continue'}
-                  </button>
-                ) : (
-                  <button
-                    type="submit"
-                    className="button primary"
-                    onClick={async (e) => {
-                      e.preventDefault();
-                      // Get current values for debugging
-                      const values = methods.getValues();
-                      console.log("Form values before submission:", values);
-                      
-                      // Trigger validation for all fields in the form
-                      await methods.trigger();
-                      
-                      // Check for any errors in the form
-                      const errors = methods.formState.errors;
-                      console.log("Validation errors:", errors);
-                      
-                      // Check if form is valid (no errors)
-                      const isValid = Object.keys(errors).length === 0;
-                      
-                      if (isValid) {
-                        handleSubmit(methods.getValues());
-                      } else {
-                        console.log("Validation failed before submission");
-                        // Display which fields have errors
-                        console.log("Errors:", methods.formState.errors);
-                        
-                        // This will help to trigger touched state on fields with errors
-                        // so that error messages will be displayed
-                        Object.keys(methods.formState.errors).forEach(fieldName => {
-                          try {
-                            methods.setError(fieldName as keyof JobseekerProfileFormData, { 
-                              type: 'validation',
-                              message: methods.formState.errors[fieldName as keyof typeof methods.formState.errors]?.message || ''
-                            });
-                          } catch (e) {
-                            console.log("Error setting field error state:", e);
-                          }
-                        });
-                      }
-                    }}
-                    disabled={isLoading}
-                  >
-                    {isLoading ? <span className="loading-spinner"></span> : 'Submit'}
-                  </button>
-                )}
-              </div>
-            </form>
-          </FormProvider>
-        </div>
-      )}
+              ) : (
+                <button
+                  type="submit"
+                  className="button primary"
+                  disabled={isLoading}
+                >
+                  {loadingStates.submitting ? <span className="loading-spinner"></span> : 'Submit'}
+                </button>
+              )}
+            </div>
+          </form>
+        </FormProvider>
+      </div>
     </div>
   );
 } 

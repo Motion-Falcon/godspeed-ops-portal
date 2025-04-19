@@ -758,11 +758,27 @@ select.form-input {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 200px; /* Ensure it takes up some space */
-  font-size: 1.2rem;
-  color: var(--text-muted);
-  margin-top: 2rem;
-  margin-bottom: 2rem;
+  padding: 12px;
+  background-color: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+  margin: 10px 0;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.loading-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 1s ease-in-out infinite;
+  margin-right: 8px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 /* Improved grid layout for profile content */
@@ -1287,4 +1303,58 @@ select.form-input {
     border-left-color: #3f51b5;
     background-color: rgba(63, 81, 181, 0.05);
   }
+}
+
+/* File status indicators */
+.file-status {
+  display: flex;
+  align-items: center;
+  padding: 6px 12px;
+  margin: 8px 0;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.file-status svg {
+  margin-right: 8px;
+}
+
+.file-status-success {
+  background-color: rgba(0, 128, 0, 0.1);
+  color: #006400;
+  border: 1px solid rgba(0, 128, 0, 0.2);
+}
+
+.file-status-pending {
+  background-color: rgba(255, 165, 0, 0.1);
+  color: #8B4513;
+  border: 1px solid rgba(255, 165, 0, 0.2);
+}
+
+/* Loading state improvements */
+.loading-indicator {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 12px;
+  background-color: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+  margin: 10px 0;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.loading-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 1s ease-in-out infinite;
+  margin-right: 8px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 } 
