@@ -1,8 +1,9 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { User } from '@supabase/supabase-js';
 import { getCurrentUser, onAuthStateChange, logoutUser } from '../lib/auth';
 import { supabase } from '../lib/supabaseClient';
 import { UserRole, getUserType, isAdmin, isRecruiter, isJobSeeker, hasJobseekerProfile } from '../types/auth';
+import { clearTokenCache } from '../services/api';
 
 // Define possible verification statuses
 export type VerificationStatus = 'pending' | 'verified' | 'rejected' | 'not_created';
@@ -38,6 +39,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
   const [profileVerificationStatus, setProfileVerificationStatus] = useState<VerificationStatus>('not_created');
   const [hasProfile, setHasProfile] = useState(false);
+  
+  // Use ref to track validation status and prevent duplicate validations
+  const isValidatingRef = useRef(false);
   
   // Compute user type and role flags
   const userType = getUserType(user);
@@ -137,6 +141,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const validateToken = async (user: User | null) => {
     if (!user) return null;
     
+    // Prevent multiple concurrent validations
+    if (isValidatingRef.current) {
+      return user;
+    }
+    
+    isValidatingRef.current = true;
+    
     try {
       // Try to get session - this will also refresh token if needed
       const { data, error } = await supabase.auth.getSession();
@@ -145,24 +156,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.error('Session validation error:', error || 'No session found');
         // If no valid session, force logout
         await logoutUser();
+        clearTokenCache();
         return null;
       }
       
-      // Verify the user still exists
+      // Use the user from the session if available, otherwise fetch
+      if (data.session.user) {
+        isValidatingRef.current = false;
+        return data.session.user;
+      }
+      
+      // Only fetch user if we don't have it from the session already
       const { data: userData, error: userError } = await supabase.auth.getUser();
       
       if (userError || !userData.user) {
         console.error('User validation error:', userError || 'User not found');
         // If user doesn't exist, force logout
         await logoutUser();
+        clearTokenCache();
         return null;
       }
       
+      isValidatingRef.current = false;
       return userData.user;
     } catch (error) {
       console.error('Token validation error:', error);
       await logoutUser();
+      clearTokenCache();
       return null;
+    } finally {
+      isValidatingRef.current = false;
     }
   };
 
@@ -188,18 +211,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [user?.id, isUserJobSeeker]);
 
   useEffect(() => {
+    let isMounted = true;
+    
     // Check for existing user session
     const checkUser = async () => {
       try {
         const user = await getCurrentUser();
         // Validate the token if user exists
         const validatedUser = user ? await validateToken(user) : null;
-        setUser(validatedUser);
+        if (isMounted) {
+          setUser(validatedUser);
+          setIsLoading(false);
+        }
       } catch (error) {
         console.error('Error checking auth state', error);
-        setUser(null);
-      } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setUser(null);
+          setIsLoading(false);
+        }
       }
     };
 
@@ -207,13 +236,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Listen for auth state changes
     const unsubscribe = onAuthStateChange(async (user) => {
-      // Validate user token when auth state changes
-      const validatedUser = user ? await validateToken(user) : null;
-      setUser(validatedUser);
-      setIsLoading(false);
+      // Only re-validate if the auth state actually changed
+      if (isMounted) {
+        // Validate user token when auth state changes
+        const validatedUser = user ? await validateToken(user) : null;
+        setUser(validatedUser);
+        setIsLoading(false);
+      }
     });
 
     return () => {
+      isMounted = false;
       unsubscribe();
     };
   }, []);
