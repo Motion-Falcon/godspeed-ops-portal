@@ -363,6 +363,24 @@ export const submitProfile = async (profileData: ProfileData) => {
   }
 };
 
+// Add updateProfile function for editing existing profiles
+export const updateProfile = async (id: string, profileData: ProfileData) => {
+  try {
+    const response = await api.put(`/api/jobseekers/${id}/update`, profileData);
+    // Clear cache for this profile and the profiles list
+    clearCacheFor(`/api/jobseekers/${id}`);
+    clearCacheFor('/api/jobseekers');
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      console.error('Profile update error details:', error.response.data);
+      const errorMessage = error.response.data.error || 'Failed to update profile';
+      throw new Error(errorMessage);
+    }
+    throw error;
+  }
+};
+
 export const getProfile = async (): Promise<ProfileResponse> => {
   try {
     const response = await api.get('/api/profile');

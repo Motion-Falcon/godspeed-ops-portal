@@ -14,6 +14,7 @@ import { ProfileAccountCreated } from './pages/JobseekerProfile/ProfileAccountCr
 import { JobSeekersList } from './pages/JobSeekersList';
 import { JobSeekerProfile } from './pages/JobSeekerProfile';
 import { GeometricShapes } from './components/GeometricShapes';
+import { ProfileEdit } from './pages/JobseekerProfile/ProfileEdit';
 import './styles/main.css';
 
 function App() {
@@ -43,6 +44,7 @@ function App() {
                 <Route path="/profile-account-created" element={<ProfileAccountCreated />} />
                 <Route path="/jobseekers" element={<JobSeekersList />} />
                 <Route path="/jobseekers/:id" element={<JobSeekerProfile />} />
+                <Route path="/jobseekers/:id/edit" element={<ProfileEdit />} />
                 {/* Add more recruiter-specific routes here */}
               </Route>
               

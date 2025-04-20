@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { ArrowLeft, Search, Filter, Eye, CheckCircle, XCircle, Clock, Trash2 } from 'lucide-react';
+import { ArrowLeft, Search, Filter, Eye, CheckCircle, XCircle, Clock, Trash2, Edit } from 'lucide-react';
 import { getJobseekerProfiles, deleteJobseeker } from '../services/api';
 import { JobSeekerProfile } from '../types/jobseeker';
 import { ConfirmationModal } from '../components/ConfirmationModal';
@@ -11,14 +11,35 @@ export function JobSeekersList() {
   const [profiles, setProfiles] = useState<JobSeekerProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [profileToDelete, setProfileToDelete] = useState<JobSeekerProfile | null>(null);
+  const [profileToEdit, setProfileToEdit] = useState<JobSeekerProfile | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const { isAdmin, isRecruiter } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Check for success message in navigation state (e.g., from edit page)
+  useEffect(() => {
+    if (location.state?.message) {
+      setSuccessMessage(location.state.message);
+      
+      // Clear the message from location state to prevent showing it again on refresh
+      navigate(location.pathname, { replace: true });
+      
+      // Auto-dismiss the success message after 5 seconds
+      const timer = setTimeout(() => {
+        setSuccessMessage(null);
+      }, 5000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [location, navigate]);
 
   useEffect(() => {
     // Check if user has access
@@ -88,6 +109,25 @@ export function JobSeekersList() {
     navigate(`/jobseekers/${id}`);
   };
 
+  const handleEditClick = (profile: JobSeekerProfile) => {
+    setProfileToEdit(profile);
+    setIsEditModalOpen(true);
+  };
+
+  const handleConfirmEdit = () => {
+    if (!profileToEdit) return;
+    
+    // Navigate to edit page with the profile ID
+    navigate(`/jobseekers/${profileToEdit.id}/edit`);
+    setIsEditModalOpen(false);
+    setProfileToEdit(null);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditModalOpen(false);
+    setProfileToEdit(null);
+  };
+
   const handleDeleteClick = (profile: JobSeekerProfile) => {
     setProfileToDelete(profile);
     setIsDeleteModalOpen(true);
@@ -140,6 +180,19 @@ export function JobSeekersList() {
           <h1>Job Seekers Profiles</h1>
         </div>
       </header>
+
+      {successMessage && (
+        <div className="success-notification">
+          <CheckCircle size={18} />
+          <span>{successMessage}</span>
+          <button 
+            className="close-notification"
+            onClick={() => setSuccessMessage(null)}
+          >
+            &times;
+          </button>
+        </div>
+      )}
 
       <main className="list-main">
         <div className="filter-container">
@@ -244,6 +297,14 @@ export function JobSeekersList() {
                           View
                         </button>
                         <button 
+                          className="button secondary edit-btn"
+                          onClick={() => handleEditClick(profile)}
+                          title="Edit this profile"
+                        >
+                          <Edit size={16} />
+                          Edit
+                        </button>
+                        <button 
                           className="button danger delete-btn"
                           onClick={() => handleDeleteClick(profile)}
                           title="Delete this profile"
@@ -271,6 +332,18 @@ export function JobSeekersList() {
         confirmButtonClass="danger"
         onConfirm={handleConfirmDelete}
         onCancel={handleCancelDelete}
+      />
+
+      {/* Edit Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={isEditModalOpen}
+        title="Edit Profile"
+        message={`Are you sure you want to edit the profile for ${profileToEdit?.name}? You will be redirected to the profile editor.`}
+        confirmText="Edit Profile"
+        cancelText="Cancel"
+        confirmButtonClass="primary"
+        onConfirm={handleConfirmEdit}
+        onCancel={handleCancelEdit}
       />
     </div>
   );

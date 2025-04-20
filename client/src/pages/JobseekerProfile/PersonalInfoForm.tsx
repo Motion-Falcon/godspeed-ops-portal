@@ -189,7 +189,7 @@ export function PersonalInfoForm({ allFields, onEmailAvailabilityChange, disable
             readOnly={disableEmail}
           />
           {disableEmail && (
-            <p className="field-note">Email cannot be changed as it's linked to your account.</p>
+            <p className="field-note">Email cannot be changed as it's used as a unique identifier for this profile.</p>
           )}
           {!disableEmail && emailAvailabilityMessage && (
             <p className={`availability-message ${emailAvailable ? 'success' : 'error'}`}>

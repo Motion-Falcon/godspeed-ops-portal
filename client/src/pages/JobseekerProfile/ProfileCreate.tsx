@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -8,7 +8,14 @@ import { PersonalInfoForm } from './PersonalInfoForm';
 import { AddressQualificationsForm } from './AddressQualificationsForm';
 import { CompensationForm } from './CompensationForm';
 import { DocumentUploadForm } from './DocumentUploadForm';
-import { submitProfile, saveDraft as saveDraftAPI, getDraft, checkEmailAvailability } from '../../services/api';
+import { 
+  submitProfile, 
+  saveDraft as saveDraftAPI, 
+  getDraft, 
+  checkEmailAvailability, 
+  getJobseekerProfile,
+  updateProfile 
+} from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import '../../styles/components/form.css';
 import '../../styles/pages/JobseekerProfile.css';
@@ -41,7 +48,7 @@ export const addressQualificationsSchema = z.object({
   
   // Qualifications fields
   workPreference: z.string().min(10, { message: 'Work preference is required and must be at least 10 characters' }),
-  bio: z.string().max(100, { message: 'Bio must be 100 characters or less' }).min(1, { message: 'Bio is required' }),
+  bio: z.string().min(100, { message: 'Bio is required and must be at least 100 characters' }).max(500, { message: 'Bio must be 500 characters or less' }),
   licenseType: z.string().min(1, { message: 'License type is required' }),
   experience: z.string().min(1, { message: 'Experience level is required' }),
   manualDriving: z.enum(['NA','Yes', 'No']),
@@ -149,7 +156,7 @@ const formSchema = z.object({
   province: z.string().min(1, { message: 'Province is required' }),
   postalCode: z.string().min(1, { message: 'Postal code is required' }),
   workPreference: z.string().min(10, { message: 'Work preference is required and must be at least 10 characters' }),
-  bio: z.string().min(100, { message: 'Bio is required and must be at least 100 characters' }),
+  bio: z.string().min(100, { message: 'Bio is required and must be at least 100 characters' }).max(500, { message: 'Bio must be 500 characters or less' }),
   licenseType: z.string().min(1, { message: 'License type is required' }),
   experience: z.string().min(1, { message: 'Experience level is required' }),
   manualDriving: z.enum(['NA','Yes', 'No']),
@@ -178,12 +185,25 @@ const formSchema = z.object({
 // Type inference for form data
 type JobseekerProfileFormData = z.infer<typeof formSchema>;
 
-export function ProfileCreate() {
+// Interface for ProfileCreate props
+interface ProfileCreateProps {
+  isEditMode?: boolean;
+}
+
+export function ProfileCreate({ isEditMode = false }: ProfileCreateProps) {
+  const { id: profileId } = useParams<{ id: string }>();
   const [currentStep, setCurrentStep] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const [isEmailAvailable, setIsEmailAvailable] = useState<boolean | null>(null);
+  const [initialEmail, setInitialEmail] = useState<string | null>(null);
   const navigate = useNavigate();
   const { isJobSeeker, user } = useAuth();
+  
+  // Add a ref to track initial load to prevent auto-submission
+  const isInitialLoad = useRef(true);
+  // Add state to track user interaction
+  const [userInteracted, setUserInteracted] = useState(false);
+  const previousUserInteraction = useRef(false); // Add this to track previous interaction state
   
   // New loading states object to track different operations
   const [loadingStates, setLoadingStates] = useState({
@@ -266,36 +286,118 @@ export function ProfileCreate() {
     }, 100); // Short delay to ensure DOM is updated
   };
 
-  // Fetch any existing draft on component mount
   useEffect(() => {
-    const fetchDraft = async () => {
-      try {
-        setLoading('formLoading', true);
-        const { draft, currentStep: savedStep } = await getDraft();
-        
-        if (draft) {
-          // If user is a jobseeker, preserve their email
-          if (isJobSeeker && user?.email) {
-            draft.email = user.email;
+    if (isEditMode && profileId) {
+      // In edit mode, fetch the existing profile data
+      const fetchProfileData = async () => {
+        try {
+          setLoading('formLoading', true);
+          setError(null);
+          
+          const profileData = await getJobseekerProfile(profileId);
+          if (!profileData) {
+            setError('Failed to load profile data');
+            return;
           }
           
-          // Set form values from draft
-          methods.reset(draft);
-          // Set current step
-          if (savedStep) {
-            setCurrentStep(savedStep);
-          }
+          // Set initial email to compare later for availability check
+          setInitialEmail(profileData.email);
+          
+          // Map detailed profile data to form format
+          // Need to match the exact structure returned from the API
+          const formData = {
+            firstName: profileData.firstName || '',
+            lastName: profileData.lastName || '',
+            dob: profileData.dob || '',
+            email: profileData.email || '',
+            mobile: profileData.mobile || '',
+            licenseNumber: profileData.licenseNumber || '',
+            passportNumber: profileData.passportNumber || '',
+            sinNumber: profileData.sinNumber || '',
+            sinExpiry: profileData.sinExpiry || '',
+            businessNumber: profileData.businessNumber || '',
+            corporationName: profileData.corporationName || '',
+            
+            street: profileData.street || '',
+            city: profileData.city || '',
+            province: profileData.province || '',
+            postalCode: profileData.postalCode || '',
+            
+            workPreference: profileData.workPreference || '',
+            bio: profileData.bio || 'No bio provided',
+            licenseType: profileData.licenseType || '',
+            experience: profileData.experience || '',
+            manualDriving: (profileData.manualDriving as 'Yes' | 'No' | 'NA') || 'NA',
+            availability: (profileData.availability as 'Full-Time' | 'Part-Time') || 'Full-Time',
+            weekendAvailability: profileData.weekendAvailability || false,
+            
+            payrateType: (profileData.payrateType as 'Hourly' | 'Daily' | 'Monthly') || 'Hourly',
+            billRate: profileData.billRate || '',
+            payRate: profileData.payRate || '',
+            paymentMethod: profileData.paymentMethod || '',
+            hstGst: profileData.hstGst || '',
+            cashDeduction: profileData.cashDeduction || '0',
+            overtimeEnabled: profileData.overtimeEnabled || false,
+            overtimeHours: profileData.overtimeHours || '',
+            overtimeBillRate: profileData.overtimeBillRate || '',
+            overtimePayRate: profileData.overtimePayRate || '',
+            
+            documents: profileData.documents?.map(doc => ({
+              ...doc,
+              id: doc.id || crypto.randomUUID() // Ensure each document has an ID
+            })) || []
+          };
+          
+          // Reset form with fetched data
+          methods.reset(formData);
+          
+          // Reset the initialLoad flag after a delay to prevent auto-submission
+          setTimeout(() => {
+            isInitialLoad.current = false;
+            console.log('Reset isInitialLoad flag after data load');
+          }, 1000); // Increased from 500ms to 1000ms for more reliability
+        } catch (err) {
+          console.error('Error loading profile for editing:', err);
+          setError(err instanceof Error ? err.message : 'Failed to load profile data');
+        } finally {
+          setLoading('formLoading', false);
         }
-      } catch (error) {
-        console.error('Error fetching draft:', error);
-        // Non-critical error, don't show to user
-      } finally {
-        setLoading('formLoading', false);
+      };
+      
+      fetchProfileData();
+    } else {
+      // In create mode, use existing draft fetching logic
+      const fetchDraft = async () => {
+        try {
+          setLoading('formLoading', true);
+          const { draft, currentStep: savedStep } = await getDraft();
+          
+          if (draft) {
+            // If user is a jobseeker, preserve their email
+            if (isJobSeeker && user?.email) {
+              draft.email = user.email;
+            }
+            
+            // Set form values from draft
+            methods.reset(draft);
+            // Set current step
+            if (savedStep) {
+              setCurrentStep(savedStep);
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching draft:', error);
+          // Non-critical error, don't show to user
+        } finally {
+          setLoading('formLoading', false);
+        }
+      };
+      
+      if (!isEditMode) {
+        fetchDraft();
       }
-    };
-    
-    fetchDraft();
-  }, [methods, isJobSeeker, user]);
+    }
+  }, [isEditMode, profileId, methods]);
 
   // Reset email availability state when moving away from step 1
   useEffect(() => {
@@ -305,8 +407,8 @@ export function ProfileCreate() {
       if (isEmailAvailable !== null) {
         setIsEmailAvailable(null); // Reset when moving to other steps
       }
-    } else if (currentStep === 1) {
-      // If returning to step 1, only check if:
+    } else if (currentStep === 1 && !isEditMode) {
+      // If returning to step 1 and not in edit mode, only check if:
       // 1. We have a valid email
       // 2. We haven't checked already (isEmailAvailable is null)
       const currentEmail = methods.getValues('email');
@@ -345,7 +447,34 @@ export function ProfileCreate() {
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentStep]); 
+  }, [currentStep, isEditMode]); 
+
+  // Add an effect to ensure document validation on final step - but be careful not to trigger submission
+  useEffect(() => {
+    // ONLY run in create mode, never in edit mode
+    if (currentStep === 5 && userInteracted && !isEditMode) {
+      console.log('On document step in CREATE mode, triggering validation');
+      // Trigger validation for documents
+      setTimeout(() => {
+        methods.trigger('documents');
+      }, 300);
+    }
+  }, [currentStep, userInteracted, methods, isEditMode]);
+
+  // Track if the component just mounted
+  const justMounted = useRef(true);
+  useEffect(() => {
+    // Set justMounted to false after component mounts
+    const timer = setTimeout(() => {
+      justMounted.current = false;
+    }, 1500); // Increased from 1000ms to 1500ms for better reliability
+    
+    // Track when user has interacted with the form
+    return () => {
+      clearTimeout(timer);
+      previousUserInteraction.current = userInteracted;
+    };
+  }, [userInteracted]);
 
   const totalSteps = 5;
 
@@ -358,12 +487,49 @@ export function ProfileCreate() {
     const isValid = await methods.trigger(currentFields as Array<keyof JobseekerProfileFormData>);
     
     // Special case for step 1 (ID document requirement)
-    if (currentStep === 1 && isValid && !values.licenseNumber && !values.passportNumber) {
-      methods.setError('licenseNumber', { 
-        type: 'custom', 
-        message: 'Either a license number or passport number is required' 
+    if (currentStep === 1 && isValid) {
+      if (!values.licenseNumber && !values.passportNumber) {
+        methods.setError('licenseNumber', { 
+          type: 'custom', 
+          message: 'Either a license number or passport number is required' 
+        });
+        return false;
+      }
+    }
+    
+    // Special case for step 5 (documents validation)
+    if (currentStep === 5 && isValid) {
+      // Check if documents array exists and has items
+      if (!values.documents || values.documents.length === 0) {
+        methods.setError('documents', {
+          type: 'custom',
+          message: 'At least one document is required'
+        });
+        return false;
+      }
+      
+      // Check each document has required fields
+      let documentsValid = true;
+      values.documents.forEach((doc, index) => {
+        if (!doc.documentType) {
+          methods.setError(`documents.${index}.documentType` as `documents.${number}.documentType`, {
+            type: 'custom',
+            message: 'Document type is required'
+          });
+          documentsValid = false;
+        }
+        
+        // Check if document has either a file or path
+        if (!doc.documentFile && !doc.documentPath) {
+          methods.setError(`documents.${index}.documentFile` as `documents.${number}.documentFile`, {
+            type: 'custom',
+            message: 'Document file is required'
+          });
+          documentsValid = false;
+        }
       });
-      return false;
+      
+      return documentsValid;
     }
     
     return isValid;
@@ -371,6 +537,12 @@ export function ProfileCreate() {
 
   // Function to save form data to draft
   const saveDraft = async () => {
+    // Skip draft saving in edit mode
+    if (isEditMode) {
+      console.log("Draft saving skipped in edit mode");
+      return true;
+    }
+    
     try {
       // Check email availability first if on first step
       if (currentStep === 1) {
@@ -490,6 +662,10 @@ export function ProfileCreate() {
 
   // Function to handle "Continue" button click
   const handleContinue = async () => {
+    // Mark user as having interacted with the form
+    setUserInteracted(true);
+    previousUserInteraction.current = true;
+    
     if (currentStep < totalSteps) {
       // Validate the current step
       const isValid = await validateCurrentStep();
@@ -500,7 +676,7 @@ export function ProfileCreate() {
       }
       
       // For the first step, explicitly verify email availability
-      if (currentStep === 1) {
+      if (currentStep === 1 && !isEditMode) {
         const email = methods.getValues('email');
         
         if (email) {
@@ -532,10 +708,16 @@ export function ProfileCreate() {
           setError('Email is required to continue.');
         }
       } else {
-        // For other steps, proceed with normal save and continue
-        const saveSuccess = await saveDraft();
-        if (saveSuccess) {
+        // For other steps or in edit mode, proceed
+        if (isEditMode) {
+          // In edit mode, just move to the next step without saving draft
           setCurrentStep(prevStep => prevStep + 1);
+        } else {
+          // For other steps in create mode, save draft and continue
+          const saveSuccess = await saveDraft();
+          if (saveSuccess) {
+            setCurrentStep(prevStep => prevStep + 1);
+          }
         }
       }
     }
@@ -543,9 +725,13 @@ export function ProfileCreate() {
 
   // Function to handle "Back" button click with option to save
   const handleBack = async (saveBeforeBack = true) => {
+    // Mark user as having interacted with the form
+    setUserInteracted(true);
+    previousUserInteraction.current = true;
+    
     if (currentStep > 1) {
-      if (saveBeforeBack) {
-        // Optional save when going back
+      if (saveBeforeBack && !isEditMode) {
+        // Only save draft when going back if not in edit mode
         await saveDraft();
       }
       setCurrentStep(prevStep => prevStep - 1);
@@ -554,12 +740,48 @@ export function ProfileCreate() {
 
   // Function to handle final form submission
   const handleSubmit = async (data: JobseekerProfileFormData) => {
-    setLoading('submitting', true);
-    setError(null);
+    console.log('Submit handler called with data:', data);
+    
+    // AGGRESSIVE protection against auto-submission in edit mode
+    if (isEditMode) {
+      // If component just mounted or initial load
+      if (justMounted.current || isInitialLoad.current) {
+        console.log('BLOCKING: Preventing auto-submission on initial load in edit mode');
+        return;
+      }
+      
+      // Additional check - if we haven't seen user interaction
+      if (!userInteracted && !previousUserInteraction.current) {
+        console.log('BLOCKING: No user interaction detected, preventing submission');
+        return;
+      }
+    }
+    
+    // Validate the final step explicitly
+    if (currentStep === totalSteps) {
+      const isValid = await validateCurrentStep();
+      if (!isValid) {
+        scrollToError();
+        return;
+      }
+    }
     
     try {
+      // Safeguard against automatic submissions
+      const isDocumentStep = currentStep === 5;
+      const isLoadingDocuments = loadingStates.fileUploading;
+      
+      if (isDocumentStep && isLoadingDocuments) {
+        console.log('Preventing submission while documents are loading');
+        return; // Prevent submission while documents are loading
+      }
+      
+      setLoading('submitting', true);
+      setError(null);
+      
       // Check email availability before submission - skip for jobseekers using their own email
-      if (!isJobSeeker) {
+      // Also skip if in edit mode and email hasn't changed
+      if (!isJobSeeker && (!isEditMode || (data.email !== initialEmail))) {
         try {
           setLoading('emailChecking', true);
           const result = await checkEmailAvailability(data.email);
@@ -579,8 +801,7 @@ export function ProfileCreate() {
         }
       }
       
-      // First save as a draft (without the file)
-      // We need the user ID for the file path
+      // Get authenticated user for file paths
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         throw new Error('User not authenticated for file upload');
@@ -628,36 +849,46 @@ export function ProfileCreate() {
         setLoading('fileUploading', false);
       }
 
-      // Submit the complete profile data to the server
-      const response = await submitProfile(profileData);
-
-      // If the user is a jobseeker who created their own profile, redirect to verification pending page
-      if (isJobSeeker) {
-        navigate('/profile-verification-pending');
-        return;
-      }
-
-      // For recruiter-created profiles, continue with existing logic
-      // Check if a new account was created (only relevant for recruiter-created profiles)
-      if (response.accountCreated) {
-        // Navigate to the account created page with credentials and profile
-        navigate('/profile-account-created', { 
-          state: { 
-            email: response.email,
-            password: response.password,
-            profile: response.profile,
-            accountCreated: true
-          }
+      let result;
+      
+      if (isEditMode && profileId) {
+        // Update existing profile
+        result = await updateProfile(profileId, profileData);
+        // Navigate to the jobseekers list with success message
+        navigate('/jobseekers', { 
+          state: { message: 'Profile updated successfully', type: 'success' } 
         });
       } else {
-        // Navigate to account created page with just the profile data
-        navigate('/profile-account-created', { 
-          state: { 
-            email: profileData.email,
-            profile: response.profile,
-            accountCreated: false
-          }
-        });
+        // Create new profile
+        result = await submitProfile(profileData);
+        
+        // If the user is a jobseeker who created their own profile, redirect to verification pending page
+        if (isJobSeeker) {
+          navigate('/profile-verification-pending');
+          return;
+        }
+        
+        // For recruiter-created profiles
+        // Check if a new account was created
+        if (result.accountCreated) {
+          // Navigate to the account created page with credentials
+          navigate('/jobseekers/profile/account-created', { 
+            state: { 
+              email: result.email,
+              password: result.password,
+              profile: result.profile,
+              accountCreated: true
+            }
+          });
+        } else {
+          // Navigate to success page
+          navigate('/jobseekers/profile/success', {
+            state: { 
+              message: 'Profile created successfully',
+              profileId: result.profile?.id
+            }
+          });
+        }
       }
     } catch (error) {
       console.error('Form submission error:', error); // Log detailed error
@@ -698,7 +929,7 @@ export function ProfileCreate() {
           currentStep={currentStep} 
           allFields={getStepFields(currentStep)} 
           onEmailAvailabilityChange={(isAvailable) => setIsEmailAvailable(isAvailable)}
-          disableEmail={isJobSeeker}
+          disableEmail={isJobSeeker || isEditMode}
         />;
       case 2:
       case 3:
@@ -706,13 +937,20 @@ export function ProfileCreate() {
       case 4:
         return <CompensationForm currentStep={currentStep} allFields={getStepFields(currentStep)} />;
       case 5:
-        return <DocumentUploadForm currentStep={currentStep} allFields={getStepFields(currentStep)} />;
+        return (
+          <DocumentUploadForm 
+            currentStep={currentStep}
+            allFields={getStepFields(currentStep)}
+            disableSubmit={loadingStates.fileUploading || loadingStates.submitting}
+            isEditMode={isEditMode} 
+          />
+        );
       default:
         return <PersonalInfoForm 
           currentStep={1} 
           allFields={getStepFields(1)}
           onEmailAvailabilityChange={(isAvailable) => setIsEmailAvailable(isAvailable)}
-          disableEmail={isJobSeeker}
+          disableEmail={isJobSeeker || isEditMode}
         />;
     }
   };
@@ -763,7 +1001,14 @@ export function ProfileCreate() {
   return (
     <div className="profile-create-container">
       <div className="profile-create-header">
-        <h1>Create Your Profile</h1>
+        <h1>
+          {isEditMode ? 'Edit Jobseeker Profile' : 'Create Jobseeker Profile'}
+        </h1>
+        <p>
+          {isEditMode 
+            ? 'Update the information for this jobseeker\'s profile.' 
+            : 'Enter the jobseeker\'s information to create their profile.'}
+        </p>
         {renderStepIndicator()}
       </div>
 
@@ -797,15 +1042,36 @@ export function ProfileCreate() {
       <div className={`form-card ${isLoading ? 'form-loading' : ''}`}>
         <FormProvider {...methods}>
           <form 
-            onSubmit={methods.handleSubmit(
-              // On valid submission
-              (data) => handleSubmit(data),
-              // On validation error
-              (errors) => {
-                console.log("Validation errors:", errors);
-                scrollToError();
+            onSubmit={(e) => {
+              console.log('Form submit event triggered');
+              
+              // Prevent default form submission and manually handle later
+              e.preventDefault();
+              
+              // Mark user interaction
+              setUserInteracted(true);
+              previousUserInteraction.current = true;
+              
+              // Check for auto-submission in edit mode
+              if (isEditMode && (justMounted.current || isInitialLoad.current)) {
+                console.log('Preventing auto-submission on initial load in edit mode');
+                return;
               }
-            )} 
+              
+              // Call React Hook Form's handleSubmit
+              methods.handleSubmit(
+                // On valid submission
+                (data) => {
+                  console.log('Form validated successfully, calling handleSubmit');
+                  handleSubmit(data);
+                },
+                // On validation error
+                (errors) => {
+                  console.log("Validation errors:", errors);
+                  scrollToError();
+                }
+              )();
+            }} 
             className={isLoading ? 'form-loading' : ''}
           >
             <div className="form-content">
@@ -824,21 +1090,26 @@ export function ProfileCreate() {
                 </button>
               )}
               
-              <button
-                type="button"
-                className="button secondary draft-button"
-                onClick={() => saveDraft()}
-                disabled={isLoading || (currentStep === 1 && isEmailAvailable === false)}
-                title={currentStep === 1 && isEmailAvailable === false ? 'Email is already in use. Please choose a different email.' : ''}
-              >
-                {loadingStates.draftSaving ? <span className="loading-spinner"></span> : 'Save Draft'}
-              </button>
+              {!isEditMode && (
+                <button
+                  type="button"
+                  className="button secondary draft-button"
+                  onClick={() => saveDraft()}
+                  disabled={isLoading || (currentStep === 1 && isEmailAvailable === false)}
+                  title={currentStep === 1 && isEmailAvailable === false ? 'Email is already in use. Please choose a different email.' : ''}
+                >
+                  {loadingStates.draftSaving ? <span className="loading-spinner"></span> : 'Save Draft'}
+                </button>
+              )}
 
               {currentStep < totalSteps ? (
                 <button
                   type="button"
                   className="button primary"
-                  onClick={handleContinue}
+                  onClick={() => {
+                    setUserInteracted(true);
+                    handleContinue();
+                  }}
                   disabled={isLoading}
                 >
                   {isLoading ? <span className="loading-spinner"></span> : 'Continue'}
@@ -847,7 +1118,11 @@ export function ProfileCreate() {
                 <button
                   type="submit"
                   className="button primary"
-                  disabled={isLoading}
+                  onClick={() => {
+                    console.log('Submit button clicked');
+                    setUserInteracted(true);
+                  }}
+                  disabled={isLoading || (isEditMode && justMounted.current)}
                 >
                   {loadingStates.submitting ? <span className="loading-spinner"></span> : 'Submit'}
                 </button>

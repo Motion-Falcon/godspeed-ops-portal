@@ -120,7 +120,7 @@ export function AddressQualificationsForm({ currentStep, allFields }: AddressQua
               <p className="error-message">{allErrors.bio?.message}</p>
             )}
             <p className="character-count">
-              <small>Maximum 100 characters</small>
+              <small>Minimum 100 characters, maximum 500 characters</small>
             </p>
           </div>
 

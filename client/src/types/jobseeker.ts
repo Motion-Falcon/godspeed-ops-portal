@@ -23,10 +23,15 @@ export interface JobSeekerProfile {
 
 export interface JobSeekerDetailedProfile extends JobSeekerProfile {
   phone?: string;
+  mobile?: string; // Add mobile field since this is what's actually used
   updatedAt: string;
   bio?: string; // This will hold the jobseeker's brief professional description
   resume?: string; // This will hold the path to the resume document
   experience?: string; // The simplified experience string from the DB
+  
+  // Add direct firstName and lastName which come directly in the API response
+  firstName?: string; 
+  lastName?: string;
   
   // Add fields from DbJobseekerProfile that are needed in the detailed view
   dob?: string;
@@ -55,6 +60,17 @@ export interface JobSeekerDetailedProfile extends JobSeekerProfile {
   overtimeHours?: string;
   overtimeBillRate?: string;
   overtimePayRate?: string;
+  
+  // Actual fields from the API response
+  verificationStatus?: 'pending' | 'verified' | 'rejected'; // This is more accurate than 'status'
+  createdByUserId?: string;
+  creatorDetails?: {
+    id: string;
+    email: string;
+    name: string;
+    userType: string;
+    createdAt: string;
+  };
   
   documents?: DocumentRecord[]; // Array of uploaded documents
 

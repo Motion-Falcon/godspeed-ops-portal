@@ -306,6 +306,126 @@ router.put('/:id/status', async (req, res) => {
 });
 
 /**
+ * @route PUT /api/jobseekers/:id/update
+ * @desc Update a jobseeker profile
+ * @access Private (Admin, Recruiter)
+ */
+router.put('/:id/update', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const profileData = req.body;
+
+    // First check if the profile exists
+    const { data: existingProfile, error: fetchError } = await supabaseAdmin
+      .from('jobseeker_profiles')
+      .select('id, user_id, email')
+      .eq('id', id)
+      .single();
+      
+    if (fetchError) {
+      console.error('Error fetching profile for update:', fetchError);
+      if (fetchError.code === 'PGRST116') { 
+        return res.status(404).json({ error: 'Profile not found' });
+      }
+      return res.status(500).json({ error: 'Failed to verify profile existence' });
+    }
+    
+    if (!existingProfile) {
+      return res.status(404).json({ error: 'Profile not found' });
+    }
+
+    // Check if updated email already exists in another profile
+    if (profileData.email && profileData.email !== existingProfile.email) {
+      const { data: emailExists, error: emailCheckError } = await supabaseAdmin
+        .from('jobseeker_profiles')
+        .select('id')
+        .eq('email', profileData.email)
+        .neq('id', id)  // Exclude the current profile
+        .maybeSingle();
+
+      if (emailCheckError) {
+        console.error('Error checking email uniqueness:', emailCheckError);
+        return res.status(500).json({ error: 'Failed to validate email uniqueness' });
+      }
+
+      if (emailExists) {
+        return res.status(409).json({ 
+          error: 'A profile with this email already exists',
+          field: 'email'
+        });
+      }
+    }
+
+    // Prepare profile data for update - convert camelCase to snake_case
+    const updateData: { [key: string]: any } = {};
+    
+    // Handle each field appropriately, mapping camelCase to snake_case
+    if (profileData.firstName) updateData.first_name = profileData.firstName;
+    if (profileData.lastName) updateData.last_name = profileData.lastName;
+    if (profileData.dob) updateData.dob = profileData.dob;
+    if (profileData.email) updateData.email = profileData.email;
+    if (profileData.mobile) updateData.mobile = profileData.mobile;
+    if (profileData.licenseNumber) updateData.license_number = profileData.licenseNumber;
+    if (profileData.passportNumber) updateData.passport_number = profileData.passportNumber;
+    if (profileData.sinNumber) updateData.sin_number = profileData.sinNumber;
+    if (profileData.sinExpiry) updateData.sin_expiry = profileData.sinExpiry;
+    if (profileData.businessNumber) updateData.business_number = profileData.businessNumber;
+    if (profileData.corporationName) updateData.corporation_name = profileData.corporationName;
+    if (profileData.street) updateData.street = profileData.street;
+    if (profileData.city) updateData.city = profileData.city;
+    if (profileData.province) updateData.province = profileData.province;
+    if (profileData.postalCode) updateData.postal_code = profileData.postalCode;
+    if (profileData.workPreference) updateData.work_preference = profileData.workPreference;
+    if (profileData.bio) updateData.bio = profileData.bio;
+    if (profileData.licenseType) updateData.license_type = profileData.licenseType;
+    if (profileData.experience) updateData.experience = profileData.experience;
+    if (profileData.manualDriving) updateData.manual_driving = profileData.manualDriving;
+    if (profileData.availability) updateData.availability = profileData.availability;
+    if (profileData.weekendAvailability !== undefined) updateData.weekend_availability = profileData.weekendAvailability;
+    if (profileData.payrateType) updateData.payrate_type = profileData.payrateType;
+    if (profileData.billRate) updateData.bill_rate = profileData.billRate;
+    if (profileData.payRate) updateData.pay_rate = profileData.payRate;
+    if (profileData.paymentMethod) updateData.payment_method = profileData.paymentMethod;
+    if (profileData.hstGst) updateData.hst_gst = profileData.hstGst;
+    if (profileData.cashDeduction) updateData.cash_deduction = profileData.cashDeduction;
+    if (profileData.overtimeEnabled !== undefined) updateData.overtime_enabled = profileData.overtimeEnabled;
+    if (profileData.overtimeHours) updateData.overtime_hours = profileData.overtimeHours;
+    if (profileData.overtimeBillRate) updateData.overtime_bill_rate = profileData.overtimeBillRate;
+    if (profileData.overtimePayRate) updateData.overtime_pay_rate = profileData.overtimePayRate;
+    
+    // Handle documents array if present
+    if (profileData.documents) {
+      updateData.documents = profileData.documents;
+    }
+    
+    // Always update the updated_at timestamp
+    updateData.updated_at = new Date().toISOString();
+
+    // Update the profile in the database
+    const { data: updatedProfile, error: updateError } = await supabaseAdmin
+      .from('jobseeker_profiles')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (updateError) {
+      console.error('Error updating profile:', updateError);
+      return res.status(500).json({ error: 'Failed to update profile' });
+    }
+
+    res.json({ 
+      message: 'Profile updated successfully',
+      profile: updatedProfile
+    });
+
+  } catch (error) {
+    console.error('Unexpected error updating jobseeker profile:', error);
+    res.status(500).json({ error: 'An unexpected error occurred while updating the profile' });
+  }
+});
+
+/**
  * @route DELETE /api/jobseekers/:id
  * @desc Delete a specific jobseeker profile
  * @access Private (Admin, Recruiter)
