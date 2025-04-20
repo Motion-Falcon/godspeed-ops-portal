@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { ArrowLeft, Search, Filter, Eye } from 'lucide-react';
-import { getJobseekerProfiles } from '../services/api';
+import { ArrowLeft, Search, Filter, Eye, CheckCircle, XCircle, Clock, Trash2 } from 'lucide-react';
+import { getJobseekerProfiles, deleteJobseeker } from '../services/api';
 import { JobSeekerProfile } from '../types/jobseeker';
+import { ConfirmationModal } from '../components/ConfirmationModal';
 import '../styles/pages/JobSeekersList.css';
 
 export function JobSeekersList() {
@@ -12,6 +13,10 @@ export function JobSeekersList() {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [profileToDelete, setProfileToDelete] = useState<JobSeekerProfile | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const { isAdmin, isRecruiter } = useAuth();
   const navigate = useNavigate();
 
@@ -65,22 +70,60 @@ export function JobSeekersList() {
     return matchesSearch && matchesStatus;
   });
 
-  const getStatusBadgeClass = (status: string) => {
+  const getStatusIcon = (status: string) => {
     switch (status) {
       case 'verified':
-        return 'status-badge verified';
-      case 'pending':
-        return 'status-badge pending';
+        return <CheckCircle className="status-icon verified" size={16} />;
       case 'rejected':
-        return 'status-badge rejected';
+        return <XCircle className="status-icon rejected" size={16} />;
+      case 'pending':
+        return <Clock className="status-icon pending" size={16} />;
       default:
-        return 'status-badge';
+        return <Clock className="status-icon pending" size={16} />;
     }
   };
 
   const handleViewProfile = (id: string) => {
     // Navigate to detailed view
     navigate(`/jobseekers/${id}`);
+  };
+
+  const handleDeleteClick = (profile: JobSeekerProfile) => {
+    setProfileToDelete(profile);
+    setIsDeleteModalOpen(true);
+    setDeleteError(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!profileToDelete) return;
+    
+    try {
+      setIsDeleting(true);
+      setDeleteError(null);
+      
+      await deleteJobseeker(profileToDelete.id);
+      
+      // Remove the deleted profile from the state
+      setProfiles(prevProfiles => 
+        prevProfiles.filter(profile => profile.id !== profileToDelete.id)
+      );
+      
+      // Close the modal
+      setIsDeleteModalOpen(false);
+      setProfileToDelete(null);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to delete profile';
+      setDeleteError(errorMessage);
+      console.error('Error deleting profile:', err);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setIsDeleteModalOpen(false);
+    setProfileToDelete(null);
+    setDeleteError(null);
   };
 
   return (
@@ -146,56 +189,89 @@ export function JobSeekersList() {
             <p>No profiles match your search criteria.</p>
           </div>
         ) : (
-          <div className="profiles-grid">
-            {filteredProfiles.map(profile => (
-              <div key={profile.id} className="profile-card">
-                <div className="profile-header">
-                  <h3 className="profile-name">{profile.name}</h3>
-                  <span className={getStatusBadgeClass(profile.status)}>
-                    {profile.status.charAt(0).toUpperCase() + profile.status.slice(1)}
-                  </span>
-                </div>
-                
-                <div className="profile-info">
-                  <p className="profile-email">{profile.email}</p>
-                  
-                  {profile.location && (
-                    <p className="profile-location">Location: {profile.location}</p>
-                  )}
-                  
-                  {profile.skills && profile.skills.length > 0 && (
-                    <div className="profile-skills">
-                      <p className="skills-label">Skills:</p>
-                      <div className="skills-list">
-                        {profile.skills.slice(0, 3).map((skill, index) => (
-                          <span key={index} className="skill-tag">{skill}</span>
-                        ))}
-                        {profile.skills.length > 3 && (
-                          <span className="more-skills">+{profile.skills.length - 3}</span>
-                        )}
+          <div className="table-container">
+            <table className="profiles-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Location</th>
+                  <th>Skills</th>
+                  <th>Status</th>
+                  <th>Joined Date</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredProfiles.map(profile => (
+                  <tr key={profile.id}>
+                    <td className="name-cell">{profile.name}</td>
+                    <td className="email-cell">{profile.email}</td>
+                    <td className="location-cell">{profile.location || 'N/A'}</td>
+                    <td className="skills-cell">
+                      {profile.skills && profile.skills.length > 0 ? (
+                        <div className="skills-list">
+                          {profile.skills.slice(0, 2).map((skill, index) => (
+                            <span key={index} className="skill-tag">{skill}</span>
+                          ))}
+                          {profile.skills.length > 2 && (
+                            <span className="more-skills">+{profile.skills.length - 2}</span>
+                          )}
+                        </div>
+                      ) : (
+                        'N/A'
+                      )}
+                    </td>
+                    <td className="status-cell">
+                      <div className="status-display">
+                        {getStatusIcon(profile.status)}
+                        <span className={`status-text ${profile.status}`}>
+                          {profile.status.charAt(0).toUpperCase() + profile.status.slice(1)}
+                        </span>
                       </div>
-                    </div>
-                  )}
-                  
-                  <p className="profile-date">
-                    Joined: {new Date(profile.createdAt).toLocaleDateString()}
-                  </p>
-                </div>
-                
-                <div className="profile-actions">
-                  <button 
-                    className="button primary view-profile-btn"
-                    onClick={() => handleViewProfile(profile.id)}
-                  >
-                    <Eye size={16} className="icon" />
-                    View Profile
-                  </button>
-                </div>
-              </div>
-            ))}
+                    </td>
+                    <td className="date-cell">
+                      {new Date(profile.createdAt).toLocaleDateString()}
+                    </td>
+                    <td className="actions-cell">
+                      <div className="action-buttons">
+                        <button 
+                          className="button primary view-btn"
+                          onClick={() => handleViewProfile(profile.id)}
+                          title="View profile details"
+                        >
+                          <Eye size={16} />
+                          View
+                        </button>
+                        <button 
+                          className="button danger delete-btn"
+                          onClick={() => handleDeleteClick(profile)}
+                          title="Delete this profile"
+                        >
+                          <Trash2 size={16} />
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </main>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={isDeleteModalOpen}
+        title="Delete Profile"
+        message={`Are you sure you want to delete the profile for ${profileToDelete?.name}? This action cannot be undone.${deleteError ? `\n\nError: ${deleteError}` : ''}`}
+        confirmText={isDeleting ? "Deleting..." : "Delete Profile"}
+        cancelText="Cancel"
+        confirmButtonClass="danger"
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+      />
     </div>
   );
 } 

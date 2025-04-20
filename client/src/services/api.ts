@@ -487,6 +487,21 @@ export const updateJobseekerStatus = async (id: string, status: 'pending' | 'ver
   }
 };
 
+// Add delete jobseeker function
+export const deleteJobseeker = async (id: string): Promise<{ message: string, deletedId: string }> => {
+  try {
+    const response = await api.delete(`/api/jobseekers/${id}`);
+    // Clear cache for jobseeker list after deletion
+    clearCacheFor('/api/jobseekers');
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(error.response.data.error || 'Failed to delete jobseeker profile');
+    }
+    throw error;
+  }
+};
+
 // Add this function with the other profile-related functions
 export const checkEmailAvailability = async (email: string): Promise<{ available: boolean; email: string }> => {
   try {

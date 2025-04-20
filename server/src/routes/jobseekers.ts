@@ -305,4 +305,54 @@ router.put('/:id/status', async (req, res) => {
   }
 });
 
+/**
+ * @route DELETE /api/jobseekers/:id
+ * @desc Delete a specific jobseeker profile
+ * @access Private (Admin, Recruiter)
+ */
+router.delete('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // First check if the profile exists
+    const { data: profile, error: fetchError } = await supabaseAdmin
+      .from('jobseeker_profiles')
+      .select('id')
+      .eq('id', id)
+      .single();
+      
+    if (fetchError) {
+      console.error('Error fetching profile for deletion:', fetchError);
+      if (fetchError.code === 'PGRST116') { 
+        return res.status(404).json({ error: 'Profile not found' });
+      }
+      return res.status(500).json({ error: 'Failed to verify profile existence' });
+    }
+    
+    if (!profile) {
+      return res.status(404).json({ error: 'Profile not found' });
+    }
+
+    // Use the admin client to bypass RLS for the delete operation
+    const { error: deleteError } = await supabaseAdmin
+      .from('jobseeker_profiles')
+      .delete()
+      .eq('id', id);
+
+    if (deleteError) {
+      console.error('Error deleting profile from database:', deleteError);
+      return res.status(500).json({ error: 'Failed to delete jobseeker profile' });
+    }
+
+    res.json({ 
+      message: 'Profile deleted successfully',
+      deletedId: id
+    });
+
+  } catch (error) {
+    console.error('Unexpected error deleting jobseeker profile:', error);
+    res.status(500).json({ error: 'An unexpected error occurred while deleting the profile' });
+  }
+});
+
 export default router; 

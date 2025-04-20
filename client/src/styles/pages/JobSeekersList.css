@@ -100,7 +100,7 @@
   box-shadow: 0 0 0 2px var(--primary-light);
 }
 
-/* .loading-container, .error-container, .empty-state {
+.loading-container, .error-container, .empty-state {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -112,105 +112,104 @@
   border-radius: var(--border-radius);
   padding: var(--spacing-6);
   box-shadow: var(--card-shadow);
-} */
+}
 
 .error-message {
   color: var(--error);
 }
 
-.profiles-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: var(--spacing-4);
-}
-
-.profile-card {
+/* Table Styles */
+.table-container {
   background-color: var(--card);
   border-radius: var(--border-radius);
   box-shadow: var(--card-shadow);
-  padding: var(--spacing-4);
-  display: flex;
-  flex-direction: column;
-  transition: transform 0.2s, box-shadow 0.2s;
+  overflow-x: auto;
 }
 
-.profile-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--card-shadow-hover);
+.profiles-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
 }
 
-.profile-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: var(--spacing-3);
+.profiles-table thead {
+  background-color: var(--background-secondary);
 }
 
-.profile-name {
-  font-size: 1.125rem;
+.profiles-table th {
+  text-align: left;
+  padding: var(--spacing-3) var(--spacing-4);
   font-weight: 600;
-  margin: 0;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
 }
 
-.status-badge {
-  font-size: 0.75rem;
-  padding: 0.25rem 0.5rem;
-  border-radius: 1rem;
+.profiles-table tbody tr {
+  border-bottom: 1px solid var(--border);
+  transition: background-color 0.2s;
+}
+
+.profiles-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.profiles-table tbody tr:hover {
+  background-color: var(--background-secondary);
+}
+
+.profiles-table td {
+  padding: var(--spacing-3) var(--spacing-4);
+  vertical-align: middle;
+}
+
+.name-cell {
   font-weight: 500;
-  text-transform: uppercase;
 }
 
-.status-badge.verified {
-  background-color: rgba(var(--color-success-rgb), 0.1);
+.email-cell {
+  color: var(--text-muted);
+}
+
+.status-cell .status-display {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.status-icon {
+  flex-shrink: 0;
+}
+
+.status-icon.verified {
   color: var(--color-success);
 }
 
-.status-badge.pending {
-  background-color: rgba(var(--color-warning-rgb), 0.1);
-  color: var(--color-warning);
-}
-
-.status-badge.rejected {
-  background-color: rgba(var(--color-error-rgb), 0.1);
+.status-icon.rejected {
   color: var(--color-error);
 }
 
-.profile-info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-2);
-  margin-bottom: var(--spacing-4);
+.status-icon.pending {
+  color: var(--color-warning);
 }
 
-.profile-email, .profile-location, .profile-date {
-  margin: 0;
-  font-size: 0.875rem;
-}
-
-.profile-email {
-  color: var(--text-muted);
-}
-
-.profile-date {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  margin-top: auto;
-}
-
-.profile-skills {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-2);
-}
-
-.skills-label {
-  margin: 0;
-  font-size: 0.875rem;
+.status-text {
   font-weight: 500;
 }
 
-.skills-list {
+.status-text.verified {
+  color: var(--color-success);
+}
+
+.status-text.rejected {
+  color: var(--color-error);
+}
+
+.status-text.pending {
+  color: var(--color-warning);
+}
+
+.skills-cell .skills-list {
   display: flex;
   flex-wrap: wrap;
   gap: var(--spacing-2);
@@ -222,26 +221,52 @@
   color: var(--text);
   padding: 0.25rem 0.5rem;
   border-radius: 1rem;
+  white-space: nowrap;
 }
 
 .more-skills {
   font-size: 0.75rem;
   color: var(--text-muted);
-  display: flex;
+  display: inline-flex;
   align-items: center;
 }
 
-.profile-actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: auto;
+.actions-cell {
+  width: 1%;
+  white-space: nowrap;
 }
 
-.view-profile-btn {
+.action-buttons {
+  display: flex;
+  gap: var(--spacing-2);
+}
+
+.view-btn, .delete-btn {
   display: flex;
   align-items: center;
   gap: var(--spacing-2);
-  font-size: 0.875rem;
+  font-size: 0.75rem;
+  padding: var(--spacing-1) var(--spacing-3);
+}
+
+.delete-btn {
+  background-color: var(--color-error);
+  color: white;
+}
+
+.delete-btn:hover {
+  background-color: var(--color-error-hover, #d32f2f);
+}
+
+@media screen and (max-width: 1024px) {
+  .profiles-table {
+    min-width: 800px;
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+    gap: var(--spacing-1);
+  }
 }
 
 @media screen and (max-width: 640px) {
