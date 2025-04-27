@@ -146,7 +146,7 @@ router.post('/submit',
               data: {
                 name: `${profileData.firstName} ${profileData.lastName}`,
                 user_type: 'jobseeker',
-                hasProfile: true, // Set hasProfile flag for new users
+                hasProfile: false, // Set hasProfile flag for new users
               },
             },
           });

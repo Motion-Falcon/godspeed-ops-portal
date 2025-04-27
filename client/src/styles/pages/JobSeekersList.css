@@ -103,14 +103,10 @@
 .loading-container, .error-container, .empty-state {
   display: flex;
   flex-direction: column;
-  align-items: center;
   justify-content: center;
-  min-height: 200px;
   gap: var(--spacing-4);
-  text-align: center;
   background-color: var(--card);
   border-radius: var(--border-radius);
-  padding: var(--spacing-6);
   box-shadow: var(--card-shadow);
 }
 
