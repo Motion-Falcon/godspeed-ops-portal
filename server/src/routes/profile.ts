@@ -3,7 +3,6 @@ import { authenticateToken } from '../middleware/auth.js';
 import { createClient } from '@supabase/supabase-js';
 import { apiRateLimiter, sensitiveRateLimiter, sanitizeInputs } from '../middleware/security.js';
 import dotenv from 'dotenv';
-import { encrypt, decrypt } from '../utils/encryption.js';
 import { ProfileData, Document, DbJobseekerProfile } from '../types.js';
 
 dotenv.config();
@@ -20,14 +19,6 @@ if (!supabaseUrl || !supabaseKey) {
 }
 
 const supabase = createClient(supabaseUrl, supabaseKey);
-
-// Define sensitive fields that need encryption/masking
-const SENSITIVE_FIELDS = {
-  sinNumber: true,
-  licenseNumber: true,
-  passportNumber: true,
-  businessNumber: true
-};
 
 /**
  * Submit complete jobseeker profile with security measures
@@ -179,54 +170,46 @@ router.post('/submit',
         console.log(`Using creator's ID as fallback: ${profileUserId}`);
       }
 
-      // Encrypt sensitive data before storing
-      const encryptedData = { ...profileData };
-      Object.keys(SENSITIVE_FIELDS).forEach(field => {
-        if (encryptedData[field]) {
-          encryptedData[field] = encrypt(encryptedData[field]);
-        }
-      });
-
       // Prepare final profile data with proper field names
       const finalProfileData = {
         user_id: profileUserId, // This is now the jobseeker's ID if found, or creator's ID if not
-        first_name: encryptedData.firstName,
-        last_name: encryptedData.lastName,
-        dob: encryptedData.dob,
-        email: encryptedData.email, // This will be the unique identifier
-        mobile: encryptedData.mobile,
-        license_number: encryptedData.licenseNumber,
-        passport_number: encryptedData.passportNumber,
-        sin_number: encryptedData.sinNumber,
-        sin_expiry: encryptedData.sinExpiry,
-        business_number: encryptedData.businessNumber,
-        corporation_name: encryptedData.corporationName,
+        first_name: profileData.firstName,
+        last_name: profileData.lastName,
+        dob: profileData.dob,
+        email: profileData.email, // This will be the unique identifier
+        mobile: profileData.mobile,
+        license_number: profileData.licenseNumber,
+        passport_number: profileData.passportNumber,
+        sin_number: profileData.sinNumber,
+        sin_expiry: profileData.sinExpiry,
+        business_number: profileData.businessNumber,
+        corporation_name: profileData.corporationName,
         // Address fields
-        street: encryptedData.street,
-        city: encryptedData.city,
-        province: encryptedData.province,
-        postal_code: encryptedData.postalCode,
+        street: profileData.street,
+        city: profileData.city,
+        province: profileData.province,
+        postal_code: profileData.postalCode,
         // Qualifications fields
-        work_preference: encryptedData.workPreference,
-        bio: encryptedData.bio,
-        license_type: encryptedData.licenseType,
-        experience: encryptedData.experience,
-        manual_driving: encryptedData.manualDriving,
-        availability: encryptedData.availability,
-        weekend_availability: encryptedData.weekendAvailability,
+        work_preference: profileData.workPreference,
+        bio: profileData.bio,
+        license_type: profileData.licenseType,
+        experience: profileData.experience,
+        manual_driving: profileData.manualDriving,
+        availability: profileData.availability,
+        weekend_availability: profileData.weekendAvailability,
         // Compensation fields
-        payrate_type: encryptedData.payrateType,
-        bill_rate: encryptedData.billRate,
-        pay_rate: encryptedData.payRate,
-        payment_method: encryptedData.paymentMethod,
-        hst_gst: encryptedData.hstGst,
-        cash_deduction: encryptedData.cashDeduction,
-        overtime_enabled: encryptedData.overtimeEnabled,
-        overtime_hours: encryptedData.overtimeHours,
-        overtime_bill_rate: encryptedData.overtimeBillRate,
-        overtime_pay_rate: encryptedData.overtimePayRate,
+        payrate_type: profileData.payrateType,
+        bill_rate: profileData.billRate,
+        pay_rate: profileData.payRate,
+        payment_method: profileData.paymentMethod,
+        hst_gst: profileData.hstGst,
+        cash_deduction: profileData.cashDeduction,
+        overtime_enabled: profileData.overtimeEnabled,
+        overtime_hours: profileData.overtimeHours,
+        overtime_bill_rate: profileData.overtimeBillRate,
+        overtime_pay_rate: profileData.overtimePayRate,
         // Document info - now stored as a JSONB array
-        documents: encryptedData.documents || [],
+        documents: profileData.documents || [],
         // Set verification status to pending
         verification_status: 'pending',
         // Add the user ID of the creator (typically a recruiter)
@@ -329,18 +312,6 @@ router.get('/',
           // Convert snake_case to camelCase
           const camelKey = key.replace(/_([a-z])/g, (m, p1) => p1.toUpperCase()) as keyof ProfileData;
           profileData[camelKey] = value;
-          
-          // Decrypt sensitive fields
-          if (
-            camelKey === 'sinNumber' || 
-            camelKey === 'licenseNumber' || 
-            camelKey === 'passportNumber' || 
-            camelKey === 'businessNumber'
-          ) {
-            if (typeof value === 'string' && value) {
-              profileData[camelKey] = decrypt(value) as string;
-            }
-          }
         } else {
           // For keys that are already camelCase (unlikely), pass them directly
           profileData[key as keyof ProfileData] = value;

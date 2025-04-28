@@ -11,6 +11,7 @@ import { ResetPassword } from './pages/ResetPassword';
 import { Dashboard } from './pages/Dashboard';
 import { ProfileCreate } from './pages/JobseekerProfile/ProfileCreate';
 import { ProfileAccountCreated } from './pages/JobseekerProfile/ProfileAccountCreated';
+import { ProfileSuccess } from './pages/JobseekerProfile/ProfileSuccess';
 import { JobSeekersList } from './pages/JobSeekersList';
 import { JobSeekerProfile } from './pages/JobSeekerProfile';
 import { GeometricShapes } from './components/GeometricShapes';
@@ -41,7 +42,8 @@ function App() {
               <Route path="/profile/create" element={<ProfileCreate />} />
 
               <Route element={<RecruiterRoute />}>
-                <Route path="/profile-account-created" element={<ProfileAccountCreated />} />
+                <Route path="/jobseekers/profile/account-created" element={<ProfileAccountCreated />} />
+                <Route path="/jobseekers/profile/success" element={<ProfileSuccess />} />
                 <Route path="/jobseekers" element={<JobSeekersList />} />
                 <Route path="/jobseekers/:id" element={<JobSeekerProfile />} />
                 <Route path="/jobseekers/:id/edit" element={<ProfileEdit />} />
