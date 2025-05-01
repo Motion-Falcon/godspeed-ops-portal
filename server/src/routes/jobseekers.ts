@@ -104,9 +104,9 @@ const supabaseAdmin = createClient(supabaseUrl!, supabaseServiceKey!);
 
 const router = Router();
 
-// Middleware to ensure only admins or recruiters can access these routes
+// Apply only authentication middleware globally
 router.use(authenticateToken);
-router.use(isAdminOrRecruiter);
+// Remove the global isAdminOrRecruiter middleware and apply it to specific routes
 
 /**
  * Formats the full name from first and last name.
@@ -128,7 +128,7 @@ function extractLocation(profile: DbJobseekerProfile): string | undefined {
  * @desc Get all jobseeker profiles (simplified view)
  * @access Private (Admin, Recruiter)
  */
-router.get('/', async (req, res) => {
+router.get('/', isAdminOrRecruiter, async (req, res) => {
   try {
     // Use the admin client to bypass RLS
     const { data: dbProfiles, error } = await supabaseAdmin
@@ -169,7 +169,7 @@ router.get('/', async (req, res) => {
 /**
  * @route GET /api/jobseekers/:id
  * @desc Get a specific jobseeker profile (detailed view)
- * @access Private (Admin, Recruiter)
+ * @access Public (Owner, Admin, Recruiter)
  */
 router.get('/:id', async (req, res) => {
   try {
@@ -237,7 +237,7 @@ router.get('/:id', async (req, res) => {
  * @desc Update a jobseeker profile status
  * @access Private (Admin, Recruiter)
  */
-router.put('/:id/status', async (req, res) => {
+router.put('/:id/status', isAdminOrRecruiter, async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
@@ -308,7 +308,7 @@ router.put('/:id/status', async (req, res) => {
 /**
  * @route PUT /api/jobseekers/:id/update
  * @desc Update a jobseeker profile
- * @access Private (Admin, Recruiter)
+ * @access Public (Owner, Admin, Recruiter)
  */
 router.put('/:id/update', async (req, res) => {
   try {
@@ -430,7 +430,7 @@ router.put('/:id/update', async (req, res) => {
  * @desc Delete a specific jobseeker profile
  * @access Private (Admin, Recruiter)
  */
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', isAdminOrRecruiter, async (req, res) => {
   try {
     const { id } = req.params;
 

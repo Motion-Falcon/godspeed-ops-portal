@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { LogOut, User as UserIcon, Briefcase, FileText, Bell, Activity } from 'lucide-react';
+import { LogOut, User as UserIcon, FileText, Bell, Activity } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { logoutUser } from '../lib/auth';
 import { useNavigate } from 'react-router-dom';
 import { ThemeToggle } from '../components/theme-toggle';
 import { checkApiHealth } from '../services/api';
+import { supabase } from '../lib/supabaseClient';
 
 interface UserData {
   id: string;
@@ -13,6 +14,7 @@ interface UserData {
   userType: string;
   createdAt: string;
   lastSignIn: string;
+  profileId?: string;
 }
 
 export function JobSeekerDashboard() {
@@ -21,6 +23,7 @@ export function JobSeekerDashboard() {
   const [healthStatus, setHealthStatus] = useState<string | null>(null);
   const navigate = useNavigate();
   const [userData, setUserData] = useState<UserData | null>(null);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -34,8 +37,32 @@ export function JobSeekerDashboard() {
           ? new Date(user.last_sign_in_at).toLocaleString() 
           : 'First login'
       });
+      
+      fetchUserProfileId(user.id);
     }
   }, [user]);
+  
+  const fetchUserProfileId = async (userId: string) => {
+    try {
+      setIsLoadingProfile(true);
+      
+      const { data, error } = await supabase
+        .from('jobseeker_profiles')
+        .select('id')
+        .eq('user_id', userId)
+        .single();
+      
+      if (error) {
+        console.error('Error fetching profile ID:', error);
+      } else if (data) {
+        setUserData(prev => prev ? { ...prev, profileId: data.id } : null);
+      }
+    } catch (err) {
+      console.error('Error fetching profile ID:', err);
+    } finally {
+      setIsLoadingProfile(false);
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -45,6 +72,12 @@ export function JobSeekerDashboard() {
     } catch (error) {
       console.error('Error logging out:', error);
       setIsLoggingOut(false);
+    }
+  };
+
+  const handleViewProfile = () => {
+    if (userData?.profileId) {
+      navigate(`/jobseekers/${userData.profileId}`);
     }
   };
 
@@ -153,9 +186,14 @@ export function JobSeekerDashboard() {
           <div className="card">
             <h2 className="card-title" style={{ marginBottom: '1rem' }}>Job Seeker Actions</h2>
             <div className="action-list">
-              <button className="button outline" style={{ justifyContent: 'flex-start' }}>
-                <Briefcase size={16} className="icon" />
-                Browse Job Listings
+              <button 
+                className="button outline" 
+                style={{ justifyContent: 'flex-start' }}
+                onClick={handleViewProfile}
+                disabled={isLoadingProfile}
+              >
+                <UserIcon size={16} className="icon" />
+                {isLoadingProfile ? 'Loading Profile...' : 'View My Profile'}
               </button>
               <button className="button outline" style={{ justifyContent: 'flex-start' }}>
                 <FileText size={16} className="icon" />

@@ -478,7 +478,7 @@ router.get('/draft',
  */
 router.get('/check-email', 
   authenticateToken,
-  apiRateLimiter,
+  // apiRateLimiter,
   async (req: Request, res: Response) => {
     try {
       if (!req.user || !req.user.id) {

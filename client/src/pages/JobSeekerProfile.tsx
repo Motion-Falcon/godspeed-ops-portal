@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { ArrowLeft, User, CheckCircle, XCircle, Clock, FileText, Download, Eye, FileWarning } from 'lucide-react';
+import { ArrowLeft, User, CheckCircle, XCircle, Clock, FileText, Download, Eye, FileWarning, Edit } from 'lucide-react';
 import { getJobseekerProfile, updateJobseekerStatus } from '../services/api';
 import { DocumentRecord } from '../types/jobseeker';
 import { supabase } from '../lib/supabaseClient';
@@ -101,11 +101,6 @@ export function JobSeekerProfile() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if user has access
-    if (!isAdmin && !isRecruiter) {
-      navigate('/dashboard');
-      return;
-    }
 
     const fetchProfile = async () => {
       try {
@@ -375,6 +370,11 @@ export function JobSeekerProfile() {
     }
   };
 
+  const handleEditProfile = () => {
+    if (!id) return;
+    navigate(`/jobseekers/${id}/edit`);
+  };
+
   if (loading) {
     return (
       <div className="profile-container">
@@ -450,29 +450,40 @@ export function JobSeekerProfile() {
             )}
             <div className="status-buttons">
               <button 
-                className={`button ${profile.verificationStatus === 'verified' ? 'success' : 'outline'}`}
-                onClick={() => handleStatusUpdate('verified')}
-                disabled={profile.verificationStatus === 'verified'}
+                className="button primary"
+                onClick={handleEditProfile}
               >
-                <CheckCircle size={16} />
-                Verify
+                <Edit size={16} />
+                Edit Profile
               </button>
-              <button 
-                className={`button ${profile.verificationStatus === 'rejected' ? 'error' : 'outline'}`}
-                onClick={() => handleStatusUpdate('rejected')}
-                disabled={profile.verificationStatus === 'rejected'}
-              >
-                <XCircle size={16} />
-                Reject
-              </button>
-              <button 
-                className={`button ${profile.verificationStatus === 'pending' ? 'warning' : 'outline'}`}
-                onClick={() => handleStatusUpdate('pending')}
-                disabled={profile.verificationStatus === 'pending'}
-              >
-                <Clock size={16} />
-                Mark Pending
-              </button>
+              {(isAdmin || isRecruiter) && (
+                <>
+                  <button 
+                    className={`button ${profile.verificationStatus === 'verified' ? 'success' : 'outline'}`}
+                    onClick={() => handleStatusUpdate('verified')}
+                    disabled={profile.verificationStatus === 'verified'}
+                  >
+                    <CheckCircle size={16} />
+                    Verify
+                  </button>
+                  <button 
+                    className={`button ${profile.verificationStatus === 'rejected' ? 'error' : 'outline'}`}
+                    onClick={() => handleStatusUpdate('rejected')}
+                    disabled={profile.verificationStatus === 'rejected'}
+                  >
+                    <XCircle size={16} />
+                    Reject
+                  </button>
+                  <button 
+                    className={`button ${profile.verificationStatus === 'pending' ? 'warning' : 'outline'}`}
+                    onClick={() => handleStatusUpdate('pending')}
+                    disabled={profile.verificationStatus === 'pending'}
+                  >
+                    <Clock size={16} />
+                    Mark Pending
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>

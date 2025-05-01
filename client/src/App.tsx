@@ -40,13 +40,13 @@ function App() {
             <Route element={<ProtectedRoute />}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/profile/create" element={<ProfileCreate />} />
+              <Route path="/jobseekers/:id/edit" element={<ProfileEdit />} />
+              <Route path="/jobseekers/:id" element={<JobSeekerProfile />} />
 
               <Route element={<RecruiterRoute />}>
                 <Route path="/jobseekers/profile/account-created" element={<ProfileAccountCreated />} />
                 <Route path="/jobseekers/profile/success" element={<ProfileSuccess />} />
                 <Route path="/jobseekers" element={<JobSeekersList />} />
-                <Route path="/jobseekers/:id" element={<JobSeekerProfile />} />
-                <Route path="/jobseekers/:id/edit" element={<ProfileEdit />} />
                 {/* Add more recruiter-specific routes here */}
               </Route>
               

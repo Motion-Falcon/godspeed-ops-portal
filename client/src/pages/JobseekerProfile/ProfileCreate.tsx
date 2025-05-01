@@ -864,7 +864,7 @@ export function ProfileCreate({ isEditMode = false }: ProfileCreateProps) {
         
         // If the user is a jobseeker who created their own profile, redirect to verification pending page
         if (isJobSeeker) {
-          console.log('[ProfileCreate] User is a jobseeker, redirecting to verification pending page');
+          window.location.reload();
           navigate('/profile-verification-pending');
           return;
         }
