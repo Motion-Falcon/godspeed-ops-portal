@@ -8,13 +8,15 @@ import { PersonalInfoForm } from './PersonalInfoForm';
 import { AddressQualificationsForm } from './AddressQualificationsForm';
 import { CompensationForm } from './CompensationForm';
 import { DocumentUploadForm } from './DocumentUploadForm';
+import { ConfirmationModal } from '../../components/ConfirmationModal';
 import { 
   submitProfile, 
   saveDraft as saveDraftAPI, 
   getDraft, 
   checkEmailAvailability, 
   getJobseekerProfile,
-  updateProfile 
+  updateProfile,
+  updateJobseekerStatus
 } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import '../../styles/components/form.css';
@@ -196,6 +198,8 @@ export function ProfileCreate({ isEditMode = false }: ProfileCreateProps) {
   const [error, setError] = useState<string | null>(null);
   const [isEmailAvailable, setIsEmailAvailable] = useState<boolean | null>(null);
   const [initialEmail, setInitialEmail] = useState<string | null>(null);
+  const [isSubmitConfirmationOpen, setIsSubmitConfirmationOpen] = useState<boolean>(false);
+  const [formDataToSubmit, setFormDataToSubmit] = useState<JobseekerProfileFormData | null>(null);
   const navigate = useNavigate();
   const { isJobSeeker, user } = useAuth();
   
@@ -766,7 +770,22 @@ export function ProfileCreate({ isEditMode = false }: ProfileCreateProps) {
       }
     }
     
+    // If this is a jobseeker in edit mode, show confirmation dialog
+    if (isEditMode && isJobSeeker && profileId) {
+      setFormDataToSubmit(data);
+      setIsSubmitConfirmationOpen(true);
+      return;
+    }
+    
+    // Otherwise, proceed with normal submission
+    submitFormData(data);
+  };
+
+  // New function to handle the actual submission after confirmation
+  const submitFormData = async (data: JobseekerProfileFormData) => {
     try {
+      // ... existing code from the handleSubmit function ...
+      
       // Safeguard against automatic submissions
       const isDocumentStep = currentStep === 5;
       const isLoadingDocuments = loadingStates.fileUploading;
@@ -854,7 +873,16 @@ export function ProfileCreate({ isEditMode = false }: ProfileCreateProps) {
       if (isEditMode && profileId) {
         // Update existing profile
         result = await updateProfile(profileId, profileData);
-        // Navigate to the jobseekers list with success message
+        
+        // If jobseeker is editing their own profile, set status to pending and redirect to verification page
+        if (isJobSeeker) {
+          // Update the status to pending
+          await updateJobseekerStatus(profileId, 'pending');
+          window.location.reload();
+          return;
+        }
+        
+        // For recruiter/admin edited profiles, navigate to the jobseekers list with success message
         navigate('/jobseekers', { 
           state: { message: 'Profile updated successfully', type: 'success' } 
         });
@@ -1133,6 +1161,23 @@ export function ProfileCreate({ isEditMode = false }: ProfileCreateProps) {
           </form>
         </FormProvider>
       </div>
+      
+      {/* Submit Confirmation Modal for Jobseekers */}
+      <ConfirmationModal
+        isOpen={isSubmitConfirmationOpen}
+        title="Profile Status Change Notice"
+        message="Your profile has been modified and will require re-verification. After submitting these changes, your profile status will change to 'pending' and your profile will not be visible to employers until our team reviews and approves the changes. Do you want to continue?"
+        confirmText="Yes, Submit Changes"
+        cancelText="Cancel"
+        confirmButtonClass="primary"
+        onConfirm={() => {
+          setIsSubmitConfirmationOpen(false);
+          if (formDataToSubmit) {
+            submitFormData(formDataToSubmit);
+          }
+        }}
+        onCancel={() => setIsSubmitConfirmationOpen(false)}
+      />
     </div>
   );
 } 

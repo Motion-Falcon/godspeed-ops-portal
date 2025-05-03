@@ -7,6 +7,7 @@ import { DocumentRecord } from '../types/jobseeker';
 import { supabase } from '../lib/supabaseClient';
 import PDFThumbnail from '../components/PDFThumbnail';
 import PDFViewerModal from '../components/PDFViewerModal';
+import { ConfirmationModal } from '../components/ConfirmationModal';
 import '../styles/pages/JobSeekerProfile.css';
 
 // Define a local comprehensive type reflecting the backend response
@@ -96,8 +97,9 @@ export function JobSeekerProfile() {
   const [isPdfModalOpen, setIsPdfModalOpen] = useState<boolean>(false);
   const [pdfCache, setPdfCache] = useState<PDFCache>({});
   const [loadingPdfs, setLoadingPdfs] = useState<boolean>(false);
+  const [isEditConfirmationOpen, setIsEditConfirmationOpen] = useState<boolean>(false);
   const { id } = useParams<{ id: string }>();
-  const { isAdmin, isRecruiter } = useAuth();
+  const { isAdmin, isRecruiter, isJobSeeker } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -372,7 +374,22 @@ export function JobSeekerProfile() {
 
   const handleEditProfile = () => {
     if (!id) return;
-    navigate(`/jobseekers/${id}/edit`);
+    
+    // If the user is a jobseeker, show confirmation dialog
+    if (isJobSeeker) {
+      setIsEditConfirmationOpen(true);
+    } else {
+      // For recruiters/admins, go directly to edit
+      navigate(`/jobseekers/${id}/edit`);
+    }
+  };
+
+  const confirmEdit = () => {
+    // Close the modal and navigate to the edit page
+    setIsEditConfirmationOpen(false);
+    if (id) {
+      navigate(`/jobseekers/${id}/edit`);
+    }
   };
 
   if (loading) {
@@ -683,6 +700,18 @@ export function JobSeekerProfile() {
         documentName={selectedPdfName}
         isOpen={isPdfModalOpen}
         onClose={() => setIsPdfModalOpen(false)}
+      />
+      
+      {/* Edit Confirmation Modal for Jobseekers */}
+      <ConfirmationModal
+        isOpen={isEditConfirmationOpen}
+        title="Profile Status Change Notice"
+        message="Editing your profile will reset your verification status to 'pending'. While your profile is in pending status, it will not be visible to employers until our team reviews and approves the changes. Do you want to proceed to the edit page?"
+        confirmText="Yes, Continue to Edit"
+        cancelText="Cancel"
+        confirmButtonClass="primary"
+        onConfirm={confirmEdit}
+        onCancel={() => setIsEditConfirmationOpen(false)}
       />
     </div>
   );

@@ -235,9 +235,9 @@ router.get('/:id', async (req, res) => {
 /**
  * @route PUT /api/jobseekers/:id/status
  * @desc Update a jobseeker profile status
- * @access Private (Admin, Recruiter)
+ * @access Public (Owner, Admin, Recruiter)
  */
-router.put('/:id/status', isAdminOrRecruiter, async (req, res) => {
+router.put('/:id/status', async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
