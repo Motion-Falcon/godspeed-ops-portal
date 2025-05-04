@@ -76,4 +76,27 @@ export const isAdminOrRecruiter = (req: Request, res: Response, next: NextFuncti
       message: 'Only admins and recruiters can access this resource' 
     });
   }
+};
+
+/**
+ * Middleware to authorize users based on their roles
+ * @param allowedRoles Array of role names that are allowed to access the route
+ */
+export const authorizeRoles = (allowedRoles: string[]) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const userType = req.user.user_metadata?.user_type;
+    
+    if (userType && allowedRoles.includes(userType)) {
+      next();
+    } else {
+      return res.status(403).json({ 
+        error: 'Access denied', 
+        message: `This resource is only accessible to: ${allowedRoles.join(', ')}` 
+      });
+    }
+  };
 }; 

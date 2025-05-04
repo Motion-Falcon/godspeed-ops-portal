@@ -9,14 +9,14 @@
 - Company Name* (required)
 - Billing Name* (required)
 - Short Code (3 letters)
-- List Name (dropdown: AA/AB/CANHIRE BRAMPTON/etc.)
+- List Name (dropdown: AA/AB/CANHIRE BRAMPTON/CANHIRE LONDON/KITCHENER /PRONTO PRO/SA /SB/SCARBOROUGH.)
 - Website
 - Client Manager (dropdown)
 - Sales Person (dropdown)
 - Accounting Person (dropdown)
 - Merge Invoice (checkbox)
 - Currency (CAD/USD)
-- Work Province (dropdown with provinces)
+- Work Province (AB/ BC/ MB/ NB/ NL/ NT/ NS/ NU/ ON/ PE/ QC/ SK/ YK)
 
 **Contact Details:**
 - Contact Person Name 1* (required)
@@ -51,9 +51,9 @@
 - Postal Code 3
 
 **Payment & Billings:**
-- Preferred Payment Method (dropdown)
-- Terms (dropdown: Due on Receipt/Net 15/etc.)
-- Pay Cycle (dropdown: 1 Week Hold options)
+- Preferred Payment Method (dropdown (Cash/ Cheque/ Corporation/ Direct Deposit /e-Transfer))
+- Terms (dropdown: Due on Receipt/ Net 15/ Net 22/Net 30/ Net 45/ Net 60/ Net 65 /Net 90)
+- Pay Cycle (dropdown: 1 Week Hold - Weekly Pay/ 1 Week Hold - Biweekly Pay /2 Week Hold - Weekly Pay/ 2 Week Hold - Biweekly Pay)
 - Credit Limit (dropdown: 20,000/35,000/50,000)
 - Notes
 

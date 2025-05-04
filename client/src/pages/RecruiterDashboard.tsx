@@ -179,8 +179,12 @@ export function RecruiterDashboard() {
               >
                 Create Jobseeker Profiles
               </button>
-              <button className="button outline" style={{ justifyContent: 'flex-start' }}>
-                View Active Postings
+              <button 
+                className="button outline" 
+                style={{ justifyContent: 'flex-start' }}
+                onClick={() => navigate('/client-management')}
+              >
+                Manage Clients
               </button>
               <button 
                 className="button outline" 

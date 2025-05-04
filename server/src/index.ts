@@ -5,6 +5,7 @@ import { createClient } from '@supabase/supabase-js';
 import authRoutes from './routes/auth.js';
 import profileRoutes from './routes/profile.js';
 import jobseekersRoutes from './routes/jobseekers.js';
+import clientsRoutes from './routes/clients.js';
 import { 
   configureSecurityHeaders, 
   forceTLS, 
@@ -68,6 +69,9 @@ app.use('/api/profile', profileRoutes);
 
 // Jobseekers routes
 app.use('/api/jobseekers', jobseekersRoutes);
+
+// Clients routes
+app.use('/api/clients', clientsRoutes);
 
 // Error handling middleware
 app.use((err: Error & { code?: string }, req: Request, res: Response, next: NextFunction) => {

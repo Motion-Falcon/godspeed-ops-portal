@@ -831,7 +831,6 @@ select.form-input {
 }
 
 .detail-item {
-  display: flex;
   flex-direction: column;
   margin-bottom: 8px;
   padding-bottom: 8px;

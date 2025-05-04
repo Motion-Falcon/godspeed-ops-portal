@@ -16,6 +16,12 @@ import { JobSeekersList } from './pages/JobSeekersList';
 import { JobSeekerProfile } from './pages/JobSeekerProfile';
 import { GeometricShapes } from './components/GeometricShapes';
 import { ProfileEdit } from './pages/JobseekerProfile/ProfileEdit';
+import { ClientManagement } from './pages/ClientManagement';
+import { ClientCreate } from './pages/ClientManagement/ClientCreate';
+import { ClientEdit } from './pages/ClientManagement/ClientEdit';
+import { ClientDrafts } from './pages/ClientManagement/ClientDrafts';
+import { ClientDraftEdit } from './pages/ClientManagement/ClientDraftEdit';
+import { ClientView } from './pages/ClientManagement/ClientView';
 import './styles/main.css';
 
 function App() {
@@ -47,6 +53,12 @@ function App() {
                 <Route path="/jobseekers/profile/account-created" element={<ProfileAccountCreated />} />
                 <Route path="/jobseekers/profile/success" element={<ProfileSuccess />} />
                 <Route path="/jobseekers" element={<JobSeekersList />} />
+                <Route path="/client-management" element={<ClientManagement />} />
+                <Route path="/client-management/create" element={<ClientCreate />} />
+                <Route path="/client-management/view/:id" element={<ClientView />} />
+                <Route path="/client-management/edit/:id" element={<ClientEdit />} />
+                <Route path="/client-management/drafts" element={<ClientDrafts />} />
+                <Route path="/client-management/drafts/edit/:id" element={<ClientDraftEdit />} />
                 {/* Add more recruiter-specific routes here */}
               </Route>
               
