@@ -26,6 +26,8 @@ export function ClientManagement() {
   const [message, setMessage] = useState<string | null>(null);
   const [clientToDelete, setClientToDelete] = useState<string | null>(null);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [clientToEdit, setClientToEdit] = useState<string | null>(null);
+  const [showEditConfirmation, setShowEditConfirmation] = useState(false);
 
   // Function to convert snake_case keys to camelCase
   const convertToCamelCase = (data: Record<string, unknown>): ExtendedClientData => {
@@ -119,8 +121,9 @@ export function ClientManagement() {
     navigate(`/client-management/view/${id}`);
   };
 
-  const handleEditClient = (id: string) => {
-    navigate(`/client-management/edit/${id}`);
+  const confirmEditClient = (id: string) => {
+    setClientToEdit(id);
+    setShowEditConfirmation(true);
   };
 
   const confirmDeleteClient = (id: string) => {
@@ -232,7 +235,7 @@ export function ClientManagement() {
                           </button>
                           <button 
                             className="button secondary button-icon"
-                            onClick={() => handleEditClient(client.id as string)}
+                            onClick={() => confirmEditClient(client.id as string)}
                           >
                             <Edit size={16} />
                             <span>Edit</span>
@@ -264,6 +267,24 @@ export function ClientManagement() {
           cancelText="Cancel"
           onConfirm={handleDeleteClient}
           onCancel={() => setShowDeleteConfirmation(false)}
+        />
+      )}
+
+      {showEditConfirmation && (
+        <ConfirmationModal
+          isOpen={showEditConfirmation}
+          title="Edit Client"
+          message="Are you sure you want to edit this client's information?"
+          confirmText="Edit"
+          cancelText="Cancel"
+          onConfirm={() => {
+            navigate(`/client-management/edit/${clientToEdit}`);
+            setShowEditConfirmation(false);
+          }}
+          onCancel={() => {
+            setClientToEdit(null);
+            setShowEditConfirmation(false);
+          }}
         />
       )}
     </div>

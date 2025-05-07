@@ -1,17 +1,27 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { ArrowLeft, Search, Filter, Eye, CheckCircle, XCircle, Clock, Trash2, Edit } from 'lucide-react';
+import { 
+  Plus, 
+  Trash2, 
+  Edit, 
+  Eye, 
+  Search, 
+  Filter, 
+  CheckCircle, 
+  XCircle, 
+  Clock 
+} from 'lucide-react';
 import { getJobseekerProfiles, deleteJobseeker } from '../services/api';
 import { JobSeekerProfile } from '../types/jobseeker';
 import { ConfirmationModal } from '../components/ConfirmationModal';
-import '../styles/pages/JobSeekersList.css';
+import '../styles/pages/JobSeekerManagement.css';
 
-export function JobSeekersList() {
+export function JobSeekerManagement() {
   const [profiles, setProfiles] = useState<JobSeekerProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -27,19 +37,17 @@ export function JobSeekersList() {
   // Check for success message in navigation state (e.g., from edit page)
   useEffect(() => {
     if (location.state?.message) {
-      setSuccessMessage(location.state.message);
+      setMessage(location.state.message);
       
       // Clear the message from location state to prevent showing it again on refresh
-      navigate(location.pathname, { replace: true });
+      window.history.replaceState({}, document.title);
       
       // Auto-dismiss the success message after 5 seconds
-      const timer = setTimeout(() => {
-        setSuccessMessage(null);
-      }, 5000);
-      
-      return () => clearTimeout(timer);
+      setTimeout(() => {
+        setMessage(null);
+      }, 3000);
     }
-  }, [location, navigate]);
+  }, [location]);
 
   useEffect(() => {
     // Check if user has access
@@ -104,6 +112,10 @@ export function JobSeekersList() {
     }
   };
 
+  const handleCreateProfile = () => {
+    navigate('/profile/create');
+  };
+
   const handleViewProfile = (id: string) => {
     // Navigate to detailed view
     navigate(`/jobseekers/${id}`);
@@ -151,6 +163,7 @@ export function JobSeekersList() {
       // Close the modal
       setIsDeleteModalOpen(false);
       setProfileToDelete(null);
+      setMessage("Profile deleted successfully");
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to delete profile';
       setDeleteError(errorMessage);
@@ -167,160 +180,146 @@ export function JobSeekersList() {
   };
 
   return (
-    <div className="jobseekers-list-container">
-      <header className="list-header">
-        <div className="header-content">
+    <div className="page-container">
+      <div className="page-header">
+        <h1>Job Seeker Management</h1>
+        <div className="header-actions">
           <button 
-            className="button ghost back-button" 
-            onClick={() => navigate('/dashboard')}
+            className="button primary button-icon" 
+            onClick={handleCreateProfile}
           >
-            <ArrowLeft size={16} />
-            <span>Back to Dashboard</span>
-          </button>
-          <h1>Job Seekers Profiles</h1>
-        </div>
-      </header>
-
-      {successMessage && (
-        <div className="success-notification">
-          <CheckCircle size={18} />
-          <span>{successMessage}</span>
-          <button 
-            className="close-notification"
-            onClick={() => setSuccessMessage(null)}
-          >
-            &times;
+            <Plus size={16} />
+            <span>New Job Seeker</span>
           </button>
         </div>
-      )}
+      </div>
 
-      <main className="list-main">
-        <div className="filter-container">
-          <div className="search-box">
-            <Search size={18} className="search-icon" />
-            <input
-              type="text"
-              placeholder="Search by name, email, skills or location..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="search-input"
-            />
-          </div>
-          
-          <div className="status-filter">
-            <Filter size={18} className="filter-icon" />
-            <select 
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="filter-select"
-            >
-              <option value="all">All Statuses</option>
-              <option value="pending">Pending</option>
-              <option value="verified">Verified</option>
-              <option value="rejected">Rejected</option>
-            </select>
-          </div>
-        </div>
-
-        {loading ? (
-          <div className="loading-container">
-            <span className="loading-spinner"></span>
-            <p>Loading profiles...</p>
-          </div>
-        ) : error ? (
-          <div className="error-container">
-            <p className="error-message">{error}</p>
-            <button 
-              className="button primary" 
-              onClick={() => window.location.reload()}
-            >
-              Try Again
-            </button>
-          </div>
-        ) : filteredProfiles.length === 0 ? (
-          <div className="empty-state">
-            <p>No profiles match your search criteria.</p>
-          </div>
-        ) : (
-          <div className="table-container">
-            <table className="profiles-table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Email</th>
-                  <th>Location</th>
-                  <th>Skills</th>
-                  <th>Status</th>
-                  <th>Joined Date</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredProfiles.map(profile => (
-                  <tr key={profile.id}>
-                    <td className="name-cell">{profile.name}</td>
-                    <td className="email-cell">{profile.email}</td>
-                    <td className="location-cell">{profile.location || 'N/A'}</td>
-                    <td className="skills-cell">
-                      {profile.skills && profile.skills.length > 0 ? (
-                        <div className="skills-list">
-                          {profile.skills.slice(0, 2).map((skill, index) => (
-                            <span key={index} className="skill-tag">{skill}</span>
-                          ))}
-                          {profile.skills.length > 2 && (
-                            <span className="more-skills">+{profile.skills.length - 2}</span>
-                          )}
-                        </div>
-                      ) : (
-                        'N/A'
-                      )}
-                    </td>
-                    <td className="status-cell">
-                      <div className="status-display">
-                        {getStatusIcon(profile.status)}
-                        <span className={`status-text ${profile.status}`}>
-                          {profile.status.charAt(0).toUpperCase() + profile.status.slice(1)}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="date-cell">
-                      {new Date(profile.createdAt).toLocaleDateString()}
-                    </td>
-                    <td className="actions-cell">
-                      <div className="action-buttons">
-                        <button 
-                          className="button primary view-btn"
-                          onClick={() => handleViewProfile(profile.id)}
-                          title="View profile details"
-                        >
-                          <Eye size={16} />
-                          View
-                        </button>
-                        <button 
-                          className="button secondary edit-btn"
-                          onClick={() => handleEditClick(profile)}
-                          title="Edit this profile"
-                        >
-                          <Edit size={16} />
-                          Edit
-                        </button>
-                        <button 
-                          className="button danger delete-btn"
-                          onClick={() => handleDeleteClick(profile)}
-                          title="Delete this profile"
-                        >
-                          <Trash2 size={16} />
-                          Delete
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+      <div className="content-container">
+        {error && (
+          <div className="error-message">{error}</div>
         )}
-      </main>
+        {message && (
+          <div className="success-message">{message}</div>
+        )}
+
+        <div className="card">
+          <div className="card-header">
+            <h2>Job Seeker Profiles</h2>
+            <div className="filter-container">
+              <div className="search-box">
+                <Search size={18} className="search-icon" />
+                <input
+                  type="text"
+                  placeholder="Search by name, email, skills or location..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="search-input"
+                />
+              </div>
+              
+              <div className="status-filter">
+                <Filter size={18} className="filter-icon" />
+                <select 
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="filter-select"
+                >
+                  <option value="all">All Statuses</option>
+                  <option value="pending">Pending</option>
+                  <option value="verified">Verified</option>
+                  <option value="rejected">Rejected</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div className="table-container">
+            {loading ? (
+              <div className="loading">Loading profiles...</div>
+            ) : filteredProfiles.length === 0 ? (
+              <div className="empty-state">
+                <p>No profiles match your search criteria.</p>
+              </div>
+            ) : (
+              <table className="profiles-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Location</th>
+                    <th>Skills</th>
+                    <th>Status</th>
+                    <th>Joined Date</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredProfiles.map(profile => (
+                    <tr key={profile.id}>
+                      <td className="name-cell">{profile.name}</td>
+                      <td className="email-cell">{profile.email}</td>
+                      <td className="location-cell">{profile.location || 'N/A'}</td>
+                      <td className="skills-cell">
+                        {profile.skills && profile.skills.length > 0 ? (
+                          <div className="skills-list">
+                            {profile.skills.slice(0, 2).map((skill, index) => (
+                              <span key={index} className="skill-tag">{skill}</span>
+                            ))}
+                            {profile.skills.length > 2 && (
+                              <span className="more-skills">+{profile.skills.length - 2}</span>
+                            )}
+                          </div>
+                        ) : (
+                          'N/A'
+                        )}
+                      </td>
+                      <td className="status-cell">
+                        <div className="status-display">
+                          {getStatusIcon(profile.status)}
+                          <span className={`status-text ${profile.status}`}>
+                            {profile.status.charAt(0).toUpperCase() + profile.status.slice(1)}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="date-cell">
+                        {new Date(profile.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className="actions-cell">
+                        <div className="action-buttons">
+                          <button 
+                            className="button primary button-icon"
+                            onClick={() => handleViewProfile(profile.id)}
+                            title="View profile details"
+                          >
+                            <Eye size={16} />
+                            <span>View</span>
+                          </button>
+                          <button 
+                            className="button secondary button-icon"
+                            onClick={() => handleEditClick(profile)}
+                            title="Edit this profile"
+                          >
+                            <Edit size={16} />
+                            <span>Edit</span>
+                          </button>
+                          <button 
+                            className="button danger button-icon"
+                            onClick={() => handleDeleteClick(profile)}
+                            title="Delete this profile"
+                          >
+                            <Trash2 size={16} />
+                            <span>Delete</span>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+      </div>
 
       {/* Delete Confirmation Modal */}
       <ConfirmationModal

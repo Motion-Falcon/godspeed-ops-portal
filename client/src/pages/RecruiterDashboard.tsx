@@ -175,9 +175,9 @@ export function RecruiterDashboard() {
               <button 
                 className="button outline" 
                 style={{ justifyContent: 'flex-start' }}
-                onClick={() => navigate('/profile/create')}
+                onClick={() => navigate('/jobseeker-management')}
               >
-                Create Jobseeker Profiles
+                Job Seeker Management
               </button>
               <button 
                 className="button outline" 
@@ -185,13 +185,6 @@ export function RecruiterDashboard() {
                 onClick={() => navigate('/client-management')}
               >
                 Manage Clients
-              </button>
-              <button 
-                className="button outline" 
-                style={{ justifyContent: 'flex-start' }}
-                onClick={() => navigate('/jobseekers')}
-              >
-                Job Seekers
               </button>
               
               {/* Reset Password button */}

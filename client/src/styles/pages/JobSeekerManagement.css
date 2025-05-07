@@ -1,50 +1,59 @@
-/* JobSeekersList Page Styles */
-.jobseekers-list-container {
-  min-height: 100vh;
-  background-color: var(--background);
-  color: var(--text);
-}
+/* JobSeekerManagement.css */
 
-.list-header {
-  background-color: var(--card);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  padding: var(--spacing-4) var(--spacing-6);
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-
-.list-header .header-content {
-  display: flex;
-  align-items: center;
+.page-container {
   max-width: 1200px;
   margin: 0 auto;
-  gap: var(--spacing-6);
+  padding: 2rem 1rem;
 }
 
-.back-button {
+.page-header {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: var(--spacing-2);
-  padding: var(--spacing-2) var(--spacing-3);
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
 }
 
-.list-header h1 {
-  font-size: 1.5rem;
-  font-weight: 600;
+.page-header h1 {
   margin: 0;
+  color: var(--heading);
+  font-size: 1.8rem;
 }
 
-.list-main {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: var(--spacing-6);
+.header-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.content-container {
+  margin-bottom: 2rem;
+}
+
+.card {
+  background: var(--color-card);
+  padding: 1.5rem;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--color-border);
+  margin-bottom: 1.5rem;
+}
+
+.card-header {
+  margin-bottom: 1.5rem;
+}
+
+.card h2 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+  color: var(--heading);
 }
 
 .filter-container {
   display: flex;
   gap: var(--spacing-4);
-  margin-bottom: var(--spacing-6);
+  margin-top: 1rem;
   flex-wrap: wrap;
 }
 
@@ -100,25 +109,32 @@
   box-shadow: 0 0 0 2px var(--primary-light);
 }
 
-.loading-container, .error-container, .empty-state {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: var(--spacing-4);
-  background-color: var(--card);
-  border-radius: var(--border-radius);
-  box-shadow: var(--card-shadow);
+.loading, .empty-state {
+  padding: var(--spacing-6);
+  text-align: center;
+  color: var(--text-muted);
 }
 
 .error-message {
-  color: var(--error);
+  background-color: rgba(var(--danger-rgb), 0.1);
+  color: var(--danger);
+  padding: 1rem;
+  border-radius: var(--border-radius);
+  margin-bottom: 1rem;
+  border-left: 4px solid var(--danger);
+}
+
+.success-message {
+  background-color: rgba(var(--success-rgb), 0.1);
+  color: var(--success);
+  padding: 1rem;
+  border-radius: var(--border-radius);
+  margin-bottom: 1rem;
+  border-left: 4px solid var(--success);
 }
 
 /* Table Styles */
 .table-container {
-  background-color: var(--card);
-  border-radius: var(--border-radius);
-  box-shadow: var(--card-shadow);
   overflow-x: auto;
 }
 
@@ -237,7 +253,7 @@
   gap: var(--spacing-2);
 }
 
-.view-btn, .delete-btn {
+.button-icon {
   display: flex;
   align-items: center;
   gap: var(--spacing-2);
@@ -245,33 +261,30 @@
   padding: var(--spacing-1) var(--spacing-3);
 }
 
-.delete-btn {
-  background-color: var(--color-error);
-  color: white;
-}
-
-.delete-btn:hover {
-  background-color: var(--color-error-hover, #d32f2f);
-}
-
-@media screen and (max-width: 1024px) {
+/* Responsive Styles */
+@media (max-width: 992px) {
   .profiles-table {
     min-width: 800px;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .header-actions {
+    width: 100%;
+    justify-content: space-between;
   }
   
   .action-buttons {
     flex-direction: column;
-    gap: var(--spacing-1);
   }
 }
 
-@media screen and (max-width: 640px) {
-  .list-header .header-content {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--spacing-4);
-  }
-  
+@media (max-width: 576px) {
   .filter-container {
     flex-direction: column;
   }
@@ -279,39 +292,15 @@
   .search-box, .status-filter {
     width: 100%;
   }
-}
-
-/* Add styling for success notification */
-.success-notification {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 15px;
-  background-color: #e6f7e6;
-  border: 1px solid #a3e0a3;
-  border-radius: 4px;
-  margin: 15px;
-  color: #2a842a;
-  position: relative;
-}
-
-.success-notification svg {
-  color: #2a842a;
-}
-
-.close-notification {
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: none;
-  border: none;
-  font-size: 18px;
-  cursor: pointer;
-  color: #2a842a;
-  padding: 0 5px;
-}
-
-.close-notification:hover {
-  color: #206420;
+  
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-4);
+  }
+  
+  .header-actions {
+    margin-top: var(--spacing-4);
+    width: 100%;
+  }
 } 

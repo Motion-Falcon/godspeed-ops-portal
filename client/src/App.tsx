@@ -12,7 +12,6 @@ import { Dashboard } from './pages/Dashboard';
 import { ProfileCreate } from './pages/JobseekerProfile/ProfileCreate';
 import { ProfileAccountCreated } from './pages/JobseekerProfile/ProfileAccountCreated';
 import { ProfileSuccess } from './pages/JobseekerProfile/ProfileSuccess';
-import { JobSeekersList } from './pages/JobSeekersList';
 import { JobSeekerProfile } from './pages/JobSeekerProfile';
 import { GeometricShapes } from './components/GeometricShapes';
 import { ProfileEdit } from './pages/JobseekerProfile/ProfileEdit';
@@ -22,6 +21,7 @@ import { ClientEdit } from './pages/ClientManagement/ClientEdit';
 import { ClientDrafts } from './pages/ClientManagement/ClientDrafts';
 import { ClientDraftEdit } from './pages/ClientManagement/ClientDraftEdit';
 import { ClientView } from './pages/ClientManagement/ClientView';
+import { JobSeekerManagement } from './pages/JobSeekerManagement';
 import './styles/main.css';
 
 function App() {
@@ -52,7 +52,7 @@ function App() {
               <Route element={<RecruiterRoute />}>
                 <Route path="/jobseekers/profile/account-created" element={<ProfileAccountCreated />} />
                 <Route path="/jobseekers/profile/success" element={<ProfileSuccess />} />
-                <Route path="/jobseekers" element={<JobSeekersList />} />
+                <Route path="/jobseeker-management" element={<JobSeekerManagement />} />
                 <Route path="/client-management" element={<ClientManagement />} />
                 <Route path="/client-management/create" element={<ClientCreate />} />
                 <Route path="/client-management/view/:id" element={<ClientView />} />
