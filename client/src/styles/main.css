@@ -11,4 +11,20 @@
 @import './components/logo.css';
 @import './components/theme-toggle.css';
 
-/* Page Styles will be imported directly by each page */ 
+/* Page Styles will be imported directly by each page */
+
+/* Add a new CSS variable for primary color in RGB format */
+:root {
+  /* ... existing variables ... */
+  --color-primary-rgb: 5, 150, 105; /* RGB values for the primary color */
+  
+  /* ... rest of the existing variables ... */
+}
+
+/* Dark theme should also have the RGB value if it has a different primary color */
+:root[class~="dark"] {
+  /* ... existing dark theme variables ... */
+  --color-primary-rgb: 5, 150, 105; /* Adjust if the dark theme uses a different primary color */
+  
+  /* ... rest of the existing dark theme variables ... */
+} 

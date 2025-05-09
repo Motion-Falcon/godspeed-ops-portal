@@ -742,4 +742,229 @@ export const deleteClientDraft = async (id: string): Promise<{ success: boolean;
   }
 };
 
+// Position management API functions
+export interface PositionData {
+  id?: string;
+  
+  // Basic Details
+  client?: string;  // Client ID
+  clientName?: string; // For display only
+  title?: string;
+  positionCode?: string;
+  startDate?: string;
+  endDate?: string;
+  showOnJobPortal?: boolean;
+  clientManager?: string;
+  salesManager?: string;
+  positionNumber?: string;
+  description?: string;
+  
+  // Address Details
+  streetAddress?: string;
+  city?: string;
+  province?: string;
+  postalCode?: string;
+  
+  // Employment Categorization
+  employmentTerm?: string;  // Permanent/Contract/Temporary
+  employmentType?: string;  // Full-Time/Part-Time
+  positionCategory?: string;  // Admin/AZ/etc.
+  experience?: string;
+  
+  // Documents Required
+  documentsRequired?: {
+    license?: boolean;
+    driverAbstract?: boolean;
+    tdgCertificate?: boolean;
+    sin?: boolean;
+    immigrationStatus?: boolean;
+    passport?: boolean;
+    cvor?: boolean;
+    resume?: boolean;
+    articlesOfIncorporation?: boolean;
+    directDeposit?: boolean;
+  };
+  
+  // Position Details
+  payrateType?: string;  // Hourly/Daily/Monthly
+  numberOfPositions?: number;
+  regularPayRate?: string;
+  markup?: string;
+  billRate?: string;
+  
+  // Overtime
+  overtimeEnabled?: boolean;
+  overtimeHours?: string;
+  overtimeBillRate?: string;
+  overtimePayRate?: string;
+  
+  // Payment & Billings
+  preferredPaymentMethod?: string;
+  terms?: string;
+  
+  // Notes & Task
+  notes?: string;
+  assignedTo?: string;
+  projCompDate?: string;
+  taskTime?: string;
+  
+  // Metadata
+  isDraft?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  lastUpdated?: string;
+}
+
+export interface PositionResponse {
+  success: boolean;
+  message: string;
+  position: PositionData;
+}
+
+export interface PositionDraftResponse {
+  draft: PositionData | null;
+  lastUpdated: string | null;
+}
+
+export const getPositions = async (): Promise<PositionData[]> => {
+  try {
+    const response = await api.get('/api/positions');
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(error.response.data.error || 'Failed to fetch positions');
+    }
+    throw error;
+  }
+};
+
+export const getPosition = async (id: string): Promise<PositionData> => {
+  try {
+    const response = await api.get(`/api/positions/${id}`);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(error.response.data.error || 'Failed to fetch position');
+    }
+    throw error;
+  }
+};
+
+export const createPosition = async (positionData: PositionData): Promise<PositionResponse> => {
+  try {
+    const response = await api.post('/api/positions', positionData);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(error.response.data.error || 'Failed to create position');
+    }
+    throw error;
+  }
+};
+
+export const updatePosition = async (id: string, positionData: PositionData): Promise<PositionResponse> => {
+  console.log(`Attempting to update position with ID ${id}`, positionData);
+  try {
+    console.log(`Making PUT request to /api/positions/${id}`);
+    const response = await api.put(`/api/positions/${id}`, positionData);
+    console.log('Update position response:', response);
+    
+    // Clear cache for this position and the positions list
+    clearCacheFor(`/api/positions/${id}`);
+    clearCacheFor('/api/positions');
+    return response.data;
+  } catch (error) {
+    console.error('Error updating position:', error);
+    if (axios.isAxiosError(error) && error.response) {
+      console.error('Server error details:', error.response.data);
+      throw new Error(error.response.data.error || 'Failed to update position');
+    }
+    throw error;
+  }
+};
+
+export const deletePosition = async (id: string): Promise<{ success: boolean; message: string; deletedId: string }> => {
+  try {
+    const response = await api.delete(`/api/positions/${id}`);
+    // Clear cache for positions list after deletion
+    clearCacheFor('/api/positions');
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(error.response.data.error || 'Failed to delete position');
+    }
+    throw error;
+  }
+};
+
+// Position drafts management
+export const savePositionDraft = async (draftData: Partial<PositionData>): Promise<PositionDraftResponse> => {
+  try {
+    // For creating new drafts or updating drafts without an ID
+    if (!draftData.id) {
+      const response = await api.post('/api/positions/draft', draftData);
+      return response.data;
+    }
+    
+    // For updating existing drafts
+    const response = await api.put(`/api/positions/draft/${draftData.id}`, draftData);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(error.response.data.error || 'Failed to save position draft');
+    }
+    throw error;
+  }
+};
+
+export const getPositionDraft = async (): Promise<PositionDraftResponse> => {
+  try {
+    const response = await api.get('/api/positions/draft');
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(error.response.data.error || 'Failed to fetch position draft');
+    }
+    throw error;
+  }
+};
+
+export const getPositionDraftById = async (id: string): Promise<PositionDraftResponse> => {
+  try {
+    const response = await api.get(`/api/positions/draft/${id}`);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(error.response.data.error || 'Failed to fetch position draft');
+    }
+    throw error;
+  }
+};
+
+export const getAllPositionDrafts = async (): Promise<PositionData[]> => {
+  try {
+    const response = await api.get('/api/positions/drafts');
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(error.response.data.error || 'Failed to fetch position drafts');
+    }
+    throw error;
+  }
+};
+
+export const deletePositionDraft = async (id: string): Promise<{ success: boolean; message: string; deletedId: string }> => {
+  try {
+    const response = await api.delete(`/api/positions/draft/${id}`);
+    // Clear cache for drafts list after deletion
+    clearCacheFor('/api/positions/drafts');
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(error.response.data.error || 'Failed to delete position draft');
+    }
+    throw error;
+  }
+};
+
 export default api; 

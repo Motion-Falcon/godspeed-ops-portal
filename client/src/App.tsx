@@ -22,6 +22,12 @@ import { ClientDrafts } from './pages/ClientManagement/ClientDrafts';
 import { ClientDraftEdit } from './pages/ClientManagement/ClientDraftEdit';
 import { ClientView } from './pages/ClientManagement/ClientView';
 import { JobSeekerManagement } from './pages/JobSeekerManagement';
+import { PositionManagement } from './pages/PositionManagement';
+import { PositionCreate } from './pages/PositionManagement/PositionCreate';
+import { PositionEdit } from './pages/PositionManagement/PositionEdit';
+import { PositionDrafts } from './pages/PositionManagement/PositionDrafts';
+import { PositionDraftEdit } from './pages/PositionManagement/PositionDraftEdit';
+import { PositionView } from './pages/PositionManagement/PositionView';
 import './styles/main.css';
 
 function App() {
@@ -59,6 +65,12 @@ function App() {
                 <Route path="/client-management/edit/:id" element={<ClientEdit />} />
                 <Route path="/client-management/drafts" element={<ClientDrafts />} />
                 <Route path="/client-management/drafts/edit/:id" element={<ClientDraftEdit />} />
+                <Route path="/position-management" element={<PositionManagement />} />
+                <Route path="/position-management/create" element={<PositionCreate />} />
+                <Route path="/position-management/view/:id" element={<PositionView />} />
+                <Route path="/position-management/edit/:id" element={<PositionEdit />} />
+                <Route path="/position-management/drafts" element={<PositionDrafts />} />
+                <Route path="/position-management/drafts/edit/:id" element={<PositionDraftEdit />} />
                 {/* Add more recruiter-specific routes here */}
               </Route>
               

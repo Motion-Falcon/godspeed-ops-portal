@@ -121,7 +121,6 @@ select.form-input, .form-select {
 .checkbox-container {
   display: flex;
   align-items: center;
-  margin-bottom: var(--spacing-5);
 }
 
 .form-checkbox {
@@ -220,4 +219,100 @@ a:hover {
   color: var(--primary);
   text-decoration: none;
   transform: translateX(-2px);
+}
+
+/* Auto-filled fields styling - improved for better visual appeal */
+.form-input[disabled].auto-filled {
+  background-color: rgba(var(--color-primary-rgb), 0.05);
+  border-color: var(--color-primary-light);
+  color: var(--text);
+  cursor: not-allowed;
+  font-style: italic;
+  position: relative;
+  box-shadow: inset 0 0 0 1px rgba(var(--color-primary-rgb), 0.2);
+}
+
+/* Dark mode styles for auto-filled fields */
+:root[class~="dark"] .form-input[disabled].auto-filled {
+  background-color: rgba(var(--color-primary-rgb), 0.1);
+  border-color: var(--color-primary-dark);
+  color: var(--text-secondary);
+  box-shadow: inset 0 0 0 1px rgba(var(--color-primary-rgb), 0.3);
+}
+
+/* Add a visual indicator for auto-filled fields */
+.form-group:has(.auto-filled)::after {
+  content: "Auto-filled";
+  position: absolute;
+  right: 10px;
+  top: 5px;
+  font-size: 10px;
+  color: var(--color-primary);
+  background-color: var(--background);
+  padding: 0 5px;
+  border-radius: 4px;
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+/* New class for auto-populated fields that are still editable */
+.form-input.auto-populated {
+  border-left: 3px solid var(--color-primary);
+  background-color: rgba(var(--color-primary-rgb), 0.03);
+  transition: all 0.2s ease;
+}
+
+.form-input.auto-populated:focus {
+  background-color: var(--input-bg);
+  border-left-color: var(--color-primary-dark);
+}
+
+/* Dark mode styles for auto-populated fields */
+:root[class~="dark"] .form-input.auto-populated {
+  background-color: rgba(var(--color-primary-rgb), 0.08);
+}
+
+:root[class~="dark"] .form-input.auto-populated:focus {
+  background-color: var(--input-bg);
+}
+
+/* Add a visual indicator for auto-populated fields */
+.form-group:has(.auto-populated)::after {
+  content: "Auto-populated";
+  position: absolute;
+  right: 10px;
+  top: 5px;
+  font-size: 10px;
+  color: var(--color-primary);
+  background-color: var(--background);
+  padding: 0 5px;
+  border-radius: 4px;
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+/* Form information notes - enhance styling */
+.form-info {
+  margin-bottom: 15px;
+  font-style: italic;
+  color: var(--text-muted);
+  padding: 8px 12px;
+  border-left: 3px solid var(--color-primary-light);
+  background-color: rgba(var(--color-primary-rgb), 0.03);
+  border-radius: 0 4px 4px 0;
+  display: flex;
+  align-items: center;
+}
+
+.form-info::before {
+  content: "ℹ️";
+  margin-right: 8px;
+  font-size: 14px;
+}
+
+/* Dark mode styles for form info */
+:root[class~="dark"] .form-info {
+  color: var(--text-secondary);
+  border-left-color: var(--color-primary-dark);
+  background-color: rgba(var(--color-primary-rgb), 0.08);
 } 

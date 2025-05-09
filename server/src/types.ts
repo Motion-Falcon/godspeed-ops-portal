@@ -246,4 +246,158 @@ export interface DbClientData {
   created_by_user_id: string;
   updated_at: string;
   updated_by_user_id: string;
+}
+
+// Position Data Types
+export interface PositionData {
+  id?: string;
+  
+  // Basic Details
+  client?: string;  // Client ID
+  clientName?: string; // For display only
+  title?: string;
+  positionCode?: string;
+  startDate?: string;
+  endDate?: string;
+  showOnJobPortal?: boolean;
+  clientManager?: string;
+  salesManager?: string;
+  positionNumber?: string;
+  description?: string;
+  
+  // Address Details
+  streetAddress?: string;
+  city?: string;
+  province?: string;
+  postalCode?: string;
+  
+  // Employment Categorization
+  employmentTerm?: string;  // Permanent/Contract/Temporary
+  employmentType?: string;  // Full-Time/Part-Time
+  positionCategory?: string;  // Admin/AZ/etc.
+  experience?: string;
+  
+  // Documents Required
+  documentsRequired?: {
+    license?: boolean;
+    driverAbstract?: boolean;
+    tdgCertificate?: boolean;
+    sin?: boolean;
+    immigrationStatus?: boolean;
+    passport?: boolean;
+    cvor?: boolean;
+    resume?: boolean;
+    articlesOfIncorporation?: boolean;
+    directDeposit?: boolean;
+  };
+  
+  // Position Details
+  payrateType?: string;  // Hourly/Daily/Monthly
+  numberOfPositions?: number;
+  regularPayRate?: string;
+  markup?: string;
+  billRate?: string;
+  
+  // Overtime
+  overtimeEnabled?: boolean;
+  overtimeHours?: string;
+  overtimeBillRate?: string;
+  overtimePayRate?: string;
+  
+  // Payment & Billings
+  preferredPaymentMethod?: string;
+  terms?: string;
+  
+  // Notes & Task
+  notes?: string;
+  assignedTo?: string;
+  projCompDate?: string;
+  taskTime?: string;
+  
+  // Metadata
+  isDraft?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  lastUpdated?: string;
+  
+  // Auth metadata
+  createdByUserId?: string;
+  updatedByUserId?: string;
+}
+
+// Database version of position data (snake_case)
+export interface DbPositionData {
+  id?: string;
+  
+  // Basic Details
+  client?: string;
+  title?: string;
+  position_code?: string;
+  start_date?: string;
+  end_date?: string;
+  show_on_job_portal?: boolean;
+  client_manager?: string;
+  sales_manager?: string;
+  position_number?: string;
+  description?: string;
+  
+  // Address Details
+  use_client_address?: boolean;
+  street_address?: string;
+  city?: string;
+  province?: string;
+  postal_code?: string;
+  
+  // Employment Categorization
+  employment_term?: string;
+  employment_type?: string;
+  position_category?: string;
+  experience?: string;
+  
+  // Documents Required
+  documents_required?: {
+    license?: boolean;
+    driver_abstract?: boolean;
+    tdg_certificate?: boolean;
+    sin?: boolean;
+    immigration_status?: boolean;
+    passport?: boolean;
+    cvor?: boolean;
+    resume?: boolean;
+    articles_of_incorporation?: boolean;
+    direct_deposit?: boolean;
+  };
+  
+  // Position Details
+  payrate_type?: string;
+  number_of_positions?: number;
+  regular_pay_rate?: string;
+  markup?: string;
+  bill_rate?: string;
+  
+  // Overtime
+  overtime_enabled?: boolean;
+  overtime_hours?: string;
+  overtime_bill_rate?: string;
+  overtime_pay_rate?: string;
+  
+  // Payment & Billings
+  preferred_payment_method?: string;
+  terms?: string;
+  
+  // Notes & Task
+  notes?: string;
+  assigned_to?: string;
+  proj_comp_date?: string;
+  task_time?: string;
+  
+  // Metadata
+  is_draft?: boolean;
+  created_at?: string;
+  updated_at?: string;
+  last_updated?: string;
+  
+  // Auth metadata
+  created_by_user_id?: string;
+  updated_by_user_id?: string;
 } 

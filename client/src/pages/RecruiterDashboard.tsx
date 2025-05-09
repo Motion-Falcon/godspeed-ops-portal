@@ -186,6 +186,13 @@ export function RecruiterDashboard() {
               >
                 Manage Clients
               </button>
+              <button 
+                className="button outline" 
+                style={{ justifyContent: 'flex-start' }}
+                onClick={() => navigate('/position-management')}
+              >
+                Position Management
+              </button>
               
               {/* Reset Password button */}
               <button 
