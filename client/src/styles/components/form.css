@@ -121,6 +121,7 @@ select.form-input, .form-select {
 .checkbox-container {
   display: flex;
   align-items: center;
+  margin: 4px 0 10px 0;
 }
 
 .form-checkbox {

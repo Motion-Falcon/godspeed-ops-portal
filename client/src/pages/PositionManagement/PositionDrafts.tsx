@@ -4,6 +4,7 @@ import { getAllPositionDrafts, deletePositionDraft, PositionData } from '../../s
 import { ConfirmationModal } from '../../components/ConfirmationModal';
 import { Pencil, Trash2, ArrowLeft } from 'lucide-react';
 import '../../styles/pages/PositionManagement.css';
+import '../../styles/components/header.css';
 
 export function PositionDrafts() {
   const navigate = useNavigate();
@@ -78,25 +79,29 @@ export function PositionDrafts() {
 
   return (
     <div className="page-container">
-      <div className="page-header">
-        <button 
-          className="button ghost button-icon" 
-          onClick={handleNavigateBack}
-        >
-          <ArrowLeft size={16} />
-          <span>Back</span>
-        </button>
-        <h1>Position Drafts</h1>
-      </div>
+      <header className="common-header">
+        <div className="header-main">
+          <h1>Position Drafts</h1>
+          <div className="header-actions">
+            <button 
+              className="button button-icon" 
+              onClick={handleNavigateBack}
+            >
+              <ArrowLeft size={16} />
+              <span>Back</span>
+            </button>
+          </div>
+        </div>
+        
+        {(error || success) && (
+          <div className="status-update-container">
+            {error && <span className="status-update-message error">{error}</span>}
+            {success && <span className="status-update-message">{success}</span>}
+          </div>
+        )}
+      </header>
 
       <div className="content-container">
-        {error && (
-          <div className="error-message">{error}</div>
-        )}
-        {success && (
-          <div className="success-message">{success}</div>
-        )}
-
         <div className="card">
           <div className="card-header">
             <h2>Saved Drafts</h2>

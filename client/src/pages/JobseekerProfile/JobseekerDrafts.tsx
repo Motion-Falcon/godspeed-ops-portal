@@ -4,6 +4,7 @@ import { getAllJobseekerDrafts, deleteJobseekerDraft } from '../../services/api'
 import { ConfirmationModal } from '../../components/ConfirmationModal';
 import { Pencil, Trash2, ArrowLeft, Clock, User } from 'lucide-react';
 import '../../styles/pages/JobSeekerManagement.css';
+import '../../styles/components/header.css';
 
 // Enhanced interface for JobseekerDraft to include creator/updater info
 interface JobseekerDraft {
@@ -141,26 +142,26 @@ export function JobseekerDrafts() {
 
   return (
     <div className="page-container">
-      <div className="page-header">
-        <div className="header-content">
-          <button 
-            className="button ghost back-button" 
-            onClick={handleNavigateBack}
-          >
-            <ArrowLeft size={16} />
-            <span>Back to Job Seekers</span>
-          </button>
+      <header className="common-header">
+        <div className="header-main">
           <h1>Job Seeker Profile Drafts</h1>
+          <div className="header-actions">
+            <button className="button" onClick={handleNavigateBack}>
+              <ArrowLeft size={16} />
+              <span>Back to Job Seekers</span>
+            </button>
+          </div>
         </div>
-      </div>
+        
+        {success && (
+          <div className="status-update-container">
+            <span className="status-update-message">{success}</span>
+          </div>
+        )}
+      </header>
 
       <div className="content-container">
-        {error && (
-          <div className="error-message">{error}</div>
-        )}
-        {success && (
-          <div className="success-message">{success}</div>
-        )}
+        {error && <div className="error-message">{error}</div>}
 
         <div className="card">
           <div className="card-header">
@@ -172,10 +173,15 @@ export function JobseekerDrafts() {
               <div className="loading">Loading drafts...</div>
             ) : drafts.length === 0 ? (
               <div className="empty-state">
-                <p>No drafts found. Create a new jobseeker profile to save a draft.</p>
-                <button 
+                <p>
+                  No drafts found. Create a new jobseeker profile to save a
+                  draft.
+                </p>
+                <button
                   className="button primary"
-                  onClick={() => navigate('/profile/create', { state: { isNewForm: true } })}
+                  onClick={() =>
+                    navigate("/profile/create", { state: { isNewForm: true } })
+                  }
                 >
                   Create New Profile
                 </button>
@@ -233,7 +239,7 @@ export function JobseekerDrafts() {
                       </td>
                       <td>
                         <div className="action-buttons">
-                          <button 
+                          <button
                             className="action-icon-btn edit-btn"
                             onClick={() => handleEditDraft(draft.id)}
                             title="Edit this draft"
@@ -241,7 +247,7 @@ export function JobseekerDrafts() {
                           >
                             <Pencil size={20} />
                           </button>
-                          <button 
+                          <button
                             className="action-icon-btn delete-btn"
                             onClick={() => confirmDeleteDraft(draft.id)}
                             title="Delete this draft"

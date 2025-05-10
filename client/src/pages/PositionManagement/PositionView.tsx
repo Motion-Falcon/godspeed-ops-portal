@@ -5,6 +5,7 @@ import { ConfirmationModal } from '../../components/ConfirmationModal';
 import { ArrowLeft, Edit, Trash2, Briefcase } from 'lucide-react';
 import '../../styles/pages/ClientView.css';
 import '../../styles/pages/PositionManagement.css';
+import '../../styles/components/header.css';
 
 export function PositionView() {
   const navigate = useNavigate();
@@ -148,7 +149,7 @@ export function PositionView() {
           <p className="error-message">{error || 'Failed to load position'}</p>
           <div className="error-actions">
             <button 
-              className="button ghost" 
+              className="button " 
               onClick={handleNavigateBack}
             >
               Back to Positions
@@ -169,16 +170,17 @@ export function PositionView() {
 
   return (
     <div className="client-view-container">
-      <header className="client-header">
-        <div className="header-content">
-          <button 
-            className="button ghost back-button" 
-            onClick={handleNavigateBack}
-          >
-            <ArrowLeft size={16} />
-            <span>Back to Positions</span>
-          </button>
+      <header className="common-header">
+        <div className="header-main">
+          <h1>{positionTitle || 'Position Details'}</h1>
           <div className="header-actions">
+            <button 
+              className="button" 
+              onClick={handleNavigateBack}
+            >
+              <ArrowLeft size={16} />
+              <span>Back to Positions</span>
+            </button>
             <button 
               className="button secondary"
               onClick={confirmEditPosition}
@@ -195,6 +197,12 @@ export function PositionView() {
             </button>
           </div>
         </div>
+        
+        {error && (
+          <div className="status-update-container">
+            <span className="status-update-message error">{error}</span>
+          </div>
+        )}
       </header>
 
       <main className="client-main">

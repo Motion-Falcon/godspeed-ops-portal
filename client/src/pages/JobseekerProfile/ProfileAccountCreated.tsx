@@ -164,7 +164,7 @@ export function ProfileAccountCreated() {
     <div className="profile-created-container">
       <div className="success-card wide-card">
         <button 
-          className="back-button" 
+          className="button" 
           onClick={() => navigate('/dashboard')}
         >
           <ArrowLeft size={16} />

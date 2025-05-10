@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { ArrowLeft, User, CheckCircle, XCircle, Clock, FileText, Download, Eye, FileWarning, Edit } from 'lucide-react';
-import { getJobseekerProfile, updateJobseekerStatus } from '../services/api';
+import { ArrowLeft, User, CheckCircle, XCircle, Clock, FileText, Download, Eye, FileWarning, Trash2, Pencil } from 'lucide-react';
+import { getJobseekerProfile, updateJobseekerStatus, deleteJobseeker } from '../services/api';
 import { DocumentRecord } from '../types/jobseeker';
 import { supabase } from '../lib/supabaseClient';
 import PDFThumbnail from '../components/PDFThumbnail';
 import PDFViewerModal from '../components/PDFViewerModal';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import '../styles/pages/JobSeekerProfile.css';
+import '../styles/components/header.css';
 
 // Define a local comprehensive type reflecting the backend response
 // TODO: Move this to shared types (e.g., client/src/types/jobseeker.ts) and update JobSeekerDetailedProfile
@@ -107,6 +108,10 @@ export function JobSeekerProfile() {
   const [pdfCache, setPdfCache] = useState<PDFCache>({});
   const [loadingPdfs, setLoadingPdfs] = useState<boolean>(false);
   const [isEditConfirmationOpen, setIsEditConfirmationOpen] = useState<boolean>(false);
+  const [isDeleteConfirmationOpen, setIsDeleteConfirmationOpen] = useState<boolean>(false);
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
+  const [isStatusModalOpen, setIsStatusModalOpen] = useState<boolean>(false);
+  const [selectedStatus, setSelectedStatus] = useState<'pending' | 'verified' | 'rejected'>('pending');
   const { id } = useParams<{ id: string }>();
   const { isAdmin, isRecruiter, isJobSeeker } = useAuth();
   const navigate = useNavigate();
@@ -132,6 +137,12 @@ export function JobSeekerProfile() {
       fetchProfile();
     }
   }, [id, isAdmin, isRecruiter, navigate]);
+
+  useEffect(() => {
+    if (profile?.verificationStatus) {
+      setSelectedStatus(profile.verificationStatus as 'pending' | 'verified' | 'rejected');
+    }
+  }, [profile?.verificationStatus]);
 
   // Effect to load all PDFs once profile is loaded and has documents
   useEffect(() => {
@@ -401,6 +412,37 @@ export function JobSeekerProfile() {
     }
   };
 
+  const handleDeleteProfile = () => {
+    if (!id) return;
+    setIsDeleteConfirmationOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!id) return;
+    
+    try {
+      setIsDeleting(true);
+      await deleteJobseeker(id);
+      setIsDeleteConfirmationOpen(false);
+      navigate('/jobseekers', { state: { message: 'Profile deleted successfully' } });
+    } catch (err) {
+      console.error('Error deleting profile:', err);
+      setUpdateStatus(err instanceof Error ? err.message : 'Failed to delete profile');
+      setTimeout(() => setUpdateStatus(null), 3000);
+      setIsDeleting(false);
+    }
+  };
+
+  const openStatusModal = () => {
+    setSelectedStatus(profile?.verificationStatus as 'pending' | 'verified' | 'rejected' || 'pending');
+    setIsStatusModalOpen(true);
+  };
+
+  const handleUpdateStatusFromModal = () => {
+    handleStatusUpdate(selectedStatus);
+    setIsStatusModalOpen(false);
+  };
+
   if (loading) {
     return (
       <div className="profile-container">
@@ -419,7 +461,7 @@ export function JobSeekerProfile() {
           <p className="error-message">{error || 'Failed to load profile'}</p>
           <div className="error-actions">
             <button 
-              className="button ghost" 
+              className="button " 
               onClick={() => navigate('/jobseekers')}
             >
               Back to List
@@ -461,68 +503,68 @@ export function JobSeekerProfile() {
 
   return (
     <div className="profile-container">
-      <header className="profile-header">
-        <div className="header-content">
+      <header className="common-header">
+        <div className="header-main">
+          <h1>Job Seeker Profile</h1>
           <button 
-            className="button ghost back-button" 
+            className="button" 
             onClick={() => navigate('/jobseekers')}
           >
             <ArrowLeft size={16} />
             <span>Back to Job Seekers</span>
           </button>
-          <div className="status-actions">
-            {updateStatus && (
-              <span className="status-update-message">{updateStatus}</span>
-            )}
-            <div className="status-buttons">
-              <button 
-                className="button primary"
-                onClick={handleEditProfile}
-              >
-                <Edit size={16} />
-                Edit Profile
-              </button>
-              {(isAdmin || isRecruiter) && (
-                <>
-                  <button 
-                    className={`button ${profile.verificationStatus === 'verified' ? 'success' : 'outline'}`}
-                    onClick={() => handleStatusUpdate('verified')}
-                    disabled={profile.verificationStatus === 'verified'}
-                  >
-                    <CheckCircle size={16} />
-                    Verify
-                  </button>
-                  <button 
-                    className={`button ${profile.verificationStatus === 'rejected' ? 'error' : 'outline'}`}
-                    onClick={() => handleStatusUpdate('rejected')}
-                    disabled={profile.verificationStatus === 'rejected'}
-                  >
-                    <XCircle size={16} />
-                    Reject
-                  </button>
-                  <button 
-                    className={`button ${profile.verificationStatus === 'pending' ? 'warning' : 'outline'}`}
-                    onClick={() => handleStatusUpdate('pending')}
-                    disabled={profile.verificationStatus === 'pending'}
-                  >
-                    <Clock size={16} />
-                    Mark Pending
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
         </div>
+        
+        {updateStatus && (
+          <div className="status-update-container">
+            <span className="status-update-message">{updateStatus}</span>
+          </div>
+        )}
       </header>
 
       <main className="profile-main">
         <div className="profile-overview section-card">
           <div className="profile-banner">
-            <div className="profile-status">
+           <div className={`profile-status ${profile?.verificationStatus || 'pending'}`}>
               {getStatusIcon()}
-              <span className={`status-text ${profile.verificationStatus || 'pending'}`}>
-                {(profile.verificationStatus || 'pending').charAt(0).toUpperCase() + (profile.verificationStatus || 'pending').slice(1)}
+              <span className={`status-text ${profile?.verificationStatus || 'pending'}`}>
+                {profile?.verificationStatus ? `Status: ${profile.verificationStatus.charAt(0).toUpperCase() + profile.verificationStatus.slice(1)}` : 'Status: Pending'}
               </span>
+             
+            </div>
+            <div className="profile-actions-container">
+            {(isAdmin || isRecruiter) && (
+            <div className="profile-actions">
+                <button 
+                  className="action-icon-btn update-status-btn"
+                  onClick={openStatusModal}
+                  title="Update status"
+                  aria-label="Update status"
+                >
+                 <span className="status-text">Update Status</span> <Pencil size={20} />
+                </button>
+            </div>
+              )}
+            <div className="profile-actions">
+              <button 
+                className="action-icon-btn edit-btn"
+                onClick={handleEditProfile}
+                title="Edit this profile"
+                aria-label="Edit profile"
+              >
+                <Pencil size={20} />
+              </button>
+              {(isAdmin || isRecruiter) && (
+                <button 
+                  className="action-icon-btn delete-btn"
+                  onClick={handleDeleteProfile}
+                  title="Delete this profile"
+                  aria-label="Delete profile"
+                >
+                  <Trash2 size={20} />
+                </button>
+              )}
+            </div>
             </div>
           </div>
           
@@ -732,6 +774,93 @@ export function JobSeekerProfile() {
         onConfirm={confirmEdit}
         onCancel={() => setIsEditConfirmationOpen(false)}
       />
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={isDeleteConfirmationOpen}
+        title="Delete Profile"
+        message={`Are you sure you want to delete this profile? This action cannot be undone.`}
+        confirmText={isDeleting ? "Deleting..." : "Delete Profile"}
+        cancelText="Cancel"
+        confirmButtonClass="danger"
+        onConfirm={confirmDelete}
+        onCancel={() => setIsDeleteConfirmationOpen(false)}
+      />
+
+      {/* Status Update Modal */}
+      <div className={`modal ${isStatusModalOpen ? 'open' : ''}`} onClick={() => setIsStatusModalOpen(false)}>
+        <div className="status-modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-header">
+            <h3>Update Profile Status</h3>
+            <button className="close-button" onClick={() => setIsStatusModalOpen(false)}><XCircle size={20} /></button>
+          </div>
+          <div className="modal-body">
+            <div className="status-options">
+              <div className="status-option">
+                <input 
+                  type="radio" 
+                  id="status-verified" 
+                  name="status" 
+                  value="verified"
+                  checked={selectedStatus === 'verified'}
+                  onChange={() => setSelectedStatus('verified')}
+                  disabled={profile?.verificationStatus === 'verified'}
+                />
+                <label htmlFor="status-verified" className={`status-label ${profile?.verificationStatus === 'verified' ? 'disabled' : ''}`}>
+                  <CheckCircle className="status-icon verified" size={18} />
+                  <span>Verified</span>
+                </label>
+              </div>
+              
+              <div className="status-option">
+                <input 
+                  type="radio" 
+                  id="status-rejected" 
+                  name="status" 
+                  value="rejected"
+                  checked={selectedStatus === 'rejected'}
+                  onChange={() => setSelectedStatus('rejected')}
+                  disabled={profile?.verificationStatus === 'rejected'}
+                />
+                <label htmlFor="status-rejected" className={`status-label ${profile?.verificationStatus === 'rejected' ? 'disabled' : ''}`}>
+                  <XCircle className="status-icon rejected" size={18} />
+                  <span>Rejected</span>
+                </label>
+              </div>
+              
+              <div className="status-option">
+                <input 
+                  type="radio" 
+                  id="status-pending" 
+                  name="status" 
+                  value="pending"
+                  checked={selectedStatus === 'pending'}
+                  onChange={() => setSelectedStatus('pending')}
+                  disabled={profile?.verificationStatus === 'pending'}
+                />
+                <label htmlFor="status-pending" className={`status-label ${profile?.verificationStatus === 'pending' ? 'disabled' : ''}`}>
+                  <Clock className="status-icon pending" size={18} />
+                  <span>Pending</span>
+                </label>
+              </div>
+            </div>
+          </div>
+          <div className="modal-footer">
+            <button 
+              className="button secondary" 
+              onClick={() => setIsStatusModalOpen(false)}
+            >
+              Cancel
+            </button>
+            <button 
+              className="button primary" 
+              onClick={handleUpdateStatusFromModal}
+            >
+              Update Status
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 } 

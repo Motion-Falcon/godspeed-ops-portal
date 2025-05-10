@@ -4,7 +4,6 @@ import { z } from 'zod';
 import { useState, useEffect, useRef } from 'react';
 import { checkEmailAvailability } from '../../services/api';
 import { useNavigate } from 'react-router-dom';
-import { Calendar } from 'lucide-react';
 
 type PersonalInfoFormData = z.infer<typeof personalInfoSchema>;
 
@@ -204,7 +203,6 @@ export function PersonalInfoForm({ allFields, onEmailAvailabilityChange, disable
         <div className="form-group dob-group">
           <label htmlFor="dob" className="form-label" data-required="*">Date of Birth</label>
           <div className="date-picker-container">
-            <Calendar size={14} className="date-picker-icon" />
             <input
               id="dob"
               type="date"
@@ -338,7 +336,6 @@ export function PersonalInfoForm({ allFields, onEmailAvailabilityChange, disable
           <div className="form-group">
             <label htmlFor="sinExpiry" className="form-label">SIN Expiry Date</label>
             <div className="date-picker-container">
-              <Calendar size={14} className="date-picker-icon" />
               <input
                 id="sinExpiry"
                 type="date"

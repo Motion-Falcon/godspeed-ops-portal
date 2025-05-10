@@ -72,15 +72,6 @@
   gap: var(--spacing-3);
 }
 
-.button.danger {
-  background-color: var(--color-error);
-  color: white;
-}
-
-.button.danger:hover {
-  background-color: var(--color-error-hover, #d32f2f);
-}
-
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }

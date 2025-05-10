@@ -10,13 +10,13 @@ import {
   XCircle, 
   Clock,
   FileText,
-  Calendar,
   Pencil
 } from 'lucide-react';
 import { getJobseekerProfiles, deleteJobseeker } from '../services/api';
 import { JobSeekerProfile } from '../types/jobseeker';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import '../styles/pages/JobSeekerManagement.css';
+import '../styles/components/header.css';
 
 export function JobSeekerManagement() {
   const [profiles, setProfiles] = useState<JobSeekerProfile[]>([]);
@@ -219,25 +219,27 @@ export function JobSeekerManagement() {
 
   return (
     <div className="page-container">
-      <div className="page-header">
-        <h1>Job Seeker Management</h1>
-        <div className="header-actions">
-          <button 
-            className="button secondary button-icon" 
-            onClick={handleViewDrafts}
-          >
-            <FileText size={16} />
-            <span>View Drafts</span>
-          </button>
-          <button 
-            className="button primary button-icon" 
-            onClick={handleCreateProfile}
-          >
-            <Plus size={16} />
-            <span>New Job Seeker</span>
-          </button>
+      <header className="common-header">
+        <div className="header-main">
+          <h1>Job Seeker Management</h1>
+          <div className="header-actions">
+            <button 
+              className="button secondary button-icon" 
+              onClick={handleViewDrafts}
+            >
+              <FileText size={16} />
+              <span>View Drafts</span>
+            </button>
+            <button 
+              className="button primary button-icon" 
+              onClick={handleCreateProfile}
+            >
+              <Plus size={16} />
+              <span>New Job Seeker</span>
+            </button>
+          </div>
         </div>
-      </div>
+      </header>
 
       <div className="content-container">
         {error && (
@@ -260,14 +262,13 @@ export function JobSeekerManagement() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="search-input"
                 />
+                <button 
+                  className="button secondary button-icon reset-filters-btn" 
+                  onClick={resetFilters}
+                >
+                  <span>Reset Filters</span>
+                </button>
               </div>
-              
-              <button 
-                className="button secondary button-icon reset-filters-btn" 
-                onClick={resetFilters}
-              >
-                <span>Reset Filters</span>
-              </button>
             </div>
           </div>
 
@@ -363,7 +364,6 @@ export function JobSeekerManagement() {
                         <div className="column-title">Joined Date</div>
                         <div className="column-search">
                           <div className="date-picker-wrapper">
-                            <Calendar size={14} className="date-picker-icon" />
                             <input
                               type="date"
                               value={dateFilter}
@@ -371,13 +371,6 @@ export function JobSeekerManagement() {
                               className="date-picker-input"
                               onClick={(e) => e.currentTarget.showPicker()}
                             />
-                            <div className="date-picker-overlay" onClick={() => {
-                              const dateInput = document.querySelector('.date-picker-input') as HTMLInputElement;
-                              if (dateInput) {
-                                dateInput.focus();
-                                dateInput.showPicker();
-                              }
-                            }}></div>
                           </div>
                         </div>
                       </div>

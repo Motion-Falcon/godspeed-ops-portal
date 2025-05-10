@@ -5,6 +5,7 @@ import { getAllClientDrafts, deleteClientDraft } from '../../services/api';
 import { ClientData } from '../../services/api';
 import { ConfirmationModal } from '../../components/ConfirmationModal';
 import '../../styles/pages/ClientManagement.css';
+import '../../styles/components/header.css';
 
 export function ClientDrafts() {
   const [drafts, setDrafts] = useState<ClientData[]>([]);
@@ -87,21 +88,29 @@ export function ClientDrafts() {
 
   return (
     <div className="page-container">
-      <div className="page-header">
-        <button 
-          className="button ghost button-icon"
-          onClick={() => navigate('/client-management')}
-        >
-          <ArrowLeft size={16} />
-          <span>Back</span>
-        </button>
-        <h1>Client Drafts</h1>
-      </div>
+      <header className="common-header">
+        <div className="header-main">
+          <h1>Client Drafts</h1>
+          <div className="header-actions">
+            <button 
+              className="button button-icon"
+              onClick={() => navigate('/client-management')}
+            >
+              <ArrowLeft size={16} />
+              <span>Back</span>
+            </button>
+          </div>
+        </div>
+        
+        {(error || successMessage) && (
+          <div className="status-update-container">
+            {error && <span className="status-update-message error">{error}</span>}
+            {successMessage && <span className="status-update-message">{successMessage}</span>}
+          </div>
+        )}
+      </header>
 
       <div className="content-container">
-        {error && <div className="error-message">{error}</div>}
-        {successMessage && <div className="success-message">{successMessage}</div>}
-
         {loading ? (
           <div className="loading">Loading drafts...</div>
         ) : drafts.length === 0 ? (

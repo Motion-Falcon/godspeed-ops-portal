@@ -2,96 +2,269 @@
 
 .profile-create-container {
   max-width: 1400px;
-  margin: 2rem auto;
-  padding: 0 1rem;
+  margin: 0 auto;
 }
 
-.profile-create-header {
-  margin-bottom: 2.5rem;
-  text-align: center;
-}
-
-.profile-create-header h1 {
-  font-size: 2rem;
-  margin-bottom: 2rem;
-  color: var(--heading);
-}
-
-.step-indicator-new {
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  margin-bottom: 2.5rem;
-  width: 100%;
-  padding: 0 5%;
-}
-
-.step-item {
-  display: flex;
-  align-items: center;
+/* Step Journey Progress Bar */
+.step-journey-container {
   position: relative;
-  flex-grow: 1;
+  margin: 3rem auto;
+  padding: 0 1.5rem;
+  width: 100%;
+  max-width: 900px;
 }
 
-.step-item:last-child {
-  flex-grow: 0;
-}
-
-.step-circle {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
+/* Step markers and labels */
+.step-markers {
+  position: relative;
   display: flex;
-  justify-content: center;
-  align-items: center;
-  font-weight: var(--font-weight-medium);
-  font-size: 0.875rem;
-  color: var(--text-muted);
-  background-color: var(--color-card);
-  border: 2px solid var(--color-border);
-  z-index: 1;
-  transition: all var(--transition-normal);
+  justify-content: space-between;
+  padding: 0 12px;
 }
 
-.step-line {
+/* Progress bar as connector */
+.step-markers::before {
+  content: '';
+  position: absolute;
+  top: 18px; /* Center with bubbles */
+  left: 18px; /* Start at center of first bubble */
+  right: 18px; /* End at center of last bubble */
   height: 4px;
   background-color: var(--color-border);
-  flex-grow: 1;
-  margin: 0 -2px;
+  z-index: 0;
+}
+
+.dark .step-markers::before {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Progress fill for connector */
+.step-progress-fill {
+  position: absolute;
+  top: 18px; /* Center with bubbles */
+  left: 18px; /* Start at center of first bubble */
+  height: 4px;
+  background: linear-gradient(90deg, #4caf50, #8bc34a); /* Green gradient for completion */
+  border-radius: 4px;
+  transition: width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 0 10px rgba(76, 175, 80, 0.4);
+  z-index: 1;
+  animation: progressPulse 3s infinite;
+}
+
+@keyframes progressPulse {
+  0% { box-shadow: 0 0 5px rgba(76, 175, 80, 0.4); }
+  50% { box-shadow: 0 0 15px rgba(76, 175, 80, 0.6); }
+  100% { box-shadow: 0 0 5px rgba(76, 175, 80, 0.4); }
+}
+
+.dark .step-progress-fill {
+  background: linear-gradient(90deg, #43a047, #66bb6a);
+  box-shadow: 0 0 15px rgba(76, 175, 80, 0.5);
+  animation: progressPulseDark 3s infinite;
+}
+
+@keyframes progressPulseDark {
+  0% { box-shadow: 0 0 5px rgba(76, 175, 80, 0.5); }
+  50% { box-shadow: 0 0 20px rgba(76, 175, 80, 0.7); }
+  100% { box-shadow: 0 0 5px rgba(76, 175, 80, 0.5); }
+}
+
+.step-marker {
   position: relative;
-  transition: background-color var(--transition-normal);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: all 0.3s ease;
+  z-index: 2;
 }
 
-.step-line-progress {
-  height: 100%;
-  width: 0;
-  background-color: var(--color-primary);
-  border-radius: 2px;
-  transition: width var(--transition-slow);
+.step-bubble {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background-color: var(--color-card);
+  border: 2px solid var(--color-border);
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 0.9rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  z-index: 1;
+  margin-bottom: 0.75rem;
+  cursor: pointer;
 }
 
-.step-item.completed .step-circle {
-  background-color: var(--color-primary);
-  border-color: var(--color-primary);
-  color: #fff;
+.dark .step-bubble {
+  background-color: var(--color-card-dark, #2a2a2a);
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
-.step-item.completed .step-line {
+.step-marker.completed .step-bubble {
+  background-color: #4caf50; /* Green for completed */
+  border-color: #2e7d32;
+  color: white;
+  transform: scale(1.05);
+  transition: transform 0.3s ease-out;
 }
 
-.step-item.completed .step-line-progress {
-  width: 100%;
+.step-marker.completed .step-bubble:hover {
+  transform: scale(1.15);
+  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.3);
 }
 
-.step-item.active .step-circle {
-  background-color: var(--color-primary);
-  border-color: var(--color-primary);
-  color: #fff;
+.step-marker.active .step-bubble {
+  background-color: #ffc107; /* Yellow for current */
+  border-color: #ff8f00;
+  color: #333;
+  transform: scale(1.15);
+  box-shadow: 0 0 0 5px rgba(255, 193, 7, 0.2);
+  animation: pulseYellow 2s infinite;
+}
+
+@keyframes pulseYellow {
+  0% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(255, 193, 7, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); }
+}
+
+.dark .step-marker.active .step-bubble {
+  box-shadow: 0 0 0 5px rgba(255, 193, 7, 0.3);
+  color: #111;
+}
+
+.step-marker:not(.active):not(.completed) .step-bubble:hover {
   transform: scale(1.1);
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+  background-color: #f5f5f5;
 }
 
-.step-item.active .step-line-progress {
-  width: 50%;
+.dark .step-marker:not(.active):not(.completed) .step-bubble:hover {
+  background-color: #3a3a3a;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.1);
+}
+
+.step-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-align: center;
+  width: 110px;
+  transition: all 0.3s ease;
+  opacity: 0.8;
+}
+
+.step-marker.active .step-label {
+  color: #ff8f00; /* Yellow text for active step */
+  font-weight: 600;
+  opacity: 1;
+  transform: scale(1.05);
+}
+
+.step-marker.completed .step-label {
+  color: #4caf50; /* Green text for completed steps */
+  font-weight: 500;
+  opacity: 0.9;
+}
+
+.dark .step-marker.active .step-label {
+  color: #ffc107; /* Brighter yellow for dark mode */
+}
+
+.dark .step-marker.completed .step-label {
+  color: #66bb6a; /* Lighter green for dark mode */
+}
+
+/* Form content transition effect */
+.form-step-container {
+  animation: fadeInStep 0.4s ease;
+  margin-bottom: 0;
+}
+
+@keyframes fadeInStep {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .step-journey-container {
+    padding: 0 1rem;
+  }
+  
+  .step-label {
+    font-size: 0.75rem;
+    width: 90px;
+  }
+  
+  .step-bubble {
+    width: 32px;
+    height: 32px;
+    font-size: 0.8rem;
+  }
+  
+  .step-markers {
+    height: 90px;
+  }
+  
+  .step-markers::before {
+    top: 16px;
+    left: 16px;
+    right: 16px;
+  }
+  
+  .step-progress-fill {
+    top: 16px;
+    left: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .step-journey-container {
+    padding: 0 0.5rem;
+    margin: 2rem auto;
+  }
+  
+  .step-label {
+    width: 70px;
+    font-size: 0.7rem;
+    display: none;
+  }
+  
+  .step-marker.active .step-label {
+    display: block;
+  }
+  
+  .step-bubble {
+    width: 24px;
+    height: 24px;
+    font-size: 0.7rem;
+  }
+  
+  .step-markers {
+    height: 60px;
+  }
+  
+  .step-markers::before {
+    top: 12px;
+    left: 12px;
+    right: 12px;
+  }
+  
+  .step-progress-fill {
+    top: 12px;
+    left: 12px;
+  }
 }
 
 .form-card {
@@ -112,10 +285,6 @@
 
 .form-content {
   margin-bottom: var(--spacing-10);
-}
-
-.form-step-container {
-  margin-bottom: 0;
 }
 
 .form-step-container h2 {
@@ -170,28 +339,17 @@
 
 .form-navigation {
   display: flex;
-  justify-content: space-between;
+  align-items: center;
+  justify-content: center;
   margin-top: 2rem;
   padding-top: 1.5rem;
   border-top: 1px solid var(--border);
+  gap: 1rem;
 }
 
-/* .error-container {
-  padding: 1rem;
-  margin-bottom: 1.5rem;
-  background-color: rgba(var(--danger-rgb), 0.1);
-  border-left: 4px solid var(--danger);
-  border-radius: var(--border-radius-sm);
-  color: var(--danger);
-} */
-
-/* Checkbox styles */
-.checkbox-container {
-  display: flex;
-  align-items: center;
-  margin-top: 1rem;
+.form-navigation button {
+  width: 200px;
 }
-
 .form-checkbox {
   margin-right: 0.5rem;
   width: 1rem;
@@ -374,8 +532,63 @@ select.form-input {
 }
 /* --- End 3-column row styles --- */
 
-.form-step-container h2 {
-  font-size: 1.5rem;
+.loading-indicator {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 12px;
+  background-color: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+  margin: 10px 0;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.loading-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 1s ease-in-out infinite;
+  margin-right: 8px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Add email validation styles */
+.email-validation-container {
+  margin-top: 5px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.email-validation-container .availability-message {
+  margin: 0;
+}
+
+.email-validation-container button.sm {
+  padding: 4px 8px;
+  font-size: 0.8rem;
+  height: auto;
+  min-height: unset;
+}
+
+.availability-message {
+  margin-top: 5px;
+  font-size: 0.9em;
+}
+
+.availability-message.success {
+  color: var(--color-success);
+}
+
+.availability-message.error {
+  color: var(--color-danger);
 }
 
 /* JobSeekerProfile Page Styles */
@@ -385,45 +598,11 @@ select.form-input {
   color: var(--text);
 }
 
-.profile-header {
-  background-color: var(--card);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  padding: var(--spacing-4) var(--spacing-6);
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-
-.profile-header .header-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  max-width: 1200px;
-  margin: 0 auto;
-  flex-wrap: wrap;
-  gap: var(--spacing-4);
-}
-
-.back-button {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-2);
-  padding: var(--spacing-2) var(--spacing-3);
-}
-
 .status-actions {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
   gap: var(--spacing-2);
-}
-
-.status-update-message {
-  font-size: 0.875rem;
-  padding: var(--spacing-2) var(--spacing-4);
-  border-radius: var(--border-radius);
-  background-color: var(--background-secondary);
-  animation: fadeInOut 3s ease-in-out;
 }
 
 @keyframes fadeInOut {
@@ -439,24 +618,10 @@ select.form-input {
 }
 
 .profile-main {
-  max-width: 1200px;
+  max-width: 1300px;
   margin: 0 auto;
   padding: var(--spacing-6);
 }
-
-/* .loading-container, .error-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--spacing-4);
-  text-align: center;
-  background-color: var(--card);
-  border-radius: var(--border-radius);
-  box-shadow: var(--card-shadow);
-  margin: var(--spacing-6);
-} */
-
 .error-message {
   color: var(--error);
 }
@@ -472,18 +637,87 @@ select.form-input {
   box-shadow: var(--card-shadow);
   overflow: hidden;
   margin-bottom: var(--spacing-6);
+  position: relative;
 }
 
 .profile-banner {
   height: 65px;
   background-color: var(--primary);
-  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 var(--spacing-4);
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1;
 }
 
+.profile-actions-container {
+  display: flex;
+  gap: var(--spacing-2);
+}
+.profile-actions {
+  display: flex;
+  gap: var(--spacing-2);
+  background-color: var(--card);
+  padding: 2px 10px;
+  border-radius: 2rem;
+  box-shadow: var(--card-shadow);
+}
+
+.action-icon-btn {
+  background-color: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.2s;
+}
+
+.action-icon-btn:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+  transform: scale(1.05);
+}
+
+.action-icon-btn.edit-btn:hover {
+  background-color: var(--color-primary-dark);
+  border-radius: 50%;
+}
+
+.action-icon-btn.delete-btn:hover {
+  background-color: var(--color-error);
+  border-radius: 50%;
+}
+
+.action-icon-btn.update-status-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  width: fit-content;
+  padding: 0 10px;
+  color: var(--text);
+}
+
+.action-icon-btn.update-status-btn:hover {
+  background-color: unset;
+  border-radius: unset;
+}
+
+.action-icon-btn.update-status-btn:hover::after {
+  border-radius: unset;
+  background-color: unset;
+}
+
+/* Profile status indicator styling */
 .profile-status {
-  position: absolute;
-  top: var(--spacing-4);
-  right: var(--spacing-4);
+  position: relative;
+  right: 0;
   display: flex;
   align-items: center;
   gap: var(--spacing-2);
@@ -491,6 +725,38 @@ select.form-input {
   padding: var(--spacing-2) var(--spacing-3);
   border-radius: 2rem;
   box-shadow: var(--card-shadow);
+  transition: background-color 0.3s ease;
+}
+
+/* Status-specific background colors */
+.profile-status.verified {
+  background-color: #e6f7e6; /* Solid light green */
+  border: 1px solid #43a047;
+}
+
+.profile-status.rejected {
+  background-color: #fdeaea; /* Solid light red */
+  border: 1px solid #e53935;
+}
+
+.profile-status.pending {
+  background-color: #fff8e6; /* Solid light yellow */
+  border: 1px solid #ffa000;
+}
+
+.dark .profile-status.verified {
+  background-color: #1e401e; /* Dark green */
+  border-color: #43a047;
+}
+
+.dark .profile-status.rejected {
+  background-color: #411c1c; /* Dark red */
+  border-color: #e53935;
+}
+
+.dark .profile-status.pending {
+  background-color: #403a1e; /* Dark yellow/amber */
+  border-color: #ffa000;
 }
 
 .status-icon {
@@ -511,7 +777,7 @@ select.form-input {
 }
 
 .status-text {
-  font-size: 0.75rem;
+  font-size: 1rem;
   font-weight: 500;
 }
 
@@ -531,6 +797,7 @@ select.form-input {
   display: flex;
   padding: var(--spacing-6);
   gap: var(--spacing-4);
+  padding-top: 65px;
 }
 
 .profile-avatar {
@@ -716,21 +983,6 @@ select.form-input {
 }
 
 @media screen and (max-width: 640px) {
-  .profile-header .header-content {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  
-  .status-actions {
-    width: 100%;
-    align-items: flex-start;
-  }
-  
-  .status-buttons {
-    width: 100%;
-    justify-content: space-between;
-  }
-  
   .profile-details {
     flex-direction: column;
     align-items: center;
@@ -977,7 +1229,7 @@ select.form-input {
     margin-bottom: 12px;
   }
   
-  .document-item {
+ .document-item {
     grid-template-columns: 1fr;
     grid-template-rows: auto auto;
     height: auto;
@@ -1107,6 +1359,10 @@ select.form-input {
   max-width: 600px;
   padding: 2rem;
   text-align: center;
+}
+
+.success-card button {
+  width: fit-content;
 }
 
 .success-card.wide-card {
@@ -1388,4 +1644,208 @@ select.form-input {
 
 .availability-message.error {
   color: var(--color-danger);
-} 
+}
+
+/* Status Update Modal styling */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modal.open {
+  display: flex;
+}
+
+.status-modal-content {
+  background-color: var(--card);
+  border-radius: var(--border-radius);
+  box-shadow: var(--card-shadow);
+  width: 100%;
+  max-width: 450px;
+  overflow: hidden;
+  animation: slideIn 0.3s ease-out;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-4) var(--spacing-4) var(--spacing-2);
+  border-bottom: 1px solid var(--border);
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.close-button {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: var(--spacing-1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.close-button:hover {
+  background-color: var(--background-secondary);
+  color: var(--text);
+}
+
+.modal-body {
+  padding: var(--spacing-4);
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: var(--spacing-2) var(--spacing-4) var(--spacing-4);
+  gap: var(--spacing-3);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from { transform: translateY(-20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Status options styling with enhanced hover effects */
+.status-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  margin-bottom: var(--spacing-2);
+}
+
+.status-option {
+  display: flex;
+  align-items: center;
+}
+
+.status-option input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  margin-right: var(--spacing-2);
+  accent-color: var(--primary);
+}
+
+.status-option input[type="radio"]:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.status-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  padding: var(--spacing-2) var(--spacing-3);
+  padding-left: var(--spacing-3);
+  border-radius: var(--border-radius-sm);
+  transition: all 0.2s ease;
+  flex-grow: 1;
+  border-left: 3px solid transparent;
+}
+
+.status-label:hover {
+  background-color: var(--background-secondary);
+}
+
+.status-label .status-icon {
+  margin-right: var(--spacing-2);
+}
+
+.status-label span {
+  font-weight: 500;
+  color: var(--text);
+}
+
+.status-label.disabled {
+  cursor: not-allowed;
+  /* background-color: var(--bg-subtle); */
+}
+
+.status-label.disabled:hover {
+  background-color: var(--bg-subtle);
+}
+
+/* Dark mode adjustments for status modal */
+.dark .status-modal-content {
+  background-color: var(--card);
+}
+
+.dark .status-label:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Status options styling with enhanced hover effects */
+.status-option input[type="radio"] + .status-label:hover {
+  background-color: var(--background-secondary);
+}
+
+/* Status-specific hover colors */
+.status-option input[value="verified"] + .status-label:hover {
+  background-color: #e6f7e6; /* Solid light green */
+  border-left: 3px solid #43a047;
+}
+
+.status-option input[value="rejected"] + .status-label:hover {
+  background-color: #fdeaea; /* Solid light red */
+  border-left: 3px solid #e53935;
+}
+
+.status-option input[value="pending"] + .status-label:hover {
+  background-color: #fff8e6; /* Solid light yellow */
+  border-left: 3px solid #ffa000;
+}
+
+/* Dark mode enhancements */
+.dark .status-option input[value="verified"] + .status-label:hover {
+  background-color: #1e401e; /* Dark green */
+  border-left: 3px solid #43a047;
+}
+
+.dark .status-option input[value="rejected"] + .status-label:hover {
+  background-color: #411c1c; /* Dark red */
+  border-left: 3px solid #e53935;
+}
+
+.dark .status-option input[value="pending"] + .status-label:hover {
+  background-color: #403a1e; /* Dark yellow/amber */
+  border-left: 3px solid #ffa000;
+}
+
+/* Selected status styling */
+.status-option input[value="verified"]:checked + .status-label {
+  background-color: #169116;
+  border-left: 3px solid #43a047;
+}
+
+.status-option input[value="rejected"]:checked + .status-label {
+  background-color: #8b1d1d;
+  border-left: 3px solid #e53935;
+}
+
+.status-option input[value="pending"]:checked + .status-label {
+  background-color: #a5832d;
+  border-left: 3px solid #ffa000;
+}

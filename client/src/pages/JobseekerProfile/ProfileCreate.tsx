@@ -23,6 +23,8 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import '../../styles/components/form.css';
 import '../../styles/pages/JobseekerProfile.css';
+import '../../styles/components/header.css';
+import { ArrowLeft, Save } from 'lucide-react';
 
 // Define the form schema types for each step
 export const personalInfoSchema = z.object({
@@ -1131,25 +1133,81 @@ export function ProfileCreate({ isEditMode = false, isDraftEditMode = false, isN
 
   // --- Step Indicator Logic ---
   const renderStepIndicator = () => {
-    const steps = [];
-    for (let i = 1; i <= totalSteps; i++) {
-      const isActive = i === currentStep;
-      const isCompleted = i < currentStep;
-      steps.push(
-        <div 
-          key={i} 
-          className={`step-item ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''}`}
-        >
-          <div className="step-circle">{i}</div>
-          {i < totalSteps && (
-            <div className="step-line">
-              <div className="step-line-progress"></div>
-            </div>
-          )}
+    // Calculate overall progress percentage - width between first and last step
+    const progressWidth = currentStep === 1 
+      ? 0 
+      : ((currentStep - 1) / (totalSteps - 1)) * 100;
+    
+    return (
+      <div className="step-journey-container">
+        {/* Step markers with connector line */}
+        <div className="step-markers">
+          {/* Progress fill that shows completion */}
+          <div 
+            className="step-progress-fill" 
+            style={{ width: `${progressWidth}%` }}
+          />
+          
+          {Array.from({ length: totalSteps }, (_, i) => {
+            const stepNum = i + 1;
+            const isActive = stepNum === currentStep;
+            const isCompleted = stepNum < currentStep;
+            
+            return (
+              <div 
+                key={stepNum} 
+                className={`step-marker ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''}`}
+                style={{ '--index': i } as React.CSSProperties}
+                onClick={() => {
+                  // Allow clicking on completed steps for navigation
+                  if (isCompleted) {
+                    setCurrentStep(stepNum);
+                  } else if (isActive) {
+                    // If clicking current step, do nothing
+                    return;
+                  } else {
+                    // If clicking future step, show requirements
+                    const incompleteSteps = [];
+                    for (let j = 1; j < stepNum; j++) {
+                      if (j >= currentStep) {
+                        incompleteSteps.push(getStepLabel(j));
+                      }
+                    }
+                    if (incompleteSteps.length > 0) {
+                      setError(`Please complete ${incompleteSteps.join(', ')} before proceeding to ${getStepLabel(stepNum)}`);
+                      setTimeout(() => setError(null), 5000);
+                    }
+                  }
+                }}
+              >
+                <div className="step-bubble">
+                  {isCompleted ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                  ) : (
+                    stepNum
+                  )}
+                </div>
+                <div className="step-label">{getStepLabel(stepNum)}</div>
+              </div>
+            );
+          })}
         </div>
-      );
+      </div>
+    );
+  };
+
+  // Helper function to get step labels
+  const getStepLabel = (step: number): string => {
+    switch (step) {
+      case 1: return "Personal Info";
+      case 2: return "Address";
+      case 3: return "Qualifications";
+      case 4: return "Compensation";
+      case 5: return "Documents";
+      default: return `Step ${step}`;
     }
-    return <div className="step-indicator-new">{steps}</div>;
   };
 
   // Render loading indicator based on specific loading states
@@ -1174,42 +1232,62 @@ export function ProfileCreate({ isEditMode = false, isDraftEditMode = false, isN
 
   return (
     <div className="profile-create-container">
-      <div className="profile-create-header">
-        <h1>
-          {isEditMode 
-            ? 'Edit Jobseeker Profile' 
-            : isDraftEditMode 
-              ? 'Edit Jobseeker Draft'
-              : 'Create Jobseeker Profile'}
-        </h1>
-        <p>
-          {isEditMode 
-            ? 'Update the information for this jobseeker\'s profile.' 
-            : isDraftEditMode
-              ? 'Continue editing this jobseeker profile draft.'
-              : 'Enter the jobseeker\'s information to create their profile.'}
-        </p>
-        {renderStepIndicator()}
-      </div>
-
-      {error && (
-        <div className="error-container">
-          <div className="">
-            <i className="fas fa-exclamation-circle"></i>
-            <span>{error}</span>
+      <header className="common-header">
+        <div className="header-main">
+          <h1>
+            {isEditMode 
+              ? 'Edit Jobseeker Profile' 
+              : isDraftEditMode 
+                ? 'Edit Jobseeker Draft'
+                : 'Create Jobseeker Profile'}
+          </h1>
+          <div className="header-actions">
+            <button 
+              className="button" 
+              onClick={() => navigate('/jobseeker-management')}
+            >
+              <ArrowLeft size={16} />
+              <span>Back to Jobseekers Management</span>
+            </button>
+            
+            {!isEditMode && (
+              <button
+                type="button"
+                className="button secondary button-icon"
+                onClick={async () => {
+                  const saveResult = await saveDraft();
+                  // If saveResult is a string/number, it's the draft ID
+                  if (saveResult && typeof saveResult !== 'boolean') {
+                    setCreatedDraftId(saveResult);
+                  }
+                }}
+                disabled={isLoading || (currentStep === 1 && isEmailAvailable === false)}
+                title={currentStep === 1 && isEmailAvailable === false ? 'Email is already in use. Please choose a different email.' : ''}
+              >
+                <Save size={16} />
+                <span>{loadingStates.draftSaving ? 'Saving...' : 'Save Draft'}</span>
+              </button>
+            )}
           </div>
         </div>
-      )}
-
-      {currentStep === 1 && isEmailAvailable === false && !error && (
-        <div className="error-container">
-          <div className="">
-            <i className="fas fa-exclamation-circle"></i>
-            <span>The email address is already in use. Please use a different email to continue.</span>
+        
+        {error && (
+          <div className="status-update-container">
+            <span className="status-update-message error">{error}</span>
           </div>
-        </div>
-      )}
+        )}
+        
+        {currentStep === 1 && isEmailAvailable === false && !error && (
+          <div className="status-update-container">
+            <span className="status-update-message error">
+              The email address is already in use. Please use a different email to continue.
+            </span>
+          </div>
+        )}
+      </header>
 
+      {renderStepIndicator()}
+      
       {renderLoadingIndicator()}
 
       <div className={`form-card ${isLoading ? 'form-loading' : ''}`}>
@@ -1276,24 +1354,6 @@ export function ProfileCreate({ isEditMode = false, isDraftEditMode = false, isN
                 </button>
               )}
               
-              {!isEditMode && (
-                <button
-                  type="button"
-                  className="button secondary draft-button"
-                  onClick={async () => {
-                    const saveResult = await saveDraft();
-                    // If saveResult is a string/number, it's the draft ID
-                    if (saveResult && typeof saveResult !== 'boolean') {
-                      setCreatedDraftId(saveResult);
-                    }
-                  }}
-                  disabled={isLoading || (currentStep === 1 && isEmailAvailable === false)}
-                  title={currentStep === 1 && isEmailAvailable === false ? 'Email is already in use. Please choose a different email.' : ''}
-                >
-                  {loadingStates.draftSaving ? <span className="loading-spinner"></span> : 'Save Draft'}
-                </button>
-              )}
-
               {currentStep < totalSteps ? (
                 <button
                   type="button"

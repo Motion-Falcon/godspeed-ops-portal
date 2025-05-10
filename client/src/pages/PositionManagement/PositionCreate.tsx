@@ -15,9 +15,10 @@ import {
   getClient
 } from '../../services/api';
 import { ConfirmationModal } from '../../components/ConfirmationModal';
-import { ArrowLeft, Save, Calendar } from 'lucide-react';
+import { ArrowLeft, Save } from 'lucide-react';
 import '../../styles/pages/PositionManagement.css';
 import '../../styles/components/form.css';
+import '../../styles/components/header.css';
 
 // Helper function for date formatting and validation
 const formatDateForInput = (date: Date): string => {
@@ -494,37 +495,40 @@ export function PositionCreate({ isEditMode = false, isEditDraftMode = false }: 
 
   return (
     <div className="page-container">
-      <div className="page-header">
-        <button 
-          className="button ghost button-icon" 
-          onClick={handleCancel}
-        >
-          <ArrowLeft size={16} />
-          <span>Back</span>
-        </button>
-        <h1>{pageTitle}</h1>
-        
-        <div className="header-actions">
-          {!isEditMode && (
+      <header className="common-header">
+        <div className="header-main">
+          <h1>{pageTitle}</h1>
+          <div className="header-actions">
             <button 
-              className="button secondary button-icon" 
-              onClick={handleSaveDraft} 
-              disabled={saving || !hasUnsavedChanges}
+              className="button button-icon" 
+              onClick={handleCancel}
             >
-              <Save size={16} />
-              <span>{saving ? 'Saving...' : 'Save Draft'}</span>
+              <ArrowLeft size={16} />
+              <span>Back</span>
             </button>
-          )}
+            
+            {!isEditMode && (
+              <button 
+                className="button secondary button-icon" 
+                onClick={handleSaveDraft} 
+                disabled={saving || !hasUnsavedChanges}
+              >
+                <Save size={16} />
+                <span>{saving ? 'Saving...' : 'Save Draft'}</span>
+              </button>
+            )}
+          </div>
         </div>
-      </div>
+        
+        {(error || success) && (
+          <div className="status-update-container">
+            {error && <span className="status-update-message error">{error}</span>}
+            {success && <span className="status-update-message">{success}</span>}
+          </div>
+        )}
+      </header>
 
       <div className="content-container">
-        {error && (
-          <div className="error-message">{error}</div>
-        )}
-        {success && (
-          <div className="success-message">{success}</div>
-        )}
         {lastSaved && !isEditMode && (
           <div className="last-saved">
             Last saved: {new Date(lastSaved).toLocaleString()}
@@ -617,7 +621,6 @@ export function PositionCreate({ isEditMode = false, isEditDraftMode = false }: 
                       Start Date
                     </label>
                     <div className="date-picker-container">
-                      <Calendar size={14} className="date-picker-icon" />
                       <input
                         type="date"
                         id="startDate"
@@ -637,7 +640,6 @@ export function PositionCreate({ isEditMode = false, isEditDraftMode = false }: 
                       End Date
                     </label>
                     <div className="date-picker-container">
-                      <Calendar size={14} className="date-picker-icon" />
                       <input
                         type="date"
                         id="endDate"
@@ -1309,7 +1311,6 @@ export function PositionCreate({ isEditMode = false, isEditDraftMode = false }: 
                       Project Completion Date
                     </label>
                     <div className="date-picker-container">
-                      <Calendar size={14} className="date-picker-icon" />
                       <input
                         type="date"
                         id="projCompDate"

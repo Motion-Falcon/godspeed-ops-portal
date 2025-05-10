@@ -38,7 +38,7 @@ export function ConfirmationModal({
         </div>
         <div className="modal-actions">
           <button 
-            className="button ghost" 
+            className="button " 
             onClick={onCancel}
           >
             {cancelText}

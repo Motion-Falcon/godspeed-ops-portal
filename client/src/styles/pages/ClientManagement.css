@@ -1,25 +1,5 @@
 /* ClientManagement.css */
 
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
-
-.page-header h1 {
-  margin: 0;
-  color: var(--heading);
-  font-size: 1.8rem;
-}
-
-.header-actions {
-  display: flex;
-  gap: 1rem;
-}
-
 .content-container {
   margin-bottom: 2rem;
 }
@@ -44,12 +24,6 @@
   margin-bottom: 1rem;
   font-size: 1.5rem;
   color: var(--heading);
-}
-
-.empty-state {
-  color: var(--text-muted);
-  font-style: italic;
-  padding: 1rem 0;
 }
 
 /* Client Form Styles */
@@ -135,11 +109,6 @@
   margin-top: 0.5rem;
 }
 
-.checkbox-container {
-  display: flex;
-  align-items: center;
-  margin-top: 0.5rem;
-}
 
 .form-checkbox {
   margin-right: 0.5rem;
@@ -232,12 +201,6 @@
   color: var(--text-muted);
 }
 
-.empty-state {
-  padding: var(--spacing-6);
-  text-align: center;
-  color: var(--text-muted);
-}
-
 .table-container {
   overflow-x: auto;
 }
@@ -257,16 +220,6 @@
 }
 
 @media (max-width: 768px) {
-  .page-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  
-  .header-actions {
-    width: 100%;
-    justify-content: space-between;
-  }
-  
   .action-buttons {
     flex-direction: column;
   }
@@ -289,16 +242,5 @@
   
   .page-actions {
     flex-direction: column;
-  }
-  
-  .page-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--spacing-4);
-  }
-  
-  .header-actions {
-    margin-top: var(--spacing-4);
-    width: 100%;
   }
 } 

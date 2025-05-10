@@ -1,25 +1,5 @@
 /* PositionManagement.css */
 
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
-
-.page-header h1 {
-  margin: 0;
-  color: var(--heading);
-  font-size: 1.8rem;
-}
-
-.header-actions {
-  display: flex;
-  gap: 1rem;
-}
-
 .content-container {
   margin-bottom: 2rem;
 }
@@ -31,10 +11,6 @@
   box-shadow: var(--shadow-md);
   border: 1px solid var(--color-border);
   margin-bottom: 1.5rem;
-}
-
-.card-header {
-  margin-bottom: 1rem;
 }
 
 .card h2 {
@@ -49,6 +25,11 @@
   font-style: italic;
   padding: 1rem 0;
   text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: var(--spacing-2);
 }
 
 .loading {
@@ -63,24 +44,9 @@
 
 /* Responsive Styles */
 @media (max-width: 768px) {
-  .page-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  
-  .header-actions {
-    width: 100%;
-    justify-content: space-between;
-  }
+  /* Remove the header-related media queries */
 }
 
 @media (max-width: 576px) {
-  .header-actions {
-    flex-direction: column;
-    width: 100%;
-  }
-  
-  .header-actions button {
-    width: 100%;
-  }
+  /* Remove the header-related media queries */
 } 

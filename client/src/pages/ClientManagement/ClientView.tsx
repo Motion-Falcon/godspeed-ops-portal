@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Building, Edit } from 'lucide-react';
 import { getClient, ClientData } from '../../services/api';
 import '../../styles/pages/ClientView.css';
+import '../../styles/components/header.css';
 
 // Interface that can handle both camelCase and snake_case properties
 interface ExtendedClientData extends ClientData {
@@ -119,7 +120,7 @@ export function ClientView() {
           <p className="error-message">{error || 'Failed to load client'}</p>
           <div className="error-actions">
             <button 
-              className="button ghost" 
+              className="button " 
               onClick={() => navigate('/client-management')}
             >
               Back to Clients
@@ -140,16 +141,17 @@ export function ClientView() {
 
   return (
     <div className="client-view-container">
-      <header className="client-header">
-        <div className="header-content">
-          <button 
-            className="button ghost back-button" 
-            onClick={() => navigate('/client-management')}
-          >
-            <ArrowLeft size={16} />
-            <span>Back to Clients</span>
-          </button>
+      <header className="common-header">
+        <div className="header-main">
+          <h1>{companyName || 'Client Details'}</h1>
           <div className="header-actions">
+            <button 
+              className="button" 
+              onClick={() => navigate('/client-management')}
+            >
+              <ArrowLeft size={16} />
+              <span>Back to Clients</span>
+            </button>
             <button 
               className="button primary"
               onClick={handleEditClient}
@@ -159,6 +161,12 @@ export function ClientView() {
             </button>
           </div>
         </div>
+        
+        {error && (
+          <div className="status-update-container">
+            <span className="status-update-message error">{error}</span>
+          </div>
+        )}
       </header>
 
       <main className="client-main">

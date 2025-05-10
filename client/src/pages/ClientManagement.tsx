@@ -8,6 +8,7 @@ import {
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import { Plus, Trash2, Pencil, FileText, Eye } from 'lucide-react';
 import '../styles/pages/ClientManagement.css';
+import '../styles/components/header.css';
 
 // Extended ClientData interface that can handle both camelCase and snake_case properties
 interface ExtendedClientData extends ClientData {
@@ -166,34 +167,36 @@ export function ClientManagement() {
   // Basic component structure - detailed client table to be added
   return (
     <div className="page-container">
-      <div className="page-header">
-        <h1>Client Management</h1>
-        <div className="header-actions">
-          <button 
-            className="button secondary button-icon" 
-            onClick={handleViewDrafts}
-          >
-            <FileText size={16} />
-            <span>View Drafts</span>
-          </button>
-          <button 
-            className="button primary button-icon" 
-            onClick={handleCreateClient}
-          >
-            <Plus size={16} />
-            <span>New Client</span>
-          </button>
+      <header className="common-header">
+        <div className="header-main">
+          <h1>Client Management</h1>
+          <div className="header-actions">
+            <button 
+              className="button secondary button-icon" 
+              onClick={handleViewDrafts}
+            >
+              <FileText size={16} />
+              <span>View Drafts</span>
+            </button>
+            <button 
+              className="button primary button-icon" 
+              onClick={handleCreateClient}
+            >
+              <Plus size={16} />
+              <span>New Client</span>
+            </button>
+          </div>
         </div>
-      </div>
+        
+        {(error || message) && (
+          <div className="status-update-container">
+            {error && <span className="status-update-message error">{error}</span>}
+            {message && <span className="status-update-message">{message}</span>}
+          </div>
+        )}
+      </header>
 
       <div className="content-container">
-        {error && (
-          <div className="error-message">{error}</div>
-        )}
-        {message && (
-          <div className="success-message">{message}</div>
-        )}
-
         <div className="card">
           <div className="card-header">
             <h2>Client List</h2>

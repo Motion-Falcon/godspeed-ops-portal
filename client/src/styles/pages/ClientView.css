@@ -1,34 +1,14 @@
 .client-view-container {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 20px;
-}
-
-.client-header {
-  margin-bottom: 20px;
-}
-
-.header-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.back-button {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.header-actions {
-  display: flex;
-  gap: 10px;
 }
 
 .client-main {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  margin: 2rem auto;
+  max-width: 1200px;
 }
 
 .section-card {
@@ -169,17 +149,6 @@
 }
 
 @media (max-width: 600px) {
-  .header-content {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-  }
-  
-  .header-actions {
-    width: 100%;
-    justify-content: flex-end;
-  }
-  
   .client-details {
     flex-direction: column;
   }

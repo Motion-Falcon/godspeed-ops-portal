@@ -3,29 +3,7 @@
 .page-container {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 2rem 1rem;
 }
-
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
-
-.page-header h1 {
-  margin: 0;
-  color: var(--heading);
-  font-size: 1.8rem;
-}
-
-.header-actions {
-  display: flex;
-  gap: 1rem;
-}
-
 .content-container {
   margin-bottom: 2rem;
 }
@@ -36,10 +14,6 @@
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
   border: 1px solid var(--color-border);
-  margin-bottom: 1.5rem;
-}
-
-.card-header {
   margin-bottom: 1.5rem;
 }
 
@@ -61,6 +35,9 @@
   flex: 1;
   position: relative;
   min-width: 250px;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
 }
 
 .search-icon, .filter-icon {
@@ -73,14 +50,14 @@
 }
 
 .search-input {
-  width: 100%;
+  flex: 1;
   padding: var(--spacing-3) var(--spacing-3) var(--spacing-3) var(--spacing-8);
   border-radius: var(--border-radius);
   border: 1px solid var(--border);
   background-color: var(--card);
   color: var(--text);
   font-size: 0.95rem;
-  height: 40px;
+  height: 48px;
 }
 
 .search-input:focus {
@@ -95,6 +72,7 @@
   padding: var(--spacing-2) var(--spacing-5);
   height: 40px;
   font-weight: 500;
+  white-space: nowrap;
 }
 
 .status-filter {
@@ -177,15 +155,6 @@
   position: relative;
   display: flex;
   align-items: center;
-}
-
-.date-picker-icon {
-  position: absolute;
-  left: 0.6rem;
-  color: var(--text-muted);
-  font-size: 0.9rem;
-  z-index: 1;
-  pointer-events: none;
 }
 
 .date-picker-container .form-input {
@@ -419,7 +388,7 @@
 
 /* Edit button - use a more neutral color */
 .edit-btn {
-  color: var(--text-muted);
+  color: var(--text);
 }
 
 .edit-btn:hover {
@@ -446,16 +415,6 @@
 }
 
 @media (max-width: 768px) {
-  .page-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  
-  .header-actions {
-    width: 100%;
-    justify-content: space-between;
-  }
-  
   .action-buttons {
     flex-direction: column;
   }
@@ -467,17 +426,6 @@
   }
   
   .search-box, .status-filter {
-    width: 100%;
-  }
-  
-  .page-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--spacing-4);
-  }
-  
-  .header-actions {
-    margin-top: var(--spacing-4);
     width: 100%;
   }
 }

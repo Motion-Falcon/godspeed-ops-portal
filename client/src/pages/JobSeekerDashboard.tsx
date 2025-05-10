@@ -1,11 +1,16 @@
-import { useState, useEffect } from 'react';
-import { LogOut, User as UserIcon, FileText, Bell, Activity } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
-import { logoutUser } from '../lib/auth';
-import { useNavigate } from 'react-router-dom';
-import { ThemeToggle } from '../components/theme-toggle';
-import { checkApiHealth } from '../services/api';
-import { supabase } from '../lib/supabaseClient';
+import { useState, useEffect } from "react";
+import {
+  LogOut,
+  User as UserIcon,
+  Activity,
+} from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
+import { logoutUser } from "../lib/auth";
+import { useNavigate } from "react-router-dom";
+import { ThemeToggle } from "../components/theme-toggle";
+import { checkApiHealth } from "../services/api";
+import { supabase } from "../lib/supabaseClient";
+import "../styles/components/header.css";
 
 interface UserData {
   id: string;
@@ -30,35 +35,35 @@ export function JobSeekerDashboard() {
       setUserData({
         id: user.id,
         email: user.email,
-        name: user.user_metadata?.name || 'User',
-        userType: user.user_metadata?.user_type || 'jobseeker',
+        name: user.user_metadata?.name || "User",
+        userType: user.user_metadata?.user_type || "jobseeker",
         createdAt: new Date(user.created_at).toLocaleDateString(),
-        lastSignIn: user.last_sign_in_at 
-          ? new Date(user.last_sign_in_at).toLocaleString() 
-          : 'First login'
+        lastSignIn: user.last_sign_in_at
+          ? new Date(user.last_sign_in_at).toLocaleString()
+          : "First login",
       });
-      
+
       fetchUserProfileId(user.id);
     }
   }, [user]);
-  
+
   const fetchUserProfileId = async (userId: string) => {
     try {
       setIsLoadingProfile(true);
-      
+
       const { data, error } = await supabase
-        .from('jobseeker_profiles')
-        .select('id')
-        .eq('user_id', userId)
+        .from("jobseeker_profiles")
+        .select("id")
+        .eq("user_id", userId)
         .single();
-      
+
       if (error) {
-        console.error('Error fetching profile ID:', error);
+        console.error("Error fetching profile ID:", error);
       } else if (data) {
-        setUserData(prev => prev ? { ...prev, profileId: data.id } : null);
+        setUserData((prev) => (prev ? { ...prev, profileId: data.id } : null));
       }
     } catch (err) {
-      console.error('Error fetching profile ID:', err);
+      console.error("Error fetching profile ID:", err);
     } finally {
       setIsLoadingProfile(false);
     }
@@ -68,9 +73,9 @@ export function JobSeekerDashboard() {
     try {
       setIsLoggingOut(true);
       await logoutUser();
-      navigate('/login');
+      navigate("/login");
     } catch (error) {
-      console.error('Error logging out:', error);
+      console.error("Error logging out:", error);
       setIsLoggingOut(false);
     }
   };
@@ -82,16 +87,20 @@ export function JobSeekerDashboard() {
   };
 
   const handleCheckHealth = async () => {
-    setHealthStatus('Checking...');
+    setHealthStatus("Checking...");
     try {
       const result = await checkApiHealth();
-      if (result.status === 'healthy') {
+      if (result.status === "healthy") {
         setHealthStatus(`✅ Connection healthy: ${result.user}`);
       } else {
         setHealthStatus(`❌ Error: ${result.message}`);
       }
     } catch (error) {
-      setHealthStatus(`❌ Check failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setHealthStatus(
+        `❌ Check failed: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
     }
   };
 
@@ -106,19 +115,22 @@ export function JobSeekerDashboard() {
   return (
     <div className="dashboard-container">
       {/* Header */}
-      <header className="dashboard-header">
-        <div className="header-content">
+      <header className="common-header">
+        <div className="header-main">
           <div className="logo-container">
-            <div className="logo">
-              CN
-            </div>
-            <span className="brand-title" style={{ margin: 0, fontSize: '1.25rem' }}>Job Seeker Portal</span>
+            <div className="logo">CN</div>
+            <span
+              className="brand-title"
+              style={{ margin: 0, fontSize: "1.25rem" }}
+            >
+              Job Seeker Portal
+            </span>
           </div>
-          
+
           <div className="header-actions">
             <ThemeToggle />
-            <button 
-              className="button ghost button-icon" 
+            <button
+              className="button  button-icon"
               onClick={handleLogout}
               disabled={isLoggingOut}
             >
@@ -154,104 +166,94 @@ export function JobSeekerDashboard() {
               <UserIcon className="icon" size={20} />
               <h2 className="card-title">Account Details</h2>
             </div>
-            
+
             <div>
               <div className="data-item">
                 <p className="data-label">Name</p>
                 <p className="data-value">{userData.name}</p>
               </div>
-              
+
               <div className="data-item">
                 <p className="data-label">Email Address</p>
                 <p className="data-value">{userData.email}</p>
               </div>
-              
+
               <div className="data-item">
                 <p className="data-label">Account ID</p>
-                <p className="data-value" style={{ fontSize: '0.875rem' }}>{userData.id}</p>
+                <p className="data-value" style={{ fontSize: "0.875rem" }}>
+                  {userData.id}
+                </p>
               </div>
-              
+
               <div className="data-item">
                 <p className="data-label">Account Created</p>
                 <p className="data-value">{userData.createdAt}</p>
               </div>
-              
+
               <div className="data-item">
                 <p className="data-label">Last Login</p>
                 <p className="data-value">{userData.lastSignIn}</p>
               </div>
             </div>
           </div>
-          
+
           <div className="card">
-            <h2 className="card-title" style={{ marginBottom: '1rem' }}>Job Seeker Actions</h2>
+            <h2 className="card-title" style={{ marginBottom: "1rem" }}>
+              Job Seeker Actions
+            </h2>
             <div className="action-list">
-              <button 
-                className="button outline" 
-                style={{ justifyContent: 'flex-start' }}
+              <button
+                className="button outline"
                 onClick={handleViewProfile}
                 disabled={isLoadingProfile}
               >
                 <UserIcon size={16} className="icon" />
-                {isLoadingProfile ? 'Loading Profile...' : 'View My Profile'}
+                {isLoadingProfile ? "Loading Profile..." : "View My Profile"}
               </button>
-              <button className="button outline" style={{ justifyContent: 'flex-start' }}>
-                <FileText size={16} className="icon" />
-                Manage My Resume
-              </button>
-              <button className="button outline" style={{ justifyContent: 'flex-start' }}>
-                <Bell size={16} className="icon" />
-                Job Alerts
-              </button>
-              
-              <button 
-                className="button outline" 
-                style={{ justifyContent: 'flex-start' }}
-                onClick={() => navigate('/profile/create')}
-              >
-                Create Jobseeker Profiles
-              </button>
-              
+
               {/* Reset Password button */}
-              <button 
-                className="button outline" 
-                style={{ justifyContent: 'flex-start' }}
-                onClick={() => navigate('/reset-password')}
+              <button
+                className="button outline"
+                onClick={() => navigate("/reset-password")}
               >
                 Reset Password
               </button>
-              
+
               {/* Health check button */}
-              <button 
-                className="button outline" 
-                onClick={handleCheckHealth}
-                style={{ justifyContent: 'flex-start' }}
-              >
+              <button className="button outline" onClick={handleCheckHealth}>
                 <Activity size={16} className="icon" />
                 Check Auth Status
               </button>
-              
+
               {healthStatus && (
-                <div className="health-status">
-                  {healthStatus}
-                </div>
+                <div className="health-status">{healthStatus}</div>
               )}
             </div>
           </div>
-          
+
           {/* Job recommendations card */}
           <div className="card" style={{ gridColumn: "span 2" }}>
             <h2 className="card-title">Recommended Jobs</h2>
-            <p className="card-subtitle">Based on your profile and preferences</p>
-            
-            <div className="recommendations-placeholder" style={{ 
-              padding: "1rem", 
-              backgroundColor: "var(--background-secondary)",
-              borderRadius: "0.5rem",
-              marginTop: "1rem"
-            }}>
-              <p>Complete your profile to see personalized job recommendations</p>
-              <button className="button primary" style={{ marginTop: "0.5rem" }}>
+            <p className="card-subtitle">
+              Based on your profile and preferences
+            </p>
+
+            <div
+              className="recommendations-placeholder"
+              style={{
+                padding: "1rem",
+                backgroundColor: "var(--background-secondary)",
+                borderRadius: "0.5rem",
+                marginTop: "1rem",
+              }}
+            >
+              <p>
+                Complete your profile to see personalized job recommendations
+              </p>
+              <button
+                className="button primary"
+                style={{ marginTop: "0.5rem" }}
+              >
                 Update Profile
               </button>
             </div>
@@ -260,4 +262,4 @@ export function JobSeekerDashboard() {
       </main>
     </div>
   );
-} 
+}
