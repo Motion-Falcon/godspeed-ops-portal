@@ -51,7 +51,9 @@ interface FullJobseekerProfile {
   verificationStatus?: 'pending' | 'verified' | 'rejected' | null;
   createdAt?: string | null;
   updatedAt?: string | null;
-  createdById?: string | null; // Added field
+  createdById?: string | null; // Legacy field
+  createdByUserId?: string | null; // New field for creator user ID
+  updatedByUserId?: string | null; // New field for last updater user ID
   creatorDetails?: {
     id: string;
     email: string;
@@ -59,6 +61,13 @@ interface FullJobseekerProfile {
     userType: string;
     createdAt: string;
   } | null; // New field for creator details
+  updaterDetails?: {
+    id: string;
+    email: string;
+    name: string;
+    userType: string;
+    updatedAt: string;
+  } | null; // New field for updater details
   // Add any other potential fields from the DB
 }
 
@@ -604,18 +613,28 @@ export function JobSeekerProfile() {
             <h2 className="section-title">Meta Information</h2>
             <div className="detail-group">
               {renderDetailItem('Created At', formatDate(profile.createdAt))}
-              {renderDetailItem('Updated At', formatDate(profile.updatedAt))}
+              {renderDetailItem('Created By User ID', profile.createdByUserId)}
+              {renderDetailItem('Last Updated At', formatDate(profile.updatedAt))}
+              {renderDetailItem('Updated By User ID', profile.updatedByUserId)}
               {profile.creatorDetails ? (
-                <>
-                  <h3 className="subsection-title">Created By</h3>
+                <div className="detail-section">
+                  <h3>Created By</h3>
                   {renderDetailItem('Name', profile.creatorDetails.name)}
                   {renderDetailItem('Email', profile.creatorDetails.email)}
                   {renderDetailItem('User Type', profile.creatorDetails.userType)}
                   {renderDetailItem('Account Created', formatDate(profile.creatorDetails.createdAt))}
-                </>
-              ) : (
-                renderDetailItem('Created By User ID', profile.createdById)
-              )}
+                </div>
+              ) : null}
+              
+              {profile.updaterDetails ? (
+                <div className="detail-section">
+                  <h3>Last Updated By</h3>
+                  {renderDetailItem('Name', profile.updaterDetails.name)}
+                  {renderDetailItem('Email', profile.updaterDetails.email)}
+                  {renderDetailItem('User Type', profile.updaterDetails.userType)}
+                  {renderDetailItem('Last Updated', formatDate(profile.updaterDetails.updatedAt))}
+                </div>
+              ) : null}
             </div>
           </div>
           

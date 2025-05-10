@@ -59,6 +59,7 @@ interface DbJobseekerProfile {
   created_at: string;
   updated_at: string;
   created_by_user_id?: string;
+  updated_by_user_id?: string;
 }
 
 // Interface for the simplified JobSeekerProfile list view (matches frontend expectation)
@@ -171,7 +172,7 @@ router.get('/', isAdminOrRecruiter, async (req, res) => {
  * @desc Get a specific jobseeker profile (detailed view)
  * @access Public (Owner, Admin, Recruiter)
  */
-router.get('/:id', async (req, res) => {
+router.get('/profile/:id', async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -223,6 +224,28 @@ router.get('/:id', async (req, res) => {
         // Don't fail the whole request if creator details can't be fetched
       }
     }
+    
+    // Fetch updater details if updated_by_user_id exists
+    if (profile.updated_by_user_id) {
+      try {
+        const { data: updaterData, error: updaterError } = await supabaseAdmin
+          .auth.admin.getUserById(profile.updated_by_user_id);
+          
+        if (!updaterError && updaterData.user) {
+          // Add updater details to the formatted profile
+          formattedProfile.updaterDetails = {
+            id: updaterData.user.id,
+            email: updaterData.user.email,
+            name: updaterData.user.user_metadata?.name || 'Unknown',
+            userType: updaterData.user.user_metadata?.user_type || 'Unknown',
+            updatedAt: profile.updated_at
+          };
+        }
+      } catch (updaterError) {
+        console.error('Error fetching updater details:', updaterError);
+        // Don't fail the whole request if updater details can't be fetched
+      }
+    }
       
     res.json(formattedProfile);
 
@@ -237,7 +260,7 @@ router.get('/:id', async (req, res) => {
  * @desc Update a jobseeker profile status
  * @access Public (Owner, Admin, Recruiter)
  */
-router.put('/:id/status', async (req, res) => {
+router.put('/profile/:id/status', async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
@@ -310,7 +333,7 @@ router.put('/:id/status', async (req, res) => {
  * @desc Update a jobseeker profile
  * @access Public (Owner, Admin, Recruiter)
  */
-router.put('/:id/update', async (req, res) => {
+router.put('/profile/:id/update', async (req, res) => {
   try {
     const { id } = req.params;
     const profileData = req.body;
@@ -430,7 +453,7 @@ router.put('/:id/update', async (req, res) => {
  * @desc Delete a specific jobseeker profile
  * @access Private (Admin, Recruiter)
  */
-router.delete('/:id', isAdminOrRecruiter, async (req, res) => {
+router.delete('/profile/:id', isAdminOrRecruiter, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -472,6 +495,593 @@ router.delete('/:id', isAdminOrRecruiter, async (req, res) => {
   } catch (error) {
     console.error('Unexpected error deleting jobseeker profile:', error);
     res.status(500).json({ error: 'An unexpected error occurred while deleting the profile' });
+  }
+});
+
+/**
+ * @route GET /api/jobseekers/drafts
+ * @desc Get all jobseeker profile drafts for the current user
+ * @access Private (Admin, Recruiter)
+ */
+router.get('/drafts', isAdminOrRecruiter, async (req, res) => {
+  try {
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const userId = req.user.id;
+
+    // Get all drafts for this user
+    const { data: drafts, error } = await supabaseAdmin
+      .from('jobseeker_profile_drafts')
+      .select('*')
+      .eq('user_id', userId)
+      .order('last_updated', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching drafts:', error);
+      return res.status(500).json({ error: 'Failed to fetch drafts' });
+    }
+
+    // Transform drafts format to match client expectations
+    const formattedDrafts = drafts.map(draft => {
+      // Extract name from form_data if available
+      const firstName = draft.form_data?.firstName || '';
+      const lastName = draft.form_data?.lastName || '';
+      const name = firstName && lastName ? `${firstName} ${lastName}` : draft.title || 'Untitled Draft';
+      const email = draft.email || draft.form_data?.email || '';
+      
+      // Create a formatted draft object
+      const formattedDraft: {
+        id: string;
+        userId: string;
+        email: string;
+        lastUpdated: string;
+        currentStep: number;
+        createdAt: string;
+        createdByUserId: string;
+        updatedAt: string;
+        updatedByUserId: string;
+        creatorDetails: {
+          id: string;
+          email: string | undefined;
+          name: string;
+          userType: string;
+          createdAt: string;
+        } | null;
+        updaterDetails: {
+          id: string;
+          email: string | undefined;
+          name: string; 
+          userType: string;
+          updatedAt: string;
+        } | null;
+      } = {
+        id: draft.id,
+        userId: draft.user_id,
+        email: email,
+        lastUpdated: draft.last_updated,
+        currentStep: draft.current_step,
+        createdAt: draft.created_at,
+        createdByUserId: draft.created_by_user_id,
+        updatedAt: draft.updated_at,
+        updatedByUserId: draft.updated_by_user_id,
+        creatorDetails: null,
+        updaterDetails: null
+      };
+
+      // If we have a creator user ID, fetch their details
+      if (draft.created_by_user_id) {
+        // Use an IIFE to execute this async code in a sync map
+        (async () => {
+          try {
+            const { data: creatorData, error: creatorError } = await supabaseAdmin
+              .auth.admin.getUserById(draft.created_by_user_id);
+              
+            if (!creatorError && creatorData.user) {
+              formattedDraft.creatorDetails = {
+                id: creatorData.user.id,
+                email: creatorData.user.email,
+                name: creatorData.user.user_metadata?.name || 'Unknown',
+                userType: creatorData.user.user_metadata?.user_type || 'Unknown',
+                createdAt: creatorData.user.created_at
+              };
+            }
+          } catch (error) {
+            console.error('Error fetching creator details for draft:', error);
+            // Don't fail if we can't get creator info
+          }
+        })();
+      }
+
+      // If we have an updater user ID that's different from the creator, fetch their details
+      if (draft.updated_by_user_id && draft.updated_by_user_id !== draft.created_by_user_id) {
+        // Use an IIFE to execute this async code in a sync map
+        (async () => {
+          try {
+            const { data: updaterData, error: updaterError } = await supabaseAdmin
+              .auth.admin.getUserById(draft.updated_by_user_id);
+              
+            if (!updaterError && updaterData.user) {
+              formattedDraft.updaterDetails = {
+                id: updaterData.user.id,
+                email: updaterData.user.email,
+                name: updaterData.user.user_metadata?.name || 'Unknown',
+                userType: updaterData.user.user_metadata?.user_type || 'Unknown',
+                updatedAt: draft.updated_at
+              };
+            }
+          } catch (error) {
+            console.error('Error fetching updater details for draft:', error);
+            // Don't fail if we can't get updater info
+          }
+        })();
+      } else if (draft.updated_by_user_id === draft.created_by_user_id && formattedDraft.creatorDetails) {
+        // If same person created and updated, use the creator's details
+        formattedDraft.updaterDetails = {
+          id: formattedDraft.creatorDetails.id,
+          email: formattedDraft.creatorDetails.email,
+          name: formattedDraft.creatorDetails.name,
+          userType: formattedDraft.creatorDetails.userType,
+          updatedAt: draft.updated_at
+        };
+      }
+      
+      return formattedDraft;
+    });
+
+    // Wait for async operations to complete before sending response
+    await Promise.all(formattedDrafts.map(async (draft) => {
+      // Fetch creator details
+      if (draft.createdByUserId && !draft.creatorDetails) {
+        try {
+          const { data: creatorData, error: creatorError } = await supabaseAdmin
+            .auth.admin.getUserById(draft.createdByUserId);
+            
+          if (!creatorError && creatorData.user) {
+            draft.creatorDetails = {
+              id: creatorData.user.id,
+              email: creatorData.user.email,
+              name: creatorData.user.user_metadata?.name || 'Unknown',
+              userType: creatorData.user.user_metadata?.user_type || 'Unknown',
+              createdAt: creatorData.user.created_at
+            };
+          }
+        } catch (error) {
+          console.error('Error fetching creator details:', error);
+        }
+      }
+      
+      // Fetch updater details if different from creator
+      if (draft.updatedByUserId && !draft.updaterDetails) {
+        // Skip if updater is same as creator and we already have creator details
+        if (draft.updatedByUserId === draft.createdByUserId && draft.creatorDetails) {
+          draft.updaterDetails = {
+            id: draft.creatorDetails.id,
+            email: draft.creatorDetails.email,
+            name: draft.creatorDetails.name,
+            userType: draft.creatorDetails.userType,
+            updatedAt: draft.updatedAt
+          };
+        } else {
+          try {
+            const { data: updaterData, error: updaterError } = await supabaseAdmin
+              .auth.admin.getUserById(draft.updatedByUserId);
+              
+            if (!updaterError && updaterData.user) {
+              draft.updaterDetails = {
+                id: updaterData.user.id,
+                email: updaterData.user.email,
+                name: updaterData.user.user_metadata?.name || 'Unknown',
+                userType: updaterData.user.user_metadata?.user_type || 'Unknown',
+                updatedAt: draft.updatedAt
+              };
+            }
+          } catch (error) {
+            console.error('Error fetching updater details:', error);
+          }
+        }
+      }
+    }));
+
+    res.json(formattedDrafts);
+  } catch (error) {
+    console.error('Unexpected error fetching drafts:', error);
+    res.status(500).json({ error: 'An unexpected error occurred while fetching drafts' });
+  }
+});
+
+/**
+ * @route GET /api/jobseekers/drafts/:id
+ * @desc Get a specific jobseeker profile draft
+ * @access Private (Admin, Recruiter)
+ */
+router.get('/drafts/:id', isAdminOrRecruiter, async (req, res) => {
+  try {
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const userId = req.user.id;
+    const { id } = req.params;
+
+    // Get draft by ID
+    const { data: draft, error } = await supabaseAdmin
+      .from('jobseeker_profile_drafts')
+      .select('*')
+      .eq('id', id)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Error fetching draft by ID:', error);
+      return res.status(500).json({ error: 'Failed to fetch draft' });
+    }
+
+    if (!draft) {
+      return res.status(404).json({ error: 'Draft not found' });
+    }
+
+    return res.status(200).json({
+      draft: draft.form_data,
+      currentStep: draft.current_step,
+      lastUpdated: draft.last_updated,
+      email: draft.email,
+    });
+  } catch (error) {
+    console.error('Unexpected error fetching draft by ID:', error);
+    return res.status(500).json({ error: 'An unexpected error occurred' });
+  }
+});
+
+/**
+ * @route POST /api/jobseekers/drafts
+ * @desc Create a new jobseeker profile draft
+ * @access Private (Admin, Recruiter)
+ */
+router.post('/drafts', isAdminOrRecruiter, async (req, res) => {
+  try {
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const userId = req.user.id;
+    const draftData = req.body;
+    const currentStep = draftData.currentStep || 1;
+    
+    // Extract email explicitly from both form data and top-level data
+    let email = draftData.email || null;
+    if (!email && draftData.form_data && draftData.form_data.email) {
+      email = draftData.form_data.email;
+    }
+    
+    // If an email is provided, check if it already exists in jobseeker_profiles
+    if (email) {
+      const { data: emailExists, error: emailCheckError } = await supabaseAdmin
+        .from('jobseeker_profiles')
+        .select('id')
+        .eq('email', email)
+        .maybeSingle();
+
+      if (emailCheckError) {
+        console.error('Error checking email existence in profiles:', emailCheckError);
+      } else if (emailExists) {
+        return res.status(409).json({
+          error: 'A jobseeker profile already exists with this email. Please use a different email.',
+          existingProfileId: emailExists.id
+        });
+      }
+
+      // Also check if the email exists in another draft
+      const { data: draftEmailExists, error: draftEmailCheckError } = await supabaseAdmin
+        .from('jobseeker_profile_drafts')
+        .select('id')
+        .eq('email', email)
+        .maybeSingle();
+
+      if (draftEmailCheckError) {
+        console.error('Error checking email existence in drafts:', draftEmailCheckError);
+      } else if (draftEmailExists) {
+        return res.status(409).json({
+          error: 'A draft with this email already exists.',
+          existingDraftId: draftEmailExists.id
+        });
+      }
+    }
+
+    // Set the current timestamp
+    const now = new Date().toISOString();
+
+    // Extract first name and last name for the draft title if needed
+    let title = 'Untitled Draft';
+    if (draftData.firstName && draftData.lastName) {
+      title = `${draftData.firstName} ${draftData.lastName}`;
+    } else if (email) {
+      title = `Draft for ${email}`;
+    }
+
+    // Create new draft with tracking fields
+    const { data: newDraft, error } = await supabaseAdmin
+      .from('jobseeker_profile_drafts')
+      .insert([
+        {
+          user_id: userId,
+          form_data: draftData,
+          last_updated: now,
+          current_step: currentStep,
+          email: email, // Ensure email is saved
+          created_at: now,
+          created_by_user_id: userId,
+          updated_at: now,
+          updated_by_user_id: userId
+        }
+      ])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating draft:', error);
+      return res.status(500).json({ error: 'Failed to create draft' });
+    }
+
+    return res.status(201).json({
+      message: 'Draft created successfully',
+      draft: {
+        id: newDraft.id,
+        lastUpdated: newDraft.last_updated,
+        currentStep: newDraft.current_step,
+        email: newDraft.email,
+        createdAt: newDraft.created_at,
+        createdByUserId: newDraft.created_by_user_id,
+        updatedAt: newDraft.updated_at,
+        updatedByUserId: newDraft.updated_by_user_id
+      }
+    });
+  } catch (error) {
+    console.error('Unexpected error creating draft:', error);
+    return res.status(500).json({ error: 'An unexpected error occurred' });
+  }
+});
+
+/**
+ * @route PUT /api/jobseekers/drafts/:id
+ * @desc Update a jobseeker profile draft
+ * @access Private (Admin, Recruiter)
+ */
+router.put('/drafts/:id', isAdminOrRecruiter, async (req, res) => {
+  try {
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const userId = req.user.id;
+    const { id } = req.params;
+    const draftData = req.body;
+    const currentStep = draftData.currentStep || 1;
+
+    // Extract email explicitly from both form data and top-level data
+    let email = draftData.email || null;
+    if (!email && draftData.form_data && draftData.form_data.email) {
+      email = draftData.form_data.email;
+    }
+
+    // Check if draft exists and belongs to this user
+    const { data: existingDraft, error: checkError } = await supabaseAdmin
+      .from('jobseeker_profile_drafts')
+      .select('id, email, created_at, created_by_user_id')
+      .eq('id', id)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (checkError) {
+      console.error('Error checking draft:', checkError);
+      return res.status(500).json({ error: 'Failed to verify draft' });
+    }
+
+    if (!existingDraft) {
+      return res.status(404).json({ error: 'Draft not found or you do not have permission to edit it' });
+    }
+
+    // If email has changed, check if it exists in profiles or other drafts
+    if (email && email !== existingDraft.email) {
+      // Check profiles
+      const { data: emailExists, error: emailCheckError } = await supabaseAdmin
+        .from('jobseeker_profiles')
+        .select('id')
+        .eq('email', email)
+        .maybeSingle();
+
+      if (emailCheckError) {
+        console.error('Error checking email existence in profiles:', emailCheckError);
+      } else if (emailExists) {
+        return res.status(409).json({
+          error: 'A jobseeker profile already exists with this email. Please use a different email.',
+          existingProfileId: emailExists.id
+        });
+      }
+
+      // Check other drafts
+      const { data: draftEmailExists, error: draftEmailCheckError } = await supabaseAdmin
+        .from('jobseeker_profile_drafts')
+        .select('id')
+        .eq('email', email)
+        .neq('id', id) // Exclude current draft
+        .maybeSingle();
+
+      if (draftEmailCheckError) {
+        console.error('Error checking email existence in drafts:', draftEmailCheckError);
+      } else if (draftEmailExists) {
+        return res.status(409).json({
+          error: 'A draft with this email already exists.',
+          existingDraftId: draftEmailExists.id
+        });
+      }
+    }
+
+    // Set the current timestamp
+    const now = new Date().toISOString();
+
+    // Extract first name and last name for the draft title
+    let title = 'Untitled Draft';
+    if (draftData.firstName && draftData.lastName) {
+      title = `${draftData.firstName} ${draftData.lastName}`;
+    } else if (email) {
+      title = `Draft for ${email}`;
+    }
+
+    // Update draft
+    const { data: updatedDraft, error: updateError } = await supabaseAdmin
+      .from('jobseeker_profile_drafts')
+      .update({
+        form_data: draftData,
+        last_updated: now,
+        current_step: currentStep,
+        email: email, // Ensure email is updated
+        updated_at: now,
+        updated_by_user_id: userId
+        // Don't modify created_at and created_by_user_id on updates
+      })
+      .eq('id', id)
+      .eq('user_id', userId)
+      .select()
+      .single();
+
+    if (updateError) {
+      console.error('Error updating draft:', updateError);
+      return res.status(500).json({ error: 'Failed to update draft' });
+    }
+
+    return res.status(200).json({
+      message: 'Draft updated successfully',
+      draft: {
+        id: updatedDraft.id,
+        lastUpdated: updatedDraft.last_updated,
+        currentStep: updatedDraft.current_step,
+        email: updatedDraft.email,
+        createdAt: updatedDraft.created_at,
+        createdByUserId: updatedDraft.created_by_user_id,
+        updatedAt: updatedDraft.updated_at,
+        updatedByUserId: updatedDraft.updated_by_user_id
+      }
+    });
+  } catch (error) {
+    console.error('Unexpected error updating draft:', error);
+    return res.status(500).json({ error: 'An unexpected error occurred' });
+  }
+});
+
+/**
+ * @route DELETE /api/jobseekers/drafts/:id
+ * @desc Delete a jobseeker profile draft
+ * @access Private (Admin, Recruiter)
+ */
+router.delete('/drafts/:id', isAdminOrRecruiter, async (req, res) => {
+  try {
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const userId = req.user.id;
+    const { id } = req.params;
+
+    // Check if draft exists and belongs to this user
+    const { data: existingDraft, error: checkError } = await supabaseAdmin
+      .from('jobseeker_profile_drafts')
+      .select('id')
+      .eq('id', id)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (checkError) {
+      console.error('Error checking draft:', checkError);
+      return res.status(500).json({ error: 'Failed to verify draft' });
+    }
+
+    if (!existingDraft) {
+      return res.status(404).json({ error: 'Draft not found or you do not have permission to delete it' });
+    }
+
+    // Delete draft
+    const { error: deleteError } = await supabaseAdmin
+      .from('jobseeker_profile_drafts')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', userId);
+
+    if (deleteError) {
+      console.error('Error deleting draft:', deleteError);
+      return res.status(500).json({ error: 'Failed to delete draft' });
+    }
+
+    return res.status(200).json({
+      message: 'Draft deleted successfully',
+      deletedId: id
+    });
+  } catch (error) {
+    console.error('Unexpected error deleting draft:', error);
+    return res.status(500).json({ error: 'An unexpected error occurred' });
+  }
+});
+
+// Check email availability (enhanced to check both profiles and drafts)
+router.get('/api/profile/check-email', async (req, res) => {
+  try {
+    const { email } = req.query;
+    
+    if (!email || typeof email !== 'string') {
+      return res.status(400).json({ error: 'Email parameter is required' });
+    }
+    
+    // First check if the email exists in the jobseeker_profiles table
+    const { data: profileData, error: profileError } = await supabaseAdmin
+      .from('jobseeker_profiles')
+      .select('id')
+      .eq('email', email)
+      .limit(1);
+      
+    if (profileError) {
+      console.error('Error checking email in profiles:', profileError);
+      throw new Error('Database error checking email availability');
+    }
+    
+    // If email exists in a profile, return not available with the profile ID
+    if (profileData && profileData.length > 0) {
+      return res.json({ 
+        available: false, 
+        email, 
+        existingProfileId: profileData[0].id 
+      });
+    }
+    
+    // If not found in profiles, check in drafts
+    const { data: draftData, error: draftError } = await supabaseAdmin
+      .from('jobseeker_profile_drafts')
+      .select('id')
+      .eq('email', email)
+      .limit(1);
+      
+    if (draftError) {
+      console.error('Error checking email in drafts:', draftError);
+      throw new Error('Database error checking email availability in drafts');
+    }
+    
+    // If email exists in a draft, return not available with the draft ID
+    if (draftData && draftData.length > 0) {
+      return res.json({ 
+        available: false, 
+        email,
+        existingDraftId: draftData[0].id 
+      });
+    }
+    
+    // If email doesn't exist in either profiles or drafts, it's available
+    return res.json({ available: true, email });
+    
+  } catch (error) {
+    console.error('Error checking email availability:', error);
+    return res.status(500).json({ 
+      error: error instanceof Error ? error.message : 'Internal server error checking email'
+    });
   }
 });
 

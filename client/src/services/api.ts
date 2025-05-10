@@ -340,6 +340,10 @@ interface DraftResponse {
   draft: ProfileData | null;
   currentStep: number;
   lastUpdated: string | null;
+  createdAt?: string | null;
+  createdByUserId?: string | null;
+  updatedAt?: string | null;
+  updatedByUserId?: string | null;
 }
 
 // Profile API endpoints
@@ -366,7 +370,7 @@ export const submitProfile = async (profileData: ProfileData) => {
 // Add updateProfile function for editing existing profiles
 export const updateProfile = async (id: string, profileData: ProfileData) => {
   try {
-    const response = await api.put(`/api/jobseekers/${id}/update`, profileData);
+    const response = await api.put(`/api/jobseekers/profile/${id}/update`, profileData);
     // Clear cache for this profile and the profiles list
     clearCacheFor(`/api/jobseekers/${id}`);
     clearCacheFor('/api/jobseekers');
@@ -483,7 +487,7 @@ export const getJobseekerProfiles = async (): Promise<JobSeekerProfile[]> => {
 
 export const getJobseekerProfile = async (id: string): Promise<JobSeekerDetailedProfile> => {
   try {
-    const response = await api.get(`/api/jobseekers/${id}`);
+    const response = await api.get(`/api/jobseekers/profile/${id}`);
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
@@ -495,7 +499,7 @@ export const getJobseekerProfile = async (id: string): Promise<JobSeekerDetailed
 
 export const updateJobseekerStatus = async (id: string, status: 'pending' | 'verified' | 'rejected') => {
   try {
-    const response = await api.put(`/api/jobseekers/${id}/status`, { status });
+    const response = await api.put(`/api/jobseekers/profile/${id}/status`, { status });
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
@@ -508,7 +512,7 @@ export const updateJobseekerStatus = async (id: string, status: 'pending' | 'ver
 // Add delete jobseeker function
 export const deleteJobseeker = async (id: string): Promise<{ message: string, deletedId: string }> => {
   try {
-    const response = await api.delete(`/api/jobseekers/${id}`);
+    const response = await api.delete(`/api/jobseekers/profile/${id}`);
     // Clear cache for jobseeker list after deletion
     clearCacheFor('/api/jobseekers');
     return response.data;
@@ -521,7 +525,7 @@ export const deleteJobseeker = async (id: string): Promise<{ message: string, de
 };
 
 // Add this function with the other profile-related functions
-export const checkEmailAvailability = async (email: string): Promise<{ available: boolean; email: string }> => {
+export const checkEmailAvailability = async (email: string): Promise<{ available: boolean; email: string; existingProfileId?: string; existingDraftId?: string }> => {
   try {
     const response = await api.get(`/api/profile/check-email`, {
       params: { email }
@@ -962,6 +966,102 @@ export const deletePositionDraft = async (id: string): Promise<{ success: boolea
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
       throw new Error(error.response.data.error || 'Failed to delete position draft');
+    }
+    throw error;
+  }
+};
+
+// Add JobseekerProfileDraftResponse type
+export interface JobseekerDraftResponse {
+  draft: ProfileData;
+  currentStep: number;
+  lastUpdated: string | null;
+  email?: string;
+  title?: string;
+  createdAt?: string;
+  createdByUserId?: string;
+  updatedAt?: string;
+  updatedByUserId?: string;
+}
+
+export interface JobseekerDraft {
+  id: string;
+  user_id: string;
+  data: Record<string, unknown>;
+  email: string;
+  lastUpdated: string;
+  createdAt: string;
+  createdByUserId: string;
+  updatedAt: string;
+  updatedByUserId: string;
+}
+
+// Add new functions for jobseeker profile drafts
+export const getAllJobseekerDrafts = async (): Promise<JobseekerDraft[]> => {
+  try {
+    const response = await api.get('/api/jobseekers/drafts');
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(error.response.data.error || 'Failed to fetch jobseeker drafts');
+    }
+    throw error;
+  }
+};
+
+export const getJobseekerDraft = async (id: string): Promise<JobseekerDraftResponse> => {
+  try {
+    const response = await api.get(`/api/jobseekers/drafts/${id}`);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(error.response.data.error || 'Failed to fetch jobseeker draft');
+    }
+    throw error;
+  }
+};
+
+export const saveJobseekerDraft = async (draftData: Partial<ProfileData>): Promise<{
+  id: string;
+  lastUpdated: string;
+  email?: string;
+  title?: string;
+  createdAt?: string;
+  createdByUserId?: string;
+  updatedAt?: string;
+  updatedByUserId?: string;
+}> => {
+  try {
+    // Make sure email is included in the top level if it exists in the data
+    const requestData = {
+      ...draftData,
+      email: draftData.email // Ensure email is explicitly included
+    };
+
+    // For creating new drafts or updating drafts without an ID
+    if (!draftData.id) {
+      const response = await api.post('/api/jobseekers/drafts', requestData);
+      return response.data.draft;
+    }
+    
+    // For updating existing drafts
+    const response = await api.put(`/api/jobseekers/drafts/${draftData.id}`, requestData);
+    return response.data.draft;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(error.response.data.error || 'Failed to save jobseeker draft');
+    }
+    throw error;
+  }
+};
+
+export const deleteJobseekerDraft = async (id: string): Promise<{deletedId: string}> => {
+  try {
+    const response = await api.delete(`/api/jobseekers/drafts/${id}`);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(error.response.data.error || 'Failed to delete jobseeker draft');
     }
     throw error;
   }

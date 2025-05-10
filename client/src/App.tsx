@@ -28,6 +28,8 @@ import { PositionEdit } from './pages/PositionManagement/PositionEdit';
 import { PositionDrafts } from './pages/PositionManagement/PositionDrafts';
 import { PositionDraftEdit } from './pages/PositionManagement/PositionDraftEdit';
 import { PositionView } from './pages/PositionManagement/PositionView';
+import { JobseekerDrafts } from './pages/JobseekerProfile/JobseekerDrafts';
+import { JobseekerProfileDraftEdit } from './pages/JobseekerProfile/JobseekerProfileDraftEdit';
 import './styles/main.css';
 
 function App() {
@@ -59,6 +61,8 @@ function App() {
                 <Route path="/jobseekers/profile/account-created" element={<ProfileAccountCreated />} />
                 <Route path="/jobseekers/profile/success" element={<ProfileSuccess />} />
                 <Route path="/jobseeker-management" element={<JobSeekerManagement />} />
+                <Route path="/jobseekers/drafts" element={<JobseekerDrafts />} />
+                <Route path="/jobseekers/drafts/edit/:id" element={<JobseekerProfileDraftEdit />} />
                 <Route path="/client-management" element={<ClientManagement />} />
                 <Route path="/client-management/create" element={<ClientCreate />} />
                 <Route path="/client-management/view/:id" element={<ClientView />} />

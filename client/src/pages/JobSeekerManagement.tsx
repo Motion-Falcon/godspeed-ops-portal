@@ -10,7 +10,8 @@ import {
   Filter, 
   CheckCircle, 
   XCircle, 
-  Clock 
+  Clock,
+  FileText
 } from 'lucide-react';
 import { getJobseekerProfiles, deleteJobseeker } from '../services/api';
 import { JobSeekerProfile } from '../types/jobseeker';
@@ -113,7 +114,11 @@ export function JobSeekerManagement() {
   };
 
   const handleCreateProfile = () => {
-    navigate('/profile/create');
+    navigate('/profile/create', { state: { isNewForm: true } });
+  };
+
+  const handleViewDrafts = () => {
+    navigate('/jobseekers/drafts');
   };
 
   const handleViewProfile = (id: string) => {
@@ -184,6 +189,13 @@ export function JobSeekerManagement() {
       <div className="page-header">
         <h1>Job Seeker Management</h1>
         <div className="header-actions">
+          <button 
+            className="button secondary button-icon" 
+            onClick={handleViewDrafts}
+          >
+            <FileText size={16} />
+            <span>View Drafts</span>
+          </button>
           <button 
             className="button primary button-icon" 
             onClick={handleCreateProfile}

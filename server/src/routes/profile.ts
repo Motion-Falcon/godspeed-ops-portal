@@ -215,7 +215,8 @@ router.post('/submit',
         // Add the user ID of the creator (typically a recruiter)
         created_by_user_id: userId, 
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
+        updated_by_user_id: userId
       };
 
       // Create a new profile in database - use insert instead of upsert
@@ -402,30 +403,83 @@ router.put('/draft',
       const userId = req.user.id;
       const draftData = req.body;
       const currentStep = req.body.currentStep || 1;
+      const email = req.body.email || null; // Explicitly extract email
 
-      // Save draft to database
-      const { data, error } = await supabase
+      // Check if draft already exists for this user
+      const { data: existingDraft, error: checkError } = await supabase
         .from('jobseeker_profile_drafts')
-        .upsert([
-          {
-            user_id: userId,
-            form_data: draftData,
-            last_updated: new Date().toISOString(),
-            current_step: currentStep
-          }
-        ], {
-          onConflict: 'user_id'
-        });
+        .select('id, created_at, created_by_user_id')
+        .eq('user_id', userId)
+        .maybeSingle();
 
-      if (error) {
-        console.error('Error saving draft:', error);
-        return res.status(500).json({ error: 'Failed to save draft' });
+      if (checkError) {
+        console.error('Error checking for existing draft:', checkError);
+        return res.status(500).json({ error: 'Failed to check draft status' });
       }
 
-      return res.status(200).json({ 
-        success: true, 
-        message: 'Draft saved successfully' 
-      });
+      const now = new Date().toISOString();
+
+      if (existingDraft) {
+        // Update existing draft
+        const { data, error } = await supabase
+          .from('jobseeker_profile_drafts')
+          .update({
+            form_data: draftData,
+            last_updated: now,
+            current_step: currentStep,
+            updated_at: now,
+            updated_by_user_id: userId,
+            email: email // Add email field explicitly
+          })
+          .eq('user_id', userId);
+
+        if (error) {
+          console.error('Error updating draft:', error);
+          return res.status(500).json({ error: 'Failed to update draft' });
+        }
+
+        return res.status(200).json({ 
+          success: true, 
+          message: 'Draft updated successfully',
+          lastUpdated: now,
+          updatedAt: now,
+          updatedByUserId: userId,
+          email: email
+        });
+      } else {
+        // Create new draft
+        const { data, error } = await supabase
+          .from('jobseeker_profile_drafts')
+          .insert([
+            {
+              user_id: userId,
+              form_data: draftData,
+              last_updated: now,
+              current_step: currentStep,
+              created_at: now,
+              created_by_user_id: userId,
+              updated_at: now,
+              updated_by_user_id: userId,
+              email: email,
+            }
+          ]);
+
+        if (error) {
+          console.error('Error creating draft:', error);
+          return res.status(500).json({ error: 'Failed to save draft' });
+        }
+
+        return res.status(200).json({ 
+          success: true, 
+          message: 'Draft saved successfully',
+          lastUpdated: now,
+          createdAt: now,
+          createdByUserId: userId,
+          updatedAt: now,
+          updatedByUserId: userId,
+          email: email
+        });
+      }
     } catch (error) {
       console.error('Draft save error:', error);
       return res.status(500).json({ error: 'An unexpected error occurred' });
@@ -463,7 +517,12 @@ router.get('/draft',
       return res.status(200).json({ 
         draft: data ? data.form_data : null,
         currentStep: data ? data.current_step : 1,
-        lastUpdated: data ? data.last_updated : null
+        lastUpdated: data ? data.last_updated : null,
+        // Include tracking fields in response
+        createdAt: data ? data.created_at : null,
+        createdByUserId: data ? data.created_by_user_id : null,
+        updatedAt: data ? data.updated_at : null,
+        updatedByUserId: data ? data.updated_by_user_id : null
       });
     } catch (error) {
       console.error('Draft fetch error:', error);
@@ -499,13 +558,43 @@ router.get('/check-email',
         .maybeSingle();
 
       if (lookupError) {
-        console.error('Error checking email availability:', lookupError);
+        console.error('Error checking email availability in profiles:', lookupError);
         return res.status(500).json({ error: 'Failed to check email availability' });
       }
 
-      // Return availability status
+      // If email exists in a profile, return not available with the profile ID
+      if (existingProfile) {
+        return res.status(200).json({ 
+          available: false, 
+          email: email,
+          existingProfileId: existingProfile.id
+        });
+      }
+      
+      // If not found in profiles, check in drafts
+      const { data: existingDraft, error: draftLookupError } = await supabase
+        .from('jobseeker_profile_drafts')
+        .select('id')
+        .eq('email', email)
+        .maybeSingle();
+        
+      if (draftLookupError) {
+        console.error('Error checking email availability in drafts:', draftLookupError);
+        return res.status(500).json({ error: 'Failed to check email availability in drafts' });
+      }
+      
+      // If email exists in a draft, return not available with the draft ID
+      if (existingDraft) {
+        return res.status(200).json({ 
+          available: false, 
+          email: email,
+          existingDraftId: existingDraft.id 
+        });
+      }
+
+      // If email doesn't exist in either profiles or drafts, it's available
       return res.status(200).json({ 
-        available: !existingProfile,
+        available: true,
         email: email
       });
     } catch (error) {

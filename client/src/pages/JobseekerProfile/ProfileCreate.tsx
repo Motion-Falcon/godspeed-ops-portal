@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -16,7 +16,9 @@ import {
   checkEmailAvailability, 
   getJobseekerProfile,
   updateProfile,
-  updateJobseekerStatus
+  updateJobseekerStatus,
+  getJobseekerDraft,
+  saveJobseekerDraft
 } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import '../../styles/components/form.css';
@@ -190,24 +192,43 @@ type JobseekerProfileFormData = z.infer<typeof formSchema>;
 // Interface for ProfileCreate props
 interface ProfileCreateProps {
   isEditMode?: boolean;
+  isDraftEditMode?: boolean;
+  isNewForm?: boolean; // Add new prop to indicate creating a fresh form
 }
 
-export function ProfileCreate({ isEditMode = false }: ProfileCreateProps) {
+export function ProfileCreate({ isEditMode = false, isDraftEditMode = false, isNewForm = false }: ProfileCreateProps) {
   const { id: profileId } = useParams<{ id: string }>();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { isJobSeeker, user } = useAuth();
+  
+  // Check if isNewForm is passed via location state
+  const locationIsNewForm = location.state?.isNewForm === true;
+  const shouldStartWithNewForm = isNewForm || locationIsNewForm;
+  
+  // Clear location state after checking
+  useEffect(() => {
+    if (locationIsNewForm) {
+      // Clear the isNewForm from location state to prevent it persisting on refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [locationIsNewForm]);
+  
   const [currentStep, setCurrentStep] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const [isEmailAvailable, setIsEmailAvailable] = useState<boolean | null>(null);
-  const [initialEmail, setInitialEmail] = useState<string | null>(null);
+  // const [initialEmail, setInitialEmail] = useState<string | null>(null);
   const [isSubmitConfirmationOpen, setIsSubmitConfirmationOpen] = useState<boolean>(false);
   const [formDataToSubmit, setFormDataToSubmit] = useState<JobseekerProfileFormData | null>(null);
-  const navigate = useNavigate();
-  const { isJobSeeker, user } = useAuth();
   
   // Add a ref to track initial load to prevent auto-submission
   const isInitialLoad = useRef(true);
   // Add state to track user interaction
   const [userInteracted, setUserInteracted] = useState(false);
   const previousUserInteraction = useRef(false); // Add this to track previous interaction state
+  
+  // Track created draft ID in the current session
+  const [createdDraftId, setCreatedDraftId] = useState<string | null>(null);
   
   // New loading states object to track different operations
   const [loadingStates, setLoadingStates] = useState({
@@ -305,7 +326,7 @@ export function ProfileCreate({ isEditMode = false }: ProfileCreateProps) {
           }
           
           // Set initial email to compare later for availability check
-          setInitialEmail(profileData.email);
+          // setInitialEmail(profileData.email);
           
           // Map detailed profile data to form format
           // Need to match the exact structure returned from the API
@@ -369,8 +390,46 @@ export function ProfileCreate({ isEditMode = false }: ProfileCreateProps) {
       };
       
       fetchProfileData();
-    } else {
-      // In create mode, use existing draft fetching logic
+    } else if (isDraftEditMode && profileId) {
+      // In draft edit mode, fetch the specific draft by ID
+      const fetchDraftById = async () => {
+        try {
+          setLoading('formLoading', true);
+          const { draft, currentStep: savedStep } = await getJobseekerDraft(profileId);
+          
+          if (draft) {
+            // Set form values from draft
+            methods.reset(draft);
+            // Set current step
+            if (savedStep) {
+              setCurrentStep(savedStep);
+            }
+          }
+        } catch (error: unknown) {
+          console.error('Error fetching draft by ID:', error);
+          // Check if this is a cancellation error due to duplicate requests
+          if (error instanceof Error && 
+              error.name === 'CanceledError' && 
+              error.message?.includes('duplicate in-flight request')) {
+            console.log('Ignoring duplicate request cancellation - this is normal');
+            // Don't set an error state for canceled requests
+          } else {
+            // Only show the error message for genuine errors
+            setError('Failed to load draft. It may have been deleted or you do not have permission to view it.');
+          }
+        } finally {
+          setLoading('formLoading', false);
+          // Reset the initialLoad flag after loading is complete
+          setTimeout(() => {
+            isInitialLoad.current = false;
+            console.log('Reset isInitialLoad flag after draft load');
+          }, 500);
+        }
+      };
+      
+      fetchDraftById();
+    } else if (!shouldStartWithNewForm) {
+      // Only fetch draft if not explicitly creating a new form
       const fetchDraft = async () => {
         try {
           setLoading('formLoading', true);
@@ -397,11 +456,12 @@ export function ProfileCreate({ isEditMode = false }: ProfileCreateProps) {
         }
       };
       
-      if (!isEditMode) {
-        fetchDraft();
-      }
+      fetchDraft();
+    } else {
+      // When creating a new form, ensure loading state is turned off
+      setLoading('formLoading', false);
     }
-  }, [isEditMode, profileId, methods]);
+  }, [isEditMode, isDraftEditMode, shouldStartWithNewForm, profileId, methods, isJobSeeker, user]);
 
   // Reset email availability state when moving away from step 1
   useEffect(() => {
@@ -411,7 +471,7 @@ export function ProfileCreate({ isEditMode = false }: ProfileCreateProps) {
       if (isEmailAvailable !== null) {
         setIsEmailAvailable(null); // Reset when moving to other steps
       }
-    } else if (currentStep === 1 && !isEditMode) {
+    } else if (currentStep === 1 && !isEditMode && !isDraftEditMode) {
       // If returning to step 1 and not in edit mode, only check if:
       // 1. We have a valid email
       // 2. We haven't checked already (isEmailAvailable is null)
@@ -451,26 +511,29 @@ export function ProfileCreate({ isEditMode = false }: ProfileCreateProps) {
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentStep, isEditMode]); 
+  }, [currentStep, isEditMode, isDraftEditMode]); 
 
   // Add an effect to ensure document validation on final step - but be careful not to trigger submission
   useEffect(() => {
     // ONLY run in create mode, never in edit mode
-    if (currentStep === 5 && userInteracted && !isEditMode) {
+    if (currentStep === 5 && userInteracted && !isEditMode && !isDraftEditMode) {
       console.log('On document step in CREATE mode, triggering validation');
       // Trigger validation for documents
       setTimeout(() => {
         methods.trigger('documents');
       }, 300);
     }
-  }, [currentStep, userInteracted, methods, isEditMode]);
+  }, [currentStep, userInteracted, methods, isEditMode, isDraftEditMode]);
 
   // Track if the component just mounted
   const justMounted = useRef(true);
+  const isFormLoaded = useRef(false); // Add a new flag to track when form is actually loaded
+
   useEffect(() => {
     // Set justMounted to false after component mounts
     const timer = setTimeout(() => {
       justMounted.current = false;
+      console.log('justMounted set to false');
     }, 1500); // Increased from 1000ms to 1500ms for better reliability
     
     // Track when user has interacted with the form
@@ -479,6 +542,15 @@ export function ProfileCreate({ isEditMode = false }: ProfileCreateProps) {
       previousUserInteraction.current = userInteracted;
     };
   }, [userInteracted]);
+
+  // Add a specific effect to handle draft loading completion
+  useEffect(() => {
+    if (isDraftEditMode && !loadingStates.formLoading && !isFormLoaded.current) {
+      console.log('Form loading complete, marking as ready for submission');
+      isFormLoaded.current = true;
+      isInitialLoad.current = false;
+    }
+  }, [isDraftEditMode, loadingStates.formLoading]);
 
   const totalSteps = 5;
 
@@ -541,7 +613,7 @@ export function ProfileCreate({ isEditMode = false }: ProfileCreateProps) {
 
   // Function to save form data to draft
   const saveDraft = async () => {
-    // Skip draft saving in edit mode
+    // Skip draft saving in regular edit mode
     if (isEditMode) {
       console.log("Draft saving skipped in edit mode");
       return true;
@@ -578,7 +650,7 @@ export function ProfileCreate({ isEditMode = false }: ProfileCreateProps) {
           return false;
         }
       }
-
+      
       setLoading('draftSaving', true);
       setError(null); // Clear previous errors
       const formData = methods.getValues();
@@ -592,7 +664,7 @@ export function ProfileCreate({ isEditMode = false }: ProfileCreateProps) {
 
       // Create a deep copy of form data to avoid mutating the original
       const draftData = structuredClone(formData);
-
+      
       // Handle document uploads before saving draft
       if (draftData.documents && draftData.documents.length > 0) {
         for (const doc of draftData.documents) {
@@ -628,7 +700,7 @@ export function ProfileCreate({ isEditMode = false }: ProfileCreateProps) {
           } else {
              console.log(`Draft Save: No new file selected for document ID ${doc.id}, skipping upload.`);
           }
-
+      
           // Always remove the file object before saving the draft JSON
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const { documentFile, ...docWithoutFile } = doc;
@@ -638,18 +710,59 @@ export function ProfileCreate({ isEditMode = false }: ProfileCreateProps) {
         setLoading('fileUploading', false);
       }
 
+      // Ensure email is explicitly included at the top level
+      const email = draftData.email || '';
+      
       // Save the potentially modified draft data (with documentPaths)
-      const response = await saveDraftAPI({
-        ...draftData,
-        currentStep
-      });
+      let response;
+      
+      // If we already created a draft in this session, use that ID
+      if (createdDraftId) {
+        console.log(`Updating existing draft with ID: ${createdDraftId}`);
+        response = await saveJobseekerDraft({
+          ...draftData,
+          id: createdDraftId,
+          currentStep,
+          email
+        });
+      } else if (isDraftEditMode && profileId && !isNewForm) {
+        // If we're editing a draft, update it with its ID
+        response = await saveJobseekerDraft({
+          ...draftData,
+          id: profileId,
+          currentStep,
+          email
+        });
+      } else if (isNewForm || !profileId) {
+        // If this is a new form, always create a new draft by explicitly setting id to undefined
+        response = await saveJobseekerDraft({
+          ...draftData,
+          id: undefined, // Force creation of a new draft
+          currentStep,
+          email
+        });
+        
+        // Save the ID of the newly created draft
+        if (response && response.id) {
+          console.log(`New draft created with ID: ${response.id}`);
+          setCreatedDraftId(response.id);
+        }
+      } else {
+        // For a new draft, use the old API in regular mode
+        response = await saveDraftAPI({
+          ...draftData,
+          currentStep,
+          email
+        });
+      }
+      
       console.log("Draft saved successfully:", response);
 
       setLoading('draftSaving', false);
       // Show success message (using whatever toast system is available)
       console.log("Draft saved successfully (including file uploads if any)");
 
-      return true;
+      return response?.id || true;
     } catch (error) {
       console.error("Error saving draft:", error);
       if (error instanceof Error) {
@@ -680,24 +793,29 @@ export function ProfileCreate({ isEditMode = false }: ProfileCreateProps) {
       }
       
       // For the first step, explicitly verify email availability
-      if (currentStep === 1 && !isEditMode) {
+      if (currentStep === 1 && !isEditMode && !isDraftEditMode) {
         const email = methods.getValues('email');
         
         if (email) {
           try {
-            setLoading('emailChecking', true);
-            const result = await checkEmailAvailability(email);
-            setIsEmailAvailable(result.available);
+            // setLoading('emailChecking', true);
+            // const result = await checkEmailAvailability(email);
+            // setIsEmailAvailable(result.available);
             
-            if (!result.available) {
-              setError('This email is already in use. Please use a different email to continue.');
-              setLoading('emailChecking', false);
-              return;
-            }
+            // if (!result.available) {
+            //   setError('This email is already in use. Please use a different email to continue.');
+            //   setLoading('emailChecking', false);
+            //   return;
+            // }
             
             // If email is available, proceed to save and continue
-            const saveSuccess = await saveDraft();
-            if (saveSuccess) {
+            const saveResult = await saveDraft();
+            // If saveResult is a string/number, it's the draft ID
+            if (saveResult && typeof saveResult !== 'boolean') {
+              setCreatedDraftId(saveResult);
+            }
+            
+            if (saveResult) {
               setCurrentStep(prevStep => prevStep + 1);
             }
           } catch (error) {
@@ -718,8 +836,13 @@ export function ProfileCreate({ isEditMode = false }: ProfileCreateProps) {
           setCurrentStep(prevStep => prevStep + 1);
         } else {
           // For other steps in create mode, save draft and continue
-          const saveSuccess = await saveDraft();
-          if (saveSuccess) {
+          const saveResult = await saveDraft();
+          // If saveResult is a string/number, it's the draft ID
+          if (saveResult && typeof saveResult !== 'boolean') {
+            setCreatedDraftId(saveResult);
+          }
+          
+          if (saveResult) {
             setCurrentStep(prevStep => prevStep + 1);
           }
         }
@@ -734,7 +857,7 @@ export function ProfileCreate({ isEditMode = false }: ProfileCreateProps) {
     previousUserInteraction.current = true;
     
     if (currentStep > 1) {
-      if (saveBeforeBack && !isEditMode) {
+      if (saveBeforeBack && !isEditMode && !isDraftEditMode) {
         // Only save draft when going back if not in edit mode
         await saveDraft();
       }
@@ -797,28 +920,6 @@ export function ProfileCreate({ isEditMode = false }: ProfileCreateProps) {
       
       setLoading('submitting', true);
       setError(null);
-      
-      // Check email availability before submission - skip for jobseekers using their own email
-      // Also skip if in edit mode and email hasn't changed
-      if (!isJobSeeker && (!isEditMode || (data.email !== initialEmail))) {
-        try {
-          setLoading('emailChecking', true);
-          const result = await checkEmailAvailability(data.email);
-          if (!result.available) {
-            setError('This email is already in use. Please use a different email to continue.');
-            setLoading('emailChecking', false);
-            setLoading('submitting', false);
-            return;
-          }
-          setLoading('emailChecking', false);
-        } catch (emailError) {
-          console.error('Error checking email availability:', emailError);
-          setError('Unable to verify email availability. Please try again.');
-          setLoading('emailChecking', false);
-          setLoading('submitting', false);
-          return;
-        }
-      }
       
       // Get authenticated user for file paths
       const { data: { user } } = await supabase.auth.getUser();
@@ -886,6 +987,49 @@ export function ProfileCreate({ isEditMode = false }: ProfileCreateProps) {
         navigate('/jobseekers', { 
           state: { message: 'Profile updated successfully', type: 'success' } 
         });
+      } else if (isDraftEditMode && profileId) {
+        // We're in draft edit mode and trying to create a profile from the draft
+        console.log('Creating profile from draft in isDraftEditMode');
+        
+        try {
+          // Submit as a new profile (don't use saveJobseekerDraft)
+          result = await submitProfile(profileData);
+          console.log('Profile created from draft:', result);
+          
+          // If the user is a jobseeker who created their own profile, redirect to verification pending page
+          if (isJobSeeker) {
+            window.location.reload();
+            navigate('/profile-verification-pending');
+            return;
+          }
+          
+          // For recruiter-created profiles
+          // Check if a new account was created
+          if (result.accountCreated) {
+            // Navigate to the account created page with credentials
+            navigate('/jobseekers/profile/account-created', { 
+              state: { 
+                email: result.email,
+                password: result.password,
+                profile: result.profile,
+                accountCreated: true
+              }
+            });
+          } else {
+            // Navigate to success page
+            navigate('/jobseekers/profile/success', {
+              state: { 
+                message: 'Profile created successfully',
+                profileId: result.profile?.id,
+                profile: result.profile
+              }
+            });
+          }
+        } catch (submitError) {
+          console.error('Error submitting profile from draft:', submitError);
+          setError(submitError instanceof Error ? submitError.message : 'Failed to create profile from draft');
+          throw submitError; // Re-throw to be caught by the outer catch block
+        }
       } else {
         // Create new profile
         result = await submitProfile(profileData);
@@ -959,7 +1103,7 @@ export function ProfileCreate({ isEditMode = false }: ProfileCreateProps) {
           currentStep={currentStep} 
           allFields={getStepFields(currentStep)} 
           onEmailAvailabilityChange={(isAvailable) => setIsEmailAvailable(isAvailable)}
-          disableEmail={isJobSeeker || isEditMode}
+          disableEmail={isJobSeeker || isEditMode || isDraftEditMode}
         />;
       case 2:
       case 3:
@@ -972,7 +1116,7 @@ export function ProfileCreate({ isEditMode = false }: ProfileCreateProps) {
             currentStep={currentStep}
             allFields={getStepFields(currentStep)}
             disableSubmit={loadingStates.fileUploading || loadingStates.submitting}
-            isEditMode={isEditMode} 
+            isEditMode={isEditMode || isDraftEditMode} 
           />
         );
       default:
@@ -980,7 +1124,7 @@ export function ProfileCreate({ isEditMode = false }: ProfileCreateProps) {
           currentStep={1} 
           allFields={getStepFields(1)}
           onEmailAvailabilityChange={(isAvailable) => setIsEmailAvailable(isAvailable)}
-          disableEmail={isJobSeeker || isEditMode}
+          disableEmail={isJobSeeker || isEditMode || isDraftEditMode}
         />;
     }
   };
@@ -1032,35 +1176,34 @@ export function ProfileCreate({ isEditMode = false }: ProfileCreateProps) {
     <div className="profile-create-container">
       <div className="profile-create-header">
         <h1>
-          {isEditMode ? 'Edit Jobseeker Profile' : 'Create Jobseeker Profile'}
+          {isEditMode 
+            ? 'Edit Jobseeker Profile' 
+            : isDraftEditMode 
+              ? 'Edit Jobseeker Draft'
+              : 'Create Jobseeker Profile'}
         </h1>
         <p>
           {isEditMode 
             ? 'Update the information for this jobseeker\'s profile.' 
-            : 'Enter the jobseeker\'s information to create their profile.'}
+            : isDraftEditMode
+              ? 'Continue editing this jobseeker profile draft.'
+              : 'Enter the jobseeker\'s information to create their profile.'}
         </p>
         {renderStepIndicator()}
       </div>
 
       {error && (
         <div className="error-container">
-          <div className="error-message">
+          <div className="">
             <i className="fas fa-exclamation-circle"></i>
             <span>{error}</span>
           </div>
-          <button 
-            className="error-dismiss" 
-            onClick={() => setError(null)}
-            aria-label="Dismiss error"
-          >
-            ×
-          </button>
         </div>
       )}
 
       {currentStep === 1 && isEmailAvailable === false && !error && (
         <div className="error-container">
-          <div className="error-message">
+          <div className="">
             <i className="fas fa-exclamation-circle"></i>
             <span>The email address is already in use. Please use a different email to continue.</span>
           </div>
@@ -1074,6 +1217,14 @@ export function ProfileCreate({ isEditMode = false }: ProfileCreateProps) {
           <form 
             onSubmit={(e) => {
               console.log('Form submit event triggered');
+              console.log('Submit flags state:', {
+                isEditMode,
+                isDraftEditMode,
+                justMounted: justMounted.current,
+                isInitialLoad: isInitialLoad.current,
+                isFormLoaded: isFormLoaded.current,
+                userInteracted
+              });
               
               // Prevent default form submission and manually handle later
               e.preventDefault();
@@ -1082,10 +1233,15 @@ export function ProfileCreate({ isEditMode = false }: ProfileCreateProps) {
               setUserInteracted(true);
               previousUserInteraction.current = true;
               
-              // Check for auto-submission in edit mode
-              if (isEditMode && (justMounted.current || isInitialLoad.current)) {
+              // Only prevent auto-submission if we're REALLY in initial load
+              if ((isEditMode || isDraftEditMode) && (justMounted.current || (isInitialLoad.current && !isFormLoaded.current))) {
                 console.log('Preventing auto-submission on initial load in edit mode');
                 return;
+              }
+              
+              // If there was any prevention happening but now we're good, log this
+              if (isDraftEditMode) {
+                console.log('Proceeding with form submission for draft edit!');
               }
               
               // Call React Hook Form's handleSubmit
@@ -1124,7 +1280,13 @@ export function ProfileCreate({ isEditMode = false }: ProfileCreateProps) {
                 <button
                   type="button"
                   className="button secondary draft-button"
-                  onClick={() => saveDraft()}
+                  onClick={async () => {
+                    const saveResult = await saveDraft();
+                    // If saveResult is a string/number, it's the draft ID
+                    if (saveResult && typeof saveResult !== 'boolean') {
+                      setCreatedDraftId(saveResult);
+                    }
+                  }}
                   disabled={isLoading || (currentStep === 1 && isEmailAvailable === false)}
                   title={currentStep === 1 && isEmailAvailable === false ? 'Email is already in use. Please choose a different email.' : ''}
                 >
@@ -1152,9 +1314,10 @@ export function ProfileCreate({ isEditMode = false }: ProfileCreateProps) {
                     console.log('Submit button clicked');
                     setUserInteracted(true);
                   }}
-                  disabled={isLoading || (isEditMode && justMounted.current)}
+                  disabled={isLoading && justMounted.current}
                 >
-                  {loadingStates.submitting ? <span className="loading-spinner"></span> : 'Submit'}
+                  {loadingStates.submitting ? <span className="loading-spinner"></span> : 
+                    isEditMode ? 'Update Profile' : 'Create Profile'}
                 </button>
               )}
             </div>

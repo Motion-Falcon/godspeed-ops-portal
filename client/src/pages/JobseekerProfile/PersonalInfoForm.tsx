@@ -3,6 +3,7 @@ import { personalInfoSchema } from './ProfileCreate';
 import { z } from 'zod';
 import { useState, useEffect, useRef } from 'react';
 import { checkEmailAvailability } from '../../services/api';
+import { useNavigate } from 'react-router-dom';
 
 type PersonalInfoFormData = z.infer<typeof personalInfoSchema>;
 
@@ -16,11 +17,14 @@ interface PersonalInfoFormProps {
 export function PersonalInfoForm({ allFields, onEmailAvailabilityChange, disableEmail = false }: PersonalInfoFormProps) {
   const { register, formState, watch, setError, clearErrors } = useFormContext<PersonalInfoFormData>();
   const { errors: allErrors } = formState;
+  const navigate = useNavigate();
   
   // Add state for email validation
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
   const [emailAvailabilityMessage, setEmailAvailabilityMessage] = useState<string | null>(null);
   const [emailAvailable, setEmailAvailable] = useState<boolean | null>(null);
+  const [existingProfileId, setExistingProfileId] = useState<string | null>(null);
+  const [existingDraftId, setExistingDraftId] = useState<string | null>(null);
   
   // Watch the email field for changes
   const watchedEmail = watch('email');
@@ -31,6 +35,19 @@ export function PersonalInfoForm({ allFields, onEmailAvailabilityChange, disable
   // Function to check if we should show an error for a specific field
   const shouldShowError = (fieldName: string) => {
     return allFields.includes(fieldName) && allErrors[fieldName as keyof typeof allErrors];
+  };
+
+  // Handle the navigation to view a profile or edit a draft
+  const handleViewProfile = () => {
+    if (existingProfileId) {
+      navigate(`/jobseekers/${existingProfileId}`);
+    }
+  };
+
+  const handleEditDraft = () => {
+    if (existingDraftId) {
+      navigate(`/jobseekers/drafts/edit/${existingDraftId}`);
+    }
   };
 
   // Effect to check email availability when the email changes
@@ -49,6 +66,10 @@ export function PersonalInfoForm({ allFields, onEmailAvailabilityChange, disable
     if (emailTimeoutRef.current) {
       clearTimeout(emailTimeoutRef.current);
     }
+    
+    // Reset states when email changes
+    setExistingProfileId(null);
+    setExistingDraftId(null);
     
     // Don't do anything if the email is empty or invalid format
     if (!watchedEmail || watchedEmail.length < 5 || !watchedEmail.includes('@')) {
@@ -76,26 +97,43 @@ export function PersonalInfoForm({ allFields, onEmailAvailabilityChange, disable
     // Set a timeout to delay the API call (similar to debounce)
     emailTimeoutRef.current = setTimeout(async () => {
       try {
+        console.log('Checking email availability for:', currentEmail);
         const result = await checkEmailAvailability(currentEmail);
+        console.log('Email check result:', result);
         
         // Only update state if this is still the latest request
         if (latestRequestRef.current !== requestId) return;
         
+        // Store response values in state
         setEmailAvailable(result.available);
+        setExistingProfileId(result.existingProfileId || null);
+        setExistingDraftId(result.existingDraftId || null);
         
         // Notify parent component about availability change
-        // Only if the value actually changed to prevent re-render loops
         if (onEmailAvailabilityChange) {
           onEmailAvailabilityChange(result.available);
         }
         
+        // Set the appropriate message based on the response
         if (result.available) {
           clearErrors('email');
           setEmailAvailabilityMessage('✓ Email is available');
+        } else if (result.existingProfileId) {
+          setError('email', { 
+            type: 'manual', 
+            message: 'A jobseeker profile already exists with this email. Please use a different email.'
+          });
+          setEmailAvailabilityMessage('✗ A jobseeker profile already exists with this email.');
+        } else if (result.existingDraftId) {
+          setError('email', { 
+            type: 'manual', 
+            message: 'A draft with this email already exists.'
+          });
+          setEmailAvailabilityMessage('✗ A draft with this email already exists.');
         } else {
           setError('email', { 
             type: 'manual', 
-            message: 'This email is already in use by another profile' 
+            message: 'This email is already in use.'
           });
           setEmailAvailabilityMessage('✗ Email is already in use');
         }
@@ -126,7 +164,7 @@ export function PersonalInfoForm({ allFields, onEmailAvailabilityChange, disable
     };
   // Disable the ESLint exhaustive-deps warning since we're handling dependencies manually
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [watchedEmail, disableEmail]); // Added disableEmail as a dependency
+  }, [watchedEmail, disableEmail]);
 
   return (
     <div className="form-containerform-step-container">
@@ -192,9 +230,33 @@ export function PersonalInfoForm({ allFields, onEmailAvailabilityChange, disable
             <p className="field-note">Email cannot be changed as it's used as a unique identifier for this profile.</p>
           )}
           {!disableEmail && emailAvailabilityMessage && (
-            <p className={`availability-message ${emailAvailable ? 'success' : 'error'}`}>
-              {isCheckingEmail ? 'Checking...' : emailAvailabilityMessage}
-            </p>
+            <div className="email-validation-container">
+              <p className={`availability-message ${emailAvailable ? 'success' : 'error'}`}>
+                {isCheckingEmail ? 'Checking...' : emailAvailabilityMessage}
+              </p>
+              
+              {/* Show View Profile button if email exists in a profile */}
+              {existingProfileId && !isCheckingEmail && (
+                <button 
+                  type="button" 
+                  className="button secondary sm" 
+                  onClick={handleViewProfile}
+                >
+                  View Profile
+                </button>
+              )}
+              
+              {/* Show Edit Draft button if email exists in a draft */}
+              {existingDraftId && !isCheckingEmail && (
+                <button 
+                  type="button" 
+                  className="button secondary sm" 
+                  onClick={handleEditDraft}
+                >
+                  Edit Draft
+                </button>
+              )}
+            </div>
           )}
           {shouldShowError('email') && !disableEmail && (
             <p className="error-message">{allErrors.email?.message}</p>
