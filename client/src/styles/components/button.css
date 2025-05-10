@@ -1,12 +1,12 @@
 /* Button Component Styles */
 .button {
   width: 100%;
-  height: 48px;
+  height: 40px;
   padding: 8px 14px;
   border: none;
   border-radius: var(--border-radius);
   background: linear-gradient(90deg, var(--gradient-amber), var(--gradient-yellow));
-  color: var(--background);
+  color: var(--text-dark);
   font-size: 1rem;
   font-weight: var(--font-weight-medium);
   cursor: pointer;
@@ -105,8 +105,8 @@
 
 .btn-primary {
   background: linear-gradient(90deg, var(--gradient-amber), var(--gradient-yellow));
-  color: white;
-  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15);
+  color: var(--text-dark);
+  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.15);
 }
 
 .btn-primary:hover:not(:disabled) {
@@ -119,12 +119,12 @@
 }
 
 .btn-secondary {
-  background-color: rgba(245, 158, 11, 0.1);
+  background-color: rgba(217, 119, 6, 0.1);
   color: var(--primary);
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background-color: rgba(245, 158, 11, 0.15);
+  background-color: rgba(217, 119, 6, 0.15);
 }
 
 .btn-outline {

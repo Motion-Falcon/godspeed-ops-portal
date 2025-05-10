@@ -95,7 +95,6 @@
   transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   z-index: 1;
   margin-bottom: 0.75rem;
-  cursor: pointer;
 }
 
 .dark .step-bubble {
@@ -135,17 +134,6 @@
 .dark .step-marker.active .step-bubble {
   box-shadow: 0 0 0 5px rgba(255, 193, 7, 0.3);
   color: #111;
-}
-
-.step-marker:not(.active):not(.completed) .step-bubble:hover {
-  transform: scale(1.1);
-  box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
-  background-color: #f5f5f5;
-}
-
-.dark .step-marker:not(.active):not(.completed) .step-bubble:hover {
-  background-color: #3a3a3a;
-  box-shadow: 0 0 8px rgba(255, 255, 255, 0.1);
 }
 
 .step-label {
@@ -274,7 +262,7 @@
   box-shadow: var(--shadow-md);
   border: 1px solid var(--color-border);
   margin-bottom: 2rem;
-  max-width: 1200px;
+  max-width: 1100px;
   margin-left: auto;
   margin-right: auto;
 }
@@ -667,34 +655,6 @@ select.form-input {
   box-shadow: var(--card-shadow);
 }
 
-.action-icon-btn {
-  background-color: rgba(255, 255, 255, 0.2);
-  border: none;
-  color: white;
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: background-color 0.2s, transform 0.2s;
-}
-
-.action-icon-btn:hover {
-  background-color: rgba(255, 255, 255, 0.3);
-  transform: scale(1.05);
-}
-
-.action-icon-btn.edit-btn:hover {
-  background-color: var(--color-primary-dark);
-  border-radius: 50%;
-}
-
-.action-icon-btn.delete-btn:hover {
-  background-color: var(--color-error);
-  border-radius: 50%;
-}
-
 .action-icon-btn.update-status-btn {
   display: flex;
   align-items: center;
@@ -707,6 +667,7 @@ select.form-input {
 .action-icon-btn.update-status-btn:hover {
   background-color: unset;
   border-radius: unset;
+  border: unset;
 }
 
 .action-icon-btn.update-status-btn:hover::after {
@@ -1841,11 +1802,11 @@ select.form-input {
 }
 
 .status-option input[value="rejected"]:checked + .status-label {
-  background-color: #8b1d1d;
+  background-color: #e22525;
   border-left: 3px solid #e53935;
 }
 
 .status-option input[value="pending"]:checked + .status-label {
-  background-color: #a5832d;
+  background-color: #e2b544;
   border-left: 3px solid #ffa000;
 }

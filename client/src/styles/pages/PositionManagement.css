@@ -42,11 +42,32 @@
   overflow-x: auto;
 }
 
+/* Removed table-related styles as they're now in CommonTable.css */
+
+/* Status badge styling */
+.status-badge {
+  display: inline-flex;
+  padding: 0.25rem 0.5rem;
+  border-radius: 2rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.status-badge.active {
+  background-color: rgba(var(--success-rgb), 0.1);
+  color: var(--success);
+}
+
+.status-badge.inactive {
+  background-color: rgba(var(--danger-rgb), 0.1);
+  color: var(--danger);
+}
+
 /* Responsive Styles */
 @media (max-width: 768px) {
-  /* Remove the header-related media queries */
+  /* Removed table-related media queries */
 }
 
 @media (max-width: 576px) {
-  /* Remove the header-related media queries */
+  /* Removed table-related media queries */
 } 

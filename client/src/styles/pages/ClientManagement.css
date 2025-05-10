@@ -159,28 +159,16 @@
 }
 
 /* Draft Management Styles */
-.drafts-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: var(--spacing-4);
-}
+/* Removed table styles as they're now in CommonTable.css */
 
-.drafts-table th {
-  text-align: left;
-  padding: var(--spacing-3) var(--spacing-4);
-  background-color: var(--background-secondary);
-  color: var(--text);
-  font-weight: 600;
-  border-bottom: 1px solid var(--border);
-}
-
-.drafts-table td {
-  padding: var(--spacing-3) var(--spacing-4);
-  border-bottom: 1px solid var(--border);
-}
-
-.drafts-table tr:hover {
-  background-color: var(--background-hover);
+.loading {
+  padding: var(--spacing-6);
+  text-align: center;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
 }
 
 .date-display {
@@ -188,21 +176,6 @@
   align-items: center;
   gap: var(--spacing-2);
   color: var(--text-muted);
-}
-
-.action-buttons {
-  display: flex;
-  gap: var(--spacing-2);
-}
-
-.loading {
-  padding: var(--spacing-6);
-  text-align: center;
-  color: var(--text-muted);
-}
-
-.table-container {
-  overflow-x: auto;
 }
 
 .page-actions {
@@ -220,14 +193,7 @@
 }
 
 @media (max-width: 768px) {
-  .action-buttons {
-    flex-direction: column;
-  }
-  
-  .drafts-table th:nth-child(3),
-  .drafts-table td:nth-child(3) {
-    display: none;
-  }
+  /* Removed table-related media queries */
 }
 
 @media (max-width: 576px) {

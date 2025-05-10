@@ -5,6 +5,7 @@ import { ConfirmationModal } from '../../components/ConfirmationModal';
 import { Pencil, Trash2, ArrowLeft, Clock, User } from 'lucide-react';
 import '../../styles/pages/JobSeekerManagement.css';
 import '../../styles/components/header.css';
+import '../../styles/components/CommonTable.css';
 
 // Enhanced interface for JobseekerDraft to include creator/updater info
 interface JobseekerDraft {
@@ -172,22 +173,24 @@ export function JobseekerDrafts() {
             {loading ? (
               <div className="loading">Loading drafts...</div>
             ) : drafts.length === 0 ? (
-              <div className="empty-state">
-                <p>
-                  No drafts found. Create a new jobseeker profile to save a
-                  draft.
-                </p>
-                <button
-                  className="button primary"
-                  onClick={() =>
-                    navigate("/profile/create", { state: { isNewForm: true } })
-                  }
-                >
-                  Create New Profile
-                </button>
+              <div className="empty-state-cell">
+                <div className="empty-state">
+                  <p>
+                    No drafts found. Create a new jobseeker profile to save a
+                    draft.
+                  </p>
+                  <button
+                    className="button primary"
+                    onClick={() =>
+                      navigate("/profile/create", { state: { isNewForm: true } })
+                    }
+                  >
+                    Create New Profile
+                  </button>
+                </div>
               </div>
             ) : (
-              <table className="profiles-table">
+              <table className="common-table">
                 <thead>
                   <tr>
                     <th>Title/Email</th>
@@ -195,14 +198,7 @@ export function JobseekerDrafts() {
                     <th>Created At</th>
                     <th>Created By</th>
                     <th>Last Updated By</th>
-                    <th>
-                      <div className="column-filter">
-                        <div className="column-title">Actions</div>
-                        <div className="column-search">
-                          <div className="actions-placeholder"></div>
-                        </div>
-                      </div>
-                    </th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>

@@ -6,6 +6,7 @@ import { ClientData } from '../../services/api';
 import { ConfirmationModal } from '../../components/ConfirmationModal';
 import '../../styles/pages/ClientManagement.css';
 import '../../styles/components/header.css';
+import '../../styles/components/CommonTable.css';
 
 export function ClientDrafts() {
   const [drafts, setDrafts] = useState<ClientData[]>([]);
@@ -129,20 +130,13 @@ export function ClientDrafts() {
             <p>Continue working on previously saved client drafts.</p>
             
             <div className="table-container">
-              <table className="drafts-table">
+              <table className="common-table">
                 <thead>
                   <tr>
                     <th>Company Name</th>
                     <th>Last Updated</th>
                     <th>Contact Person</th>
-                    <th>
-                      <div className="column-filter">
-                        <div className="column-title">Actions</div>
-                        <div className="column-search">
-                          <div className="actions-placeholder"></div>
-                        </div>
-                      </div>
-                    </th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>

@@ -9,6 +9,7 @@ import { ConfirmationModal } from '../components/ConfirmationModal';
 import { Plus, Trash2, Pencil, FileText, Eye } from 'lucide-react';
 import '../styles/pages/ClientManagement.css';
 import '../styles/components/header.css';
+import '../styles/components/CommonTable.css';
 
 // Extended ClientData interface that can handle both camelCase and snake_case properties
 interface ExtendedClientData extends ClientData {
@@ -206,25 +207,20 @@ export function ClientManagement() {
             {loading ? (
               <div className="loading">Loading clients...</div>
             ) : clients.length === 0 ? (
-              <div className="empty-state">
-                <p>No clients found. Click "New Client" to add one.</p>
+              <div className="empty-state-cell">
+                <div className="empty-state">
+                  <p>No clients found. Click "New Client" to add one.</p>
+                </div>
               </div>
             ) : (
-              <table className="drafts-table">
+              <table className="common-table">
                 <thead>
                   <tr>
                     <th>Company Name</th>
                     <th>Contact Person</th>
                     <th>Province</th>
                     <th>Currency</th>
-                    <th>
-                      <div className="column-filter">
-                        <div className="column-title">Actions</div>
-                        <div className="column-search">
-                          <div className="actions-placeholder"></div>
-                        </div>
-                      </div>
-                    </th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>

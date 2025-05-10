@@ -11,7 +11,7 @@
   display: block;
   margin-bottom: var(--spacing-2);
   font-weight: var(--font-weight-medium);
-  font-size: 1.2rem;
+  font-size: 0.9 rem;
   color: var(--heading);
   transition: color var(--transition-normal);
   min-height: 1.25rem;

@@ -24,7 +24,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import '../../styles/components/form.css';
 import '../../styles/pages/JobseekerProfile.css';
 import '../../styles/components/header.css';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Check, Save } from 'lucide-react';
 
 // Define the form schema types for each step
 export const personalInfoSchema = z.object({
@@ -1158,33 +1158,10 @@ export function ProfileCreate({ isEditMode = false, isDraftEditMode = false, isN
                 key={stepNum} 
                 className={`step-marker ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''}`}
                 style={{ '--index': i } as React.CSSProperties}
-                onClick={() => {
-                  // Allow clicking on completed steps for navigation
-                  if (isCompleted) {
-                    setCurrentStep(stepNum);
-                  } else if (isActive) {
-                    // If clicking current step, do nothing
-                    return;
-                  } else {
-                    // If clicking future step, show requirements
-                    const incompleteSteps = [];
-                    for (let j = 1; j < stepNum; j++) {
-                      if (j >= currentStep) {
-                        incompleteSteps.push(getStepLabel(j));
-                      }
-                    }
-                    if (incompleteSteps.length > 0) {
-                      setError(`Please complete ${incompleteSteps.join(', ')} before proceeding to ${getStepLabel(stepNum)}`);
-                      setTimeout(() => setError(null), 5000);
-                    }
-                  }
-                }}
               >
                 <div className="step-bubble">
                   {isCompleted ? (
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
+                    <Check size={20} />
                   ) : (
                     stepNum
                   )}

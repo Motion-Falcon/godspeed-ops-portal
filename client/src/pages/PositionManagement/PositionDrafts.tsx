@@ -5,6 +5,7 @@ import { ConfirmationModal } from '../../components/ConfirmationModal';
 import { Pencil, Trash2, ArrowLeft } from 'lucide-react';
 import '../../styles/pages/PositionManagement.css';
 import '../../styles/components/header.css';
+import '../../styles/components/CommonTable.css';
 
 export function PositionDrafts() {
   const navigate = useNavigate();
@@ -111,24 +112,19 @@ export function PositionDrafts() {
             {loading ? (
               <div className="loading">Loading drafts...</div>
             ) : drafts.length === 0 ? (
-              <div className="empty-state">
-                <p>No drafts found. Create a new position and save as draft.</p>
+              <div className="empty-state-cell">
+                <div className="empty-state">
+                  <p>No drafts found. Create a new position and save as draft.</p>
+                </div>
               </div>
             ) : (
-              <table className="drafts-table">
+              <table className="common-table">
                 <thead>
                   <tr>
                     <th>Title</th>
                     <th>Client</th>
                     <th>Last Updated</th>
-                    <th>
-                      <div className="column-filter">
-                        <div className="column-title">Actions</div>
-                        <div className="column-search">
-                          <div className="actions-placeholder"></div>
-                        </div>
-                      </div>
-                    </th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>

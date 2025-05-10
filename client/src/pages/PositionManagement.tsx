@@ -5,6 +5,7 @@ import { getPositions, deletePosition, PositionData } from '../services/api';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import '../styles/pages/PositionManagement.css';
 import '../styles/components/header.css';
+import '../styles/components/CommonTable.css';
 
 export function PositionManagement() {
   const navigate = useNavigate();
@@ -154,11 +155,13 @@ export function PositionManagement() {
             {loading ? (
               <div className="loading">Loading positions...</div>
             ) : positions.length === 0 ? (
-              <div className="empty-state">
-                <p>No positions found. Click "New Position" to add one.</p>
+              <div className="empty-state-cell">
+                <div className="empty-state">
+                  <p>No positions found. Click "New Position" to add one.</p>
+                </div>
               </div>
             ) : (
-              <table className="drafts-table">
+              <table className="common-table">
                 <thead>
                   <tr>
                     <th>Title</th>
@@ -166,14 +169,7 @@ export function PositionManagement() {
                     <th>Start Date</th>
                     <th>Location</th>
                     <th>Status</th>
-                    <th>
-                      <div className="column-filter">
-                        <div className="column-title">Actions</div>
-                        <div className="column-search">
-                          <div className="actions-placeholder"></div>
-                        </div>
-                      </div>
-                    </th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>

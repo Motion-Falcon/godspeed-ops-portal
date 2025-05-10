@@ -17,6 +17,7 @@ import { JobSeekerProfile } from '../types/jobseeker';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import '../styles/pages/JobSeekerManagement.css';
 import '../styles/components/header.css';
+import '../styles/components/CommonTable.css';
 
 export function JobSeekerManagement() {
   const [profiles, setProfiles] = useState<JobSeekerProfile[]>([]);
@@ -276,7 +277,7 @@ export function JobSeekerManagement() {
             {loading ? (
               <div className="loading">Loading profiles...</div>
             ) : (
-              <table className="profiles-table">
+              <table className="common-table">
                 <thead>
                   <tr>
                     <th>
