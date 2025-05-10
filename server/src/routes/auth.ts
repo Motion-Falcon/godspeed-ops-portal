@@ -25,12 +25,23 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
+    // Determine user type based on email
+    let userType = 'jobseeker'; // Default type
+    
+    // Check for recruiter email pattern
+    if (email.includes('@motionfalcon')) {
+      userType = 'recruiter';
+    }
+    
+    // Admin users are handled separately via direct database assignments
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
           name,
+          user_type: userType,
         },
       },
     });
@@ -156,18 +167,7 @@ router.post('/update-password', async (req, res) => {
 
     // Try with service role first (most reliable)
     try {
-      const adminSupabase = createClient(
-        supabaseUrl, 
-        process.env.SUPABASE_SERVICE_KEY || '',
-        { 
-          auth: {
-            autoRefreshToken: false,
-            persistSession: false
-          }
-        }
-      );
-
-      const { error } = await adminSupabase.auth.admin.updateUserById(
+      const { error } = await supabase.auth.admin.updateUserById(
         userData.user.id,
         { password }
       );
@@ -186,20 +186,7 @@ router.post('/update-password', async (req, res) => {
 
     // Fallback to user context update
     try {
-      // Create a client with the token
-      const userClient = createClient(
-        supabaseUrl,
-        supabaseKey,
-        {
-          global: {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          }
-        }
-      );
-      
-      const { error: userUpdateError } = await userClient.auth.updateUser({ 
+      const { error: userUpdateError } = await supabase.auth.updateUser({ 
         password 
       });
       

@@ -1,0 +1,123 @@
+# Task ID: 4
+# Title: Implement Client/Employer Management with Data Protection
+# Status: pending
+# Dependencies: None
+# Priority: medium
+# Description: Create a comprehensive client profile management system with robust data protection. The system must include a detailed Client Creation form with the following sections and fields:
+
+**Basic Details:**
+- Company Name* (required)
+- Billing Name* (required)
+- Short Code (3 letters)
+- List Name (dropdown: AA/AB/CANHIRE BRAMPTON/CANHIRE LONDON/KITCHENER /PRONTO PRO/SA /SB/SCARBOROUGH.)
+- Website
+- Client Manager (dropdown)
+- Sales Person (dropdown)
+- Accounting Person (dropdown)
+- Merge Invoice (checkbox)
+- Currency (CAD/USD)
+- Work Province (AB/ BC/ MB/ NB/ NL/ NT/ NS/ NU/ ON/ PE/ QC/ SK/ YK)
+
+**Contact Details:**
+- Contact Person Name 1* (required)
+- Email Address* (required)
+- Mobile* (required)
+- Contact Person Name 2
+- Email 2
+- Invoice CC (checkbox)
+- Mobile 2
+- Contact Person 3
+- Email 3
+- Invoice CC (checkbox)
+- Mobile 3
+- Dispatch Dept. Email
+- Invoice CC (checkbox)
+- Accounts Dept. Email
+- Invoice CC (checkbox)
+- Invoice Language (English/French)
+
+**Address Details:**
+- Street Address 1* (required)
+- City 1* (required)
+- Province 1* (required)
+- Postal Code 1* (required)
+- Street Address 2
+- City 2
+- Province 2
+- Postal Code 2
+- Street Address 3
+- City 3
+- Province 3
+- Postal Code 3
+
+**Payment & Billings:**
+- Preferred Payment Method (dropdown (Cash/ Cheque/ Corporation/ Direct Deposit /e-Transfer))
+- Terms (dropdown: Due on Receipt/ Net 15/ Net 22/Net 30/ Net 45/ Net 60/ Net 65 /Net 90)
+- Pay Cycle (dropdown: 1 Week Hold - Weekly Pay/ 1 Week Hold - Biweekly Pay /2 Week Hold - Weekly Pay/ 2 Week Hold - Biweekly Pay)
+- Credit Limit (dropdown: 20,000/35,000/50,000)
+- Notes
+
+**Functional and Technical Requirements:**
+- All required fields (marked with *) must be validated
+- Email, phone number, and postal code fields require format validation
+- Data persistence must use Supabase
+- Use React Hook Form with Zod for schema-based validation and error handling[6][8][10]
+- UI must be consistent with existing components
+- Allow saving partial client information as draft
+
+**Security Considerations:**
+- Encrypt sensitive client financial and billing information using AES-256
+- Implement access controls based on recruiter roles
+- Create comprehensive audit logs for all client data operations
+- Ensure input validation to prevent injection attacks
+- Mask sensitive information in logs and displays
+- Follow security guidelines from task 11 for handling business-sensitive data
+
+**Other Features:**
+- Client dashboard showing activity timeline, communication history, financial summary, and position tracking
+- Client listing view for recruiters with search and filter capabilities
+
+All features must be implemented in accordance with best practices for form validation, data security, and user experience.
+# Details:
+Develop a comprehensive Client Creation form with the specified sections and fields. Use React Hook Form and Zod to implement robust validation, including required fields and format checks for emails, phone numbers, and postal codes[6][8][10]. Integrate Supabase for data persistence and enable saving partial forms as drafts. Ensure the UI matches existing design components. Implement access controls, AES-256 encryption for sensitive data, audit logging, and data masking. The system must also provide a client dashboard (activity timeline, communication history, financial summary, position tracking) and a client listing view with search and filter for recruiters. All security and data protection requirements from task 11 must be followed.
+
+# Test Strategy:
+Test the Client Creation form for all required and optional fields, including validation for emails, phone numbers, and postal codes. Verify saving and retrieving drafts. Test Supabase integration for data persistence. Ensure the UI is consistent with existing components. Validate access controls for different recruiter roles. Confirm audit logs are generated for all client data operations. Test AES-256 encryption and decryption of sensitive data. Check that sensitive information is masked in logs and displays. Test the client dashboard for correct display of activity, communication, financials, and position tracking. Validate search and filter in the client listing view. Perform security testing for XSS, CSRF, and injection vulnerabilities.
+
+# Subtasks:
+## 1. Create Client Form UI Components and Layout [pending]
+### Dependencies: None
+### Description: Design and implement the UI components for the client creation form with all required sections and fields
+### Details:
+Create React components for each section of the client form (Basic Details, Contact Details, Address Details, Payment & Billings). Implement the form layout using a multi-step or tabbed interface. Build all input components including text fields, dropdowns, checkboxes with proper labeling and required field indicators. Ensure the UI is consistent with existing design components. This subtask focuses only on the visual components without validation or data persistence.
+
+## 2. Implement Form Validation with React Hook Form and Zod [pending]
+### Dependencies: 4.1
+### Description: Set up form validation logic for all fields with appropriate validation rules and error handling
+### Details:
+Integrate React Hook Form with Zod schema validation. Define validation schemas for all form sections with appropriate rules: required field validation for fields marked with *, email format validation, phone number format validation, postal code format validation. Implement error display and handling for each field. Add support for form state management including partial completion and draft saving. Ensure validation provides clear user feedback and maintains accessibility standards.
+
+## 3. Implement Data Persistence with Supabase and Security Features [pending]
+### Dependencies: 4.2
+### Description: Create database schema and implement data persistence with encryption and security measures
+### Details:
+Design and create the database schema in Supabase for client profiles. Implement data persistence functions for creating, updating, and retrieving client information. Apply AES-256 encryption for sensitive client financial and billing information. Implement input sanitization to prevent injection attacks. Create comprehensive audit logging for all client data operations. Set up data masking for sensitive information in logs and displays. Ensure all security guidelines from task 11 are followed for handling business-sensitive data.
+
+## 4. Develop Client Dashboard with Activity Timeline [pending]
+### Dependencies: 4.3
+### Description: Create a comprehensive client dashboard showing key information and activity history
+### Details:
+Design and implement a client dashboard that displays: activity timeline showing recent interactions, communication history with timestamps and content summaries, financial summary including payment status and history, and position tracking showing open and filled positions. Create data fetching and aggregation functions to populate the dashboard. Implement appropriate loading states and error handling. Ensure the dashboard maintains all security requirements while presenting a clear overview of client status and history.
+
+## 5. Build Client Listing View with Search and Filtering [pending]
+### Dependencies: 4.3
+### Description: Implement a comprehensive view for recruiters to browse, search, and filter client records
+### Details:
+Create a client listing page with a data table or card-based view. Implement search functionality that works across multiple client fields (name, contact, location, etc.). Add filtering capabilities based on key attributes (client manager, sales person, status, location, etc.). Include sorting options for different columns. Implement pagination for efficient data loading. Ensure the listing view respects access control permissions based on recruiter roles. Add quick-action buttons for common operations like viewing, editing, or contacting clients.
+
+## 6. Implement Role-Based Access Controls and Integration Testing [pending]
+### Dependencies: 4.3, 4.4, 4.5
+### Description: Set up role-based permissions and conduct comprehensive integration testing
+### Details:
+Implement access control mechanisms based on recruiter roles (admin, manager, recruiter, etc.). Define permission sets for different roles regarding client data access, editing capabilities, and sensitive information visibility. Create middleware to enforce these permissions across all client management features. Conduct comprehensive integration testing across all components: form submission with validation, data persistence with encryption, dashboard functionality, listing view with search and filters, and access controls. Fix any issues found during testing and ensure all components work together seamlessly.
+

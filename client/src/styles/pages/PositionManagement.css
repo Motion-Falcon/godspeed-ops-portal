@@ -1,0 +1,73 @@
+/* PositionManagement.css */
+
+.content-container {
+  margin-bottom: 2rem;
+}
+
+.card {
+  background: var(--color-card);
+  padding: 1.5rem;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--color-border);
+  margin-bottom: 1.5rem;
+}
+
+.card h2 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+  color: var(--heading);
+}
+
+.empty-state {
+  color: var(--text-muted);
+  font-style: italic;
+  padding: 1rem 0;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.loading {
+  padding: var(--spacing-6);
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.table-container {
+  overflow-x: auto;
+}
+
+/* Removed table-related styles as they're now in CommonTable.css */
+
+/* Status badge styling */
+.status-badge {
+  display: inline-flex;
+  padding: 0.25rem 0.5rem;
+  border-radius: 2rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.status-badge.active {
+  background-color: rgba(var(--success-rgb), 0.1);
+  color: var(--success);
+}
+
+.status-badge.inactive {
+  background-color: rgba(var(--danger-rgb), 0.1);
+  color: var(--danger);
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+  /* Removed table-related media queries */
+}
+
+@media (max-width: 576px) {
+  /* Removed table-related media queries */
+} 

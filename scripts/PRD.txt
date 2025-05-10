@@ -1,0 +1,416 @@
+# Godspeed Recruitment Platform: Product Requirements Document
+
+## Overview  
+The Godspeed Recruitment Platform addresses the challenge of efficiently connecting low-level workers (drivers, forklift operators, warehouse staff) with appropriate job opportunities. The current recruitment process for these roles is often manual, time-consuming, and lacks proper matching between candidate qualifications and job requirements.
+
+The platform serves two primary user groups:
+1. **Jobseekers** - Individuals with specialized experience/licenses seeking employment
+2. **Recruiters** - Staffing professionals managing the hiring process
+
+By centralizing the recruitment workflow, automating document verification, and implementing intelligent matching algorithms, Godspeed creates value through:
+- Reduced time-to-hire
+- Higher quality matches
+- Streamlined compliance verification
+- Comprehensive tracking of the recruitment lifecycle
+
+## Core Features  
+
+### 1. Unified Authentication System
+- **Shared Login Portal** - Single entry point for all users (jobseekers, recruiters, and admins)
+- **Role-Based Access** - System differentiates users based on email domain (@godspeed domain required for recruiters and admins, any domain allowed for jobseekers)
+- **Administrator Role** - Special admin users with all recruiter capabilities plus recruiter management functionality (view, delete recruiters)
+- **Security Protocols** - Mandatory email verification for all users; two-factor authentication required for recruiters and admins on every login
+- **Account Management** - Password reset, session management, and activity monitoring
+
+### 2. Jobseeker Management
+- **Multi-step Profile Creation**
+  - Progressive disclosure form with save-as-draft capability
+  - Personal identification and contact information
+  - Professional qualifications (license types, experience levels)
+  - Document upload system for credential verification
+  - Location and availability preferences
+- **Profile Verification Workflow**
+  - Document submission and review process
+  - AI-assisted verification of credentials
+  - Status tracking and notification system
+- **Dashboard Interface**
+  - View matched positions with match percentage
+  - Track application status (accepted, rejected, ongoing)
+  - Manage profile information
+
+### 3. Position Management
+- **Comprehensive Job Creation**
+  - Mandatory client/employer association (positions must be linked to a specific client)
+  - Detailed position requirements and qualifications
+  - Location, schedule, and compensation details
+  - Required document specifications
+- **Position Lifecycle Management**
+  - Open, filled, closed, and on-hold status tracking
+  - Editing and duplication capabilities
+  - Bulk actions for position management
+- **Candidate Matching System**
+  - Primary criteria: License type, experience level, availability
+  - Secondary criteria: Location, additional experience, schedule preferences
+  - Match percentage calculation and sorting
+
+### 4. Client/Employer Management
+- **Client Profile Creation**
+  - Company information and billing details
+  - Multiple location and contact management
+  - Payment terms and preferences
+- **Client Relationship Tools**
+  - Activity timeline and communication history
+  - Financial summary and account health metrics
+  - Position tracking across the organization
+
+### 5. Document Verification Center
+- **AI-Assisted Review**
+  - Security feature detection and tampering identification
+  - Automated data extraction and cross-referencing
+  - Verification confidence scoring and issue flagging
+- **Verification Workflow**
+  - Approval, rejection, and information request options
+  - Standardized rejection categories and feedback mechanisms
+  - Verification history and audit trail
+
+### 6. Timesheet & Invoice Management
+- **Time Tracking**
+  - Period-based work hour recording
+  - Regular and overtime categorization
+  - Optional client approval workflow
+- **Invoice Generation**
+  - Automatic creation from approved timesheets
+  - Customizable templates and line items
+  - Distribution system with tracking capabilities
+
+### 7. Notification System
+- **Email Alerts** at critical touchpoints:
+  - Account verification
+  - Profile submission/approval
+  - Job matching and selection
+  - Application status changes
+  - Document verification updates
+  - Invoice generation and payment
+
+## User Experience  
+
+### Jobseeker Persona
+**Name:** Alex  
+**Background:** Commercial driver with AZ license, 3 years experience  
+**Goals:** Find reliable work with fair compensation, minimize paperwork hassle, track applications easily  
+**Pain Points:** Repetitive application processes, delayed document verification, lack of status visibility
+
+### Recruiter Persona
+**Name:** Taylor  
+**Background:** Staffing coordinator at logistics recruitment agency  
+**Goals:** Efficiently match qualified candidates to positions, maintain compliance, minimize manual processes  
+**Pain Points:** Document verification bottlenecks, candidate qualification assessment, tracking multiple positions
+
+### Key User Flows
+
+#### Jobseeker Flow
+1. Registration and profile creation
+2. Document submission and verification
+3. Job matching and application
+4. Position acceptance and scheduling
+5. Time tracking and payment processing
+
+#### Recruiter Flow
+1. Position creation and requirement specification
+2. Candidate matching and selection
+3. Document verification and compliance checks
+4. Job assignment and scheduling
+5. Time approval and invoice generation
+
+### UI/UX Considerations
+- **Existing UI Framework** - A basic UI has already been designed and implemented. All future development must follow this established pattern to maintain design consistency.
+- **Responsive Design:** Mobile-friendly interface for jobseekers, recruiters, and admins
+- **Progressive Disclosure:** Multi-step forms with clear progress indicators
+- **Contextual Help:** Tooltips and guidance for complex operations
+- **Status Visibility:** Clear indicators for verification status, application progress
+- **Notification Integration:** In-app and email notifications for critical updates
+- **Filter/Search Capability:** Powerful filtering for both positions and candidates
+
+## Technical Architecture  
+
+### System Components
+
+#### Frontend
+- **Responsive Web Application**
+  - React (18.2.0) with TypeScript
+  - Vite for building and development
+  - React Router DOM (6.22.3) for navigation
+  - React Hook Form (7.51.3) with Zod (3.22.4) for form validation
+  - Supabase JS client (2.39.2) for data management
+  - Progressive web app with offline capabilities
+  - Shared authentication portal
+  - Role-specific interfaces post-login
+
+#### Backend
+- **API Layer**
+  - Express.js (4.18.2) with TypeScript
+  - RESTful service architecture
+  - Supabase (2.39.2) for database and authentication
+  - API encryption/decryption for secure data transmission
+  - Comprehensive logging system for monitoring and debugging
+  - Role-based permission system
+
+#### Services
+- **User Management Service**
+  - Authentication and authorization
+  - Profile management
+  - Session handling
+
+- **Matching Engine**
+  - Qualification-based filtering
+  - Weighted scoring algorithm
+  - Vector similarity for text analysis
+
+- **Document Processing Service**
+  - AI-powered document verification
+  - Data extraction and validation
+  - Storage and versioning
+
+- **Notification Service**
+  - Email delivery system
+  - Template management
+  - Delivery tracking
+
+- **Payment Processing**
+  - Timesheet validation
+  - Invoice generation
+  - Payment tracking
+
+### Data Models
+
+#### Core Entities
+- **User**
+  - Basic identification and authentication
+  - Role types (jobseeker, recruiter, admin)
+  - Permission mapping based on role
+  - Platform-specific settings
+  
+- **Admin**
+  - Extended recruiter capabilities
+  - Recruiter management functionality
+  - System configuration access
+  - Analytics dashboard access
+
+- **Jobseeker Profile**
+  - Personal and contact information
+  - Professional qualifications
+  - Document references
+  - Availability and preferences
+
+- **Position**
+  - Requirements and specifications
+  - Client association
+  - Status and lifecycle
+  - Compensation details
+
+- **Client/Employer**
+  - Company information
+  - Contact details
+  - Billing configuration
+  - Relationship history
+
+- **Document**
+  - File metadata and storage reference
+  - Verification status
+  - Expiration tracking
+  - Change history
+
+- **Timesheet**
+  - Worker and position association
+  - Hours and period tracking
+  - Approval status
+  - Invoice linkage
+
+### Integration Points
+- **Accounting Systems:** QuickBooks, Sage, Xero
+- **Payroll Systems:** ADP, Ceridian, Payworks
+- **Communication:** Email, SMS gateways
+- **Document Storage:** SharePoint, Google Drive, Dropbox
+- **CRM Systems:** Optional synchronization
+
+## Development Roadmap  
+
+### Current Development Status
+The project development has already commenced using the technologies specified in the Technical Architecture section. The Authentication System from Phase 1 has been completed, including login, registration, email verification, and 2FA for recruiters. A basic UI has also been established, which should be followed for all future development to maintain consistency.
+
+### Phase 1: Foundation (MVP)
+- **Authentication System** (Highest Priority)
+  - Complete login/registration with email domain validation 
+  - Email verification for all users
+  - Two-factor authentication for recruiters
+  - Role differentiation based on email domain
+  
+- **Core Jobseeker Features**
+  - Profile creation (basic fields)
+  - Document upload (limited types)
+  - Simple dashboard view
+  
+- **Core Recruiter Features**
+  - Position creation
+  - Basic candidate list view
+  - Manual matching capabilities
+  
+- **Basic Document Management**
+  - Upload and storage
+  - Manual verification interface
+  - Status tracking
+
+### Phase 2: Enhanced Matching & Verification
+- **Advanced Profile Management**
+  - Complete multi-step forms
+  - Save-as-draft functionality
+  - Profile editing and history
+  
+- **Intelligent Matching System**
+  - Weighted criteria algorithm
+  - Match percentage calculation
+  - Automated notifications
+  
+- **AI-Assisted Document Verification**
+  - Authenticity checking
+  - Data extraction
+  - Verification recommendations
+  
+- **Client Management**
+  - Client profile creation
+  - Position association
+  - Basic relationship tracking
+
+### Phase 3: Complete Workflow & Integration
+- **Time Tracking System**
+  - Timesheet creation
+  - Validation workflows
+  - Status tracking
+  
+- **Invoice Generation**
+  - Automated creation from timesheets
+  - Customizable templates
+  - Distribution system
+  
+- **External System Integration**
+  - Accounting system connections
+  - Payroll processing
+  - Document storage integration
+  
+- **Advanced Analytics**
+  - Performance dashboards
+  - Recruitment metrics
+  - Efficiency reporting
+
+### Phase 4: Optimization & Scale
+- **Security and Monitoring Enhancements**
+  - Advanced logging system with analytics
+  - Security audit and penetration testing
+  - Comprehensive API encryption implementation
+  
+- **Mobile Experience Enhancement**
+  - Native app capabilities
+  - Offline functionality
+  - Push notifications
+  
+- **Enterprise Features**
+  - Multi-branch support
+  - Advanced permissions
+  - White-labeling options
+  
+- **Performance Optimization** (Secondary priority)
+  - Caching strategies
+  - Database optimization
+  - Load balancing
+  
+- **Advanced AI Integration**
+  - Predictive matching
+  - Fraud detection improvements
+  - Automated document classification
+
+## Logical Dependency Chain
+
+### Foundation Layer
+1. **Authentication System** - Entry point for all users
+2. **User Profile Storage** - Basic data structures for both user types
+3. **Document Upload** - File handling and storage mechanism
+
+### Primary Workflows
+4. **Jobseeker Profile Creation** - Complete forms and validation
+5. **Position Definition** - Job creation and requirements
+6. **Basic Matching** - Initial candidate-position pairing
+
+### Enhanced Functionality
+7. **Document Verification** - AI integration and workflow
+8. **Advanced Matching** - Refined algorithms and scoring
+9. **Client Management** - Employer profiles and relationships
+
+### Operational Systems
+10. **Time Tracking** - Hour recording and validation
+11. **Invoice Generation** - Billing and financial tracking
+12. **Reporting & Analytics** - Performance metrics and insights
+
+### Integration Layer
+13. **External System Connections** - Accounting, payroll, and storage
+14. **API Extensions** - Additional integration points
+15. **Mobile Optimization** - Cross-platform enhancements
+
+## Risks and Mitigations  
+
+### Technical Challenges
+
+| Risk | Impact | Mitigation |
+|------|--------|------------|
+| Document verification accuracy | False positives/negatives in critical compliance checks | Implement human review for edge cases; continuous model training |
+| Matching algorithm effectiveness | Poor quality matches leading to reduced platform value | A/B testing of algorithms; feedback loop from successful placements |
+| Security vulnerabilities | Data breaches or unauthorized access | Regular security audits; proper API encryption; comprehensive logging |
+| Mobile compatibility issues | Limited access for on-the-go users | Progressive web app approach; responsive design principles |
+| System performance at scale | Slow experience with increased usage | Note: While functionality is priority #1, we'll implement basic performance optimizations throughout development |
+
+### MVP Scoping
+
+| Risk | Impact | Mitigation |
+|------|--------|------------|
+| Feature creep delaying launch | Missed market opportunity | Strict prioritization based on user value; modular development approach |
+| Incomplete workflows in MVP | Poor initial user experience | End-to-end testing of critical paths; ensure complete user journeys |
+| Over-engineering early features | Resource allocation inefficiency | Focused development on core value propositions; iterative enhancement |
+| Insufficient differentiation | Limited adoption rates | Emphasize key value propositions; focus on pain point solutions |
+
+### Resource Constraints
+
+| Risk | Impact | Mitigation |
+|------|--------|------------|
+| Development timeline pressure | Quality compromises | Phased approach with clear milestones; modular architecture |
+| AI integration complexity | Dependency bottlenecks | Fallback to manual processes where necessary; incremental AI enhancement |
+| User adoption challenges | Slow platform growth | Early user testing; intuitive onboarding; targeted marketing |
+| Integration with legacy systems | Implementation delays | Standardized API approach; adapter patterns for compatibility |
+
+## Appendix  
+
+### Document Verification AI Specifications
+- **Technologies:** Computer vision, OCR, document forensics
+- **Verification points:** Format consistency, security features, data extraction
+- **Performance metrics:** Accuracy rate, false positive/negative rates, processing time
+- **Training requirements:** Document samples across categories with verified status
+
+### Matching Algorithm Details
+- **Primary criteria weighting:** 70% of total score
+- **Secondary criteria weighting:** 30% of total score
+- **Bio text analysis:** Vector embedding with domain-specific training
+- **Location proximity calculation:** Geocoding and distance-based scoring
+- **Experience level mapping:** Standardized categorization across position types
+
+### Performance Requirements
+- **Page load times:** <3 seconds for standard operations
+- **Search response:** <2 seconds for filtered results
+- **Document processing:** <30 seconds for AI verification
+- **System availability:** 99.9% uptime guarantee
+- **Mobile performance:** Optimized for 4G connections
+
+### Security Implementation
+- **Data encryption:** In transit and at rest, with additional API encryption/decryption layer
+- **Access control:** Role-based permissions with least privilege principle
+- **Authentication:** Email verification for all users; mandatory 2FA for recruiter logins
+- **Compliance:** Data protection regulations for employment information
+- **Monitoring:** Comprehensive logging system for all operations
+- **Threat Detection:** Suspicious activity identification and alerting

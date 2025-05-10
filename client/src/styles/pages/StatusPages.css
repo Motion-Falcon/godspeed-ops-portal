@@ -1,0 +1,46 @@
+/* client/src/styles/pages/StatusPages.css */
+
+.status-page-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 80vh; /* Adjust as needed */
+  padding: 2rem;
+  background-color: var(--background-color);
+}
+
+.status-box {
+  background-color: var(--card-background);
+  padding: 2.5rem 3rem;
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--box-shadow-md);
+  text-align: center;
+  max-width: 500px;
+  width: 100%;
+  border: 1px solid var(--border-color);
+}
+
+.status-title {
+  font-size: 1.8rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  color: var(--text-color-primary);
+}
+
+.status-message {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--text-color-secondary);
+  margin-bottom: 1rem;
+}
+
+.status-message:last-of-type {
+  margin-bottom: 2rem;
+}
+
+.status-button {
+  margin-top: 1rem;
+  width: auto;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+} 

@@ -14,11 +14,20 @@ if (!supabaseUrl || !supabaseKey) {
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Extend the Request interface to include user
+// Define user type within Express namespace
 declare global {
   namespace Express {
     interface Request {
-      user?: any;
+      user?: {
+        id: string;
+        email?: string;
+        user_metadata?: {
+          name?: string;
+          user_type?: 'jobseeker' | 'recruiter' | 'admin';
+          [key: string]: unknown;
+        }
+        [key: string]: unknown;
+      };
     }
   }
 }
@@ -40,11 +49,54 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
       return res.status(403).json({ error: 'Invalid or expired token' });
     }
 
-    // Set the user in the request object
-    req.user = data.user;
+    // Set the user in the request object with proper type casting
+    req.user = data.user as any;
     next();
   } catch (error) {
     console.error('Authentication error:', error);
     return res.status(500).json({ error: 'Authentication failed' });
   }
+};
+
+/**
+ * Middleware to check if the user is an admin or recruiter
+ */
+export const isAdminOrRecruiter = (req: Request, res: Response, next: NextFunction) => {
+  if (!req.user) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+
+  const userType = req.user.user_metadata?.user_type;
+  
+  if (userType === 'admin' || userType === 'recruiter') {
+    next();
+  } else {
+    return res.status(403).json({ 
+      error: 'Access denied', 
+      message: 'Only admins and recruiters can access this resource' 
+    });
+  }
+};
+
+/**
+ * Middleware to authorize users based on their roles
+ * @param allowedRoles Array of role names that are allowed to access the route
+ */
+export const authorizeRoles = (allowedRoles: string[]) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const userType = req.user.user_metadata?.user_type;
+    
+    if (userType && allowedRoles.includes(userType)) {
+      next();
+    } else {
+      return res.status(403).json({ 
+        error: 'Access denied', 
+        message: `This resource is only accessible to: ${allowedRoles.join(', ')}` 
+      });
+    }
+  };
 }; 

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useLocation, Navigate, Link } from 'react-router-dom';
 import { MailCheck, CheckCircle } from 'lucide-react';
 import { ThemeToggle } from '../components/theme-toggle';
-import { resendVerificationEmail } from '../lib/auth';
+import { resendVerificationEmail, logoutUser } from '../lib/auth';
 import '../styles/variables.css';
 import '../styles/pages/VerificationPending.css';
 import '../styles/components/button.css';
@@ -13,6 +13,7 @@ export function VerificationPending() {
   const [isResending, setIsResending] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const fromLogin = location.state?.fromLogin || false;
 
   // If the page is accessed directly without an email, redirect to signup
   if (!email) {
@@ -33,6 +34,17 @@ export function VerificationPending() {
       }
     } finally {
       setIsResending(false);
+    }
+  };
+
+  const handleBackToLogin = async () => {
+    // If user came from login, we need to log them out first
+    if (fromLogin) {
+      try {
+        await logoutUser();
+      } catch (error) {
+        console.error('Error logging out:', error);
+      }
     }
   };
 
@@ -87,7 +99,11 @@ export function VerificationPending() {
           </button>
           
           <div>
-            <Link to="/login" className="auth-link">
+            <Link 
+              to="/login" 
+              className="auth-link" 
+              onClick={handleBackToLogin}
+            >
               Back to login
             </Link>
           </div>

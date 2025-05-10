@@ -1,0 +1,55 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+ - **PowerShell Piping Considerations**
+  - In PowerShell on Windows, piping with `|` does not work the same way as in bash/sh
+  - When attempting to pipe command output to utilities like `cat`, PowerShell interprets this differently
+  - The `cat` command in PowerShell (an alias for `Get-Content`) expects a file path, not piped input
+
+  ```powershell
+  // ❌ DON'T: Use piping with cat in PowerShell commands
+  task-master list --with-subtasks | cat
+  
+  // ✅ DO: Run terminal commands directly without piping to cat
+  task-master list --with-subtasks
+  ```
+
+- **Cross-Platform Command Syntax**
+  - Use PowerShell-compatible command separator syntax for multi-command operations
+  - Use the semicolon (`;`) instead of `&&` for command chaining in PowerShell
+
+  ```powershell
+  // ❌ DON'T: Use bash-style command chaining
+  cd /path/to/directory && command
+  
+  // ✅ DO: Use PowerShell-compatible command chaining
+  cd /path/to/directory ; command
+  ```
+
+- **Path Handling**
+  - Be aware of path normalization differences between PowerShell and bash
+  - PowerShell may interpret forward slashes in paths but backslashes are standard
+  - When possible, avoid mixing directory conventions within a single command
+
+  ```powershell
+  // ✅ DO: Use normalized path formats appropriate for PowerShell
+  cd D:\path\to\directory
+  
+  // ⚠️ CAUTION: Using mixed path formats may cause issues
+  cd /d:/path/to/directory
+  ```
+
+- **PowerShell Output Capture**
+  - If you need to process command output, prefer variable assignment in PowerShell
+  - Use PowerShell's `$variable = command` syntax for capturing output
+
+  ```powershell
+  // ❌ DON'T: Use bash-style output capture approaches
+  command | grep pattern
+  
+  // ✅ DO: Use PowerShell-native approaches
+  $output = command
+  $output -match "pattern"
+  ```

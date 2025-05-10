@@ -1,0 +1,54 @@
+# Task ID: 7
+# Title: Implement Jobseeker Dashboard with Privacy Protection
+# Status: pending
+# Dependencies: 1, 5
+# Priority: medium
+# Description: Create the jobseeker dashboard interface showing matched positions, application status, and profile management, with appropriate security measures for personal data protection.
+# Details:
+Develop a dashboard for jobseekers that displays: matched positions with match percentage, application status tracking (accepted, rejected, ongoing), and profile management options. Implement filtering and sorting for matched positions. Create a detailed view for each position showing all relevant information. Add functionality to apply for positions directly from the dashboard. Use React for the frontend and Supabase for data retrieval.
+
+Security Considerations:
+- Implement proper authentication and session management
+- Create audit logs for all dashboard activities
+- Ensure personal data is properly protected and encrypted
+- Implement rate limiting for dashboard APIs
+- Add CSRF protection for all form submissions
+- Follow the security guidelines from task 11 for handling personal data
+- Ensure proper input validation for all user inputs
+
+Follow the existing UI framework for design consistency.
+
+# Test Strategy:
+Test the dashboard with various user profiles and match scenarios. Verify filtering and sorting functionality. Test the application process from the dashboard. Ensure the UI is responsive and follows the established design patterns. Validate that match percentages and application statuses are correctly displayed. Test authentication and session management to ensure security. Verify audit logs are created for all dashboard activities. Test for common security vulnerabilities including XSS and CSRF attacks. Validate that personal data is properly protected and encrypted.
+
+# Subtasks:
+## 1. Set up authentication and dashboard structure [pending]
+### Dependencies: None
+### Description: Implement the authentication system and basic dashboard layout for jobseekers with proper session management and security controls
+### Details:
+Create the dashboard shell with React components including navigation, header, and content areas. Implement authentication using Supabase Auth with secure session management. Set up protected routes that require authentication. Implement audit logging for all dashboard activities. Configure CSRF protection for all form submissions. Set up rate limiting for dashboard APIs. Create the basic layout following the existing UI framework for design consistency.
+
+## 2. Implement matched positions display with filtering and sorting [pending]
+### Dependencies: 7.1
+### Description: Create the matched positions section with match percentage indicators, filtering options, and sorting capabilities
+### Details:
+Develop the matched positions component that fetches job data from Supabase with proper data encryption in transit. Display jobs with match percentage using visual indicators. Implement filtering by job attributes (location, salary, etc.) with input validation. Add sorting functionality (by match percentage, date posted, etc.). Create pagination for results. Ensure all API calls include proper authentication headers. Implement error handling for failed data fetches with user-friendly messages.
+
+## 3. Create detailed job view and application functionality [pending]
+### Dependencies: 7.2
+### Description: Implement the detailed job view component and the ability to apply for positions directly from the dashboard
+### Details:
+Build a modal or dedicated page component for detailed job information. Include all relevant job details with proper data sanitization. Create an application form with comprehensive input validation. Implement secure form submission with encrypted personal data transmission. Add confirmation dialogs and success/error notifications. Ensure all personal data is handled according to the security guidelines from task 11. Store application status in Supabase with appropriate access controls.
+
+## 4. Develop application status tracking system [pending]
+### Dependencies: 7.3
+### Description: Create the interface for tracking application statuses (accepted, rejected, ongoing) with appropriate notifications
+### Details:
+Build the application status tracking component that displays all user applications. Implement status indicators (accepted, rejected, ongoing) with appropriate styling. Create a real-time update system using Supabase subscriptions for status changes. Add filtering options for applications by status and date. Implement notifications for status changes. Ensure proper data access controls so users can only see their own applications. Add detailed view for each application with communication history.
+
+## 5. Implement profile management with privacy controls [pending]
+### Dependencies: 7.1
+### Description: Create the profile management section with secure personal data handling and privacy settings
+### Details:
+Develop the profile management component with editable fields for personal information. Implement proper data encryption for sensitive personal information. Create privacy settings that allow users to control what information is visible to employers. Add data export functionality for GDPR compliance. Implement secure password change functionality. Create account deletion option with proper data cleanup. Ensure all form submissions include input validation and sanitization. Add confirmation dialogs for sensitive actions. Implement proper error handling with user-friendly messages.
+

@@ -1,0 +1,70 @@
+/* Common Header Component Styles */
+
+.common-header {
+  background-color: var(--card);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: var(--spacing-4) var(--spacing-6);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.header-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.header-main button {
+  width: fit-content;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+}
+
+.common-header h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--heading);
+  margin: 0;
+}
+
+.status-update-container {
+  max-width: 1200px;
+  margin: var(--spacing-2) auto 0;
+  display: flex;
+  justify-content: center;
+}
+
+.status-update-message {
+  font-size: 0.875rem;
+  padding: var(--spacing-2) var(--spacing-4);
+  border-radius: var(--border-radius);
+  background-color: var(--background-secondary);
+  animation: fadeInOut 3s ease-in-out;
+}
+
+/* Responsive adjustments for header */
+@media (max-width: 768px) {
+  .header-main {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-2);
+  }
+  
+  .common-header h1 {
+    margin-bottom: var(--spacing-2);
+  }
+}
+
+@keyframes fadeInOut {
+  0% { opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { opacity: 0; }
+} 

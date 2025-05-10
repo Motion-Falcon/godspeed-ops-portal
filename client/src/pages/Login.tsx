@@ -41,8 +41,22 @@ export function Login() {
     setError(null);
     
     try {
-      await loginUser(data.email, data.password, !!data.rememberMe);
-      navigate('/dashboard');
+      // Attempt to login
+      const result = await loginUser(data.email, data.password, !!data.rememberMe);
+      
+      // Check if email is verified
+      if (!result.emailVerified) {
+        // If not verified, redirect to verification pending page
+        navigate('/verification-pending', { 
+          state: { 
+            email: result.email || data.email,
+            fromLogin: true 
+          } 
+        });
+      } else {
+        // If verified, proceed to dashboard
+        navigate('/dashboard');
+      }
     } catch (error) {
       if (error instanceof Error) {
         setError(error.message);

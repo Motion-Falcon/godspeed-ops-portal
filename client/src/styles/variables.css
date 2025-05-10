@@ -9,18 +9,18 @@
   --text-muted-light: #71717A;
   --text-muted-dark: #A1A1AA;
   
-  /* New gradient colors - changed to yellow/amber tones */
-  --gradient-amber: #F59E0B;
-  --gradient-yellow: #FCD34D;
+  /* New gradient colors - darker amber/yellow for better contrast */
+  --gradient-amber: #D97706; /* Darker amber for better contrast */
+  --gradient-yellow: #F59E0B; /* Using amber as the lighter end for better contrast */
   
   /* Background gradients - updated with yellow tones */
   --bg-gradient-light: linear-gradient(120deg, #F8F8F8, #FFFBEB, #FEF3C7);
   --bg-gradient-dark: radial-gradient(circle at top right, #0A0A10, #1C1917 70%, #080810);
   
   /* Primary colors changed to yellow/amber */
-  --primary-light: #F59E0B;
+  --primary-light: #D97706; /* Darker amber for better contrast in light mode */
   --primary-dark: #FBBF24;
-  --primary-hover-light: #D97706;
+  --primary-hover-light: #B45309; /* Even darker for hover */
   --primary-hover-dark: #F59E0B;
   --border-light: #E4E4E7;
   --border-dark: #27272E;

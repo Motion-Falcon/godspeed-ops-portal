@@ -1,0 +1,251 @@
+.pdf-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(3px);
+}
+
+.pdf-modal-content {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  width: 90%;
+  max-width: 900px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+.pdf-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.pdf-modal-title {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #333;
+  max-width: 50%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pdf-modal-close-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #666;
+  padding: 5px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.pdf-modal-close-btn:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  color: #333;
+}
+
+.pdf-modal-body {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  position: relative;
+  min-height: 500px;
+}
+
+.pdf-loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.9);
+  z-index: 5;
+}
+
+.pdf-loading-spinner {
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  border-left-color: #3498db;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 10px;
+}
+
+.pdf-error-container {
+  text-align: center;
+  padding: 20px;
+  color: #e74c3c;
+}
+
+.pdf-document {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding-top: 10px;
+}
+
+.pdf-page {
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  margin: 0 auto;
+}
+
+.pdf-modal-footer {
+  padding: 15px 20px;
+  border-top: 1px solid #e0e0e0;
+  display: flex;
+  justify-content: center;
+}
+
+.pdf-pagination {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.pdf-nav-button {
+  background-color: #f5f5f5;
+  border: 1px solid #ddd;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.pdf-nav-button:hover:not(:disabled) {
+  background-color: #e0e0e0;
+}
+
+.pdf-nav-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.pdf-page-indicator {
+  font-size: 14px;
+  color: #666;
+}
+
+.pdf-modal-zoom-controls {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.pdf-zoom-button {
+  background-color: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  padding: 4px 8px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.pdf-zoom-button:hover {
+  background-color: #e0e0e0;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .pdf-modal-content {
+    background-color: #1a1a1a;
+    color: #e0e0e0;
+  }
+  
+  .pdf-modal-title {
+    color: #f5f5f5;
+  }
+  
+  .pdf-modal-close-btn {
+    color: #aaa;
+  }
+  
+  .pdf-modal-close-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #fff;
+  }
+  
+  .pdf-modal-header, .pdf-modal-footer {
+    border-color: #333;
+  }
+  
+  .pdf-zoom-button {
+    background-color: #333;
+    border-color: #444;
+    color: #e0e0e0;
+  }
+  
+  .pdf-zoom-button:hover {
+    background-color: #444;
+  }
+  
+  .pdf-loading-container {
+    background-color: rgba(26, 26, 26, 0.9);
+  }
+  
+  .pdf-loading-spinner {
+    border-color: rgba(255, 255, 255, 0.1);
+    border-left-color: #3498db;
+  }
+  
+  .pdf-nav-button {
+    background-color: #333;
+    border-color: #444;
+    color: #e0e0e0;
+  }
+  
+  .pdf-nav-button:hover:not(:disabled) {
+    background-color: #444;
+  }
+  
+  .pdf-page-indicator {
+    color: #aaa;
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .pdf-modal-content {
+    width: 95%;
+  }
+  
+  .pdf-modal-title {
+    font-size: 1rem;
+  }
+  
+  .pdf-nav-button {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+} 

@@ -3,15 +3,25 @@
   margin-bottom: var(--spacing-6);
   position: relative;
   transition: all var(--transition-normal);
+  flex-grow: 1;
+  width: 100%;
 }
 
 .form-label {
   display: block;
   margin-bottom: var(--spacing-2);
   font-weight: var(--font-weight-medium);
-  font-size: 0.875rem;
-  color: var(--text-muted);
+  font-size: 0.9 rem;
+  color: var(--heading);
   transition: color var(--transition-normal);
+  min-height: 1.25rem;
+}
+
+/* Make asterisks in form labels red */
+.form-label[data-required="*"]::after {
+  content: "*";
+  color: var(--danger);
+  margin-left: 0.125rem;
 }
 
 .form-header {
@@ -33,36 +43,57 @@
   text-decoration: none;
 }
 
-.form-input {
+.form-input,
+.form-textarea,
+.form-select {
   width: 100%;
-  height: 48px;
-  padding: 0 var(--spacing-4);
+  min-height: 48px;
+  padding: var(--spacing-3) var(--spacing-4);
   border: 1px solid var(--border);
-  border-radius: var(--border-radius);
+  border-radius: var(--radius);
   background-color: var(--input-bg);
   color: var(--text);
   font-size: 1rem;
   transition: all var(--transition-normal);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-sm);
+  line-height: 1.5;
 }
 
-.form-input::placeholder {
+select.form-input, .form-select {
+  padding-right: 2.5rem;
+}
+
+.form-input::placeholder,
+.form-textarea::placeholder {
   color: var(--text-muted);
-  opacity: 0.5;
+  opacity: 0.6;
 }
 
-.form-input:hover {
+.form-input:hover,
+.form-textarea:hover,
+.form-select:hover {
   border-color: var(--primary);
 }
 
-.form-input:focus {
+.form-input:focus,
+.form-textarea:focus,
+.form-select:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+  box-shadow: 0 0 0 2px var(--color-primary-bg);
 }
 
-.dark .form-input:focus {
-  box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.2);
+.dark .form-input:focus,
+.dark .form-textarea:focus,
+.dark .form-select:focus {
+  box-shadow: 0 0 0 2px var(--color-primary-bg);
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 100px;
+  padding-top: var(--spacing-3);
+  padding-bottom: var(--spacing-3);
 }
 
 .input-container {
@@ -90,7 +121,7 @@
 .checkbox-container {
   display: flex;
   align-items: center;
-  margin-bottom: var(--spacing-5);
+  margin: 4px 0 10px 0;
 }
 
 .form-checkbox {
@@ -103,12 +134,14 @@
 }
 
 .error-message {
+  background-color: rgba(239, 68, 68, 0.1);
   color: var(--danger);
+  padding: .5rem;
   font-size: 0.75rem;
-  margin-top: var(--spacing-2);
-  animation: fadeIn 0.3s ease;
+  border-radius: var(--border-radius);
+  margin: 1rem 0;
+  border-left: 4px solid var(--danger);
 }
-
 /* Form Animation */
 @keyframes fadeIn {
   from {
@@ -191,4 +224,100 @@ a:hover {
   color: var(--primary);
   text-decoration: none;
   transform: translateX(-2px);
+}
+
+/* Auto-filled fields styling - improved for better visual appeal */
+.form-input[disabled].auto-filled {
+  background-color: rgba(var(--color-primary-rgb), 0.05);
+  border-color: var(--color-primary-light);
+  color: var(--text);
+  cursor: not-allowed;
+  font-style: italic;
+  position: relative;
+  box-shadow: inset 0 0 0 1px rgba(var(--color-primary-rgb), 0.2);
+}
+
+/* Dark mode styles for auto-filled fields */
+:root[class~="dark"] .form-input[disabled].auto-filled {
+  background-color: rgba(var(--color-primary-rgb), 0.1);
+  border-color: var(--color-primary-dark);
+  color: var(--text-secondary);
+  box-shadow: inset 0 0 0 1px rgba(var(--color-primary-rgb), 0.3);
+}
+
+/* Add a visual indicator for auto-filled fields */
+.form-group:has(.auto-filled)::after {
+  content: "Auto-filled";
+  position: absolute;
+  right: 10px;
+  top: 5px;
+  font-size: 10px;
+  color: var(--color-primary);
+  background-color: var(--background);
+  padding: 0 5px;
+  border-radius: 4px;
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+/* New class for auto-populated fields that are still editable */
+.form-input.auto-populated {
+  border-left: 3px solid var(--color-primary);
+  background-color: rgba(var(--color-primary-rgb), 0.03);
+  transition: all 0.2s ease;
+}
+
+.form-input.auto-populated:focus {
+  background-color: var(--input-bg);
+  border-left-color: var(--color-primary-dark);
+}
+
+/* Dark mode styles for auto-populated fields */
+:root[class~="dark"] .form-input.auto-populated {
+  background-color: rgba(var(--color-primary-rgb), 0.08);
+}
+
+:root[class~="dark"] .form-input.auto-populated:focus {
+  background-color: var(--input-bg);
+}
+
+/* Add a visual indicator for auto-populated fields */
+.form-group:has(.auto-populated)::after {
+  content: "Auto-populated";
+  position: absolute;
+  right: 10px;
+  top: 5px;
+  font-size: 10px;
+  color: var(--color-primary);
+  background-color: var(--background);
+  padding: 0 5px;
+  border-radius: 4px;
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+/* Form information notes - enhance styling */
+.form-info {
+  margin-bottom: 15px;
+  font-style: italic;
+  color: var(--text-muted);
+  padding: 8px 12px;
+  border-left: 3px solid var(--color-primary-light);
+  background-color: rgba(var(--color-primary-rgb), 0.03);
+  border-radius: 0 4px 4px 0;
+  display: flex;
+  align-items: center;
+}
+
+.form-info::before {
+  content: "ℹ️";
+  margin-right: 8px;
+  font-size: 14px;
+}
+
+/* Dark mode styles for form info */
+:root[class~="dark"] .form-info {
+  color: var(--text-secondary);
+  border-left-color: var(--color-primary-dark);
+  background-color: rgba(var(--color-primary-rgb), 0.08);
 } 
