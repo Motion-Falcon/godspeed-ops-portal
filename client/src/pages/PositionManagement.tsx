@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Plus, FileText, Edit, Eye, Trash2 } from 'lucide-react';
+import { Plus, FileText, Eye, Trash2, Pencil } from 'lucide-react';
 import { getPositions, deletePosition, PositionData } from '../services/api';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import '../styles/pages/PositionManagement.css';
@@ -163,7 +163,14 @@ export function PositionManagement() {
                     <th>Start Date</th>
                     <th>Location</th>
                     <th>Status</th>
-                    <th>Actions</th>
+                    <th>
+                      <div className="column-filter">
+                        <div className="column-title">Actions</div>
+                        <div className="column-search">
+                          <div className="actions-placeholder"></div>
+                        </div>
+                      </div>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -181,25 +188,28 @@ export function PositionManagement() {
                       <td>
                         <div className="action-buttons">
                           <button 
-                            className="button primary button-icon"
+                            className="action-icon-btn view-btn"
                             onClick={() => handleViewPosition(position.id as string)}
+                            title="View position details"
+                            aria-label="View position"
                           >
-                            <Eye size={16} />
-                            <span>View</span>
+                            <Eye size={20} />
                           </button>
                           <button 
-                            className="button secondary button-icon"
+                            className="action-icon-btn edit-btn"
                             onClick={() => confirmEditPosition(position.id as string)}
+                            title="Edit position"
+                            aria-label="Edit position"
                           >
-                            <Edit size={16} />
-                            <span>Edit</span>
+                            <Pencil size={20} />
                           </button>
                           <button 
-                            className="button danger button-icon"
+                            className="action-icon-btn delete-btn"
                             onClick={() => confirmDeletePosition(position.id as string)}
+                            title="Delete position"
+                            aria-label="Delete position"
                           >
-                            <Trash2 size={16} />
-                            <span>Delete</span>
+                            <Trash2 size={20} />
                           </button>
                         </div>
                       </td>

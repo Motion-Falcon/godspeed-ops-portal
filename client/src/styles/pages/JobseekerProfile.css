@@ -1,7 +1,7 @@
 /* JobseekerProfile.css */
 
 .profile-create-container {
-  max-width: 1100px;
+  max-width: 1400px;
   margin: 2rem auto;
   padding: 0 1rem;
 }
@@ -101,7 +101,7 @@
   box-shadow: var(--shadow-md);
   border: 1px solid var(--color-border);
   margin-bottom: 2rem;
-  max-width: 1000px;
+  max-width: 1200px;
   margin-left: auto;
   margin-right: auto;
 }
@@ -605,7 +605,7 @@ select.form-input {
     grid-template-columns: 1fr 2fr;
   }
   
-  .skills-section, .resume-section {
+  .experience-section, .resume-section {
     grid-column: 1;
   }
   
@@ -614,7 +614,7 @@ select.form-input {
   }
 }
 
-.skills-list {
+.experience-list {
   display: flex;
   flex-wrap: wrap;
   gap: var(--spacing-2);
@@ -749,7 +749,7 @@ select.form-input {
     grid-template-columns: 1fr;
   }
   
-  .skills-section, .resume-section, .experience-section, .education-section {
+  .experience-section, .resume-section, .experience-section, .education-section {
     grid-column: 1;
   }
 }

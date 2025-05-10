@@ -4,7 +4,7 @@
 The Godspeed Recruitment Platform addresses the challenge of efficiently connecting low-level workers (drivers, forklift operators, warehouse staff) with appropriate job opportunities. The current recruitment process for these roles is often manual, time-consuming, and lacks proper matching between candidate qualifications and job requirements.
 
 The platform serves two primary user groups:
-1. **Jobseekers** - Individuals with specialized skills/licenses seeking employment
+1. **Jobseekers** - Individuals with specialized experience/licenses seeking employment
 2. **Recruiters** - Staffing professionals managing the hiring process
 
 By centralizing the recruitment workflow, automating document verification, and implementing intelligent matching algorithms, Godspeed creates value through:
@@ -50,7 +50,7 @@ By centralizing the recruitment workflow, automating document verification, and 
   - Bulk actions for position management
 - **Candidate Matching System**
   - Primary criteria: License type, experience level, availability
-  - Secondary criteria: Location, additional skills, schedule preferences
+  - Secondary criteria: Location, additional experience, schedule preferences
   - Match percentage calculation and sorting
 
 ### 4. Client/Employer Management

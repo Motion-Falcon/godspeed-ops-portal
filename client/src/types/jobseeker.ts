@@ -16,8 +16,8 @@ export interface JobSeekerProfile {
   name: string;
   email: string;
   status: 'pending' | 'verified' | 'rejected';
+  experience: string;
   createdAt: string;
-  skills?: string[];
   location?: string;
 }
 
@@ -27,7 +27,6 @@ export interface JobSeekerDetailedProfile extends JobSeekerProfile {
   updatedAt: string;
   bio?: string; // This will hold the jobseeker's brief professional description
   resume?: string; // This will hold the path to the resume document
-  experience?: string; // The simplified experience string from the DB
   
   // Add direct firstName and lastName which come directly in the API response
   firstName?: string; 

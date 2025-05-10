@@ -3,15 +3,15 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { 
   Plus, 
-  Trash2, 
-  Edit, 
+  Trash2,
   Eye, 
   Search, 
-  Filter, 
   CheckCircle, 
   XCircle, 
   Clock,
-  FileText
+  FileText,
+  Calendar,
+  Pencil
 } from 'lucide-react';
 import { getJobseekerProfiles, deleteJobseeker } from '../services/api';
 import { JobSeekerProfile } from '../types/jobseeker';
@@ -24,7 +24,12 @@ export function JobSeekerManagement() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [nameFilter, setNameFilter] = useState('');
+  const [emailFilter, setEmailFilter] = useState('');
+  const [locationFilter, setLocationFilter] = useState('');
+  const [experienceFilter, setExperienceFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [dateFilter, setDateFilter] = useState<string>('');
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [profileToDelete, setProfileToDelete] = useState<JobSeekerProfile | null>(null);
@@ -85,19 +90,37 @@ export function JobSeekerManagement() {
     fetchProfiles();
   }, [isAdmin, isRecruiter, navigate]);
 
-  // Filter profiles based on search term and status filter
+  // Filter profiles based on all filter criteria
   const filteredProfiles = profiles.filter(profile => {
-    const matchesSearch = 
+    // Global search filter
+    const matchesGlobalSearch = searchTerm === '' || 
       profile.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       profile.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (profile.skills && profile.skills.some(skill => 
-        skill.toLowerCase().includes(searchTerm.toLowerCase())
-      )) ||
+      (profile.experience && profile.experience.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (profile.location && profile.location.toLowerCase().includes(searchTerm.toLowerCase()));
     
-    const matchesStatus = statusFilter === 'all' || profile.status === statusFilter;
+    // Individual column filters
+    const matchesName = nameFilter === '' || 
+      profile.name.toLowerCase().includes(nameFilter.toLowerCase());
     
-    return matchesSearch && matchesStatus;
+    const matchesEmail = emailFilter === '' || 
+      profile.email.toLowerCase().includes(emailFilter.toLowerCase());
+    
+    const matchesLocation = locationFilter === '' || 
+      (profile.location && profile.location.toLowerCase().includes(locationFilter.toLowerCase()));
+    
+    const matchesExperience = experienceFilter === 'all' || 
+      profile.experience === experienceFilter;
+    
+    const matchesStatus = statusFilter === 'all' || 
+      profile.status === statusFilter;
+    
+    // Date filter
+    const matchesDate = dateFilter === '' || 
+      (new Date(profile.createdAt).toISOString().split('T')[0] === dateFilter);
+    
+    return matchesGlobalSearch && matchesName && matchesEmail && 
+           matchesLocation && matchesExperience && matchesStatus && matchesDate;
   });
 
   const getStatusIcon = (status: string) => {
@@ -184,6 +207,16 @@ export function JobSeekerManagement() {
     setDeleteError(null);
   };
 
+  // Helper to reset all filters
+  const resetFilters = () => {
+    setNameFilter('');
+    setEmailFilter('');
+    setLocationFilter('');
+    setExperienceFilter('all');
+    setStatusFilter('all');
+    setDateFilter('');
+  };
+
   return (
     <div className="page-container">
       <div className="page-header">
@@ -222,110 +255,202 @@ export function JobSeekerManagement() {
                 <Search size={18} className="search-icon" />
                 <input
                   type="text"
-                  placeholder="Search by name, email, skills or location..."
+                  placeholder="Global search..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="search-input"
                 />
               </div>
               
-              <div className="status-filter">
-                <Filter size={18} className="filter-icon" />
-                <select 
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="filter-select"
-                >
-                  <option value="all">All Statuses</option>
-                  <option value="pending">Pending</option>
-                  <option value="verified">Verified</option>
-                  <option value="rejected">Rejected</option>
-                </select>
-              </div>
+              <button 
+                className="button secondary button-icon reset-filters-btn" 
+                onClick={resetFilters}
+              >
+                <span>Reset Filters</span>
+              </button>
             </div>
           </div>
 
           <div className="table-container">
             {loading ? (
               <div className="loading">Loading profiles...</div>
-            ) : filteredProfiles.length === 0 ? (
-              <div className="empty-state">
-                <p>No profiles match your search criteria.</p>
-              </div>
             ) : (
               <table className="profiles-table">
                 <thead>
                   <tr>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Location</th>
-                    <th>Skills</th>
-                    <th>Status</th>
-                    <th>Joined Date</th>
-                    <th>Actions</th>
+                    <th>
+                      <div className="column-filter">
+                        <div className="column-title">Name</div>
+                        <div className="column-search">
+                          <input
+                            type="text"
+                            placeholder="Search name..."
+                            value={nameFilter}
+                            onChange={(e) => setNameFilter(e.target.value)}
+                            className="column-search-input"
+                          />
+                        </div>
+                      </div>
+                    </th>
+                    <th>
+                      <div className="column-filter">
+                        <div className="column-title">Email</div>
+                        <div className="column-search">
+                          <input
+                            type="text"
+                            placeholder="Search email..."
+                            value={emailFilter}
+                            onChange={(e) => setEmailFilter(e.target.value)}
+                            className="column-search-input"
+                          />
+                        </div>
+                      </div>
+                    </th>
+                    <th>
+                      <div className="column-filter">
+                        <div className="column-title">Location</div>
+                        <div className="column-search">
+                          <input
+                            type="text"
+                            placeholder="Search location..."
+                            value={locationFilter}
+                            onChange={(e) => setLocationFilter(e.target.value)}
+                            className="column-search-input"
+                          />
+                        </div>
+                      </div>
+                    </th>
+                    <th>
+                      <div className="column-filter">
+                        <div className="column-title">Experience</div>
+                        <div className="column-search">
+                          <select
+                            value={experienceFilter}
+                            onChange={(e) => setExperienceFilter(e.target.value)}
+                            className="column-filter-select"
+                          >
+                            <option value="all">All Experience</option>
+                            <option value="0-6 Months">0-6 Months</option>
+                            <option value="6-12 Months">6-12 Months</option>
+                            <option value="1-2 Years">1-2 Years</option>
+                            <option value="2-3 Years">2-3 Years</option>
+                            <option value="3-4 Years">3-4 Years</option>
+                            <option value="4-5 Years">4-5 Years</option>
+                            <option value="5+ Years">5+ Years</option>
+                          </select>
+                        </div>
+                      </div>
+                    </th>
+                    <th>
+                      <div className="column-filter">
+                        <div className="column-title">Status</div>
+                        <div className="column-search">
+                          <select
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                            className="column-filter-select"
+                          >
+                            <option value="all">All Statuses</option>
+                            <option value="pending">Pending</option>
+                            <option value="verified">Verified</option>
+                            <option value="rejected">Rejected</option>
+                          </select>
+                        </div>
+                      </div>
+                    </th>
+                    <th>
+                      <div className="column-filter">
+                        <div className="column-title">Joined Date</div>
+                        <div className="column-search">
+                          <div className="date-picker-wrapper">
+                            <Calendar size={14} className="date-picker-icon" />
+                            <input
+                              type="date"
+                              value={dateFilter}
+                              onChange={(e) => setDateFilter(e.target.value)}
+                              className="date-picker-input"
+                              onClick={(e) => e.currentTarget.showPicker()}
+                            />
+                            <div className="date-picker-overlay" onClick={() => {
+                              const dateInput = document.querySelector('.date-picker-input') as HTMLInputElement;
+                              if (dateInput) {
+                                dateInput.focus();
+                                dateInput.showPicker();
+                              }
+                            }}></div>
+                          </div>
+                        </div>
+                      </div>
+                    </th>
+                    <th>
+                      <div className="column-filter">
+                        <div className="column-title">Actions</div>
+                        <div className="column-search">
+                          {/* Empty space to maintain consistent alignment */}
+                          <div className="actions-placeholder"></div>
+                        </div>
+                      </div>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredProfiles.map(profile => (
-                    <tr key={profile.id}>
-                      <td className="name-cell">{profile.name}</td>
-                      <td className="email-cell">{profile.email}</td>
-                      <td className="location-cell">{profile.location || 'N/A'}</td>
-                      <td className="skills-cell">
-                        {profile.skills && profile.skills.length > 0 ? (
-                          <div className="skills-list">
-                            {profile.skills.slice(0, 2).map((skill, index) => (
-                              <span key={index} className="skill-tag">{skill}</span>
-                            ))}
-                            {profile.skills.length > 2 && (
-                              <span className="more-skills">+{profile.skills.length - 2}</span>
-                            )}
-                          </div>
-                        ) : (
-                          'N/A'
-                        )}
-                      </td>
-                      <td className="status-cell">
-                        <div className="status-display">
-                          {getStatusIcon(profile.status)}
-                          <span className={`status-text ${profile.status}`}>
-                            {profile.status.charAt(0).toUpperCase() + profile.status.slice(1)}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="date-cell">
-                        {new Date(profile.createdAt).toLocaleDateString()}
-                      </td>
-                      <td className="actions-cell">
-                        <div className="action-buttons">
-                          <button 
-                            className="button primary button-icon"
-                            onClick={() => handleViewProfile(profile.id)}
-                            title="View profile details"
-                          >
-                            <Eye size={16} />
-                            <span>View</span>
-                          </button>
-                          <button 
-                            className="button secondary button-icon"
-                            onClick={() => handleEditClick(profile)}
-                            title="Edit this profile"
-                          >
-                            <Edit size={16} />
-                            <span>Edit</span>
-                          </button>
-                          <button 
-                            className="button danger button-icon"
-                            onClick={() => handleDeleteClick(profile)}
-                            title="Delete this profile"
-                          >
-                            <Trash2 size={16} />
-                            <span>Delete</span>
-                          </button>
+                  {filteredProfiles.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="empty-state-cell">
+                        <div className="empty-state">
+                          <p>No profiles match your search criteria.</p>
                         </div>
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    filteredProfiles.map(profile => (
+                      <tr key={profile.id}>
+                        <td className="name-cell">{profile.name}</td>
+                        <td className="email-cell">{profile.email}</td>
+                        <td className="location-cell">{profile.location || 'N/A'}</td>
+                        <td className="experience-cell">{profile.experience}</td>
+                        <td className="status-cell">
+                          <div className="status-display">
+                            {getStatusIcon(profile.status)}
+                            <span className={`status-text ${profile.status}`}>
+                              {profile.status.charAt(0).toUpperCase() + profile.status.slice(1)}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="date-cell">
+                          {new Date(profile.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="actions-cell">
+                          <div className="action-buttons">
+                            <button 
+                              className="action-icon-btn view-btn"
+                              onClick={() => handleViewProfile(profile.id)}
+                              title="View profile details"
+                              aria-label="View profile"
+                            >
+                              <Eye size={20} />
+                            </button>
+                            <button 
+                              className="action-icon-btn edit-btn"
+                              onClick={() => handleEditClick(profile)}
+                              title="Edit this profile"
+                              aria-label="Edit profile"
+                            >
+                              <Pencil size={20} />
+                            </button>
+                            <button 
+                              className="action-icon-btn delete-btn"
+                              onClick={() => handleDeleteClick(profile)}
+                              title="Delete this profile"
+                              aria-label="Delete profile"
+                            >
+                              <Trash2 size={20} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             )}

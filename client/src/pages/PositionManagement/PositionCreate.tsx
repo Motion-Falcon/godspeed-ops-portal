@@ -15,7 +15,7 @@ import {
   getClient
 } from '../../services/api';
 import { ConfirmationModal } from '../../components/ConfirmationModal';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, Calendar } from 'lucide-react';
 import '../../styles/pages/PositionManagement.css';
 import '../../styles/components/form.css';
 
@@ -540,8 +540,8 @@ export function PositionCreate({ isEditMode = false, isEditDraftMode = false }: 
                 
                 <div className="form-row">
                   <div className="form-group">
-                    <label htmlFor="client" className="form-label">
-                      Client*
+                    <label htmlFor="client" className="form-label" data-required="*">
+                      Client
                     </label>
                     <select
                       id="client"
@@ -569,8 +569,8 @@ export function PositionCreate({ isEditMode = false, isEditDraftMode = false }: 
                   </div>
                   
                   <div className="form-group">
-                    <label htmlFor="title" className="form-label">
-                      Title*
+                    <label htmlFor="title" className="form-label" data-required="*">
+                      Title
                     </label>
                     <select
                       id="title"
@@ -613,16 +613,20 @@ export function PositionCreate({ isEditMode = false, isEditDraftMode = false }: 
                   </div>
                   
                   <div className="form-group">
-                    <label htmlFor="startDate" className="form-label">
-                      Start Date*
+                    <label htmlFor="startDate" className="form-label" data-required="*">
+                      Start Date
                     </label>
-                    <input
-                      type="date"
-                      id="startDate"
-                      className="form-input"
-                      min={getTodayFormatted()}
-                      {...methods.register('startDate')}
-                    />
+                    <div className="date-picker-container">
+                      <Calendar size={14} className="date-picker-icon" />
+                      <input
+                        type="date"
+                        id="startDate"
+                        className="form-input"
+                        min={getTodayFormatted()}
+                        {...methods.register('startDate')}
+                        onClick={(e) => e.currentTarget.showPicker()}
+                      />
+                    </div>
                     {methods.formState.errors.startDate && (
                       <p className="form-error">{methods.formState.errors.startDate.message}</p>
                     )}
@@ -632,13 +636,17 @@ export function PositionCreate({ isEditMode = false, isEditDraftMode = false }: 
                     <label htmlFor="endDate" className="form-label">
                       End Date
                     </label>
-                    <input
-                      type="date"
-                      id="endDate"
-                      className="form-input"
-                      min={minEndDate}
-                      {...methods.register('endDate')}
-                    />
+                    <div className="date-picker-container">
+                      <Calendar size={14} className="date-picker-icon" />
+                      <input
+                        type="date"
+                        id="endDate"
+                        className="form-input"
+                        min={minEndDate}
+                        {...methods.register('endDate')}
+                        onClick={(e) => e.currentTarget.showPicker()}
+                      />
+                    </div>
                     {methods.formState.errors.endDate && (
                       <p className="form-error">{methods.formState.errors.endDate.message}</p>
                     )}
@@ -706,8 +714,8 @@ export function PositionCreate({ isEditMode = false, isEditDraftMode = false }: 
                 
                 <div className="form-row">
                   <div className="form-group">
-                    <label htmlFor="description" className="form-label">
-                      Description*
+                    <label htmlFor="description" className="form-label" data-required="*">
+                      Description
                     </label>
                     <textarea
                       id="description"
@@ -733,8 +741,8 @@ export function PositionCreate({ isEditMode = false, isEditDraftMode = false }: 
                 
                 <div className="form-row">
                   <div className="form-group">
-                    <label htmlFor="streetAddress" className="form-label">
-                      Street Address*
+                    <label htmlFor="streetAddress" className="form-label" data-required="*">
+                      Street Address
                     </label>
                     <input
                       type="text"
@@ -751,8 +759,8 @@ export function PositionCreate({ isEditMode = false, isEditDraftMode = false }: 
                 
                 <div className="form-row">
                   <div className="form-group">
-                    <label htmlFor="city" className="form-label">
-                      City*
+                    <label htmlFor="city" className="form-label" data-required="*">
+                      City
                     </label>
                     <input
                       type="text"
@@ -767,8 +775,8 @@ export function PositionCreate({ isEditMode = false, isEditDraftMode = false }: 
                   </div>
                   
                   <div className="form-group">
-                    <label htmlFor="province" className="form-label">
-                      Province*
+                    <label htmlFor="province" className="form-label" data-required="*">
+                      Province
                     </label>
                     <input
                       type="text"
@@ -783,8 +791,8 @@ export function PositionCreate({ isEditMode = false, isEditDraftMode = false }: 
                   </div>
                   
                   <div className="form-group">
-                    <label htmlFor="postalCode" className="form-label">
-                      Postal Code*
+                    <label htmlFor="postalCode" className="form-label" data-required="*">
+                      Postal Code
                     </label>
                     <input
                       type="text"
@@ -806,8 +814,8 @@ export function PositionCreate({ isEditMode = false, isEditDraftMode = false }: 
                 
                 <div className="form-row">
                   <div className="form-group">
-                    <label htmlFor="employmentTerm" className="form-label">
-                      Employment Term*
+                    <label htmlFor="employmentTerm" className="form-label" data-required="*">
+                      Employment Term
                     </label>
                     <select
                       id="employmentTerm"
@@ -825,8 +833,8 @@ export function PositionCreate({ isEditMode = false, isEditDraftMode = false }: 
                   </div>
                   
                   <div className="form-group">
-                    <label htmlFor="employmentType" className="form-label">
-                      Employment Type*
+                    <label htmlFor="employmentType" className="form-label" data-required="*">
+                      Employment Type
                     </label>
                     <select
                       id="employmentType"
@@ -846,8 +854,8 @@ export function PositionCreate({ isEditMode = false, isEditDraftMode = false }: 
                 
                 <div className="form-row">
                   <div className="form-group">
-                    <label htmlFor="positionCategory" className="form-label">
-                      Position Category*
+                    <label htmlFor="positionCategory" className="form-label" data-required="*">
+                      Position Category
                     </label>
                     <select
                       id="positionCategory"
@@ -869,8 +877,8 @@ export function PositionCreate({ isEditMode = false, isEditDraftMode = false }: 
                   </div>
                   
                   <div className="form-group">
-                    <label htmlFor="experience" className="form-label">
-                      Experience*
+                    <label htmlFor="experience" className="form-label" data-required="*">
+                      Experience
                     </label>
                     <select
                       id="experience"
@@ -1052,8 +1060,8 @@ export function PositionCreate({ isEditMode = false, isEditDraftMode = false }: 
                 
                 <div className="form-row">
                   <div className="form-group">
-                    <label htmlFor="payrateType" className="form-label">
-                      Payrate Type*
+                    <label htmlFor="payrateType" className="form-label" data-required="*">
+                      Payrate Type
                     </label>
                     <select
                       id="payrateType"
@@ -1071,8 +1079,8 @@ export function PositionCreate({ isEditMode = false, isEditDraftMode = false }: 
                   </div>
                   
                   <div className="form-group">
-                    <label htmlFor="numberOfPositions" className="form-label">
-                      Number of Positions*
+                    <label htmlFor="numberOfPositions" className="form-label" data-required="*">
+                      Number of Positions
                     </label>
                     <input
                       type="number"
@@ -1091,8 +1099,8 @@ export function PositionCreate({ isEditMode = false, isEditDraftMode = false }: 
                 
                 <div className="form-row">
                   <div className="form-group">
-                    <label htmlFor="regularPayRate" className="form-label">
-                      Regular Pay Rate*
+                    <label htmlFor="regularPayRate" className="form-label" data-required="*">
+                      Regular Pay Rate
                     </label>
                     <input
                       type="text"
@@ -1122,8 +1130,8 @@ export function PositionCreate({ isEditMode = false, isEditDraftMode = false }: 
                 
                 <div className="form-row">
                   <div className="form-group">
-                    <label htmlFor="billRate" className="form-label">
-                      Bill Rate*
+                    <label htmlFor="billRate" className="form-label" data-required="*">
+                      Bill Rate
                     </label>
                     <input
                       type="text"
@@ -1215,8 +1223,8 @@ export function PositionCreate({ isEditMode = false, isEditDraftMode = false }: 
                 
                 <div className="form-row">
                   <div className="form-group">
-                    <label htmlFor="preferredPaymentMethod" className="form-label">
-                      Preferred Payment Method*
+                    <label htmlFor="preferredPaymentMethod" className="form-label" data-required="*">
+                      Preferred Payment Method
                     </label>
                     <select
                       id="preferredPaymentMethod"
@@ -1236,8 +1244,8 @@ export function PositionCreate({ isEditMode = false, isEditDraftMode = false }: 
                 
                 <div className="form-row">
                   <div className="form-group">
-                    <label htmlFor="terms" className="form-label">
-                      Terms*
+                    <label htmlFor="terms" className="form-label" data-required="*">
+                      Terms
                     </label>
                     <input
                       type="text"
@@ -1259,8 +1267,8 @@ export function PositionCreate({ isEditMode = false, isEditDraftMode = false }: 
                 
                 <div className="form-row">
                   <div className="form-group">
-                    <label htmlFor="notes" className="form-label">
-                      Notes*
+                    <label htmlFor="notes" className="form-label" data-required="*">
+                      Notes
                     </label>
                     <textarea
                       id="notes"
@@ -1300,12 +1308,16 @@ export function PositionCreate({ isEditMode = false, isEditDraftMode = false }: 
                     <label htmlFor="projCompDate" className="form-label">
                       Project Completion Date
                     </label>
-                    <input
-                      type="date"
-                      id="projCompDate"
-                      className="form-input"
-                      {...methods.register('projCompDate')}
-                    />
+                    <div className="date-picker-container">
+                      <Calendar size={14} className="date-picker-icon" />
+                      <input
+                        type="date"
+                        id="projCompDate"
+                        className="form-input"
+                        {...methods.register('projCompDate')}
+                        onClick={(e) => e.currentTarget.showPicker()}
+                      />
+                    </div>
                   </div>
                 </div>
                 

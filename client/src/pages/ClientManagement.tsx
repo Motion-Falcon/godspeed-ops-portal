@@ -6,7 +6,7 @@ import {
   deleteClient
 } from '../services/api';
 import { ConfirmationModal } from '../components/ConfirmationModal';
-import { Plus, Trash2, Edit, FileText, Eye } from 'lucide-react';
+import { Plus, Trash2, Pencil, FileText, Eye } from 'lucide-react';
 import '../styles/pages/ClientManagement.css';
 
 // Extended ClientData interface that can handle both camelCase and snake_case properties
@@ -214,7 +214,14 @@ export function ClientManagement() {
                     <th>Contact Person</th>
                     <th>Province</th>
                     <th>Currency</th>
-                    <th>Actions</th>
+                    <th>
+                      <div className="column-filter">
+                        <div className="column-title">Actions</div>
+                        <div className="column-search">
+                          <div className="actions-placeholder"></div>
+                        </div>
+                      </div>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -227,25 +234,28 @@ export function ClientManagement() {
                       <td>
                         <div className="action-buttons">
                           <button 
-                            className="button primary button-icon"
+                            className="action-icon-btn view-btn"
                             onClick={() => handleViewClient(client.id as string)}
+                            title="View client details"
+                            aria-label="View client"
                           >
-                            <Eye size={16} />
-                            <span>View</span>
+                            <Eye size={20} />
                           </button>
                           <button 
-                            className="button secondary button-icon"
+                            className="action-icon-btn edit-btn"
                             onClick={() => confirmEditClient(client.id as string)}
+                            title="Edit client details"
+                            aria-label="Edit client"
                           >
-                            <Edit size={16} />
-                            <span>Edit</span>
+                            <Pencil size={20} />
                           </button>
                           <button 
-                            className="button danger button-icon"
+                            className="action-icon-btn delete-btn"
                             onClick={() => confirmDeleteClient(client.id as string)}
+                            title="Delete client"
+                            aria-label="Delete client"
                           >
-                            <Trash2 size={16} />
-                            <span>Delete</span>
+                            <Trash2 size={20} />
                           </button>
                         </div>
                       </td>

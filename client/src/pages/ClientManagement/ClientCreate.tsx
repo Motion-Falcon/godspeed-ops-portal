@@ -402,8 +402,8 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
                 <h2>Basic Details</h2>
                 <div className="form-row">
                   <div className="form-group">
-                    <label htmlFor="companyName" className="form-label">
-                      Company Name*
+                    <label htmlFor="companyName" className="form-label" data-required="*">
+                      Company Name
                     </label>
                     <input
                       type="text"
@@ -418,8 +418,8 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
                   </div>
                   
                   <div className="form-group">
-                    <label htmlFor="billingName" className="form-label">
-                      Billing Name*
+                    <label htmlFor="billingName" className="form-label" data-required="*">
+                      Billing Name
                     </label>
                     <input
                       type="text"
@@ -586,8 +586,8 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
                   </div>
                   
                   <div className="form-group">
-                    <label htmlFor="workProvince" className="form-label">
-                      Work Province*
+                    <label htmlFor="workProvince" className="form-label" data-required="*">
+                      Work Province
                     </label>
                     <select
                       id="workProvince"
@@ -625,8 +625,8 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
                   <h3>Primary Contact</h3>
                   <div className="form-row">
                     <div className="form-group">
-                      <label htmlFor="contactPersonName1" className="form-label">
-                        Contact Person Name 1*
+                      <label htmlFor="contactPersonName1" className="form-label" data-required="*">
+                        Contact Person Name 1
                       </label>
                       <input
                         type="text"
@@ -641,8 +641,8 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
                     </div>
                     
                     <div className="form-group">
-                      <label htmlFor="emailAddress1" className="form-label">
-                        Email Address 1*
+                      <label htmlFor="emailAddress1" className="form-label" data-required="*">
+                        Email Address 1
                       </label>
                       <input
                         type="email"
@@ -657,8 +657,8 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
                     </div>
                     
                     <div className="form-group">
-                      <label htmlFor="mobile1" className="form-label">
-                        Mobile 1*
+                      <label htmlFor="mobile1" className="form-label" data-required="*">
+                        Mobile 1
                       </label>
                       <input
                         type="tel"
@@ -899,8 +899,8 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
                   <h3>Primary Address</h3>
                   <div className="form-row">
                     <div className="form-group">
-                      <label htmlFor="streetAddress1" className="form-label">
-                        Street Address 1*
+                      <label htmlFor="streetAddress1" className="form-label" data-required="*">
+                        Street Address 1
                       </label>
                       <input
                         type="text"
@@ -915,8 +915,8 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
                     </div>
                     
                     <div className="form-group">
-                      <label htmlFor="city1" className="form-label">
-                        City 1*
+                      <label htmlFor="city1" className="form-label" data-required="*">
+                        City 1
                       </label>
                       <input
                         type="text"
@@ -933,8 +933,8 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
                   
                   <div className="form-row">
                     <div className="form-group">
-                      <label htmlFor="province1" className="form-label">
-                        Province 1*
+                      <label htmlFor="province1" className="form-label" data-required="*">
+                        Province 1
                       </label>
                       <select
                         id="province1"
@@ -962,8 +962,8 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
                     </div>
                     
                     <div className="form-group">
-                      <label htmlFor="postalCode1" className="form-label">
-                        Postal Code 1*
+                      <label htmlFor="postalCode1" className="form-label" data-required="*">
+                        Postal Code 1
                       </label>
                       <input
                         type="text"
@@ -1155,8 +1155,8 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
                 <h2>Payment & Billings</h2>
                 <div className="form-row">
                   <div className="form-group">
-                    <label htmlFor="preferredPaymentMethod" className="form-label">
-                      Preferred Payment Method*
+                    <label htmlFor="preferredPaymentMethod" className="form-label" data-required="*">
+                      Preferred Payment Method
                     </label>
                     <select
                       id="preferredPaymentMethod"
@@ -1176,8 +1176,8 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
                   </div>
                   
                   <div className="form-group">
-                    <label htmlFor="terms" className="form-label">
-                      Terms*
+                    <label htmlFor="terms" className="form-label" data-required="*">
+                      Terms
                     </label>
                     <select
                       id="terms"
@@ -1202,8 +1202,8 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
                 
                 <div className="form-row">
                   <div className="form-group">
-                    <label htmlFor="payCycle" className="form-label">
-                      Pay Cycle*
+                    <label htmlFor="payCycle" className="form-label" data-required="*">
+                      Pay Cycle
                     </label>
                     <select
                       id="payCycle"
@@ -1222,8 +1222,8 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
                   </div>
                   
                   <div className="form-group">
-                    <label htmlFor="creditLimit" className="form-label">
-                      Credit Limit*
+                    <label htmlFor="creditLimit" className="form-label" data-required="*">
+                      Credit Limit
                     </label>
                     <select
                       id="creditLimit"

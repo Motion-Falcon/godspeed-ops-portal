@@ -70,7 +70,6 @@ interface JobSeekerProfile {
   email: string;
   status: 'pending' | 'verified' | 'rejected';
   createdAt: string;
-  skills?: string[];
   location?: string;
 }
 
@@ -154,8 +153,7 @@ router.get('/', isAdminOrRecruiter, async (req, res) => {
       email: profile.email,
       status: profile.verification_status || 'pending',
       createdAt: profile.created_at,
-      // Try to derive skills from experience field or leave empty
-      skills: profile.experience ? [profile.experience] : [], 
+      experience: profile.experience,
       location: extractLocation(profile)
     }));
       
@@ -305,7 +303,6 @@ router.put('/profile/:id/status', async (req, res) => {
       status: updatedDbProfile.verification_status || status, // Use the new status
       createdAt: updatedDbProfile.created_at,
       updatedAt: updatedDbProfile.updated_at,
-      skills: updatedDbProfile.experience ? [updatedDbProfile.experience] : [],
       location: extractLocation(updatedDbProfile),
       bio: updatedDbProfile.license_type || updatedDbProfile.work_preference || undefined,
       // Add type to doc in find callback

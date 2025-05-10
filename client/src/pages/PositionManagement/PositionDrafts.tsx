@@ -116,7 +116,14 @@ export function PositionDrafts() {
                     <th>Title</th>
                     <th>Client</th>
                     <th>Last Updated</th>
-                    <th>Actions</th>
+                    <th>
+                      <div className="column-filter">
+                        <div className="column-title">Actions</div>
+                        <div className="column-search">
+                          <div className="actions-placeholder"></div>
+                        </div>
+                      </div>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -134,18 +141,20 @@ export function PositionDrafts() {
                       <td>
                         <div className="action-buttons">
                           <button 
-                            className="button secondary button-icon"
+                            className="action-icon-btn edit-btn"
                             onClick={() => handleEditDraft(draft.id as string)}
+                            title="Edit this draft"
+                            aria-label="Edit draft"
                           >
-                            <Pencil size={16} />
-                            <span>Edit</span>
+                            <Pencil size={20} />
                           </button>
                           <button 
-                            className="button danger button-icon"
+                            className="action-icon-btn delete-btn"
                             onClick={() => confirmDeleteDraft(draft.id as string)}
+                            title="Delete this draft"
+                            aria-label="Delete draft"
                           >
-                            <Trash2 size={16} />
-                            <span>Delete</span>
+                            <Trash2 size={20} />
                           </button>
                         </div>
                       </td>

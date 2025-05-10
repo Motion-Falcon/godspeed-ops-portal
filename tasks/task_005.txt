@@ -5,7 +5,7 @@
 # Priority: high
 # Description: Develop the intelligent matching algorithm that connects jobseekers with appropriate positions based on primary and secondary criteria, ensuring proper data protection and privacy.
 # Details:
-Implement a matching algorithm that evaluates jobseekers against positions using: Primary criteria (70% weight): License type, experience level, availability; Secondary criteria (30% weight): Location, additional skills, schedule preferences. Calculate match percentage based on weighted criteria. Create a sorting mechanism for candidates based on match percentage. Implement the matching engine as a separate service that can be called via API. Store match results in Supabase for quick retrieval.
+Implement a matching algorithm that evaluates jobseekers against positions using: Primary criteria (70% weight): License type, experience level, availability; Secondary criteria (30% weight): Location, additional experience, schedule preferences. Calculate match percentage based on weighted criteria. Create a sorting mechanism for candidates based on match percentage. Implement the matching engine as a separate service that can be called via API. Store match results in Supabase for quick retrieval.
 
 Security Considerations:
 - Implement proper access controls for the matching API
@@ -23,13 +23,13 @@ Create test cases with various jobseeker profiles and positions to validate matc
 ### Dependencies: None
 ### Description: Create the foundation of the matching algorithm that evaluates jobseekers against positions using weighted primary and secondary criteria.
 ### Details:
-Implement a function that takes candidate data and job requirements as input and calculates a match percentage. Primary criteria (70% weight): License type, experience level, availability. Secondary criteria (30% weight): Location, additional skills, schedule preferences. The algorithm should normalize scores within each criteria group, apply appropriate weights, and output a final percentage match score. Include unit tests to verify the algorithm works correctly with various input scenarios.
+Implement a function that takes candidate data and job requirements as input and calculates a match percentage. Primary criteria (70% weight): License type, experience level, availability. Secondary criteria (30% weight): Location, additional experience, schedule preferences. The algorithm should normalize scores within each criteria group, apply appropriate weights, and output a final percentage match score. Include unit tests to verify the algorithm works correctly with various input scenarios.
 
 ## 2. Develop candidate sorting and filtering mechanism [pending]
 ### Dependencies: 5.1
 ### Description: Create a system to sort and filter candidates based on match percentage and other relevant criteria.
 ### Details:
-Build upon the core matching algorithm to implement sorting functionality that ranks candidates by match percentage. Add filtering capabilities to allow refinement of results based on specific criteria (e.g., minimum match percentage, specific skills, location radius). Implement pagination for large result sets. Ensure the sorting mechanism can handle ties appropriately with configurable secondary sorting criteria. Include performance optimizations for handling large candidate pools.
+Build upon the core matching algorithm to implement sorting functionality that ranks candidates by match percentage. Add filtering capabilities to allow refinement of results based on specific criteria (e.g., minimum match percentage, specific experience, location radius). Implement pagination for large result sets. Ensure the sorting mechanism can handle ties appropriately with configurable secondary sorting criteria. Include performance optimizations for handling large candidate pools.
 
 ## 3. Create secure matching service API [pending]
 ### Dependencies: 5.1, 5.2

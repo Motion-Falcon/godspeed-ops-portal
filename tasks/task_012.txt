@@ -83,7 +83,7 @@ Testing should verify all functional requirements and edge cases:
 ### Dependencies: None
 ### Description: Develop a dedicated section in the jobseeker dashboard that displays all user profile information in organized categories with visual indicators for verification status and edit dates.
 ### Details:
-Implement a read-only profile view component that: 1) Fetches and displays all user profile data from the existing profile data model, 2) Organizes information into logical categories matching the profile creation flow (personal details, education, experience, skills, etc.), 3) Adds visual indicators (icons/badges) for verified vs. unverified information, 4) Shows last edit date and next available edit date prominently at the top of the profile, 5) Ensures responsive design for all screen sizes, and 6) Maintains UI/UX consistency with the existing dashboard design.
+Implement a read-only profile view component that: 1) Fetches and displays all user profile data from the existing profile data model, 2) Organizes information into logical categories matching the profile creation flow (personal details, education, experience, experience, etc.), 3) Adds visual indicators (icons/badges) for verified vs. unverified information, 4) Shows last edit date and next available edit date prominently at the top of the profile, 5) Ensures responsive design for all screen sizes, and 6) Maintains UI/UX consistency with the existing dashboard design.
 
 ## 2. Implement Edit Restriction System and Database Structure [pending]
 ### Dependencies: 12.1

@@ -1,11 +1,5 @@
 /* ClientManagement.css */
 
-.page-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem 1rem;
-}
-
 .page-header {
   display: flex;
   justify-content: space-between;
@@ -63,14 +57,6 @@
   width: 100%;
 }
 
-.form-card {
-  background-color: var(--card);
-  border-radius: var(--border-radius);
-  box-shadow: var(--card-shadow);
-  padding: var(--spacing-6);
-  margin-bottom: var(--spacing-6);
-}
-
 .form-section {
   margin-bottom: var(--spacing-6);
 }
@@ -117,13 +103,6 @@
 .form-group {
   flex: 1;
   min-width: 0;
-}
-
-.form-label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: var(--font-weight-medium);
-  color: var(--text);
 }
 
 .form-input,
@@ -286,10 +265,6 @@
   .header-actions {
     width: 100%;
     justify-content: space-between;
-  }
-  
-  .form-card {
-    padding: var(--spacing-6) var(--spacing-4);
   }
   
   .action-buttons {

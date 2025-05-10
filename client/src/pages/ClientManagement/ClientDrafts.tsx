@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Edit, Trash2, Clock } from 'lucide-react';
+import { ArrowLeft, Trash2, Clock, Pencil } from 'lucide-react';
 import { getAllClientDrafts, deleteClientDraft } from '../../services/api';
 import { ClientData } from '../../services/api';
 import { ConfirmationModal } from '../../components/ConfirmationModal';
@@ -126,7 +126,14 @@ export function ClientDrafts() {
                     <th>Company Name</th>
                     <th>Last Updated</th>
                     <th>Contact Person</th>
-                    <th>Actions</th>
+                    <th>
+                      <div className="column-filter">
+                        <div className="column-title">Actions</div>
+                        <div className="column-search">
+                          <div className="actions-placeholder"></div>
+                        </div>
+                      </div>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -143,18 +150,20 @@ export function ClientDrafts() {
                       <td>
                         <div className="action-buttons">
                           <button 
-                            className="button secondary button-icon"
+                            className="action-icon-btn edit-btn"
                             onClick={() => handleEditDraft(draft)}
+                            title="Edit this draft"
+                            aria-label="Edit draft"
                           >
-                            <Edit size={16} />
-                            <span>Edit</span>
+                            <Pencil size={20} />
                           </button>
                           <button 
-                            className="button danger button-icon"
+                            className="action-icon-btn delete-btn"
                             onClick={() => handleDeleteClick(draft)}
+                            title="Delete this draft"
+                            aria-label="Delete draft"
                           >
-                            <Trash2 size={16} />
-                            <span>Delete</span>
+                            <Trash2 size={20} />
                           </button>
                         </div>
                       </td>
