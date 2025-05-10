@@ -232,20 +232,34 @@ export function JobSeekerProfile() {
     }
   };
 
-  const formatDate = (dateString?: string | null) => {
+  const formatDate = (dateString?: string | null, showTime: boolean = true) => {
     if (!dateString) return 'N/A';
     try {
+      // Setup options based on whether to show time
+      const options: Intl.DateTimeFormatOptions = {
+        timeZone: 'America/Toronto',
+        year: 'numeric',
+        month: 'numeric',
+        day: 'numeric',
+        ...(showTime && {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true
+        })
+      };
+      
       let date = new Date(dateString);
       if (!isNaN(date.getTime())) {
-        return date.toLocaleDateString();
+        return date.toLocaleString('en-CA', options);
       }
+      
       const datePart = dateString.split('T')[0];
       date = new Date(datePart + 'T00:00:00Z');
-       if (!isNaN(date.getTime())) {
-         return date.toLocaleDateString();
-       }
+      if (!isNaN(date.getTime())) {
+        return date.toLocaleString('en-CA', options);
+      }
     } catch (e) {
-       console.warn(`Failed to parse date: ${dateString}`, e);
+      console.warn(`Failed to parse date: ${dateString}`, e);
     }
     return dateString;
   };
@@ -569,17 +583,25 @@ export function JobSeekerProfile() {
           </div>
           
           <div className="profile-details">
+            <div className="profile-avatar-container">
             <div className="profile-avatar">
               <User size={40} />
             </div>
-            <div className="profile-info-header">
               <h1 className="profile-name">{displayName}</h1>
-              {renderDetailItem('Email', profile.email)}
-              {renderDetailItem('Phone', profile.mobile)}
-              {renderDetailItem('Location', displayLocation)}
-              {renderDetailItem('Joined', formatDate(profile.createdAt))}
-              {renderDetailItem('Last Updated', formatDate(profile.updatedAt))}
-              {renderDetailItem('DOB', formatDate(profile.dob))}
+              </div>
+            <div className="profile-info-header">
+              <div className="profile-info-details">
+                {renderDetailItem('Email', profile.email)}
+                {renderDetailItem('Phone', profile.mobile)}
+              </div>
+              <div className="profile-info-details">
+                {renderDetailItem('Location', displayLocation)}
+                {renderDetailItem('Joined', formatDate(profile.createdAt))}
+              </div>
+              <div className="profile-info-details">
+                {renderDetailItem('Last Updated', formatDate(profile.updatedAt))}
+                {renderDetailItem('DOB', formatDate(profile.dob, false))}
+              </div>
             </div>
           </div>
         </div>
@@ -592,7 +614,7 @@ export function JobSeekerProfile() {
               {renderDetailItem('Last Name', profile.lastName)}
               {renderDetailItem('Email', profile.email)}
               {renderDetailItem('Mobile', profile.mobile)}
-              {renderDetailItem('Date of Birth', formatDate(profile.dob))}
+              {renderDetailItem('Date of Birth', formatDate(profile.dob, false))}
             </div>
           </div>
           
@@ -602,7 +624,7 @@ export function JobSeekerProfile() {
               {renderDetailItem('License Number', profile.licenseNumber)}
               {renderDetailItem('Passport Number', profile.passportNumber)}
               {renderDetailItem('SIN Number', profile.sinNumber)}
-              {renderDetailItem('SIN Expiry', formatDate(profile.sinExpiry))}
+              {renderDetailItem('SIN Expiry', formatDate(profile.sinExpiry, false))}
               {renderDetailItem('Business Number', profile.businessNumber)}
               {renderDetailItem('Corporation Name', profile.corporationName)}
             </div>
@@ -654,17 +676,13 @@ export function JobSeekerProfile() {
           <div className="meta-section section-card">
             <h2 className="section-title">Meta Information</h2>
             <div className="detail-group">
-              {renderDetailItem('Created At', formatDate(profile.createdAt))}
-              {renderDetailItem('Created By User ID', profile.createdByUserId)}
-              {renderDetailItem('Last Updated At', formatDate(profile.updatedAt))}
-              {renderDetailItem('Updated By User ID', profile.updatedByUserId)}
               {profile.creatorDetails ? (
                 <div className="detail-section">
                   <h3>Created By</h3>
                   {renderDetailItem('Name', profile.creatorDetails.name)}
                   {renderDetailItem('Email', profile.creatorDetails.email)}
                   {renderDetailItem('User Type', profile.creatorDetails.userType)}
-                  {renderDetailItem('Account Created', formatDate(profile.creatorDetails.createdAt))}
+                  {renderDetailItem('Account Created At', formatDate(profile.creatorDetails.createdAt))}
                 </div>
               ) : null}
               
@@ -674,7 +692,7 @@ export function JobSeekerProfile() {
                   {renderDetailItem('Name', profile.updaterDetails.name)}
                   {renderDetailItem('Email', profile.updaterDetails.email)}
                   {renderDetailItem('User Type', profile.updaterDetails.userType)}
-                  {renderDetailItem('Last Updated', formatDate(profile.updaterDetails.updatedAt))}
+                  {renderDetailItem('Last Updated At', formatDate(profile.updaterDetails.updatedAt))}
                 </div>
               ) : null}
             </div>

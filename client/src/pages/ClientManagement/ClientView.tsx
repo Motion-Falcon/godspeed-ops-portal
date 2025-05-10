@@ -187,8 +187,8 @@ export function ClientView() {
           </div>
         </div>
         
-        <div className="client-content grid-container">
-          <div className="company-details-section section-card">
+        <div className="profile-content grid-container">
+          <div className="personal-details-section section-card">
             <h2 className="section-title">Company Information</h2>
             <div className="detail-group">
               {renderDetailItem('Company Name', getFieldValue(client, 'companyName'))}
