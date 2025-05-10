@@ -549,7 +549,7 @@ select.form-input {
 
 /* Add email validation styles */
 .email-validation-container {
-  margin-top: 5px;
+  margin-top: 10px;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -562,21 +562,8 @@ select.form-input {
 .email-validation-container button.sm {
   padding: 4px 8px;
   font-size: 0.8rem;
-  height: auto;
-  min-height: unset;
-}
-
-.availability-message {
-  margin-top: 5px;
-  font-size: 0.9em;
-}
-
-.availability-message.success {
-  color: var(--color-success);
-}
-
-.availability-message.error {
-  color: var(--color-danger);
+  height: 30px;
+  width: fit-content;
 }
 
 /* JobSeekerProfile Page Styles */
@@ -609,9 +596,6 @@ select.form-input {
   max-width: 1300px;
   margin: 0 auto;
   padding: var(--spacing-6);
-}
-.error-message {
-  color: var(--error);
 }
 
 .error-actions {
@@ -1573,38 +1557,6 @@ select.form-input {
 
 @keyframes spin {
   to { transform: rotate(360deg); }
-}
-
-/* Add email validation styles */
-.email-validation-container {
-  margin-top: 5px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.email-validation-container .availability-message {
-  margin: 0;
-}
-
-.email-validation-container button.sm {
-  padding: 4px 8px;
-  font-size: 0.8rem;
-  height: auto;
-  min-height: unset;
-}
-
-.availability-message {
-  margin-top: 5px;
-  font-size: 0.9em;
-}
-
-.availability-message.success {
-  color: var(--color-success);
-}
-
-.availability-message.error {
-  color: var(--color-danger);
 }
 
 /* Status Update Modal styling */

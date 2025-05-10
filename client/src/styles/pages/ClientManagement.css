@@ -131,14 +131,7 @@
   margin-top: var(--spacing-6);
 }
 
-.error-message {
-  background-color: rgba(var(--danger-rgb), 0.1);
-  color: var(--danger);
-  padding: 1rem;
-  border-radius: var(--border-radius);
-  margin-bottom: 1rem;
-  border-left: 4px solid var(--danger);
-}
+
 
 .success-message {
   background-color: rgba(var(--success-rgb), 0.1);

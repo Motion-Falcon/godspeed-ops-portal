@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { useState, useEffect, useRef } from 'react';
 import { checkEmailAvailability } from '../../services/api';
 import { useNavigate } from 'react-router-dom';
+import { Eye, Pencil } from 'lucide-react';
 
 type PersonalInfoFormData = z.infer<typeof personalInfoSchema>;
 
@@ -123,19 +124,19 @@ export function PersonalInfoForm({ allFields, onEmailAvailabilityChange, disable
             type: 'manual', 
             message: 'A jobseeker profile already exists with this email. Please use a different email.'
           });
-          setEmailAvailabilityMessage('✗ A jobseeker profile already exists with this email.');
+          setEmailAvailabilityMessage('A jobseeker profile already exists with this email.');
         } else if (result.existingDraftId) {
           setError('email', { 
             type: 'manual', 
             message: 'A draft with this email already exists.'
           });
-          setEmailAvailabilityMessage('✗ A draft with this email already exists.');
+          setEmailAvailabilityMessage('A draft with this email already exists.');
         } else {
           setError('email', { 
             type: 'manual', 
             message: 'This email is already in use.'
           });
-          setEmailAvailabilityMessage('✗ Email is already in use');
+          setEmailAvailabilityMessage('Email is already in use');
         }
       } catch (error) {
         // Only update state if this is still the latest request
@@ -245,7 +246,7 @@ export function PersonalInfoForm({ allFields, onEmailAvailabilityChange, disable
                   className="button secondary sm" 
                   onClick={handleViewProfile}
                 >
-                  View Profile
+                 <Eye size={14} /> View Profile
                 </button>
               )}
               
@@ -256,7 +257,7 @@ export function PersonalInfoForm({ allFields, onEmailAvailabilityChange, disable
                   className="button secondary sm" 
                   onClick={handleEditDraft}
                 >
-                  Edit Draft
+                  <Pencil size={14} /> Edit Draft
                 </button>
               )}
             </div>
