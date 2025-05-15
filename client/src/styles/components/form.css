@@ -5,6 +5,7 @@
   transition: all var(--transition-normal);
   flex-grow: 1;
   width: 100%;
+  font-family: var(--font-family);
 }
 
 .form-label {
@@ -12,15 +13,16 @@
   margin-bottom: var(--spacing-2);
   font-weight: var(--font-weight-medium);
   font-size: 0.9 rem;
-  color: var(--heading);
+  color: var(--text);
   transition: color var(--transition-normal);
   min-height: 1.25rem;
+  font-family: var(--font-family);
 }
 
 /* Make asterisks in form labels red */
 .form-label[data-required="*"]::after {
   content: "*";
-  color: var(--danger);
+  color: var(--failure);
   margin-left: 0.125rem;
 }
 
@@ -50,13 +52,14 @@
   min-height: 48px;
   padding: var(--spacing-3) var(--spacing-4);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--border-radius);
   background-color: var(--input-bg);
   color: var(--text);
   font-size: 1rem;
   transition: all var(--transition-normal);
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   line-height: 1.5;
+  font-family: var(--font-family);
 }
 
 select.form-input, .form-select {
@@ -67,6 +70,7 @@ select.form-input, .form-select {
 .form-textarea::placeholder {
   color: var(--text-muted);
   opacity: 0.6;
+  font-family: var(--font-family);
 }
 
 .form-input:hover,
@@ -80,13 +84,13 @@ select.form-input, .form-select {
 .form-select:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 2px var(--color-primary-bg);
+  box-shadow: 0 0 0 2px var(--card-shadow);
 }
 
 .dark .form-input:focus,
 .dark .form-textarea:focus,
 .dark .form-select:focus {
-  box-shadow: 0 0 0 2px var(--color-primary-bg);
+  box-shadow: 0 0 0 2px var(--card-shadow)
 }
 
 .form-textarea {
@@ -131,16 +135,18 @@ select.form-input, .form-select {
 
 .checkbox-label {
   font-size: 0.875rem;
+  font-family: var(--font-family);
 }
 
 .error-message {
-  background-color: rgba(239, 68, 68, 0.1);
-  color: var(--danger);
+  background-color: var(--failure-bg);
+  color: var(--failure);
   padding: .5rem;
   font-size: 0.75rem;
   border-radius: var(--border-radius);
   margin: 1rem 0;
-  border-left: 4px solid var(--danger);
+  border-left: 4px solid var(--failure);
+  font-family: var(--font-family);
 }
 /* Form Animation */
 @keyframes fadeIn {
@@ -169,7 +175,7 @@ select.form-input, .form-select {
   display: inline-block;
   width: 20px;
   height: 20px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  border: 2px solid rgba(var(--text-rgb, 0, 0, 0), 0.1);
   border-radius: 50%;
   border-top-color: var(--text);
   animation: spin 0.8s linear infinite;
@@ -186,6 +192,7 @@ a {
   color: var(--primary);
   text-decoration: none;
   transition: color var(--transition-normal);
+  font-family: var(--font-family);
 }
 
 a:hover {
@@ -198,126 +205,103 @@ a:hover {
   font-size: 0.875rem;
   text-decoration: none;
   display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-2);
-  transition: all var(--transition-normal);
+  font-family: var(--font-family);
 }
 
 .auth-link:hover {
   color: var(--primary-hover);
-  text-decoration: none;
-  transform: translateY(-1px);
+  text-decoration: underline;
 }
 
 .back-link {
   display: inline-flex;
   align-items: center;
-  gap: var(--spacing-2);
   color: var(--text-muted);
-  font-size: 0.875rem;
   text-decoration: none;
-  margin-bottom: var(--spacing-4);
-  transition: all var(--transition-normal);
+  font-size: 0.875rem;
+  transition: color var(--transition-normal);
+  font-family: var(--font-family);
 }
 
 .back-link:hover {
   color: var(--primary);
-  text-decoration: none;
-  transform: translateX(-2px);
 }
 
-/* Auto-filled fields styling - improved for better visual appeal */
 .form-input[disabled].auto-filled {
-  background-color: rgba(var(--color-primary-rgb), 0.05);
-  border-color: var(--color-primary-light);
+  background-color: var(--pending-bg);
+  border-color: var(--pending);
   color: var(--text);
   cursor: not-allowed;
-  font-style: italic;
-  position: relative;
-  box-shadow: inset 0 0 0 1px rgba(var(--color-primary-rgb), 0.2);
+  opacity: 0.8;
 }
 
-/* Dark mode styles for auto-filled fields */
 :root[class~="dark"] .form-input[disabled].auto-filled {
-  background-color: rgba(var(--color-primary-rgb), 0.1);
-  border-color: var(--color-primary-dark);
-  color: var(--text-secondary);
-  box-shadow: inset 0 0 0 1px rgba(var(--color-primary-rgb), 0.3);
+  background-color: var(--pending-bg);
+  border-color: var(--pending);
 }
 
-/* Add a visual indicator for auto-filled fields */
 .form-group:has(.auto-filled)::after {
-  content: "Auto-filled";
+  content: '✓';
   position: absolute;
   right: 10px;
-  top: 5px;
-  font-size: 10px;
-  color: var(--color-primary);
-  background-color: var(--background);
-  padding: 0 5px;
-  border-radius: 4px;
-  opacity: 0.8;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--success);
+  font-weight: bold;
+  font-size: 1rem;
   pointer-events: none;
 }
 
-/* New class for auto-populated fields that are still editable */
 .form-input.auto-populated {
-  border-left: 3px solid var(--color-primary);
-  background-color: rgba(var(--color-primary-rgb), 0.03);
-  transition: all 0.2s ease;
+  background-color: var(--success-bg);
+  border-color: var(--success);
 }
 
 .form-input.auto-populated:focus {
-  background-color: var(--input-bg);
-  border-left-color: var(--color-primary-dark);
+  background-color: var(--success-bg);
+  border-color: var(--success);
 }
 
-/* Dark mode styles for auto-populated fields */
 :root[class~="dark"] .form-input.auto-populated {
-  background-color: rgba(var(--color-primary-rgb), 0.08);
+  background-color: var(--success-bg);
 }
 
 :root[class~="dark"] .form-input.auto-populated:focus {
-  background-color: var(--input-bg);
+  background-color: var(--success-bg);
 }
 
-/* Add a visual indicator for auto-populated fields */
 .form-group:has(.auto-populated)::after {
-  content: "Auto-populated";
+  content: '✓';
   position: absolute;
   right: 10px;
-  top: 5px;
-  font-size: 10px;
-  color: var(--color-primary);
-  background-color: var(--background);
-  padding: 0 5px;
-  border-radius: 4px;
-  opacity: 0.8;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--success);
+  font-weight: bold;
+  font-size: 1rem;
   pointer-events: none;
 }
 
-/* Form information notes - enhance styling */
 .form-info {
-  margin-bottom: 15px;
-  font-style: italic;
+  margin-top: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-3);
+  font-size: 0.75rem;
   color: var(--text-muted);
-  padding: 8px 12px;
-  border-left: 3px solid var(--color-primary-light);
-  background-color: rgba(var(--color-primary-rgb), 0.03);
-  border-radius: 0 4px 4px 0;
-  display: flex;
-  align-items: center;
+  background-color: var(--pending-bg);
+  border-radius: var(--border-radius);
+  position: relative;
+  padding-left: calc(var(--spacing-3) + 1rem);
+  font-family: var(--font-family);
 }
 
 .form-info::before {
-  content: "ℹ️";
-  margin-right: 8px;
-  font-size: 14px;
+  content: 'ℹ️';
+  position: absolute;
+  left: var(--spacing-2);
+  top: 50%;
+  transform: translateY(-50%);
 }
 
-/* Dark mode styles for form info */
 :root[class~="dark"] .form-info {
-  color: var(--text-secondary);
-  border-left-color: var(--color-primary-dark);
-  background-color: rgba(var(--color-primary-rgb), 0.08);
+  background-color: var(--pending-bg);
 } 

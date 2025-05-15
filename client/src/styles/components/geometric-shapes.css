@@ -30,21 +30,21 @@
   width: var(--size, 150px);
   height: var(--size, 150px);
   border-radius: 50%;
-  background: linear-gradient(45deg, var(--gradient-amber), var(--gradient-yellow));
+  background: linear-gradient(45deg, var(--gradient-dark), var(--gradient-light));
   animation-name: float-circle;
 }
 
 .shape-square {
   width: var(--size, 120px);
   height: var(--size, 120px);
-  background: linear-gradient(135deg, var(--gradient-yellow), var(--gradient-amber));
+  background: linear-gradient(135deg, var(--gradient-light), var(--gradient-dark));
   animation-name: float-square;
 }
 
 .shape-triangle {
   width: var(--size, 180px);
   height: var(--size, 180px);
-  background: linear-gradient(225deg, var(--gradient-amber), var(--gradient-yellow));
+  background: linear-gradient(225deg, var(--gradient-dark), var(--gradient-light));
   clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
   animation-name: float-triangle;
 }
@@ -55,7 +55,7 @@
   border-radius: 50%;
   background: transparent;
   border: 25px solid;
-  border-image: linear-gradient(to right, var(--gradient-amber), var(--gradient-yellow)) 1;
+  border-image: linear-gradient(to right, var(--gradient-dark), var(--gradient-light)) 1;
   animation-name: float-donut;
 }
 

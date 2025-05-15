@@ -1,35 +1,60 @@
 /* Base Variables */
 :root {
   --background-light: #F8F8F8;
-  --background-dark: #0A0A10;
+  --background-dark: #121212;
   --card-light: #FFFFFF;
-  --card-dark: #13131A;
+  --card-dark: #1E1E1E;
   --text-light: #000000;
   --text-dark: #FFFFFF;
-  --text-muted-light: #71717A;
-  --text-muted-dark: #A1A1AA;
+  --text-muted-light: #6E6E6E;
+  --text-muted-dark: #AAAAAA;
   
-  /* New gradient colors - darker amber/yellow for better contrast */
-  --gradient-amber: #D97706; /* Darker amber for better contrast */
-  --gradient-yellow: #F59E0B; /* Using amber as the lighter end for better contrast */
+  /* Monochrome gradient colors */
+  --gradient-dark: #333333;
+  --gradient-light: #DDDDDD;
   
-  /* Background gradients - updated with yellow tones */
-  --bg-gradient-light: linear-gradient(120deg, #F8F8F8, #FFFBEB, #FEF3C7);
-  --bg-gradient-dark: radial-gradient(circle at top right, #0A0A10, #1C1917 70%, #080810);
+  /* Background gradients - monochrome */
+  --bg-gradient-light: linear-gradient(120deg, #FFFFFF, #F5F5F5, #EEEEEE);
+  --bg-gradient-dark: radial-gradient(circle at top right, #121212, #1A1A1A 70%, #0F0F0F);
   
-  /* Primary colors changed to yellow/amber */
-  --primary-light: #D97706; /* Darker amber for better contrast in light mode */
-  --primary-dark: #FBBF24;
-  --primary-hover-light: #B45309; /* Even darker for hover */
-  --primary-hover-dark: #F59E0B;
-  --border-light: #E4E4E7;
-  --border-dark: #27272E;
+  /* Primary colors - black and white with appropriate contrast */
+  --primary-light: #333333; /* Dark gray for light mode */
+  --primary-dark: #E0E0E0; /* Light gray for dark mode */
+  --primary-hover-light: #000000; /* Black for hover in light mode */
+  --primary-hover-dark: #FFFFFF; /* White for hover in dark mode */
+  --border-light: #E0E0E0;
+  --border-dark: #333333;
   --input-bg-light: #FFFFFF;
-  --input-bg-dark: #13131A;
-  --danger-light: #EF4444;
-  --danger-dark: #B91C1C;
+  --input-bg-dark: #1E1E1E;
+  
+  /* Status colors for light mode */
+  --success-light: #4CAF50; /* Green */
+  --success-bg-light: #E8F5E9; /* Light green background */
+  --pending-light: #757575; /* Gray for pending in monochrome theme */
+  --pending-bg-light: #F5F5F5; /* Light gray background */
+  --failure-light: #D32F2F; /* Red */
+  --failure-bg-light: #FFEBEE; /* Light red background */
+  
+  /* Status colors for dark mode */
+  --success-dark: #81C784; /* Lighter green for dark mode */
+  --success-bg-dark: #1B2E1C; /* Dark green background */
+  --pending-dark: #BDBDBD; /* Light gray for dark mode */
+  --pending-bg-dark: #2C2C2C; /* Dark gray background */
+  --failure-dark: #F44336; /* Brighter red for dark mode */
+  --failure-bg-dark: #2E1A1A; /* Dark red background */
+  
+  /* Shadows for status indicators */
+  --success-shadow-light: 0 0 8px rgba(76, 175, 80, 0.3);
+  --success-shadow-dark: 0 0 8px rgba(129, 199, 132, 0.3);
+  --pending-shadow-light: 0 0 8px rgba(117, 117, 117, 0.3);
+  --pending-shadow-dark: 0 0 8px rgba(189, 189, 189, 0.3);
+  --failure-shadow-light: 0 0 8px rgba(211, 47, 47, 0.3);
+  --failure-shadow-dark: 0 0 8px rgba(244, 67, 54, 0.3);
+  
+  --danger-light: #D32F2F;
+  --danger-dark: #F44336;
   --card-shadow-light: 0px 4px 12px rgba(0, 0, 0, 0.08);
-  --card-shadow-dark: 0px 4px 12px rgba(0, 0, 0, 0.2);
+  --card-shadow-dark: 0px 4px 12px rgba(0, 0, 0, 0.3);
   --border-radius: 8px;
   --spacing-1: 4px;
   --spacing-2: 8px;
@@ -45,7 +70,7 @@
   --transition-slow: 0.5s ease;
   
   /* Typography */
-  --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
   --font-weight-normal: 400;
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
@@ -55,9 +80,9 @@
   --font-size-body: 16px;
   --font-size-small: 14px;
   
-  /* Glow effects - updated for yellow/amber */
-  --glow-amber: 0 0 15px rgba(245, 158, 11, 0.4);
-  --glow-yellow: 0 0 15px rgba(252, 211, 77, 0.4);
+  /* Glow effects - monochrome */
+  --glow-dark: 0 0 15px rgba(0, 0, 0, 0.4);
+  --glow-light: 0 0 15px rgba(255, 255, 255, 0.4);
 }
 
 /* Dark Theme */
@@ -73,7 +98,18 @@
   --input-bg: var(--input-bg-dark);
   --danger: var(--danger-dark);
   --card-shadow: var(--card-shadow-dark);
-  --glow: var(--glow-amber);
+  --glow: var(--glow-light);
+  
+  /* Status colors for dark mode */
+  --success: var(--success-dark);
+  --success-bg: var(--success-bg-dark);
+  --success-shadow: var(--success-shadow-dark);
+  --pending: var(--pending-dark);
+  --pending-bg: var(--pending-bg-dark);
+  --pending-shadow: var(--pending-shadow-dark);
+  --failure: var(--failure-dark);
+  --failure-bg: var(--failure-bg-dark);
+  --failure-shadow: var(--failure-shadow-dark);
 }
 
 /* Light Theme */
@@ -89,7 +125,18 @@
   --input-bg: var(--input-bg-light);
   --danger: var(--danger-light);
   --card-shadow: var(--card-shadow-light);
-  --glow: var(--glow-yellow);
+  --glow: var(--glow-dark);
+  
+  /* Status colors for light mode */
+  --success: var(--success-light);
+  --success-bg: var(--success-bg-light);
+  --success-shadow: var(--success-shadow-light);
+  --pending: var(--pending-light);
+  --pending-bg: var(--pending-bg-light);
+  --pending-shadow: var(--pending-shadow-light);
+  --failure: var(--failure-light);
+  --failure-bg: var(--failure-bg-light);
+  --failure-shadow: var(--failure-shadow-light);
 }
 
 /* Reset and Base Styles */
@@ -107,4 +154,18 @@ body {
   font-weight: var(--font-weight-normal);
   transition: background var(--transition-slow), color var(--transition-normal);
   min-height: 100vh;
+}
+
+/* Ensure all form elements use the custom font */
+input, 
+select, 
+textarea, 
+button,
+option,
+optgroup,
+fieldset,
+legend,
+label,
+.form-control {
+  font-family: var(--font-family) !important;
 } 

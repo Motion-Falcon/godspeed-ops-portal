@@ -1,27 +1,4 @@
 /* JobseekerProfile.css */
-
-/* Variables for background and card/border RGB values to use with alpha channels */
-:root {
-  --primary-rgb: 217, 119, 6; /* Darker amber to match primary color */
-  --border-rgb: 228, 228, 231; /* Border color */
-  --background-rgb: 248, 248, 248; /* Light background */
-  --card-rgb: 255, 255, 255; /* Card background */
-  --text-rgb: 0, 0, 0; /* Text color */
-}
-
-.dark {
-  --primary-rgb: 251, 191, 36; /* Match primary-dark from variables.css */
-  --border-rgb: 39, 39, 46; /* Dark mode border */
-  --background-rgb: 10, 10, 16; /* Dark background */
-  --card-rgb: 19, 19, 26; /* Dark card background */
-  --text-rgb: 255, 255, 255; /* Dark mode text */
-}
-
-.profile-create-container {
-  max-width: 1400px;
-  margin: 0 auto;
-}
-
 /* Step Journey Progress Bar */
 .step-journey-container {
   position: relative;
@@ -705,21 +682,6 @@ select.form-input {
   border: 1px solid #ffa000;
 }
 
-.dark .profile-status.verified {
-  background-color: #1e401e; /* Dark green */
-  border-color: #43a047;
-}
-
-.dark .profile-status.rejected {
-  background-color: #411c1c; /* Dark red */
-  border-color: #e53935;
-}
-
-.dark .profile-status.pending {
-  background-color: #403a1e; /* Dark yellow/amber */
-  border-color: #ffa000;
-}
-
 .status-icon {
   width: 16px;
   height: 16px;
@@ -1162,27 +1124,11 @@ select.form-input {
 .document-item {
   display: flex;
   height: 100%;
-  background-color: rgba(var(--card-rgb), 0.9);
+  background-color: var(--background);
   border-radius: 12px;
   border: 1px solid var(--border);
   transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-}
-
-.document-item:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-  border-color: rgba(var(--primary-rgb), 0.3);
-}
-
-.dark .document-item {
-  background-color: rgba(25, 25, 35, 0.95);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.dark .document-item:hover {
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-  border-color: rgba(var(--primary-rgb), 0.4);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .document-content {
@@ -1230,6 +1176,19 @@ select.form-input {
   width: fit-content;
 }
 
+.document-preview-container .remove-document-container {
+  display: flex;
+  justify-content: end;
+  align-items: center;
+}
+
+.document-preview-container .remove-document {
+  margin-top: 28px;
+  margin-right: 10px;
+  width: fit-content;
+
+}
+
 .document-preview {
   height: 160px;
   display: flex;
@@ -1269,6 +1228,16 @@ select.form-input {
 .document-preview:hover .document-preview-placeholder-icon {
   transform: scale(1.1);
   opacity: 0.9;
+}
+.add-document-container {
+  display: flex;
+  justify-content: start;
+  align-items: center;
+  margin-top: 20px;
+}
+
+.add-document-container button {
+  width: fit-content;
 }
 
 /* No documents message */
@@ -1638,6 +1607,7 @@ select.form-input {
   margin: 8px 0;
   border-radius: 4px;
   font-size: 14px;
+  color: var(--text);
 }
 
 .file-status svg {
@@ -1645,14 +1615,14 @@ select.form-input {
 }
 
 .file-status-success {
-  background-color: rgba(0, 128, 0, 0.1);
-  color: #006400;
+  background-color: var(--success-bg);
+  color: var(--success);
   border: 1px solid rgba(0, 128, 0, 0.2);
 }
 
 .file-status-pending {
-  background-color: rgba(255, 165, 0, 0.1);
-  color: #8B4513;
+  background-color: var(--pending-bg);
+  color: var(--pending);
   border: 1px solid rgba(255, 165, 0, 0.2);
 }
 
@@ -1842,50 +1812,50 @@ select.form-input {
 
 /* Status-specific hover colors */
 .status-option input[value="verified"] + .status-label:hover {
-  background-color: #e6f7e6; /* Solid light green */
-  border-left: 3px solid #43a047;
+  background-color: var(--success-bg);
+  border-left: 3px solid var(--success);
 }
 
 .status-option input[value="rejected"] + .status-label:hover {
-  background-color: #fdeaea; /* Solid light red */
-  border-left: 3px solid #e53935;
+  background-color: var(--failure-bg);
+  border-left: 3px solid var(--failure);
 }
 
 .status-option input[value="pending"] + .status-label:hover {
-  background-color: #fff8e6; /* Solid light yellow */
-  border-left: 3px solid #ffa000;
+  background-color: var(--pending-bg);
+  border-left: 3px solid var(--pending);
 }
 
 /* Dark mode enhancements */
 .dark .status-option input[value="verified"] + .status-label:hover {
-  background-color: #1e401e; /* Dark green */
-  border-left: 3px solid #43a047;
+  background-color: var(--success-bg-dark);
+  border-left: 3px solid var(--success);
 }
 
 .dark .status-option input[value="rejected"] + .status-label:hover {
-  background-color: #411c1c; /* Dark red */
-  border-left: 3px solid #e53935;
+  background-color: var(--failure-bg-dark);
+  border-left: 3px solid var(--failure);
 }
 
 .dark .status-option input[value="pending"] + .status-label:hover {
-  background-color: #403a1e; /* Dark yellow/amber */
-  border-left: 3px solid #ffa000;
+  background-color: var(--pending-bg-dark);
+  border-left: 3px solid var(--pending);
 }
 
 /* Selected status styling */
 .status-option input[value="verified"]:checked + .status-label {
-  background-color: #169116;
-  border-left: 3px solid #43a047;
+  background-color: var(--success);
+  border-left: 3px solid var(--success);
 }
 
 .status-option input[value="rejected"]:checked + .status-label {
-  background-color: #e22525;
-  border-left: 3px solid #e53935;
+  background-color: var(--failure);
+  border-left: 3px solid var(--failure);
 }
 
 .status-option input[value="pending"]:checked + .status-label {
-  background-color: #e2b544;
-  border-left: 3px solid #ffa000;
+  background-color: var(--pending);
+  border-left: 3px solid var(--pending);
 }
 
 /* Enhanced loading indicators */
