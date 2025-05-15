@@ -66,20 +66,6 @@
   }
 }
 
-.brand-logo {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  background-color: var(--primary);
-  color: var(--card);
-  font-size: 1.5rem;
-  font-weight: bold;
-  margin-bottom: var(--spacing-6);
-}
-
 .brand-title {
   font-size: 32px;
   font-weight: var(--font-weight-semibold);

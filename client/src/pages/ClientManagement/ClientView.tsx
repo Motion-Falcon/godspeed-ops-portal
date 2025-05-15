@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Building, Edit } from 'lucide-react';
 import { getClient, ClientData } from '../../services/api';
+import { AppHeader } from '../../components/AppHeader';
 import '../../styles/pages/ClientView.css';
 import '../../styles/components/header.css';
 
@@ -141,10 +142,10 @@ export function ClientView() {
 
   return (
     <div className="client-view-container">
-      <header className="common-header">
-        <div className="header-main">
-          <h1>{companyName || 'Client Details'}</h1>
-          <div className="header-actions">
+      <AppHeader
+        title={typeof companyName === 'string' ? companyName : 'Client Details'}
+        actions={
+          <>
             <button 
               className="button" 
               onClick={() => navigate('/client-management')}
@@ -159,15 +160,11 @@ export function ClientView() {
               <Edit size={16} />
               Edit Client
             </button>
-          </div>
-        </div>
-        
-        {error && (
-          <div className="status-update-container">
-            <span className="status-update-message error">{error}</span>
-          </div>
-        )}
-      </header>
+          </>
+        }
+        statusMessage={error}
+        statusType="error"
+      />
 
       <main className="client-main">
         <div className="client-overview section-card">

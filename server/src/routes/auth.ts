@@ -25,6 +25,43 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
+    // First, check if user already exists by trying to sign in with their email
+    // This is a common approach since Supabase doesn't expose direct user lookup by email
+    try {
+      // Use a simple query to check if the email exists in the auth schema
+      const { data: existingUsers, error: queryError } = await supabase
+        .from('users') // Make sure this is the correct table name
+        .select('id')
+        .eq('email', email)
+        .limit(1);
+
+      if (!queryError && existingUsers?.length > 0) {
+        return res.status(400).json({ error: 'An account with this email already exists' });
+      }
+    } catch (searchError) {
+      console.error('Error searching for existing user:', searchError);
+      // Continue with registration attempt if the search fails
+    }
+
+    // Additional check: try to sign in with a random password
+    // If we get back an "Invalid login credentials" error, the user exists
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password: `random-password-${Date.now()}`, // Use a random password that won't match
+    });
+
+    if (signInError) {
+      // If error is "Invalid login credentials", the user exists
+      // If error is "Email not confirmed", the user exists
+      if (signInError.message.includes('Invalid login credentials') || 
+          signInError.message.includes('Email not confirmed')) {
+        return res.status(400).json({ error: 'An account with this email already exists' });
+      }
+    } else {
+      // If sign in succeeded with a random password (very unlikely), the user exists
+      return res.status(400).json({ error: 'An account with this email already exists' });
+    }
+
     // Determine user type based on email
     let userType = 'jobseeker'; // Default type
     
@@ -48,6 +85,11 @@ router.post('/register', async (req, res) => {
 
     if (error) {
       return res.status(400).json({ error: error.message });
+    }
+
+    // Check if user is null, which indicates the email already exists
+    if (!data.user) {
+      return res.status(400).json({ error: 'An account with this email already exists' });
     }
 
     return res.status(201).json({

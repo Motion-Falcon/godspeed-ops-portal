@@ -8,27 +8,9 @@ export const registerUser = async (
   password: string, 
   name: string
 ) => {
-  // Determine user type based on email
-  let userType = 'jobseeker'; // Default type
-  
-  // Check for recruiter email pattern
-  if (email.includes('@motionfalcon')) {
-    userType = 'recruiter';
-  }
-  
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: {
-        name,
-        user_type: userType,
-      },
-    },
-  });
-  
-  if (error) throw error;
-  return data;
+  // Use the API endpoint instead of direct Supabase call
+  const response = await import('../services/api').then(api => api.registerUserAPI(email, password, name));
+  return response;
 };
 
 // Login existing user

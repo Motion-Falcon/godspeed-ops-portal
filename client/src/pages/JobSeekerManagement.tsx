@@ -15,6 +15,7 @@ import {
 import { getJobseekerProfiles, deleteJobseeker } from '../services/api';
 import { JobSeekerProfile } from '../types/jobseeker';
 import { ConfirmationModal } from '../components/ConfirmationModal';
+import { AppHeader } from '../components/AppHeader';
 import '../styles/pages/JobSeekerManagement.css';
 import '../styles/components/header.css';
 import '../styles/components/CommonTable.css';
@@ -220,10 +221,10 @@ export function JobSeekerManagement() {
 
   return (
     <div className="page-container">
-      <header className="common-header">
-        <div className="header-main">
-          <h1>Job Seeker Management</h1>
-          <div className="header-actions">
+      <AppHeader
+        title="Job Seeker Management"
+        actions={
+          <>
             <button 
               className="button secondary button-icon" 
               onClick={handleViewDrafts}
@@ -238,9 +239,11 @@ export function JobSeekerManagement() {
               <Plus size={16} />
               <span>New Job Seeker</span>
             </button>
-          </div>
-        </div>
-      </header>
+          </>
+        }
+        statusMessage={message || error}
+        statusType={error ? 'error' : 'success'}
+      />
 
       <div className="content-container">
         {error && (

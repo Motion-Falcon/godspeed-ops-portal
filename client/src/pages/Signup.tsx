@@ -11,6 +11,7 @@ import '../styles/pages/Signup.css';
 import '../styles/pages/Login.css';
 import '../styles/components/form.css';
 import '../styles/components/button.css';
+import godspeedLogo from '../assets/logos/godspped-logo.png';
 
 const signupSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters' }),
@@ -191,9 +192,9 @@ export function Signup() {
         </div>
         <div className="brand-content">
           <div className="brand-logo">
-            <div className="logo-shape"></div>
+            <img src={godspeedLogo} alt="Godspeed Logo" className="godspeed-logo" />
           </div>
-          <h2 className="brand-title">Company <span className="gradient-text">Name</span></h2>
+          <h2 className="brand-title">Godspeed <span className="gradient-text">Operations</span></h2>
           <p className="brand-description">
             Transform your ideas into beautiful digital experiences with our comprehensive suite of tools and resources.
           </p>

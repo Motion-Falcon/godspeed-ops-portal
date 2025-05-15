@@ -7,6 +7,7 @@ import {
 } from '../services/api';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import { Plus, Trash2, Pencil, FileText, Eye } from 'lucide-react';
+import { AppHeader } from '../components/AppHeader';
 import '../styles/pages/ClientManagement.css';
 import '../styles/components/header.css';
 import '../styles/components/CommonTable.css';
@@ -168,10 +169,10 @@ export function ClientManagement() {
   // Basic component structure - detailed client table to be added
   return (
     <div className="page-container">
-      <header className="common-header">
-        <div className="header-main">
-          <h1>Client Management</h1>
-          <div className="header-actions">
+      <AppHeader
+        title="Client Management"
+        actions={
+          <>
             <button 
               className="button secondary button-icon" 
               onClick={handleViewDrafts}
@@ -186,16 +187,11 @@ export function ClientManagement() {
               <Plus size={16} />
               <span>New Client</span>
             </button>
-          </div>
-        </div>
-        
-        {(error || message) && (
-          <div className="status-update-container">
-            {error && <span className="status-update-message error">{error}</span>}
-            {message && <span className="status-update-message">{message}</span>}
-          </div>
-        )}
-      </header>
+          </>
+        }
+        statusMessage={message || error}
+        statusType={error ? 'error' : 'success'}
+      />
 
       <div className="content-container">
         <div className="card">

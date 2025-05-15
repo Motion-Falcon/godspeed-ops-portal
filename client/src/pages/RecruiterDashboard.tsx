@@ -11,6 +11,7 @@ import { logoutUser } from "../lib/auth";
 import { useNavigate } from "react-router-dom";
 import { ThemeToggle } from "../components/theme-toggle";
 import { checkApiHealth } from "../services/api";
+import { AppHeader } from "../components/AppHeader";
 import "../styles/components/header.css";
 
 interface UserData {
@@ -98,22 +99,13 @@ export function RecruiterDashboard() {
   return (
     <div className="dashboard-container">
       {/* Header */}
-      <header className="common-header">
-        <div className="header-main">
-          <div className="logo-container">
-            <div className="logo">CN</div>
-            <span
-              className="brand-title"
-              style={{ margin: 0, fontSize: "1.25rem" }}
-            >
-              Recruiter Portal
-            </span>
-          </div>
-
-          <div className="header-actions">
+      <AppHeader 
+        title="Recruiter Portal"
+        actions={
+          <>
             <ThemeToggle />
             <button
-              className="button  button-icon"
+              className="button button-icon"
               onClick={handleLogout}
               disabled={isLoggingOut}
             >
@@ -126,9 +118,9 @@ export function RecruiterDashboard() {
                 </>
               )}
             </button>
-          </div>
-        </div>
-      </header>
+          </>
+        }
+      />
 
       {/* Main content */}
       <main className="dashboard-main">

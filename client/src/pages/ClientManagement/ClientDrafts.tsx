@@ -4,6 +4,7 @@ import { ArrowLeft, Trash2, Clock, Pencil } from 'lucide-react';
 import { getAllClientDrafts, deleteClientDraft } from '../../services/api';
 import { ClientData } from '../../services/api';
 import { ConfirmationModal } from '../../components/ConfirmationModal';
+import { AppHeader } from '../../components/AppHeader';
 import '../../styles/pages/ClientManagement.css';
 import '../../styles/components/header.css';
 import '../../styles/components/CommonTable.css';
@@ -89,27 +90,20 @@ export function ClientDrafts() {
 
   return (
     <div className="page-container">
-      <header className="common-header">
-        <div className="header-main">
-          <h1>Client Drafts</h1>
-          <div className="header-actions">
-            <button 
-              className="button button-icon"
-              onClick={() => navigate('/client-management')}
-            >
-              <ArrowLeft size={16} />
-              <span>Back</span>
-            </button>
-          </div>
-        </div>
-        
-        {(error || successMessage) && (
-          <div className="status-update-container">
-            {error && <span className="status-update-message error">{error}</span>}
-            {successMessage && <span className="status-update-message">{successMessage}</span>}
-          </div>
-        )}
-      </header>
+      <AppHeader
+        title="Client Drafts"
+        actions={
+          <button 
+            className="button button-icon"
+            onClick={() => navigate('/client-management')}
+          >
+            <ArrowLeft size={16} />
+            <span>Back</span>
+          </button>
+        }
+        statusMessage={error || successMessage}
+        statusType={error ? 'error' : 'success'}
+      />
 
       <div className="content-container">
         {loading ? (

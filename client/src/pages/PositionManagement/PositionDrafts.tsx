@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAllPositionDrafts, deletePositionDraft, PositionData } from '../../services/api';
 import { ConfirmationModal } from '../../components/ConfirmationModal';
+import { AppHeader } from '../../components/AppHeader';
 import { Pencil, Trash2, ArrowLeft } from 'lucide-react';
 import '../../styles/pages/PositionManagement.css';
 import '../../styles/components/header.css';
@@ -80,27 +81,20 @@ export function PositionDrafts() {
 
   return (
     <div className="page-container">
-      <header className="common-header">
-        <div className="header-main">
-          <h1>Position Drafts</h1>
-          <div className="header-actions">
-            <button 
-              className="button button-icon" 
-              onClick={handleNavigateBack}
-            >
-              <ArrowLeft size={16} />
-              <span>Back</span>
-            </button>
-          </div>
-        </div>
-        
-        {(error || success) && (
-          <div className="status-update-container">
-            {error && <span className="status-update-message error">{error}</span>}
-            {success && <span className="status-update-message">{success}</span>}
-          </div>
-        )}
-      </header>
+      <AppHeader
+        title="Position Drafts"
+        actions={
+          <button 
+            className="button button-icon" 
+            onClick={handleNavigateBack}
+          >
+            <ArrowLeft size={16} />
+            <span>Back</span>
+          </button>
+        }
+        statusMessage={error || success}
+        statusType={error ? 'error' : 'success'}
+      />
 
       <div className="content-container">
         <div className="card">

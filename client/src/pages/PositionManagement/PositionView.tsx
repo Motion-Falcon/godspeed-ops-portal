@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getPosition, PositionData, deletePosition } from '../../services/api';
 import { ConfirmationModal } from '../../components/ConfirmationModal';
+import { AppHeader } from '../../components/AppHeader';
 import { ArrowLeft, Edit, Trash2, Briefcase } from 'lucide-react';
 import '../../styles/pages/ClientView.css';
 import '../../styles/pages/PositionManagement.css';
@@ -170,10 +171,10 @@ export function PositionView() {
 
   return (
     <div className="client-view-container">
-      <header className="common-header">
-        <div className="header-main">
-          <h1>{positionTitle || 'Position Details'}</h1>
-          <div className="header-actions">
+      <AppHeader
+        title={positionTitle || 'Position Details'}
+        actions={
+          <>
             <button 
               className="button" 
               onClick={handleNavigateBack}
@@ -195,15 +196,11 @@ export function PositionView() {
               <Trash2 size={16} />
               Delete
             </button>
-          </div>
-        </div>
-        
-        {error && (
-          <div className="status-update-container">
-            <span className="status-update-message error">{error}</span>
-          </div>
-        )}
-      </header>
+          </>
+        }
+        statusMessage={error}
+        statusType="error"
+      />
 
       <main className="client-main">
         <div className="client-overview section-card">

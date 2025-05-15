@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Plus, FileText, Eye, Trash2, Pencil } from 'lucide-react';
 import { getPositions, deletePosition, PositionData } from '../services/api';
 import { ConfirmationModal } from '../components/ConfirmationModal';
+import { AppHeader } from '../components/AppHeader';
 import '../styles/pages/PositionManagement.css';
 import '../styles/components/header.css';
 import '../styles/components/CommonTable.css';
@@ -116,10 +117,10 @@ export function PositionManagement() {
 
   return (
     <div className="page-container">
-      <header className="common-header">
-        <div className="header-main">
-          <h1>Position Management</h1>
-          <div className="header-actions">
+      <AppHeader
+        title="Position Management"
+        actions={
+          <>
             <button 
               className="button secondary button-icon" 
               onClick={handleViewDrafts}
@@ -134,16 +135,11 @@ export function PositionManagement() {
               <Plus size={16} />
               <span>New Position</span>
             </button>
-          </div>
-        </div>
-        
-        {(error || message) && (
-          <div className="status-update-container">
-            {error && <span className="status-update-message error">{error}</span>}
-            {message && <span className="status-update-message">{message}</span>}
-          </div>
-        )}
-      </header>
+          </>
+        }
+        statusMessage={message || error}
+        statusType={error ? 'error' : 'success'}
+      />
 
       <div className="content-container">
         <div className="card">

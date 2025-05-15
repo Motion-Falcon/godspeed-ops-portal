@@ -8,6 +8,7 @@ import { supabase } from '../lib/supabaseClient';
 import PDFThumbnail from '../components/PDFThumbnail';
 import PDFViewerModal from '../components/PDFViewerModal';
 import { ConfirmationModal } from '../components/ConfirmationModal';
+import { AppHeader } from '../components/AppHeader';
 import '../styles/pages/JobSeekerProfile.css';
 import '../styles/components/header.css';
 
@@ -517,9 +518,9 @@ export function JobSeekerProfile() {
 
   return (
     <div className="profile-container">
-      <header className="common-header">
-        <div className="header-main">
-          <h1>Job Seeker Profile</h1>
+      <AppHeader
+        title="Job Seeker Profile"
+        actions={
           <button 
             className="button" 
             onClick={() => navigate('/jobseekers')}
@@ -527,14 +528,9 @@ export function JobSeekerProfile() {
             <ArrowLeft size={16} />
             <span>Back to Job Seekers</span>
           </button>
-        </div>
-        
-        {updateStatus && (
-          <div className="status-update-container">
-            <span className="status-update-message">{updateStatus}</span>
-          </div>
-        )}
-      </header>
+        }
+        statusMessage={updateStatus}
+      />
 
       <main className="profile-main">
         <div className="profile-overview section-card">
