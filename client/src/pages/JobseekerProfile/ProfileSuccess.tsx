@@ -1,7 +1,7 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { User, CheckCircle, Clock, ArrowLeft } from 'lucide-react';
-import '../../styles/pages/JobseekerProfile.css';
+import '../../styles/pages/JobseekerProfileStyles.css';
 
 // Define a profile type based on the Supabase DB fields
 interface JobseekerProfile {
