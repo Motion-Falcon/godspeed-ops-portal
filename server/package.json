@@ -10,7 +10,7 @@
     "build": "tsc -p .",
     "postinstall": "tsc",
     "lint": "eslint \"src/**/*.{js,ts}\"",
-    "seed": "ts-node src/scripts/seedData.ts"
+    "deploy": "git add . && git commit -m Heroku && git push heroku master"
   },
   "keywords": [],
   "author": "",
