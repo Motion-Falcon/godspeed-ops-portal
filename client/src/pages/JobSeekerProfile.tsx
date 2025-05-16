@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { ArrowLeft, User, CheckCircle, XCircle, Clock, FileText, Download, Eye, FileWarning, Trash2, Pencil } from 'lucide-react';
+import { ArrowLeft, User, CheckCircle, XCircle, Clock, FileText, Download, Eye, FileWarning, Trash2, Pencil, AlertCircle, CheckSquare, Shield, CircleAlert } from 'lucide-react';
 import { getJobseekerProfile, updateJobseekerStatus, deleteJobseeker } from '../services/api';
 import { DocumentRecord } from '../types/jobseeker';
 import { supabase } from '../lib/supabaseClient';
 import PDFThumbnail from '../components/PDFThumbnail';
 import PDFViewerModal from '../components/PDFViewerModal';
 import { ConfirmationModal } from '../components/ConfirmationModal';
+import { AppHeader } from '../components/AppHeader';
 import '../styles/pages/JobSeekerProfile.css';
 import '../styles/components/header.css';
 
@@ -112,6 +113,7 @@ export function JobSeekerProfile() {
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const [isStatusModalOpen, setIsStatusModalOpen] = useState<boolean>(false);
   const [selectedStatus, setSelectedStatus] = useState<'pending' | 'verified' | 'rejected'>('pending');
+  const [expandedNotesIds, setExpandedNotesIds] = useState<Set<string>>(new Set());
   const { id } = useParams<{ id: string }>();
   const { isAdmin, isRecruiter, isJobSeeker } = useAuth();
   const navigate = useNavigate();
@@ -457,6 +459,28 @@ export function JobSeekerProfile() {
     setIsStatusModalOpen(false);
   };
 
+  const toggleNotes = (docId?: string) => {
+    if (!docId) return;
+    
+    setExpandedNotesIds(prevIds => {
+      const newIds = new Set(prevIds);
+      if (newIds.has(docId)) {
+        newIds.delete(docId);
+      } else {
+        newIds.add(docId);
+      }
+      return newIds;
+    });
+  };
+
+
+  // Helper function to get score color class based on percentage
+  const getScoreColorClass = (percentage: number): string => {
+    if (percentage >= 80) return "success";
+    if (percentage >= 40) return "pending";
+    return "failure";
+  };
+
   if (loading) {
     return (
       <div className="profile-container">
@@ -517,9 +541,9 @@ export function JobSeekerProfile() {
 
   return (
     <div className="profile-container">
-      <header className="common-header">
-        <div className="header-main">
-          <h1>Job Seeker Profile</h1>
+      <AppHeader
+        title="Job Seeker Profile"
+        actions={
           <button 
             className="button" 
             onClick={() => navigate('/jobseekers')}
@@ -527,14 +551,9 @@ export function JobSeekerProfile() {
             <ArrowLeft size={16} />
             <span>Back to Job Seekers</span>
           </button>
-        </div>
-        
-        {updateStatus && (
-          <div className="status-update-container">
-            <span className="status-update-message">{updateStatus}</span>
-          </div>
-        )}
-      </header>
+        }
+        statusMessage={updateStatus}
+      />
 
       <main className="profile-main">
         <div className="profile-overview section-card">
@@ -714,57 +733,152 @@ export function JobSeekerProfile() {
             )}
             {(profile?.documents && profile.documents.length > 0) ? (
               <div className="document-list">
-                {profile.documents.map((doc: DocumentRecord, index: number) => (
-                  <div key={doc.id || index} className="document-item">
-                    <div className="document-content">
-                      <FileText size={18} className="document-icon" />
-                      <div className="document-info">
-                        <p className="document-name" title={doc.documentFileName}>{doc.documentFileName || 'Unnamed Document'}</p>
-                        <p className="document-type">Type: {doc.documentType}</p>
-                        {doc.documentTitle && <p className="document-title">Title: {doc.documentTitle}</p>}
-                        {doc.documentNotes && <p className="document-notes">Notes: {doc.documentNotes}</p>}
-                        
-                        <div className="document-actions">
-                          <button 
-                            onClick={() => handlePreviewDocument(doc.documentPath, doc.documentFileName)} 
-                            className="button primary"
-                          >
-                            <Eye size={16} /> Preview
-                          </button>
-                          <button 
-                            onClick={() => handleDownloadDocument(doc.documentPath, doc.id, doc.documentFileName)} 
-                            className="button primary"
-                            disabled={downloadingDocId === doc.id}
-                          >
-                            {downloadingDocId === doc.id ? (
-                              <>
-                                <span className="download-spinner"></span> Downloading...
-                              </>
-                            ) : (
-                              <>
-                                <Download size={16} /> Download
-                              </>
-                            )}
-                          </button>
+                {(profile.documents || []).map((doc: DocumentRecord, index: number) => {
+                  const scoreClass = getScoreColorClass(doc.aiValidation?.document_authentication_percentage || 0);
+                  return (
+                    <div key={doc.id || index} className="document-item">
+                      <div className="document-content">
+                        <FileText size={18} className="document-icon" />
+                        <div className="document-info">
+                          <p className="document-name" title={doc.documentFileName}>{doc.documentFileName || 'Unnamed Document'}</p>
+                          <p className="document-type">Type: {doc.documentType}</p>
+                          {doc.documentTitle && <p className="document-title">Title: {doc.documentTitle}</p>}
+                          {doc.documentNotes && <p className="document-notes">Notes: {doc.documentNotes}</p>}
+                          
+                          <div className="document-actions">
+                            <button 
+                              onClick={() => handlePreviewDocument(doc.documentPath, doc.documentFileName)} 
+                              className="button primary"
+                            >
+                              <Eye size={16} /> Preview
+                            </button>
+                            <button 
+                              onClick={() => handleDownloadDocument(doc.documentPath, doc.id, doc.documentFileName)} 
+                              className="button primary"
+                              disabled={downloadingDocId === doc.id}
+                            >
+                              {downloadingDocId === doc.id ? (
+                                <>
+                                  <span className="download-spinner"></span> Downloading...
+                                </>
+                              ) : (
+                                <>
+                                  <Download size={16} /> Download
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* AI Document Validation - Now with consistent data from cache */}
+                        <div className="document-validation">
+                          <div className="validation-header">
+                            <Shield size={16} />
+                            <h3>AI Document Validation</h3>
+                          </div>
+                          
+                          {doc.aiValidation === null ? (
+                            // Fallback UI when AI validation is null/in progress
+                            <div className="validation-in-progress">
+                              <div className="validation-loading">
+                                <div className="validation-spinner">
+                                  <div className="validation-spinner-inner"></div>
+                                </div>
+                              </div>
+                              <h4 className="validation-progress-title">AI Validation in Progress</h4>
+                              <p className="validation-progress-message">
+                                Our AI is analyzing this document for authenticity and quality. 
+                                This process typically takes a few minutes.
+                              </p>
+                              <p className="validation-progress-note">
+                                Please check back later for the complete analysis results.
+                              </p>
+                            </div>
+                          ) : (
+                            // Regular UI when AI validation data is available
+                            <>
+                              <div className="authentication-score">
+                                <div className="score-gauge">
+                                  <div 
+                                    className={`score-fill ${scoreClass}`} 
+                                    style={{ width: `${doc.aiValidation?.document_authentication_percentage}%` }}
+                                  ></div>
+                                  <span className="score-value">{doc.aiValidation?.document_authentication_percentage}%</span>
+                                </div>
+                                <span className="score-label">Authentication Score</span>
+                              </div>
+                              
+                              <div className="validation-status-list">
+                                <div className={`validation-status-item ${!doc.aiValidation?.is_tampered ? "valid" : "invalid"}`}>
+                                  {!doc.aiValidation?.is_tampered ? (
+                                    <CheckSquare size={16} />
+                                  ) : (
+                                    <CircleAlert size={16} />
+                                  )}
+                                  <span>{!doc.aiValidation?.is_tampered ? "Not Tampered" : "Tampered"}</span>
+                                </div>
+                                <div className={`validation-status-item ${!doc.aiValidation?.is_blurry ? "valid" : "invalid"}`}>
+                                  {!doc.aiValidation?.is_blurry ? (
+                                    <CheckSquare size={16} />
+                                  ) : (
+                                    <CircleAlert size={16} />
+                                  )}
+                                  <span>{!doc.aiValidation?.is_blurry ? "Not Blurry" : "Blurry"}</span>
+                                </div>
+                                <div className={`validation-status-item ${doc.aiValidation?.is_text_clear ? "valid" : "invalid"}`}>
+                                  {doc.aiValidation?.is_text_clear ? (
+                                    <CheckSquare size={16} />
+                                  ) : (
+                                    <CircleAlert size={16} />
+                                  )}
+                                  <span>{doc.aiValidation?.is_text_clear ? "Text Clear" : "Text Unclear"}</span>
+                                </div>
+                                <div className={`validation-status-item ${!doc.aiValidation?.is_resubmission_required ? "valid" : "invalid"}`}>
+                                  {!doc.aiValidation?.is_resubmission_required ? (
+                                    <CheckSquare size={16} />
+                                  ) : (
+                                    <CircleAlert size={16} />
+                                  )}
+                                  <span>{!doc.aiValidation?.is_resubmission_required ? "No Resubmission Required" : "Resubmission Required"}</span>
+                                </div>
+                              </div>
+                              
+                              <div className="validation-notes">
+                                <div className="validation-notes-header">
+                                  <AlertCircle size={14} />
+                                  <span>AI Analysis Notes</span>
+                                </div>
+                                <p className={`validation-notes-content ${expandedNotesIds.has(doc.id || '') ? 'expanded' : ''}`}>
+                                  {doc.aiValidation?.notes}
+                                </p>
+                                <button 
+                                  className="toggle-notes-btn"
+                                  onClick={() => toggleNotes(doc.id)}
+                                >
+                                  {expandedNotesIds.has(doc.id || '') ? 'Show less' : 'Show full notes'}
+                                </button>
+                              </div>
+                            </>
+                          )}
                         </div>
                       </div>
+                      
+                      <div className="document-preview">
+                        {doc.documentPath ? (
+                          <PDFThumbnail 
+                            pdfUrl={pdfCache[doc.documentPath] || null}
+                            onClick={() => handlePreviewDocument(doc.documentPath, doc.documentFileName)}
+                          />
+                        ) : (
+                          <div className="document-preview-placeholder">
+                            <FileWarning size={24} className="document-preview-placeholder-icon" />
+                            <span>No preview available</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    
-                    <div className="document-preview">
-                      {doc.documentPath ? (
-                        <PDFThumbnail 
-                          pdfUrl={pdfCache[doc.documentPath] || null}
-                          onClick={() => handlePreviewDocument(doc.documentPath, doc.documentFileName)}
-                        />
-                      ) : (
-                        <div className="document-preview-placeholder">
-                          <FileWarning size={24} className="document-preview-placeholder-icon" />
-                          <span>No preview available</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <p className="empty-documents">No documents uploaded.</p>

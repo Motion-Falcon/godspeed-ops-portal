@@ -9,6 +9,7 @@ import { AddressQualificationsForm } from './AddressQualificationsForm';
 import { CompensationForm } from './CompensationForm';
 import { DocumentUploadForm } from './DocumentUploadForm';
 import { ConfirmationModal } from '../../components/ConfirmationModal';
+import { AppHeader } from '../../components/AppHeader';
 import { 
   submitProfile, 
   saveDraft as saveDraftAPI, 
@@ -1209,16 +1210,14 @@ export function ProfileCreate({ isEditMode = false, isDraftEditMode = false, isN
 
   return (
     <div className="profile-create-container">
-      <header className="common-header">
-        <div className="header-main">
-          <h1>
-            {isEditMode 
-              ? 'Edit Jobseeker Profile' 
-              : isDraftEditMode 
-                ? 'Edit Jobseeker Draft'
-                : 'Create Jobseeker Profile'}
-          </h1>
-          <div className="header-actions">
+      <AppHeader
+        title={isEditMode 
+          ? 'Edit Jobseeker Profile' 
+          : isDraftEditMode 
+            ? 'Edit Jobseeker Draft'
+            : 'Create Jobseeker Profile'}
+        actions={
+          <>
             <button 
               className="button" 
               onClick={() => navigate('/jobseeker-management')}
@@ -1245,23 +1244,16 @@ export function ProfileCreate({ isEditMode = false, isDraftEditMode = false, isN
                 <span>{loadingStates.draftSaving ? 'Saving...' : 'Save Draft'}</span>
               </button>
             )}
-          </div>
-        </div>
-        
-        {error && (
-          <div className="status-update-container">
-            <span className="status-update-message error">{error}</span>
-          </div>
-        )}
-        
-        {currentStep === 1 && isEmailAvailable === false && !error && (
-          <div className="status-update-container">
-            <span className="status-update-message error">
-              The email address is already in use. Please use a different email to continue.
-            </span>
-          </div>
-        )}
-      </header>
+          </>
+        }
+        statusMessage={
+          error ? error : 
+          (currentStep === 1 && isEmailAvailable === false) ? 
+            "The email address is already in use. Please use a different email to continue." : 
+            undefined
+        }
+        statusType={error || (currentStep === 1 && isEmailAvailable === false) ? "error" : undefined}
+      />
 
       {renderStepIndicator()}
       

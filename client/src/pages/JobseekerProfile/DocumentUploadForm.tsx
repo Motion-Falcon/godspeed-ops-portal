@@ -11,7 +11,7 @@ import {
 import { supabase } from '../../lib/supabaseClient';
 import PDFThumbnail from '../../components/PDFThumbnail';
 import PDFViewerModal from '../../components/PDFViewerModal';
-import { FileText, Eye, Download, FileWarning, AlertCircle, CheckCircle, Upload } from 'lucide-react';
+import { FileText, Eye, Download, FileWarning, AlertCircle, CheckCircle, Upload, Trash, Plus } from 'lucide-react';
 import '../../styles/components/form.css';
 import '../../styles/pages/JobseekerProfile.css';
 
@@ -123,7 +123,6 @@ function DocumentItem({
   onPreviewPdf,
   isLoading,
   onFileChange,
-  isEditMode = false,
   disableSubmit = false
 }: DocumentItemProps) {
   // Watch for changes within this specific item
@@ -154,9 +153,7 @@ function DocumentItem({
   const hasFileError = !!getDocumentFieldError(index, 'documentFile');
 
   // Add conditional text/behavior based on edit mode
-  const documentLabel = isEditMode ? 
-    `Document ${index + 1} (Edit Mode)` : 
-    `Document ${index + 1}`;
+  const documentLabel = `Document ${index + 1}`;
 
   // Update local PDF URL when a new file is selected or from cache when document path changes
   useEffect(() => {
@@ -287,27 +284,9 @@ function DocumentItem({
     <div className={`document-item${hasAnyError ? ' document-item-error' : ''}`}>
       <div className="document-content">
         <FileText size={18} className="document-icon" />
-        <div className="document-info">
+        <div className="document-upload-info">
           <div className="document-header">
             <h3>{documentLabel}</h3>
-            {index > 0 && !isEditMode && (
-              <button 
-                type="button" 
-                className="button remove-document" 
-                onClick={() => remove(index)}
-              >
-                Remove
-              </button>
-            )}
-            {index > 0 && isEditMode && (
-              <button 
-                type="button" 
-                className="button secondary remove-document" 
-                onClick={() => remove(index)}
-              >
-                Remove in Edit Mode
-              </button>
-            )}
           </div>
 
           {/* Display preview error if any */}
@@ -399,6 +378,9 @@ function DocumentItem({
                   </button>
                 </>
               )}
+              <>
+             
+              </>
             </div>
           </div>
         </div>
@@ -428,6 +410,17 @@ function DocumentItem({
         )}
         
         {renderFileStatus(currentDoc)}
+        <div className="remove-document-container">
+        {index > 0 && (
+              <button 
+                type="button" 
+                className="button remove-document" 
+                onClick={() => remove(index)}
+              >
+                <Trash size={16} />  Remove {documentLabel}
+              </button>
+            )}
+        </div>
       </div>
     </div>
   );
@@ -758,7 +751,7 @@ export function DocumentUploadForm({ allFields = [], disableSubmit = false, isEd
           onClick={handleAddDocument}
           disabled={disableSubmit}
         >
-          Add Another Document
+         <Plus size={16} /> Add Another Document
         </button>
       </div>
 
@@ -770,140 +763,7 @@ export function DocumentUploadForm({ allFields = [], disableSubmit = false, isEd
         onClose={() => setIsPdfModalOpen(false)}
       />
 
-      {/* Additional styles for document upload form */}
-      <style>
-        {`
-          .document-upload-placeholder {
-            margin-bottom: 15px;
-          }
-          
-          .document-uploaded-info {
-            margin-bottom: 15px;
-          }
-          
-          .file-missing-error {
-            margin-top: 8px;
-            font-size: 0.9rem;
-          }
-          
-          .document-file-section {
-            border-top: 1px dashed var(--color-border-light, #e0e0e0);
-            padding-top: 15px;
-            margin-top: 10px;
-          }
-          
-          .upload-note {
-            display: block;
-            font-size: 0.75rem;
-            margin-top: 8px;
-            opacity: 0.7;
-          }
-          
-          .add-document-container {
-            margin-top: 30px;
-            text-align: center;
-          }
-          
-          .add-document {
-            padding: 10px 20px;
-            font-size: 1rem;
-          }
-          
-          .form-input-file-hidden {
-            display: none;
-          }
-          
-          .file-upload-button {
-            display: inline-block;
-            padding: 8px 15px;
-          }
-          
-          .document-actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-          }
-          
-          .document-actions button {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 5px;
-            padding: 8px 12px;
-            font-size: 0.875rem;
-          }
-
-          .documents-error-banner {
-            background-color: rgba(220, 53, 69, 0.1);
-            border: 1px solid rgba(220, 53, 69, 0.3);
-            border-left: 4px solid #dc3545;
-            padding: 15px;
-            margin-bottom: 20px;
-            border-radius: 4px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-          }
-          
-          .documents-error-banner svg {
-            color: #dc3545;
-          }
-          
-          .documents-error-banner .error-message {
-            margin: 0;
-            color: #dc3545;
-            font-weight: 500;
-          }
-          
-          .document-validation-error {
-            background-color: rgba(220, 53, 69, 0.1);
-            border-left: 3px solid #dc3545;
-            padding: 10px 15px;
-            margin-bottom: 15px;
-            border-radius: 4px;
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-          }
-          
-          .document-validation-error svg {
-            color: #dc3545;
-            flex-shrink: 0;
-            margin-top: 3px;
-          }
-          
-          .document-validation-error .error-message {
-            margin: 0 0 5px 0;
-            color: #dc3545;
-            font-weight: 500;
-          }
-          
-          .document-item-error {
-            border-color: var(--danger, #dc3545);
-            box-shadow: 0 0 0 1px rgba(var(--danger-rgb, 220, 53, 69), 0.25);
-          }
-          
-          .error-input {
-            border-color: var(--danger, #dc3545) !important;
-          }
-          
-          .error-button {
-            border-color: var(--danger, #dc3545) !important;
-          }
-          
-          .document-preview-error {
-            border: 1px dashed var(--danger, #dc3545);
-            background-color: rgba(var(--danger-rgb, 220, 53, 69), 0.05);
-          }
-          
-          @media (max-width: 768px) {
-            .document-actions {
-              flex-direction: column;
-            }
-          }
-        `}
-      </style>
+    
     </div>
   );
 } 

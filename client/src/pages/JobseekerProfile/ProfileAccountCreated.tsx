@@ -235,7 +235,7 @@ export function ProfileAccountCreated() {
                 )}
                 
                 <button 
-                  className={`copy-btn ${copySuccess ? 'success' : ''}`} 
+                  className={`button ${copySuccess ? 'success' : ''}`} 
                   onClick={handleCopyCredentials}
                 >
                   {copySuccess ? (
@@ -255,78 +255,96 @@ export function ProfileAccountCreated() {
           )}
 
           {activeTab === 'profile' && (
-            <div className="profile-overview">
-              <div className="profile-banner">
-                <div className="profile-status">
-                  <Clock className="status-icon pending" />
-                  <span className="status-text pending">Pending</span>
+            <div className="profile-main">
+              <div className="profile-overview section-card">
+                <div className="profile-banner">
+                  <div className="profile-status pending">
+                    <Clock className="status-icon pending" />
+                    <span className="status-text pending">Status: Pending</span>
+                  </div>
+                </div>
+                
+                <div className="profile-details">
+                  <div className="profile-avatar-container">
+                    <div className="profile-avatar">
+                      <User size={40} />
+                    </div>
+                    <h1 className="profile-name">{getDisplayName()}</h1>
+                  </div>
+                  <div className="profile-info-header">
+                    <div className="profile-info-details">
+                      {renderDetailItem('Email', state.profile.email)}
+                      {renderDetailItem('Phone', state.profile.mobile)}
+                    </div>
+                  </div>
                 </div>
               </div>
               
-              <div className="profile-details">
-                <div className="profile-avatar">
-                  <User size={40} />
-                </div>
-                <div className="profile-info-header">
-                  <h1 className="profile-name">{getDisplayName()}</h1>
-                </div>
-              </div>
-
-              <div className="profile-details-grid">
-                <div className="details-section">
-                  <h3 className="section-title">Personal Information</h3>
-                  {renderDetailItem('First Name', state.profile.first_name)}
-                  {renderDetailItem('Last Name', state.profile.last_name)}
-                  {renderDetailItem('Email', state.profile.email)}
-                  {renderDetailItem('Mobile', state.profile.mobile)}
-                  {renderDetailItem('Date of Birth', formatDate(state.profile.dob))}
+              <div className="profile-content grid-container">
+                <div className="personal-details-section section-card">
+                  <h2 className="section-title">Personal Information</h2>
+                  <div className="detail-group">
+                    {renderDetailItem('First Name', state.profile.first_name)}
+                    {renderDetailItem('Last Name', state.profile.last_name)}
+                    {renderDetailItem('Email', state.profile.email)}
+                    {renderDetailItem('Mobile', state.profile.mobile)}
+                    {renderDetailItem('Date of Birth', formatDate(state.profile.dob))}
+                  </div>
                 </div>
 
-                <div className="details-section">
-                  <h3 className="section-title">Identification</h3>
-                  {renderDetailItem('License Number', state.profile.license_number)}
-                  {renderDetailItem('Passport Number', state.profile.passport_number)}
-                  {renderDetailItem('SIN Number', state.profile.sin_number)}
-                  {renderDetailItem('SIN Expiry', formatDate(state.profile.sin_expiry))}
-                  {renderDetailItem('Business Number', state.profile.business_number)}
-                  {renderDetailItem('Corporation Name', state.profile.corporation_name)}
+                <div className="identification-section section-card">
+                  <h2 className="section-title">Identification</h2>
+                  <div className="detail-group">
+                    {renderDetailItem('License Number', state.profile.license_number)}
+                    {renderDetailItem('Passport Number', state.profile.passport_number)}
+                    {renderDetailItem('SIN Number', state.profile.sin_number)}
+                    {renderDetailItem('SIN Expiry', formatDate(state.profile.sin_expiry))}
+                    {renderDetailItem('Business Number', state.profile.business_number)}
+                    {renderDetailItem('Corporation Name', state.profile.corporation_name)}
+                  </div>
                 </div>
 
-                <div className="details-section">
-                  <h3 className="section-title">Address</h3>
-                  {renderDetailItem('Street', state.profile.street)}
-                  {renderDetailItem('City', state.profile.city)}
-                  {renderDetailItem('Province', state.profile.province)}
-                  {renderDetailItem('Postal Code', state.profile.postal_code)}
+                <div className="address-section section-card">
+                  <h2 className="section-title">Address</h2>
+                  <div className="detail-group">
+                    {renderDetailItem('Street', state.profile.street)}
+                    {renderDetailItem('City', state.profile.city)}
+                    {renderDetailItem('Province', state.profile.province)}
+                    {renderDetailItem('Postal Code', state.profile.postal_code)}
+                  </div>
                 </div>
 
-                <div className="details-section">
-                  <h3 className="section-title">Qualifications</h3>
-                  {renderDetailItem('Work Preference', state.profile.work_preference)}
-                  {renderDetailItem('Bio', state.profile.bio)}
-                  {renderDetailItem('License Type', state.profile.license_type)}
-                  {renderDetailItem('Experience', state.profile.experience)}
-                  {renderDetailItem('Manual Driving', state.profile.manual_driving)}
-                  {renderDetailItem('Availability', state.profile.availability)}
-                  {renderDetailItem('Weekend Availability', state.profile.weekend_availability)}
+                <div className="qualifications-section section-card">
+                  <h2 className="section-title">Qualifications</h2>
+                  <div className="detail-group">
+                    {renderDetailItem('Work Preference', state.profile.work_preference)}
+                    {renderDetailItem('Bio', state.profile.bio)}
+                    {renderDetailItem('License Type', state.profile.license_type)}
+                    {renderDetailItem('Experience', state.profile.experience)}
+                    {renderDetailItem('Manual Driving', state.profile.manual_driving)}
+                    {renderDetailItem('Availability', state.profile.availability)}
+                    {renderDetailItem('Weekend Availability', state.profile.weekend_availability)}
+                  </div>
                 </div>
 
-                <div className="details-section">
-                  <h3 className="section-title">Compensation</h3>
-                  {renderDetailItem('Payrate Type', state.profile.payrate_type)}
-                  {renderDetailItem('Bill Rate', state.profile.bill_rate)}
-                  {renderDetailItem('Pay Rate', state.profile.pay_rate)}
-                  {renderDetailItem('Payment Method', state.profile.payment_method)}
-                  {renderDetailItem('HST/GST', state.profile.hst_gst)}
-                  {renderDetailItem('Cash Deduction', state.profile.cash_deduction)}
-                  {renderDetailItem('Overtime Enabled', state.profile.overtime_enabled)}
-                  {state.profile.overtime_enabled && (
-                    <>
-                      {renderDetailItem('Overtime Hours After', state.profile.overtime_hours)}
-                      {renderDetailItem('Overtime Bill Rate', state.profile.overtime_bill_rate)}
-                      {renderDetailItem('Overtime Pay Rate', state.profile.overtime_pay_rate)}
-                    </>
-                  )}
+                <div className="compensation-section section-card">
+                  <h2 className="section-title">Compensation</h2>
+                  <div className="detail-group">
+                    {renderDetailItem('Payrate Type', state.profile.payrate_type)}
+                    {renderDetailItem('Bill Rate', state.profile.bill_rate)}
+                    {renderDetailItem('Pay Rate', state.profile.pay_rate)}
+                    {renderDetailItem('Payment Method', state.profile.payment_method)}
+                    {renderDetailItem('HST/GST', state.profile.hst_gst)}
+                    {renderDetailItem('Cash Deduction', state.profile.cash_deduction)}
+                    {renderDetailItem('Overtime Enabled', state.profile.overtime_enabled)}
+                    {state.profile.overtime_enabled && (
+                      <>
+                        {renderDetailItem('Overtime Hours After', state.profile.overtime_hours)}
+                        {renderDetailItem('Overtime Bill Rate', state.profile.overtime_bill_rate)}
+                        {renderDetailItem('Overtime Pay Rate', state.profile.overtime_pay_rate)}
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

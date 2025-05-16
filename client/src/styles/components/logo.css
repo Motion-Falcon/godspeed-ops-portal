@@ -7,11 +7,11 @@
 }
 
 .logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
+  filter: drop-shadow(0 0 2em rgba(100, 100, 100, 0.6));
 }
 
 .logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+  filter: drop-shadow(0 0 2em rgba(97, 218, 251, 0.6));
 }
 
 @keyframes logo-spin {
@@ -31,9 +31,9 @@
 
 /* Logo Styling */
 .brand-logo {
-  width: 80px;
-  height: 80px;
-  background: rgba(255, 255, 255, 0.1);
+  width: 230px;
+  height: 230px;
+  /* background-color: var(--text-muted); */
   backdrop-filter: blur(10px);
   border-radius: 50%;
   display: flex;
@@ -42,13 +42,29 @@
   margin-bottom: var(--spacing-6);
   position: relative;
   animation: float 6s ease-in-out infinite;
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+  /* box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1); */
+  box-shadow: 0 10px 20px var(--text-muted);
+}
+
+.godspeed-logo { 
+  max-width: 100%;
+  max-height: 100%;
+  width: 180px;
+  height: auto;
+  object-fit: contain;
+  position: absolute;
+  margin-bottom: 40px;
+}
+
+/* Dark mode adjustments for logo */
+.dark .godspeed-logo {
+  filter: brightness(1.2);
 }
 
 .logo-shape {
   width: 50px;
   height: 50px;
-  background: linear-gradient(135deg, var(--gradient-amber), var(--gradient-yellow));
+  background: linear-gradient(135deg, var(--gradient-dark), var(--gradient-light));
   border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
   position: relative;
   overflow: hidden;
@@ -57,12 +73,12 @@
 
 /* Improve contrast for light mode */
 :root:not(.dark) .logo-shape {
-  background: linear-gradient(135deg, #D97706, #F59E0B); /* Darker amber for better contrast */
-  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+  background: linear-gradient(135deg, #333333, #DDDDDD); /* Dark gray to light gray */
+  box-shadow: 0 4px 12px rgba(51, 51, 51, 0.3);
 }
 
 .dark .logo-shape {
-  background: linear-gradient(135deg, var(--gradient-amber), var(--gradient-yellow));
+  background: linear-gradient(135deg, var(--gradient-dark), var(--gradient-light));
 }
 
 .logo-shape::after {
