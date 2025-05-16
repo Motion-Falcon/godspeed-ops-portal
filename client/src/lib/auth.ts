@@ -178,7 +178,7 @@ export const resendVerificationEmail = async (email: string) => {
 
 // Check auth state changes
 export const onAuthStateChange = (callback: (user: User | null) => void) => {
-  const { data } = supabase.auth.onAuthStateChange((event, session) => {
+  const { data } = supabase.auth.onAuthStateChange((_, session) => {
     callback(session?.user || null);
   });
   
