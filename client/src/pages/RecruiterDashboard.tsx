@@ -188,7 +188,7 @@ export function RecruiterDashboard() {
               >
                 Job Seeker Management
               </button>
-              <button
+              {/* <button
                 className="button outline"
                 onClick={() => navigate("/client-management")}
               >
@@ -199,7 +199,7 @@ export function RecruiterDashboard() {
                 onClick={() => navigate("/position-management")}
               >
                 Position Management
-              </button>
+              </button> */}
 
               {/* Reset Password button */}
               <button
