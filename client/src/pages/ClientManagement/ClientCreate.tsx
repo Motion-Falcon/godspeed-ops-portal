@@ -13,6 +13,7 @@ import {
   updateClient
 } from '../../services/api';
 import { ConfirmationModal } from '../../components/ConfirmationModal';
+import { AppHeader } from '../../components/AppHeader';
 import { ArrowLeft, Save } from 'lucide-react';
 import '../../styles/pages/ClientManagement.css';
 import '../../styles/components/form.css';
@@ -358,10 +359,10 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
   // Basic component structure - detailed form to be added
   return (
     <div className="page-container">
-      <header className="common-header">
-        <div className="header-main">
-          <h1>{pageTitle}</h1>
-          <div className="header-actions">
+      <AppHeader
+        title={pageTitle}
+        actions={
+          <>
             <button 
               className="button button-icon" 
               onClick={handleCancel}
@@ -380,16 +381,11 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
                 <span>{saving ? 'Saving...' : 'Save Draft'}</span>
               </button>
             )}
-          </div>
-        </div>
-        
-        {(error || success) && (
-          <div className="status-update-container">
-            {error && <span className="status-update-message error">{error}</span>}
-            {success && <span className="status-update-message">{success}</span>}
-          </div>
-        )}
-      </header>
+          </>
+        }
+        statusMessage={error || success}
+        statusType={error ? 'error' : 'success'}
+      />
 
       <div className="content-container">
         {lastSaved && !isEditMode && (

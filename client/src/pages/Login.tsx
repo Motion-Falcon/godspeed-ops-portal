@@ -10,6 +10,7 @@ import '../styles/variables.css';
 import '../styles/pages/Login.css';
 import '../styles/components/form.css';
 import '../styles/components/button.css';
+import godspeedLogo from '../assets/logos/godspped-logo.png';
 
 const loginSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address' }),
@@ -76,7 +77,7 @@ export function Login() {
         </div>
         <div className="brand-content">
           <div className="brand-logo">
-            CN
+            <img src={godspeedLogo} alt="Godspeed Logo" className="godspeed-logo" />
           </div>
           <h2 className="brand-title">Welcome back</h2>
           <p className="brand-description">

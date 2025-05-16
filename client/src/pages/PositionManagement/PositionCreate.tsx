@@ -19,6 +19,7 @@ import { ArrowLeft, Save } from 'lucide-react';
 import '../../styles/pages/PositionManagement.css';
 import '../../styles/components/form.css';
 import '../../styles/components/header.css';
+import { AppHeader } from '../../components/AppHeader';
 
 // Helper function for date formatting and validation
 const formatDateForInput = (date: Date): string => {
@@ -495,10 +496,10 @@ export function PositionCreate({ isEditMode = false, isEditDraftMode = false }: 
 
   return (
     <div className="page-container">
-      <header className="common-header">
-        <div className="header-main">
-          <h1>{pageTitle}</h1>
-          <div className="header-actions">
+      <AppHeader
+        title={pageTitle}
+        actions={
+          <>
             <button 
               className="button button-icon" 
               onClick={handleCancel}
@@ -517,16 +518,11 @@ export function PositionCreate({ isEditMode = false, isEditDraftMode = false }: 
                 <span>{saving ? 'Saving...' : 'Save Draft'}</span>
               </button>
             )}
-          </div>
-        </div>
-        
-        {(error || success) && (
-          <div className="status-update-container">
-            {error && <span className="status-update-message error">{error}</span>}
-            {success && <span className="status-update-message">{success}</span>}
-          </div>
-        )}
-      </header>
+          </>
+        }
+        statusMessage={error || success}
+        statusType={error ? "error" : success ? "success" : undefined}
+      />
 
       <div className="content-container">
         {lastSaved && !isEditMode && (

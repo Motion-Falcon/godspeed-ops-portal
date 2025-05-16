@@ -1,3 +1,6 @@
+/* Import Inter font from Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+
 /* Main CSS Entry Point */
 
 /* Variables and Base Styles */
@@ -5,26 +8,8 @@
 @import './utils.css';
 
 /* Component Styles */
-@import './components/alert.css';
 @import './components/button.css';
 @import './components/form.css';
 @import './components/logo.css';
 @import './components/theme-toggle.css';
-
-/* Page Styles will be imported directly by each page */
-
-/* Add a new CSS variable for primary color in RGB format */
-:root {
-  /* ... existing variables ... */
-  --color-primary-rgb: 5, 150, 105; /* RGB values for the primary color */
-  
-  /* ... rest of the existing variables ... */
-}
-
-/* Dark theme should also have the RGB value if it has a different primary color */
-:root[class~="dark"] {
-  /* ... existing dark theme variables ... */
-  --color-primary-rgb: 5, 150, 105; /* Adjust if the dark theme uses a different primary color */
-  
-  /* ... rest of the existing dark theme variables ... */
-} 
+@import './components/header.css';

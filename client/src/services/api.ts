@@ -179,8 +179,22 @@ export const registerUserAPI = async (email: string, password: string, name: str
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Registration failed');
+      // Handle specific status codes
+      if (error.response.status === 400 && error.response.data.error) {
+        // Usually indicates validation error or duplicate email
+        throw new Error(error.response.data.error);
+      } else if (error.response.status === 409) {
+        // Alternative status for conflicts (e.g., duplicate email)
+        throw new Error(error.response.data.error || 'An account with this email already exists');
+      } else if (error.response.status === 422) {
+        // Unprocessable entity - often validation errors
+        throw new Error(error.response.data.error || 'Invalid registration data');
+      } else {
+        // Generic error handling for other status codes
+        throw new Error(error.response.data.error || 'Registration failed');
+      }
     }
+    // For non-Axios errors
     throw error;
   }
 };
@@ -237,7 +251,7 @@ export const updatePasswordAPI = async (password: string) => {
     throw new Error('No authentication token available');
   }
   
-  const response = await fetch(`${API_URL}/auth/update-password`, {
+  const response = await fetch(`${API_URL}/api/auth/update-password`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

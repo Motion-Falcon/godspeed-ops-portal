@@ -7,6 +7,7 @@
   position: sticky;
   top: 0;
   z-index: 10;
+  font-family: var(--font-family);
 }
 
 .header-main {
@@ -15,6 +16,29 @@
   align-items: center;
   max-width: 1400px;
   margin: 0 auto;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+}
+
+.header-logo {
+  height: 40px;
+  width: auto;
+  object-fit: contain;
+}
+
+/* Dark mode adjustments for logo */
+.dark .header-logo {
+  filter: brightness(1.2);
 }
 
 .header-main button {
@@ -30,8 +54,9 @@
 .common-header h1 {
   font-size: 1.5rem;
   font-weight: 600;
-  color: var(--heading);
+  color: var(--text);
   margin: 0;
+  font-family: var(--font-family);
 }
 
 .status-update-container {
@@ -45,8 +70,26 @@
   font-size: 0.875rem;
   padding: var(--spacing-2) var(--spacing-4);
   border-radius: var(--border-radius);
-  background-color: var(--background-secondary);
+  background-color: var(--pending-bg);
   animation: fadeInOut 3s ease-in-out;
+  font-family: var(--font-family);
+}
+
+/* Status-specific messages */
+.status-update-message.success {
+  background-color: var(--success-bg);
+  color: var(--success);
+}
+
+.status-update-message.pending {
+  background-color: var(--pending-bg);
+  color: var(--pending);
+}
+
+.status-update-message.error,
+.status-update-message.failure {
+  background-color: var(--failure-bg);
+  color: var(--failure);
 }
 
 /* Responsive adjustments for header */

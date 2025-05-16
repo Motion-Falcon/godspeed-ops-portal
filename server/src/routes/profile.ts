@@ -13,6 +13,9 @@ const router = Router();
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
 
+// Get AI verification service URL from environment variables
+const aiVerificationUrl = process.env.AI_VERIFICATION_URL || 'https://ai-verification-ff5a17fb5c4a.herokuapp.com/analyze-profile-documents';
+
 if (!supabaseUrl || !supabaseKey) {
   console.error('Missing Supabase credentials');
   process.exit(1);
@@ -256,6 +259,28 @@ router.post('/submit',
         .from('jobseeker_profile_drafts')
         .delete()
         .eq('user_id', userId);
+
+      // Send profile data to AI verification service
+      try {
+        console.log(`Sending profile data to AI verification service at: ${aiVerificationUrl}`);
+        const verificationResponse = await fetch(aiVerificationUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(finalProfileData),
+        });
+        
+        if (verificationResponse.ok) {
+          const verificationResult = await verificationResponse.json();
+          console.log('AI verification service response:', verificationResult);
+        } else {
+          console.error('AI verification service error:', verificationResponse.status, await verificationResponse.text());
+        }
+      } catch (verificationError) {
+        console.error('Error sending data to AI verification service:', verificationError);
+        // Don't block profile creation if verification service fails
+      }
 
       // Include the created profile data in the response
       return res.status(200).json({

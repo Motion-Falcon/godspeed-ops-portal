@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAllJobseekerDrafts, deleteJobseekerDraft } from '../../services/api';
 import { ConfirmationModal } from '../../components/ConfirmationModal';
+import { AppHeader } from '../../components/AppHeader';
 import { Pencil, Trash2, ArrowLeft, Clock, User } from 'lucide-react';
 import '../../styles/pages/JobSeekerManagement.css';
 import '../../styles/components/header.css';
@@ -143,23 +144,17 @@ export function JobseekerDrafts() {
 
   return (
     <div className="page-container">
-      <header className="common-header">
-        <div className="header-main">
-          <h1>Job Seeker Profile Drafts</h1>
-          <div className="header-actions">
-            <button className="button" onClick={handleNavigateBack}>
-              <ArrowLeft size={16} />
-              <span>Back to Job Seekers</span>
-            </button>
-          </div>
-        </div>
-        
-        {success && (
-          <div className="status-update-container">
-            <span className="status-update-message">{success}</span>
-          </div>
-        )}
-      </header>
+      <AppHeader
+        title="Job Seeker Profile Drafts"
+        actions={
+          <button className="button" onClick={handleNavigateBack}>
+            <ArrowLeft size={16} />
+            <span>Back to Job Seekers</span>
+          </button>
+        }
+        statusMessage={success || error}
+        statusType={error ? 'error' : 'success'}
+      />
 
       <div className="content-container">
         {error && <div className="error-message">{error}</div>}

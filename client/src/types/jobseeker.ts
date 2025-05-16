@@ -8,6 +8,18 @@ export interface DocumentRecord {
   documentFileName?: string;
   documentNotes?: string;
   id?: string;
+  aiValidation?: AIValidationResponse | null;
+}
+
+// Interface for the AI validation response
+interface AIValidationResponse {
+  document_authentication_percentage: number;
+  is_tampered: boolean;
+  is_blurry: boolean;
+  is_text_clear: boolean;
+  is_resubmission_required: boolean;
+  notes: string;
+  document_status?: string;
 }
 
 export interface JobSeekerProfile {
