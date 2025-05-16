@@ -7,6 +7,9 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+// Get AI verification service URL from environment variables
+const aiVerificationUrl = process.env.AI_VERIFICATION_URL || 'https://ai-verification-ff5a17fb5c4a.herokuapp.com/analyze-profile-documents';
+
 // Type definition for the document structure within the JSONB column
 interface DocumentRecord {
   documentType: string;
@@ -15,6 +18,19 @@ interface DocumentRecord {
   documentFileName?: string;
   documentNotes?: string;
   id?: string;
+  // Add new field for AI validation response
+  aiValidation?: AIValidationResponse;
+}
+
+// Interface for the AI validation response
+interface AIValidationResponse {
+  document_authentication_percentage: number;
+  is_tampered: boolean;
+  is_blurry: boolean;
+  is_text_clear: boolean;
+  is_resubmission_required: boolean;
+  notes: string;
+  document_status?: string;
 }
 
 // Interface matching the actual database schema for jobseeker_profiles
@@ -103,6 +119,14 @@ if (!supabaseUrl || !supabaseServiceKey) {
 const supabaseAdmin = createClient(supabaseUrl!, supabaseServiceKey!); 
 
 const router = Router();
+
+// Helper function to generate a UUID
+function generateUUID() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
 
 // Apply only authentication middleware globally
 router.use(authenticateToken);
@@ -201,6 +225,53 @@ router.get('/profile/:id', async (req, res) => {
       formattedProfile[camelKey] = value;
     });
     
+    // If profile has documents, fetch AI validation data for each document
+    if (profile.documents && profile.documents.length > 0) {
+      // First, initialize all documents with null aiValidation
+      formattedProfile.documents = profile.documents.map((doc: DocumentRecord) => ({
+        ...doc,
+        aiValidation: null
+      }));
+
+      // Extract document IDs
+      const documentIds = profile.documents
+        .filter(doc => doc.id) // Filter out documents without an ID
+        .map(doc => doc.id);
+      
+      if (documentIds.length > 0) {
+        // Fetch AI validation data for these documents
+        const { data: aiValidations, error: aiError } = await supabaseAdmin
+          .from('ai_validation')
+          .select('document_id, ai_response, document_status')
+          .in('document_id', documentIds);
+          
+        if (aiError) {
+          console.error('Error fetching AI validation data:', aiError);
+          // Don't fail the whole request if we can't get validation data
+        } else if (aiValidations && aiValidations.length > 0) {
+          // Create a map of document_id to validation data for quick lookup
+          const validationMap = aiValidations.reduce((map, validation) => {
+            map[validation.document_id] = {
+              ...validation.ai_response,
+              document_status: validation.document_status
+            };
+            return map;
+          }, {} as { [key: string]: any });
+          
+          // Update documents with validation data where available
+          formattedProfile.documents = formattedProfile.documents.map((doc: DocumentRecord) => {
+            if (doc.id && validationMap[doc.id]) {
+              return {
+                ...doc,
+                aiValidation: validationMap[doc.id]
+              };
+            }
+            return doc; // Already has aiValidation: null from earlier
+          });
+        }
+      }
+    } 
+    
     // Fetch creator details if created_by_user_id exists
     if (profile.created_by_user_id) {
       try {
@@ -277,7 +348,7 @@ router.put('/profile/:id/status', async (req, res) => {
       })
       .eq('id', id)
       .select<string, DbJobseekerProfile>() // Specify type for select
-      .single(); // Expecting a single record update
+      .single();
 
     if (error) {
       console.error('Error updating profile status in database:', error);
@@ -376,6 +447,68 @@ router.put('/profile/:id/update', async (req, res) => {
       }
     }
 
+    // Get current profile documents to compare with updated documents
+    const { data: currentProfile, error: docFetchError } = await supabaseAdmin
+      .from('jobseeker_profiles')
+      .select('documents')
+      .eq('id', id)
+      .single();
+      
+    if (docFetchError) {
+      console.error('Error fetching current documents:', docFetchError);
+      // Continue with update, but log the error
+    }
+
+    // Handle document IDs - update IDs only when document path changes
+    if (profileData.documents && currentProfile?.documents) {
+      const currentDocuments = currentProfile.documents;
+      
+      // Create a map of existing document IDs to document objects for quick lookup
+      const existingDocsMap = new Map();
+      currentDocuments.forEach((doc: DocumentRecord) => {
+        if (doc.id) {
+          existingDocsMap.set(doc.id, doc);
+        }
+      });
+      
+      // Update document IDs whenever any document metadata changes
+      profileData.documents = profileData.documents.map((doc: any) => {
+        // If doc has an ID and it exists in current documents
+        if (doc.id && existingDocsMap.has(doc.id)) {
+          const oldDoc = existingDocsMap.get(doc.id);
+          
+          // Check if any metadata has changed
+          const hasMetadataChanged = 
+            doc.documentPath !== oldDoc.documentPath || 
+            doc.documentType !== oldDoc.documentType || 
+            doc.documentTitle !== oldDoc.documentTitle || 
+            doc.documentFileName !== oldDoc.documentFileName || 
+            doc.documentNotes !== oldDoc.documentNotes;
+          
+          if (hasMetadataChanged) {
+            // Document metadata changed, generate new ID
+            const newId = generateUUID();
+            const changedFields = [];
+            
+            if (doc.documentPath !== oldDoc.documentPath) changedFields.push('path');
+            if (doc.documentType !== oldDoc.documentType) changedFields.push('type');
+            if (doc.documentTitle !== oldDoc.documentTitle) changedFields.push('title');
+            if (doc.documentFileName !== oldDoc.documentFileName) changedFields.push('fileName');
+            if (doc.documentNotes !== oldDoc.documentNotes) changedFields.push('notes');
+            
+            console.log(`Document metadata changed - Old ID: ${doc.id}, New ID: ${newId}, Changed fields: ${changedFields.join(', ')}`);
+            
+            return {
+              ...doc,
+              id: newId // Generate a new UUID for the updated document
+            };
+          }
+        }
+        // No changes or new document, keep as is
+        return doc;
+      });
+    }
+
     // Prepare profile data for update - convert camelCase to snake_case
     const updateData: { [key: string]: any } = {};
     
@@ -432,6 +565,36 @@ router.put('/profile/:id/update', async (req, res) => {
     if (updateError) {
       console.error('Error updating profile:', updateError);
       return res.status(500).json({ error: 'Failed to update profile' });
+    }
+
+    console.log(updateData);
+    // Send profile data to AI verification service
+    try {
+      console.log(`Sending updated profile data to AI verification service at: ${aiVerificationUrl}`);
+      
+      // Create payload with user_id included
+      const verificationPayload = {
+        ...updateData,
+        user_id: existingProfile.user_id // Add the user_id to the payload
+      };
+      
+      const verificationResponse = await fetch(aiVerificationUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(verificationPayload),
+      });
+      
+      if (verificationResponse.ok) {
+        const verificationResult = await verificationResponse.json();
+        console.log('AI verification service response:', verificationResult);
+      } else {
+        console.error('AI verification service error:', verificationResponse.status, await verificationResponse.text());
+      }
+    } catch (verificationError) {
+      console.error('Error sending data to AI verification service:', verificationError);
+      // Don't block profile update if verification service fails
     }
 
     res.json({ 

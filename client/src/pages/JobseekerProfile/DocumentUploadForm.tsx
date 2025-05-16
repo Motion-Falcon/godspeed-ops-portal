@@ -284,7 +284,7 @@ function DocumentItem({
     <div className={`document-item${hasAnyError ? ' document-item-error' : ''}`}>
       <div className="document-content">
         <FileText size={18} className="document-icon" />
-        <div className="document-info">
+        <div className="document-upload-info">
           <div className="document-header">
             <h3>{documentLabel}</h3>
           </div>
