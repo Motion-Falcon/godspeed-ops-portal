@@ -9,8 +9,8 @@ import PDFThumbnail from '../components/PDFThumbnail';
 import PDFViewerModal from '../components/PDFViewerModal';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import { AppHeader } from '../components/AppHeader';
-import '../styles/pages/JobSeekerProfile.css';
 import '../styles/components/header.css';
+import '../styles/pages/JobseekerProfileStyles.css';
 
 // Define a local comprehensive type reflecting the backend response
 // TODO: Move this to shared types (e.g., client/src/types/jobseeker.ts) and update JobSeekerDetailedProfile
