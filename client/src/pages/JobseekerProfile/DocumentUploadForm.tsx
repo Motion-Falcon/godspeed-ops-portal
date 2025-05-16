@@ -13,7 +13,7 @@ import PDFThumbnail from '../../components/PDFThumbnail';
 import PDFViewerModal from '../../components/PDFViewerModal';
 import { FileText, Eye, Download, FileWarning, AlertCircle, CheckCircle, Upload, Trash, Plus } from 'lucide-react';
 import '../../styles/components/form.css';
-import '../../styles/pages/JobseekerProfile.css';
+import '../../styles/pages/JobseekerProfileStyles.css';
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 const ALLOWED_FILE_TYPES = ['application/pdf'];

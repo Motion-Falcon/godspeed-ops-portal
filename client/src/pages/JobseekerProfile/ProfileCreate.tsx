@@ -23,7 +23,7 @@ import {
 } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import '../../styles/components/form.css';
-import '../../styles/pages/JobseekerProfile.css';
+import '../../styles/pages/JobseekerProfileStyles.css';
 import '../../styles/components/header.css';
 import { ArrowLeft, Check, Save } from 'lucide-react';
 
