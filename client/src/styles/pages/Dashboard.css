@@ -56,6 +56,11 @@ div.logo {
   gap: var(--spacing-6);
 }
 
+.dashboard-grid button {
+  text-align: left;
+  justify-content: flex-start;
+}
+
 @media (min-width: 768px) {
   .dashboard-grid {
     grid-template-columns: 2fr 1fr;
