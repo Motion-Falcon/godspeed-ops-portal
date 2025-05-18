@@ -19,7 +19,7 @@ interface DocumentRecord {
   documentNotes?: string;
   id?: string;
   // Add new field for AI validation response
-  aiValidation?: AIValidationResponse;
+  aiValidation?: AIValidationResponse | null;
 }
 
 // Interface for the AI validation response
@@ -87,6 +87,8 @@ interface JobSeekerProfile {
   status: 'pending' | 'verified' | 'rejected';
   createdAt: string;
   location?: string;
+  experience?: string;
+  documents?: DocumentRecord[];
 }
 
 // Interface for the detailed JobSeekerProfile view (matches frontend expectation)
@@ -158,7 +160,7 @@ router.get('/', isAdminOrRecruiter, async (req, res) => {
     const { data: dbProfiles, error } = await supabaseAdmin
       .from('jobseeker_profiles')
       // Specify the type for Supabase select for better type inference
-      .select<string, DbJobseekerProfile>('id, user_id, first_name, last_name, email, verification_status, created_at, city, province, experience'); // Select necessary fields
+      .select<string, DbJobseekerProfile>('id, user_id, first_name, last_name, email, verification_status, created_at, city, province, experience, documents'); // Select necessary fields
       
     if (error) {
       console.error('Error fetching from jobseeker_profiles:', error);
@@ -178,8 +180,59 @@ router.get('/', isAdminOrRecruiter, async (req, res) => {
       status: profile.verification_status || 'pending',
       createdAt: profile.created_at,
       experience: profile.experience,
-      location: extractLocation(profile)
+      location: extractLocation(profile),
+      documents: profile.documents?.map((doc: DocumentRecord) => ({
+        ...doc,
+        aiValidation: null
+      })) || []
     }));
+
+    // Collect all document IDs across all profiles for bulk AI validation fetching
+    const allDocumentIds: string[] = [];
+    dbProfiles.forEach(profile => {
+      if (profile.documents && profile.documents.length > 0) {
+        profile.documents
+          .filter(doc => doc.id)
+          .forEach(doc => doc.id && allDocumentIds.push(doc.id));
+      }
+    });
+
+    // If we have documents to validate, fetch their validation data
+    if (allDocumentIds.length > 0) {
+      const { data: aiValidations, error: aiError } = await supabaseAdmin
+        .from('ai_validation')
+        .select('document_id, ai_response, document_status')
+        .in('document_id', allDocumentIds);
+        
+      if (aiError) {
+        console.error('Error fetching AI validation data for profiles list:', aiError);
+        // Don't fail the whole request if we can't get validation data
+      } else if (aiValidations && aiValidations.length > 0) {
+        // Create a map of document_id to validation data for quick lookup
+        const validationMap = aiValidations.reduce((map, validation) => {
+          map[validation.document_id] = {
+            ...validation.ai_response,
+            document_status: validation.document_status
+          };
+          return map;
+        }, {} as { [key: string]: any });
+        
+        // Update documents with validation data where available
+        formattedProfiles.forEach(profile => {
+          if (profile.documents && profile.documents.length > 0) {
+            profile.documents = profile.documents.map((doc: DocumentRecord) => {
+              if (doc.id && validationMap[doc.id]) {
+                return {
+                  ...doc,
+                  aiValidation: validationMap[doc.id]
+                };
+              }
+              return doc; // Keep aiValidation: null from earlier
+            });
+          }
+        });
+      }
+    }
       
     res.json(formattedProfiles);
 

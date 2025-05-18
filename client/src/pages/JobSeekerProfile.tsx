@@ -17,6 +17,8 @@ import {
   CheckSquare,
   Shield,
   CircleAlert,
+  AlertTriangle,
+  RefreshCw,
 } from "lucide-react";
 import {
   getJobseekerProfile,
@@ -109,6 +111,26 @@ const getDisplayLocation = (
   if (!profile) return undefined;
   const parts = [profile.city, profile.province].filter(Boolean);
   return parts.length > 0 ? parts.join(", ") : undefined;
+};
+
+// Helper function to check if profile needs attention based on document validation issues
+const profileNeedsAttention = (profile: FullJobseekerProfile | null): boolean => {
+  // Only check for pending profiles
+  if (!profile || profile.verificationStatus !== "pending") return false;
+  
+  // Check if profile has documents with AI validation issues
+  if (!profile.documents || profile.documents.length === 0) return false;
+  
+  return profile.documents.some(doc => {
+    if (!doc.aiValidation) return false;
+    
+    return (
+      doc.aiValidation.is_tampered === true ||
+      doc.aiValidation.is_blurry === true ||
+      doc.aiValidation.is_text_clear === true ||
+      doc.aiValidation.is_resubmission_required === true
+    );
+  });
 };
 
 // Helper function to decode HTML entities for slashes
@@ -233,12 +255,17 @@ export function JobSeekerProfile() {
       // Check the structure of the response to find the correct property
       console.log("Status update response:", response);
 
+      // Preserve the original documents with AI validation data
+      const preservedDocuments = profile.documents || [];
+
       // If response includes profile data with the updated status
       if (response.profile) {
-        // Make sure we preserve the correct structure
+        // Make sure we preserve the correct structure and documents
         setProfile({
           ...profile,
           ...response.profile,
+          // Keep the original documents with AI validation intact
+          documents: preservedDocuments,
           verificationStatus:
             response.profile.status ||
             response.profile.verificationStatus ||
@@ -634,24 +661,34 @@ export function JobSeekerProfile() {
       <main className="profile-main">
         <div className="profile-overview section-card">
           <div className="profile-banner">
-            <div
-              className={`profile-status ${
-                profile?.verificationStatus || "pending"
-              }`}
-            >
-              {getStatusIcon()}
-              <span
-                className={`status-text ${
+            <div className="profile-banner-status-container">
+              <div
+                className={`profile-status ${
                   profile?.verificationStatus || "pending"
                 }`}
               >
-                {profile?.verificationStatus
-                  ? `Status: ${
-                      profile.verificationStatus.charAt(0).toUpperCase() +
-                      profile.verificationStatus.slice(1)
-                    }`
-                  : "Status: Pending"}
-              </span>
+                {getStatusIcon()}
+                <span
+                  className={`status-text ${
+                    profile?.verificationStatus || "pending"
+                  }`}
+                >
+                  {profile?.verificationStatus
+                    ? `Status: ${
+                        profile.verificationStatus.charAt(0).toUpperCase() +
+                        profile.verificationStatus.slice(1)
+                      }`
+                    : "Status: Pending"}
+                </span>
+              </div>
+              {profileNeedsAttention(profile) && (
+                <div className="profile-status need-attention">
+                  <AlertTriangle className="status-icon need-attention" size={16} />
+                  <span className="status-text need-attention">
+                    Needs Attention
+                  </span>
+                </div>
+              )}
             </div>
             <div className="profile-actions-container">
               {(isAdmin || isRecruiter) && (
@@ -663,7 +700,7 @@ export function JobSeekerProfile() {
                     aria-label="Update status"
                   >
                     <span className="status-text">Update Status</span>{" "}
-                    <Pencil size={20} />
+                    <RefreshCw size={16} />
                   </button>
                 </div>
               )}

@@ -614,6 +614,13 @@ select.form-input {
   z-index: 1;
 }
 
+/* Add a status container for displaying multiple status pills */
+.profile-banner-status-container {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
 .profile-actions-container {
   display: flex;
   gap: var(--spacing-2);
@@ -673,42 +680,52 @@ select.form-input {
 }
 
 .profile-status.pending {
-  background-color: #fff8e6; /* Solid light yellow */
-  border: 1px solid #ffa000;
+  background-color: var(--background);
+  border: 1px solid var(--text-muted);
 }
 
+
+/* Profile status need-attention styling with animation */
+.profile-status.need-attention {
+  background-color: rgba(172, 78, 0, 0.15);
+  border: 1px solid rgba(172, 78, 0, 0.5);
+  animation: pulse-attention 2s infinite ease-in-out;
+}
+
+/* Dark mode enhancement for need-attention */
+.dark .profile-status.need-attention {
+  background-color: rgba(255, 153, 0, 0.25);
+  border: 1px solid rgba(255, 153, 0, 0.5);
+}
+
+/* Pulse animation for need-attention status */
+@keyframes pulse-attention {
+  0% { box-shadow: 0 0 0 0 rgba(172, 78, 0, 0.5); }
+  70% { box-shadow: 0 0 8px 3px rgba(172, 78, 0, 0.3); }
+  100% { box-shadow: 0 0 0 0 rgba(172, 78, 0, 0); }
+}
+
+
+/* Status icon for need-attention - darker orange */
+.profile-status .status-icon.need-attention {
+  color: #9c4500; /* Much darker orange for better contrast on white */
+}
+
+/* Status text for need-attention - darker orange */
+.profile-status .status-text.need-attention {
+  color: #9c4500; /* Much darker orange for better contrast on white */
+  font-weight: 700; /* Increased font weight for better visibility */
+}
+/* Status icons styling */
 .status-icon {
   width: 16px;
   height: 16px;
 }
 
-.status-icon.verified {
-  color: var(--color-success);
-}
-
-.status-icon.rejected {
-  color: var(--color-error);
-}
-
-.status-icon.pending {
-  color: var(--color-warning);
-}
-
+/* Status text styling */
 .status-text {
   font-size: 1rem;
   font-weight: 500;
-}
-
-.status-text.verified {
-  color: var(--color-success);
-}
-
-.status-text.rejected {
-  color: var(--color-error);
-}
-
-.status-text.pending {
-  color: var(--color-warning);
 }
 
 .profile-details {
@@ -1774,7 +1791,6 @@ select.form-input {
   margin-bottom: 24px;
   text-align: center;
   border: 1px solid var(--border);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 @keyframes pulse {
@@ -2121,3 +2137,4 @@ select.form-input {
     grid-template-columns: 1fr;
   }
 }
+

@@ -142,6 +142,10 @@
   color: var(--pending);
 }
 
+.status-text.need-attention {
+  color: #ff9900;
+}
+
 .status-text {
   font-weight: var(--font-weight-medium);
 }
@@ -156,6 +160,10 @@
 
 .status-text.pending {
   color: var(--pending);
+}
+
+.status-icon.need-attention {
+  color: #ff9900;
 }
 
 .experience-cell .experience-list {

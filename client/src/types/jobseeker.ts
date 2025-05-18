@@ -31,6 +31,7 @@ export interface JobSeekerProfile {
   experience: string;
   createdAt: string;
   location?: string;
+  documents?: DocumentRecord[];
 }
 
 export interface JobSeekerDetailedProfile extends JobSeekerProfile {

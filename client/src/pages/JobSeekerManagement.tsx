@@ -10,7 +10,8 @@ import {
   XCircle, 
   Clock,
   FileText,
-  Pencil
+  Pencil,
+  AlertTriangle
 } from 'lucide-react';
 import { getJobseekerProfiles, deleteJobseeker } from '../services/api';
 import { JobSeekerProfile } from '../types/jobseeker';
@@ -20,8 +21,29 @@ import '../styles/pages/JobSeekerManagement.css';
 import '../styles/components/header.css';
 import '../styles/components/CommonTable.css';
 
+// Extend the JobSeekerProfile type to include documents
+interface ExtendedJobSeekerProfile extends JobSeekerProfile {
+  documents?: Array<{
+    id?: string;
+    documentType: string;
+    documentPath?: string;
+    documentTitle?: string;
+    documentFileName?: string;
+    documentNotes?: string;
+    aiValidation?: {
+      document_authentication_percentage: number;
+      is_tampered: boolean;
+      is_blurry: boolean;
+      is_text_clear: boolean;
+      is_resubmission_required: boolean;
+      notes: string;
+      document_status?: string;
+    } | null;
+  }>;
+}
+
 export function JobSeekerManagement() {
-  const [profiles, setProfiles] = useState<JobSeekerProfile[]>([]);
+  const [profiles, setProfiles] = useState<ExtendedJobSeekerProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -34,8 +56,8 @@ export function JobSeekerManagement() {
   const [dateFilter, setDateFilter] = useState<string>('');
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [profileToDelete, setProfileToDelete] = useState<JobSeekerProfile | null>(null);
-  const [profileToEdit, setProfileToEdit] = useState<JobSeekerProfile | null>(null);
+  const [profileToDelete, setProfileToDelete] = useState<ExtendedJobSeekerProfile | null>(null);
+  const [profileToEdit, setProfileToEdit] = useState<ExtendedJobSeekerProfile | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const { isAdmin, isRecruiter } = useAuth();
@@ -92,8 +114,39 @@ export function JobSeekerManagement() {
     fetchProfiles();
   }, [isAdmin, isRecruiter, navigate]);
 
+  // Check if a profile needs attention based on AI validation
+  const profileNeedsAttention = (profile: ExtendedJobSeekerProfile): boolean => {
+    // Only check for pending profiles
+    if (profile.status !== 'pending') return false;
+    
+    // Check if profile has documents with AI validation issues
+    if (!profile.documents || profile.documents.length === 0) return false;
+    
+    return profile.documents.some(doc => {
+      if (!doc.aiValidation) return false;
+      
+      return (
+        doc.aiValidation.is_tampered === true ||
+        doc.aiValidation.is_blurry === true ||
+        doc.aiValidation.is_text_clear === true ||
+        doc.aiValidation.is_resubmission_required === true
+      );
+    });
+  };
+
+  // Get the effective status for display (including the 'need attention' status)
+  const getEffectiveStatus = (profile: ExtendedJobSeekerProfile): string => {
+    if (profile.status === 'pending' && profileNeedsAttention(profile)) {
+      return 'need-attention';
+    }
+    return profile.status;
+  };
+
   // Filter profiles based on all filter criteria
   const filteredProfiles = profiles.filter(profile => {
+    // Get the effective status for filtering
+    const effectiveStatus = getEffectiveStatus(profile);
+    
     // Global search filter
     const matchesGlobalSearch = searchTerm === '' || 
       profile.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -114,8 +167,10 @@ export function JobSeekerManagement() {
     const matchesExperience = experienceFilter === 'all' || 
       profile.experience === experienceFilter;
     
+    // Status filter handling for 'need-attention'
     const matchesStatus = statusFilter === 'all' || 
-      profile.status === statusFilter;
+      (statusFilter === 'need-attention' && effectiveStatus === 'need-attention') ||
+      (statusFilter !== 'need-attention' && profile.status === statusFilter);
     
     // Date filter
     const matchesDate = dateFilter === '' || 
@@ -133,9 +188,16 @@ export function JobSeekerManagement() {
         return <XCircle className="status-icon rejected" size={16} />;
       case 'pending':
         return <Clock className="status-icon pending" size={16} />;
+      case 'need-attention':
+        return <AlertTriangle className="status-icon need-attention" size={16} />;
       default:
         return <Clock className="status-icon pending" size={16} />;
     }
+  };
+
+  const formatStatusLabel = (status: string): string => {
+    if (status === 'need-attention') return 'Needs Attention';
+    return status.charAt(0).toUpperCase() + status.slice(1);
   };
 
   const handleCreateProfile = () => {
@@ -151,7 +213,7 @@ export function JobSeekerManagement() {
     navigate(`/jobseekers/${id}`);
   };
 
-  const handleEditClick = (profile: JobSeekerProfile) => {
+  const handleEditClick = (profile: ExtendedJobSeekerProfile) => {
     setProfileToEdit(profile);
     setIsEditModalOpen(true);
   };
@@ -170,7 +232,7 @@ export function JobSeekerManagement() {
     setProfileToEdit(null);
   };
 
-  const handleDeleteClick = (profile: JobSeekerProfile) => {
+  const handleDeleteClick = (profile: ExtendedJobSeekerProfile) => {
     setProfileToDelete(profile);
     setIsDeleteModalOpen(true);
     setDeleteError(null);
@@ -359,6 +421,7 @@ export function JobSeekerManagement() {
                             <option value="pending">Pending</option>
                             <option value="verified">Verified</option>
                             <option value="rejected">Rejected</option>
+                            <option value="need-attention">Needs Attention</option>
                           </select>
                         </div>
                       </div>
@@ -400,53 +463,56 @@ export function JobSeekerManagement() {
                       </td>
                     </tr>
                   ) : (
-                    filteredProfiles.map(profile => (
-                      <tr key={profile.id}>
-                        <td className="name-cell">{profile.name}</td>
-                        <td className="email-cell">{profile.email}</td>
-                        <td className="location-cell">{profile.location || 'N/A'}</td>
-                        <td className="experience-cell">{profile.experience}</td>
-                        <td className="status-cell">
-                          <div className="status-display">
-                            {getStatusIcon(profile.status)}
-                            <span className={`status-text ${profile.status}`}>
-                              {profile.status.charAt(0).toUpperCase() + profile.status.slice(1)}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="date-cell">
-                          {new Date(profile.createdAt).toLocaleDateString()}
-                        </td>
-                        <td className="actions-cell">
-                          <div className="action-buttons">
-                            <button 
-                              className="action-icon-btn view-btn"
-                              onClick={() => handleViewProfile(profile.id)}
-                              title="View profile details"
-                              aria-label="View profile"
-                            >
-                              <Eye size={20} />
-                            </button>
-                            <button 
-                              className="action-icon-btn edit-btn"
-                              onClick={() => handleEditClick(profile)}
-                              title="Edit this profile"
-                              aria-label="Edit profile"
-                            >
-                              <Pencil size={20} />
-                            </button>
-                            <button 
-                              className="action-icon-btn delete-btn"
-                              onClick={() => handleDeleteClick(profile)}
-                              title="Delete this profile"
-                              aria-label="Delete profile"
-                            >
-                              <Trash2 size={20} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
+                    filteredProfiles.map(profile => {
+                      const effectiveStatus = getEffectiveStatus(profile);
+                      return (
+                        <tr key={profile.id}>
+                          <td className="name-cell">{profile.name}</td>
+                          <td className="email-cell">{profile.email}</td>
+                          <td className="location-cell">{profile.location || 'N/A'}</td>
+                          <td className="experience-cell">{profile.experience}</td>
+                          <td className="status-cell">
+                            <div className="status-display">
+                              {getStatusIcon(effectiveStatus)}
+                              <span className={`status-text ${effectiveStatus}`}>
+                                {formatStatusLabel(effectiveStatus)}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="date-cell">
+                            {new Date(profile.createdAt).toLocaleDateString()}
+                          </td>
+                          <td className="actions-cell">
+                            <div className="action-buttons">
+                              <button 
+                                className="action-icon-btn view-btn"
+                                onClick={() => handleViewProfile(profile.id)}
+                                title="View profile details"
+                                aria-label="View profile"
+                              >
+                                <Eye size={20} />
+                              </button>
+                              <button 
+                                className="action-icon-btn edit-btn"
+                                onClick={() => handleEditClick(profile)}
+                                title="Edit this profile"
+                                aria-label="Edit profile"
+                              >
+                                <Pencil size={20} />
+                              </button>
+                              <button 
+                                className="action-icon-btn delete-btn"
+                                onClick={() => handleDeleteClick(profile)}
+                                title="Delete this profile"
+                                aria-label="Delete profile"
+                              >
+                                <Trash2 size={20} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
