@@ -1,7 +1,6 @@
 /* Dashboard Page Styles */
 .dashboard-container {
   min-height: 100vh;
-  background-color: var(--background);
   color: var(--text);
 }
 
