@@ -11,7 +11,9 @@
     "parse-prd": "node scripts/dev.js parse-prd"
   },
   "engines": {
-    "node": "16.x"
+    "node": "16.x",
+    "npm": "8.x",
+    "pnpm": "8.x"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
