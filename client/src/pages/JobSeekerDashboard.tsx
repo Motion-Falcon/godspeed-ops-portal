@@ -149,7 +149,7 @@ export function JobSeekerDashboard() {
           </div>
         </div>
         <p className="dashboard-subtitle">
-          Find your dream job and manage your applications
+          Discover opportunities at Godspeed pace with our intelligent job matching system
         </p>
 
         <div className="dashboard-grid">

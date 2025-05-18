@@ -132,7 +132,7 @@ export function RecruiterDashboard() {
           </div>
         </div>
         <p className="dashboard-subtitle">
-          Manage your job postings and candidates
+          Manage talent acquisition with Godspeed's lightning-fast recruiting tools
         </p>
 
         <div className="dashboard-grid">
