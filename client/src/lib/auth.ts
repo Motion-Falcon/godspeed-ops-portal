@@ -1,7 +1,84 @@
 import { supabase } from './supabaseClient';
 import type { User, AuthError } from '@supabase/supabase-js';
 import { resendVerificationEmailAPI, updatePasswordAPI } from '../services/api';
+import { VerificationStatus } from '../contexts/AuthContext';
 
+// User role types
+export type UserRole = 'jobseeker' | 'recruiter' | 'admin';
+
+// Extended user with our custom fields
+export interface AppUser extends User {
+  user_metadata: {
+    name: string;
+    user_type: UserRole;
+    hasProfile?: boolean;
+    [key: string]: unknown;
+  };
+}
+
+// Function to get user type safely with fallback
+export function getUserType(user: User | null): UserRole {
+  if (!user) return 'jobseeker'; // Default when no user
+  
+  const metadata = user.user_metadata || {};
+  const userType = metadata.user_type;
+  
+  if (userType === 'recruiter' || userType === 'admin') {
+    return userType;
+  }
+  
+  return 'jobseeker'; // Default
+}
+
+// Check if user has specific role
+export function hasRole(user: User | null, role: UserRole): boolean {
+  return getUserType(user) === role;
+}
+
+// Check if user is admin
+export function isAdmin(user: User | null): boolean {
+  return getUserType(user) === 'admin';
+}
+
+// Check if user is recruiter
+export function isRecruiter(user: User | null): boolean {
+  return getUserType(user) === 'recruiter';
+}
+
+// Check if user is jobseeker
+export function isJobSeeker(user: User | null): boolean {
+  return getUserType(user) === 'jobseeker';
+}
+
+// Check if jobseeker has created a profile
+export function hasJobseekerProfile(user: User | null): boolean {
+  if (!user) return false;
+  
+  const metadata = user.user_metadata || {};
+  return metadata.hasProfile;
+} 
+
+// Get jobseeker profile verification status
+export async function getJobseekerVerificationStatus(userId: string | undefined): Promise<VerificationStatus> {
+  if (!userId) return 'not_created';
+  
+  try {
+    const { data: profile, error } = await supabase
+      .from('jobseeker_profiles')
+      .select('verification_status')
+      .eq('user_id', userId)
+      .single();
+      
+    if (error || !profile) {
+      return 'not_created';
+    }
+    
+    return (profile.verification_status as VerificationStatus) || 'pending';
+  } catch (error) {
+    console.error('Error fetching verification status:', error);
+    return 'not_created';
+  }
+}
 // Register a new user
 export const registerUser = async (
   email: string, 

@@ -1,7 +1,7 @@
 import { ReactNode } from 'react';
 import godspeedLogo from '../assets/logos/godspped-logo-fulllength.png';
 import '../styles/components/header.css';
-
+import { useNavigate } from 'react-router-dom';
 interface AppHeaderProps {
   title: string;
   actions?: ReactNode;
@@ -15,11 +15,12 @@ export function AppHeader({
   statusMessage,
   statusType = 'success'
 }: AppHeaderProps) {
+  const navigate = useNavigate();
   return (
     <header className="common-header">
       <div className="header-main">
         <div className="header-left">
-          <div className="logo-container">
+          <div className="logo-container" onClick={() => navigate('/')}>
             <img src={godspeedLogo} alt="Godspeed Logo" className="header-logo" />
           </div>
         </div>

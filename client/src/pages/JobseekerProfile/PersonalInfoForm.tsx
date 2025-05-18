@@ -32,6 +32,13 @@ export function PersonalInfoForm({ allFields, onEmailAvailabilityChange, disable
   const emailTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   // Add a ref to track the latest request
   const latestRequestRef = useRef<number>(0);
+
+  // Get the maximum valid DOB date (18 years ago from today)
+  const getMaxDobDate = (): string => {
+    const today = new Date();
+    today.setFullYear(today.getFullYear() - 18);
+    return today.toISOString().split('T')[0];
+  };
   
   // Function to check if we should show an error for a specific field
   const shouldShowError = (fieldName: string) => {
@@ -49,6 +56,42 @@ export function PersonalInfoForm({ allFields, onEmailAvailabilityChange, disable
     if (existingDraftId) {
       navigate(`/jobseekers/drafts/edit/${existingDraftId}`);
     }
+  };
+
+  // DOB validation function
+  const validateDob = (value: string) => {
+    // Check if value is empty
+    if (!value) return true; // Let the required validation handle this
+
+    // Get today's date and reset the time portion
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Parse the selected date and reset the time portion
+    const selectedDate = new Date(value);
+    selectedDate.setHours(0, 0, 0, 0);
+
+    // Calculate the minimum DOB date (18 years ago)
+    const minAge = 18;
+    const minDobDate = new Date();
+    minDobDate.setFullYear(today.getFullYear() - minAge);
+    minDobDate.setHours(0, 0, 0, 0);
+
+    // Check if date is in the future
+    if (selectedDate > today) {
+      setError('dob', { type: 'manual', message: 'Date of birth cannot be in the future' });
+      return false;
+    }
+
+    // Check if person is at least 18 years old
+    if (selectedDate > minDobDate) {
+      setError('dob', { type: 'manual', message: 'Must be at least 18 years old' });
+      return false;
+    }
+
+    // Clear errors if validation passes
+    clearErrors('dob');
+    return true;
   };
 
   // Effect to check email availability when the email changes
@@ -208,13 +251,17 @@ export function PersonalInfoForm({ allFields, onEmailAvailabilityChange, disable
               id="dob"
               type="date"
               className="form-input"
-              {...register('dob')}
+              max={getMaxDobDate()}
+              {...register('dob', {
+                validate: validateDob
+              })}
               onClick={(e) => e.currentTarget.showPicker()}
             />
           </div>
           {shouldShowError('dob') && (
             <p className="error-message">{allErrors.dob?.message}</p>
           )}
+          <p className="field-note">Must be at least 18 years old</p>
         </div>
       </div>
 

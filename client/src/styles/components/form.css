@@ -270,18 +270,6 @@ a:hover {
   background-color: var(--success-bg);
 }
 
-.form-group:has(.auto-populated)::after {
-  content: '✓';
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--success);
-  font-weight: bold;
-  font-size: 1rem;
-  pointer-events: none;
-}
-
 .form-info {
   margin-top: var(--spacing-2);
   padding: var(--spacing-2) var(--spacing-3);

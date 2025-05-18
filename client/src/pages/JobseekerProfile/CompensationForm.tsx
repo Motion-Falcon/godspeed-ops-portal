@@ -1,13 +1,14 @@
 import { useFormContext } from 'react-hook-form';
 import { useState, useEffect } from 'react';
 import { z } from 'zod';
+import { useAuth } from '../../contexts/AuthContext';
 
 // Will define this schema in ProfileCreate.tsx
 const compensationSchema = z.object({
-  payrateType: z.enum(['Hourly', 'Daily', 'Monthly']),
-  billRate: z.string().min(1, { message: 'Bill rate is required' }),
-  payRate: z.string().min(1, { message: 'Pay rate is required' }),
-  paymentMethod: z.string().min(1, { message: 'Payment method is required' }),
+  payrateType: z.enum(['Hourly', 'Daily', 'Monthly']).optional(),
+  billRate: z.string().optional(),
+  payRate: z.string().optional(),
+  paymentMethod: z.string().optional(),
   hstGst: z.string().optional(),
   cashDeduction: z.string().optional(),
   overtimeEnabled: z.boolean().default(false),
@@ -26,6 +27,7 @@ interface CompensationFormProps {
 export function CompensationForm({ allFields }: CompensationFormProps) {
   const { register, watch, formState, trigger } = useFormContext<CompensationFormData>();
   const { errors: allErrors } = formState;
+  const { isJobSeeker } = useAuth();
   
   // Function to check if we should show an error for a specific field
   const shouldShowError = (fieldName: string) => {
@@ -57,10 +59,11 @@ export function CompensationForm({ allFields }: CompensationFormProps) {
       <h2>Compensation Details</h2>
       <p className="form-description">
         Please provide your compensation information. Fields marked with * are required.
+        {isJobSeeker && <span className="text-info"> As a jobseeker, bill rate and pay rate fields are optional.</span>}
       </p>
 
       <div className="form-group">
-        <label htmlFor="payrateType" className="form-label" data-required="*">Payrate Type</label>
+        <label htmlFor="payrateType" className="form-label" data-required={isJobSeeker ? "" : "*"}>Payrate Type</label>
         <select 
           id="payrateType"
           className="form-input"
@@ -77,7 +80,7 @@ export function CompensationForm({ allFields }: CompensationFormProps) {
 
       <div className="form-row">
         <div className="form-group">
-          <label htmlFor="billRate" className="form-label" data-required="*">Bill Rate ($)</label>
+          <label htmlFor="billRate" className="form-label" data-required={isJobSeeker ? "" : "*"}>Bill Rate ($)</label>
           <input
             id="billRate"
             type="number"
@@ -93,7 +96,7 @@ export function CompensationForm({ allFields }: CompensationFormProps) {
         </div>
 
         <div className="form-group">
-          <label htmlFor="payRate" className="form-label" data-required="*">Pay Rate ($)</label>
+          <label htmlFor="payRate" className="form-label" data-required={isJobSeeker ? "" : "*"}>Pay Rate ($)</label>
           <input
             id="payRate"
             type="number"
@@ -110,7 +113,7 @@ export function CompensationForm({ allFields }: CompensationFormProps) {
       </div>
 
       <div className="form-group">
-        <label htmlFor="paymentMethod" className="form-label" data-required="*">Payment Method</label>
+        <label htmlFor="paymentMethod" className="form-label" data-required={isJobSeeker ? "" : "*"}>Payment Method</label>
         <select
           id="paymentMethod"
           className="form-input"

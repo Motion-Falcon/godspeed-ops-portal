@@ -146,6 +146,7 @@ export function PositionCreate({ isEditMode = false, isEditDraftMode = false }: 
   const [pageTitle, setPageTitle] = useState('Create Position');
   const [clients, setClients] = useState<Array<{id: string, companyName: string}>>([]);
   const [minEndDate, setMinEndDate] = useState<string>(getTodayFormatted());
+  const [previousClientValue, setPreviousClientValue] = useState<string>("");
 
   // Get ID from URL params or location state
   const idFromParams = params.id;
@@ -348,6 +349,18 @@ export function PositionCreate({ isEditMode = false, isEditDraftMode = false }: 
     }
   }, [methods.watch('startDate')]);
 
+  // Function to handle "Create a new client" option
+  const handleCreateNewClient = () => {
+    // Save the current client value before navigating
+    setPreviousClientValue(methods.getValues('client'));
+    // Reset the dropdown in the next render cycle
+    setTimeout(() => {
+      methods.setValue('client', previousClientValue);
+    }, 0);
+    // Navigate to the client creation page
+    navigate('/client-management/create');
+  };
+
   const handleSaveDraft = async () => {
     const formData = methods.getValues();
     
@@ -548,6 +561,15 @@ export function PositionCreate({ isEditMode = false, isEditDraftMode = false }: 
                       className="form-input"
                       {...methods.register('client', {
                         onChange: (e) => {
+                          // Check if the "create new client" option is selected
+                          if (e.target.value === "create-new-client") {
+                            handleCreateNewClient();
+                            return;
+                          }
+                          
+                          // Save the selected value for restoration after navigation
+                          setPreviousClientValue(e.target.value);
+                          
                           // Trigger client data fetch on change
                           const clientId = e.target.value;
                           if (clientId) {
@@ -557,6 +579,7 @@ export function PositionCreate({ isEditMode = false, isEditDraftMode = false }: 
                       })}
                     >
                       <option value="">Select a client</option>
+                      <option value="create-new-client" className="create-client-option">➕ Create a new client</option>
                       {clients.map(client => (
                         <option key={client.id} value={client.id}>
                           {client.companyName}
@@ -673,7 +696,7 @@ export function PositionCreate({ isEditMode = false, isEditDraftMode = false }: 
                     <input
                       type="text"
                       id="clientManager"
-                      className="form-input auto-filled"
+                      className="form-input auto-populated"
                       placeholder="Auto-filled from client"
                       disabled
                       {...methods.register('clientManager')}
@@ -687,7 +710,7 @@ export function PositionCreate({ isEditMode = false, isEditDraftMode = false }: 
                     <input
                       type="text"
                       id="salesManager"
-                      className="form-input auto-filled"
+                      className="form-input auto-populated"
                       placeholder="Auto-filled from client"
                       disabled
                       {...methods.register('salesManager')}

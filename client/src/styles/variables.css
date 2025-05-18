@@ -36,11 +36,11 @@
   --failure-bg-light: #FFEBEE; /* Light red background */
   
   /* Status colors for dark mode */
-  --success-dark: #81C784; /* Lighter green for dark mode */
+  --success-dark: #4CAF50; /* Lighter green for dark mode */
   --success-bg-dark: #1B2E1C; /* Dark green background */
   --pending-dark: #BDBDBD; /* Light gray for dark mode */
   --pending-bg-dark: #2C2C2C; /* Dark gray background */
-  --failure-dark: #F44336; /* Brighter red for dark mode */
+  --failure-dark: #D32F2F; /* Brighter red for dark mode */
   --failure-bg-dark: #2E1A1A; /* Dark red background */
   
   /* Shadows for status indicators */

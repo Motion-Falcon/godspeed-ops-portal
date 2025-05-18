@@ -617,10 +617,10 @@ router.delete('/profile/:id', isAdminOrRecruiter, async (req, res) => {
   try {
     const { id } = req.params;
 
-    // First check if the profile exists
+    // First check if the profile exists and get the user_id
     const { data: profile, error: fetchError } = await supabaseAdmin
       .from('jobseeker_profiles')
-      .select('id')
+      .select('id, user_id')
       .eq('id', id)
       .single();
       
@@ -636,6 +636,9 @@ router.delete('/profile/:id', isAdminOrRecruiter, async (req, res) => {
       return res.status(404).json({ error: 'Profile not found' });
     }
 
+    // Store the user_id before deleting the profile
+    const userId = profile.user_id;
+
     // Use the admin client to bypass RLS for the delete operation
     const { error: deleteError } = await supabaseAdmin
       .from('jobseeker_profiles')
@@ -645,6 +648,41 @@ router.delete('/profile/:id', isAdminOrRecruiter, async (req, res) => {
     if (deleteError) {
       console.error('Error deleting profile from database:', deleteError);
       return res.status(500).json({ error: 'Failed to delete jobseeker profile' });
+    }
+
+    // Update the user metadata to set hasProfile to false
+    try {
+      // Get existing user metadata to preserve other fields
+      const { data: userData, error: userDataError } = await supabaseAdmin.auth.admin.getUserById(userId);
+      
+      if (!userDataError && userData?.user) {
+        const existingUserMetadata = userData.user.user_metadata || {};
+        
+        // Create merged metadata with hasProfile set to false
+        const mergedMetadata = {
+          ...existingUserMetadata,
+          hasProfile: false
+        };
+        
+        // Update user metadata with merged data
+        const { error: metadataError } = await supabaseAdmin.auth.admin.updateUserById(
+          userId,
+          { 
+            user_metadata: mergedMetadata
+          }
+        );
+        
+        if (metadataError) {
+          console.error('Error updating user metadata to remove hasProfile flag:', metadataError);
+        } else {
+          console.log(`Successfully updated hasProfile flag to false for user ${userId}`);
+        }
+      } else {
+        console.error('Error fetching user data for updating metadata:', userDataError);
+      }
+    } catch (metadataError) {
+      // Log error but don't fail the profile deletion
+      console.error('Error updating user metadata to remove hasProfile flag:', metadataError);
     }
 
     res.json({ 
@@ -660,22 +698,17 @@ router.delete('/profile/:id', isAdminOrRecruiter, async (req, res) => {
 
 /**
  * @route GET /api/jobseekers/drafts
- * @desc Get all jobseeker profile drafts for the current user
+ * @desc Get all jobseeker profile drafts
  * @access Private (Admin, Recruiter)
  */
 router.get('/drafts', isAdminOrRecruiter, async (req, res) => {
   try {
-    if (!req.user || !req.user.id) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
+    const userId = req.user && req.user.id;
 
-    const userId = req.user.id;
-
-    // Get all drafts for this user
+    // Get all drafts, not just for this user
     const { data: drafts, error } = await supabaseAdmin
       .from('jobseeker_profile_drafts')
       .select('*')
-      .eq('user_id', userId)
       .order('last_updated', { ascending: false });
 
     if (error) {
@@ -858,11 +891,7 @@ router.get('/drafts', isAdminOrRecruiter, async (req, res) => {
  */
 router.get('/drafts/:id', isAdminOrRecruiter, async (req, res) => {
   try {
-    if (!req.user || !req.user.id) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
-
-    const userId = req.user.id;
+    const userId = req?.user?.id;
     const { id } = req.params;
 
     // Get draft by ID
@@ -897,15 +926,12 @@ router.get('/drafts/:id', isAdminOrRecruiter, async (req, res) => {
 /**
  * @route POST /api/jobseekers/drafts
  * @desc Create a new jobseeker profile draft
- * @access Private (Admin, Recruiter)
+ * @access Public (Owner, Admin, Recruiter)
  */
-router.post('/drafts', isAdminOrRecruiter, async (req, res) => {
+router.post('/drafts', async (req, res) => {
   try {
-    if (!req.user || !req.user.id) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
 
-    const userId = req.user.id;
+    const userId = req.user?.id;
     const draftData = req.body;
     const currentStep = draftData.currentStep || 1;
     
@@ -951,14 +977,6 @@ router.post('/drafts', isAdminOrRecruiter, async (req, res) => {
 
     // Set the current timestamp
     const now = new Date().toISOString();
-
-    // Extract first name and last name for the draft title if needed
-    let title = 'Untitled Draft';
-    if (draftData.firstName && draftData.lastName) {
-      title = `${draftData.firstName} ${draftData.lastName}`;
-    } else if (email) {
-      title = `Draft for ${email}`;
-    }
 
     // Create new draft with tracking fields
     const { data: newDraft, error } = await supabaseAdmin
@@ -1006,15 +1024,11 @@ router.post('/drafts', isAdminOrRecruiter, async (req, res) => {
 /**
  * @route PUT /api/jobseekers/drafts/:id
  * @desc Update a jobseeker profile draft
- * @access Private (Admin, Recruiter)
+ * @access Public (Owner, Admin, Recruiter)
  */
-router.put('/drafts/:id', isAdminOrRecruiter, async (req, res) => {
+router.put('/drafts/:id', async (req, res) => {
   try {
-    if (!req.user || !req.user.id) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
-
-    const userId = req.user.id;
+    const userId = req.user?.id;
     const { id } = req.params;
     const draftData = req.body;
     const currentStep = draftData.currentStep || 1;
@@ -1081,14 +1095,6 @@ router.put('/drafts/:id', isAdminOrRecruiter, async (req, res) => {
     // Set the current timestamp
     const now = new Date().toISOString();
 
-    // Extract first name and last name for the draft title
-    let title = 'Untitled Draft';
-    if (draftData.firstName && draftData.lastName) {
-      title = `${draftData.firstName} ${draftData.lastName}`;
-    } else if (email) {
-      title = `Draft for ${email}`;
-    }
-
     // Update draft
     const { data: updatedDraft, error: updateError } = await supabaseAdmin
       .from('jobseeker_profile_drafts')
@@ -1137,19 +1143,13 @@ router.put('/drafts/:id', isAdminOrRecruiter, async (req, res) => {
  */
 router.delete('/drafts/:id', isAdminOrRecruiter, async (req, res) => {
   try {
-    if (!req.user || !req.user.id) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
-
-    const userId = req.user.id;
     const { id } = req.params;
 
-    // Check if draft exists and belongs to this user
+    // Check if draft exists (without user check)
     const { data: existingDraft, error: checkError } = await supabaseAdmin
       .from('jobseeker_profile_drafts')
       .select('id')
       .eq('id', id)
-      .eq('user_id', userId)
       .maybeSingle();
 
     if (checkError) {
@@ -1158,15 +1158,14 @@ router.delete('/drafts/:id', isAdminOrRecruiter, async (req, res) => {
     }
 
     if (!existingDraft) {
-      return res.status(404).json({ error: 'Draft not found or you do not have permission to delete it' });
+      return res.status(404).json({ error: 'Draft not found' });
     }
 
-    // Delete draft
+    // Delete draft (without user check)
     const { error: deleteError } = await supabaseAdmin
       .from('jobseeker_profile_drafts')
       .delete()
-      .eq('id', id)
-      .eq('user_id', userId);
+      .eq('id', id);
 
     if (deleteError) {
       console.error('Error deleting draft:', deleteError);

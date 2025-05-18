@@ -30,7 +30,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 router.post('/submit', 
   authenticateToken, 
   sanitizeInputs,
-  sensitiveRateLimiter,
+  // sensitiveRateLimiter,
   async (req: Request, res: Response) => {
     try {
       if (!req.user || !req.user.id) {
@@ -89,6 +89,8 @@ router.post('/submit',
 
       // Check if a user account exists with the submitted email
       let profileUserId = ""; // Default to empty string
+      let existingUserMetadata = {};
+      
       try {
         // Execute a custom SQL query to find a user with the given email
         const { data: userByEmail, error: userLookupError } = await supabase.rpc(
@@ -103,6 +105,12 @@ router.post('/submit',
           // If a user with the provided email exists, use their ID
           profileUserId = userByEmail;
           console.log(`Found existing user account for email ${profileData.email}, using ID: ${profileUserId}`);
+          
+          // Get existing user metadata to merge with updates
+          const { data: userData, error: userDataError } = await supabase.auth.admin.getUserById(profileUserId);
+          if (!userDataError && userData?.user) {
+            existingUserMetadata = userData.user.user_metadata || {};
+          }
         } else {
           console.log(`No existing user account found for email ${profileData.email}, creating new account`);
           
@@ -140,7 +148,7 @@ router.post('/submit',
               data: {
                 name: `${profileData.firstName} ${profileData.lastName}`,
                 user_type: 'jobseeker',
-                hasProfile: false, // Set hasProfile flag for new users
+                hasProfile: true, // Set hasProfile flag for new users
               },
             },
           });
@@ -150,6 +158,7 @@ router.post('/submit',
             profileUserId = userId; // Fallback to creator's ID
           } else if (newUser?.user) {
             profileUserId = newUser.user.id;
+            existingUserMetadata = newUser.user.user_metadata || {};
             console.log(`Created new user account with ID: ${profileUserId}`);
             
             // Add account information to the response
@@ -222,8 +231,7 @@ router.post('/submit',
         updated_by_user_id: userId
       };
 
-      // Create a new profile in database - use insert instead of upsert
-      // since we've already checked for email uniqueness
+      // Create a new profile in database
       const { data, error } = await supabase
         .from('jobseeker_profiles')
         .insert([finalProfileData])
@@ -234,19 +242,26 @@ router.post('/submit',
         return res.status(500).json({ error: 'Failed to create profile' });
       }
 
-      // Update user metadata to set hasProfile=true
+      // Update user metadata to set hasProfile=true while preserving existing metadata
       try {
-        // Use the profileUserId to update the user metadata
-
-        // Update user metadata
-        await supabase.auth.admin.updateUserById(
+        const mergedMetadata = {
+          ...existingUserMetadata,
+          hasProfile: true 
+        };
+        
+        // Update user metadata with merged data
+        const { error: metadataError } = await supabase.auth.admin.updateUserById(
           profileUserId,
           { 
-            user_metadata: { 
-              hasProfile: true 
-            } 
+            user_metadata: mergedMetadata
           }
         );
+        
+        if (metadataError) {
+          console.error('Error updating user metadata with hasProfile flag:', metadataError);
+        } else {
+          console.log(`Successfully updated hasProfile flag for user ${profileUserId}`);
+        }
       } catch (metadataError) {
         // Log error but don't fail the profile creation
         console.error('Error updating user metadata with hasProfile flag:', metadataError);
@@ -260,27 +275,29 @@ router.post('/submit',
         .delete()
         .eq('user_id', userId);
 
-      // Send profile data to AI verification service
-      try {
-        console.log(`Sending profile data to AI verification service at: ${aiVerificationUrl}`);
-        const verificationResponse = await fetch(aiVerificationUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(finalProfileData),
-        });
-        
-        if (verificationResponse.ok) {
-          const verificationResult = await verificationResponse.json();
-          console.log('AI verification service response:', verificationResult);
-        } else {
-          console.error('AI verification service error:', verificationResponse.status, await verificationResponse.text());
+      // Send profile data to AI verification service asynchronously
+      // This allows the response to be sent back immediately without waiting for verification
+      setTimeout(async () => {
+        try {
+          console.log(`Sending profile data to AI verification service at: ${aiVerificationUrl}`);
+          const verificationResponse = await fetch(aiVerificationUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(finalProfileData),
+          });
+          
+          if (verificationResponse.ok) {
+            const verificationResult = await verificationResponse.json();
+            console.log('AI verification service response:', verificationResult);
+          } else {
+            console.error('AI verification service error:', verificationResponse.status, await verificationResponse.text());
+          }
+        } catch (verificationError) {
+          console.error('Error sending data to AI verification service:', verificationError);
         }
-      } catch (verificationError) {
-        console.error('Error sending data to AI verification service:', verificationError);
-        // Don't block profile creation if verification service fails
-      }
+      }, 0);
 
       // Include the created profile data in the response
       return res.status(200).json({
@@ -518,7 +535,7 @@ router.put('/draft',
  */
 router.get('/draft', 
   authenticateToken,
-  apiRateLimiter,
+  // apiRateLimiter,
   async (req: Request, res: Response) => {
     try {
       if (!req.user || !req.user.id) {
@@ -539,8 +556,14 @@ router.get('/draft',
         return res.status(500).json({ error: 'Failed to fetch draft' });
       }
 
+      // Prepare draft data with ID included inside the draft object
+      const draftData = data ? {
+        ...data.form_data,
+        id: data.id  // Include the ID inside the draft object
+      } : null;
+
       return res.status(200).json({ 
-        draft: data ? data.form_data : null,
+        draft: draftData,
         currentStep: data ? data.current_step : 1,
         lastUpdated: data ? data.last_updated : null,
         // Include tracking fields in response
