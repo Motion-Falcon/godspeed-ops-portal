@@ -1506,12 +1506,9 @@ export function ProfileCreate({
         actions={
           <>
             {isJobSeeker && hasProfile && (
-              <button
-                className="button"
-                onClick={() => navigate("/jobseeker-management")}
-              >
+              <button className="button" onClick={() => navigate("/dashboard")}>
                 <ArrowLeft size={16} />
-                <span>Back to Jobseekers Management</span>
+                <span>Back to Dashboard</span>
               </button>
             )}
             {!isEditMode && (
@@ -1538,6 +1535,15 @@ export function ProfileCreate({
                 <span>
                   {loadingStates.draftSaving ? "Saving..." : "Save Draft"}
                 </span>
+              </button>
+            )}
+            {!isJobSeeker && (
+              <button
+                className="button button-icon"
+                onClick={() => navigate("/jobseeker-management")}
+              >
+                <ArrowLeft size={16} />
+                <span>Back to Jobseeker Management</span>
               </button>
             )}
           </>
