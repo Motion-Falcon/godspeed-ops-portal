@@ -756,7 +756,7 @@ export function PositionCreate({ isEditMode = false, isEditDraftMode = false }: 
               <div className="form-section">
                 <h2>Address Details</h2>
                 
-                <div className="form-info">
+                <div className="form-info" data-required="*">
                   <small>Note: Address details are auto-filled from the selected client but can be modified if needed</small>
                 </div>
                 

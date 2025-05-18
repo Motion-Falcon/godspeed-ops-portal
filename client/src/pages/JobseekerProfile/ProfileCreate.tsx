@@ -56,11 +56,9 @@ export const addressQualificationsSchema = z.object({
   postalCode: z.string().min(1, { message: "Postal code is required" }),
 
   // Qualifications fields
-  workPreference: z
-    .string()
-    .min(10, {
-      message: "Work preference is required and must be at least 10 characters",
-    }),
+  workPreference: z.string().min(10, {
+    message: "Work preference is required and must be at least 10 characters",
+  }),
   bio: z
     .string()
     .min(100, {
@@ -186,12 +184,9 @@ const formSchema = z
     city: z.string().min(1, { message: "City is required" }),
     province: z.string().min(1, { message: "Province is required" }),
     postalCode: z.string().min(1, { message: "Postal code is required" }),
-    workPreference: z
-      .string()
-      .min(10, {
-        message:
-          "Work preference is required and must be at least 10 characters",
-      }),
+    workPreference: z.string().min(10, {
+      message: "Work preference is required and must be at least 10 characters",
+    }),
     bio: z
       .string()
       .min(100, {
@@ -1511,13 +1506,13 @@ export function ProfileCreate({
         actions={
           <>
             {isJobSeeker && hasProfile && (
-            <button
-              className="button"
-              onClick={() => navigate("/jobseeker-management")}
-            >
-              <ArrowLeft size={16} />
-              <span>Back to Jobseekers Management</span>
-            </button>
+              <button
+                className="button"
+                onClick={() => navigate("/jobseeker-management")}
+              >
+                <ArrowLeft size={16} />
+                <span>Back to Jobseekers Management</span>
+              </button>
             )}
             {!isEditMode && (
               <button
@@ -1636,21 +1631,42 @@ export function ProfileCreate({
               )}
 
               {currentStep < totalSteps ? (
-                <button
-                  type="button"
-                  className="button primary"
-                  onClick={() => {
-                    setUserInteracted(true);
-                    handleContinue();
-                  }}
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <span className="loading-spinner"></span>
-                  ) : (
-                    "Continue"
+                <>
+                  <button
+                    type="button"
+                    className="button primary"
+                    onClick={() => {
+                      setUserInteracted(true);
+                      handleContinue();
+                    }}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <span className="loading-spinner"></span>
+                    ) : (
+                      "Continue"
+                    )}
+                  </button>
+                  {isEditMode && (
+                    <button
+                      type="submit"
+                      className="button primary"
+                      onClick={() => {
+                        console.log("Submit button clicked");
+                        setUserInteracted(true);
+                      }}
+                      disabled={isLoading && justMounted.current}
+                    >
+                      {loadingStates.submitting ? (
+                        <span className="loading-spinner"></span>
+                      ) : isEditMode ? (
+                        "Update Profile"
+                      ) : (
+                        "Create Profile"
+                      )}
+                    </button>
                   )}
-                </button>
+                </>
               ) : (
                 <button
                   type="submit"
@@ -1669,25 +1685,6 @@ export function ProfileCreate({
                     "Create Profile"
                   )}
                 </button>
-              )}
-              {isEditMode && (
-                <button
-                type="submit"
-                className="button primary"
-                onClick={() => {
-                  console.log("Submit button clicked");
-                  setUserInteracted(true);
-                }}
-                disabled={isLoading && justMounted.current}
-              >
-                {loadingStates.submitting ? (
-                  <span className="loading-spinner"></span>
-                ) : isEditMode ? (
-                  "Update Profile"
-                ) : (
-                  "Create Profile"
-                )}
-              </button>
               )}
             </div>
           </form>
