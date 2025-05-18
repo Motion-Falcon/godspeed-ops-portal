@@ -756,8 +756,6 @@ router.delete('/profile/:id', isAdminOrRecruiter, async (req, res) => {
  */
 router.get('/drafts', isAdminOrRecruiter, async (req, res) => {
   try {
-    const userId = req.user && req.user.id;
-
     // Get all drafts, not just for this user
     const { data: drafts, error } = await supabaseAdmin
       .from('jobseeker_profile_drafts')
@@ -944,7 +942,6 @@ router.get('/drafts', isAdminOrRecruiter, async (req, res) => {
  */
 router.get('/drafts/:id', isAdminOrRecruiter, async (req, res) => {
   try {
-    const userId = req?.user?.id;
     const { id } = req.params;
 
     // Get draft by ID
@@ -952,7 +949,6 @@ router.get('/drafts/:id', isAdminOrRecruiter, async (req, res) => {
       .from('jobseeker_profile_drafts')
       .select('*')
       .eq('id', id)
-      .eq('user_id', userId)
       .maybeSingle();
 
     if (error) {
@@ -1077,7 +1073,7 @@ router.post('/drafts', async (req, res) => {
 /**
  * @route PUT /api/jobseekers/drafts/:id
  * @desc Update a jobseeker profile draft
- * @access Public (Owner, Admin, Recruiter)
+ * @access Private (Admin, Recruiter)
  */
 router.put('/drafts/:id', async (req, res) => {
   try {
@@ -1092,12 +1088,11 @@ router.put('/drafts/:id', async (req, res) => {
       email = draftData.form_data.email;
     }
 
-    // Check if draft exists and belongs to this user
+    // Check if draft exists
     const { data: existingDraft, error: checkError } = await supabaseAdmin
       .from('jobseeker_profile_drafts')
       .select('id, email, created_at, created_by_user_id')
       .eq('id', id)
-      .eq('user_id', userId)
       .maybeSingle();
 
     if (checkError) {
@@ -1106,7 +1101,7 @@ router.put('/drafts/:id', async (req, res) => {
     }
 
     if (!existingDraft) {
-      return res.status(404).json({ error: 'Draft not found or you do not have permission to edit it' });
+      return res.status(404).json({ error: 'Draft not found' });
     }
 
     // If email has changed, check if it exists in profiles or other drafts
@@ -1161,7 +1156,6 @@ router.put('/drafts/:id', async (req, res) => {
         // Don't modify created_at and created_by_user_id on updates
       })
       .eq('id', id)
-      .eq('user_id', userId)
       .select()
       .single();
 
