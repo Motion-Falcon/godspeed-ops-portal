@@ -1,0 +1,518 @@
+/* ==========================================================================
+   Hamburger Menu - Core Styles
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Menu Overlay
+   -------------------------------------------------------------------------- */
+.menu-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.menu-overlay.open {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* --------------------------------------------------------------------------
+   Menu Container - Core Structure
+   -------------------------------------------------------------------------- */
+.hamburger-menu {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 68px; /* Collapsed width */
+  height: 100vh;
+  background-color: var(--card);
+  z-index: 1100;
+  padding: var(--spacing-6) var(--spacing-3);
+  box-shadow: var(--card-shadow);
+  transition: width 0.3s ease, padding 0.3s ease, box-shadow 0.3s ease;
+  overflow-x: hidden;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border);
+  visibility: visible;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+/* Expanded state */
+.hamburger-menu.open {
+  width: 250px; /* Expanded width */
+  padding: var(--spacing-6) var(--spacing-4);
+}
+
+/* Custom scrollbar for WebKit browsers */
+.hamburger-menu::-webkit-scrollbar {
+  width: 8px;
+}
+
+.hamburger-menu::-webkit-scrollbar-track {
+  background: transparent;
+  margin: var(--spacing-2) 0;
+}
+
+.hamburger-menu::-webkit-scrollbar-thumb {
+  background-color: var(--border);
+  border-radius: 20px;
+}
+
+.hamburger-menu::-webkit-scrollbar-thumb:hover {
+  background-color: var(--text-muted);
+}
+
+/* --------------------------------------------------------------------------
+   Menu Header
+   -------------------------------------------------------------------------- */
+.menu-header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-bottom: var(--spacing-4);
+  margin-bottom: var(--spacing-2);
+  border-bottom: 1px solid var(--border);
+  transition: all 0.3s ease;
+}
+
+.hamburger-menu.open .menu-header {
+  justify-content: space-between;
+}
+
+/* Toggle button visibility */
+.hamburger-menu .menu-header .toggle-button {
+  display: none;
+}
+
+.hamburger-menu.open .menu-header .toggle-button {
+  display: block;
+}
+
+/* Menu expand button */
+.menu-expand-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-2);
+  border-radius: 50%;
+  transition: all 0.3s ease;
+  width: 40px;
+  height: 40px;
+  color: var(--text);
+  margin: 0 auto;
+}
+
+.menu-expand-button:hover {
+  background-color: var(--text);
+  color: var(--background);
+  transform: scale(1.05);
+}
+
+.hamburger-menu.open .menu-expand-button {
+  display: none;
+}
+
+/* Theme toggle and close button */
+.theme-toggle-container,
+.close-button {
+  opacity: 0;
+  visibility: hidden;
+  position: absolute;
+  transition: opacity 0.3s ease 0.1s, visibility 0.3s ease 0.1s;
+}
+
+.hamburger-menu.open .theme-toggle-container,
+.hamburger-menu.open .close-button {
+  opacity: 1;
+  visibility: visible;
+  position: static;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+}
+
+.close-button:hover {
+  color: var(--failure);
+  transform: rotate(90deg);
+  background-color: var(--pending-bg);
+}
+
+/* --------------------------------------------------------------------------
+   Menu Items - General
+   -------------------------------------------------------------------------- */
+.menu-items {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+  flex: 1;
+  height: fit-content;
+  display: flex;
+  flex-direction: column;
+  gap: 0; /* Remove default gap for more control */
+}
+
+.menu-item {
+  margin-bottom: 0; /* Remove default margin for more control */
+  transition: transform var(--transition-fast);
+  text-align: center;
+}
+
+/* Apply consistent spacing to all top-level items in collapsed state */
+.hamburger-menu:not(.open) .menu-item,
+.hamburger-menu:not(.open) .submenu-item {
+  height: 40px; /* Fixed height for all items */
+  margin: 4px 0; /* Consistent spacing between all icons */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.menu-item:hover {
+  transform: translateX(2px);
+}
+
+.hamburger-menu.open .menu-item {
+  text-align: left;
+  /* margin-bottom: var(--spacing-2); */
+}
+
+/* Menu item links, toggles and buttons */
+.menu-item a,
+.menu-action-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-2);
+  color: var(--text);
+  text-decoration: none;
+  border-radius: var(--border-radius);
+  transition: all 0.3s ease;
+  font-weight: var(--font-weight-medium);
+  width: 100%;
+  background: none;
+  border: 1px solid transparent;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: 0.8rem;
+}
+
+.hamburger-menu.open .menu-item a,
+.hamburger-menu.open .menu-action-button {
+  justify-content: flex-start;
+  padding: var(--spacing-1);
+  text-align: left;
+  margin: var(--spacing-1) 0;
+}
+
+/* Underline effect */
+.menu-item a::before,
+.menu-action-button::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 0;
+  height: 2px;
+  background-color: var(--background);
+  transition: width var(--transition-normal);
+  z-index: 1;
+}
+
+.menu-item a:hover::before,
+.menu-action-button:hover::before {
+  width: 100%;
+  background-color: var(--background);
+}
+
+/* Menu item icons */
+.menu-item-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 0;
+  color: var(--text);
+  transition: color 0.3s ease, 
+              transform 0.3s ease,
+              margin-right 0.3s ease;
+  font-size: 18px; /* Consistent icon size */
+  flex-shrink: 0;
+  width: 24px; /* Fixed width for icons */
+  height: 24px; /* Fixed height for icons */
+}
+
+.hamburger-menu.open .menu-item-icon {
+  margin-right: var(--spacing-3);
+  color: var(--text-muted);
+  font-size: inherit;
+}
+
+/* Ensure consistent icon size in collapsed state */
+.hamburger-menu:not(.open) .menu-item-icon,
+.hamburger-menu:not(.open) .submenu-item .menu-item-icon {
+  font-size: 18px; /* Same size for all icons */
+  width: 24px;
+  height: 24px;
+}
+
+/* Menu item text */
+.menu-item-text {
+  position: absolute;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(20px);
+  transition: opacity 0.3s ease, 
+              transform 0.3s ease,
+              visibility 0.3s ease;
+  white-space: nowrap;
+}
+
+.hamburger-menu.open .menu-item-text {
+  position: static;
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(0);
+  transition-delay: 0.1s;
+}
+
+/* Hover states */
+.menu-item a:hover .menu-item-icon,
+.menu-item a.active .menu-item-icon,
+.menu-action-button:hover .menu-item-icon {
+  color: var(--background);
+}
+
+/* Active states */
+.menu-item a.active::before,
+.menu-action-button.active::before {
+  width: 100%;
+}
+
+/* --------------------------------------------------------------------------
+   Menu Categories (replaces submenu toggles)
+   -------------------------------------------------------------------------- */
+.menu-category {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Category header */
+.menu-category-header {
+  display: none; /* Hidden in collapsed state to prevent gaps */
+  align-items: center;
+  justify-content: flex-start; /* Left align in all states */
+  padding: var(--spacing-1) var(--spacing-3) var(--spacing-1) 0;
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: var(--font-weight-semibold);
+  margin: var(--spacing-1) 0;
+  white-space: nowrap;
+  overflow: hidden;
+  border-bottom: 1px dashed var(--border);
+}
+
+.hamburger-menu.open .menu-category-header {
+  display: flex; /* Show in expanded state */
+}
+
+/* Remove previous icon styles */
+.menu-category-header .menu-item-text {
+  position: static;
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  white-space: nowrap;
+  width: 100%;
+}
+
+/* Collapsed state - ensure proper tooltip behavior */
+.hamburger-menu:not(.open) .menu-category:hover::after {
+  content: attr(data-category);
+  position: absolute;
+  left: 70px;
+  background-color: var(--card);
+  padding: var(--spacing-2) var(--spacing-3);
+  border-radius: var(--border-radius);
+  box-shadow: var(--card-shadow);
+  color: var(--text);
+  font-size: 0.8rem;
+  white-space: nowrap;
+  z-index: 1200;
+}
+
+/* Category items container */
+.menu-category-items {
+  list-style-type: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0; /* Remove default gap in collapsed mode */
+}
+
+/* Submenu items within category */
+.submenu-item {
+  margin-top: 0; /* Remove for consistent spacing */
+  margin-bottom: 0; /* Remove for consistent spacing */
+  transition: transform 0.3s ease-out, opacity 0.3s ease;
+  white-space: nowrap;
+}
+
+.submenu-item a {
+  padding: var(--spacing-2);
+  font-weight: var(--font-weight-normal);
+  font-size: 0.8rem;
+}
+
+/* Ensure consistent vertical alignment in collapsed state */
+.hamburger-menu:not(.open) .submenu-item a {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Only show icons in collapsed state */
+.hamburger-menu:not(.open) .submenu-item .menu-item-text {
+  display: none;
+}
+
+/* --------------------------------------------------------------------------
+   Active and Hover States
+   -------------------------------------------------------------------------- */
+.menu-item a:hover,
+.submenu-item a:hover,
+.menu-action-button:hover,
+.menu-item a.active,
+.submenu-item a.active,
+.menu-action-button.active {
+  background-color: var(--text);
+  color: var(--background);
+}
+
+/* Ensure the action button icons change color consistently */
+.menu-action-button:hover .menu-item-icon,
+.menu-action-button.active .menu-item-icon {
+  color: var(--background);
+}
+
+/* --------------------------------------------------------------------------
+   Menu Footer
+   -------------------------------------------------------------------------- */
+.menu-footer {
+  margin-top: auto;
+  padding-top: var(--spacing-4);
+  border-top: 1px solid var(--border);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.hamburger-menu.open .menu-footer {
+  opacity: 1;
+  visibility: visible;
+  height: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+/* Logout button */
+.logout-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-2);
+  background-color: var(--failure-bg);
+  color: var(--failure);
+  border: 1px solid transparent;
+  border-radius: var(--border-radius);
+  padding: var(--spacing-3);
+  cursor: pointer;
+  font-weight: var(--font-weight-medium);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  transform: translateY(20px);
+  opacity: 0;
+}
+
+.hamburger-menu.open .logout-button {
+  transform: translateY(0);
+  opacity: 1;
+  transition-delay: 0.2s;
+}
+
+/* Logout button shine effect */
+.logout-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
+  transition: left 0.7s;
+}
+
+.logout-button:hover {
+  background-color: var(--failure);
+  color: white;
+  border-color: var(--failure);
+}
+
+.logout-button:hover::before {
+  left: 100%;
+}
+
+/* --------------------------------------------------------------------------
+   Theme-specific and Responsive Styles
+   -------------------------------------------------------------------------- */
+/* Dark mode specific adjustments */
+.dark .hamburger-menu {
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+.dark .hamburger-menu.open {
+  box-shadow: var(--glow), 0 0 25px rgba(0, 0, 0, 0.7);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .hamburger-menu.open {
+    width: 240px;
+  }
+}
+

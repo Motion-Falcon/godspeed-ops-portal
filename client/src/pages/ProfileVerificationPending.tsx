@@ -1,25 +1,12 @@
 import { useAuth } from "../contexts/AuthContext";
-import { logoutUser } from "../lib/auth";
 import { useState } from "react";
 import { AppHeader } from "../components/AppHeader";
-import { LogOut, RefreshCw } from "lucide-react";
-import { ThemeToggle } from "../components/theme-toggle";
+import { RefreshCw } from "lucide-react";
 
 export function ProfileVerificationPending() {
   const { refetchProfileStatus } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  const handleLogout = async () => {
-    try {
-      setIsLoggingOut(true);
-      await logoutUser();
-      window.location.href = "/login";
-    } catch (error) {
-      console.error("Error logging out:", error);
-      setIsLoggingOut(false);
-    }
-  };
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -28,28 +15,9 @@ export function ProfileVerificationPending() {
   };
 
   return (
-    <>
+    <div className="page-container">
       <AppHeader
         title="Profile Verification"
-        actions={
-          <>
-            <ThemeToggle />
-            <button
-              className="button button-icon"
-              onClick={handleLogout}
-              disabled={isLoggingOut}
-            >
-              {isLoggingOut ? (
-                <span className="loading-spinner"></span>
-              ) : (
-                <>
-                  <LogOut className="icon" size={16} />
-                  <span>Log out</span>
-                </>
-              )}
-            </button>
-          </>
-        }
       />
       <div className="centered-container">
         <div className="centered-card">
@@ -85,6 +53,6 @@ export function ProfileVerificationPending() {
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

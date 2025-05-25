@@ -1,15 +1,12 @@
 import { useState, useEffect } from "react";
 import {
-  LogOut,
   User as UserIcon,
   Activity,
   BookOpen,
   KeyRound
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
-import { logoutUser } from "../lib/auth";
 import { useNavigate } from "react-router-dom";
-import { ThemeToggle } from "../components/theme-toggle";
 import { checkApiHealth } from "../services/api";
 import { supabase } from "../lib/supabaseClient";
 import "../styles/components/header.css";
@@ -27,7 +24,6 @@ interface UserData {
 
 export function JobSeekerDashboard() {
   const { user } = useAuth();
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [healthStatus, setHealthStatus] = useState<string | null>(null);
   const navigate = useNavigate();
   const [userData, setUserData] = useState<UserData | null>(null);
@@ -72,17 +68,6 @@ export function JobSeekerDashboard() {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      setIsLoggingOut(true);
-      await logoutUser();
-      navigate("/login");
-    } catch (error) {
-      console.error("Error logging out:", error);
-      setIsLoggingOut(false);
-    }
-  };
-
   const handleViewProfile = () => {
     if (userData?.profileId) {
       navigate(`/jobseekers/${userData.profileId}`);
@@ -120,25 +105,6 @@ export function JobSeekerDashboard() {
       {/* Header */}
       <AppHeader 
         title="Job Seeker Portal" 
-        actions={
-          <>
-            <ThemeToggle />
-            <button
-              className="button button-icon"
-              onClick={handleLogout}
-              disabled={isLoggingOut}
-            >
-              {isLoggingOut ? (
-                <span className="loading-spinner"></span>
-              ) : (
-                <>
-                  <LogOut className="icon" size={16} />
-                  <span>Log out</span>
-                </>
-              )}
-            </button>
-          </>
-        }
       />
 
       {/* Main content */}

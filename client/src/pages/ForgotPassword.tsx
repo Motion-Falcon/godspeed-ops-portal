@@ -5,7 +5,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { resetPassword } from "../lib/auth";
 import { ArrowLeft, MailCheck } from "lucide-react";
-import { ThemeToggle } from "../components/theme-toggle";
 import { AppHeader } from "../components/AppHeader";
 import "../styles/variables.css";
 import "../styles/pages/ForgotPassword.css";
@@ -54,7 +53,7 @@ export function ForgotPassword() {
 
   if (isSuccess) {
     return (
-      <>
+      <div className="page-container">
         <AppHeader
           title="Password Reset"
           actions={
@@ -69,9 +68,6 @@ export function ForgotPassword() {
         />
         <div className="centered-container">
           <div className="centered-card">
-            <div className="toggle-container">
-              <ThemeToggle />
-            </div>
 
             <div className="icon-circle">
               <MailCheck />
@@ -106,12 +102,12 @@ export function ForgotPassword() {
             </div>
           </div>
         </div>
-      </>
+      </div>
     );
   }
 
   return (
-    <>
+    <div className="page-container">
       <AppHeader
         title="Password Reset"
         actions={
@@ -123,10 +119,6 @@ export function ForgotPassword() {
       />
       <div className="centered-container">
         <div className="form-container">
-          <div className="toggle-container">
-            <ThemeToggle />
-          </div>
-
           <div>
             <Link to="/login" className="back-link">
               <ArrowLeft className="icon" size={16} />
@@ -169,6 +161,6 @@ export function ForgotPassword() {
           </form>
         </div>
       </div>
-    </>
+    </div>
   );
 }
