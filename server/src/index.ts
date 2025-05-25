@@ -26,7 +26,7 @@ const PORT = process.env.PORT || 5000;
 app.use(forceTLS);
 app.use(configureSecurityHeaders);
 app.use(requestTracker);
-app.use(apiRateLimiter); // Global rate limiter
+// app.use(apiRateLimiter); // Global rate limiter
 app.use(sanitizeInputs); // Global input sanitization
 
 // Standard Middleware

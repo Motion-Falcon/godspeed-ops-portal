@@ -67,6 +67,16 @@
   color: var(--danger);
 }
 
+/* Create client option styling */
+.create-client-option {
+  font-weight: 500;
+  color: #0066cc;
+  background-color: #f0f8ff;
+  border-top: 1px solid #e0e0e0;
+  margin-top: 5px;
+  padding-top: 8px !important;
+}
+
 /* Responsive Styles */
 @media (max-width: 768px) {
   /* Removed table-related media queries */

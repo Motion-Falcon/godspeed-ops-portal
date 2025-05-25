@@ -1,29 +1,36 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { z } from 'zod';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { updatePasswordWithResetToken } from '../lib/auth';
-import { Eye, EyeOff, Check, AlertCircle } from 'lucide-react';
-import { ThemeToggle } from '../components/theme-toggle';
-import { supabase } from '../lib/supabaseClient';
-import '../styles/variables.css';
-import '../styles/pages/ForgotPassword.css';
-import '../styles/components/form.css';
-import '../styles/components/button.css';
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { updatePasswordWithResetToken } from "../lib/auth";
+import { Eye, EyeOff, Check, AlertCircle, ArrowLeft } from "lucide-react";
+import { ThemeToggle } from "../components/theme-toggle";
+import { supabase } from "../lib/supabaseClient";
+import "../styles/variables.css";
+import "../styles/pages/ForgotPassword.css";
+import "../styles/components/form.css";
+import "../styles/components/button.css";
+import { AppHeader } from "../components/AppHeader";
 
-const resetPasswordSchema = z.object({
-  password: z
-    .string()
-    .min(8, { message: 'Password must be at least 8 characters' })
-    .regex(/[A-Z]/, { message: 'Password must contain at least one uppercase letter' })
-    .regex(/[a-z]/, { message: 'Password must contain at least one lowercase letter' })
-    .regex(/[0-9]/, { message: 'Password must contain at least one number' }),
-  confirmPassword: z.string()
-}).refine(data => data.password === data.confirmPassword, {
-  message: 'Passwords do not match',
-  path: ['confirmPassword']
-});
+const resetPasswordSchema = z
+  .object({
+    password: z
+      .string()
+      .min(8, { message: "Password must be at least 8 characters" })
+      .regex(/[A-Z]/, {
+        message: "Password must contain at least one uppercase letter",
+      })
+      .regex(/[a-z]/, {
+        message: "Password must contain at least one lowercase letter",
+      })
+      .regex(/[0-9]/, { message: "Password must contain at least one number" }),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
 
 type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
 
@@ -43,26 +50,26 @@ export function ResetPassword() {
     const checkForTokens = async () => {
       // Check URL hash for access_token
       const hashParams = new URLSearchParams(location.hash.substring(1));
-      const accessToken = hashParams.get('access_token');
-      const type = hashParams.get('type');
-      
+      const accessToken = hashParams.get("access_token");
+      const type = hashParams.get("type");
+
       // Check URL query for initial recovery token
       const queryParams = new URLSearchParams(location.search);
-      const recoveryToken = queryParams.get('token');
-      const recoveryType = queryParams.get('type');
-      
-      if (accessToken && type === 'recovery') {
+      const recoveryToken = queryParams.get("token");
+      const recoveryType = queryParams.get("type");
+
+      if (accessToken && type === "recovery") {
         // We have a valid token in the hash
         setHasToken(true);
         setIsVerifying(false);
-      } else if (recoveryToken && recoveryType === 'recovery') {
+      } else if (recoveryToken && recoveryType === "recovery") {
         // We have the initial token but Supabase is still processing the redirect
-        
+
         // Direct validation attempt with the token from the URL
         handleInitialToken(recoveryToken);
       } else {
         // No tokens found in URL, check if we have a session already
-        
+
         const { data } = await supabase.auth.getSession();
         if (data.session) {
           setHasToken(true);
@@ -70,20 +77,22 @@ export function ResetPassword() {
         } else {
           // No valid tokens or session found
           setIsVerifying(false);
-          setError('Password reset link is invalid or has expired. Please request a new one.');
+          setError(
+            "Password reset link is invalid or has expired. Please request a new one."
+          );
         }
       }
     };
-    
+
     // Process the token directly with Supabase
     const handleInitialToken = async (token: string) => {
       try {
         // Create a session directly using the token
         const { data, error } = await supabase.auth.verifyOtp({
           token_hash: token,
-          type: 'recovery'
+          type: "recovery",
         });
-        
+
         if (error) {
           // Even if token verification fails, check if we somehow have a session
           const { data: sessionData } = await supabase.auth.getSession();
@@ -92,7 +101,9 @@ export function ResetPassword() {
             setIsVerifying(false);
           } else {
             setIsVerifying(false);
-            setError('Password reset link is invalid or has expired. Please request a new one.');
+            setError(
+              "Password reset link is invalid or has expired. Please request a new one."
+            );
           }
         } else if (data && data.session) {
           setHasToken(true);
@@ -103,7 +114,9 @@ export function ResetPassword() {
         }
       } catch (err) {
         setIsVerifying(false);
-        setError('An error occurred while validating your reset link. Please try again.');
+        setError(
+          "An error occurred while validating your reset link. Please try again."
+        );
       }
     };
 
@@ -115,27 +128,27 @@ export function ResetPassword() {
   const {
     register,
     handleSubmit,
-    formState: { errors }
+    formState: { errors },
   } = useForm<ResetPasswordFormData>({
-    resolver: zodResolver(resetPasswordSchema)
+    resolver: zodResolver(resetPasswordSchema),
   });
 
   const onSubmit = async (data: ResetPasswordFormData) => {
     setIsLoading(true);
     setError(null);
-    
+
     try {
       await updatePasswordWithResetToken(data.password);
       setIsSuccess(true);
       // Redirect after 3 seconds
       setTimeout(() => {
-        navigate('/login');
+        navigate("/login");
       }, 3000);
     } catch (error) {
       if (error instanceof Error) {
         setError(error.message);
       } else {
-        setError('An error occurred while resetting your password.');
+        setError("An error occurred while resetting your password.");
       }
       setIsLoading(false);
     }
@@ -143,169 +156,226 @@ export function ResetPassword() {
 
   if (isVerifying) {
     return (
-      <div className="centered-container">
-        <div className="centered-card">
-          <div className="toggle-container">
-            <ThemeToggle />
+      <>
+        <AppHeader
+          title="Reset Password"
+          actions={
+            <button
+              className="button button-icon"
+              onClick={() => navigate("/")}
+            >
+              <ArrowLeft className="icon" size={16} />
+              <span>Back to Dashboard</span>
+            </button>
+          }
+        />
+        <div className="centered-container">
+          <div className="centered-card">
+            <div className="toggle-container">
+              <ThemeToggle />
+            </div>
+
+            <div className="flex items-center justify-center my-6">
+              <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+            </div>
+
+            <h1 className="auth-card-title">Verifying Reset Link</h1>
+
+            <p className="text-center">
+              Please wait while we verify your password reset link...
+            </p>
           </div>
-          
-          <div className="flex items-center justify-center my-6">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
-          </div>
-          
-          <h1 className="auth-card-title">Verifying Reset Link</h1>
-          
-          <p className="text-center">
-            Please wait while we verify your password reset link...
-          </p>
         </div>
-      </div>
+      </>
     );
   }
 
   if (isSuccess) {
     return (
-      <div className="centered-container">
-        <div className="centered-card">
-          <div className="toggle-container">
-            <ThemeToggle />
+      <>
+        <AppHeader
+          title="Reset Password"
+          actions={
+            <button
+              className="button button-icon"
+              onClick={() => navigate("/")}
+            >
+              <ArrowLeft className="icon" size={16} />
+              <span>Back to Dashboard</span>
+            </button>
+          }
+        />
+        <div className="centered-container">
+          <div className="centered-card">
+            <div className="toggle-container">
+              <ThemeToggle />
+            </div>
+
+            <div
+              className="icon-circle"
+              style={{
+                backgroundColor: "rgba(34, 197, 94, 0.1)",
+                color: "#22c55e",
+              }}
+            >
+              <Check />
+            </div>
+
+            <h1 className="auth-card-title">Password Reset Successful</h1>
+
+            <p>
+              Your password has been reset successfully. You will be redirected
+              to the login page shortly.
+            </p>
+
+            <button className="button" onClick={() => navigate("/login")}>
+              Go to Login
+            </button>
           </div>
-          
-          <div className="icon-circle" style={{ backgroundColor: 'rgba(34, 197, 94, 0.1)', color: '#22c55e' }}>
-            <Check />
-          </div>
-          
-          <h1 className="auth-card-title">Password Reset Successful</h1>
-          
-          <p>
-            Your password has been reset successfully. You will be redirected to the login page shortly.
-          </p>
-          
-          <button
-            className="button"
-            onClick={() => navigate('/login')}
-          >
-            Go to Login
-          </button>
         </div>
-      </div>
+      </>
     );
   }
 
   if (!hasToken) {
     return (
+      <>
+        <AppHeader
+          title="Reset Password"
+          actions={
+            <button
+              className="button button-icon"
+              onClick={() => navigate("/")}
+            >
+              <ArrowLeft className="icon" size={16} />
+              <span>Back to Dashboard</span>
+            </button>
+          }
+        />
+        <div className="centered-container">
+          <div className="centered-card">
+            <div className="toggle-container">
+              <ThemeToggle />
+            </div>
+
+            <div
+              className="icon-circle"
+              style={{
+                backgroundColor: "rgba(239, 68, 68, 0.1)",
+                color: "#ef4444",
+              }}
+            >
+              <AlertCircle />
+            </div>
+
+            <h1 className="auth-card-title">Invalid Reset Link</h1>
+
+            <p className="error-message">{error}</p>
+
+            <button
+              className="button"
+              onClick={() => navigate("/forgot-password")}
+            >
+              Request New Reset Link
+            </button>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <AppHeader
+        title="Reset Password"
+        actions={
+          <button className="button button-icon" onClick={() => navigate("/")}>
+            <ArrowLeft className="icon" size={16} />
+            <span>Back to Dashboard</span>
+          </button>
+        }
+      />
       <div className="centered-container">
         <div className="centered-card">
           <div className="toggle-container">
             <ThemeToggle />
           </div>
-          
-          <div className="icon-circle" style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' }}>
-            <AlertCircle />
-          </div>
-          
-          <h1 className="auth-card-title">Invalid Reset Link</h1>
-          
-          <p className="error-message">
-            {error}
-          </p>
-          
-          <button
-            className="button"
-            onClick={() => navigate('/forgot-password')}
-          >
-            Request New Reset Link
-          </button>
+
+          <h1 className="auth-card-title">Reset Your Password</h1>
+
+          <p className="text-muted">Enter your new password below.</p>
+
+          {error && <div className="error-container">{error}</div>}
+
+          <form onSubmit={handleSubmit(onSubmit)} className="mt-4">
+            <div className="form-group">
+              <label htmlFor="password" className="form-label">
+                New Password
+              </label>
+              <div className="input-container">
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  className="form-input"
+                  {...register("password")}
+                />
+                <button
+                  type="button"
+                  className="password-toggle"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff className="icon" size={16} />
+                  ) : (
+                    <Eye className="icon" size={16} />
+                  )}
+                </button>
+              </div>
+              {errors.password && (
+                <p className="error-message">{errors.password.message}</p>
+              )}
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="confirmPassword" className="form-label">
+                Confirm Password
+              </label>
+              <div className="input-container">
+                <input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  className="form-input"
+                  {...register("confirmPassword")}
+                />
+                <button
+                  type="button"
+                  className="password-toggle"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="icon" size={16} />
+                  ) : (
+                    <Eye className="icon" size={16} />
+                  )}
+                </button>
+              </div>
+              {errors.confirmPassword && (
+                <p className="error-message">
+                  {errors.confirmPassword.message}
+                </p>
+              )}
+            </div>
+
+            <button type="submit" className="button" disabled={isLoading}>
+              {isLoading ? (
+                <span className="loading-spinner"></span>
+              ) : (
+                "Reset Password"
+              )}
+            </button>
+          </form>
         </div>
       </div>
-    );
-  }
-
-  return (
-    <div className="centered-container">
-      <div className="centered-card">
-        <div className="toggle-container">
-          <ThemeToggle />
-        </div>
-        
-        <h1 className="auth-card-title">Reset Your Password</h1>
-        
-        <p className="text-muted">
-          Enter your new password below.
-        </p>
-
-        {error && (
-          <div className="error-container">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit(onSubmit)} className="mt-4">
-          <div className="form-group">
-            <label htmlFor="password" className="form-label">New Password</label>
-            <div className="input-container">
-              <input
-                id="password"
-                type={showPassword ? 'text' : 'password'}
-                className="form-input"
-                {...register('password')}
-              />
-              <button
-                type="button"
-                className="password-toggle"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? (
-                  <EyeOff className="icon" size={16} />
-                ) : (
-                  <Eye className="icon" size={16} />
-                )}
-              </button>
-            </div>
-            {errors.password && (
-              <p className="error-message">{errors.password.message}</p>
-            )}
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="confirmPassword" className="form-label">Confirm Password</label>
-            <div className="input-container">
-              <input
-                id="confirmPassword"
-                type={showConfirmPassword ? 'text' : 'password'}
-                className="form-input"
-                {...register('confirmPassword')}
-              />
-              <button
-                type="button"
-                className="password-toggle"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              >
-                {showConfirmPassword ? (
-                  <EyeOff className="icon" size={16} />
-                ) : (
-                  <Eye className="icon" size={16} />
-                )}
-              </button>
-            </div>
-            {errors.confirmPassword && (
-              <p className="error-message">{errors.confirmPassword.message}</p>
-            )}
-          </div>
-
-          <button
-            type="submit"
-            className="button"
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <span className="loading-spinner"></span>
-            ) : (
-              'Reset Password'
-            )}
-          </button>
-        </form>
-      </div>
-    </div>
+    </>
   );
-} 
+}

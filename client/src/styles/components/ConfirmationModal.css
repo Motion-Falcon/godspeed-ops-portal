@@ -20,6 +20,7 @@
   max-width: 450px;
   overflow: hidden;
   animation: slideIn 0.3s ease-out;
+  border: 1px solid var(--border);
 }
 
 .modal-header {

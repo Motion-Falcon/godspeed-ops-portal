@@ -20,7 +20,8 @@
 }
 
 /* Make asterisks in form labels red */
-.form-label[data-required="*"]::after {
+.form-label[data-required="*"]::after,
+.form-info[data-required="*"]::after {
   content: "*";
   color: var(--failure);
   margin-left: 0.125rem;
@@ -270,20 +271,9 @@ a:hover {
   background-color: var(--success-bg);
 }
 
-.form-group:has(.auto-populated)::after {
-  content: '✓';
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--success);
-  font-weight: bold;
-  font-size: 1rem;
-  pointer-events: none;
-}
-
 .form-info {
   margin-top: var(--spacing-2);
+  margin-bottom: var(--spacing-2);
   padding: var(--spacing-2) var(--spacing-3);
   font-size: 0.75rem;
   color: var(--text-muted);

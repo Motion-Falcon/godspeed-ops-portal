@@ -24,7 +24,7 @@
   left: 18px; /* Start at center of first bubble */
   right: 18px; /* End at center of last bubble */
   height: 4px;
-  background-color: var(--color-border);
+  background-color: var(--text-muted);
   z-index: 0;
 }
 
@@ -80,21 +80,15 @@
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background-color: var(--color-card);
+  background-color: var(--text);
   border: 2px solid var(--color-border);
-  color: var(--text-muted);
+  color: var(--background);
   font-weight: 600;
   font-size: 0.9rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   z-index: 1;
   margin-bottom: 0.75rem;
-}
-
-.dark .step-bubble {
-  background-color: var(--color-card-dark, #2a2a2a);
-  border-color: rgba(255, 255, 255, 0.2);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 .step-marker.completed .step-bubble {
@@ -250,19 +244,13 @@
 }
 
 .form-card {
-  background: linear-gradient(145deg, rgba(var(--primary-rgb), 0.05), rgba(var(--bg-rgb), 0.01)), var(--color-card);
-  padding: var(--spacing-10) var(--spacing-8);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
+  background-color: var(--background);
+  max-width: 1200px;
+  padding: var(--spacing-6);
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
   border: 1px solid var(--color-border);
-  margin-bottom: 2rem;
-  max-width: 1100px;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-.dark .form-card {
-  background: linear-gradient(145deg, rgba(var(--primary-rgb), 0.1), rgba(var(--bg-rgb), 0.1)), var(--color-card);
+  margin: 0 auto 2rem auto;
 }
 
 .form-content {
@@ -485,11 +473,6 @@ select.form-input {
   flex-grow: 0; /* Prevent growing */
 }
 
-.name-dob-row .dob-group {
-  /* Optionally give DOB a slightly different basis if needed */
-  /* flex-basis: 25%; */ 
-}
-
 /* Responsive adjustment for the 3-column row */
 @media (max-width: 900px) { /* Adjust breakpoint as needed */
   .name-dob-row {
@@ -619,6 +602,13 @@ select.form-input {
   z-index: 1;
 }
 
+/* Add a status container for displaying multiple status pills */
+.profile-banner-status-container {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
 .profile-actions-container {
   display: flex;
   gap: var(--spacing-2);
@@ -678,42 +668,45 @@ select.form-input {
 }
 
 .profile-status.pending {
-  background-color: #fff8e6; /* Solid light yellow */
-  border: 1px solid #ffa000;
+  background-color: var(--background);
+  border: 1px solid var(--text-muted);
 }
 
+
+/* Profile status need-attention styling with animation */
+.profile-status.need-attention {
+  background-color: rgba(255, 153, 0, 0.25);
+  border: 1px solid rgba(255, 153, 0, 0.5);
+  animation: pulse-attention 2s infinite ease-in-out;
+
+}
+
+/* Pulse animation for need-attention status */
+@keyframes pulse-attention {
+  0% { box-shadow: 0 0 0 0 var(--text-muted); }
+  70% { box-shadow: 0 0 8px 3px var(--background); }
+  100% { box-shadow: 0 0 0 0 var(--background); }
+}
+
+.profile-status .status-icon.need-attention,
+.profile-status .status-text.need-attention {
+  color: #9c4500; 
+}
+
+.light .profile-status .status-icon.need-attention,
+.light .profile-status .status-text.need-attention {
+  color: #ff9900; 
+}
+/* Status icons styling */
 .status-icon {
   width: 16px;
   height: 16px;
 }
 
-.status-icon.verified {
-  color: var(--color-success);
-}
-
-.status-icon.rejected {
-  color: var(--color-error);
-}
-
-.status-icon.pending {
-  color: var(--color-warning);
-}
-
+/* Status text styling */
 .status-text {
-  font-size: 1rem;
+  font-size: 14px;
   font-weight: 500;
-}
-
-.status-text.verified {
-  color: var(--color-success);
-}
-
-.status-text.rejected {
-  color: var(--color-error);
-}
-
-.status-text.pending {
-  color: var(--color-warning);
 }
 
 .profile-details {
@@ -732,14 +725,11 @@ select.form-input {
 }
 
 .profile-avatar {
-  width: 80px;
-  height: 80px;
   border-radius: 50%;
   background-color: var(--background-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 4px solid var(--card);
   color: var(--text-muted);
 }
 
@@ -934,33 +924,6 @@ select.form-input {
   }
 }
 
-.loading-indicator {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 12px;
-  background-color: rgba(0, 0, 0, 0.05);
-  border-radius: 4px;
-  margin: 10px 0;
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.loading-spinner {
-  display: inline-block;
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  border-top-color: #fff;
-  animation: spin 1s ease-in-out infinite;
-  margin-right: 8px;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
 /* Improved grid layout for profile content */
 .profile-content.grid-container {
   display: grid;
@@ -971,7 +934,7 @@ select.form-input {
 
 /* Section card styling */
 .section-card {
-  background-color: var(--card);
+  background-color: var(--background);
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
   padding: 24px;
@@ -992,22 +955,9 @@ select.form-input {
   background: linear-gradient(90deg, var(--primary), var(--primary-hover));
   opacity: 0.8;
 }
-
-.dark .section-card {
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  background: linear-gradient(to bottom, rgba(30, 30, 40, 0.7), rgba(20, 20, 28, 0.9));
-  backdrop-filter: blur(10px);
-  border-color: rgba(255, 255, 255, 0.08);
-}
-
 .section-card:hover {
   transform: translateY(-3px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.09);
-}
-
-.dark .section-card:hover {
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-  border-color: rgba(255, 255, 255, 0.15);
 }
 
 /* Section titles */
@@ -1017,7 +967,7 @@ select.form-input {
   padding-bottom: 12px;
   border-bottom: 2px solid rgba(var(--primary-rgb), 0.3);
   font-size: 20px;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: -0.01em;
   text-align: left;
   position: relative;
@@ -1054,14 +1004,13 @@ select.form-input {
 .detail-group {
   display: flex;
   flex-direction: column;
-  gap: 16px;
   text-align: left;
 }
 
 .detail-item {
   display: flex;
-  flex-direction: column;
-  margin-bottom: 12px;
+  align-items: start;
+  margin-bottom: 4px;
   border-bottom: 1px solid rgba(var(--border-rgb), 0.5);
   transition: all 0.2s ease;
   text-align: left;
@@ -1074,36 +1023,22 @@ select.form-input {
 }
 
 .detail-label {
-  font-size: 14px;
+  line-height: 28px;
+  font-size: 16px;
   font-weight: 500;
-  color: var(--text-muted);
+  color: var(--text);
   margin-bottom: 4px;
   transition: color 0.2s ease;
 }
 
 .detail-value {
-  font-size: 16px;
-  color: var(--text);
+  font-size: 14px;
+  line-height: 28px;
+  color: var(--text-muted);
   word-break: break-word;
-  padding: 10px 14px;
-  background-color: rgba(0, 0, 0, 0.02);
-  border-radius: 8px;
-  border-left: 3px solid var(--primary);
+  padding: 0 0 0 10px;
   transition: all 0.2s ease;
   font-weight: 500;
-}
-
-.detail-item:hover .detail-value {
-  background-color: rgba(var(--primary-rgb), 0.06);
-  border-left-width: 5px;
-}
-
-.dark .detail-value {
-  background-color: rgba(255, 255, 255, 0.04);
-}
-
-.dark .detail-item:hover .detail-value {
-  background-color: rgba(255, 255, 255, 0.07);
 }
 
 /* Document section with preview styling */
@@ -1189,11 +1124,10 @@ select.form-input {
   justify-content: center;
   align-items: center;
   background-color: rgba(var(--background-rgb), 0.3);
-  border-top: 1px solid var(--border);
   overflow: hidden;
   cursor: pointer;
   transition: all 0.2s ease;
-  padding: 0 20px;
+  padding: 20px;
   min-width: 33%;
 }
 
@@ -1281,6 +1215,25 @@ select.form-input {
 }
 
 /* Loading PDFs indicator */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 40vh;
+  gap: 16px;
+}
+
+.loading-spinner {
+  display: inline-block;
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(var(--primary-rgb), 0.1);
+  border-radius: 50%;
+  border-top-color: var(--primary);
+  animation: spin 1s ease-in-out infinite;
+}
+
 .loading-pdfs {
   display: flex;
   flex-direction: column;
@@ -1571,34 +1524,6 @@ select.form-input {
   border: 1px solid rgba(255, 165, 0, 0.2);
 }
 
-/* Loading state improvements */
-.loading-indicator {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 12px;
-  background-color: rgba(0, 0, 0, 0.05);
-  border-radius: 4px;
-  margin: 10px 0;
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.loading-spinner {
-  display: inline-block;
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  border-top-color: #fff;
-  animation: spin 1s ease-in-out infinite;
-  margin-right: 8px;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
 /* Status Update Modal styling */
 .modal {
   position: fixed;
@@ -1621,11 +1546,12 @@ select.form-input {
 .status-modal-content {
   background-color: var(--card);
   border-radius: var(--border-radius);
-  box-shadow: var(--card-shadow);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
   width: 100%;
   max-width: 450px;
   overflow: hidden;
   animation: slideIn 0.3s ease-out;
+  border: 1px solid var(--border);
 }
 
 .modal-header {
@@ -1693,18 +1619,11 @@ select.form-input {
 .status-option {
   display: flex;
   align-items: center;
+  cursor: pointer;
 }
 
 .status-option input[type="radio"] {
-  width: 18px;
-  height: 18px;
-  margin-right: var(--spacing-2);
-  accent-color: var(--primary);
-}
-
-.status-option input[type="radio"]:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+  display: none;
 }
 
 .status-label {
@@ -1734,25 +1653,10 @@ select.form-input {
 
 .status-label.disabled {
   cursor: not-allowed;
-  /* background-color: var(--bg-subtle); */
 }
 
 .status-label.disabled:hover {
   background-color: var(--bg-subtle);
-}
-
-/* Dark mode adjustments for status modal */
-.dark .status-modal-content {
-  background-color: var(--card);
-}
-
-.dark .status-label:hover {
-  background-color: rgba(255, 255, 255, 0.05);
-}
-
-/* Status options styling with enhanced hover effects */
-.status-option input[type="radio"] + .status-label:hover {
-  background-color: var(--background-secondary);
 }
 
 /* Status-specific hover colors */
@@ -1771,58 +1675,23 @@ select.form-input {
   border-left: 3px solid var(--pending);
 }
 
-/* Dark mode enhancements */
-.dark .status-option input[value="verified"] + .status-label:hover {
-  background-color: var(--success-bg-dark);
-  border-left: 3px solid var(--success);
-}
-
-.dark .status-option input[value="rejected"] + .status-label:hover {
-  background-color: var(--failure-bg-dark);
-  border-left: 3px solid var(--failure);
-}
-
-.dark .status-option input[value="pending"] + .status-label:hover {
-  background-color: var(--pending-bg-dark);
-  border-left: 3px solid var(--pending);
-}
-
 /* Selected status styling */
 .status-option input[value="verified"]:checked + .status-label {
-  background-color: var(--success);
+  background-color: var(--success-bg);
   border-left: 3px solid var(--success);
 }
 
 .status-option input[value="rejected"]:checked + .status-label {
-  background-color: var(--failure);
+  background-color: var(--failure-bg);
   border-left: 3px solid var(--failure);
 }
 
 .status-option input[value="pending"]:checked + .status-label {
-  background-color: var(--pending);
+  background-color: var(--pending-bg);
   border-left: 3px solid var(--pending);
 }
 
 /* Enhanced loading indicators */
-.loading-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 40vh;
-  gap: 16px;
-}
-
-.loading-spinner {
-  display: inline-block;
-  width: 40px;
-  height: 40px;
-  border: 3px solid rgba(var(--primary-rgb), 0.1);
-  border-radius: 50%;
-  border-top-color: var(--primary);
-  animation: spin 1s ease-in-out infinite;
-}
-
 .loading-pdfs {
   display: flex;
   flex-direction: column;
@@ -1830,26 +1699,10 @@ select.form-input {
   justify-content: center;
   padding: 30px;
   border-radius: 12px;
-  background-color: rgba(var(--background-rgb), 0.3);
+  background-color: rgba(var(--backgroundb), 0.3);
   margin-bottom: 24px;
   text-align: center;
   border: 1px solid var(--border);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-}
-
-.pdf-loading-spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid rgba(var(--primary-rgb), 0.1);
-  border-radius: 50%;
-  border-top-color: var(--primary);
-  animation: spin 1s cubic-bezier(0.42, 0, 0.58, 1) infinite;
-  margin-bottom: 16px;
-}
-
-.dark .pdf-loading-spinner {
-  border-color: rgba(255, 255, 255, 0.1);
-  border-top-color: var(--primary);
 }
 
 @keyframes pulse {
@@ -2044,7 +1897,7 @@ select.form-input {
 
 .score-gauge {
   height: 24px;
-  background-color: var(--text-muted);
+  background-color: lightgray;
   border-radius: 12px;
   overflow: hidden;
   position: relative;
@@ -2063,17 +1916,17 @@ select.form-input {
 
 /* Score fill colors based on score percentage */
 .score-fill.success {
-  background: linear-gradient(90deg, var(--success), var(--text));
+  background: var(--success);
   box-shadow: 0 0 10px rgba(76, 175, 80, 0.4);
 }
 
 .score-fill.pending {
-  background: linear-gradient(90deg, #ffc107, var(--text));
+  background: #ffc107;
   box-shadow: 0 0 10px rgba(255, 193, 7, 0.4);
 }
 
 .score-fill.failure {
-  background: linear-gradient(90deg, var(--failure), var(--text));
+  background: var(--failure); 
   box-shadow: 0 0 10px rgba(244, 67, 54, 0.4);
 }
 
@@ -2129,6 +1982,7 @@ select.form-input {
   border-radius: 8px;
   padding: 12px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  filter: brightness(0.8);
 }
 
 .validation-notes-header {
@@ -2195,3 +2049,4 @@ select.form-input {
     grid-template-columns: 1fr;
   }
 }
+

@@ -2,12 +2,17 @@
 
 .common-header {
   background-color: var(--card);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1);
   padding: var(--spacing-4) var(--spacing-6);
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: 1000;
   font-family: var(--font-family);
+  border-bottom: 0.1px solid #1b2024;
+}
+
+.light .common-header {
+  border-bottom: 0.1px solid #fafdff;
 }
 
 .header-main {
@@ -28,6 +33,7 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-4);
+  cursor: pointer;
 }
 
 .header-logo {

@@ -24,57 +24,39 @@ export const ProtectedRoute = () => {
 
   // Handle jobseeker profile-based routing for all protected routes
   if (isJobSeeker) {
-    console.log('JobSeeker routing - Path:', location.pathname, '| hasProfile:', hasProfile, '| verificationStatus:', profileVerificationStatus);
+    const path = location.pathname;
     
-    // Handle profile creation page
-    if (location.pathname === '/profile/create') {
-      console.log('Profile creation page - checking conditions');
-      // If user already has a profile, they shouldn't access profile creation
+    // Define route access rules for job seekers
+    if (path === '/profile/create') {
+      // Redirect if user already has a profile
       if (hasProfile) {
-        console.log('User has profile - redirecting from profile creation');
-        // If profile is verified, go to dashboard, otherwise to verification pending
-        if (profileVerificationStatus === 'verified') {
-          console.log('Profile verified - redirecting to dashboard');
-          return <Navigate to="/dashboard" replace />;
-        } else {
-          console.log('Profile pending verification - redirecting to verification pending');
-          return <Navigate to="/profile-verification-pending" replace />;
-        }
+        return <Navigate to={profileVerificationStatus === 'verified' 
+          ? '/dashboard' 
+          : '/profile-verification-pending'} replace />;
       }
-      console.log('No profile - allowing access to profile creation');
-      // If they don't have a profile, allow access to profile creation
+      // Allow access to profile creation if no profile exists
     } 
-    // Handle verification pending page
-    else if (location.pathname === '/profile-verification-pending') {
-      console.log('Verification pending page - checking conditions');
-      // If user doesn't have a profile, they should create one first
+    else if (path === '/profile-verification-pending') {
+      // Redirect to profile creation if no profile
       if (!hasProfile) {
-        console.log('No profile - redirecting to profile creation');
         return <Navigate to="/profile/create" replace />;
       }
-      // If profile is verified, they should go to dashboard
+      // Redirect to dashboard if profile is verified
       if (profileVerificationStatus === 'verified') {
-        console.log('Profile verified - redirecting to dashboard');
         return <Navigate to="/dashboard" replace />;
       }
-      console.log('Profile pending verification - allowing access to verification pending');
-      // Otherwise, allow access to verification pending
+      // Otherwise allow access to verification pending page
     }
-    // Handle dashboard and other protected routes
-    else if (location.pathname === '/dashboard' || location.pathname.startsWith('/jobseekers/')) {
-      console.log('Dashboard or jobseeker route - checking conditions');
-      // If user doesn't have a profile, they need to create one
+    else if (path === '/dashboard' || path.startsWith('/jobseekers/')) {
+      // Redirect to profile creation if no profile
       if (!hasProfile) {
-        console.log('No profile - redirecting to profile creation');
         return <Navigate to="/profile/create" replace />;
       }
-      // If profile is not verified, they can't access dashboard
+      // Redirect to verification pending if profile not verified
       if (profileVerificationStatus !== 'verified') {
-        console.log('Profile not verified - redirecting to verification pending');
         return <Navigate to="/profile-verification-pending" replace />;
       }
-      console.log('Profile verified - allowing access to dashboard/jobseeker routes');
-      // If profile is verified, allow access to dashboard and other routes
+      // Allow access to dashboard/jobseeker routes if profile is verified
     }
   }
 
