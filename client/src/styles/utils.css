@@ -21,13 +21,6 @@
 .w-full { width: 100%; }
 .h-full { height: 100%; }
 
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+.page-container {
+  margin-left: 68px;
 }
-
-.read-the-docs {
-  color: var(--text-muted);
-} 

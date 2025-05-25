@@ -650,9 +650,9 @@ export function JobSeekerProfile() {
       <AppHeader
         title="Job Seeker Profile"
         actions={
-          <button className="button" onClick={() => navigate("/jobseekers")}>
+          <button className="button" onClick={() => navigate("/jobseeker-management")}>
             <ArrowLeft size={16} />
-            <span>Back to Job Seekers</span>
+            <span>{isJobSeeker ? "Back to Dashboard" : "Back to Job Seeker Management"}</span>
           </button>
         }
         statusMessage={updateStatus}

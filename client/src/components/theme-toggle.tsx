@@ -29,7 +29,6 @@ export function ThemeToggle() {
           <Sun className="toggle-icon sun" size={18} />
         )}
       </div>
-      <span className="sr-only">Toggle theme</span>
     </button>
   );
 } 

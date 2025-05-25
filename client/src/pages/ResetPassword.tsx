@@ -5,7 +5,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { updatePasswordWithResetToken } from "../lib/auth";
 import { Eye, EyeOff, Check, AlertCircle, ArrowLeft } from "lucide-react";
-import { ThemeToggle } from "../components/theme-toggle";
 import { supabase } from "../lib/supabaseClient";
 import "../styles/variables.css";
 import "../styles/pages/ForgotPassword.css";
@@ -171,10 +170,6 @@ export function ResetPassword() {
         />
         <div className="centered-container">
           <div className="centered-card">
-            <div className="toggle-container">
-              <ThemeToggle />
-            </div>
-
             <div className="flex items-center justify-center my-6">
               <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
             </div>
@@ -207,10 +202,6 @@ export function ResetPassword() {
         />
         <div className="centered-container">
           <div className="centered-card">
-            <div className="toggle-container">
-              <ThemeToggle />
-            </div>
-
             <div
               className="icon-circle"
               style={{
@@ -254,10 +245,6 @@ export function ResetPassword() {
         />
         <div className="centered-container">
           <div className="centered-card">
-            <div className="toggle-container">
-              <ThemeToggle />
-            </div>
-
             <div
               className="icon-circle"
               style={{
@@ -297,10 +284,6 @@ export function ResetPassword() {
       />
       <div className="centered-container">
         <div className="centered-card">
-          <div className="toggle-container">
-            <ThemeToggle />
-          </div>
-
           <h1 className="auth-card-title">Reset Your Password</h1>
 
           <p className="text-muted">Enter your new password below.</p>
