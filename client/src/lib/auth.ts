@@ -170,8 +170,14 @@ export const getCurrentUser = async (): Promise<User | null> => {
 
 // Reset password request (sends email)
 export const resetPassword = async (email: string) => {
+  // Ensure the origin doesn't have a trailing slash before appending the path
+  const origin = window.location.origin;
+  const redirectURL = origin.endsWith('/')
+    ? `${origin}reset-password`
+    : `${origin}/reset-password`;
+    
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${window.location.origin}/reset-password`,
+    redirectTo: redirectURL,
   });
   
   if (error) throw error;
