@@ -196,7 +196,7 @@ export function Signup() {
           </div>
           <h2 className="brand-title">Godspeed <span className="gradient-text">Operations</span></h2>
           <p className="brand-description">
-            Transform your ideas into beautiful digital experiences with our comprehensive suite of tools and resources.
+            Elevate your talent management with Godspeed's intelligent workflows and lightning-fast systems designed to connect the right people with the right opportunities.
           </p>
         </div>
       </div>

@@ -1,31 +1,31 @@
 /* Base Variables */
 :root {
-  --background-light: #F8F8F8;
-  --background-dark: #121212;
+  --background-light: #FFFFFF;
+  --background-dark: #000000;
   --card-light: #FFFFFF;
-  --card-dark: #1E1E1E;
+  --card-dark: #000000;
   --text-light: #000000;
   --text-dark: #FFFFFF;
   --text-muted-light: #6E6E6E;
   --text-muted-dark: #AAAAAA;
   
   /* Monochrome gradient colors */
-  --gradient-dark: #333333;
-  --gradient-light: #DDDDDD;
+  --gradient-dark: #000000;
+  --gradient-light: #FFFFFF;
   
   /* Background gradients - monochrome */
   --bg-gradient-light: linear-gradient(120deg, #FFFFFF, #F5F5F5, #EEEEEE);
-  --bg-gradient-dark: radial-gradient(circle at top right, #121212, #1A1A1A 70%, #0F0F0F);
+  --bg-gradient-dark: radial-gradient(circle at top right, #000000, #1A1A1A 70%, #0F0F0F);
   
   /* Primary colors - black and white with appropriate contrast */
-  --primary-light: #333333; /* Dark gray for light mode */
-  --primary-dark: #E0E0E0; /* Light gray for dark mode */
+  --primary-light: #000000; /* Pure black for light mode */
+  --primary-dark: #FFFFFF; /* Pure white for dark mode */
   --primary-hover-light: #000000; /* Black for hover in light mode */
   --primary-hover-dark: #FFFFFF; /* White for hover in dark mode */
   --border-light: #E0E0E0;
   --border-dark: #333333;
   --input-bg-light: #FFFFFF;
-  --input-bg-dark: #1E1E1E;
+  --input-bg-dark: #000000;
   
   /* Status colors for light mode */
   --success-light: #4CAF50; /* Green */
@@ -36,11 +36,11 @@
   --failure-bg-light: #FFEBEE; /* Light red background */
   
   /* Status colors for dark mode */
-  --success-dark: #81C784; /* Lighter green for dark mode */
+  --success-dark: #4CAF50; /* Lighter green for dark mode */
   --success-bg-dark: #1B2E1C; /* Dark green background */
   --pending-dark: #BDBDBD; /* Light gray for dark mode */
   --pending-bg-dark: #2C2C2C; /* Dark gray background */
-  --failure-dark: #F44336; /* Brighter red for dark mode */
+  --failure-dark: #D32F2F; /* Brighter red for dark mode */
   --failure-bg-dark: #2E1A1A; /* Dark red background */
   
   /* Shadows for status indicators */

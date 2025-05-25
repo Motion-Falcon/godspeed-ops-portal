@@ -25,8 +25,7 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    // First, check if user already exists by trying to sign in with their email
-    // This is a common approach since Supabase doesn't expose direct user lookup by email
+    // Check if user already exists in the database
     try {
       // Use a simple query to check if the email exists in the auth schema
       const { data: existingUsers, error: queryError } = await supabase
@@ -43,25 +42,6 @@ router.post('/register', async (req, res) => {
       // Continue with registration attempt if the search fails
     }
 
-    // Additional check: try to sign in with a random password
-    // If we get back an "Invalid login credentials" error, the user exists
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password: `random-password-${Date.now()}`, // Use a random password that won't match
-    });
-
-    if (signInError) {
-      // If error is "Invalid login credentials", the user exists
-      // If error is "Email not confirmed", the user exists
-      if (signInError.message.includes('Invalid login credentials') || 
-          signInError.message.includes('Email not confirmed')) {
-        return res.status(400).json({ error: 'An account with this email already exists' });
-      }
-    } else {
-      // If sign in succeeded with a random password (very unlikely), the user exists
-      return res.status(400).json({ error: 'An account with this email already exists' });
-    }
-
     // Determine user type based on email
     let userType = 'jobseeker'; // Default type
     
@@ -71,7 +51,6 @@ router.post('/register', async (req, res) => {
     }
     
     // Admin users are handled separately via direct database assignments
-
     const { data, error } = await supabase.auth.signUp({
       email,
       password,

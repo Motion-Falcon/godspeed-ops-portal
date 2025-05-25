@@ -70,6 +70,17 @@
   margin-bottom: 1.5rem;
 }
 
+.form-row.license-row {
+  border: 1px solid var(--text-muted);
+  flex-direction: column;
+  border-radius: 16px;
+  padding: 2rem 2rem 0 2rem;
+}
+
+.form-row.license-row .form-label {
+  font-size: rem;
+}
+
 .form-row:last-child {
   margin-bottom: 0;
 }

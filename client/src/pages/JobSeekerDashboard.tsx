@@ -3,6 +3,8 @@ import {
   LogOut,
   User as UserIcon,
   Activity,
+  BookOpen,
+  KeyRound
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { logoutUser } from "../lib/auth";
@@ -149,7 +151,7 @@ export function JobSeekerDashboard() {
           </div>
         </div>
         <p className="dashboard-subtitle">
-          Find your dream job and manage your applications
+          Discover opportunities at Godspeed pace with our intelligent job matching system
         </p>
 
         <div className="dashboard-grid">
@@ -203,11 +205,21 @@ export function JobSeekerDashboard() {
                 {isLoadingProfile ? "Loading Profile..." : "View My Profile"}
               </button>
 
+              {/* Training Modules button */}
+              <button
+                className="button outline"
+                onClick={() => navigate("/training-modules")}
+              >
+                <BookOpen size={16} className="icon" />
+                Training & Development
+              </button>
+
               {/* Reset Password button */}
               <button
                 className="button outline"
                 onClick={() => navigate("/reset-password")}
               >
+                <KeyRound size={16} className="icon" />
                 Reset Password
               </button>
 

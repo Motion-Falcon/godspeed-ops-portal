@@ -1,7 +1,7 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { User, CheckCircle, Clock, ArrowLeft } from 'lucide-react';
-import '../../styles/pages/JobseekerProfile.css';
+import '../../styles/pages/JobseekerProfileStyles.css';
 
 // Define a profile type based on the Supabase DB fields
 interface JobseekerProfile {
@@ -160,94 +160,97 @@ export function ProfileSuccess() {
           </p>
         </div>
         
-        <div className="profile-overview">
-          <div className="profile-banner">
-            <div className="profile-status">
-              <Clock className="status-icon pending" />
-              <span className="status-text pending">Pending</span>
+        <div className="profile-main">
+          <div className="profile-overview section-card">
+            <div className="profile-banner">
+              <div className="profile-status pending">
+                <Clock className="status-icon pending" />
+                <span className="status-text pending">Status: Pending</span>
+              </div>
+            </div>
+            
+            <div className="profile-details">
+              <div className="profile-avatar-container">
+                <div className="profile-avatar">
+                  <User size={40} />
+                </div>
+                <h1 className="profile-name">{getDisplayName()}</h1>
+              </div>
+              <div className="profile-info-header">
+                <div className="profile-info-details">
+                  {renderDetailItem('Email', profile.email)}
+                  {renderDetailItem('Phone', profile.mobile)}
+                </div>
+              </div>
             </div>
           </div>
           
-          <div className="profile-details">
-            <div className="profile-avatar">
-              <User size={40} />
-            </div>
-            <div className="profile-info-header">
-              <h1 className="profile-name">{getDisplayName()}</h1>
-              <p className="profile-email">{profile.email || 'No email provided'}</p>
-            </div>
-          </div>
-
-          <div className="profile-details-grid">
-            <div className="details-section">
-              <h3 className="section-title">Personal Information</h3>
-              {renderDetailItem('First Name', profile.first_name)}
-              {renderDetailItem('Last Name', profile.last_name)}
-              {renderDetailItem('Email', profile.email)}
-              {renderDetailItem('Mobile', profile.mobile)}
-              {renderDetailItem('Date of Birth', formatDate(profile.dob))}
-            </div>
-
-            <div className="details-section">
-              <h3 className="section-title">Identification</h3>
-              {renderDetailItem('License Number', profile.license_number)}
-              {renderDetailItem('Passport Number', profile.passport_number)}
-              {renderDetailItem('SIN Number', profile.sin_number)}
-              {renderDetailItem('SIN Expiry', formatDate(profile.sin_expiry))}
-              {renderDetailItem('Business Number', profile.business_number)}
-              {renderDetailItem('Corporation Name', profile.corporation_name)}
-            </div>
-
-            <div className="details-section">
-              <h3 className="section-title">Address</h3>
-              {renderDetailItem('Street', profile.street)}
-              {renderDetailItem('City', profile.city)}
-              {renderDetailItem('Province', profile.province)}
-              {renderDetailItem('Postal Code', profile.postal_code)}
-            </div>
-
-            <div className="details-section">
-              <h3 className="section-title">Qualifications</h3>
-              {renderDetailItem('Work Preference', profile.work_preference)}
-              {renderDetailItem('Bio', profile.bio)}
-              {renderDetailItem('License Type', profile.license_type)}
-              {renderDetailItem('Experience', profile.experience)}
-              {renderDetailItem('Manual Driving', profile.manual_driving)}
-              {renderDetailItem('Availability', profile.availability)}
-              {renderDetailItem('Weekend Availability', profile.weekend_availability)}
-            </div>
-
-            <div className="details-section">
-              <h3 className="section-title">Compensation</h3>
-              {renderDetailItem('Payrate Type', profile.payrate_type)}
-              {renderDetailItem('Bill Rate', profile.bill_rate)}
-              {renderDetailItem('Pay Rate', profile.pay_rate)}
-              {renderDetailItem('Payment Method', profile.payment_method)}
-              {renderDetailItem('HST/GST', profile.hst_gst)}
-              {renderDetailItem('Cash Deduction', profile.cash_deduction)}
-              {renderDetailItem('Overtime Enabled', profile.overtime_enabled)}
-              {profile.overtime_enabled && (
-                <>
-                  {renderDetailItem('Overtime Hours After', profile.overtime_hours)}
-                  {renderDetailItem('Overtime Bill Rate', profile.overtime_bill_rate)}
-                  {renderDetailItem('Overtime Pay Rate', profile.overtime_pay_rate)}
-                </>
-              )}
-            </div>
-            
-            {profile.documents && profile.documents.length > 0 && (
-              <div className="details-section">
-                <h3 className="section-title">Documents</h3>
-                {profile.documents.map((doc, index) => (
-                  <div key={doc.id || index} className="document-item">
-                    {renderDetailItem(`Document ${index + 1}`, doc.documentType)}
-                    {doc.documentTitle && renderDetailItem('Title', doc.documentTitle)}
-                    {doc.documentFileName && renderDetailItem('File', doc.documentFileName)}
-                    {doc.documentNotes && renderDetailItem('Notes', doc.documentNotes)}
-                  </div>
-                ))}
+          <div className="profile-content grid-container">
+            <div className="personal-details-section section-card">
+              <h2 className="section-title">Personal Information</h2>
+              <div className="detail-group">
+                {renderDetailItem('First Name', profile.first_name)}
+                {renderDetailItem('Last Name', profile.last_name)}
+                {renderDetailItem('Email', profile.email)}
+                {renderDetailItem('Mobile', profile.mobile)}
+                {renderDetailItem('Date of Birth', formatDate(profile.dob))}
               </div>
-            )}
+            </div>
+
+            <div className="identification-section section-card">
+              <h2 className="section-title">Identification</h2>
+              <div className="detail-group">
+                {renderDetailItem('License Number', profile.license_number)}
+                {renderDetailItem('Passport Number', profile.passport_number)}
+                {renderDetailItem('SIN Number', profile.sin_number)}
+                {renderDetailItem('SIN Expiry', formatDate(profile.sin_expiry))}
+                {renderDetailItem('Business Number', profile.business_number)}
+                {renderDetailItem('Corporation Name', profile.corporation_name)}
+              </div>
+            </div>
+
+            <div className="address-section section-card">
+              <h2 className="section-title">Address</h2>
+              <div className="detail-group">
+                {renderDetailItem('Street', profile.street)}
+                {renderDetailItem('City', profile.city)}
+                {renderDetailItem('Province', profile.province)}
+                {renderDetailItem('Postal Code', profile.postal_code)}
+              </div>
+            </div>
+
+            <div className="qualifications-section section-card">
+              <h2 className="section-title">Qualifications</h2>
+              <div className="detail-group">
+                {renderDetailItem('Work Preference', profile.work_preference)}
+                {renderDetailItem('Bio', profile.bio)}
+                {renderDetailItem('License Type', profile.license_type)}
+                {renderDetailItem('Experience', profile.experience)}
+                {renderDetailItem('Manual Driving', profile.manual_driving)}
+                {renderDetailItem('Availability', profile.availability)}
+                {renderDetailItem('Weekend Availability', profile.weekend_availability)}
+              </div>
+            </div>
+
+            <div className="compensation-section section-card">
+              <h2 className="section-title">Compensation</h2>
+              <div className="detail-group">
+                {renderDetailItem('Payrate Type', profile.payrate_type)}
+                {renderDetailItem('Bill Rate', profile.bill_rate)}
+                {renderDetailItem('Pay Rate', profile.pay_rate)}
+                {renderDetailItem('Payment Method', profile.payment_method)}
+                {renderDetailItem('HST/GST', profile.hst_gst)}
+                {renderDetailItem('Cash Deduction', profile.cash_deduction)}
+                {renderDetailItem('Overtime Enabled', profile.overtime_enabled)}
+                {profile.overtime_enabled && (
+                  <>
+                    {renderDetailItem('Overtime Hours After', profile.overtime_hours)}
+                    {renderDetailItem('Overtime Bill Rate', profile.overtime_bill_rate)}
+                    {renderDetailItem('Overtime Pay Rate', profile.overtime_pay_rate)}
+                  </>
+                )}
+              </div>
+            </div>
           </div>
         </div>
         

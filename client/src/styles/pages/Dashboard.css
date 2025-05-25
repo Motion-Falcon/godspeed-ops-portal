@@ -1,7 +1,6 @@
 /* Dashboard Page Styles */
 .dashboard-container {
   min-height: 100vh;
-  background-color: var(--background);
   color: var(--text);
 }
 
@@ -55,6 +54,11 @@ div.logo {
   display: grid;
   grid-template-columns: 1fr;
   gap: var(--spacing-6);
+}
+
+.dashboard-grid button {
+  text-align: left;
+  justify-content: flex-start;
 }
 
 @media (min-width: 768px) {

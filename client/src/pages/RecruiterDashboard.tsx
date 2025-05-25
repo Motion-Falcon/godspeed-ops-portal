@@ -5,6 +5,11 @@ import {
   UserCheck,
   Shield,
   Activity,
+  BookOpen,
+  Users,
+  Building,
+  Briefcase,
+  KeyRound
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { logoutUser } from "../lib/auth";
@@ -132,7 +137,7 @@ export function RecruiterDashboard() {
           </div>
         </div>
         <p className="dashboard-subtitle">
-          Manage your job postings and candidates
+          Manage talent acquisition with Godspeed's lightning-fast recruiting tools
         </p>
 
         <div className="dashboard-grid">
@@ -186,19 +191,31 @@ export function RecruiterDashboard() {
                 className="button outline"
                 onClick={() => navigate("/jobseeker-management")}
               >
+                <Users size={16} className="icon" />
                 Job Seeker Management
               </button>
               <button
                 className="button outline"
                 onClick={() => navigate("/client-management")}
               >
+                <Building size={16} className="icon" />
                 Manage Clients
               </button>
               <button
                 className="button outline"
                 onClick={() => navigate("/position-management")}
               >
+                <Briefcase size={16} className="icon" />
                 Position Management
+              </button>
+
+              {/* Training Modules button */}
+              <button
+                className="button outline"
+                onClick={() => navigate("/training-modules")}
+              >
+                <BookOpen size={16} className="icon" />
+                Training & Development
               </button>
 
               {/* Reset Password button */}
@@ -206,6 +223,7 @@ export function RecruiterDashboard() {
                 className="button outline"
                 onClick={() => navigate("/reset-password")}
               >
+                <KeyRound size={16} className="icon" />
                 Reset Password
               </button>
 
