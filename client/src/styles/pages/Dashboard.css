@@ -2,6 +2,7 @@
 .dashboard-container {
   min-height: 100vh;
   color: var(--text);
+  margin-left: 68px;
 }
 
 .logo-container {

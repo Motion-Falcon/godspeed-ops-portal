@@ -138,9 +138,14 @@ router.post('/reset-password', async (req, res) => {
     // Make sure we have the right clientURL with http/https
     const clientURL = process.env.CLIENT_URL || 'http://localhost:5173';
     
+    // Ensure the clientURL doesn't have a trailing slash before appending the path
+    const redirectURL = clientURL.endsWith('/')
+      ? `${clientURL}reset-password`
+      : `${clientURL}/reset-password`;
+    
     // Send password reset email with redirect
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${clientURL}/reset-password`,
+      redirectTo: redirectURL,
     });
 
     if (error) {

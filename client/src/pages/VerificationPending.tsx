@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useLocation, Navigate, Link } from "react-router-dom";
 import { MailCheck, CheckCircle, LogOut } from "lucide-react";
-import { ThemeToggle } from "../components/theme-toggle";
 import { resendVerificationEmail, logoutUser } from "../lib/auth";
 import "../styles/variables.css";
 import "../styles/pages/VerificationPending.css";
@@ -84,10 +83,6 @@ export function VerificationPending() {
       />
       <div className="centered-container">
         <div className="centered-card">
-          <div className="toggle-container">
-            <ThemeToggle />
-          </div>
-
           <div className="icon-circle">
             <MailCheck />
           </div>

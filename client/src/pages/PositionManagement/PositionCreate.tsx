@@ -512,15 +512,7 @@ export function PositionCreate({ isEditMode = false, isEditDraftMode = false }: 
       <AppHeader
         title={pageTitle}
         actions={
-          <>
-            <button 
-              className="button button-icon" 
-              onClick={handleCancel}
-            >
-              <ArrowLeft size={16} />
-              <span>Back</span>
-            </button>
-            
+          <>      
             {!isEditMode && (
               <button 
                 className="button secondary button-icon" 
@@ -531,6 +523,13 @@ export function PositionCreate({ isEditMode = false, isEditDraftMode = false }: 
                 <span>{saving ? 'Saving...' : 'Save Draft'}</span>
               </button>
             )}
+            <button 
+              className="button button-icon" 
+              onClick={handleCancel}
+            >
+              <ArrowLeft size={16} />
+              <span>Back To Position Management</span>
+            </button>
           </>
         }
         statusMessage={error || success}

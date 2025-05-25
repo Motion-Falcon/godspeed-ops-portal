@@ -363,14 +363,6 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
         title={pageTitle}
         actions={
           <>
-            <button 
-              className="button button-icon" 
-              onClick={handleCancel}
-            >
-              <ArrowLeft size={16} />
-              <span>Back</span>
-            </button>
-            
             {!isEditMode && (
               <button 
                 className="button secondary button-icon" 
@@ -381,6 +373,13 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
                 <span>{saving ? 'Saving...' : 'Save Draft'}</span>
               </button>
             )}
+             <button 
+              className="button button-icon" 
+              onClick={handleCancel}
+            >
+              <ArrowLeft size={16} />
+              <span>Back To Client Management</span>
+            </button>
           </>
         }
         statusMessage={error || success}

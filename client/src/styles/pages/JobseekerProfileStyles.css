@@ -1,4 +1,7 @@
 /* JobseekerProfile.css */
+.profile-create-container {
+  margin-left: 68px;
+}
 /* Step Journey Progress Bar */
 .step-journey-container {
   position: relative;
@@ -548,6 +551,7 @@ select.form-input {
   min-height: 100vh;
   background-color: var(--background);
   color: var(--text);
+  margin-left: 68px;
 }
 
 .status-actions {
