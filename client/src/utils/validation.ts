@@ -1,0 +1,142 @@
+/**
+ * Shared validation utilities for form validation
+ */
+
+/**
+ * Log validation messages only in development
+ */
+export const logValidation = (message: string) => {
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(message);
+  }
+};
+
+/**
+ * Validate a Canadian Social Insurance Number (SIN)
+ * Uses the modified Luhn algorithm
+ * @param {string|number} sin - A 9-digit Canadian SIN
+ * @returns {Object} Result with isValid flag and optional error message
+ */
+export function validateSIN(sin: string | number): {isValid: boolean, errorMessage?: string} {
+  if (!sin) return { isValid: true }; // Allow empty value as it's optional
+  
+  const originalInput = sin.toString();
+  
+  // Check if the original input contains ONLY digits - no spaces, dashes or other characters
+  const validInputRegex = /^\d+$/;
+  if (!validInputRegex.test(originalInput)) {
+    return { 
+      isValid: false, 
+      errorMessage: "SIN must contain only numbers (no spaces or dashes)" 
+    };
+  }
+  
+  // Must be exactly 9 digits
+  if (originalInput.length !== 9) {
+    return { 
+      isValid: false, 
+      errorMessage: "SIN must be exactly 9 digits" 
+    };
+  }
+  
+  // Additional check: SINs starting with 0 or 8 are typically invalid
+  if (originalInput[0] === '0' || originalInput[0] === '8') {
+    return { 
+      isValid: false, 
+      errorMessage: "SIN cannot start with 0 or 8" 
+    };
+  }
+  
+  // Convert to array of digits
+  const digits = originalInput.split('').map(Number);
+  
+  // Extract check digit (last digit)
+  const checkDigit = digits[8];
+  
+  // Process first 8 digits using modified Luhn algorithm
+  let sum = 0;
+  for (let i = 0; i < 8; i++) {
+    let digit = digits[i];
+    
+    // Multiply every 2nd digit by 2 (positions 1, 3, 5, 7 in 0-based indexing)
+    if (i % 2 === 1) {
+      digit *= 2;
+      // If result is > 9, add the digits together
+      if (digit > 9) {
+        digit = Math.floor(digit / 10) + (digit % 10);
+      }
+    }
+    
+    sum += digit;
+  }
+  
+  // Calculate what the check digit should be
+  const expectedCheckDigit = (10 - (sum % 10)) % 10;
+  
+  if (checkDigit !== expectedCheckDigit) {
+    return { 
+      isValid: false, 
+      errorMessage: "Invalid SIN (check digit validation failed)" 
+    };
+  }
+  
+  return { isValid: true };
+}
+
+/**
+ * Validate a date of birth to ensure the person is at least 18 years old
+ * and the date is not in the future
+ * @param {string} dob - Date of birth string in ISO format (YYYY-MM-DD)
+ * @returns {Object} Result with isValid flag and optional error message
+ */
+export function validateDOB(dob: string): {isValid: boolean, errorMessage?: string} {
+  if (!dob) return { isValid: true }; // Allow empty value for required validation
+  
+  logValidation(`DOB validation - value: ${dob}`);
+  
+  // Create date at noon to avoid timezone issues
+  const selectedDate = new Date(dob);
+  selectedDate.setHours(12, 0, 0, 0);
+  
+  const today = new Date();
+  today.setHours(12, 0, 0, 0);
+  
+  logValidation(`DOB validation - Selected: ${selectedDate.toISOString()}, Today: ${today.toISOString()}`);
+  
+  // Check if date is in the future
+  if (selectedDate > today) {
+    logValidation('DOB ERROR: Date is in the future');
+    return { 
+      isValid: false, 
+      errorMessage: "Date of birth cannot be in the future" 
+    };
+  }
+  
+  // Calculate the minimum DOB date (18 years ago)
+  const minAge = 18;
+  const minDobDate = new Date();
+  minDobDate.setFullYear(today.getFullYear() - minAge);
+  minDobDate.setHours(12, 0, 0, 0);
+  
+  // Check if person is at least 18 years old
+  if (selectedDate > minDobDate) {
+    logValidation('DOB ERROR: Person is not at least 18 years old');
+    return { 
+      isValid: false, 
+      errorMessage: "Must be at least 18 years old" 
+    };
+  }
+  
+  logValidation('DOB validation passed');
+  return { isValid: true };
+}
+
+/**
+ * Get the maximum valid DOB date (18 years ago from today)
+ * @returns {string} Date string in ISO format (YYYY-MM-DD)
+ */
+export function getMaxDobDate(): string {
+  const today = new Date();
+  today.setFullYear(today.getFullYear() - 18);
+  return today.toISOString().split('T')[0];
+} 
