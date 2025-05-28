@@ -6,6 +6,7 @@ import { Signup } from './pages/Signup';
 import { Login } from './pages/Login';
 import { VerificationPending } from './pages/VerificationPending';
 import { ProfileVerificationPending } from './pages/ProfileVerificationPending';
+import { ProfileVerificationRejected } from './pages/ProfileVerificationRejected';
 import { ForgotPassword } from './pages/ForgotPassword';
 import { ResetPassword } from './pages/ResetPassword';
 import { Dashboard } from './pages/Dashboard';
@@ -82,6 +83,7 @@ function App() {
               
               <Route element={<JobSeekerRoute />}>
                 <Route path="/profile-verification-pending" element={<ProfileVerificationPending />} />
+                <Route path="/profile-verification-rejected" element={<ProfileVerificationRejected />} />
                 {/* Add more jobseeker-specific routes here */}
               </Route>
               

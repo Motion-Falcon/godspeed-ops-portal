@@ -65,7 +65,7 @@ export async function getJobseekerVerificationStatus(userId: string | undefined)
   try {
     const { data: profile, error } = await supabase
       .from('jobseeker_profiles')
-      .select('verification_status')
+      .select('verification_status, rejection_reason')
       .eq('user_id', userId)
       .single();
       
