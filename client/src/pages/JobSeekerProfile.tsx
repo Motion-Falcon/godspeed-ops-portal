@@ -92,6 +92,7 @@ interface FullJobseekerProfile {
     userType: string;
     updatedAt: string;
   } | null; // New field for updater details
+  rejectionReason?: string | null;
   // Add any other potential fields from the DB
 }
 
@@ -164,9 +165,12 @@ export function JobSeekerProfile() {
   const [selectedStatus, setSelectedStatus] = useState<
     "pending" | "verified" | "rejected"
   >("pending");
+  const [rejectionReason, setRejectionReason] = useState<string>("");
+  const [rejectionReasonError, setRejectionReasonError] = useState<string | null>(null);
   const [expandedNotesIds, setExpandedNotesIds] = useState<Set<string>>(
     new Set()
   );
+  const [showFullRejectionReason, setShowFullRejectionReason] = useState<boolean>(false);
   const { id } = useParams<{ id: string }>();
   const { isAdmin, isRecruiter, isJobSeeker } = useAuth();
   const navigate = useNavigate();
@@ -248,9 +252,18 @@ export function JobSeekerProfile() {
   ) => {
     if (!profile || !id) return;
 
+    // Clear previous error
+    setRejectionReasonError(null);
+
+    // Require rejection reason when rejecting a profile
+    if (newStatus === "rejected" && !rejectionReason.trim()) {
+      setRejectionReasonError("Please provide a reason for rejection");
+      return;
+    }
+
     try {
       setUpdateStatus("Updating status...");
-      const response = await updateJobseekerStatus(id, newStatus);
+      const response = await updateJobseekerStatus(id, newStatus, newStatus === "rejected" ? rejectionReason : null);
 
       // Check the structure of the response to find the correct property
       console.log("Status update response:", response);
@@ -270,13 +283,20 @@ export function JobSeekerProfile() {
             response.profile.status ||
             response.profile.verificationStatus ||
             newStatus,
+          rejectionReason: newStatus === "rejected" ? rejectionReason : null,
         });
       } else {
         // If direct response or unknown structure, just update the local status
         setProfile({
           ...profile,
           verificationStatus: newStatus,
+          rejectionReason: newStatus === "rejected" ? rejectionReason : null,
         });
+      }
+
+      // Clear rejection reason after successful update
+      if (newStatus === "rejected") {
+        setRejectionReason("");
       }
 
       setUpdateStatus(`Profile status updated to ${newStatus}`);
@@ -541,14 +561,37 @@ export function JobSeekerProfile() {
   };
 
   const openStatusModal = () => {
+    // Set the current status from profile
     setSelectedStatus(
       (profile?.verificationStatus as "pending" | "verified" | "rejected") ||
         "pending"
     );
+    
+    // If profile is rejected, prefill the rejection reason from profile data
+    if (profile?.verificationStatus === "rejected" && profile?.rejectionReason) {
+      setRejectionReason(profile.rejectionReason);
+    } else {
+      // Otherwise clear the rejection reason
+      setRejectionReason("");
+    }
+    
+    // Clear any error message
+    setRejectionReasonError(null);
+    
     setIsStatusModalOpen(true);
   };
 
   const handleUpdateStatusFromModal = () => {
+    // If status is rejected and no reason is provided, show error but don't close the modal
+    if (selectedStatus === "rejected" && !rejectionReason.trim()) {
+      setRejectionReasonError("Please provide a reason for rejection");
+      return;
+    }
+    
+    // Clear any error before proceeding
+    setRejectionReasonError(null);
+    
+    // Only proceed with status update and close modal if validation passes
     handleStatusUpdate(selectedStatus);
     setIsStatusModalOpen(false);
   };
@@ -572,6 +615,34 @@ export function JobSeekerProfile() {
     if (percentage >= 80) return "success";
     if (percentage >= 40) return "pending";
     return "failure";
+  };
+
+  const renderRejectionReason = () => {
+    if (profile?.verificationStatus !== "rejected" || !profile?.rejectionReason) {
+      return null;
+    }
+    
+    const showToggle = profile.rejectionReason.length > 200;
+    
+    return (
+      <div className="profile-rejection-reason">
+        <div className="rejection-reason-header">
+          <AlertCircle size={16} className="rejection-reason-icon" />
+          <span className="rejection-reason-title">Rejection Reason</span>
+        </div>
+        <div className={`rejection-reason-content ${showFullRejectionReason ? 'expanded' : ''}`}>
+          {profile.rejectionReason}
+        </div>
+        {showToggle && (
+          <button 
+            className="toggle-rejection-btn"
+            onClick={() => setShowFullRejectionReason(!showFullRejectionReason)}
+          >
+            {showFullRejectionReason ? 'Show less' : 'Show full reason'}
+          </button>
+        )}
+      </div>
+    );
   };
 
   if (loading) {
@@ -728,6 +799,7 @@ export function JobSeekerProfile() {
           </div>
 
           <div className="profile-details">
+            {renderRejectionReason()}
             <div className="profile-avatar-container">
               <div className="profile-avatar">
                 <User size={40} />
@@ -1260,6 +1332,30 @@ export function JobSeekerProfile() {
                 </label>
               </div>
             </div>
+
+            {/* Rejection reason textarea - only visible when rejected status is selected */}
+            {selectedStatus === "rejected" && (
+              <div className="rejection-reason-container">
+                <label htmlFor="rejection-reason" className="form-label">Rejection Reason <span className="required">*</span></label>
+                <textarea
+                  id="rejection-reason"
+                  className={`form-textarea ${rejectionReasonError ? 'error-input' : ''}`}
+                  placeholder="Please provide a reason for rejecting this profile"
+                  value={rejectionReason}
+                  onChange={(e) => {
+                    setRejectionReason(e.target.value);
+                    if (e.target.value.trim()) {
+                      setRejectionReasonError(null);
+                    }
+                  }}
+                  required
+                />
+                {rejectionReasonError && (
+                  <p className="error-message rejection-error">{rejectionReasonError}</p>
+                )}
+                <p className="field-note">This reason will be stored with the profile and may be shown to the user</p>
+              </div>
+            )}
           </div>
           <div className="modal-footer">
             <button

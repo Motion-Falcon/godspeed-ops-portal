@@ -511,9 +511,12 @@ export const getJobseekerProfile = async (id: string): Promise<JobSeekerDetailed
   }
 };
 
-export const updateJobseekerStatus = async (id: string, status: 'pending' | 'verified' | 'rejected') => {
+export const updateJobseekerStatus = async (id: string, status: 'pending' | 'verified' | 'rejected', rejectionReason: string | null = null) => {
   try {
-    const response = await api.put(`/api/jobseekers/profile/${id}/status`, { status });
+    const response = await api.put(`/api/jobseekers/profile/${id}/status`, { 
+      status,
+      rejectionReason
+    });
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {

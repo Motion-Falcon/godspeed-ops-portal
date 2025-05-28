@@ -63,6 +63,7 @@ export interface ProfileData {
   
   // Meta fields - used internally
   verificationStatus?: 'pending' | 'verified' | 'rejected';
+  rejectionReason?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -117,6 +118,7 @@ export interface DbJobseekerProfile {
   
   // Meta fields
   verification_status: string;
+  rejection_reason?: string | null;
   created_at: string;
   updated_at: string;
 }

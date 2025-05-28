@@ -351,6 +351,9 @@ router.get('/',
         if (key === 'documents') {
           // Keep documents as is - they're already in camelCase in the JSONB
           profileData.documents = value as Document[];
+        } else if (key === 'rejection_reason') {
+          // Handle rejection reason specifically
+          profileData.rejectionReason = value;
         } else if (key.includes('_')) {
           // Convert snake_case to camelCase
           const camelKey = key.replace(/_([a-z])/g, (m, p1) => p1.toUpperCase()) as keyof ProfileData;

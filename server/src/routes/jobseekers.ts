@@ -76,6 +76,7 @@ interface DbJobseekerProfile {
   updated_at: string;
   created_by_user_id?: string;
   updated_by_user_id?: string;
+  rejection_reason?: string;
 }
 
 // Interface for the simplified JobSeekerProfile list view (matches frontend expectation)
@@ -105,6 +106,7 @@ interface JobSeekerDetailedProfile extends JobSeekerProfile {
   experienceList?: any[]; 
   // Add the documents field to match backend response
   documents?: DocumentRecord[]; 
+  rejectionReason?: string;
 }
 
 // Initialize a Supabase client with the SERVICE_KEY for backend operations
@@ -385,20 +387,36 @@ router.get('/profile/:id', async (req, res) => {
 router.put('/profile/:id/status', async (req, res) => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
+    const { status, rejectionReason } = req.body;
 
     // Validate the status
     if (!['pending', 'verified', 'rejected'].includes(status)) {
       return res.status(400).json({ error: 'Invalid status value' });
     }
 
+    // If status is 'rejected', rejectionReason is required
+    if (status === 'rejected' && (!rejectionReason || rejectionReason.trim() === '')) {
+      return res.status(400).json({ error: 'Rejection reason is required when setting status to rejected' });
+    }
+
+    // Prepare update data
+    const updateData: any = { 
+      verification_status: status,
+      updated_at: new Date().toISOString() 
+    };
+
+    // Only set rejection_reason when status is rejected
+    if (status === 'rejected') {
+      updateData.rejection_reason = rejectionReason;
+    } else {
+      // Clear rejection_reason if status is not rejected
+      updateData.rejection_reason = null;
+    }
+
     // Use the admin client to bypass RLS for the update
     const { data, error } = await supabaseAdmin
       .from('jobseeker_profiles')
-      .update({ 
-        verification_status: status,
-        updated_at: new Date().toISOString() 
-      })
+      .update(updateData)
       .eq('id', id)
       .select<string, DbJobseekerProfile>() // Specify type for select
       .single();
@@ -436,6 +454,8 @@ router.put('/profile/:id/status', async (req, res) => {
       documents: updatedDbProfile.documents || [],
       education: [],
       experienceList: [],
+      // Include rejection reason in the response
+      rejectionReason: updatedDbProfile.rejection_reason
     };
 
     res.json({ 
