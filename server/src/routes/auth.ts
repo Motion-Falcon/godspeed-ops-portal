@@ -46,7 +46,7 @@ router.post('/register', async (req, res) => {
     let userType = 'jobseeker'; // Default type
     
     // Check for recruiter email pattern
-    if (email.includes('@motionfalcon')) {
+    if (email.includes('@godspeedxp') || email.includes('@motionfalcon')) {
       userType = 'recruiter';
     }
     
