@@ -1243,6 +1243,7 @@ export function ProfileCreate({
         submitProfile(profileData).then((result) => {
           // If the user is a jobseeker who created their own profile, redirect to verification pending page
           if (isJobSeeker) {
+            window.location.reload();
             navigate("/profile-verification-pending");
             return;
           }
