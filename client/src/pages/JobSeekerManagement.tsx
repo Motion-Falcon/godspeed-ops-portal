@@ -128,7 +128,7 @@ export function JobSeekerManagement() {
       return (
         doc.aiValidation.is_tampered === true ||
         doc.aiValidation.is_blurry === true ||
-        doc.aiValidation.is_text_clear === true ||
+        doc.aiValidation.is_text_clear === false ||
         doc.aiValidation.is_resubmission_required === true
       );
     });
