@@ -1,0 +1,177 @@
+/* Two-Factor Authentication Page Styles */
+.centered-container {
+  display: flex;
+  min-height: 100vh;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-6);
+}
+
+.centered-card {
+  max-width: 400px;
+  width: 100%;
+  padding: var(--spacing-8);
+  background: var(--card-background);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-lg);
+  text-align: center;
+}
+
+.icon-circle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background-color: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+  margin: 0 auto var(--spacing-6);
+}
+
+.auth-card-title {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: var(--spacing-4);
+  color: var(--text-primary);
+}
+
+.bold-text {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.text-muted {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  margin-bottom: var(--spacing-4);
+  line-height: 1.5;
+}
+
+.card-actions {
+  margin-top: var(--spacing-6);
+}
+
+.error-container {
+  background-color: rgba(239, 68, 68, 0.1);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-3);
+  margin-bottom: var(--spacing-4);
+  color: var(--danger);
+  font-size: 0.875rem;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+/* OTP Container Styles */
+.otp-container {
+  margin-top: var(--spacing-6);
+}
+
+.otp-input {
+  width: 100%;
+  margin-bottom: var(--spacing-4);
+  text-align: center;
+  font-size: 1.2rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  padding: var(--spacing-3);
+  border: 2px solid var(--border-color);
+  border-radius: var(--border-radius);
+  background-color: var(--input-background);
+  color: var(--text-primary);
+  transition: border-color 0.2s ease;
+}
+
+.otp-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.otp-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  align-items: center;
+}
+
+.success-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--success);
+  font-size: 0.875rem;
+  padding: var(--spacing-2);
+  background-color: rgba(34, 197, 94, 0.1);
+  border-radius: var(--border-radius);
+  margin-bottom: var(--spacing-3);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+/* Button spacing overrides for OTP actions */
+.otp-actions .button {
+  min-width: 140px;
+}
+
+.otp-actions .button.outline {
+  background-color: transparent;
+  border: 2px solid var(--border-color);
+  color: var(--text-secondary);
+}
+
+.otp-actions .button.outline:hover {
+  background-color: var(--hover-background);
+  border-color: var(--primary);
+}
+
+/* Loading spinner overrides */
+.loading-spinner-small {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(var(--primary-rgb), 0.2);
+  border-radius: 50%;
+  border-top-color: var(--primary);
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { 
+    transform: rotate(360deg); 
+  }
+}
+
+/* Mobile responsiveness */
+@media (max-width: 600px) {
+  .centered-container {
+    padding: var(--spacing-4);
+  }
+  
+  .centered-card {
+    padding: var(--spacing-6);
+  }
+  
+  .otp-actions {
+    gap: var(--spacing-3);
+  }
+  
+  .otp-actions .button {
+    width: 100%;
+    min-width: unset;
+  }
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+  .icon-circle {
+    background-color: rgba(59, 130, 246, 0.2);
+  }
+  
+  .success-message {
+    background-color: rgba(34, 197, 94, 0.2);
+  }
+  
+  .error-container {
+    background-color: rgba(239, 68, 68, 0.2);
+  }
+} 

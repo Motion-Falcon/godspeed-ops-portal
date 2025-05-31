@@ -1357,11 +1357,6 @@ select.form-input {
   margin-bottom: 1rem;
 }
 
-.success-message {
-  font-size: 1.1rem;
-  margin: 1rem 0 2rem;
-}
-
 /* Tabs styling */
 .tabs {
   display: flex;

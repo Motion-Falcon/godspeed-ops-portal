@@ -9,13 +9,15 @@ interface AppHeaderProps {
   actions?: ReactNode;
   statusMessage?: string | null;
   statusType?: 'success' | 'error' | 'pending';
+  hideHamburgerMenu?: boolean;
 }
 
 export function AppHeader({
   title,
   actions,
   statusMessage,
-  statusType = 'success'
+  statusType = 'success',
+  hideHamburgerMenu = false
 }: AppHeaderProps) {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -79,7 +81,9 @@ export function AppHeader({
       </div>
       
       {/* Render the hamburger menu outside of the header for proper positioning */}
-      <HamburgerMenu isOpen={menuOpen} onClose={closeMenu} onOpen={toggleMenu}/>
+      {!hideHamburgerMenu && (
+        <HamburgerMenu isOpen={menuOpen} onClose={closeMenu} onOpen={toggleMenu}/>
+      )}
     </div>
   );
 } 

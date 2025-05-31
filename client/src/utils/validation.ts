@@ -139,4 +139,63 @@ export function getMaxDobDate(): string {
   const today = new Date();
   today.setFullYear(today.getFullYear() - 18);
   return today.toISOString().split('T')[0];
-} 
+}
+
+/**
+ * Validate a Canadian phone number
+ * @param {string} phone - Phone number string
+ * @returns {boolean} True if valid Canadian phone number
+ */
+export function isValidCanadianPhone(phone: string): boolean {
+
+  // Remove all non-digit characters
+  const cleaned = phone.replace(/\D/g, '');
+  
+if (cleaned.length === 11 && cleaned.startsWith('1')) {
+    // Remove country code and check remaining 10 digits
+    const withoutCountryCode = cleaned.substring(1);
+    return /^[2-9][0-9][0-9][2-9][0-9][0-9][0-9][0-9][0-9][0-9]$/.test(withoutCountryCode);
+  }
+  
+  return false;
+}
+
+/**
+ * Validate an Indian phone number
+ * @param {string} phone - Phone number string
+ * @returns {boolean} True if valid Indian phone number
+ */
+export function isValidIndianPhone(phone: string): boolean {
+  // Remove all non-digit characters
+  const cleaned = phone.replace(/\D/g, '');
+if (cleaned.length === 12 && cleaned.startsWith('91')) {
+    // Remove country code and check remaining 10 digits
+    const withoutCountryCode = cleaned.substring(2);
+    return /^[6-9]\d{9}$/.test(withoutCountryCode);
+  }
+  
+  return false;
+}
+
+/**
+ * Validate a phone number for Canadian or Indian formats
+ * @param {string} phone - Phone number string
+ * @param {string} country - Country code ('CA' for Canada, 'IN' for India)
+ * @returns {boolean} True if valid phone number for the specified country
+ */
+export function isValidPhoneNumber(phone: string, country: string): boolean {
+  if (!phone) return false;
+  
+  // Validate based on specific country
+  switch (country.toUpperCase()) {
+    case 'CA':
+    case 'CANADA':
+      return isValidCanadianPhone(phone);
+    case 'IN':
+    case 'INDIA':
+      return isValidIndianPhone(phone);
+    default:
+      // For unsupported countries, fall back to checking both formats
+      return isValidCanadianPhone(phone) || isValidIndianPhone(phone);
+  }
+}

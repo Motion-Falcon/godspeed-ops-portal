@@ -33,6 +33,7 @@ import { JobseekerDrafts } from './pages/JobseekerProfile/JobseekerDrafts';
 import { JobseekerProfileDraftEdit } from './pages/JobseekerProfile/JobseekerProfileDraftEdit';
 import { TrainingModules } from './pages/TrainingModules';
 import './styles/main.css';
+import { TwoFactorAuth } from './pages/TwoFactorAuth';
 
 function App() {
   return (
@@ -51,6 +52,7 @@ function App() {
 
             {/* Routes accessible regardless of auth status */}
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/two-factor-auth" element={<TwoFactorAuth />} />
 
             {/* Protected routes for all authenticated users */}
             <Route element={<ProtectedRoute />}>

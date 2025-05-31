@@ -28,6 +28,12 @@ export const ProtectedRoute = () => {
     return <Navigate to="/login" replace />;
   }
 
+  // Special handling for 2FA route - prevent access if user is already authenticated
+  // This prevents bypassing 2FA by accessing the route directly
+  if (location.pathname === "/two-factor-auth" && isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
   // Handle jobseeker profile-based routing for all protected routes
   if (isJobSeeker) {
     const path = location.pathname;

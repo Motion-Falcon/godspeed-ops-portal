@@ -142,17 +142,6 @@
   margin-top: var(--spacing-6);
 }
 
-
-
-.success-message {
-  background-color: rgba(var(--success-rgb), 0.1);
-  color: var(--success);
-  padding: 1rem;
-  border-radius: var(--border-radius);
-  margin-bottom: 1rem;
-  border-left: 4px solid var(--success);
-}
-
 .last-saved {
   color: var(--text-muted);
   font-size: 0.875rem;

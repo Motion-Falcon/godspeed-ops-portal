@@ -169,12 +169,13 @@ api.interceptors.response.use((response) => {
 });
 
 // Auth API calls
-export const registerUserAPI = async (email: string, password: string, name: string) => {
+export const registerUserAPI = async (email: string, password: string, name: string, phoneNumber?: string) => {
   try {
     const response = await api.post('/api/auth/register', {
       email,
       password,
       name,
+      phoneNumber
     });
     return response.data;
   } catch (error) {
@@ -273,6 +274,35 @@ export const resendVerificationEmailAPI = async (email: string) => {
   });
 
   return handleResponse(response);
+};
+
+export const sendOtpAPI = async (phoneNumber: string) => {
+  try {
+    const response = await api.post('/api/auth/send-verification', {
+      phoneNumber
+    });
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(error.response.data.error || 'Failed to send verification code');
+    }
+    throw error;
+  }
+};
+
+export const verifyOtpAPI = async (phoneNumber: string, code: string) => {
+  try {
+    const response = await api.post('/api/auth/verify-otp', {
+      phoneNumber,
+      code
+    });
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(error.response.data.error || 'Invalid verification code');
+    }
+    throw error;
+  }
 };
 
 export const fetchUserData = async () => {
@@ -551,6 +581,35 @@ export const checkEmailAvailability = async (email: string): Promise<{ available
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
       throw new Error(error.response.data.error || 'Failed to check email availability');
+    }
+    throw error;
+  }
+};
+
+// Add this function after checkEmailAvailability
+export const checkAuthEmailAvailability = async (email: string): Promise<{ available: boolean; email: string; existingUserId?: string }> => {
+  try {
+    const response = await api.get(`/api/auth/check-email`, {
+      params: { email }
+    });
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(error.response.data.error || 'Failed to check email availability');
+    }
+    throw error;
+  }
+};
+
+export const checkPhoneAvailability = async (phone: string): Promise<{ available: boolean; phone: string; existingUserId?: string }> => {
+  try {
+    const response = await api.get(`/api/auth/check-phone`, {
+      params: { phone }
+    });
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(error.response.data.error || 'Failed to check phone availability');
     }
     throw error;
   }
@@ -1079,6 +1138,41 @@ export const deleteJobseekerDraft = async (id: string): Promise<{deletedId: stri
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
       throw new Error(error.response.data.error || 'Failed to delete jobseeker draft');
+    }
+    throw error;
+  }
+};
+
+// New function for validating credentials without creating session
+export const validateCredentialsAPI = async (email: string, password: string) => {
+  try {
+    // Clear caches before validation
+    clearTokenCache();
+    clearRequestCache();
+    const response = await api.post('/api/auth/validate-credentials', {
+      email,
+      password,
+    });
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(error.response.data.error || 'Credential validation failed');
+    }
+    throw error;
+  }
+};
+
+// New function for completing 2FA and creating session
+export const complete2FAAPI = async (email: string, password: string) => {
+  try {
+    const response = await api.post('/api/auth/complete-2fa', {
+      email,
+      password,
+    });
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(error.response.data.error || 'Failed to complete 2FA');
     }
     throw error;
   }
