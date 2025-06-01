@@ -8,14 +8,29 @@ import '../../styles/pages/ClientView.css';
 import '../../styles/pages/PositionManagement.css';
 import '../../styles/components/header.css';
 
+interface ExtendedPositionData extends PositionData {
+  [key: string]: unknown;
+}
+
 export function PositionView() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const [position, setPosition] = useState<PositionData | null>(null);
+  const [position, setPosition] = useState<ExtendedPositionData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [showEditConfirmation, setShowEditConfirmation] = useState(false);
+
+  const convertToCamelCase = (data: Record<string, unknown>): ExtendedPositionData => {
+    const converted: Record<string, unknown> = {};
+    
+    Object.entries(data).forEach(([key, value]) => {
+      const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+      converted[camelKey] = value;
+    });
+    
+    return converted as ExtendedPositionData;
+  };
 
   useEffect(() => {
     const fetchPosition = async () => {
@@ -23,8 +38,9 @@ export function PositionView() {
       
       try {
         const fetchedPosition = await getPosition(id);
-        setPosition(fetchedPosition);
-        console.log("Position data loaded:", fetchedPosition);
+        const convertedPosition = convertToCamelCase(fetchedPosition as unknown as Record<string, unknown>);
+        setPosition(convertedPosition);
+        console.log("Position data loaded:", convertedPosition);
       } catch (err) {
         console.error('Error fetching position:', err);
         const errorMessage = err instanceof Error ? err.message : 'Failed to fetch position details';

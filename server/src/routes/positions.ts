@@ -191,6 +191,55 @@ router.get('/:id',
 );
 
 /**
+ * Generate next position code for a client
+ * GET /api/positions/generate-code/:clientId
+ * @access Private (Admin, Recruiter)
+ */
+router.get('/generate-code/:clientId', 
+  authenticateToken, 
+  authorizeRoles(['admin', 'recruiter']),
+  // apiRateLimiter,
+  async (req: Request, res: Response) => {
+    try {
+      const { clientId } = req.params;
+
+      // First, get the client's short code
+      const { data: client, error: clientError } = await supabase
+        .from('clients')
+        .select('short_code')
+        .eq('id', clientId)
+        .single();
+
+      if (clientError || !client) {
+        console.error('Error fetching client:', clientError);
+        return res.status(404).json({ error: 'Client not found' });
+      }
+
+      if (!client.short_code) {
+        return res.status(400).json({ error: 'Client does not have a short code' });
+      }
+
+      // Use the database function to generate the next position code
+      const { data: result, error: generateError } = await supabase
+        .rpc('generate_next_position_code', { client_short_code: client.short_code });
+
+      if (generateError) {
+        console.error('Error generating position code:', generateError);
+        return res.status(500).json({ error: 'Failed to generate position code' });
+      }
+
+      return res.status(200).json({
+        positionCode: result,
+        clientShortCode: client.short_code
+      });
+    } catch (error) {
+      console.error('Unexpected error generating position code:', error);
+      return res.status(500).json({ error: 'An unexpected error occurred' });
+    }
+  }
+);
+
+/**
  * Create a new position
  * POST /api/positions
  * @access Private (Admin, Recruiter)

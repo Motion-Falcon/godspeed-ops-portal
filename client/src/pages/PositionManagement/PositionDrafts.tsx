@@ -8,20 +8,36 @@ import '../../styles/pages/PositionManagement.css';
 import '../../styles/components/header.css';
 import '../../styles/components/CommonTable.css';
 
+interface ExtendedPositionData extends PositionData {
+  [key: string]: unknown;
+}
+
 export function PositionDrafts() {
   const navigate = useNavigate();
-  const [drafts, setDrafts] = useState<PositionData[]>([]);
+  const [drafts, setDrafts] = useState<ExtendedPositionData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [draftToDelete, setDraftToDelete] = useState<string | null>(null);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
 
+  const convertToCamelCase = (data: Record<string, unknown>): ExtendedPositionData => {
+    const converted: Record<string, unknown> = {};
+    
+    Object.entries(data).forEach(([key, value]) => {
+      const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+      converted[camelKey] = value;
+    });
+    
+    return converted as ExtendedPositionData;
+  };
+
   useEffect(() => {
     const fetchDrafts = async () => {
       try {
         const fetchedDrafts = await getAllPositionDrafts();
-        setDrafts(fetchedDrafts);
+        const convertedDrafts = fetchedDrafts.map((draft) => convertToCamelCase(draft as unknown as Record<string, unknown>));
+        setDrafts(convertedDrafts);
       } catch (err) {
         console.error('Error fetching drafts:', err);
         const errorMessage = err instanceof Error ? err.message : 'Failed to fetch drafts';

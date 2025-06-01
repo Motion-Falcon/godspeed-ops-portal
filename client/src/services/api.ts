@@ -1201,6 +1201,19 @@ export const deletePositionDraft = async (id: string): Promise<{ success: boolea
   }
 };
 
+// Generate position code for a client
+export const generatePositionCode = async (clientId: string): Promise<{ positionCode: string; clientShortCode: string }> => {
+  try {
+    const response = await api.get(`/api/positions/generate-code/${clientId}`);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(error.response.data.error || 'Failed to generate position code');
+    }
+    throw error;
+  }
+};
+
 // Add JobseekerProfileDraftResponse type
 export interface JobseekerDraftResponse {
   draft: ProfileData;

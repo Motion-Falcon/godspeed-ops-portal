@@ -207,15 +207,15 @@ export function CompensationForm({ allFields }: CompensationFormProps) {
       <div className="form-section">
         <h3>Overtime Settings</h3>
 
-        <div className="form-group checkbox-container">
+        <div className="container-form">
           <input
             id="overtimeEnabled"
             type="checkbox"
-            className="form-checkbox"
+            className="toggle-form"
             {...register("overtimeEnabled")}
           />
-          <label htmlFor="overtimeEnabled" className="checkbox-label">
-            Enable overtime rates
+          <label htmlFor="overtimeEnabled" className="label-form">
+            Enable Overtime
           </label>
           {shouldShowError("overtimeEnabled") && (
             <p className="error-message">

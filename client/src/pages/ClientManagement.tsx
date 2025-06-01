@@ -211,7 +211,7 @@ export function ClientManagement() {
 
   // Event handlers
   const handleCreateClient = () => {
-    navigate('/client-management/new');
+    navigate('/client-management/create');
   };
   
   const handleViewDrafts = () => {

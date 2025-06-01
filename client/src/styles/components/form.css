@@ -127,16 +127,122 @@ select.form-input, .form-select {
   display: flex;
   align-items: center;
   margin: 4px 0 10px 0;
+  position: relative;
+  cursor: pointer;
+  user-select: none;
+  transition: all var(--transition-normal);
+}
+
+.checkbox-container:hover {
+  transform: translateY(-1px);
 }
 
 .form-checkbox {
-  margin-right: var(--spacing-2);
-  accent-color: var(--primary);
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  margin-right: var(--spacing-3);
+  position: relative;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  background-color: var(--input-bg);
+  flex-shrink: 0;
+}
+
+.form-checkbox:hover {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+}
+
+.dark .form-checkbox:hover {
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
+}
+
+.form-checkbox:checked {
+  background-color: var(--primary);
+  border-color: var(--primary);
+  animation: checkboxPop var(--transition-fast);
+}
+
+.form-checkbox:checked::before {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  color: var(--background);
+  font-size: 14px;
+  font-weight: bold;
+  line-height: 1;
+  animation: checkmarkShow 0.3s ease-out 0.1s forwards;
+  z-index: 1;
+}
+
+.dark .form-checkbox:checked::before {
+  color: var(--background);
+}
+
+.form-checkbox:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--card-shadow);
 }
 
 .checkbox-label {
   font-size: 0.875rem;
   font-family: var(--font-family);
+  color: var(--text);
+  cursor: pointer;
+  transition: color var(--transition-normal);
+  line-height: 1.4;
+}
+
+.checkbox-container:hover .checkbox-label {
+  color: var(--primary);
+}
+
+.form-checkbox:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  border-color: var(--text-muted);
+}
+
+.form-checkbox:disabled + .checkbox-label {
+  opacity: 0.5;
+  cursor: not-allowed;
+  color: var(--text-muted);
+}
+
+/* Checkbox animations */
+@keyframes checkboxPop {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes checkmarkShow {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.2);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
 }
 
 .error-message {
@@ -293,4 +399,112 @@ a:hover {
 
 :root[class~="dark"] .form-info {
   background-color: var(--pending-bg);
+}
+
+/* Toggle Switch Styles */
+.container-form {
+  display: flex;
+  align-items: center;
+  margin: 4px 0 10px 0;
+  position: relative;
+  cursor: pointer;
+  user-select: none;
+  transition: all var(--transition-normal);
+}
+
+.container-form:hover {
+  transform: translateY(-1px);
+}
+
+.toggle-form {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  width: 48px;
+  height: 24px;
+  border: 2px solid var(--border);
+  border-radius: 24px;
+  margin-right: var(--spacing-3);
+  position: relative;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  background-color: var(--text-muted);
+  flex-shrink: 0;
+  outline: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15), inset 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.toggle-form:hover {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+}
+
+.dark .toggle-form:hover {
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
+}
+
+.toggle-form:checked {
+  background-color: var(--success);
+  border-color: var(--success);
+}
+
+.toggle-form::before {
+  content: '';
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 18px;
+  height: 18px;
+  background-color: var(--card);
+  border-radius: 50%;
+  transition: all var(--transition-normal);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.toggle-form:checked::before {
+  transform: translateX(24px);
+  background-color: var(--card);
+}
+
+.label-form {
+  font-size: 0.875rem;
+  font-family: var(--font-family);
+  color: var(--text);
+  cursor: pointer;
+  transition: color var(--transition-normal);
+  line-height: 1.4;
+}
+
+.container-form:hover .label-form {
+  color: var(--primary);
+}
+
+.toggle-form:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  border-color: var(--text-muted);
+}
+
+.toggle-form:disabled + .label-form {
+  opacity: 0.5;
+  cursor: not-allowed;
+  color: var(--text-muted);
+}
+
+.toggle-form:disabled::before {
+  background-color: var(--text-muted);
+}
+
+/* Toggle switch animations */
+@keyframes toggleSlide {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(24px);
+  }
+}
+
+.dark .toggle-form {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3), inset 0 1px 3px rgba(0, 0, 0, 0.2);
 } 

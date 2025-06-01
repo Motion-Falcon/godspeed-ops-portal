@@ -8,17 +8,32 @@ import '../styles/pages/PositionManagement.css';
 import '../styles/components/header.css';
 import '../styles/components/CommonTable.css';
 
+interface ExtendedPositionData extends PositionData {
+  [key: string]: unknown;
+}
+
 export function PositionManagement() {
   const navigate = useNavigate();
   const location = useLocation();
   const [loading, setLoading] = useState(true);
-  const [positions, setPositions] = useState<PositionData[]>([]);
+  const [positions, setPositions] = useState<ExtendedPositionData[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [positionToDelete, setPositionToDelete] = useState<string | null>(null);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [positionToEdit, setPositionToEdit] = useState<string | null>(null);
   const [showEditConfirmation, setShowEditConfirmation] = useState(false);
+
+  const convertToCamelCase = (data: Record<string, unknown>): ExtendedPositionData => {
+    const converted: Record<string, unknown> = {};
+    
+    Object.entries(data).forEach(([key, value]) => {
+      const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+      converted[camelKey] = value;
+    });
+    
+    return converted as ExtendedPositionData;
+  };
 
   useEffect(() => {
     // Check for message in location state
@@ -96,7 +111,8 @@ export function PositionManagement() {
       try {
         const data = await getPositions();
         console.log('Fetched positions:', data);
-        setPositions(data);
+        const convertedPositions = data.map((position) => convertToCamelCase(position as unknown as Record<string, unknown>));
+        setPositions(convertedPositions);
       } catch (err) {
         console.error('Error fetching positions:', err);
         const errorMessage = err instanceof Error ? err.message : 'Failed to fetch positions';
@@ -163,7 +179,12 @@ export function PositionManagement() {
                     <th>Title</th>
                     <th>Client</th>
                     <th>Start Date</th>
+                    <th>End Date</th>
                     <th>Location</th>
+                    <th>Employment Term</th>
+                    <th>Employment Type</th>
+                    <th>Position Category</th>
+                    <th>Experience</th>
                     <th>Status</th>
                     <th>Actions</th>
                   </tr>
@@ -174,7 +195,12 @@ export function PositionManagement() {
                       <td>{position.title}</td>
                       <td>{position.clientName}</td>
                       <td>{formatDate(position.startDate)}</td>
+                      <td>{formatDate(position.endDate)}</td>
                       <td>{position.city}, {position.province}</td>
+                      <td>{position.employmentTerm || 'N/A'}</td>
+                      <td>{position.employmentType || 'N/A'}</td>
+                      <td>{position.positionCategory || 'N/A'}</td>
+                      <td>{position.experience || 'N/A'}</td>
                       <td>
                         <span className={`status-badge ${position.showOnJobPortal ? 'active' : 'inactive'}`}>
                           {position.showOnJobPortal ? 'Active' : 'Inactive'}
