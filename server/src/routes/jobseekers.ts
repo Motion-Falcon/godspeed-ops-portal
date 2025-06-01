@@ -160,19 +160,31 @@ function extractLocation(profile: DbJobseekerProfile): string | undefined {
 router.get('/', isAdminOrRecruiter, async (req, res) => {
   try {
     // Extract pagination and filter parameters from query
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
-    const searchTerm = req.query.search as string || '';
-    const nameFilter = req.query.nameFilter as string || '';
-    const emailFilter = req.query.emailFilter as string || '';
-    const phoneFilter = req.query.phoneFilter as string || '';
-    const locationFilter = req.query.locationFilter as string || '';
-    const experienceFilter = req.query.experienceFilter as string || 'all';
-    const statusFilter = req.query.statusFilter as string || 'all';
-    const dateFilter = req.query.dateFilter as string || '';
+    const { 
+      page = '1', 
+      limit = '10', 
+      searchTerm = '', 
+      emailFilter = '', 
+      creatorFilter = '', 
+      updaterFilter = '',
+      dateFilter = '',
+      createdDateFilter = ''
+    } = req.query as {
+      page?: string;
+      limit?: string;
+      searchTerm?: string;
+      emailFilter?: string;
+      creatorFilter?: string;
+      updaterFilter?: string;
+      dateFilter?: string;
+      createdDateFilter?: string;
+    };
+
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
 
     // Calculate offset for pagination
-    const offset = (page - 1) * limit;
+    const offset = (pageNum - 1) * limitNum;
 
     // Start building the query
     let query = supabaseAdmin
@@ -180,28 +192,31 @@ router.get('/', isAdminOrRecruiter, async (req, res) => {
       .select<string, DbJobseekerProfile>('id, user_id, first_name, last_name, email, verification_status, created_at, city, province, experience, documents, mobile');
 
     // Apply filters
-    if (nameFilter) {
-      query = query.or(`first_name.ilike.%${nameFilter}%, last_name.ilike.%${nameFilter}%`);
+    if (searchTerm && searchTerm.length >= 4) {
+      query = query.or(`first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`);
     }
 
-    if (emailFilter) {
+    if (emailFilter && emailFilter.length >= 4) {
       query = query.ilike('email', `%${emailFilter}%`);
     }
 
-    if (locationFilter) {
-      query = query.or(`city.ilike.%${locationFilter}%, province.ilike.%${locationFilter}%`);
+    if (creatorFilter && creatorFilter.length >= 4) {
+      query = query.ilike('created_by_name', `%${creatorFilter}%`);
     }
 
-    if (experienceFilter !== 'all') {
-      query = query.eq('experience', experienceFilter);
-    }
-
-    if (statusFilter !== 'all' && statusFilter !== 'need-attention') {
-      query = query.eq('verification_status', statusFilter);
+    if (updaterFilter && updaterFilter.length >= 4) {
+      query = query.ilike('updated_by_name', `%${updaterFilter}%`);
     }
 
     if (dateFilter) {
       const filterDate = new Date(dateFilter);
+      const nextDay = new Date(filterDate);
+      nextDay.setDate(nextDay.getDate() + 1);
+      query = query.gte('updated_at', filterDate.toISOString()).lt('updated_at', nextDay.toISOString());
+    }
+
+    if (createdDateFilter) {
+      const filterDate = new Date(createdDateFilter);
       const nextDay = new Date(filterDate);
       nextDay.setDate(nextDay.getDate() + 1);
       query = query.gte('created_at', filterDate.toISOString()).lt('created_at', nextDay.toISOString());
@@ -219,7 +234,7 @@ router.get('/', isAdminOrRecruiter, async (req, res) => {
 
     // Apply pagination and execute query
     const { data: dbProfiles, error } = await query
-      .range(offset, offset + limit - 1)
+      .range(offset, offset + limitNum - 1)
       .order('created_at', { ascending: false });
       
     if (error) {
@@ -231,10 +246,10 @@ router.get('/', isAdminOrRecruiter, async (req, res) => {
       return res.json({
         profiles: [],
         pagination: {
-          page,
-          limit,
+          page: pageNum,
+          limit: limitNum,
           total: totalCount || 0,
-          totalPages: Math.ceil((totalCount || 0) / limit),
+          totalPages: Math.ceil((totalCount || 0) / limitNum),
           hasNextPage: false,
           hasPrevPage: false
         }
@@ -302,9 +317,9 @@ router.get('/', isAdminOrRecruiter, async (req, res) => {
     }
 
     // Apply phone filter after formatting (since phoneNumber is computed)
-    if (phoneFilter) {
+    if (emailFilter) {
       filteredProfiles = filteredProfiles.filter(profile => 
-        profile.phoneNumber && profile.phoneNumber.toLowerCase().includes(phoneFilter.toLowerCase())
+        profile.phoneNumber && profile.phoneNumber.toLowerCase().includes(emailFilter.toLowerCase())
       );
     }
 
@@ -357,15 +372,15 @@ router.get('/', isAdminOrRecruiter, async (req, res) => {
 
     // Calculate pagination info
     const totalFiltered = filteredProfiles.length;
-    const totalPages = Math.ceil((totalCount || 0) / limit);
-    const hasNextPage = page < totalPages;
-    const hasPrevPage = page > 1;
+    const totalPages = Math.ceil((totalCount || 0) / limitNum);
+    const hasNextPage = pageNum < totalPages;
+    const hasPrevPage = pageNum > 1;
       
     res.json({
       profiles: filteredProfiles,
       pagination: {
-        page,
-        limit,
+        page: pageNum,
+        limit: limitNum,
         total: totalCount || 0,
         totalFiltered,
         totalPages,
@@ -921,6 +936,7 @@ router.get('/drafts', isAdminOrRecruiter, async (req, res) => {
     const creatorFilter = req.query.creatorFilter as string || '';
     const updaterFilter = req.query.updaterFilter as string || '';
     const dateFilter = req.query.dateFilter as string || '';
+    const createdDateFilter = req.query.createdDateFilter as string || '';
 
     // Calculate offset for pagination
     const offset = (page - 1) * limit;
@@ -937,6 +953,13 @@ router.get('/drafts', isAdminOrRecruiter, async (req, res) => {
 
     if (dateFilter) {
       const filterDate = new Date(dateFilter);
+      const nextDay = new Date(filterDate);
+      nextDay.setDate(nextDay.getDate() + 1);
+      query = query.gte('updated_at', filterDate.toISOString()).lt('updated_at', nextDay.toISOString());
+    }
+
+    if (createdDateFilter) {
+      const filterDate = new Date(createdDateFilter);
       const nextDay = new Date(filterDate);
       nextDay.setDate(nextDay.getDate() + 1);
       query = query.gte('created_at', filterDate.toISOString()).lt('created_at', nextDay.toISOString());

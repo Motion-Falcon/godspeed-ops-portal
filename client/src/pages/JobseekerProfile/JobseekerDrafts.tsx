@@ -79,6 +79,7 @@ export function JobseekerDrafts() {
   const [creatorFilter, setCreatorFilter] = useState('');
   const [updaterFilter, setUpdaterFilter] = useState('');
   const [dateFilter, setDateFilter] = useState<string>('');
+  const [createdDateFilter, setCreatedDateFilter] = useState<string>('');
 
   // Debounced fetch function
   const fetchDrafts = useCallback(async () => {
@@ -98,7 +99,8 @@ export function JobseekerDrafts() {
         emailFilter: effectiveEmailFilter,
         creatorFilter: effectiveCreatorFilter,
         updaterFilter: effectiveUpdaterFilter,
-        dateFilter
+        dateFilter,
+        createdDateFilter
       });
       
       console.log('Fetched drafts:', data);
@@ -119,7 +121,8 @@ export function JobseekerDrafts() {
     emailFilter.length >= 4 || emailFilter === '' ? emailFilter : 'inactive',
     creatorFilter.length >= 4 || creatorFilter === '' ? creatorFilter : 'inactive',
     updaterFilter.length >= 4 || updaterFilter === '' ? updaterFilter : 'inactive',
-    dateFilter
+    dateFilter,
+    createdDateFilter
   ]);
 
   useEffect(() => {
@@ -137,7 +140,8 @@ export function JobseekerDrafts() {
     emailFilter.length >= 4 || emailFilter === '' ? emailFilter : null,
     creatorFilter.length >= 4 || creatorFilter === '' ? creatorFilter : null,
     updaterFilter.length >= 4 || updaterFilter === '' ? updaterFilter : null,
-    dateFilter
+    dateFilter,
+    createdDateFilter
   ]);
 
   const handleNavigateBack = () => {
@@ -226,6 +230,7 @@ export function JobseekerDrafts() {
     setCreatorFilter('');
     setUpdaterFilter('');
     setDateFilter('');
+    setCreatedDateFilter('');
     setPagination(prev => ({ ...prev, page: 1 }));
   };
 
@@ -351,7 +356,22 @@ export function JobseekerDrafts() {
                       </div>
                     </div>
                   </th>
-                  <th>Created At</th>
+                  <th>
+                    <div className="column-filter">
+                      <div className="column-title">Created At</div>
+                      <div className="column-search">
+                        <div className="date-picker-wrapper">
+                          <input
+                            type="date"
+                            value={createdDateFilter}
+                            onChange={(e) => setCreatedDateFilter(e.target.value)}
+                            className="date-picker-input"
+                            onClick={(e) => e.currentTarget.showPicker()}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </th>
                   <th>
                     <div className="column-filter">
                       <div className="column-title">Created By</div>

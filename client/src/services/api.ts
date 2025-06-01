@@ -1124,6 +1124,7 @@ export interface DraftPaginationParams {
   creatorFilter?: string;
   updaterFilter?: string;
   dateFilter?: string;
+  createdDateFilter?: string;
 }
 
 // Add paginated response interface for drafts
@@ -1153,6 +1154,7 @@ export const getAllJobseekerDrafts = async (params: DraftPaginationParams = {}):
     if (params.creatorFilter) queryParams.append('creatorFilter', params.creatorFilter);
     if (params.updaterFilter) queryParams.append('updaterFilter', params.updaterFilter);
     if (params.dateFilter) queryParams.append('dateFilter', params.dateFilter);
+    if (params.createdDateFilter) queryParams.append('createdDateFilter', params.createdDateFilter);
 
     const response = await api.get(`/api/jobseekers/drafts?${queryParams.toString()}`);
     return response.data;
