@@ -58,7 +58,7 @@ function camelToSnakeCase(str: string): string {
 }
 
 /**
- * Get all positions
+ * Get all positions with pagination and filtering
  * GET /api/positions
  * @access Private (Admin, Recruiter)
  */
@@ -68,10 +68,139 @@ router.get('/',
   // apiRateLimiter,
   async (req: Request, res: Response) => {
     try {
-      // Get positions from the database
-      const { data: positions, error } = await supabase
+      // Extract pagination and filter parameters from query
+      const { 
+        page = '1', 
+        limit = '10', 
+        search = '',
+        titleFilter = '',
+        clientFilter = '', 
+        locationFilter = '',
+        employmentTermFilter = '',
+        employmentTypeFilter = '',
+        positionCategoryFilter = '',
+        experienceFilter = '',
+        showOnPortalFilter = '',
+        dateFilter = ''
+      } = req.query as {
+        page?: string;
+        limit?: string;
+        search?: string;
+        titleFilter?: string;
+        clientFilter?: string;
+        locationFilter?: string;
+        employmentTermFilter?: string;
+        employmentTypeFilter?: string;
+        positionCategoryFilter?: string;
+        experienceFilter?: string;
+        showOnPortalFilter?: string;
+        dateFilter?: string;
+      };
+
+      const pageNum = parseInt(page);
+      const limitNum = parseInt(limit);
+
+      // Calculate offset for pagination
+      const offset = (pageNum - 1) * limitNum;
+
+      // Start building the query
+      let query = supabase
         .from('positions')
-        .select('*, clients(company_name)')
+        .select('*, clients(company_name)');
+
+      // Apply database-level filters (only if they meet minimum character requirement)
+      if (titleFilter && titleFilter.length >= 3) {
+        query = query.ilike('title', `%${titleFilter}%`);
+      }
+
+      if (employmentTermFilter && employmentTermFilter !== 'all') {
+        query = query.eq('employment_term', employmentTermFilter);
+      }
+
+      if (employmentTypeFilter && employmentTypeFilter !== 'all') {
+        query = query.eq('employment_type', employmentTypeFilter);
+      }
+
+      if (positionCategoryFilter && positionCategoryFilter !== 'all') {
+        query = query.eq('position_category', positionCategoryFilter);
+      }
+
+      if (experienceFilter && experienceFilter !== 'all') {
+        query = query.eq('experience', experienceFilter);
+      }
+
+      if (showOnPortalFilter && showOnPortalFilter !== 'all') {
+        const showOnPortal = showOnPortalFilter === 'true' || showOnPortalFilter === 'Yes';
+        query = query.eq('show_on_job_portal', showOnPortal);
+      }
+
+      if (dateFilter) {
+        const filterDate = new Date(dateFilter);
+        const nextDay = new Date(filterDate);
+        nextDay.setDate(nextDay.getDate() + 1);
+        query = query.gte('start_date', filterDate.toISOString().split('T')[0])
+                   .lt('start_date', nextDay.toISOString().split('T')[0]);
+      }
+
+      // Get total count first (without pagination and without filters)
+      const { count: totalCount, error: countError } = await supabase
+        .from('positions')
+        .select('*', { count: 'exact', head: true });
+
+      if (countError) {
+        console.error('Error getting total count:', countError);
+        return res.status(500).json({ error: 'Failed to get total count of positions' });
+      }
+
+      // Get filtered count (with filters but without pagination)
+      let countQuery = supabase
+        .from('positions')
+        .select('*', { count: 'exact', head: true });
+
+      // Apply the same filters to the count query
+      if (titleFilter && titleFilter.length >= 3) {
+        countQuery = countQuery.ilike('title', `%${titleFilter}%`);
+      }
+
+      if (employmentTermFilter && employmentTermFilter !== 'all') {
+        countQuery = countQuery.eq('employment_term', employmentTermFilter);
+      }
+
+      if (employmentTypeFilter && employmentTypeFilter !== 'all') {
+        countQuery = countQuery.eq('employment_type', employmentTypeFilter);
+      }
+
+      if (positionCategoryFilter && positionCategoryFilter !== 'all') {
+        countQuery = countQuery.eq('position_category', positionCategoryFilter);
+      }
+
+      if (experienceFilter && experienceFilter !== 'all') {
+        countQuery = countQuery.eq('experience', experienceFilter);
+      }
+
+      if (showOnPortalFilter && showOnPortalFilter !== 'all') {
+        const showOnPortal = showOnPortalFilter === 'true' || showOnPortalFilter === 'Yes';
+        countQuery = countQuery.eq('show_on_job_portal', showOnPortal);
+      }
+
+      if (dateFilter) {
+        const filterDate = new Date(dateFilter);
+        const nextDay = new Date(filterDate);
+        nextDay.setDate(nextDay.getDate() + 1);
+        countQuery = countQuery.gte('start_date', filterDate.toISOString().split('T')[0])
+                              .lt('start_date', nextDay.toISOString().split('T')[0]);
+      }
+
+      const { count: filteredCount, error: filteredCountError } = await countQuery;
+
+      if (filteredCountError) {
+        console.error('Error getting filtered count:', filteredCountError);
+        return res.status(500).json({ error: 'Failed to get filtered count of positions' });
+      }
+
+      // Apply pagination and execute query
+      const { data: positions, error } = await query
+        .range(offset, offset + limitNum - 1)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -79,21 +208,107 @@ router.get('/',
         return res.status(500).json({ error: 'Failed to fetch positions' });
       }
 
-      // Transform the response to include clientName
+      if (!positions) {
+        return res.json({
+          positions: [],
+          pagination: {
+            page: pageNum,
+            limit: limitNum,
+            total: totalCount || 0,
+            totalPages: Math.ceil((totalCount || 0) / limitNum),
+            hasNextPage: false,
+            hasPrevPage: false
+          }
+        });
+      }
+
+      // Transform the response to include clientName and convert snake_case to camelCase
       const formattedPositions = positions.map(position => {
         const clientName = position.clients?.company_name || null;
-        // Remove the clients object and add clientName directly
+        // Remove the clients object
         const { clients, ...positionData } = position;
-        return {
-          ...positionData,
-          clientName
-        };
+        
+        // Convert snake_case to camelCase
+        const formattedPosition = Object.entries(positionData).reduce((acc, [key, value]) => {
+          const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+          acc[camelKey] = value;
+          return acc;
+        }, { clientName } as Record<string, any>);
+
+        return formattedPosition;
       });
 
-      return res.status(200).json(formattedPositions);
+      // Apply client-side filters after formatting (for computed fields that need 3+ characters)
+      let filteredPositions = formattedPositions;
+      
+      if (search && search.length >= 3) {
+        filteredPositions = filteredPositions.filter(position => 
+          (position.title && position.title.toLowerCase().includes(search.toLowerCase())) ||
+          (position.clientName && position.clientName.toLowerCase().includes(search.toLowerCase())) ||
+          (position.positionCode && position.positionCode.toLowerCase().includes(search.toLowerCase())) ||
+          (position.positionNumber && position.positionNumber.toLowerCase().includes(search.toLowerCase())) ||
+          (position.description && position.description.toLowerCase().includes(search.toLowerCase())) ||
+          (position.city && position.city.toLowerCase().includes(search.toLowerCase())) ||
+          (position.province && position.province.toLowerCase().includes(search.toLowerCase()))
+        );
+      }
+
+      if (clientFilter && clientFilter.length >= 3) {
+        filteredPositions = filteredPositions.filter(position => 
+          position.clientName && position.clientName.toLowerCase().includes(clientFilter.toLowerCase())
+        );
+      }
+
+      if (locationFilter && locationFilter.length >= 3) {
+        filteredPositions = filteredPositions.filter(position => {
+          const location = `${position.city || ''} ${position.province || ''}`.trim();
+          return location.toLowerCase().includes(locationFilter.toLowerCase());
+        });
+      }
+
+      // Calculate pagination info based on the actual final filtered count
+      const actualFilteredCount = filteredPositions.length;
+      
+      // For pagination calculation, we need to account for the fact that we applied client-side filters
+      // If we have client-side filters, we need to estimate the total filtered count
+      let totalFilteredForPagination = filteredCount || 0;
+      
+      // If we have client-side filters that could reduce the count, use the actual count
+      const hasClientSideFilters = (search && search.length >= 3) || 
+                                   (clientFilter && clientFilter.length >= 3) || 
+                                   (locationFilter && locationFilter.length >= 3);
+      
+      if (hasClientSideFilters) {
+        // For client-side filtered results, we can't easily calculate total across all pages
+        // So we'll use a conservative approach
+        totalFilteredForPagination = actualFilteredCount + ((pageNum - 1) * limitNum);
+        
+        // If we got a full page, there might be more
+        if (actualFilteredCount === limitNum && filteredCount && filteredCount > totalFilteredForPagination) {
+          totalFilteredForPagination = filteredCount;
+        }
+      }
+
+      const totalPages = Math.ceil(totalFilteredForPagination / limitNum);
+      const hasNextPage = pageNum < totalPages && actualFilteredCount === limitNum;
+      const hasPrevPage = pageNum > 1;
+
+      return res.json({
+        positions: filteredPositions,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total: totalCount || 0,
+          totalFiltered: totalFilteredForPagination,
+          totalPages,
+          hasNextPage,
+          hasPrevPage
+        }
+      });
+
     } catch (error) {
       console.error('Unexpected error fetching positions:', error);
-      return res.status(500).json({ error: 'An unexpected error occurred' });
+      return res.status(500).json({ error: 'An unexpected error occurred while fetching positions' });
     }
   }
 );

@@ -133,6 +133,11 @@ export function PositionDrafts() {
                   <tr>
                     <th>Title</th>
                     <th>Client</th>
+                    <th>Position Code</th>
+                    <th>Position Number</th>
+                    <th>Start Date</th>
+                    <th>Show on Portal</th>
+                    <th>Created At</th>
                     <th>Last Updated</th>
                     <th>Actions</th>
                   </tr>
@@ -142,6 +147,27 @@ export function PositionDrafts() {
                     <tr key={draft.id}>
                       <td>{draft.title || 'Untitled'}</td>
                       <td>{draft.clientName || 'N/A'}</td>
+                      <td>{draft.positionCode || 'N/A'}</td>
+                      <td>{draft.positionNumber || 'N/A'}</td>
+                      <td>
+                        <div className="date-display">
+                          {draft.startDate 
+                            ? new Date(draft.startDate).toLocaleDateString() 
+                            : 'N/A'}
+                        </div>
+                      </td>
+                      <td>
+                        <span className={`status-badge ${draft.showOnJobPortal ? 'active' : 'inactive'}`}>
+                          {draft.showOnJobPortal ? 'Yes' : 'No'}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="date-display">
+                          {draft.createdAt 
+                            ? new Date(draft.createdAt).toLocaleString() 
+                            : 'N/A'}
+                        </div>
+                      </td>
                       <td>
                         <div className="date-display">
                           {draft.lastUpdated 
@@ -157,7 +183,7 @@ export function PositionDrafts() {
                             title="Edit this draft"
                             aria-label="Edit draft"
                           >
-                            <Pencil size={20} />
+                            <Pencil size={16} />
                           </button>
                           <button 
                             className="action-icon-btn delete-btn"
@@ -165,7 +191,7 @@ export function PositionDrafts() {
                             title="Delete this draft"
                             aria-label="Delete draft"
                           >
-                            <Trash2 size={20} />
+                            <Trash2 size={16} />
                           </button>
                         </div>
                       </td>

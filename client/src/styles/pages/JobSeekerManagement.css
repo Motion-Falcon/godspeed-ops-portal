@@ -36,28 +36,31 @@
   gap: var(--spacing-3);
   flex: 1;
   max-width: 600px;
+  position: relative;
 }
 
-.search-icon, .filter-icon {
+.search-icon {
   color: var(--text-muted);
   transition: color var(--transition-fast);
   position: absolute;
-  left: var(--spacing-3);
+  left: 10px;
   top: 50%;
   transform: translateY(-50%);
   pointer-events: none;
+  z-index: 10;
 }
 
 .search-input {
   flex: 1;
-  padding: var(--spacing-3) var(--spacing-3) var(--spacing-3) calc(var(--spacing-8) + var(--spacing-2));
+  padding: var(--spacing-3) var(--spacing-3) var(--spacing-3) var(--spacing-8);
   border: 1px solid var(--border);
   border-radius: var(--border-radius);
   background: var(--input-bg);
   color: var(--text);
-  font-size: var(--font-size-body);
   position: relative;
   transition: all var(--transition-fast);
+  height: 30px;
+  font-size: 0.7rem;
 }
 
 .search-input:focus {
@@ -70,17 +73,9 @@
   box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
 }
 
-.reset-filters-btn {
-  background: var(--card);
-  color: var(--text);
-  border: 1px solid var(--border);
-  padding: var(--spacing-3) var(--spacing-4);
-  border-radius: var(--border-radius);
-  transition: all var(--transition-fast);
-  font-size: var(--font-size-small);
-  font-weight: var(--font-weight-medium);
-  cursor: pointer;
-  white-space: nowrap;
+.filter-container .reset-filters-btn {
+  height: 30px;
+  font-size: 0.7rem;
 }
 
 .status-filter {

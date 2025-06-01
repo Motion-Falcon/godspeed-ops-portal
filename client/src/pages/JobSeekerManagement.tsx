@@ -217,15 +217,15 @@ export function JobSeekerManagement() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'verified':
-        return <CheckCircle className="status-icon verified" size={16} />;
+        return <CheckCircle className="status-icon verified" size={12} />;
       case 'rejected':
-        return <XCircle className="status-icon rejected" size={16} />;
+        return <XCircle className="status-icon rejected" size={12} />;
       case 'pending':
-        return <Clock className="status-icon pending" size={16} />;
+        return <Clock className="status-icon pending" size={12} />;
       case 'need-attention':
-        return <AlertTriangle className="status-icon need-attention" size={16} />;
+        return <AlertTriangle className="status-icon need-attention" size={12} />;
       default:
-        return <Clock className="status-icon pending" size={16} />;
+        return <Clock className="status-icon pending" size={12} />;
     }
   };
 
@@ -375,7 +375,7 @@ export function JobSeekerManagement() {
             <h2>Job Seeker Profiles</h2>
             <div className="filter-container">
               <div className="search-box">
-                <Search size={18} className="search-icon" />
+                <Search size={14} className="search-icon" />
                 <input
                   type="text"
                   placeholder="Global search..."
@@ -540,8 +540,9 @@ export function JobSeekerManagement() {
                     <div className="column-filter">
                       <div className="column-title">Actions</div>
                       <div className="column-search">
-                        {/* Empty space to maintain consistent alignment */}
-                        <div className="actions-placeholder"></div>
+                        <div className="actions-info">
+                          <span className="actions-help-text">View • Edit • Delete</span>
+                        </div>
                       </div>
                     </div>
                   </th>
@@ -573,12 +574,12 @@ export function JobSeekerManagement() {
                         <td className="location-cell">{profile.location || 'N/A'}</td>
                         <td className="experience-cell">{profile.experience}</td>
                         <td className="status-cell">
-                          <div className="status-display">
+                          <span className="status-display">
                             {getStatusIcon(effectiveStatus)}
                             <span className={`status-text ${effectiveStatus}`}>
                               {formatStatusLabel(effectiveStatus)}
                             </span>
-                          </div>
+                          </span>
                         </td>
                         <td className="date-cell">
                           {new Date(profile.createdAt).toLocaleDateString()}
@@ -591,7 +592,7 @@ export function JobSeekerManagement() {
                               title="View profile details"
                               aria-label="View profile"
                             >
-                              <Eye size={20} />
+                              <Eye size={16} />
                             </button>
                             <button 
                               className="action-icon-btn edit-btn"
@@ -599,7 +600,7 @@ export function JobSeekerManagement() {
                               title="Edit this profile"
                               aria-label="Edit profile"
                             >
-                              <Pencil size={20} />
+                              <Pencil size={16} />
                             </button>
                             <button 
                               className="action-icon-btn delete-btn"
@@ -607,7 +608,7 @@ export function JobSeekerManagement() {
                               title="Delete this profile"
                               aria-label="Delete profile"
                             >
-                              <Trash2 size={20} />
+                              <Trash2 size={16} />
                             </button>
                           </div>
                         </td>

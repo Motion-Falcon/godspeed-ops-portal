@@ -1060,11 +1060,61 @@ export interface PositionDraftResponse {
   lastUpdated: string | null;
 }
 
-export const getPositions = async (): Promise<PositionData[]> => {
+// Add position pagination parameters interface
+export interface PositionPaginationParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  titleFilter?: string;
+  clientFilter?: string;
+  locationFilter?: string;
+  employmentTermFilter?: string;
+  employmentTypeFilter?: string;
+  positionCategoryFilter?: string;
+  experienceFilter?: string;
+  showOnPortalFilter?: string;
+  dateFilter?: string;
+}
+
+// Add paginated response interface for positions
+export interface PaginatedPositionResponse {
+  positions: PositionData[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalFiltered: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+  };
+}
+
+export const getPositions = async (params: PositionPaginationParams = {}): Promise<PaginatedPositionResponse> => {
   try {
-    const response = await api.get('/api/positions');
+    const config: AxiosRequestConfig = {
+      method: 'GET',
+      url: '/api/positions',
+      params: {
+        page: params.page || 1,
+        limit: params.limit || 10,
+        ...(params.search && { search: params.search }),
+        ...(params.titleFilter && { titleFilter: params.titleFilter }),
+        ...(params.clientFilter && { clientFilter: params.clientFilter }),
+        ...(params.locationFilter && { locationFilter: params.locationFilter }),
+        ...(params.employmentTermFilter && params.employmentTermFilter !== 'all' && { employmentTermFilter: params.employmentTermFilter }),
+        ...(params.employmentTypeFilter && params.employmentTypeFilter !== 'all' && { employmentTypeFilter: params.employmentTypeFilter }),
+        ...(params.positionCategoryFilter && params.positionCategoryFilter !== 'all' && { positionCategoryFilter: params.positionCategoryFilter }),
+        ...(params.experienceFilter && params.experienceFilter !== 'all' && { experienceFilter: params.experienceFilter }),
+        ...(params.showOnPortalFilter && params.showOnPortalFilter !== 'all' && { showOnPortalFilter: params.showOnPortalFilter }),
+        ...(params.dateFilter && { dateFilter: params.dateFilter }),
+      },
+    };
+
+    const response = await api.get('/api/positions', config);
     return response.data;
   } catch (error) {
+    console.error('Error fetching positions:', error);
     if (axios.isAxiosError(error) && error.response) {
       throw new Error(error.response.data.error || 'Failed to fetch positions');
     }

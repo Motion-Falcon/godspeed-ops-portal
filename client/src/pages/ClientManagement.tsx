@@ -315,7 +315,7 @@ export function ClientManagement() {
             <h2>Client List</h2>
             <div className="filter-container">
               <div className="search-box">
-                <Search size={18} className="search-icon" />
+                <Search size={14} className="search-icon" />
                 <input
                   type="text"
                   placeholder="Global search..."
@@ -481,7 +481,9 @@ export function ClientManagement() {
                     <div className="column-filter">
                       <div className="column-title">Actions</div>
                       <div className="column-search">
-                        <div className="actions-placeholder"></div>
+                        <div className="actions-info">
+                          <span className="actions-help-text">View • Edit • Delete</span>
+                        </div>
                       </div>
                     </div>
                   </th>
@@ -521,7 +523,7 @@ export function ClientManagement() {
                             title="View client details"
                             aria-label="View client"
                           >
-                            <Eye size={20} />
+                            <Eye size={16} />
                           </button>
                           <button 
                             className="action-icon-btn edit-btn"
@@ -529,7 +531,7 @@ export function ClientManagement() {
                             title="Edit this client"
                             aria-label="Edit client"
                           >
-                            <Pencil size={20} />
+                            <Pencil size={16} />
                           </button>
                           <button 
                             className="action-icon-btn delete-btn"
@@ -537,7 +539,7 @@ export function ClientManagement() {
                             title="Delete this client"
                             aria-label="Delete client"
                           >
-                            <Trash2 size={20} />
+                            <Trash2 size={16} />
                           </button>
                         </div>
                       </td>
