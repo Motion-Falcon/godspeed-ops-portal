@@ -109,10 +109,10 @@ export function JobSeekerManagement() {
       setLoading(true);
       
       // Only apply filters if they meet the minimum character requirement
-      const effectiveNameFilter = nameFilter.length >= 4 ? nameFilter : '';
-      const effectiveEmailFilter = emailFilter.length >= 4 ? emailFilter : '';
-      const effectivePhoneFilter = phoneFilter.length >= 4 ? phoneFilter : '';
-      const effectiveLocationFilter = locationFilter.length >= 4 ? locationFilter : '';
+      const effectiveNameFilter = nameFilter.length >= 3 ? nameFilter : '';
+      const effectiveEmailFilter = emailFilter.length >= 3 ? emailFilter : '';
+      const effectivePhoneFilter = phoneFilter.length >= 3 ? phoneFilter : '';
+      const effectiveLocationFilter = locationFilter.length >= 3 ? locationFilter : '';
       
       const data = await getJobseekerProfiles({
         page: pagination.page,
@@ -150,10 +150,10 @@ export function JobSeekerManagement() {
     pagination.limit, 
     searchTerm, 
     // Only include text filters in dependencies when they meet minimum length or are empty
-    nameFilter.length >= 4 || nameFilter === '' ? nameFilter : 'inactive',
-    emailFilter.length >= 4 || emailFilter === '' ? emailFilter : 'inactive',
-    phoneFilter.length >= 4 || phoneFilter === '' ? phoneFilter : 'inactive',
-    locationFilter.length >= 4 || locationFilter === '' ? locationFilter : 'inactive',
+    nameFilter.length >= 3 || nameFilter === '' ? nameFilter : 'inactive',
+    emailFilter.length >= 3 || emailFilter === '' ? emailFilter : 'inactive',
+    phoneFilter.length >= 3 || phoneFilter === '' ? phoneFilter : 'inactive',
+    locationFilter.length >= 3 || locationFilter === '' ? locationFilter : 'inactive',
     experienceFilter, 
     statusFilter, 
     dateFilter
@@ -177,10 +177,10 @@ export function JobSeekerManagement() {
   }, [
     searchTerm, 
     // Only reset pagination for text filters when they meet the minimum length or are empty
-    nameFilter.length >= 4 || nameFilter === '' ? nameFilter : null,
-    emailFilter.length >= 4 || emailFilter === '' ? emailFilter : null,
-    phoneFilter.length >= 4 || phoneFilter === '' ? phoneFilter : null,
-    locationFilter.length >= 4 || locationFilter === '' ? locationFilter : null,
+    nameFilter.length >= 3 || nameFilter === '' ? nameFilter : null,
+    emailFilter.length >= 3 || emailFilter === '' ? emailFilter : null,
+    phoneFilter.length >= 3 || phoneFilter === '' ? phoneFilter : null,
+    locationFilter.length >= 3 || locationFilter === '' ? locationFilter : null,
     experienceFilter, 
     statusFilter, 
     dateFilter

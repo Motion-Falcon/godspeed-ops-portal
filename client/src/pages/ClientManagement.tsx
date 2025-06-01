@@ -1,119 +1,217 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Eye, Pencil, Trash2, Plus, FileText, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { 
   getClients, 
   ClientData, 
-  deleteClient
+  deleteClient,
+  ClientPaginationParams,
+  PaginatedClientResponse
 } from '../services/api';
-import { ConfirmationModal } from '../components/ConfirmationModal';
-import { Plus, Trash2, Pencil, FileText, Eye } from 'lucide-react';
 import { AppHeader } from '../components/AppHeader';
-import '../styles/pages/ClientManagement.css';
-import '../styles/components/header.css';
+import { ConfirmationModal } from '../components/ConfirmationModal';
 import '../styles/components/CommonTable.css';
+import '../styles/pages/ClientManagement.css';
 
-// Extended ClientData interface that can handle both camelCase and snake_case properties
 interface ExtendedClientData extends ClientData {
   company_name?: string;
   contact_person_name1?: string;
   work_province?: string;
-  [key: string]: unknown; // Allow string indexing for dynamic access
+  [key: string]: unknown;
+}
+
+interface PaginationInfo {
+  page: number;
+  limit: number;
+  total: number;
+  totalFiltered: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
 }
 
 export function ClientManagement() {
-  const navigate = useNavigate();
-  const location = useLocation();
+  // State management
   const [clients, setClients] = useState<ExtendedClientData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const [clientToDelete, setClientToDelete] = useState<string | null>(null);
-  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
-  const [clientToEdit, setClientToEdit] = useState<string | null>(null);
-  const [showEditConfirmation, setShowEditConfirmation] = useState(false);
+  const navigate = useNavigate();
 
-  // Function to convert snake_case keys to camelCase
+  // Filter states
+  const [searchTerm, setSearchTerm] = useState('');
+  const [companyNameFilter, setCompanyNameFilter] = useState('');
+  const [shortCodeFilter, setShortCodeFilter] = useState('');
+  const [listNameFilter, setListNameFilter] = useState('');
+  const [contactFilter, setContactFilter] = useState('');
+  const [emailFilter, setEmailFilter] = useState('');
+  const [mobileFilter, setMobileFilter] = useState('');
+  const [paymentMethodFilter, setPaymentMethodFilter] = useState('');
+  const [paymentCycleFilter, setPaymentCycleFilter] = useState('');
+
+  // Pagination state
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    page: 1,
+    limit: 25,
+    total: 0,
+    totalFiltered: 0,
+    totalPages: 0,
+    hasNextPage: false,
+    hasPrevPage: false,
+  });
+
+  // Delete confirmation state
+  const [clientToDelete, setClientToDelete] = useState<ExtendedClientData | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  // Edit confirmation state
+  const [clientToEdit, setClientToEdit] = useState<ExtendedClientData | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
   const convertToCamelCase = (data: Record<string, unknown>): ExtendedClientData => {
-    const result: Record<string, unknown> = { ...data };
+    const converted: Record<string, unknown> = {};
     
-    Object.keys(data).forEach(key => {
-      if (key.includes('_')) {
+    Object.entries(data).forEach(([key, value]) => {
         const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
-        result[camelKey] = data[key];
-      }
+      converted[camelKey] = value;
     });
     
-    return result as ExtendedClientData;
+    return converted as ExtendedClientData;
   };
 
-  // Get field value, checking both camelCase and snake_case properties
   const getFieldValue = (client: ExtendedClientData, field: string): string => {
-    // Check camelCase version
-    if (client[field] !== undefined) {
-      return String(client[field] || '');
+    const value = client[field] || client[field.toLowerCase()] || client[field.replace(/([A-Z])/g, '_$1').toLowerCase()];
+    
+    if (value === null || value === undefined) {
+      return 'N/A';
     }
     
-    // Check snake_case version
-    const snakeField = field.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
-    if (client[snakeField] !== undefined) {
-      return String(client[snakeField] || '');
+    if (typeof value === 'string') {
+      return value;
     }
     
-    // If we have a direct property accessor for this field
-    switch (field) {
-      case 'companyName':
-        return String(client.company_name || client.companyName || '');
-      case 'contactPersonName1':
-        return String(client.contact_person_name1 || client.contactPersonName1 || '');
-      case 'workProvince':
-        return String(client.work_province || client.workProvince || '');
-      default:
-        return '';
+    return String(value);
+  };
+
+  // Utility functions
+  const resetFilters = () => {
+    setSearchTerm('');
+    setCompanyNameFilter('');
+    setShortCodeFilter('');
+    setListNameFilter('');
+    setContactFilter('');
+    setEmailFilter('');
+    setMobileFilter('');
+    setPaymentMethodFilter('');
+    setPaymentCycleFilter('');
+    setPagination(prev => ({ ...prev, page: 1 }));
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setPagination(prev => ({ ...prev, page: newPage }));
+  };
+
+  const handleLimitChange = (newLimit: number) => {
+    setPagination(prev => ({ ...prev, limit: newLimit, page: 1 }));
+  };
+
+  const handlePreviousPage = () => {
+    if (pagination.hasPrevPage) {
+      setPagination(prev => ({ ...prev, page: prev.page - 1 }));
     }
   };
 
-  useEffect(() => {
-    // Check for message in location state
-    if (location.state?.message) {
-      setMessage(location.state.message);
-      
-      // Clear the message from location state after displaying
-      window.history.replaceState({}, document.title);
-      
-      // Auto-hide message after 3 seconds
-      setTimeout(() => {
-        setMessage(null);
-      }, 3000);
+  const handleNextPage = () => {
+    if (pagination.hasNextPage) {
+      setPagination(prev => ({ ...prev, page: prev.page + 1 }));
     }
-  }, [location]);
+  };
 
-  useEffect(() => {
-    const fetchClients = async () => {
-      try {
-        const fetchedClients = await getClients();
-        console.log('Fetched clients:', fetchedClients);
-        
-        // Convert each client's snake_case keys to camelCase
-        const formattedClients = fetchedClients.map(client => 
+  // Fetch clients with debounced filters
+  const fetchClients = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Prepare filter parameters - only include filters with at least 3 characters
+      const filterParams: Partial<ClientPaginationParams> = {
+        page: pagination.page,
+        limit: pagination.limit,
+      };
+      
+      if (searchTerm && searchTerm.length >= 3) {
+        filterParams.searchTerm = searchTerm;
+      }
+      if (companyNameFilter && companyNameFilter.length >= 3) {
+        filterParams.companyNameFilter = companyNameFilter;
+      }
+      if (shortCodeFilter && shortCodeFilter.length >= 3) {
+        filterParams.shortCodeFilter = shortCodeFilter;
+      }
+      if (listNameFilter && listNameFilter.length >= 3) {
+        filterParams.listNameFilter = listNameFilter;
+      }
+      if (contactFilter && contactFilter.length >= 3) {
+        filterParams.contactFilter = contactFilter;
+      }
+      if (emailFilter && emailFilter.length >= 3) {
+        filterParams.emailFilter = emailFilter;
+      }
+      if (mobileFilter && mobileFilter.length >= 3) {
+        filterParams.mobileFilter = mobileFilter;
+      }
+      if (paymentMethodFilter && paymentMethodFilter.length >= 3) {
+        filterParams.paymentMethodFilter = paymentMethodFilter;
+      }
+      if (paymentCycleFilter && paymentCycleFilter.length >= 3) {
+        filterParams.paymentCycleFilter = paymentCycleFilter;
+      }
+
+      const response: PaginatedClientResponse = await getClients(filterParams);
+      
+      // Convert each client's snake_case keys to camelCase if needed
+      const formattedClients = response.clients.map(client => 
           convertToCamelCase(client as unknown as Record<string, unknown>)
         );
-        console.log('Formatted clients:', formattedClients);
         
         setClients(formattedClients);
+      setPagination(response.pagination);
       } catch (err) {
         console.error('Error fetching clients:', err);
         const errorMessage = err instanceof Error ? err.message : 'Failed to fetch clients';
         setError(errorMessage);
+      setClients([]);
       } finally {
         setLoading(false);
       }
-    };
+  }, [
+    pagination.page,
+    pagination.limit,
+    searchTerm,
+    companyNameFilter,
+    shortCodeFilter,
+    listNameFilter,
+    contactFilter,
+    emailFilter,
+    mobileFilter,
+    paymentMethodFilter,
+    paymentCycleFilter,
+  ]);
 
+  // Debounced fetch effect
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
     fetchClients();
-  }, []);
+    }, 300);
 
+    return () => clearTimeout(timeoutId);
+  }, [fetchClients]);
+
+  // Event handlers
   const handleCreateClient = () => {
-    navigate('/client-management/create');
+    navigate('/client-management/new');
   };
   
   const handleViewDrafts = () => {
@@ -124,49 +222,60 @@ export function ClientManagement() {
     navigate(`/client-management/view/${id}`);
   };
 
-  const confirmEditClient = (id: string) => {
-    setClientToEdit(id);
-    setShowEditConfirmation(true);
+  const handleEditClick = (client: ExtendedClientData) => {
+    setClientToEdit(client);
+    setIsEditModalOpen(true);
   };
 
-  const confirmDeleteClient = (id: string) => {
-    setClientToDelete(id);
-    setShowDeleteConfirmation(true);
+  const handleConfirmEdit = () => {
+    if (clientToEdit?.id) {
+      navigate(`/client-management/edit/${clientToEdit.id}`);
+    }
+    setIsEditModalOpen(false);
+    setClientToEdit(null);
   };
 
-  const handleDeleteClient = async () => {
-    if (!clientToDelete) return;
-    
+  const handleCancelEdit = () => {
+    setIsEditModalOpen(false);
+    setClientToEdit(null);
+  };
+
+  const handleDeleteClick = (client: ExtendedClientData) => {
+    setClientToDelete(client);
+    setIsDeleteModalOpen(true);
+    setDeleteError(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!clientToDelete?.id) return;
+
     try {
-      await deleteClient(clientToDelete);
+      setIsDeleting(true);
+      setDeleteError(null);
       
-      // Remove deleted client from state
-      setClients((prevClients) => 
-        prevClients.filter((client) => client.id !== clientToDelete)
-      );
+      await deleteClient(clientToDelete.id as string);
       
-      setMessage('Client deleted successfully');
+      setClients(clients.filter(c => c.id !== clientToDelete.id));
+      setMessage(`Client "${getFieldValue(clientToDelete, 'companyName')}" deleted successfully.`);
       
-      // Auto-hide message after 3 seconds
       setTimeout(() => {
         setMessage(null);
       }, 3000);
     } catch (err) {
       console.error('Error deleting client:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to delete client';
-      setError(errorMessage);
-      
-      // Auto-hide error after 3 seconds
-      setTimeout(() => {
-        setError(null);
-      }, 3000);
+      setDeleteError(errorMessage);
     } finally {
-      setClientToDelete(null);
-      setShowDeleteConfirmation(false);
+      setIsDeleting(false);
     }
   };
 
-  // Basic component structure - detailed client table to be added
+  const handleCancelDelete = () => {
+    setIsDeleteModalOpen(false);
+    setClientToDelete(null);
+    setDeleteError(null);
+  };
+
   return (
     <div className="page-container">
       <AppHeader
@@ -194,43 +303,221 @@ export function ClientManagement() {
       />
 
       <div className="content-container">
+        {error && (
+          <div className="error-message">{error}</div>
+        )}
+        {message && (
+          <div className="success-message">{message}</div>
+        )}
+
         <div className="card">
           <div className="card-header">
             <h2>Client List</h2>
+            <div className="filter-container">
+              <div className="search-box">
+                <Search size={18} className="search-icon" />
+                <input
+                  type="text"
+                  placeholder="Global search..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="search-input"
+                />
+                <button 
+                  className="button secondary button-icon reset-filters-btn" 
+                  onClick={resetFilters}
+                >
+                  <span>Reset Filters</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Pagination Controls - Top */}
+          <div className="pagination-controls top">
+            <div className="pagination-info">
+              <span className="pagination-text">
+                Showing {Math.min((pagination.page - 1) * pagination.limit + 1, pagination.total)} to{' '}
+                {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} entries
+                {pagination.totalFiltered !== pagination.total && (
+                  <span className="filtered-info"> (filtered from {pagination.total} total entries)</span>
+                )}
+              </span>
+            </div>
+            <div className="pagination-size-selector">
+              <label htmlFor="pageSize" className="page-size-label">Show:</label>
+              <select
+                id="pageSize"
+                value={pagination.limit}
+                onChange={(e) => handleLimitChange(parseInt(e.target.value))}
+                className="page-size-select"
+              >
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+              <span className="page-size-label">per page</span>
+            </div>
           </div>
 
           <div className="table-container">
-            {loading ? (
-              <div className="loading">Loading clients...</div>
-            ) : clients.length === 0 ? (
-              <div className="empty-state-cell">
-                <div className="empty-state">
-                  <p>No clients found. Click "New Client" to add one.</p>
-                </div>
-              </div>
-            ) : (
               <table className="common-table">
                 <thead>
                   <tr>
-                    <th>Company Name</th>
-                    <th>Contact Person</th>
-                    <th>Province</th>
-                    <th>Currency</th>
-                    <th>Actions</th>
+                  <th>
+                    <div className="column-filter">
+                      <div className="column-title">Company Name</div>
+                      <div className="column-search">
+                        <input
+                          type="text"
+                          placeholder="Search company..."
+                          value={companyNameFilter}
+                          onChange={(e) => setCompanyNameFilter(e.target.value)}
+                          className="column-search-input"
+                        />
+                      </div>
+                    </div>
+                  </th>
+                  <th>
+                    <div className="column-filter">
+                      <div className="column-title">Short Code</div>
+                      <div className="column-search">
+                        <input
+                          type="text"
+                          placeholder="Search code..."
+                          value={shortCodeFilter}
+                          onChange={(e) => setShortCodeFilter(e.target.value)}
+                          className="column-search-input"
+                        />
+                      </div>
+                    </div>
+                  </th>
+                  <th>
+                    <div className="column-filter">
+                      <div className="column-title">List Name</div>
+                      <div className="column-search">
+                        <input
+                          type="text"
+                          placeholder="Search list..."
+                          value={listNameFilter}
+                          onChange={(e) => setListNameFilter(e.target.value)}
+                          className="column-search-input"
+                        />
+                      </div>
+                    </div>
+                  </th>
+                  <th>
+                    <div className="column-filter">
+                      <div className="column-title">Primary Contact</div>
+                      <div className="column-search">
+                        <input
+                          type="text"
+                          placeholder="Search contact..."
+                          value={contactFilter}
+                          onChange={(e) => setContactFilter(e.target.value)}
+                          className="column-search-input"
+                        />
+                      </div>
+                    </div>
+                  </th>
+                  <th>
+                    <div className="column-filter">
+                      <div className="column-title">Primary Email</div>
+                      <div className="column-search">
+                        <input
+                          type="text"
+                          placeholder="Search email..."
+                          value={emailFilter}
+                          onChange={(e) => setEmailFilter(e.target.value)}
+                          className="column-search-input"
+                        />
+                      </div>
+                    </div>
+                  </th>
+                  <th>
+                    <div className="column-filter">
+                      <div className="column-title">Primary Mobile</div>
+                      <div className="column-search">
+                        <input
+                          type="text"
+                          placeholder="Search mobile..."
+                          value={mobileFilter}
+                          onChange={(e) => setMobileFilter(e.target.value)}
+                          className="column-search-input"
+                        />
+                      </div>
+                    </div>
+                  </th>
+                  <th>
+                    <div className="column-filter">
+                      <div className="column-title">Payment Method</div>
+                      <div className="column-search">
+                        <input
+                          type="text"
+                          placeholder="Search method..."
+                          value={paymentMethodFilter}
+                          onChange={(e) => setPaymentMethodFilter(e.target.value)}
+                          className="column-search-input"
+                        />
+                      </div>
+                    </div>
+                  </th>
+                  <th>
+                    <div className="column-filter">
+                      <div className="column-title">Payment Cycle</div>
+                      <div className="column-search">
+                        <input
+                          type="text"
+                          placeholder="Search cycle..."
+                          value={paymentCycleFilter}
+                          onChange={(e) => setPaymentCycleFilter(e.target.value)}
+                          className="column-search-input"
+                        />
+                      </div>
+                    </div>
+                  </th>
+                  <th>
+                    <div className="column-filter">
+                      <div className="column-title">Actions</div>
+                      <div className="column-search">
+                        <div className="actions-placeholder"></div>
+                      </div>
+                    </div>
+                  </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {clients.map((client) => (
-                    <tr key={client.id}>
-                      <td>{getFieldValue(client, 'companyName')}</td>
-                      <td>{getFieldValue(client, 'contactPersonName1')}</td>
-                      <td>{getFieldValue(client, 'workProvince')}</td>
-                      <td>{client.currency}</td>
-                      <td>
+                {loading ? (
+                  <tr>
+                    <td colSpan={9} className="loading-cell">
+                      <div className="loading">Loading clients...</div>
+                    </td>
+                  </tr>
+                ) : clients.length === 0 ? (
+                  <tr>
+                    <td colSpan={9} className="empty-state-cell">
+                      <div className="empty-state">
+                        <p>No clients match your search criteria.</p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  clients.map(client => (
+                    <tr key={String(client.id)}>
+                      <td className="name-cell">{getFieldValue(client, 'companyName')}</td>
+                      <td className="shortcode-cell">{getFieldValue(client, 'shortCode')}</td>
+                      <td className="listname-cell">{getFieldValue(client, 'listName')}</td>
+                      <td className="contact-cell">{getFieldValue(client, 'primaryContactPersonName1')}</td>
+                      <td className="email-cell">{getFieldValue(client, 'emailAddress1')}</td>
+                      <td className="mobile-cell">{getFieldValue(client, 'mobile1')}</td>
+                      <td className="payment-method-cell">{getFieldValue(client, 'preferredPaymentMethod')}</td>
+                      <td className="payment-cycle-cell">{getFieldValue(client, 'payCycle')}</td>
+                      <td className="actions-cell">
                         <div className="action-buttons">
                           <button 
                             className="action-icon-btn view-btn"
-                            onClick={() => handleViewClient(client.id as string)}
+                            onClick={() => handleViewClient(String(client.id))}
                             title="View client details"
                             aria-label="View client"
                           >
@@ -238,16 +525,16 @@ export function ClientManagement() {
                           </button>
                           <button 
                             className="action-icon-btn edit-btn"
-                            onClick={() => confirmEditClient(client.id as string)}
-                            title="Edit client details"
+                            onClick={() => handleEditClick(client)}
+                            title="Edit this client"
                             aria-label="Edit client"
                           >
                             <Pencil size={20} />
                           </button>
                           <button 
                             className="action-icon-btn delete-btn"
-                            onClick={() => confirmDeleteClient(client.id as string)}
-                            title="Delete client"
+                            onClick={() => handleDeleteClick(client)}
+                            title="Delete this client"
                             aria-label="Delete client"
                           >
                             <Trash2 size={20} />
@@ -255,43 +542,98 @@ export function ClientManagement() {
                         </div>
                       </td>
                     </tr>
-                  ))}
+                  ))
+                )}
                 </tbody>
               </table>
-            )}
           </div>
+
+          {/* Pagination Controls - Bottom */}
+          {!loading && pagination.totalPages > 1 && (
+            <div className="pagination-controls bottom">
+              <div className="pagination-info">
+                <span className="pagination-text">
+                  Page {pagination.page} of {pagination.totalPages}
+                </span>
+              </div>
+              <div className="pagination-buttons">
+                <button
+                  className="pagination-btn prev"
+                  onClick={handlePreviousPage}
+                  disabled={!pagination.hasPrevPage}
+                  title="Previous page"
+                  aria-label="Previous page"
+                >
+                  <ChevronLeft size={16} />
+                  <span>Previous</span>
+                </button>
+                
+                {/* Page numbers */}
+                <div className="page-numbers">
+                  {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                    let pageNum;
+                    if (pagination.totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (pagination.page <= 3) {
+                      pageNum = i + 1;
+                    } else if (pagination.page >= pagination.totalPages - 2) {
+                      pageNum = pagination.totalPages - 4 + i;
+                    } else {
+                      pageNum = pagination.page - 2 + i;
+                    }
+                    
+                    return (
+                      <button
+                        key={pageNum}
+                        className={`page-number-btn ${pageNum === pagination.page ? 'active' : ''}`}
+                        onClick={() => handlePageChange(pageNum)}
+                        aria-label={`Go to page ${pageNum}`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <button
+                  className="pagination-btn next"
+                  onClick={handleNextPage}
+                  disabled={!pagination.hasNextPage}
+                  title="Next page"
+                  aria-label="Next page"
+                >
+                  <span>Next</span>
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      {showDeleteConfirmation && (
+      {/* Delete Confirmation Modal */}
         <ConfirmationModal
-          isOpen={showDeleteConfirmation}
+        isOpen={isDeleteModalOpen}
           title="Delete Client"
-          message="Are you sure you want to delete this client? This action cannot be undone."
-          confirmText="Delete"
+        message={`Are you sure you want to delete the client "${clientToDelete ? getFieldValue(clientToDelete, 'companyName') : 'Unknown'}"? This action cannot be undone.${deleteError ? `\n\nError: ${deleteError}` : ''}`}
+        confirmText={isDeleting ? "Deleting..." : "Delete Client"}
           cancelText="Cancel"
-          onConfirm={handleDeleteClient}
-          onCancel={() => setShowDeleteConfirmation(false)}
+        confirmButtonClass="danger"
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
         />
-      )}
 
-      {showEditConfirmation && (
+      {/* Edit Confirmation Modal */}
         <ConfirmationModal
-          isOpen={showEditConfirmation}
+        isOpen={isEditModalOpen}
           title="Edit Client"
-          message="Are you sure you want to edit this client's information?"
-          confirmText="Edit"
+        message={`Are you sure you want to edit the client "${clientToEdit ? getFieldValue(clientToEdit, 'companyName') : 'Unknown'}"? You will be redirected to the client editor.`}
+        confirmText="Edit Client"
           cancelText="Cancel"
-          onConfirm={() => {
-            navigate(`/client-management/edit/${clientToEdit}`);
-            setShowEditConfirmation(false);
-          }}
-          onCancel={() => {
-            setClientToEdit(null);
-            setShowEditConfirmation(false);
-          }}
-        />
-      )}
+        confirmButtonClass="primary"
+        onConfirm={handleConfirmEdit}
+        onCancel={handleCancelEdit}
+      />
     </div>
   );
 } 

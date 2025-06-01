@@ -88,9 +88,9 @@ export function JobseekerDrafts() {
       setLoading(true);
       
       // Only apply filters if they meet the minimum character requirement
-      const effectiveEmailFilter = emailFilter.length >= 4 ? emailFilter : '';
-      const effectiveCreatorFilter = creatorFilter.length >= 4 ? creatorFilter : '';
-      const effectiveUpdaterFilter = updaterFilter.length >= 4 ? updaterFilter : '';
+      const effectiveEmailFilter = emailFilter.length >= 3 ? emailFilter : '';
+      const effectiveCreatorFilter = creatorFilter.length >= 3 ? creatorFilter : '';
+      const effectiveUpdaterFilter = updaterFilter.length >= 3 ? updaterFilter : '';
       
       const data = await getAllJobseekerDrafts({
         page: pagination.page,
@@ -118,9 +118,9 @@ export function JobseekerDrafts() {
     pagination.limit, 
     searchTerm, 
     // Only include text filters in dependencies when they meet minimum length or are empty
-    emailFilter.length >= 4 || emailFilter === '' ? emailFilter : 'inactive',
-    creatorFilter.length >= 4 || creatorFilter === '' ? creatorFilter : 'inactive',
-    updaterFilter.length >= 4 || updaterFilter === '' ? updaterFilter : 'inactive',
+    emailFilter.length >= 3 || emailFilter === '' ? emailFilter : 'inactive',
+    creatorFilter.length >= 3 || creatorFilter === '' ? creatorFilter : 'inactive',
+    updaterFilter.length >= 3 || updaterFilter === '' ? updaterFilter : 'inactive',
     dateFilter,
     createdDateFilter
   ]);
@@ -137,9 +137,9 @@ export function JobseekerDrafts() {
   }, [
     searchTerm, 
     // Only reset pagination for text filters when they meet the minimum length or are empty
-    emailFilter.length >= 4 || emailFilter === '' ? emailFilter : null,
-    creatorFilter.length >= 4 || creatorFilter === '' ? creatorFilter : null,
-    updaterFilter.length >= 4 || updaterFilter === '' ? updaterFilter : null,
+    emailFilter.length >= 3 || emailFilter === '' ? emailFilter : null,
+    creatorFilter.length >= 3 || creatorFilter === '' ? creatorFilter : null,
+    updaterFilter.length >= 3 || updaterFilter === '' ? updaterFilter : null,
     dateFilter,
     createdDateFilter
   ]);
@@ -261,7 +261,7 @@ export function JobseekerDrafts() {
         actions={
           <button className="button" onClick={handleNavigateBack}>
             <ArrowLeft size={16} />
-            <span>Back to Job Seekers</span>
+            <span>Back to Job Seekers Management</span>
           </button>
         }
         statusMessage={success || error}

@@ -1357,7 +1357,7 @@ export function PositionCreate({ isEditMode = false, isEditDraftMode = false }: 
               </div>
             </div>
 
-            <div className="form-footer">
+            <div className="form-navigation">
               <button 
                 type="button" 
                 className="button secondary" 

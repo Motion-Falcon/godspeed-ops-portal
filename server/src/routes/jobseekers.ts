@@ -163,8 +163,13 @@ router.get('/', isAdminOrRecruiter, async (req, res) => {
     const { 
       page = '1', 
       limit = '10', 
-      searchTerm = '', 
+      search = '', // Frontend sends 'search', not 'searchTerm'
+      nameFilter = '',
       emailFilter = '', 
+      phoneFilter = '',
+      locationFilter = '',
+      experienceFilter = '',
+      statusFilter = '',
       creatorFilter = '', 
       updaterFilter = '',
       dateFilter = '',
@@ -172,8 +177,13 @@ router.get('/', isAdminOrRecruiter, async (req, res) => {
     } = req.query as {
       page?: string;
       limit?: string;
-      searchTerm?: string;
+      search?: string;
+      nameFilter?: string;
       emailFilter?: string;
+      phoneFilter?: string;
+      locationFilter?: string;
+      experienceFilter?: string;
+      statusFilter?: string;
       creatorFilter?: string;
       updaterFilter?: string;
       dateFilter?: string;
@@ -191,20 +201,24 @@ router.get('/', isAdminOrRecruiter, async (req, res) => {
       .from('jobseeker_profiles')
       .select<string, DbJobseekerProfile>('id, user_id, first_name, last_name, email, verification_status, created_at, city, province, experience, documents, mobile');
 
-    // Apply filters
-    if (searchTerm && searchTerm.length >= 4) {
-      query = query.or(`first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`);
-    }
-
-    if (emailFilter && emailFilter.length >= 4) {
+    // Apply database-level filters (only if they meet minimum character requirement)
+    if (emailFilter && emailFilter.length >= 3) {
       query = query.ilike('email', `%${emailFilter}%`);
     }
 
-    if (creatorFilter && creatorFilter.length >= 4) {
+    if (experienceFilter && experienceFilter.length >= 3 && experienceFilter !== 'all') {
+      query = query.ilike('experience', `%${experienceFilter}%`);
+    }
+
+    if (statusFilter && statusFilter !== 'all') {
+      query = query.eq('verification_status', statusFilter);
+    }
+
+    if (creatorFilter && creatorFilter.length >= 3) {
       query = query.ilike('created_by_name', `%${creatorFilter}%`);
     }
 
-    if (updaterFilter && updaterFilter.length >= 4) {
+    if (updaterFilter && updaterFilter.length >= 3) {
       query = query.ilike('updated_by_name', `%${updaterFilter}%`);
     }
 
@@ -222,7 +236,7 @@ router.get('/', isAdminOrRecruiter, async (req, res) => {
       query = query.gte('created_at', filterDate.toISOString()).lt('created_at', nextDay.toISOString());
     }
 
-    // Get total count first (without pagination)
+    // Get total count first (without pagination and without filters)
     const { count: totalCount, error: countError } = await supabaseAdmin
       .from('jobseeker_profiles')
       .select('*', { count: 'exact', head: true });
@@ -230,6 +244,53 @@ router.get('/', isAdminOrRecruiter, async (req, res) => {
     if (countError) {
       console.error('Error getting total count:', countError);
       return res.status(500).json({ error: 'Failed to get total count of profiles' });
+    }
+
+    // Get filtered count (with filters but without pagination)
+    let countQuery = supabaseAdmin
+      .from('jobseeker_profiles')
+      .select('*', { count: 'exact', head: true });
+
+    // Apply the same filters to the count query
+    if (emailFilter && emailFilter.length >= 3) {
+      countQuery = countQuery.ilike('email', `%${emailFilter}%`);
+    }
+
+    if (experienceFilter && experienceFilter.length >= 3 && experienceFilter !== 'all') {
+      countQuery = countQuery.ilike('experience', `%${experienceFilter}%`);
+    }
+
+    if (statusFilter && statusFilter !== 'all') {
+      countQuery = countQuery.eq('verification_status', statusFilter);
+    }
+
+    if (creatorFilter && creatorFilter.length >= 3) {
+      countQuery = countQuery.ilike('created_by_name', `%${creatorFilter}%`);
+    }
+
+    if (updaterFilter && updaterFilter.length >= 3) {
+      countQuery = countQuery.ilike('updated_by_name', `%${updaterFilter}%`);
+    }
+
+    if (dateFilter) {
+      const filterDate = new Date(dateFilter);
+      const nextDay = new Date(filterDate);
+      nextDay.setDate(nextDay.getDate() + 1);
+      countQuery = countQuery.gte('updated_at', filterDate.toISOString()).lt('updated_at', nextDay.toISOString());
+    }
+
+    if (createdDateFilter) {
+      const filterDate = new Date(createdDateFilter);
+      const nextDay = new Date(filterDate);
+      nextDay.setDate(nextDay.getDate() + 1);
+      countQuery = countQuery.gte('created_at', filterDate.toISOString()).lt('created_at', nextDay.toISOString());
+    }
+
+    const { count: filteredCount, error: filteredCountError } = await countQuery;
+
+    if (filteredCountError) {
+      console.error('Error getting filtered count:', filteredCountError);
+      return res.status(500).json({ error: 'Failed to get filtered count of profiles' });
     }
 
     // Apply pagination and execute query
@@ -304,22 +365,34 @@ router.get('/', isAdminOrRecruiter, async (req, res) => {
       })) || []
     }));
 
-    // Apply global search filter after formatting (since it involves computed fields)
+    // Apply client-side filters after formatting (for computed fields that need 3+ characters)
     let filteredProfiles = formattedProfiles;
-    if (searchTerm) {
-      filteredProfiles = formattedProfiles.filter(profile => 
-        profile.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        profile.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (profile.phoneNumber && profile.phoneNumber.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (profile.experience && profile.experience.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (profile.location && profile.location.toLowerCase().includes(searchTerm.toLowerCase()))
+    
+    if (search && search.length >= 3) {
+      filteredProfiles = filteredProfiles.filter(profile => 
+        profile.name.toLowerCase().includes(search.toLowerCase()) ||
+        profile.email.toLowerCase().includes(search.toLowerCase()) ||
+        (profile.phoneNumber && profile.phoneNumber.toLowerCase().includes(search.toLowerCase())) ||
+        (profile.experience && profile.experience.toLowerCase().includes(search.toLowerCase())) ||
+        (profile.location && profile.location.toLowerCase().includes(search.toLowerCase()))
       );
     }
 
-    // Apply phone filter after formatting (since phoneNumber is computed)
-    if (emailFilter) {
+    if (nameFilter && nameFilter.length >= 3) {
       filteredProfiles = filteredProfiles.filter(profile => 
-        profile.phoneNumber && profile.phoneNumber.toLowerCase().includes(emailFilter.toLowerCase())
+        profile.name.toLowerCase().includes(nameFilter.toLowerCase())
+      );
+    }
+
+    if (phoneFilter && phoneFilter.length >= 3) {
+      filteredProfiles = filteredProfiles.filter(profile => 
+        profile.phoneNumber && profile.phoneNumber.toLowerCase().includes(phoneFilter.toLowerCase())
+      );
+    }
+
+    if (locationFilter && locationFilter.length >= 3) {
+      filteredProfiles = filteredProfiles.filter(profile => 
+        profile.location && profile.location.toLowerCase().includes(locationFilter.toLowerCase())
       );
     }
 
@@ -370,10 +443,32 @@ router.get('/', isAdminOrRecruiter, async (req, res) => {
       }
     }
 
-    // Calculate pagination info
-    const totalFiltered = filteredProfiles.length;
-    const totalPages = Math.ceil((totalCount || 0) / limitNum);
-    const hasNextPage = pageNum < totalPages;
+    // Calculate pagination info based on the actual final filtered count
+    const actualFilteredCount = filteredProfiles.length;
+    
+    // For pagination calculation, we need to account for the fact that we applied client-side filters
+    // If we have client-side filters, we need to estimate the total filtered count
+    let totalFilteredForPagination = filteredCount || 0;
+    
+    // If we have client-side filters that could reduce the count, use the actual count
+    const hasClientSideFilters = (search && search.length >= 3) || 
+                                 (nameFilter && nameFilter.length >= 3) || 
+                                 (phoneFilter && phoneFilter.length >= 3) || 
+                                 (locationFilter && locationFilter.length >= 3);
+    
+    if (hasClientSideFilters) {
+      // For client-side filtered results, we can't easily calculate total across all pages
+      // So we'll use a conservative approach
+      totalFilteredForPagination = actualFilteredCount + ((pageNum - 1) * limitNum);
+      
+      // If we got a full page, there might be more
+      if (actualFilteredCount === limitNum && filteredCount && filteredCount > totalFilteredForPagination) {
+        totalFilteredForPagination = filteredCount;
+      }
+    }
+
+    const totalPages = Math.ceil(totalFilteredForPagination / limitNum);
+    const hasNextPage = pageNum < totalPages && actualFilteredCount === limitNum;
     const hasPrevPage = pageNum > 1;
       
     res.json({
@@ -382,7 +477,7 @@ router.get('/', isAdminOrRecruiter, async (req, res) => {
         page: pageNum,
         limit: limitNum,
         total: totalCount || 0,
-        totalFiltered,
+        totalFiltered: totalFilteredForPagination,
         totalPages,
         hasNextPage,
         hasPrevPage
@@ -965,7 +1060,7 @@ router.get('/drafts', isAdminOrRecruiter, async (req, res) => {
       query = query.gte('created_at', filterDate.toISOString()).lt('created_at', nextDay.toISOString());
     }
 
-    // Get total count first (without pagination)
+    // Get total count first (without pagination and without filters)
     const { count: totalCount, error: countError } = await supabaseAdmin
       .from('jobseeker_profile_drafts')
       .select('*', { count: 'exact', head: true });
@@ -973,6 +1068,37 @@ router.get('/drafts', isAdminOrRecruiter, async (req, res) => {
     if (countError) {
       console.error('Error getting total count:', countError);
       return res.status(500).json({ error: 'Failed to get total count of drafts' });
+    }
+
+    // Get filtered count (with filters but without pagination)
+    let countQuery = supabaseAdmin
+      .from('jobseeker_profile_drafts')
+      .select('*', { count: 'exact', head: true });
+
+    // Apply the same filters to the count query
+    if (emailFilter) {
+      countQuery = countQuery.ilike('email', `%${emailFilter}%`);
+    }
+
+    if (dateFilter) {
+      const filterDate = new Date(dateFilter);
+      const nextDay = new Date(filterDate);
+      nextDay.setDate(nextDay.getDate() + 1);
+      countQuery = countQuery.gte('updated_at', filterDate.toISOString()).lt('updated_at', nextDay.toISOString());
+    }
+
+    if (createdDateFilter) {
+      const filterDate = new Date(createdDateFilter);
+      const nextDay = new Date(filterDate);
+      nextDay.setDate(nextDay.getDate() + 1);
+      countQuery = countQuery.gte('created_at', filterDate.toISOString()).lt('created_at', nextDay.toISOString());
+    }
+
+    const { count: filteredCount, error: filteredCountError } = await countQuery;
+
+    if (filteredCountError) {
+      console.error('Error getting filtered count:', filteredCountError);
+      return res.status(500).json({ error: 'Failed to get filtered count of drafts' });
     }
 
     // Apply pagination and execute query
@@ -1093,9 +1219,9 @@ router.get('/drafts', isAdminOrRecruiter, async (req, res) => {
       );
     }
 
-    // Calculate pagination info
-    const totalFiltered = filteredDrafts.length;
-    const totalPages = Math.ceil((totalCount || 0) / limit);
+    // Calculate pagination info based on filtered count
+    const totalFiltered = filteredCount || 0;
+    const totalPages = Math.ceil(totalFiltered / limit);
     const hasNextPage = page < totalPages;
     const hasPrevPage = page > 1;
 

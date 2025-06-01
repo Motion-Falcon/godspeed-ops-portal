@@ -61,7 +61,7 @@ function camelToSnakeCase(str: string): string {
 }
 
 /**
- * Get all clients
+ * Get all clients with pagination and filtering
  * GET /api/clients
  * @access Private (Admin, Recruiter)
  */
@@ -71,10 +71,143 @@ router.get('/',
   apiRateLimiter,
   async (req: Request, res: Response) => {
     try {
-      // Get clients from the database
-      const { data: clients, error } = await supabase
+      // Extract pagination and filter parameters from query
+      const { 
+        page = '1', 
+        limit = '10', 
+        searchTerm = '', 
+        companyNameFilter = '', 
+        shortCodeFilter = '',
+        listNameFilter = '',
+        contactFilter = '',
+        emailFilter = '', 
+        mobileFilter = '',
+        paymentMethodFilter = '',
+        paymentCycleFilter = ''
+      } = req.query as {
+        page?: string;
+        limit?: string;
+        searchTerm?: string;
+        companyNameFilter?: string;
+        shortCodeFilter?: string;
+        listNameFilter?: string;
+        contactFilter?: string;
+        emailFilter?: string;
+        mobileFilter?: string;
+        paymentMethodFilter?: string;
+        paymentCycleFilter?: string;
+      };
+
+      const pageNum = parseInt(page);
+      const limitNum = parseInt(limit);
+
+      // Calculate offset for pagination
+      const offset = (pageNum - 1) * limitNum;
+
+      // Start building the query
+      let query = supabase
         .from('clients')
-        .select('*')
+        .select('*');
+
+      // Apply filters (4-character minimum for better performance)
+      if (searchTerm && searchTerm.length >= 3) {
+        query = query.or(`company_name.ilike.%${searchTerm}%,contact_person_name1.ilike.%${searchTerm}%,email_address1.ilike.%${searchTerm}%`);
+      }
+
+      if (companyNameFilter && companyNameFilter.length >= 3) {
+        query = query.ilike('company_name', `%${companyNameFilter}%`);
+      }
+
+      if (shortCodeFilter && shortCodeFilter.length >= 3) {
+        query = query.ilike('short_code', `%${shortCodeFilter}%`);
+      }
+
+      if (listNameFilter && listNameFilter.length >= 3) {
+        query = query.ilike('list_name', `%${listNameFilter}%`);
+      }
+
+      if (contactFilter && contactFilter.length >= 3) {
+        query = query.ilike('contact_person_name1', `%${contactFilter}%`);
+      }
+
+      if (emailFilter && emailFilter.length >= 3) {
+        query = query.ilike('email_address1', `%${emailFilter}%`);
+      }
+
+      if (mobileFilter && mobileFilter.length >= 3) {
+        query = query.ilike('mobile1', `%${mobileFilter}%`);
+      }
+
+      if (paymentMethodFilter && paymentMethodFilter.length >= 3) {
+        query = query.ilike('preferred_payment_method', `%${paymentMethodFilter}%`);
+      }
+
+      if (paymentCycleFilter && paymentCycleFilter.length >= 3) {
+        query = query.ilike('pay_cycle', `%${paymentCycleFilter}%`);
+      }
+
+      // Get total count first (without pagination and without filters)
+      const { count: totalCount, error: countError } = await supabase
+        .from('clients')
+        .select('*', { count: 'exact', head: true });
+
+      if (countError) {
+        console.error('Error getting total count:', countError);
+        return res.status(500).json({ error: 'Failed to get total count of clients' });
+      }
+
+      // Get filtered count (with filters but without pagination)
+      let countQuery = supabase
+        .from('clients')
+        .select('*', { count: 'exact', head: true });
+
+      // Apply the same filters to the count query
+      if (searchTerm && searchTerm.length >= 3) {
+        countQuery = countQuery.or(`company_name.ilike.%${searchTerm}%,contact_person_name1.ilike.%${searchTerm}%,email_address1.ilike.%${searchTerm}%`);
+      }
+
+      if (companyNameFilter && companyNameFilter.length >= 3) {
+        countQuery = countQuery.ilike('company_name', `%${companyNameFilter}%`);
+      }
+
+      if (shortCodeFilter && shortCodeFilter.length >= 3) {
+        countQuery = countQuery.ilike('short_code', `%${shortCodeFilter}%`);
+      }
+
+      if (listNameFilter && listNameFilter.length >= 3) {
+        countQuery = countQuery.ilike('list_name', `%${listNameFilter}%`);
+      }
+
+      if (contactFilter && contactFilter.length >= 3) {
+        countQuery = countQuery.ilike('contact_person_name1', `%${contactFilter}%`);
+      }
+
+      if (emailFilter && emailFilter.length >= 3) {
+        countQuery = countQuery.ilike('email_address1', `%${emailFilter}%`);
+      }
+
+      if (mobileFilter && mobileFilter.length >= 3) {
+        countQuery = countQuery.ilike('mobile1', `%${mobileFilter}%`);
+      }
+
+      if (paymentMethodFilter && paymentMethodFilter.length >= 3) {
+        countQuery = countQuery.ilike('preferred_payment_method', `%${paymentMethodFilter}%`);
+      }
+
+      if (paymentCycleFilter && paymentCycleFilter.length >= 3) {
+        countQuery = countQuery.ilike('pay_cycle', `%${paymentCycleFilter}%`);
+      }
+
+      const { count: filteredCount, error: filteredCountError } = await countQuery;
+
+      if (filteredCountError) {
+        console.error('Error getting filtered count:', filteredCountError);
+        return res.status(500).json({ error: 'Failed to get filtered count of clients' });
+      }
+
+      // Apply pagination and execute query
+      const { data: clients, error } = await query
+        .range(offset, offset + limitNum - 1)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -82,7 +215,39 @@ router.get('/',
         return res.status(500).json({ error: 'Failed to fetch clients' });
       }
 
-      return res.status(200).json(clients);
+      if (!clients) {
+        return res.json({
+          clients: [],
+          pagination: {
+            page: pageNum,
+            limit: limitNum,
+            total: totalCount || 0,
+            totalFiltered: 0,
+            totalPages: 0,
+            hasNextPage: false,
+            hasPrevPage: false
+          }
+        });
+      }
+
+      // Calculate pagination info based on filtered count
+      const totalFiltered = filteredCount || 0;
+      const totalPages = Math.ceil(totalFiltered / limitNum);
+      const hasNextPage = pageNum < totalPages;
+      const hasPrevPage = pageNum > 1;
+
+      return res.status(200).json({
+        clients,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total: totalCount || 0,
+          totalFiltered,
+          totalPages,
+          hasNextPage,
+          hasPrevPage
+        }
+      });
     } catch (error) {
       console.error('Unexpected error fetching clients:', error);
       return res.status(500).json({ error: 'An unexpected error occurred' });
@@ -91,7 +256,7 @@ router.get('/',
 );
 
 /**
- * Get all client drafts for the user
+ * Get all client drafts with pagination and filtering
  * GET /api/clients/drafts
  * @access Private (Admin, Recruiter)
  */
@@ -101,37 +266,265 @@ router.get('/drafts',
   apiRateLimiter,
   async (req: Request, res: Response) => {
     try {
-      if (!req.user || !req.user.id) {
-        return res.status(401).json({ error: 'Authentication required' });
+      // Extract pagination and filter parameters from query
+      const { 
+        page = '1', 
+        limit = '10', 
+        search = '', // Frontend sends 'search', not 'searchTerm'
+        companyNameFilter = '',
+        shortCodeFilter = '',
+        listNameFilter = '',
+        contactPersonFilter = '',
+        creatorFilter = '', 
+        updaterFilter = '',
+        dateFilter = '',
+        createdDateFilter = ''
+      } = req.query as {
+        page?: string;
+        limit?: string;
+        search?: string;
+        companyNameFilter?: string;
+        shortCodeFilter?: string;
+        listNameFilter?: string;
+        contactPersonFilter?: string;
+        creatorFilter?: string;
+        updaterFilter?: string;
+        dateFilter?: string;
+        createdDateFilter?: string;
+      };
+
+      const pageNum = parseInt(page);
+      const limitNum = parseInt(limit);
+
+      // Calculate offset for pagination
+      const offset = (pageNum - 1) * limitNum;
+
+      // Start building the query
+      let query = supabase
+        .from('client_drafts')
+        .select('*');
+
+      // Apply database-level filters (only if they meet minimum character requirement)
+      if (companyNameFilter && companyNameFilter.length >= 3) {
+        query = query.ilike('company_name', `%${companyNameFilter}%`);
       }
 
-      const userId = req.user.id;
+      if (shortCodeFilter && shortCodeFilter.length >= 3) {
+        query = query.ilike('short_code', `%${shortCodeFilter}%`);
+      }
 
-      // Get all drafts for this user
-      const { data: drafts, error } = await supabase
+      if (listNameFilter && listNameFilter.length >= 3) {
+        query = query.ilike('list_name', `%${listNameFilter}%`);
+      }
+
+      if (contactPersonFilter && contactPersonFilter.length >= 3) {
+        query = query.ilike('contact_person_name1', `%${contactPersonFilter}%`);
+      }
+
+      if (dateFilter) {
+        const filterDate = new Date(dateFilter);
+        const nextDay = new Date(filterDate);
+        nextDay.setDate(nextDay.getDate() + 1);
+        query = query.gte('updated_at', filterDate.toISOString()).lt('updated_at', nextDay.toISOString());
+      }
+
+      if (createdDateFilter) {
+        const filterDate = new Date(createdDateFilter);
+        const nextDay = new Date(filterDate);
+        nextDay.setDate(nextDay.getDate() + 1);
+        query = query.gte('created_at', filterDate.toISOString()).lt('created_at', nextDay.toISOString());
+      }
+
+      // Get total count first (without pagination and without filters)
+      const { count: totalCount, error: countError } = await supabase
         .from('client_drafts')
-        .select('*')
-        .eq('created_by_user_id', userId)
+        .select('*', { count: 'exact', head: true });
+
+      if (countError) {
+        console.error('Error getting total count:', countError);
+        return res.status(500).json({ error: 'Failed to get total count of drafts' });
+      }
+
+      // Get filtered count (with filters but without pagination)
+      let countQuery = supabase
+        .from('client_drafts')
+        .select('*', { count: 'exact', head: true });
+
+      // Apply the same filters to the count query
+      if (companyNameFilter && companyNameFilter.length >= 3) {
+        countQuery = countQuery.ilike('company_name', `%${companyNameFilter}%`);
+      }
+
+      if (shortCodeFilter && shortCodeFilter.length >= 3) {
+        countQuery = countQuery.ilike('short_code', `%${shortCodeFilter}%`);
+      }
+
+      if (listNameFilter && listNameFilter.length >= 3) {
+        countQuery = countQuery.ilike('list_name', `%${listNameFilter}%`);
+      }
+
+      if (contactPersonFilter && contactPersonFilter.length >= 3) {
+        countQuery = countQuery.ilike('contact_person_name1', `%${contactPersonFilter}%`);
+      }
+
+      if (dateFilter) {
+        const filterDate = new Date(dateFilter);
+        const nextDay = new Date(filterDate);
+        nextDay.setDate(nextDay.getDate() + 1);
+        countQuery = countQuery.gte('updated_at', filterDate.toISOString()).lt('updated_at', nextDay.toISOString());
+      }
+
+      if (createdDateFilter) {
+        const filterDate = new Date(createdDateFilter);
+        const nextDay = new Date(filterDate);
+        nextDay.setDate(nextDay.getDate() + 1);
+        countQuery = countQuery.gte('created_at', filterDate.toISOString()).lt('created_at', nextDay.toISOString());
+      }
+
+      const { count: filteredCount, error: filteredCountError } = await countQuery;
+
+      if (filteredCountError) {
+        console.error('Error getting filtered count:', filteredCountError);
+        return res.status(500).json({ error: 'Failed to get filtered count of drafts' });
+      }
+
+      // Apply pagination and execute query
+      const { data: drafts, error } = await query
+        .range(offset, offset + limitNum - 1)
         .order('updated_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching all drafts:', error);
+        console.error('Error fetching drafts:', error);
         return res.status(500).json({ error: 'Failed to fetch drafts' });
       }
 
-      // Convert snake_case to camelCase for frontend
-      const clientDrafts = drafts.map(draft => {
-        return Object.entries(draft).reduce((acc, [key, value]) => {
-          // Convert snake_case to camelCase
+      if (!drafts) {
+        return res.json({
+          drafts: [],
+          pagination: {
+            page: pageNum,
+            limit: limitNum,
+            total: totalCount || 0,
+            totalFiltered: 0,
+            totalPages: 0,
+            hasNextPage: false,
+            hasPrevPage: false
+          }
+        });
+      }
+
+      // Collect all user IDs to fetch their details
+      const creatorIds = [...new Set(drafts.map(draft => draft.created_by_user_id).filter(Boolean))];
+      const updaterIds = [...new Set(drafts.map(draft => draft.updated_by_user_id).filter(Boolean))];
+      const allUserIds = [...new Set([...creatorIds, ...updaterIds])];
+
+      // Fetch user details for all users using Supabase Admin API
+      const userDetailsMap: { [key: string]: any } = {};
+      if (allUserIds.length > 0) {
+        try {
+          const userPromises = allUserIds.map(async (userId) => {
+            try {
+              const { data: userData, error: userError } = await supabase.auth.admin.getUserById(userId);
+              if (!userError && userData?.user) {
+                return { 
+                  userId, 
+                  details: {
+                    id: userData.user.id,
+                    email: userData.user.email,
+                    name: userData.user.user_metadata?.name || 'Unknown',
+                    userType: userData.user.user_metadata?.user_type || 'Unknown',
+                    createdAt: userData.user.created_at
+                  }
+                };
+              }
+              return { userId, details: null };
+            } catch (err) {
+              console.error(`Error fetching user details for ${userId}:`, err);
+              return { userId, details: null };
+            }
+          });
+          
+          const userResults = await Promise.all(userPromises);
+          userResults.forEach(({ userId, details }) => {
+            if (details) {
+              userDetailsMap[userId] = details;
+            }
+          });
+        } catch (error) {
+          console.error('Error fetching user details:', error);
+          // Continue without user details if there's an error
+        }
+      }
+
+      // Transform drafts format to match client expectations and convert snake_case to camelCase
+      const formattedDrafts = drafts.map(draft => {
+        // Convert snake_case to camelCase for frontend
+        const camelCaseDraft = Object.entries(draft).reduce((acc, [key, value]) => {
           const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
           acc[camelKey] = value;
           return acc;
         }, {} as Record<string, any>);
+
+        // Add creator and updater details
+        const formattedDraft = {
+          ...camelCaseDraft,
+          creatorDetails: draft.created_by_user_id ? userDetailsMap[draft.created_by_user_id] || null : null,
+          updaterDetails: draft.updated_by_user_id ? userDetailsMap[draft.updated_by_user_id] || null : null
+        };
+
+        return formattedDraft;
       });
 
-      return res.status(200).json(clientDrafts);
+      // Apply client-side filters after formatting (since they involve computed fields)
+      let filteredDrafts = formattedDrafts;
+      
+      if (search && search.length >= 3) {
+        filteredDrafts = formattedDrafts.filter((draft: any) => 
+          (draft.companyName && draft.companyName.toLowerCase().includes(search.toLowerCase())) ||
+          (draft.shortCode && draft.shortCode.toLowerCase().includes(search.toLowerCase())) ||
+          (draft.listName && draft.listName.toLowerCase().includes(search.toLowerCase())) ||
+          (draft.contactPersonName1 && draft.contactPersonName1.toLowerCase().includes(search.toLowerCase())) ||
+          (draft.creatorDetails?.name && draft.creatorDetails.name.toLowerCase().includes(search.toLowerCase())) ||
+          (draft.creatorDetails?.email && draft.creatorDetails.email.toLowerCase().includes(search.toLowerCase())) ||
+          (draft.updaterDetails?.name && draft.updaterDetails.name.toLowerCase().includes(search.toLowerCase())) ||
+          (draft.updaterDetails?.email && draft.updaterDetails.email.toLowerCase().includes(search.toLowerCase()))
+        );
+      }
+
+      if (creatorFilter && creatorFilter.length >= 3) {
+        filteredDrafts = filteredDrafts.filter((draft: any) => 
+          (draft.creatorDetails?.name && draft.creatorDetails.name.toLowerCase().includes(creatorFilter.toLowerCase())) ||
+          (draft.creatorDetails?.email && draft.creatorDetails.email.toLowerCase().includes(creatorFilter.toLowerCase()))
+        );
+      }
+
+      if (updaterFilter && updaterFilter.length >= 3) {
+        filteredDrafts = filteredDrafts.filter((draft: any) => 
+          (draft.updaterDetails?.name && draft.updaterDetails.name.toLowerCase().includes(updaterFilter.toLowerCase())) ||
+          (draft.updaterDetails?.email && draft.updaterDetails.email.toLowerCase().includes(updaterFilter.toLowerCase()))
+        );
+      }
+
+      // Calculate pagination info based on filtered count
+      const totalFiltered = filteredCount || 0;
+      const totalPages = Math.ceil(totalFiltered / limitNum);
+      const hasNextPage = pageNum < totalPages;
+      const hasPrevPage = pageNum > 1;
+
+      return res.status(200).json({
+        drafts: filteredDrafts,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total: totalCount || 0,
+          totalFiltered,
+          totalPages,
+          hasNextPage,
+          hasPrevPage
+        }
+      });
     } catch (error) {
-      console.error('Unexpected error fetching all drafts:', error);
+      console.error('Unexpected error fetching drafts:', error);
       return res.status(500).json({ error: 'An unexpected error occurred' });
     }
   }

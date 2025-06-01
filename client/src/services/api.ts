@@ -730,14 +730,55 @@ export interface ClientDraftResponse {
   lastUpdated: string | null;
 }
 
-export const getClients = async (): Promise<ClientData[]> => {
+// Add client pagination parameters interface after the PositionDraftResponse interface
+export interface ClientPaginationParams {
+  page?: number;
+  limit?: number;
+  searchTerm?: string;
+  companyNameFilter?: string;
+  shortCodeFilter?: string;
+  listNameFilter?: string;
+  contactFilter?: string;
+  emailFilter?: string;
+  mobileFilter?: string;
+  paymentMethodFilter?: string;
+  paymentCycleFilter?: string;
+}
+
+export interface PaginatedClientResponse {
+  clients: ClientData[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalFiltered: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+  };
+}
+
+export const getClients = async (params: ClientPaginationParams = {}): Promise<PaginatedClientResponse> => {
   try {
-    const response = await api.get('/api/clients');
+    const url = new URL('/api/clients', API_URL);
+    
+    // Add pagination and filter parameters
+    if (params.page) url.searchParams.append('page', params.page.toString());
+    if (params.limit) url.searchParams.append('limit', params.limit.toString());
+    if (params.searchTerm) url.searchParams.append('searchTerm', params.searchTerm);
+    if (params.companyNameFilter) url.searchParams.append('companyNameFilter', params.companyNameFilter);
+    if (params.shortCodeFilter) url.searchParams.append('shortCodeFilter', params.shortCodeFilter);
+    if (params.listNameFilter) url.searchParams.append('listNameFilter', params.listNameFilter);
+    if (params.contactFilter) url.searchParams.append('contactFilter', params.contactFilter);
+    if (params.emailFilter) url.searchParams.append('emailFilter', params.emailFilter);
+    if (params.mobileFilter) url.searchParams.append('mobileFilter', params.mobileFilter);
+    if (params.paymentMethodFilter) url.searchParams.append('paymentMethodFilter', params.paymentMethodFilter);
+    if (params.paymentCycleFilter) url.searchParams.append('paymentCycleFilter', params.paymentCycleFilter);
+
+    const response = await api.get(url.pathname + url.search);
     return response.data;
   } catch (error) {
-    if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Failed to fetch clients');
-    }
+    console.error('Error fetching clients:', error);
     throw error;
   }
 };
@@ -839,9 +880,79 @@ export const getClientDraftById = async (id: string): Promise<ClientDraftRespons
   }
 };
 
-export const getAllClientDrafts = async (): Promise<ClientData[]> => {
+export interface ClientDraft {
+  id: string;
+  userId: string;
+  companyName?: string;
+  shortCode?: string;
+  listName?: string;
+  contactPersonName1?: string;
+  createdAt: string;
+  updatedAt: string;
+  lastUpdated: string;
+  createdByUserId: string;
+  updatedByUserId: string;
+  creatorDetails?: {
+    id: string;
+    email?: string;
+    name: string;
+    userType: string;
+    createdAt: string;
+  } | null;
+  updaterDetails?: {
+    id: string;
+    email?: string;
+    name: string;
+    userType: string;
+    updatedAt: string;
+  } | null;
+}
+
+export interface ClientDraftPaginationParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  companyNameFilter?: string;
+  shortCodeFilter?: string;
+  listNameFilter?: string;
+  contactPersonFilter?: string;
+  creatorFilter?: string;
+  updaterFilter?: string;
+  dateFilter?: string;
+  createdDateFilter?: string;
+}
+
+export interface PaginatedClientDraftResponse {
+  drafts: ClientDraft[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalFiltered: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+  };
+}
+
+export const getAllClientDrafts = async (params: ClientDraftPaginationParams = {}): Promise<PaginatedClientDraftResponse> => {
   try {
-    const response = await api.get('/api/clients/drafts');
+    const queryParams = new URLSearchParams();
+    
+    // Add all parameters to query string
+    if (params.page) queryParams.append('page', params.page.toString());
+    if (params.limit) queryParams.append('limit', params.limit.toString());
+    if (params.search) queryParams.append('search', params.search);
+    if (params.companyNameFilter) queryParams.append('companyNameFilter', params.companyNameFilter);
+    if (params.shortCodeFilter) queryParams.append('shortCodeFilter', params.shortCodeFilter);
+    if (params.listNameFilter) queryParams.append('listNameFilter', params.listNameFilter);
+    if (params.contactPersonFilter) queryParams.append('contactPersonFilter', params.contactPersonFilter);
+    if (params.creatorFilter) queryParams.append('creatorFilter', params.creatorFilter);
+    if (params.updaterFilter) queryParams.append('updaterFilter', params.updaterFilter);
+    if (params.dateFilter) queryParams.append('dateFilter', params.dateFilter);
+    if (params.createdDateFilter) queryParams.append('createdDateFilter', params.createdDateFilter);
+    
+    const response = await api.get(`/api/clients/drafts?${queryParams.toString()}`);
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {

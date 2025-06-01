@@ -1260,7 +1260,7 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
               </div>
             </div>
 
-            <div className="form-footer">
+            <div className="form-navigation">
               <button 
                 type="button" 
                 className="button secondary" 

@@ -89,7 +89,7 @@ export function PositionDrafts() {
             onClick={handleNavigateBack}
           >
             <ArrowLeft size={16} />
-            <span>Back</span>
+            <span>Back to Position Management</span>
           </button>
         }
         statusMessage={error || success}
