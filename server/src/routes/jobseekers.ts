@@ -908,15 +908,53 @@ router.delete('/profile/:id', isAdminOrRecruiter, async (req, res) => {
 
 /**
  * @route GET /api/jobseekers/drafts
- * @desc Get all jobseeker profile drafts
+ * @desc Get all jobseeker profile drafts with pagination and filtering
  * @access Private (Admin, Recruiter)
  */
 router.get('/drafts', isAdminOrRecruiter, async (req, res) => {
   try {
-    // Get all drafts, not just for this user
-    const { data: drafts, error } = await supabaseAdmin
+    // Extract pagination and filter parameters from query
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const searchTerm = req.query.search as string || '';
+    const emailFilter = req.query.emailFilter as string || '';
+    const creatorFilter = req.query.creatorFilter as string || '';
+    const updaterFilter = req.query.updaterFilter as string || '';
+    const dateFilter = req.query.dateFilter as string || '';
+
+    // Calculate offset for pagination
+    const offset = (page - 1) * limit;
+
+    // Start building the query
+    let query = supabaseAdmin
       .from('jobseeker_profile_drafts')
-      .select('*')
+      .select('*');
+
+    // Apply filters
+    if (emailFilter) {
+      query = query.ilike('email', `%${emailFilter}%`);
+    }
+
+    if (dateFilter) {
+      const filterDate = new Date(dateFilter);
+      const nextDay = new Date(filterDate);
+      nextDay.setDate(nextDay.getDate() + 1);
+      query = query.gte('created_at', filterDate.toISOString()).lt('created_at', nextDay.toISOString());
+    }
+
+    // Get total count first (without pagination)
+    const { count: totalCount, error: countError } = await supabaseAdmin
+      .from('jobseeker_profile_drafts')
+      .select('*', { count: 'exact', head: true });
+
+    if (countError) {
+      console.error('Error getting total count:', countError);
+      return res.status(500).json({ error: 'Failed to get total count of drafts' });
+    }
+
+    // Apply pagination and execute query
+    const { data: drafts, error } = await query
+      .range(offset, offset + limit - 1)
       .order('last_updated', { ascending: false });
 
     if (error) {
@@ -924,40 +962,70 @@ router.get('/drafts', isAdminOrRecruiter, async (req, res) => {
       return res.status(500).json({ error: 'Failed to fetch drafts' });
     }
 
+    if (!drafts) {
+      return res.json({
+        drafts: [],
+        pagination: {
+          page,
+          limit,
+          total: totalCount || 0,
+          totalPages: Math.ceil((totalCount || 0) / limit),
+          hasNextPage: false,
+          hasPrevPage: false
+        }
+      });
+    }
+
+    // Collect all user IDs to fetch their details
+    const creatorIds = [...new Set(drafts.map(draft => draft.created_by_user_id).filter(Boolean))];
+    const updaterIds = [...new Set(drafts.map(draft => draft.updated_by_user_id).filter(Boolean))];
+    const allUserIds = [...new Set([...creatorIds, ...updaterIds])];
+
+    // Fetch user details for all users
+    const userDetailsMap: { [key: string]: any } = {};
+    if (allUserIds.length > 0) {
+      try {
+        const userPromises = allUserIds.map(async (userId) => {
+          try {
+            const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(userId);
+            if (!userError && userData?.user) {
+              return { 
+                userId, 
+                details: {
+                  id: userData.user.id,
+                  email: userData.user.email,
+                  name: userData.user.user_metadata?.name || 'Unknown',
+                  userType: userData.user.user_metadata?.user_type || 'Unknown',
+                  createdAt: userData.user.created_at
+                }
+              };
+            }
+            return { userId, details: null };
+          } catch (err) {
+            console.error(`Error fetching user details for ${userId}:`, err);
+            return { userId, details: null };
+          }
+        });
+        
+        const userResults = await Promise.all(userPromises);
+        userResults.forEach(({ userId, details }) => {
+          if (details) {
+            userDetailsMap[userId] = details;
+          }
+        });
+      } catch (error) {
+        console.error('Error fetching user details:', error);
+        // Continue without user details if there's an error
+      }
+    }
+
     // Transform drafts format to match client expectations
     const formattedDrafts = drafts.map(draft => {
-      // Extract name from form_data if available
-      const firstName = draft.form_data?.firstName || '';
-      const lastName = draft.form_data?.lastName || '';
-      const name = firstName && lastName ? `${firstName} ${lastName}` : draft.title || 'Untitled Draft';
+      // Extract email display
       const email = draft.email || draft.form_data?.email || '';
       
       // Create a formatted draft object
-      const formattedDraft: {
-        id: string;
-        userId: string;
-        email: string;
-        lastUpdated: string;
-        currentStep: number;
-        createdAt: string;
-        createdByUserId: string;
-        updatedAt: string;
-        updatedByUserId: string;
-        creatorDetails: {
-          id: string;
-          email: string | undefined;
-          name: string;
-          userType: string;
-          createdAt: string;
-        } | null;
-        updaterDetails: {
-          id: string;
-          email: string | undefined;
-          name: string; 
-          userType: string;
-          updatedAt: string;
-        } | null;
-      } = {
+      const formattedDraft = {
         id: draft.id,
         userId: draft.user_id,
         email: email,
@@ -967,125 +1035,59 @@ router.get('/drafts', isAdminOrRecruiter, async (req, res) => {
         createdByUserId: draft.created_by_user_id,
         updatedAt: draft.updated_at,
         updatedByUserId: draft.updated_by_user_id,
-        creatorDetails: null,
-        updaterDetails: null
+        data: draft.form_data,
+        creatorDetails: draft.created_by_user_id ? userDetailsMap[draft.created_by_user_id] || null : null,
+        updaterDetails: draft.updated_by_user_id ? userDetailsMap[draft.updated_by_user_id] || null : null
       };
 
-      // If we have a creator user ID, fetch their details
-      if (draft.created_by_user_id) {
-        // Use an IIFE to execute this async code in a sync map
-        (async () => {
-          try {
-            const { data: creatorData, error: creatorError } = await supabaseAdmin
-              .auth.admin.getUserById(draft.created_by_user_id);
-              
-            if (!creatorError && creatorData.user) {
-              formattedDraft.creatorDetails = {
-                id: creatorData.user.id,
-                email: creatorData.user.email,
-                name: creatorData.user.user_metadata?.name || 'Unknown',
-                userType: creatorData.user.user_metadata?.user_type || 'Unknown',
-                createdAt: creatorData.user.created_at
-              };
-            }
-          } catch (error) {
-            console.error('Error fetching creator details for draft:', error);
-            // Don't fail if we can't get creator info
-          }
-        })();
-      }
-
-      // If we have an updater user ID that's different from the creator, fetch their details
-      if (draft.updated_by_user_id && draft.updated_by_user_id !== draft.created_by_user_id) {
-        // Use an IIFE to execute this async code in a sync map
-        (async () => {
-          try {
-            const { data: updaterData, error: updaterError } = await supabaseAdmin
-              .auth.admin.getUserById(draft.updated_by_user_id);
-              
-            if (!updaterError && updaterData.user) {
-              formattedDraft.updaterDetails = {
-                id: updaterData.user.id,
-                email: updaterData.user.email,
-                name: updaterData.user.user_metadata?.name || 'Unknown',
-                userType: updaterData.user.user_metadata?.user_type || 'Unknown',
-                updatedAt: draft.updated_at
-              };
-            }
-          } catch (error) {
-            console.error('Error fetching updater details for draft:', error);
-            // Don't fail if we can't get updater info
-          }
-        })();
-      } else if (draft.updated_by_user_id === draft.created_by_user_id && formattedDraft.creatorDetails) {
-        // If same person created and updated, use the creator's details
-        formattedDraft.updaterDetails = {
-          id: formattedDraft.creatorDetails.id,
-          email: formattedDraft.creatorDetails.email,
-          name: formattedDraft.creatorDetails.name,
-          userType: formattedDraft.creatorDetails.userType,
-          updatedAt: draft.updated_at
-        };
-      }
-      
       return formattedDraft;
     });
 
-    // Wait for async operations to complete before sending response
-    await Promise.all(formattedDrafts.map(async (draft) => {
-      // Fetch creator details
-      if (draft.createdByUserId && !draft.creatorDetails) {
-        try {
-          const { data: creatorData, error: creatorError } = await supabaseAdmin
-            .auth.admin.getUserById(draft.createdByUserId);
-            
-          if (!creatorError && creatorData.user) {
-            draft.creatorDetails = {
-              id: creatorData.user.id,
-              email: creatorData.user.email,
-              name: creatorData.user.user_metadata?.name || 'Unknown',
-              userType: creatorData.user.user_metadata?.user_type || 'Unknown',
-              createdAt: creatorData.user.created_at
-            };
-          }
-        } catch (error) {
-          console.error('Error fetching creator details:', error);
-        }
-      }
-      
-      // Fetch updater details if different from creator
-      if (draft.updatedByUserId && !draft.updaterDetails) {
-        // Skip if updater is same as creator and we already have creator details
-        if (draft.updatedByUserId === draft.createdByUserId && draft.creatorDetails) {
-          draft.updaterDetails = {
-            id: draft.creatorDetails.id,
-            email: draft.creatorDetails.email,
-            name: draft.creatorDetails.name,
-            userType: draft.creatorDetails.userType,
-            updatedAt: draft.updatedAt
-          };
-        } else {
-          try {
-            const { data: updaterData, error: updaterError } = await supabaseAdmin
-              .auth.admin.getUserById(draft.updatedByUserId);
-              
-            if (!updaterError && updaterData.user) {
-              draft.updaterDetails = {
-                id: updaterData.user.id,
-                email: updaterData.user.email,
-                name: updaterData.user.user_metadata?.name || 'Unknown',
-                userType: updaterData.user.user_metadata?.user_type || 'Unknown',
-                updatedAt: draft.updatedAt
-              };
-            }
-          } catch (error) {
-            console.error('Error fetching updater details:', error);
-          }
-        }
-      }
-    }));
+    // Apply client-side filters after formatting (since they involve computed fields)
+    let filteredDrafts = formattedDrafts;
+    
+    if (searchTerm) {
+      filteredDrafts = formattedDrafts.filter(draft => 
+        draft.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (draft.creatorDetails?.name && draft.creatorDetails.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (draft.creatorDetails?.email && draft.creatorDetails.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (draft.updaterDetails?.name && draft.updaterDetails.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (draft.updaterDetails?.email && draft.updaterDetails.email.toLowerCase().includes(searchTerm.toLowerCase()))
+      );
+    }
 
-    res.json(formattedDrafts);
+    if (creatorFilter) {
+      filteredDrafts = filteredDrafts.filter(draft => 
+        (draft.creatorDetails?.name && draft.creatorDetails.name.toLowerCase().includes(creatorFilter.toLowerCase())) ||
+        (draft.creatorDetails?.email && draft.creatorDetails.email.toLowerCase().includes(creatorFilter.toLowerCase()))
+      );
+    }
+
+    if (updaterFilter) {
+      filteredDrafts = filteredDrafts.filter(draft => 
+        (draft.updaterDetails?.name && draft.updaterDetails.name.toLowerCase().includes(updaterFilter.toLowerCase())) ||
+        (draft.updaterDetails?.email && draft.updaterDetails.email.toLowerCase().includes(updaterFilter.toLowerCase()))
+      );
+    }
+
+    // Calculate pagination info
+    const totalFiltered = filteredDrafts.length;
+    const totalPages = Math.ceil((totalCount || 0) / limit);
+    const hasNextPage = page < totalPages;
+    const hasPrevPage = page > 1;
+
+    res.json({
+      drafts: filteredDrafts,
+      pagination: {
+        page,
+        limit,
+        total: totalCount || 0,
+        totalFiltered,
+        totalPages,
+        hasNextPage,
+        hasPrevPage
+      }
+    });
   } catch (error) {
     console.error('Unexpected error fetching drafts:', error);
     res.status(500).json({ error: 'An unexpected error occurred while fetching drafts' });

@@ -1,9 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAllJobseekerDrafts, deleteJobseekerDraft } from '../../services/api';
 import { ConfirmationModal } from '../../components/ConfirmationModal';
 import { AppHeader } from '../../components/AppHeader';
-import { Pencil, Trash2, ArrowLeft, Clock, User } from 'lucide-react';
+import { 
+  Pencil, 
+  Trash2, 
+  ArrowLeft, 
+  Clock, 
+  User, 
+  Search,
+  ChevronLeft,
+  ChevronRight
+} from 'lucide-react';
 import '../../styles/pages/JobSeekerManagement.css';
 import '../../styles/components/header.css';
 import '../../styles/components/CommonTable.css';
@@ -36,31 +45,100 @@ interface JobseekerDraft {
   } | null;
 }
 
+interface PaginationInfo {
+  page: number;
+  limit: number;
+  total: number;
+  totalFiltered: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+}
+
 export function JobseekerDrafts() {
   const navigate = useNavigate();
   const [drafts, setDrafts] = useState<JobseekerDraft[]>([]);
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalFiltered: 0,
+    totalPages: 0,
+    hasNextPage: false,
+    hasPrevPage: false
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [draftToDelete, setDraftToDelete] = useState<string | null>(null);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  
+  // Filter states
+  const [searchTerm, setSearchTerm] = useState('');
+  const [emailFilter, setEmailFilter] = useState('');
+  const [creatorFilter, setCreatorFilter] = useState('');
+  const [updaterFilter, setUpdaterFilter] = useState('');
+  const [dateFilter, setDateFilter] = useState<string>('');
+
+  // Debounced fetch function
+  const fetchDrafts = useCallback(async () => {
+    try {
+      console.log('Fetching jobseeker drafts...');
+      setLoading(true);
+      
+      // Only apply filters if they meet the minimum character requirement
+      const effectiveEmailFilter = emailFilter.length >= 4 ? emailFilter : '';
+      const effectiveCreatorFilter = creatorFilter.length >= 4 ? creatorFilter : '';
+      const effectiveUpdaterFilter = updaterFilter.length >= 4 ? updaterFilter : '';
+      
+      const data = await getAllJobseekerDrafts({
+        page: pagination.page,
+        limit: pagination.limit,
+        search: searchTerm,
+        emailFilter: effectiveEmailFilter,
+        creatorFilter: effectiveCreatorFilter,
+        updaterFilter: effectiveUpdaterFilter,
+        dateFilter
+      });
+      
+      console.log('Fetched drafts:', data);
+      setDrafts(data.drafts);
+      setPagination(data.pagination);
+    } catch (err) {
+      console.error('Error fetching drafts:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch drafts';
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, [
+    pagination.page, 
+    pagination.limit, 
+    searchTerm, 
+    // Only include text filters in dependencies when they meet minimum length or are empty
+    emailFilter.length >= 4 || emailFilter === '' ? emailFilter : 'inactive',
+    creatorFilter.length >= 4 || creatorFilter === '' ? creatorFilter : 'inactive',
+    updaterFilter.length >= 4 || updaterFilter === '' ? updaterFilter : 'inactive',
+    dateFilter
+  ]);
 
   useEffect(() => {
-    const fetchDrafts = async () => {
-      try {
-        const fetchedDrafts = await getAllJobseekerDrafts();
-        setDrafts(fetchedDrafts);
-      } catch (err) {
-        console.error('Error fetching drafts:', err);
-        const errorMessage = err instanceof Error ? err.message : 'Failed to fetch drafts';
-        setError(errorMessage);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchDrafts();
-  }, []);
+  }, [fetchDrafts]);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    if (pagination.page !== 1) {
+      setPagination(prev => ({ ...prev, page: 1 }));
+    }
+  }, [
+    searchTerm, 
+    // Only reset pagination for text filters when they meet the minimum length or are empty
+    emailFilter.length >= 4 || emailFilter === '' ? emailFilter : null,
+    creatorFilter.length >= 4 || creatorFilter === '' ? creatorFilter : null,
+    updaterFilter.length >= 4 || updaterFilter === '' ? updaterFilter : null,
+    dateFilter
+  ]);
 
   const handleNavigateBack = () => {
     navigate('/jobseeker-management');
@@ -142,6 +220,35 @@ export function JobseekerDrafts() {
     return 'Unknown';
   };
 
+  const resetFilters = () => {
+    setSearchTerm('');
+    setEmailFilter('');
+    setCreatorFilter('');
+    setUpdaterFilter('');
+    setDateFilter('');
+    setPagination(prev => ({ ...prev, page: 1 }));
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setPagination(prev => ({ ...prev, page: newPage }));
+  };
+
+  const handleLimitChange = (newLimit: number) => {
+    setPagination(prev => ({ ...prev, limit: newLimit, page: 1 }));
+  };
+
+  const handlePreviousPage = () => {
+    if (pagination.hasPrevPage) {
+      setPagination(prev => ({ ...prev, page: prev.page - 1 }));
+    }
+  };
+
+  const handleNextPage = () => {
+    if (pagination.hasNextPage) {
+      setPagination(prev => ({ ...prev, page: prev.page + 1 }));
+    }
+  };
+
   return (
     <div className="page-container">
       <AppHeader
@@ -162,42 +269,148 @@ export function JobseekerDrafts() {
         <div className="card">
           <div className="card-header">
             <h2>Your Saved Drafts</h2>
+            <div className="filter-container">
+              <div className="search-box">
+                <Search size={18} className="search-icon" />
+                <input
+                  type="text"
+                  placeholder="Global search..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="search-input"
+                />
+                <button 
+                  className="button secondary button-icon reset-filters-btn" 
+                  onClick={resetFilters}
+                >
+                  <span>Reset Filters</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Pagination Controls - Top */}
+          <div className="pagination-controls top">
+            <div className="pagination-info">
+              <span className="pagination-text">
+                Showing {Math.min((pagination.page - 1) * pagination.limit + 1, pagination.total)} to{' '}
+                {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} entries
+                {pagination.totalFiltered !== pagination.total && (
+                  <span className="filtered-info"> (filtered from {pagination.total} total entries)</span>
+                )}
+              </span>
+            </div>
+            <div className="pagination-size-selector">
+              <label htmlFor="pageSize" className="page-size-label">Show:</label>
+              <select
+                id="pageSize"
+                value={pagination.limit}
+                onChange={(e) => handleLimitChange(parseInt(e.target.value))}
+                className="page-size-select"
+              >
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+              <span className="page-size-label">per page</span>
+            </div>
           </div>
 
           <div className="table-container">
-            {loading ? (
-              <div className="loading">Loading drafts...</div>
-            ) : drafts.length === 0 ? (
-              <div className="empty-state-cell">
-                <div className="empty-state">
-                  <p>
-                    No drafts found. Create a new jobseeker profile to save a
-                    draft.
-                  </p>
-                  <button
-                    className="button primary"
-                    onClick={() =>
-                      navigate("/profile/create", { state: { isNewForm: true } })
-                    }
-                  >
-                    Create New Profile
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <table className="common-table">
-                <thead>
+            <table className="common-table">
+              <thead>
+                <tr>
+                  <th>
+                    <div className="column-filter">
+                      <div className="column-title">Title/Email</div>
+                      <div className="column-search">
+                        <input
+                          type="text"
+                          placeholder="Search email..."
+                          value={emailFilter}
+                          onChange={(e) => setEmailFilter(e.target.value)}
+                          className="column-search-input"
+                        />
+                      </div>
+                    </div>
+                  </th>
+                  <th>
+                    <div className="column-filter">
+                      <div className="column-title">Last Updated</div>
+                      <div className="column-search">
+                        <div className="date-picker-wrapper">
+                          <input
+                            type="date"
+                            value={dateFilter}
+                            onChange={(e) => setDateFilter(e.target.value)}
+                            className="date-picker-input"
+                            onClick={(e) => e.currentTarget.showPicker()}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </th>
+                  <th>Created At</th>
+                  <th>
+                    <div className="column-filter">
+                      <div className="column-title">Created By</div>
+                      <div className="column-search">
+                        <input
+                          type="text"
+                          placeholder="Search creator..."
+                          value={creatorFilter}
+                          onChange={(e) => setCreatorFilter(e.target.value)}
+                          className="column-search-input"
+                        />
+                      </div>
+                    </div>
+                  </th>
+                  <th>
+                    <div className="column-filter">
+                      <div className="column-title">Last Updated By</div>
+                      <div className="column-search">
+                        <input
+                          type="text"
+                          placeholder="Search updater..."
+                          value={updaterFilter}
+                          onChange={(e) => setUpdaterFilter(e.target.value)}
+                          className="column-search-input"
+                        />
+                      </div>
+                    </div>
+                  </th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
                   <tr>
-                    <th>Title/Email</th>
-                    <th>Last Updated</th>
-                    <th>Created At</th>
-                    <th>Created By</th>
-                    <th>Last Updated By</th>
-                    <th>Actions</th>
+                    <td colSpan={6} className="loading-cell">
+                      <div className="loading">Loading drafts...</div>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {drafts.map((draft) => (
+                ) : drafts.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="empty-state-cell">
+                      <div className="empty-state">
+                        <p>
+                          No drafts found. Create a new jobseeker profile to save a
+                          draft.
+                        </p>
+                        <button
+                          className="button primary"
+                          onClick={() =>
+                            navigate("/profile/create", { state: { isNewForm: true } })
+                          }
+                        >
+                          Create New Profile
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  drafts.map((draft) => (
                     <tr key={draft.id}>
                       <td>{getEmailDisplay(draft)}</td>
                       <td>
@@ -249,11 +462,72 @@ export function JobseekerDrafts() {
                         </div>
                       </td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
+
+          {/* Pagination Controls - Bottom */}
+          {!loading && pagination.totalPages > 1 && (
+            <div className="pagination-controls bottom">
+              <div className="pagination-info">
+                <span className="pagination-text">
+                  Page {pagination.page} of {pagination.totalPages}
+                </span>
+              </div>
+              <div className="pagination-buttons">
+                <button
+                  className="pagination-btn prev"
+                  onClick={handlePreviousPage}
+                  disabled={!pagination.hasPrevPage}
+                  title="Previous page"
+                  aria-label="Previous page"
+                >
+                  <ChevronLeft size={16} />
+                  <span>Previous</span>
+                </button>
+                
+                {/* Page numbers */}
+                <div className="page-numbers">
+                  {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                    let pageNum;
+                    if (pagination.totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (pagination.page <= 3) {
+                      pageNum = i + 1;
+                    } else if (pagination.page >= pagination.totalPages - 2) {
+                      pageNum = pagination.totalPages - 4 + i;
+                    } else {
+                      pageNum = pagination.page - 2 + i;
+                    }
+                    
+                    return (
+                      <button
+                        key={pageNum}
+                        className={`page-number-btn ${pageNum === pagination.page ? 'active' : ''}`}
+                        onClick={() => handlePageChange(pageNum)}
+                        aria-label={`Go to page ${pageNum}`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <button
+                  className="pagination-btn next"
+                  onClick={handleNextPage}
+                  disabled={!pagination.hasNextPage}
+                  title="Next page"
+                  aria-label="Next page"
+                >
+                  <span>Next</span>
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

@@ -1115,10 +1115,46 @@ export interface JobseekerDraft {
   updatedByUserId: string;
 }
 
+// Add pagination parameters interface for drafts
+export interface DraftPaginationParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  emailFilter?: string;
+  creatorFilter?: string;
+  updaterFilter?: string;
+  dateFilter?: string;
+}
+
+// Add paginated response interface for drafts
+export interface PaginatedDraftResponse {
+  drafts: JobseekerDraft[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalFiltered: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+  };
+}
+
 // Add new functions for jobseeker profile drafts
-export const getAllJobseekerDrafts = async (): Promise<JobseekerDraft[]> => {
+export const getAllJobseekerDrafts = async (params: DraftPaginationParams = {}): Promise<PaginatedDraftResponse> => {
   try {
-    const response = await api.get('/api/jobseekers/drafts');
+    // Build query parameters
+    const queryParams = new URLSearchParams();
+    
+    if (params.page) queryParams.append('page', params.page.toString());
+    if (params.limit) queryParams.append('limit', params.limit.toString());
+    if (params.search) queryParams.append('search', params.search);
+    if (params.emailFilter) queryParams.append('emailFilter', params.emailFilter);
+    if (params.creatorFilter) queryParams.append('creatorFilter', params.creatorFilter);
+    if (params.updaterFilter) queryParams.append('updaterFilter', params.updaterFilter);
+    if (params.dateFilter) queryParams.append('dateFilter', params.dateFilter);
+
+    const response = await api.get(`/api/jobseekers/drafts?${queryParams.toString()}`);
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
