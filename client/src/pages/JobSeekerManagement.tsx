@@ -23,6 +23,7 @@ import '../styles/components/CommonTable.css';
 
 // Extend the JobSeekerProfile type to include documents
 interface ExtendedJobSeekerProfile extends JobSeekerProfile {
+  phoneNumber?: string | null;
   documents?: Array<{
     id?: string;
     documentType: string;
@@ -50,6 +51,7 @@ export function JobSeekerManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [nameFilter, setNameFilter] = useState('');
   const [emailFilter, setEmailFilter] = useState('');
+  const [phoneFilter, setPhoneFilter] = useState('');
   const [locationFilter, setLocationFilter] = useState('');
   const [experienceFilter, setExperienceFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -151,6 +153,7 @@ export function JobSeekerManagement() {
     const matchesGlobalSearch = searchTerm === '' || 
       profile.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       profile.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (profile.phoneNumber && profile.phoneNumber.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (profile.experience && profile.experience.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (profile.location && profile.location.toLowerCase().includes(searchTerm.toLowerCase()));
     
@@ -160,6 +163,9 @@ export function JobSeekerManagement() {
     
     const matchesEmail = emailFilter === '' || 
       profile.email.toLowerCase().includes(emailFilter.toLowerCase());
+    
+    const matchesPhone = phoneFilter === '' || 
+      (profile.phoneNumber && profile.phoneNumber.toLowerCase().includes(phoneFilter.toLowerCase()));
     
     const matchesLocation = locationFilter === '' || 
       (profile.location && profile.location.toLowerCase().includes(locationFilter.toLowerCase()));
@@ -176,7 +182,7 @@ export function JobSeekerManagement() {
     const matchesDate = dateFilter === '' || 
       (new Date(profile.createdAt).toISOString().split('T')[0] === dateFilter);
     
-    return matchesGlobalSearch && matchesName && matchesEmail && 
+    return matchesGlobalSearch && matchesName && matchesEmail && matchesPhone &&
            matchesLocation && matchesExperience && matchesStatus && matchesDate;
   });
 
@@ -275,6 +281,7 @@ export function JobSeekerManagement() {
   const resetFilters = () => {
     setNameFilter('');
     setEmailFilter('');
+    setPhoneFilter('');
     setLocationFilter('');
     setExperienceFilter('all');
     setStatusFilter('all');
@@ -375,6 +382,20 @@ export function JobSeekerManagement() {
                     </th>
                     <th>
                       <div className="column-filter">
+                        <div className="column-title">Phone Number</div>
+                        <div className="column-search">
+                          <input
+                            type="text"
+                            placeholder="Search phone..."
+                            value={phoneFilter}
+                            onChange={(e) => setPhoneFilter(e.target.value)}
+                            className="column-search-input"
+                          />
+                        </div>
+                      </div>
+                    </th>
+                    <th>
+                      <div className="column-filter">
                         <div className="column-title">Location</div>
                         <div className="column-search">
                           <input
@@ -456,7 +477,7 @@ export function JobSeekerManagement() {
                 <tbody>
                   {filteredProfiles.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="empty-state-cell">
+                      <td colSpan={8} className="empty-state-cell">
                         <div className="empty-state">
                           <p>No profiles match your search criteria.</p>
                         </div>
@@ -469,6 +490,7 @@ export function JobSeekerManagement() {
                         <tr key={profile.id}>
                           <td className="name-cell">{profile.name}</td>
                           <td className="email-cell">{profile.email}</td>
+                          <td className="phone-cell">{profile.phoneNumber || 'N/A'}</td>
                           <td className="location-cell">{profile.location || 'N/A'}</td>
                           <td className="experience-cell">{profile.experience}</td>
                           <td className="status-cell">

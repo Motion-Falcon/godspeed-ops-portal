@@ -85,6 +85,7 @@ interface JobSeekerProfile {
   userId: string;
   name: string;
   email: string;
+  phoneNumber: string | null;
   status: 'pending' | 'verified' | 'rejected';
   createdAt: string;
   location?: string;
@@ -173,12 +174,44 @@ router.get('/', isAdminOrRecruiter, async (req, res) => {
        return res.json([]); // Return empty array if no profiles found
     }
 
+    // Collect all user IDs to fetch their metadata
+    const userIds = dbProfiles.map(profile => profile.user_id).filter(Boolean);
+    
+    // Fetch user metadata for all users to get phone numbers
+    const userMetadataMap: { [key: string]: any } = {};
+    if (userIds.length > 0) {
+      try {
+        // Get user data for all user IDs
+        const userPromises = userIds.map(async (userId) => {
+          try {
+            const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(userId);
+            if (!userError && userData?.user) {
+              return { userId, metadata: userData.user.user_metadata || {} };
+            }
+            return { userId, metadata: {} };
+          } catch (err) {
+            console.error(`Error fetching user metadata for ${userId}:`, err);
+            return { userId, metadata: {} };
+          }
+        });
+        
+        const userResults = await Promise.all(userPromises);
+        userResults.forEach(({ userId, metadata }) => {
+          userMetadataMap[userId] = metadata;
+        });
+      } catch (error) {
+        console.error('Error fetching user metadata:', error);
+        // Continue without metadata if there's an error
+      }
+    }
+
     // Transform database records to the simplified frontend format
     const formattedProfiles: JobSeekerProfile[] = dbProfiles.map((profile) => ({
       id: profile.id,
       userId: profile.user_id,
       name: formatName(profile),
       email: profile.email,
+      phoneNumber: userMetadataMap[profile.user_id]?.phoneNumber || null,
       status: profile.verification_status || 'pending',
       createdAt: profile.created_at,
       experience: profile.experience,
@@ -441,6 +474,7 @@ router.put('/profile/:id/status', async (req, res) => {
       userId: updatedDbProfile.user_id,
       name: formatName(updatedDbProfile),
       email: updatedDbProfile.email,
+      phoneNumber: updatedDbProfile.mobile || null,
       phone: updatedDbProfile.mobile,
       status: updatedDbProfile.verification_status || status, // Use the new status
       createdAt: updatedDbProfile.created_at,

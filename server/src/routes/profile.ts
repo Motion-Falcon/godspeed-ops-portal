@@ -149,6 +149,7 @@ router.post('/submit',
                 name: `${profileData.firstName} ${profileData.lastName}`,
                 user_type: 'jobseeker',
                 hasProfile: true, // Set hasProfile flag for new users
+                phoneNumber: profileData.mobile,
               },
             },
           });
@@ -246,7 +247,8 @@ router.post('/submit',
       try {
         const mergedMetadata = {
           ...existingUserMetadata,
-          hasProfile: true 
+          hasProfile: true,
+          phoneNumber: profileData.mobile
         };
         
         // Update user metadata with merged data
