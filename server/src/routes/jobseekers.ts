@@ -154,16 +154,73 @@ function extractLocation(profile: DbJobseekerProfile): string | undefined {
 
 /**
  * @route GET /api/jobseekers
- * @desc Get all jobseeker profiles (simplified view)
+ * @desc Get all jobseeker profiles (simplified view) with pagination
  * @access Private (Admin, Recruiter)
  */
 router.get('/', isAdminOrRecruiter, async (req, res) => {
   try {
-    // Use the admin client to bypass RLS
-    const { data: dbProfiles, error } = await supabaseAdmin
+    // Extract pagination and filter parameters from query
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const searchTerm = req.query.search as string || '';
+    const nameFilter = req.query.nameFilter as string || '';
+    const emailFilter = req.query.emailFilter as string || '';
+    const phoneFilter = req.query.phoneFilter as string || '';
+    const locationFilter = req.query.locationFilter as string || '';
+    const experienceFilter = req.query.experienceFilter as string || 'all';
+    const statusFilter = req.query.statusFilter as string || 'all';
+    const dateFilter = req.query.dateFilter as string || '';
+
+    // Calculate offset for pagination
+    const offset = (page - 1) * limit;
+
+    // Start building the query
+    let query = supabaseAdmin
       .from('jobseeker_profiles')
-      // Specify the type for Supabase select for better type inference
-      .select<string, DbJobseekerProfile>('id, user_id, first_name, last_name, email, verification_status, created_at, city, province, experience, documents'); // Select necessary fields
+      .select<string, DbJobseekerProfile>('id, user_id, first_name, last_name, email, verification_status, created_at, city, province, experience, documents, mobile');
+
+    // Apply filters
+    if (nameFilter) {
+      query = query.or(`first_name.ilike.%${nameFilter}%, last_name.ilike.%${nameFilter}%`);
+    }
+
+    if (emailFilter) {
+      query = query.ilike('email', `%${emailFilter}%`);
+    }
+
+    if (locationFilter) {
+      query = query.or(`city.ilike.%${locationFilter}%, province.ilike.%${locationFilter}%`);
+    }
+
+    if (experienceFilter !== 'all') {
+      query = query.eq('experience', experienceFilter);
+    }
+
+    if (statusFilter !== 'all' && statusFilter !== 'need-attention') {
+      query = query.eq('verification_status', statusFilter);
+    }
+
+    if (dateFilter) {
+      const filterDate = new Date(dateFilter);
+      const nextDay = new Date(filterDate);
+      nextDay.setDate(nextDay.getDate() + 1);
+      query = query.gte('created_at', filterDate.toISOString()).lt('created_at', nextDay.toISOString());
+    }
+
+    // Get total count first (without pagination)
+    const { count: totalCount, error: countError } = await supabaseAdmin
+      .from('jobseeker_profiles')
+      .select('*', { count: 'exact', head: true });
+
+    if (countError) {
+      console.error('Error getting total count:', countError);
+      return res.status(500).json({ error: 'Failed to get total count of profiles' });
+    }
+
+    // Apply pagination and execute query
+    const { data: dbProfiles, error } = await query
+      .range(offset, offset + limit - 1)
+      .order('created_at', { ascending: false });
       
     if (error) {
       console.error('Error fetching from jobseeker_profiles:', error);
@@ -171,7 +228,17 @@ router.get('/', isAdminOrRecruiter, async (req, res) => {
     }
     
     if (!dbProfiles) {
-       return res.json([]); // Return empty array if no profiles found
+      return res.json({
+        profiles: [],
+        pagination: {
+          page,
+          limit,
+          total: totalCount || 0,
+          totalPages: Math.ceil((totalCount || 0) / limit),
+          hasNextPage: false,
+          hasPrevPage: false
+        }
+      });
     }
 
     // Collect all user IDs to fetch their metadata
@@ -211,7 +278,7 @@ router.get('/', isAdminOrRecruiter, async (req, res) => {
       userId: profile.user_id,
       name: formatName(profile),
       email: profile.email,
-      phoneNumber: userMetadataMap[profile.user_id]?.phoneNumber || null,
+      phoneNumber: userMetadataMap[profile.user_id]?.phoneNumber || profile.mobile || null,
       status: profile.verification_status || 'pending',
       createdAt: profile.created_at,
       experience: profile.experience,
@@ -221,6 +288,25 @@ router.get('/', isAdminOrRecruiter, async (req, res) => {
         aiValidation: null
       })) || []
     }));
+
+    // Apply global search filter after formatting (since it involves computed fields)
+    let filteredProfiles = formattedProfiles;
+    if (searchTerm) {
+      filteredProfiles = formattedProfiles.filter(profile => 
+        profile.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        profile.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (profile.phoneNumber && profile.phoneNumber.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (profile.experience && profile.experience.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (profile.location && profile.location.toLowerCase().includes(searchTerm.toLowerCase()))
+      );
+    }
+
+    // Apply phone filter after formatting (since phoneNumber is computed)
+    if (phoneFilter) {
+      filteredProfiles = filteredProfiles.filter(profile => 
+        profile.phoneNumber && profile.phoneNumber.toLowerCase().includes(phoneFilter.toLowerCase())
+      );
+    }
 
     // Collect all document IDs across all profiles for bulk AI validation fetching
     const allDocumentIds: string[] = [];
@@ -253,7 +339,7 @@ router.get('/', isAdminOrRecruiter, async (req, res) => {
         }, {} as { [key: string]: any });
         
         // Update documents with validation data where available
-        formattedProfiles.forEach(profile => {
+        filteredProfiles.forEach(profile => {
           if (profile.documents && profile.documents.length > 0) {
             profile.documents = profile.documents.map((doc: DocumentRecord) => {
               if (doc.id && validationMap[doc.id]) {
@@ -268,8 +354,25 @@ router.get('/', isAdminOrRecruiter, async (req, res) => {
         });
       }
     }
+
+    // Calculate pagination info
+    const totalFiltered = filteredProfiles.length;
+    const totalPages = Math.ceil((totalCount || 0) / limit);
+    const hasNextPage = page < totalPages;
+    const hasPrevPage = page > 1;
       
-    res.json(formattedProfiles);
+    res.json({
+      profiles: filteredProfiles,
+      pagination: {
+        page,
+        limit,
+        total: totalCount || 0,
+        totalFiltered,
+        totalPages,
+        hasNextPage,
+        hasPrevPage
+      }
+    });
 
   } catch (error) {
     console.error('Unexpected error fetching jobseeker profiles:', error);

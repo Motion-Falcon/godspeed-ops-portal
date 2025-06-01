@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { 
@@ -11,7 +11,9 @@ import {
   Clock,
   FileText,
   Pencil,
-  AlertTriangle
+  AlertTriangle,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { getJobseekerProfiles, deleteJobseeker } from '../services/api';
 import { JobSeekerProfile } from '../types/jobseeker';
@@ -43,8 +45,27 @@ interface ExtendedJobSeekerProfile extends JobSeekerProfile {
   }>;
 }
 
+interface PaginationInfo {
+  page: number;
+  limit: number;
+  total: number;
+  totalFiltered: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+}
+
 export function JobSeekerManagement() {
   const [profiles, setProfiles] = useState<ExtendedJobSeekerProfile[]>([]);
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalFiltered: 0,
+    totalPages: 0,
+    hasNextPage: false,
+    hasPrevPage: false
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -81,6 +102,63 @@ export function JobSeekerManagement() {
     }
   }, [location]);
 
+  // Debounced fetch function
+  const fetchProfiles = useCallback(async () => {
+    try {
+      console.log('Fetching jobseeker profiles...');
+      setLoading(true);
+      
+      // Only apply filters if they meet the minimum character requirement
+      const effectiveNameFilter = nameFilter.length >= 4 ? nameFilter : '';
+      const effectiveEmailFilter = emailFilter.length >= 4 ? emailFilter : '';
+      const effectivePhoneFilter = phoneFilter.length >= 4 ? phoneFilter : '';
+      const effectiveLocationFilter = locationFilter.length >= 4 ? locationFilter : '';
+      
+      const data = await getJobseekerProfiles({
+        page: pagination.page,
+        limit: pagination.limit,
+        search: searchTerm,
+        nameFilter: effectiveNameFilter,
+        emailFilter: effectiveEmailFilter,
+        phoneFilter: effectivePhoneFilter,
+        locationFilter: effectiveLocationFilter,
+        experienceFilter,
+        statusFilter,
+        dateFilter
+      });
+      console.log('Fetched profiles:', data);
+      setProfiles(data.profiles);
+      setPagination(data.pagination);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred while fetching profiles';
+      console.error('Error fetching profiles:', err);
+      setError(errorMessage);
+      
+      // Show more detailed error info in console
+      if (err instanceof Error) {
+        console.error('Error details:', {
+          message: err.message,
+          stack: err.stack,
+          name: err.name
+        });
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [
+    pagination.page, 
+    pagination.limit, 
+    searchTerm, 
+    // Only include text filters in dependencies when they meet minimum length or are empty
+    nameFilter.length >= 4 || nameFilter === '' ? nameFilter : 'inactive',
+    emailFilter.length >= 4 || emailFilter === '' ? emailFilter : 'inactive',
+    phoneFilter.length >= 4 || phoneFilter === '' ? phoneFilter : 'inactive',
+    locationFilter.length >= 4 || locationFilter === '' ? locationFilter : 'inactive',
+    experienceFilter, 
+    statusFilter, 
+    dateFilter
+  ]);
+
   useEffect(() => {
     // Check if user has access
     if (!isAdmin && !isRecruiter) {
@@ -88,33 +166,25 @@ export function JobSeekerManagement() {
       return;
     }
 
-    const fetchProfiles = async () => {
-      try {
-        console.log('Fetching jobseeker profiles...');
-        setLoading(true);
-        const data = await getJobseekerProfiles();
-        console.log('Fetched profiles:', data);
-        setProfiles(data);
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'An error occurred while fetching profiles';
-        console.error('Error fetching profiles:', err);
-        setError(errorMessage);
-        
-        // Show more detailed error info in console
-        if (err instanceof Error) {
-          console.error('Error details:', {
-            message: err.message,
-            stack: err.stack,
-            name: err.name
-          });
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchProfiles();
-  }, [isAdmin, isRecruiter, navigate]);
+  }, [isAdmin, isRecruiter, navigate, fetchProfiles]);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    if (pagination.page !== 1) {
+      setPagination(prev => ({ ...prev, page: 1 }));
+    }
+  }, [
+    searchTerm, 
+    // Only reset pagination for text filters when they meet the minimum length or are empty
+    nameFilter.length >= 4 || nameFilter === '' ? nameFilter : null,
+    emailFilter.length >= 4 || emailFilter === '' ? emailFilter : null,
+    phoneFilter.length >= 4 || phoneFilter === '' ? phoneFilter : null,
+    locationFilter.length >= 4 || locationFilter === '' ? locationFilter : null,
+    experienceFilter, 
+    statusFilter, 
+    dateFilter
+  ]);
 
   // Check if a profile needs attention based on AI validation
   const profileNeedsAttention = (profile: ExtendedJobSeekerProfile): boolean => {
@@ -143,48 +213,6 @@ export function JobSeekerManagement() {
     }
     return profile.status;
   };
-
-  // Filter profiles based on all filter criteria
-  const filteredProfiles = profiles.filter(profile => {
-    // Get the effective status for filtering
-    const effectiveStatus = getEffectiveStatus(profile);
-    
-    // Global search filter
-    const matchesGlobalSearch = searchTerm === '' || 
-      profile.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      profile.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (profile.phoneNumber && profile.phoneNumber.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (profile.experience && profile.experience.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (profile.location && profile.location.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    // Individual column filters
-    const matchesName = nameFilter === '' || 
-      profile.name.toLowerCase().includes(nameFilter.toLowerCase());
-    
-    const matchesEmail = emailFilter === '' || 
-      profile.email.toLowerCase().includes(emailFilter.toLowerCase());
-    
-    const matchesPhone = phoneFilter === '' || 
-      (profile.phoneNumber && profile.phoneNumber.toLowerCase().includes(phoneFilter.toLowerCase()));
-    
-    const matchesLocation = locationFilter === '' || 
-      (profile.location && profile.location.toLowerCase().includes(locationFilter.toLowerCase()));
-    
-    const matchesExperience = experienceFilter === 'all' || 
-      profile.experience === experienceFilter;
-    
-    // Status filter handling for 'need-attention'
-    const matchesStatus = statusFilter === 'all' || 
-      (statusFilter === 'need-attention' && effectiveStatus === 'need-attention') ||
-      (statusFilter !== 'need-attention' && profile.status === statusFilter);
-    
-    // Date filter
-    const matchesDate = dateFilter === '' || 
-      (new Date(profile.createdAt).toISOString().split('T')[0] === dateFilter);
-    
-    return matchesGlobalSearch && matchesName && matchesEmail && matchesPhone &&
-           matchesLocation && matchesExperience && matchesStatus && matchesDate;
-  });
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -253,10 +281,8 @@ export function JobSeekerManagement() {
       
       await deleteJobseeker(profileToDelete.id);
       
-      // Remove the deleted profile from the state
-      setProfiles(prevProfiles => 
-        prevProfiles.filter(profile => profile.id !== profileToDelete.id)
-      );
+      // Refresh the profiles list
+      await fetchProfiles();
       
       // Close the modal
       setIsDeleteModalOpen(false);
@@ -286,6 +312,28 @@ export function JobSeekerManagement() {
     setExperienceFilter('all');
     setStatusFilter('all');
     setDateFilter('');
+    setSearchTerm('');
+  };
+
+  // Pagination handlers
+  const handlePageChange = (newPage: number) => {
+    setPagination(prev => ({ ...prev, page: newPage }));
+  };
+
+  const handleLimitChange = (newLimit: number) => {
+    setPagination(prev => ({ ...prev, limit: newLimit, page: 1 }));
+  };
+
+  const handlePreviousPage = () => {
+    if (pagination.hasPrevPage) {
+      handlePageChange(pagination.page - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (pagination.hasNextPage) {
+      handlePageChange(pagination.page + 1);
+    }
   };
 
   return (
@@ -345,201 +393,292 @@ export function JobSeekerManagement() {
             </div>
           </div>
 
-          <div className="table-container">
-            {loading ? (
-              <div className="loading">Loading profiles...</div>
-            ) : (
-              <table className="common-table">
-                <thead>
-                  <tr>
-                    <th>
-                      <div className="column-filter">
-                        <div className="column-title">Name</div>
-                        <div className="column-search">
-                          <input
-                            type="text"
-                            placeholder="Search name..."
-                            value={nameFilter}
-                            onChange={(e) => setNameFilter(e.target.value)}
-                            className="column-search-input"
-                          />
-                        </div>
-                      </div>
-                    </th>
-                    <th>
-                      <div className="column-filter">
-                        <div className="column-title">Email</div>
-                        <div className="column-search">
-                          <input
-                            type="text"
-                            placeholder="Search email..."
-                            value={emailFilter}
-                            onChange={(e) => setEmailFilter(e.target.value)}
-                            className="column-search-input"
-                          />
-                        </div>
-                      </div>
-                    </th>
-                    <th>
-                      <div className="column-filter">
-                        <div className="column-title">Phone Number</div>
-                        <div className="column-search">
-                          <input
-                            type="text"
-                            placeholder="Search phone..."
-                            value={phoneFilter}
-                            onChange={(e) => setPhoneFilter(e.target.value)}
-                            className="column-search-input"
-                          />
-                        </div>
-                      </div>
-                    </th>
-                    <th>
-                      <div className="column-filter">
-                        <div className="column-title">Location</div>
-                        <div className="column-search">
-                          <input
-                            type="text"
-                            placeholder="Search location..."
-                            value={locationFilter}
-                            onChange={(e) => setLocationFilter(e.target.value)}
-                            className="column-search-input"
-                          />
-                        </div>
-                      </div>
-                    </th>
-                    <th>
-                      <div className="column-filter">
-                        <div className="column-title">Experience</div>
-                        <div className="column-search">
-                          <select
-                            value={experienceFilter}
-                            onChange={(e) => setExperienceFilter(e.target.value)}
-                            className="column-filter-select"
-                          >
-                            <option value="all">All Experience</option>
-                            <option value="0-6 Months">0-6 Months</option>
-                            <option value="6-12 Months">6-12 Months</option>
-                            <option value="1-2 Years">1-2 Years</option>
-                            <option value="2-3 Years">2-3 Years</option>
-                            <option value="3-4 Years">3-4 Years</option>
-                            <option value="4-5 Years">4-5 Years</option>
-                            <option value="5+ Years">5+ Years</option>
-                          </select>
-                        </div>
-                      </div>
-                    </th>
-                    <th>
-                      <div className="column-filter">
-                        <div className="column-title">Status</div>
-                        <div className="column-search">
-                          <select
-                            value={statusFilter}
-                            onChange={(e) => setStatusFilter(e.target.value)}
-                            className="column-filter-select"
-                          >
-                            <option value="all">All Statuses</option>
-                            <option value="pending">Pending</option>
-                            <option value="verified">Verified</option>
-                            <option value="rejected">Rejected</option>
-                            <option value="need-attention">Needs Attention</option>
-                          </select>
-                        </div>
-                      </div>
-                    </th>
-                    <th>
-                      <div className="column-filter">
-                        <div className="column-title">Joined Date</div>
-                        <div className="column-search">
-                          <div className="date-picker-wrapper">
-                            <input
-                              type="date"
-                              value={dateFilter}
-                              onChange={(e) => setDateFilter(e.target.value)}
-                              className="date-picker-input"
-                              onClick={(e) => e.currentTarget.showPicker()}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </th>
-                    <th>
-                      <div className="column-filter">
-                        <div className="column-title">Actions</div>
-                        <div className="column-search">
-                          {/* Empty space to maintain consistent alignment */}
-                          <div className="actions-placeholder"></div>
-                        </div>
-                      </div>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredProfiles.length === 0 ? (
-                    <tr>
-                      <td colSpan={8} className="empty-state-cell">
-                        <div className="empty-state">
-                          <p>No profiles match your search criteria.</p>
-                        </div>
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredProfiles.map(profile => {
-                      const effectiveStatus = getEffectiveStatus(profile);
-                      return (
-                        <tr key={profile.id}>
-                          <td className="name-cell">{profile.name}</td>
-                          <td className="email-cell">{profile.email}</td>
-                          <td className="phone-cell">{profile.phoneNumber || 'N/A'}</td>
-                          <td className="location-cell">{profile.location || 'N/A'}</td>
-                          <td className="experience-cell">{profile.experience}</td>
-                          <td className="status-cell">
-                            <div className="status-display">
-                              {getStatusIcon(effectiveStatus)}
-                              <span className={`status-text ${effectiveStatus}`}>
-                                {formatStatusLabel(effectiveStatus)}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="date-cell">
-                            {new Date(profile.createdAt).toLocaleDateString()}
-                          </td>
-                          <td className="actions-cell">
-                            <div className="action-buttons">
-                              <button 
-                                className="action-icon-btn view-btn"
-                                onClick={() => handleViewProfile(profile.id)}
-                                title="View profile details"
-                                aria-label="View profile"
-                              >
-                                <Eye size={20} />
-                              </button>
-                              <button 
-                                className="action-icon-btn edit-btn"
-                                onClick={() => handleEditClick(profile)}
-                                title="Edit this profile"
-                                aria-label="Edit profile"
-                              >
-                                <Pencil size={20} />
-                              </button>
-                              <button 
-                                className="action-icon-btn delete-btn"
-                                onClick={() => handleDeleteClick(profile)}
-                                title="Delete this profile"
-                                aria-label="Delete profile"
-                              >
-                                <Trash2 size={20} />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            )}
+          {/* Pagination Controls - Top */}
+          <div className="pagination-controls top">
+            <div className="pagination-info">
+              <span className="pagination-text">
+                Showing {Math.min((pagination.page - 1) * pagination.limit + 1, pagination.total)} to{' '}
+                {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} entries
+                {pagination.totalFiltered !== pagination.total && (
+                  <span className="filtered-info"> (filtered from {pagination.total} total entries)</span>
+                )}
+              </span>
+            </div>
+            <div className="pagination-size-selector">
+              <label htmlFor="pageSize" className="page-size-label">Show:</label>
+              <select
+                id="pageSize"
+                value={pagination.limit}
+                onChange={(e) => handleLimitChange(parseInt(e.target.value))}
+                className="page-size-select"
+              >
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+              <span className="page-size-label">per page</span>
+            </div>
           </div>
+
+          <div className="table-container">
+            <table className="common-table">
+              <thead>
+                <tr>
+                  <th>
+                    <div className="column-filter">
+                      <div className="column-title">Name</div>
+                      <div className="column-search">
+                        <input
+                          type="text"
+                          placeholder="Search name..."
+                          value={nameFilter}
+                          onChange={(e) => setNameFilter(e.target.value)}
+                          className="column-search-input"
+                        />
+                      </div>
+                    </div>
+                  </th>
+                  <th>
+                    <div className="column-filter">
+                      <div className="column-title">Email</div>
+                      <div className="column-search">
+                        <input
+                          type="text"
+                          placeholder="Search email..."
+                          value={emailFilter}
+                          onChange={(e) => setEmailFilter(e.target.value)}
+                          className="column-search-input"
+                        />
+                      </div>
+                    </div>
+                  </th>
+                  <th>
+                    <div className="column-filter">
+                      <div className="column-title">Phone Number</div>
+                      <div className="column-search">
+                        <input
+                          type="text"
+                          placeholder="Search phone..."
+                          value={phoneFilter}
+                          onChange={(e) => setPhoneFilter(e.target.value)}
+                          className="column-search-input"
+                        />
+                      </div>
+                    </div>
+                  </th>
+                  <th>
+                    <div className="column-filter">
+                      <div className="column-title">Location</div>
+                      <div className="column-search">
+                        <input
+                          type="text"
+                          placeholder="Search location..."
+                          value={locationFilter}
+                          onChange={(e) => setLocationFilter(e.target.value)}
+                          className="column-search-input"
+                        />
+                      </div>
+                    </div>
+                  </th>
+                  <th>
+                    <div className="column-filter">
+                      <div className="column-title">Experience</div>
+                      <div className="column-search">
+                        <select
+                          value={experienceFilter}
+                          onChange={(e) => setExperienceFilter(e.target.value)}
+                          className="column-filter-select"
+                        >
+                          <option value="all">All Experience</option>
+                          <option value="0-6 Months">0-6 Months</option>
+                          <option value="6-12 Months">6-12 Months</option>
+                          <option value="1-2 Years">1-2 Years</option>
+                          <option value="2-3 Years">2-3 Years</option>
+                          <option value="3-4 Years">3-4 Years</option>
+                          <option value="4-5 Years">4-5 Years</option>
+                          <option value="5+ Years">5+ Years</option>
+                        </select>
+                      </div>
+                    </div>
+                  </th>
+                  <th>
+                    <div className="column-filter">
+                      <div className="column-title">Status</div>
+                      <div className="column-search">
+                        <select
+                          value={statusFilter}
+                          onChange={(e) => setStatusFilter(e.target.value)}
+                          className="column-filter-select"
+                        >
+                          <option value="all">All Statuses</option>
+                          <option value="pending">Pending</option>
+                          <option value="verified">Verified</option>
+                          <option value="rejected">Rejected</option>
+                          <option value="need-attention">Needs Attention</option>
+                        </select>
+                      </div>
+                    </div>
+                  </th>
+                  <th>
+                    <div className="column-filter">
+                      <div className="column-title">Joined Date</div>
+                      <div className="column-search">
+                        <div className="date-picker-wrapper">
+                          <input
+                            type="date"
+                            value={dateFilter}
+                            onChange={(e) => setDateFilter(e.target.value)}
+                            className="date-picker-input"
+                            onClick={(e) => e.currentTarget.showPicker()}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </th>
+                  <th>
+                    <div className="column-filter">
+                      <div className="column-title">Actions</div>
+                      <div className="column-search">
+                        {/* Empty space to maintain consistent alignment */}
+                        <div className="actions-placeholder"></div>
+                      </div>
+                    </div>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr>
+                    <td colSpan={8} className="loading-cell">
+                      <div className="loading">Loading profiles...</div>
+                    </td>
+                  </tr>
+                ) : profiles.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="empty-state-cell">
+                      <div className="empty-state">
+                        <p>No profiles match your search criteria.</p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  profiles.map(profile => {
+                    const effectiveStatus = getEffectiveStatus(profile);
+                    return (
+                      <tr key={profile.id}>
+                        <td className="name-cell">{profile.name}</td>
+                        <td className="email-cell">{profile.email}</td>
+                        <td className="phone-cell">{profile.phoneNumber || 'N/A'}</td>
+                        <td className="location-cell">{profile.location || 'N/A'}</td>
+                        <td className="experience-cell">{profile.experience}</td>
+                        <td className="status-cell">
+                          <div className="status-display">
+                            {getStatusIcon(effectiveStatus)}
+                            <span className={`status-text ${effectiveStatus}`}>
+                              {formatStatusLabel(effectiveStatus)}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="date-cell">
+                          {new Date(profile.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="actions-cell">
+                          <div className="action-buttons">
+                            <button 
+                              className="action-icon-btn view-btn"
+                              onClick={() => handleViewProfile(profile.id)}
+                              title="View profile details"
+                              aria-label="View profile"
+                            >
+                              <Eye size={20} />
+                            </button>
+                            <button 
+                              className="action-icon-btn edit-btn"
+                              onClick={() => handleEditClick(profile)}
+                              title="Edit this profile"
+                              aria-label="Edit profile"
+                            >
+                              <Pencil size={20} />
+                            </button>
+                            <button 
+                              className="action-icon-btn delete-btn"
+                              onClick={() => handleDeleteClick(profile)}
+                              title="Delete this profile"
+                              aria-label="Delete profile"
+                            >
+                              <Trash2 size={20} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination Controls - Bottom */}
+          {!loading && pagination.totalPages > 1 && (
+            <div className="pagination-controls bottom">
+              <div className="pagination-info">
+                <span className="pagination-text">
+                  Page {pagination.page} of {pagination.totalPages}
+                </span>
+              </div>
+              <div className="pagination-buttons">
+                <button
+                  className="pagination-btn prev"
+                  onClick={handlePreviousPage}
+                  disabled={!pagination.hasPrevPage}
+                  title="Previous page"
+                  aria-label="Previous page"
+                >
+                  <ChevronLeft size={16} />
+                  <span>Previous</span>
+                </button>
+                
+                {/* Page numbers */}
+                <div className="page-numbers">
+                  {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                    let pageNum;
+                    if (pagination.totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (pagination.page <= 3) {
+                      pageNum = i + 1;
+                    } else if (pagination.page >= pagination.totalPages - 2) {
+                      pageNum = pagination.totalPages - 4 + i;
+                    } else {
+                      pageNum = pagination.page - 2 + i;
+                    }
+                    
+                    return (
+                      <button
+                        key={pageNum}
+                        className={`page-number-btn ${pageNum === pagination.page ? 'active' : ''}`}
+                        onClick={() => handlePageChange(pageNum)}
+                        aria-label={`Go to page ${pageNum}`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <button
+                  className="pagination-btn next"
+                  onClick={handleNextPage}
+                  disabled={!pagination.hasNextPage}
+                  title="Next page"
+                  aria-label="Next page"
+                >
+                  <span>Next</span>
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

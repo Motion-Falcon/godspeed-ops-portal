@@ -516,12 +516,55 @@ export const checkApiHealth = async () => {
   }
 };
 
-// Jobseeker API functions
-export const getJobseekerProfiles = async (): Promise<JobSeekerProfile[]> => {
+interface PaginationParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  nameFilter?: string;
+  emailFilter?: string;
+  phoneFilter?: string;
+  locationFilter?: string;
+  experienceFilter?: string;
+  statusFilter?: string;
+  dateFilter?: string;
+}
+
+interface PaginatedJobSeekerResponse {
+  profiles: JobSeekerProfile[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalFiltered: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+  };
+}
+
+export const getJobseekerProfiles = async (params: PaginationParams = {}): Promise<PaginatedJobSeekerResponse> => {
   try {
-    const response = await api.get('/api/jobseekers');
+    const config: AxiosRequestConfig = {
+      method: 'GET',
+      url: '/api/jobseekers',
+      params: {
+        page: params.page || 1,
+        limit: params.limit || 10,
+        ...(params.search && { search: params.search }),
+        ...(params.nameFilter && { nameFilter: params.nameFilter }),
+        ...(params.emailFilter && { emailFilter: params.emailFilter }),
+        ...(params.phoneFilter && { phoneFilter: params.phoneFilter }),
+        ...(params.locationFilter && { locationFilter: params.locationFilter }),
+        ...(params.experienceFilter && params.experienceFilter !== 'all' && { experienceFilter: params.experienceFilter }),
+        ...(params.statusFilter && params.statusFilter !== 'all' && { statusFilter: params.statusFilter }),
+        ...(params.dateFilter && { dateFilter: params.dateFilter }),
+      },
+    };
+
+    const response = await api.get('/api/jobseekers', config);
     return response.data;
   } catch (error) {
+    console.error('Error fetching jobseeker profiles:', error);
     if (axios.isAxiosError(error) && error.response) {
       throw new Error(error.response.data.error || 'Failed to fetch jobseeker profiles');
     }
