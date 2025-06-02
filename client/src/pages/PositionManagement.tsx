@@ -48,6 +48,7 @@ export function PositionManagement() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [positionIdFilter, setPositionIdFilter] = useState('');
   const [titleFilter, setTitleFilter] = useState('');
   const [clientFilter, setClientFilter] = useState('');
   const [locationFilter, setLocationFilter] = useState('');
@@ -100,11 +101,13 @@ export function PositionManagement() {
       const effectiveTitleFilter = titleFilter.length >= 3 ? titleFilter : '';
       const effectiveClientFilter = clientFilter.length >= 3 ? clientFilter : '';
       const effectiveLocationFilter = locationFilter.length >= 3 ? locationFilter : '';
+      const effectivePositionIdFilter = positionIdFilter.length >= 3 ? positionIdFilter : '';
       
       const params: PositionPaginationParams = {
         page: pagination.page,
         limit: pagination.limit,
         search: searchTerm,
+        positionIdFilter: effectivePositionIdFilter,
         titleFilter: effectiveTitleFilter,
         clientFilter: effectiveClientFilter,
         locationFilter: effectiveLocationFilter,
@@ -145,6 +148,7 @@ export function PositionManagement() {
     pagination.limit, 
     searchTerm, 
     // Only include text filters in dependencies when they meet minimum length or are empty
+    positionIdFilter.length >= 3 || positionIdFilter === '' ? positionIdFilter : 'inactive',
     titleFilter.length >= 3 || titleFilter === '' ? titleFilter : 'inactive',
     clientFilter.length >= 3 || clientFilter === '' ? clientFilter : 'inactive',
     locationFilter.length >= 3 || locationFilter === '' ? locationFilter : 'inactive',
@@ -168,6 +172,7 @@ export function PositionManagement() {
   }, [
     searchTerm, 
     // Only reset pagination for text filters when they meet the minimum length or are empty
+    positionIdFilter.length >= 3 || positionIdFilter === '' ? positionIdFilter : null,
     titleFilter.length >= 3 || titleFilter === '' ? titleFilter : null,
     clientFilter.length >= 3 || clientFilter === '' ? clientFilter : null,
     locationFilter.length >= 3 || locationFilter === '' ? locationFilter : null,
@@ -233,6 +238,7 @@ export function PositionManagement() {
 
   // Helper to reset all filters
   const resetFilters = () => {
+    setPositionIdFilter('');
     setTitleFilter('');
     setClientFilter('');
     setLocationFilter('');
@@ -361,6 +367,20 @@ export function PositionManagement() {
             <table className="common-table">
               <thead>
                 <tr>
+                  <th>
+                    <div className="column-filter">
+                      <div className="column-title">Position ID</div>
+                      <div className="column-search">
+                        <input
+                          type="text"
+                          placeholder="Search ID..."
+                          value={positionIdFilter}
+                          onChange={(e) => setPositionIdFilter(e.target.value)}
+                          className="column-search-input"
+                        />
+                      </div>
+                    </div>
+                  </th>
                   <th>
                     <div className="column-filter">
                       <div className="column-title">Position Title</div>
@@ -524,13 +544,13 @@ export function PositionManagement() {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={10} className="loading-cell">
+                    <td colSpan={11} className="loading-cell">
                       <div className="loading">Loading positions...</div>
                     </td>
                   </tr>
                 ) : positions.length === 0 ? (
                   <tr>
-                    <td colSpan={10} className="empty-state-cell">
+                    <td colSpan={11} className="empty-state-cell">
                       <div className="empty-state">
                         <p>No positions match your search criteria.</p>
                       </div>
@@ -539,6 +559,7 @@ export function PositionManagement() {
                 ) : (
                   positions.map((position) => (
                     <tr key={position.id}>
+                      <td className="position-id-cell">{position.positionCode || 'N/A'}</td>
                       <td className="title-cell">{position.title}</td>
                       <td className="client-cell">{position.clientName}</td>
                       <td className="date-cell">

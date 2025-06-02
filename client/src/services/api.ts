@@ -1,8 +1,8 @@
-import axios, { AxiosRequestConfig } from 'axios';
-import { supabase } from '../lib/supabaseClient';
-import { JobSeekerProfile, JobSeekerDetailedProfile } from '../types/jobseeker';
+import axios, { AxiosRequestConfig } from "axios";
+import { supabase } from "../lib/supabaseClient";
+import { JobSeekerProfile, JobSeekerDetailedProfile } from "../types/jobseeker";
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 // Request caching system
 interface CacheRecord {
@@ -19,19 +19,21 @@ const requestCache: Record<string, CacheRecord> = {};
 
 // Generate cache key from request config
 const getCacheKey = (config: AxiosRequestConfig): string => {
-  return `${config.method}:${config.url}:${JSON.stringify(config.params || {})}`;
+  return `${config.method}:${config.url}:${JSON.stringify(
+    config.params || {}
+  )}`;
 };
 
 // Clear entire request cache
 export const clearRequestCache = () => {
-  Object.keys(requestCache).forEach(key => {
+  Object.keys(requestCache).forEach((key) => {
     delete requestCache[key];
   });
 };
 
 // Clear specific cache entry
 export const clearCacheFor = (url: string) => {
-  Object.keys(requestCache).forEach(key => {
+  Object.keys(requestCache).forEach((key) => {
     if (key.includes(url)) {
       delete requestCache[key];
     }
@@ -41,7 +43,7 @@ export const clearCacheFor = (url: string) => {
 const api = axios.create({
   baseURL: API_URL,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
 });
 
@@ -59,7 +61,7 @@ const getAuthToken = async () => {
 
   // Otherwise fetch a new token
   const { data } = await supabase.auth.getSession();
-  
+
   if (data.session?.access_token) {
     cachedToken = data.session.access_token;
     // Set expiry time to 5 minutes before actual expiry to be safe
@@ -68,7 +70,7 @@ const getAuthToken = async () => {
     tokenExpiryTime = currentTime + (expiresIn - 300) * 1000;
     return cachedToken;
   }
-  
+
   // No token available
   cachedToken = null;
   tokenExpiryTime = null;
@@ -83,99 +85,125 @@ export const clearTokenCache = () => {
 };
 
 // Request interceptor
-api.interceptors.request.use(async (config) => {
-  // Add auth token
-  const token = await getAuthToken();
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  
-  // Implement request deduplication for GET requests
-  if (config.method?.toLowerCase() === 'get') {
-    const cacheKey = getCacheKey(config);
-    const currentTime = Date.now();
-    const cachedResponse = requestCache[cacheKey];
-    
-    // If we have a valid cached response, use it
-    if (cachedResponse && currentTime - cachedResponse.timestamp < CACHE_DURATION) {
-      // If there's an in-flight request, return its promise
-      if (cachedResponse.promise) {
-        const source = axios.CancelToken.source();
-        config.cancelToken = source.token;
-        source.cancel('Request canceled due to duplicate in-flight request');
-        return Promise.reject({
-          __CACHE_PROMISE__: cachedResponse.promise,
-          config
-        });
-      }
-      
-      // For completed requests, return the cached data
-      return {
-        ...config,
-        adapter: () => {
-          return Promise.resolve({
-            data: cachedResponse.data,
-            status: 200,
-            statusText: 'OK',
-            headers: {},
-            config,
-            request: {}
-          });
+api.interceptors.request.use(
+  async (config) => {
+    // Add auth token
+    const token = await getAuthToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+
+    // Implement request deduplication for GET requests
+    if (config.method?.toLowerCase() === "get") {
+      const cacheKey = getCacheKey(config);
+      const currentTime = Date.now();
+      const cachedResponse = requestCache[cacheKey];
+
+      // If we have a valid cached response, use it
+      if (
+        cachedResponse &&
+        currentTime - cachedResponse.timestamp < CACHE_DURATION
+      ) {
+        // If there's an in-flight request, wait for it and return its result
+        if (cachedResponse.promise) {
+          return {
+            ...config,
+            adapter: async () => {
+              try {
+                // Wait for the in-flight request to complete
+                await cachedResponse.promise;
+                
+                // Get the cached data (should be populated now)
+                const updatedCache = requestCache[cacheKey];
+                if (updatedCache && updatedCache.data) {
+                  return Promise.resolve({
+                    data: updatedCache.data,
+                    status: 200,
+                    statusText: "OK",
+                    headers: {},
+                    config,
+                    request: {},
+                  });
+                }
+                
+                // Fallback: make the actual request if cache is somehow empty
+                delete config.adapter;
+                const response = await axios(config);
+                return response;
+              } catch (error) {
+                // If the in-flight request failed, make a new request
+                delete config.adapter;
+                const response = await axios(config);
+                return response;
+              }
+            },
+          };
         }
+
+        // For completed requests, return the cached data
+        return {
+          ...config,
+          adapter: () => {
+            return Promise.resolve({
+              data: cachedResponse.data,
+              status: 200,
+              statusText: "OK",
+              headers: {},
+              config,
+              request: {},
+            });
+          },
+        };
+      }
+
+      // Track this as an in-flight request
+      const requestPromise = Promise.resolve(); // Placeholder promise
+      requestCache[cacheKey] = {
+        data: null,
+        timestamp: currentTime,
+        promise: requestPromise,
       };
     }
-    
-    // Track this as an in-flight request
-    const requestPromise = Promise.resolve(); // Placeholder promise
-    requestCache[cacheKey] = {
-      data: null,
-      timestamp: currentTime,
-      promise: requestPromise
-    };
+
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
   }
-  
-  return config;
-}, (error) => {
-  return Promise.reject(error);
-});
+);
 
 // Response interceptor
-api.interceptors.response.use((response) => {
-  // Cache successful GET responses
-  if (response.config.method?.toLowerCase() === 'get') {
-    const cacheKey = getCacheKey(response.config);
-    requestCache[cacheKey] = {
-      data: response.data,
-      timestamp: Date.now(),
-      promise: undefined // Clear promise as request is complete
-    };
-  }
-  return response;
-}, async (error) => {
-  // Check if this is our special cache case
-  if (error.__CACHE_PROMISE__) {
-    try {
-      await error.__CACHE_PROMISE__;
-      // Re-request using the same config, the cache should be populated now
-      delete error.config.adapter; // Remove custom adapter
-      const result = await axios(error.config);
-      return result;
-    } catch (e) {
-      return Promise.reject(e);
+api.interceptors.response.use(
+  (response) => {
+    // Cache successful GET responses
+    if (response.config.method?.toLowerCase() === "get") {
+      const cacheKey = getCacheKey(response.config);
+      requestCache[cacheKey] = {
+        data: response.data,
+        timestamp: Date.now(),
+        promise: undefined, // Clear promise as request is complete
+      };
     }
+    return response;
+  },
+  async (error) => {
+    return Promise.reject(error);
   }
-  
-  return Promise.reject(error);
-});
+);
 
 // Auth API calls
-export const registerUserAPI = async (email: string, password: string, name: string, phoneNumber?: string) => {
+export const registerUserAPI = async (
+  email: string,
+  password: string,
+  name: string,
+  phoneNumber?: string
+) => {
   try {
-    const response = await api.post('/api/auth/register', {
+    const response = await api.post("/api/auth/register", {
       email,
       password,
       name,
-      phoneNumber
+      phoneNumber,
     });
     return response.data;
   } catch (error) {
@@ -186,13 +214,18 @@ export const registerUserAPI = async (email: string, password: string, name: str
         throw new Error(error.response.data.error);
       } else if (error.response.status === 409) {
         // Alternative status for conflicts (e.g., duplicate email)
-        throw new Error(error.response.data.error || 'An account with this email already exists');
+        throw new Error(
+          error.response.data.error ||
+            "An account with this email already exists"
+        );
       } else if (error.response.status === 422) {
         // Unprocessable entity - often validation errors
-        throw new Error(error.response.data.error || 'Invalid registration data');
+        throw new Error(
+          error.response.data.error || "Invalid registration data"
+        );
       } else {
         // Generic error handling for other status codes
-        throw new Error(error.response.data.error || 'Registration failed');
+        throw new Error(error.response.data.error || "Registration failed");
       }
     }
     // For non-Axios errors
@@ -205,14 +238,14 @@ export const loginUserAPI = async (email: string, password: string) => {
     // Clear caches before login attempt
     clearTokenCache();
     clearRequestCache();
-    const response = await api.post('/api/auth/login', {
+    const response = await api.post("/api/auth/login", {
       email,
       password,
     });
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Login failed');
+      throw new Error(error.response.data.error || "Login failed");
     }
     throw error;
   }
@@ -220,14 +253,14 @@ export const loginUserAPI = async (email: string, password: string) => {
 
 export const logoutUserAPI = async () => {
   try {
-    const response = await api.post('/api/auth/logout');
+    const response = await api.post("/api/auth/logout");
     // Clear caches on logout
     clearTokenCache();
     clearRequestCache();
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Logout failed');
+      throw new Error(error.response.data.error || "Logout failed");
     }
     throw error;
   }
@@ -235,11 +268,11 @@ export const logoutUserAPI = async () => {
 
 export const resetPasswordAPI = async (email: string) => {
   try {
-    const response = await api.post('/api/auth/reset-password', { email });
+    const response = await api.post("/api/auth/reset-password", { email });
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Password reset failed');
+      throw new Error(error.response.data.error || "Password reset failed");
     }
     throw error;
   }
@@ -247,16 +280,16 @@ export const resetPasswordAPI = async (email: string) => {
 
 export const updatePasswordAPI = async (password: string) => {
   const token = await getAuthToken();
-  
+
   if (!token) {
-    throw new Error('No authentication token available');
+    throw new Error("No authentication token available");
   }
-  
+
   const response = await fetch(`${API_URL}/api/auth/update-password`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({ password }),
   });
@@ -266,9 +299,9 @@ export const updatePasswordAPI = async (password: string) => {
 
 export const resendVerificationEmailAPI = async (email: string) => {
   const response = await fetch(`${API_URL}/api/auth/resend-verification`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
     body: JSON.stringify({ email }),
   });
@@ -278,13 +311,15 @@ export const resendVerificationEmailAPI = async (email: string) => {
 
 export const sendOtpAPI = async (phoneNumber: string) => {
   try {
-    const response = await api.post('/api/auth/send-verification', {
-      phoneNumber
+    const response = await api.post("/api/auth/send-verification", {
+      phoneNumber,
     });
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Failed to send verification code');
+      throw new Error(
+        error.response.data.error || "Failed to send verification code"
+      );
     }
     throw error;
   }
@@ -292,14 +327,14 @@ export const sendOtpAPI = async (phoneNumber: string) => {
 
 export const verifyOtpAPI = async (phoneNumber: string, code: string) => {
   try {
-    const response = await api.post('/api/auth/verify-otp', {
+    const response = await api.post("/api/auth/verify-otp", {
       phoneNumber,
-      code
+      code,
     });
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Invalid verification code');
+      throw new Error(error.response.data.error || "Invalid verification code");
     }
     throw error;
   }
@@ -307,11 +342,11 @@ export const verifyOtpAPI = async (phoneNumber: string, code: string) => {
 
 export const fetchUserData = async () => {
   try {
-    const response = await api.get('/api/auth/me');
+    const response = await api.get("/api/auth/me");
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Failed to fetch user data');
+      throw new Error(error.response.data.error || "Failed to fetch user data");
     }
     throw error;
   }
@@ -319,10 +354,10 @@ export const fetchUserData = async () => {
 
 export const fetchData = async () => {
   try {
-    const response = await api.get('/api/data');
+    const response = await api.get("/api/data");
     return response.data;
   } catch (error) {
-    console.error('Error fetching data:', error);
+    console.error("Error fetching data:", error);
     throw error;
   }
 };
@@ -348,10 +383,10 @@ interface ProfileData {
   bio?: string; // Brief professional description (max 100 chars)
   licenseType?: string;
   experience?: string;
-  manualDriving?: 'Yes' | 'No' | 'NA';
-  availability?: 'Full-Time' | 'Part-Time';
+  manualDriving?: "Yes" | "No" | "NA";
+  availability?: "Full-Time" | "Part-Time";
   weekendAvailability?: boolean;
-  payrateType?: 'Hourly' | 'Daily' | 'Monthly';
+  payrateType?: "Hourly" | "Daily" | "Monthly";
   billRate?: string;
   payRate?: string;
   paymentMethod?: string;
@@ -372,7 +407,13 @@ interface ProfileData {
   }>;
   currentStep?: number;
   // Use Record for additional properties with specific types
-  [key: string]: string | boolean | number | undefined | File | Array<{[key: string]: string | boolean | number | undefined | File}>;
+  [key: string]:
+    | string
+    | boolean
+    | number
+    | undefined
+    | File
+    | Array<{ [key: string]: string | boolean | number | undefined | File }>;
 }
 
 // Define response types
@@ -393,17 +434,20 @@ interface DraftResponse {
 // Profile API endpoints
 export const submitProfile = async (profileData: ProfileData) => {
   try {
-    const response = await api.post('/api/profile/submit', profileData);
+    const response = await api.post("/api/profile/submit", profileData);
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
       // Log the error details for debugging
-      console.error('Profile submission error details:', error.response.data);
-      
+      console.error("Profile submission error details:", error.response.data);
+
       // Return a more specific error message if available
-      const errorMessage = error.response.data.error || 
-                          (error.response.status === 409 ? 'A profile with this email already exists' : 'Failed to submit profile');
-      
+      const errorMessage =
+        error.response.data.error ||
+        (error.response.status === 409
+          ? "A profile with this email already exists"
+          : "Failed to submit profile");
+
       throw new Error(errorMessage);
     }
     // For non-Axios errors, rethrow
@@ -414,15 +458,19 @@ export const submitProfile = async (profileData: ProfileData) => {
 // Add updateProfile function for editing existing profiles
 export const updateProfile = async (id: string, profileData: ProfileData) => {
   try {
-    const response = await api.put(`/api/jobseekers/profile/${id}/update`, profileData);
+    const response = await api.put(
+      `/api/jobseekers/profile/${id}/update`,
+      profileData
+    );
     // Clear cache for this profile and the profiles list
     clearCacheFor(`/api/jobseekers/${id}`);
-    clearCacheFor('/api/jobseekers');
+    clearCacheFor("/api/jobseekers");
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
-      console.error('Profile update error details:', error.response.data);
-      const errorMessage = error.response.data.error || 'Failed to update profile';
+      console.error("Profile update error details:", error.response.data);
+      const errorMessage =
+        error.response.data.error || "Failed to update profile";
       throw new Error(errorMessage);
     }
     throw error;
@@ -431,23 +479,27 @@ export const updateProfile = async (id: string, profileData: ProfileData) => {
 
 export const getProfile = async (): Promise<ProfileResponse> => {
   try {
-    const response = await api.get('/api/profile');
+    const response = await api.get("/api/profile");
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Failed to fetch profile');
+      throw new Error(error.response.data.error || "Failed to fetch profile");
     }
     throw error;
   }
 };
 
-export const saveDraft = async (draftData: Partial<ProfileData> & { currentStep?: number }) => {
+export const saveDraft = async (
+  draftData: Partial<ProfileData> & { currentStep?: number }
+) => {
   try {
-    const response = await api.put('/api/profile/draft', draftData);
+    const response = await api.put("/api/profile/draft", draftData);
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Failed to save profile draft');
+      throw new Error(
+        error.response.data.error || "Failed to save profile draft"
+      );
     }
     throw error;
   }
@@ -455,11 +507,13 @@ export const saveDraft = async (draftData: Partial<ProfileData> & { currentStep?
 
 export const getDraft = async (): Promise<DraftResponse> => {
   try {
-    const response = await api.get('/api/profile/draft');
+    const response = await api.get("/api/profile/draft");
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Failed to fetch profile draft');
+      throw new Error(
+        error.response.data.error || "Failed to fetch profile draft"
+      );
     }
     throw error;
   }
@@ -481,37 +535,41 @@ export const checkApiHealth = async () => {
     // First check if we can fetch the token
     const token = await getAuthToken();
     if (!token) {
-      return { status: 'error', message: 'No valid authentication token' };
+      return { status: "error", message: "No valid authentication token" };
     }
-    
+
     // Check Supabase user validity
     const { data, error } = await supabase.auth.getUser(token);
     if (error || !data.user) {
-      return { 
-        status: 'error', 
-        message: 'Invalid Supabase token: ' + (error?.message || 'User not found') 
+      return {
+        status: "error",
+        message:
+          "Invalid Supabase token: " + (error?.message || "User not found"),
       };
     }
-    
+
     // Check server API connection
     const response = await fetch(`${API_URL}/health`, {
       headers: {
-        Authorization: `Bearer ${token}`
-      }
+        Authorization: `Bearer ${token}`,
+      },
     });
-    
+
     if (!response.ok) {
-      return { 
-        status: 'error', 
-        message: `API connection error: ${response.status}` 
+      return {
+        status: "error",
+        message: `API connection error: ${response.status}`,
       };
     }
-    
-    return { status: 'healthy', user: data.user.email };
+
+    return { status: "healthy", user: data.user.email };
   } catch (error) {
-    return { 
-      status: 'error', 
-      message: error instanceof Error ? error.message : 'Unknown error checking API health' 
+    return {
+      status: "error",
+      message:
+        error instanceof Error
+          ? error.message
+          : "Unknown error checking API health",
     };
   }
 };
@@ -542,11 +600,13 @@ interface PaginatedJobSeekerResponse {
   };
 }
 
-export const getJobseekerProfiles = async (params: PaginationParams = {}): Promise<PaginatedJobSeekerResponse> => {
+export const getJobseekerProfiles = async (
+  params: PaginationParams = {}
+): Promise<PaginatedJobSeekerResponse> => {
   try {
     const config: AxiosRequestConfig = {
-      method: 'GET',
-      url: '/api/jobseekers',
+      method: "GET",
+      url: "/api/jobseekers",
       params: {
         page: params.page || 1,
         limit: params.limit || 10,
@@ -555,104 +615,143 @@ export const getJobseekerProfiles = async (params: PaginationParams = {}): Promi
         ...(params.emailFilter && { emailFilter: params.emailFilter }),
         ...(params.phoneFilter && { phoneFilter: params.phoneFilter }),
         ...(params.locationFilter && { locationFilter: params.locationFilter }),
-        ...(params.experienceFilter && params.experienceFilter !== 'all' && { experienceFilter: params.experienceFilter }),
-        ...(params.statusFilter && params.statusFilter !== 'all' && { statusFilter: params.statusFilter }),
+        ...(params.experienceFilter &&
+          params.experienceFilter !== "all" && {
+            experienceFilter: params.experienceFilter,
+          }),
+        ...(params.statusFilter &&
+          params.statusFilter !== "all" && {
+            statusFilter: params.statusFilter,
+          }),
         ...(params.dateFilter && { dateFilter: params.dateFilter }),
       },
     };
 
-    const response = await api.get('/api/jobseekers', config);
+    const response = await api.get("/api/jobseekers", config);
     return response.data;
   } catch (error) {
-    console.error('Error fetching jobseeker profiles:', error);
+    console.error("Error fetching jobseeker profiles:", error);
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Failed to fetch jobseeker profiles');
+      throw new Error(
+        error.response.data.error || "Failed to fetch jobseeker profiles"
+      );
     }
     throw error;
   }
 };
 
-export const getJobseekerProfile = async (id: string): Promise<JobSeekerDetailedProfile> => {
+export const getJobseekerProfile = async (
+  id: string
+): Promise<JobSeekerDetailedProfile> => {
   try {
     const response = await api.get(`/api/jobseekers/profile/${id}`);
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Failed to fetch jobseeker profile');
+      throw new Error(
+        error.response.data.error || "Failed to fetch jobseeker profile"
+      );
     }
     throw error;
   }
 };
 
-export const updateJobseekerStatus = async (id: string, status: 'pending' | 'verified' | 'rejected', rejectionReason: string | null = null) => {
+export const updateJobseekerStatus = async (
+  id: string,
+  status: "pending" | "verified" | "rejected",
+  rejectionReason: string | null = null
+) => {
   try {
-    const response = await api.put(`/api/jobseekers/profile/${id}/status`, { 
+    const response = await api.put(`/api/jobseekers/profile/${id}/status`, {
       status,
-      rejectionReason
+      rejectionReason,
     });
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Failed to update jobseeker status');
+      throw new Error(
+        error.response.data.error || "Failed to update jobseeker status"
+      );
     }
     throw error;
   }
 };
 
 // Add delete jobseeker function
-export const deleteJobseeker = async (id: string): Promise<{ message: string, deletedId: string }> => {
+export const deleteJobseeker = async (
+  id: string
+): Promise<{ message: string; deletedId: string }> => {
   try {
     const response = await api.delete(`/api/jobseekers/profile/${id}`);
     // Clear cache for jobseeker list after deletion
-    clearCacheFor('/api/jobseekers');
+    clearCacheFor("/api/jobseekers");
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Failed to delete jobseeker profile');
+      throw new Error(
+        error.response.data.error || "Failed to delete jobseeker profile"
+      );
     }
     throw error;
   }
 };
 
 // Add this function with the other profile-related functions
-export const checkEmailAvailability = async (email: string): Promise<{ available: boolean; email: string; existingProfileId?: string; existingDraftId?: string }> => {
+export const checkEmailAvailability = async (
+  email: string
+): Promise<{
+  available: boolean;
+  email: string;
+  existingProfileId?: string;
+  existingDraftId?: string;
+}> => {
   try {
     const response = await api.get(`/api/profile/check-email`, {
-      params: { email }
+      params: { email },
     });
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Failed to check email availability');
+      throw new Error(
+        error.response.data.error || "Failed to check email availability"
+      );
     }
     throw error;
   }
 };
 
 // Add this function after checkEmailAvailability
-export const checkAuthEmailAvailability = async (email: string): Promise<{ available: boolean; email: string; existingUserId?: string }> => {
+export const checkAuthEmailAvailability = async (
+  email: string
+): Promise<{ available: boolean; email: string; existingUserId?: string }> => {
   try {
     const response = await api.get(`/api/auth/check-email`, {
-      params: { email }
+      params: { email },
     });
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Failed to check email availability');
+      throw new Error(
+        error.response.data.error || "Failed to check email availability"
+      );
     }
     throw error;
   }
 };
 
-export const checkPhoneAvailability = async (phone: string): Promise<{ available: boolean; phone: string; existingUserId?: string }> => {
+export const checkPhoneAvailability = async (
+  phone: string
+): Promise<{ available: boolean; phone: string; existingUserId?: string }> => {
   try {
     const response = await api.get(`/api/auth/check-phone`, {
-      params: { phone }
+      params: { phone },
     });
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Failed to check phone availability');
+      throw new Error(
+        error.response.data.error || "Failed to check phone availability"
+      );
     }
     throw error;
   }
@@ -672,7 +771,7 @@ export interface ClientData {
   mergeInvoice?: boolean;
   currency?: string;
   workProvince?: string;
-  
+
   // Contact Details
   contactPersonName1?: string;
   emailAddress1?: string;
@@ -690,7 +789,7 @@ export interface ClientData {
   accountsDeptEmail?: string;
   invoiceCCAccounts?: boolean;
   invoiceLanguage?: string;
-  
+
   // Address Details
   streetAddress1?: string;
   city1?: string;
@@ -704,14 +803,14 @@ export interface ClientData {
   city3?: string;
   province3?: string;
   postalCode3?: string;
-  
+
   // Payment & Billings
   preferredPaymentMethod?: string;
   terms?: string;
   payCycle?: string;
   creditLimit?: string;
   notes?: string;
-  
+
   // Metadata
   isDraft?: boolean;
   createdAt?: string;
@@ -758,27 +857,41 @@ export interface PaginatedClientResponse {
   };
 }
 
-export const getClients = async (params: ClientPaginationParams = {}): Promise<PaginatedClientResponse> => {
+export const getClients = async (
+  params: ClientPaginationParams = {}
+): Promise<PaginatedClientResponse> => {
   try {
-    const url = new URL('/api/clients', API_URL);
-    
+    const url = new URL("/api/clients", API_URL);
+
     // Add pagination and filter parameters
-    if (params.page) url.searchParams.append('page', params.page.toString());
-    if (params.limit) url.searchParams.append('limit', params.limit.toString());
-    if (params.searchTerm) url.searchParams.append('searchTerm', params.searchTerm);
-    if (params.companyNameFilter) url.searchParams.append('companyNameFilter', params.companyNameFilter);
-    if (params.shortCodeFilter) url.searchParams.append('shortCodeFilter', params.shortCodeFilter);
-    if (params.listNameFilter) url.searchParams.append('listNameFilter', params.listNameFilter);
-    if (params.contactFilter) url.searchParams.append('contactFilter', params.contactFilter);
-    if (params.emailFilter) url.searchParams.append('emailFilter', params.emailFilter);
-    if (params.mobileFilter) url.searchParams.append('mobileFilter', params.mobileFilter);
-    if (params.paymentMethodFilter) url.searchParams.append('paymentMethodFilter', params.paymentMethodFilter);
-    if (params.paymentCycleFilter) url.searchParams.append('paymentCycleFilter', params.paymentCycleFilter);
+    if (params.page) url.searchParams.append("page", params.page.toString());
+    if (params.limit) url.searchParams.append("limit", params.limit.toString());
+    if (params.searchTerm)
+      url.searchParams.append("searchTerm", params.searchTerm);
+    if (params.companyNameFilter)
+      url.searchParams.append("companyNameFilter", params.companyNameFilter);
+    if (params.shortCodeFilter)
+      url.searchParams.append("shortCodeFilter", params.shortCodeFilter);
+    if (params.listNameFilter)
+      url.searchParams.append("listNameFilter", params.listNameFilter);
+    if (params.contactFilter)
+      url.searchParams.append("contactFilter", params.contactFilter);
+    if (params.emailFilter)
+      url.searchParams.append("emailFilter", params.emailFilter);
+    if (params.mobileFilter)
+      url.searchParams.append("mobileFilter", params.mobileFilter);
+    if (params.paymentMethodFilter)
+      url.searchParams.append(
+        "paymentMethodFilter",
+        params.paymentMethodFilter
+      );
+    if (params.paymentCycleFilter)
+      url.searchParams.append("paymentCycleFilter", params.paymentCycleFilter);
 
     const response = await api.get(url.pathname + url.search);
     return response.data;
   } catch (error) {
-    console.error('Error fetching clients:', error);
+    console.error("Error fetching clients:", error);
     throw error;
   }
 };
@@ -789,68 +902,82 @@ export const getClient = async (id: string): Promise<ClientData> => {
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Failed to fetch client');
+      throw new Error(error.response.data.error || "Failed to fetch client");
     }
     throw error;
   }
 };
 
-export const createClient = async (clientData: ClientData): Promise<ClientResponse> => {
+export const createClient = async (
+  clientData: ClientData
+): Promise<ClientResponse> => {
   try {
-    const response = await api.post('/api/clients', clientData);
+    const response = await api.post("/api/clients", clientData);
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Failed to create client');
+      throw new Error(error.response.data.error || "Failed to create client");
     }
     throw error;
   }
 };
 
-export const updateClient = async (id: string, clientData: ClientData): Promise<ClientResponse> => {
+export const updateClient = async (
+  id: string,
+  clientData: ClientData
+): Promise<ClientResponse> => {
   try {
     const response = await api.put(`/api/clients/${id}`, clientData);
     // Clear cache for this client and the clients list
     clearCacheFor(`/api/clients/${id}`);
-    clearCacheFor('/api/clients');
+    clearCacheFor("/api/clients");
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Failed to update client');
+      throw new Error(error.response.data.error || "Failed to update client");
     }
     throw error;
   }
 };
 
-export const deleteClient = async (id: string): Promise<{ success: boolean; message: string; deletedId: string }> => {
+export const deleteClient = async (
+  id: string
+): Promise<{ success: boolean; message: string; deletedId: string }> => {
   try {
     const response = await api.delete(`/api/clients/${id}`);
     // Clear cache for clients list after deletion
-    clearCacheFor('/api/clients');
+    clearCacheFor("/api/clients");
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Failed to delete client');
+      throw new Error(error.response.data.error || "Failed to delete client");
     }
     throw error;
   }
 };
 
 // Client drafts management
-export const saveClientDraft = async (draftData: Partial<ClientData>): Promise<ClientDraftResponse> => {
+export const saveClientDraft = async (
+  draftData: Partial<ClientData>
+): Promise<ClientDraftResponse> => {
   try {
     // For creating new drafts or updating drafts without an ID
     if (!draftData.id) {
-      const response = await api.post('/api/clients/draft', draftData);
+      const response = await api.post("/api/clients/draft", draftData);
       return response.data;
     }
-    
+
     // For updating existing drafts
-    const response = await api.put(`/api/clients/draft/${draftData.id}`, draftData);
+    const response = await api.put(
+      `/api/clients/draft/${draftData.id}`,
+      draftData
+    );
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Failed to save client draft');
+      throw new Error(
+        error.response.data.error || "Failed to save client draft"
+      );
     }
     throw error;
   }
@@ -858,23 +985,29 @@ export const saveClientDraft = async (draftData: Partial<ClientData>): Promise<C
 
 export const getClientDraft = async (): Promise<ClientDraftResponse> => {
   try {
-    const response = await api.get('/api/clients/draft');
+    const response = await api.get("/api/clients/draft");
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Failed to fetch client draft');
+      throw new Error(
+        error.response.data.error || "Failed to fetch client draft"
+      );
     }
     throw error;
   }
 };
 
-export const getClientDraftById = async (id: string): Promise<ClientDraftResponse> => {
+export const getClientDraftById = async (
+  id: string
+): Promise<ClientDraftResponse> => {
   try {
     const response = await api.get(`/api/clients/draft/${id}`);
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Failed to fetch client draft');
+      throw new Error(
+        error.response.data.error || "Failed to fetch client draft"
+      );
     }
     throw error;
   }
@@ -935,42 +1068,59 @@ export interface PaginatedClientDraftResponse {
   };
 }
 
-export const getAllClientDrafts = async (params: ClientDraftPaginationParams = {}): Promise<PaginatedClientDraftResponse> => {
+export const getAllClientDrafts = async (
+  params: ClientDraftPaginationParams = {}
+): Promise<PaginatedClientDraftResponse> => {
   try {
     const queryParams = new URLSearchParams();
-    
+
     // Add all parameters to query string
-    if (params.page) queryParams.append('page', params.page.toString());
-    if (params.limit) queryParams.append('limit', params.limit.toString());
-    if (params.search) queryParams.append('search', params.search);
-    if (params.companyNameFilter) queryParams.append('companyNameFilter', params.companyNameFilter);
-    if (params.shortCodeFilter) queryParams.append('shortCodeFilter', params.shortCodeFilter);
-    if (params.listNameFilter) queryParams.append('listNameFilter', params.listNameFilter);
-    if (params.contactPersonFilter) queryParams.append('contactPersonFilter', params.contactPersonFilter);
-    if (params.creatorFilter) queryParams.append('creatorFilter', params.creatorFilter);
-    if (params.updaterFilter) queryParams.append('updaterFilter', params.updaterFilter);
-    if (params.dateFilter) queryParams.append('dateFilter', params.dateFilter);
-    if (params.createdDateFilter) queryParams.append('createdDateFilter', params.createdDateFilter);
-    
-    const response = await api.get(`/api/clients/drafts?${queryParams.toString()}`);
+    if (params.page) queryParams.append("page", params.page.toString());
+    if (params.limit) queryParams.append("limit", params.limit.toString());
+    if (params.search) queryParams.append("search", params.search);
+    if (params.companyNameFilter)
+      queryParams.append("companyNameFilter", params.companyNameFilter);
+    if (params.shortCodeFilter)
+      queryParams.append("shortCodeFilter", params.shortCodeFilter);
+    if (params.listNameFilter)
+      queryParams.append("listNameFilter", params.listNameFilter);
+    if (params.contactPersonFilter)
+      queryParams.append("contactPersonFilter", params.contactPersonFilter);
+    if (params.creatorFilter)
+      queryParams.append("creatorFilter", params.creatorFilter);
+    if (params.updaterFilter)
+      queryParams.append("updaterFilter", params.updaterFilter);
+    if (params.dateFilter) queryParams.append("dateFilter", params.dateFilter);
+    if (params.createdDateFilter)
+      queryParams.append("createdDateFilter", params.createdDateFilter);
+
+    const response = await api.get(
+      `/api/clients/drafts?${queryParams.toString()}`
+    );
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Failed to fetch client drafts');
+      throw new Error(
+        error.response.data.error || "Failed to fetch client drafts"
+      );
     }
     throw error;
   }
 };
 
-export const deleteClientDraft = async (id: string): Promise<{ success: boolean; message: string; deletedId: string }> => {
+export const deleteClientDraft = async (
+  id: string
+): Promise<{ success: boolean; message: string; deletedId: string }> => {
   try {
     const response = await api.delete(`/api/clients/draft/${id}`);
     // Clear cache for drafts list after deletion
-    clearCacheFor('/api/clients/drafts');
+    clearCacheFor("/api/clients/drafts");
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Failed to delete client draft');
+      throw new Error(
+        error.response.data.error || "Failed to delete client draft"
+      );
     }
     throw error;
   }
@@ -979,9 +1129,9 @@ export const deleteClientDraft = async (id: string): Promise<{ success: boolean;
 // Position management API functions
 export interface PositionData {
   id?: string;
-  
+
   // Basic Details
-  client?: string;  // Client ID
+  client?: string; // Client ID
   clientName?: string; // For display only
   title?: string;
   positionCode?: string;
@@ -992,19 +1142,19 @@ export interface PositionData {
   salesManager?: string;
   positionNumber?: string;
   description?: string;
-  
+
   // Address Details
   streetAddress?: string;
   city?: string;
   province?: string;
   postalCode?: string;
-  
+
   // Employment Categorization
-  employmentTerm?: string;  // Permanent/Contract/Temporary
-  employmentType?: string;  // Full-Time/Part-Time
-  positionCategory?: string;  // Admin/AZ/etc.
+  employmentTerm?: string; // Permanent/Contract/Temporary
+  employmentType?: string; // Full-Time/Part-Time
+  positionCategory?: string; // Admin/AZ/etc.
   experience?: string;
-  
+
   // Documents Required
   documentsRequired?: {
     license?: boolean;
@@ -1018,30 +1168,30 @@ export interface PositionData {
     articlesOfIncorporation?: boolean;
     directDeposit?: boolean;
   };
-  
+
   // Position Details
-  payrateType?: string;  // Hourly/Daily/Monthly
+  payrateType?: string; // Hourly/Daily/Monthly
   numberOfPositions?: number;
   regularPayRate?: string;
   markup?: string;
   billRate?: string;
-  
+
   // Overtime
   overtimeEnabled?: boolean;
   overtimeHours?: string;
   overtimeBillRate?: string;
   overtimePayRate?: string;
-  
+
   // Payment & Billings
   preferredPaymentMethod?: string;
   terms?: string;
-  
+
   // Notes & Task
   notes?: string;
   assignedTo?: string;
   projCompDate?: string;
   taskTime?: string;
-  
+
   // Metadata
   isDraft?: boolean;
   createdAt?: string;
@@ -1060,11 +1210,42 @@ export interface PositionDraftResponse {
   lastUpdated: string | null;
 }
 
+export interface PositionDraft {
+  id: string;
+  userId: string;
+  title?: string;
+  clientName?: string;
+  positionCode?: string;
+  positionNumber?: string;
+  startDate?: string;
+  showOnJobPortal?: boolean;
+  createdAt: string;
+  lastUpdated: string;
+  createdByUserId: string;
+  updatedAt: string;
+  updatedByUserId: string;
+  creatorDetails?: {
+    id: string;
+    email?: string;
+    name: string;
+    userType: string;
+    createdAt: string;
+  } | null;
+  updaterDetails?: {
+    id: string;
+    email?: string;
+    name: string;
+    userType: string;
+    updatedAt: string;
+  } | null;
+}
+
 // Add position pagination parameters interface
 export interface PositionPaginationParams {
   page?: number;
   limit?: number;
   search?: string;
+  positionIdFilter?: string;
   titleFilter?: string;
   clientFilter?: string;
   locationFilter?: string;
@@ -1090,33 +1271,51 @@ export interface PaginatedPositionResponse {
   };
 }
 
-export const getPositions = async (params: PositionPaginationParams = {}): Promise<PaginatedPositionResponse> => {
+export const getPositions = async (
+  params: PositionPaginationParams = {}
+): Promise<PaginatedPositionResponse> => {
   try {
     const config: AxiosRequestConfig = {
-      method: 'GET',
-      url: '/api/positions',
+      method: "GET",
+      url: "/api/positions",
       params: {
         page: params.page || 1,
         limit: params.limit || 10,
         ...(params.search && { search: params.search }),
+        ...(params.positionIdFilter && { positionIdFilter: params.positionIdFilter }),
         ...(params.titleFilter && { titleFilter: params.titleFilter }),
         ...(params.clientFilter && { clientFilter: params.clientFilter }),
         ...(params.locationFilter && { locationFilter: params.locationFilter }),
-        ...(params.employmentTermFilter && params.employmentTermFilter !== 'all' && { employmentTermFilter: params.employmentTermFilter }),
-        ...(params.employmentTypeFilter && params.employmentTypeFilter !== 'all' && { employmentTypeFilter: params.employmentTypeFilter }),
-        ...(params.positionCategoryFilter && params.positionCategoryFilter !== 'all' && { positionCategoryFilter: params.positionCategoryFilter }),
-        ...(params.experienceFilter && params.experienceFilter !== 'all' && { experienceFilter: params.experienceFilter }),
-        ...(params.showOnPortalFilter && params.showOnPortalFilter !== 'all' && { showOnPortalFilter: params.showOnPortalFilter }),
+        ...(params.employmentTermFilter &&
+          params.employmentTermFilter !== "all" && {
+            employmentTermFilter: params.employmentTermFilter,
+          }),
+        ...(params.employmentTypeFilter &&
+          params.employmentTypeFilter !== "all" && {
+            employmentTypeFilter: params.employmentTypeFilter,
+          }),
+        ...(params.positionCategoryFilter &&
+          params.positionCategoryFilter !== "all" && {
+            positionCategoryFilter: params.positionCategoryFilter,
+          }),
+        ...(params.experienceFilter &&
+          params.experienceFilter !== "all" && {
+            experienceFilter: params.experienceFilter,
+          }),
+        ...(params.showOnPortalFilter &&
+          params.showOnPortalFilter !== "all" && {
+            showOnPortalFilter: params.showOnPortalFilter,
+          }),
         ...(params.dateFilter && { dateFilter: params.dateFilter }),
       },
     };
 
-    const response = await api.get('/api/positions', config);
+    const response = await api.get("/api/positions", config);
     return response.data;
   } catch (error) {
-    console.error('Error fetching positions:', error);
+    console.error("Error fetching positions:", error);
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Failed to fetch positions');
+      throw new Error(error.response.data.error || "Failed to fetch positions");
     }
     throw error;
   }
@@ -1128,74 +1327,88 @@ export const getPosition = async (id: string): Promise<PositionData> => {
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Failed to fetch position');
+      throw new Error(error.response.data.error || "Failed to fetch position");
     }
     throw error;
   }
 };
 
-export const createPosition = async (positionData: PositionData): Promise<PositionResponse> => {
+export const createPosition = async (
+  positionData: PositionData
+): Promise<PositionResponse> => {
   try {
-    const response = await api.post('/api/positions', positionData);
+    const response = await api.post("/api/positions", positionData);
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Failed to create position');
+      throw new Error(error.response.data.error || "Failed to create position");
     }
     throw error;
   }
 };
 
-export const updatePosition = async (id: string, positionData: PositionData): Promise<PositionResponse> => {
+export const updatePosition = async (
+  id: string,
+  positionData: PositionData
+): Promise<PositionResponse> => {
   console.log(`Attempting to update position with ID ${id}`, positionData);
   try {
     console.log(`Making PUT request to /api/positions/${id}`);
     const response = await api.put(`/api/positions/${id}`, positionData);
-    console.log('Update position response:', response);
-    
+    console.log("Update position response:", response);
+
     // Clear cache for this position and the positions list
     clearCacheFor(`/api/positions/${id}`);
-    clearCacheFor('/api/positions');
+    clearCacheFor("/api/positions");
     return response.data;
   } catch (error) {
-    console.error('Error updating position:', error);
+    console.error("Error updating position:", error);
     if (axios.isAxiosError(error) && error.response) {
-      console.error('Server error details:', error.response.data);
-      throw new Error(error.response.data.error || 'Failed to update position');
+      console.error("Server error details:", error.response.data);
+      throw new Error(error.response.data.error || "Failed to update position");
     }
     throw error;
   }
 };
 
-export const deletePosition = async (id: string): Promise<{ success: boolean; message: string; deletedId: string }> => {
+export const deletePosition = async (
+  id: string
+): Promise<{ success: boolean; message: string; deletedId: string }> => {
   try {
     const response = await api.delete(`/api/positions/${id}`);
     // Clear cache for positions list after deletion
-    clearCacheFor('/api/positions');
+    clearCacheFor("/api/positions");
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Failed to delete position');
+      throw new Error(error.response.data.error || "Failed to delete position");
     }
     throw error;
   }
 };
 
 // Position drafts management
-export const savePositionDraft = async (draftData: Partial<PositionData>): Promise<PositionDraftResponse> => {
+export const savePositionDraft = async (
+  draftData: Partial<PositionData>
+): Promise<PositionDraftResponse> => {
   try {
     // For creating new drafts or updating drafts without an ID
     if (!draftData.id) {
-      const response = await api.post('/api/positions/draft', draftData);
+      const response = await api.post("/api/positions/draft", draftData);
       return response.data;
     }
-    
+
     // For updating existing drafts
-    const response = await api.put(`/api/positions/draft/${draftData.id}`, draftData);
+    const response = await api.put(
+      `/api/positions/draft/${draftData.id}`,
+      draftData
+    );
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Failed to save position draft');
+      throw new Error(
+        error.response.data.error || "Failed to save position draft"
+      );
     }
     throw error;
   }
@@ -1203,62 +1416,108 @@ export const savePositionDraft = async (draftData: Partial<PositionData>): Promi
 
 export const getPositionDraft = async (): Promise<PositionDraftResponse> => {
   try {
-    const response = await api.get('/api/positions/draft');
+    const response = await api.get("/api/positions/draft");
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Failed to fetch position draft');
+      throw new Error(
+        error.response.data.error || "Failed to fetch position draft"
+      );
     }
     throw error;
   }
 };
 
-export const getPositionDraftById = async (id: string): Promise<PositionDraftResponse> => {
+export const getPositionDraftById = async (
+  id: string
+): Promise<PositionDraftResponse> => {
   try {
     const response = await api.get(`/api/positions/draft/${id}`);
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Failed to fetch position draft');
+      throw new Error(
+        error.response.data.error || "Failed to fetch position draft"
+      );
     }
     throw error;
   }
 };
 
-export const getAllPositionDrafts = async (): Promise<PositionData[]> => {
-  try {
-    const response = await api.get('/api/positions/drafts');
-    return response.data;
-  } catch (error) {
-    if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Failed to fetch position drafts');
-    }
-    throw error;
-  }
-};
+// Position Drafts
 
-export const deletePositionDraft = async (id: string): Promise<{ success: boolean; message: string; deletedId: string }> => {
+export interface PositionDraftFilters {
+  page?: number;
+  limit?: number;
+  search?: string;
+  titleFilter?: string;
+  clientFilter?: string;
+  positionIdFilter?: string;
+  positionCodeFilter?: string;
+  creatorFilter?: string;
+  updaterFilter?: string;
+  dateFilter?: string;
+  createdDateFilter?: string;
+  startDateFilter?: string;
+}
+
+export interface PaginatedPositionDraftResponse {
+  drafts: PositionDraft[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalFiltered: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+  };
+}
+
+export const getAllPositionDrafts = async (
+  filters?: PositionDraftFilters
+): Promise<PaginatedPositionDraftResponse> => {
   try {
-    const response = await api.delete(`/api/positions/draft/${id}`);
-    // Clear cache for drafts list after deletion
-    clearCacheFor('/api/positions/drafts');
+    const queryParams = new URLSearchParams();
+
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== "") {
+          queryParams.append(key, value.toString());
+        }
+      });
+    }
+
+    const queryString = queryParams.toString();
+    const url = queryString
+      ? `/api/positions/drafts?${queryString}`
+      : `/api/positions/drafts`;
+
+    const response = await api.get(url);
     return response.data;
   } catch (error) {
+    console.error("Error fetching position drafts:", error);
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Failed to delete position draft');
+      throw new Error(
+        error.response.data.error || "Failed to fetch position drafts"
+      );
     }
     throw error;
   }
 };
 
 // Generate position code for a client
-export const generatePositionCode = async (clientId: string): Promise<{ positionCode: string; clientShortCode: string }> => {
+export const generatePositionCode = async (
+  clientId: string
+): Promise<{ positionCode: string; clientShortCode: string }> => {
   try {
     const response = await api.get(`/api/positions/generate-code/${clientId}`);
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Failed to generate position code');
+      throw new Error(
+        error.response.data.error || "Failed to generate position code"
+      );
     }
     throw error;
   }
@@ -1316,43 +1575,59 @@ export interface PaginatedDraftResponse {
 }
 
 // Add new functions for jobseeker profile drafts
-export const getAllJobseekerDrafts = async (params: DraftPaginationParams = {}): Promise<PaginatedDraftResponse> => {
+export const getAllJobseekerDrafts = async (
+  params: DraftPaginationParams = {}
+): Promise<PaginatedDraftResponse> => {
   try {
     // Build query parameters
     const queryParams = new URLSearchParams();
-    
-    if (params.page) queryParams.append('page', params.page.toString());
-    if (params.limit) queryParams.append('limit', params.limit.toString());
-    if (params.search) queryParams.append('search', params.search);
-    if (params.emailFilter) queryParams.append('emailFilter', params.emailFilter);
-    if (params.creatorFilter) queryParams.append('creatorFilter', params.creatorFilter);
-    if (params.updaterFilter) queryParams.append('updaterFilter', params.updaterFilter);
-    if (params.dateFilter) queryParams.append('dateFilter', params.dateFilter);
-    if (params.createdDateFilter) queryParams.append('createdDateFilter', params.createdDateFilter);
 
-    const response = await api.get(`/api/jobseekers/drafts?${queryParams.toString()}`);
+    if (params.page) queryParams.append("page", params.page.toString());
+    if (params.limit) queryParams.append("limit", params.limit.toString());
+    if (params.search) queryParams.append("search", params.search);
+    if (params.emailFilter)
+      queryParams.append("emailFilter", params.emailFilter);
+    if (params.creatorFilter)
+      queryParams.append("creatorFilter", params.creatorFilter);
+    if (params.updaterFilter)
+      queryParams.append("updaterFilter", params.updaterFilter);
+    if (params.dateFilter) queryParams.append("dateFilter", params.dateFilter);
+    if (params.createdDateFilter)
+      queryParams.append("createdDateFilter", params.createdDateFilter);
+
+    const response = await api.get(
+      `/api/jobseekers/drafts?${queryParams.toString()}`
+    );
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Failed to fetch jobseeker drafts');
+      throw new Error(
+        error.response.data.error || "Failed to fetch jobseeker drafts"
+      );
     }
     throw error;
   }
 };
 
-export const getJobseekerDraft = async (id: string): Promise<JobseekerDraftResponse> => {
+export const getJobseekerDraft = async (
+  id: string
+): Promise<JobseekerDraftResponse> => {
   try {
     const response = await api.get(`/api/jobseekers/drafts/${id}`);
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Failed to fetch jobseeker draft');
+      throw new Error(
+        error.response.data.error || "Failed to fetch jobseeker draft"
+      );
     }
     throw error;
   }
 };
 
-export const saveJobseekerDraft = async (draftData: Partial<ProfileData>): Promise<{
+export const saveJobseekerDraft = async (
+  draftData: Partial<ProfileData>
+): Promise<{
   id: string;
   lastUpdated: string;
   email?: string;
@@ -1366,52 +1641,66 @@ export const saveJobseekerDraft = async (draftData: Partial<ProfileData>): Promi
     // Make sure email is included in the top level if it exists in the data
     const requestData = {
       ...draftData,
-      email: draftData.email // Ensure email is explicitly included
+      email: draftData.email, // Ensure email is explicitly included
     };
 
     // For creating new drafts or updating drafts without an ID
     if (!draftData.id) {
-      const response = await api.post('/api/jobseekers/drafts', requestData);
+      const response = await api.post("/api/jobseekers/drafts", requestData);
       return response.data.draft;
     }
-    
+
     // For updating existing drafts
-    const response = await api.put(`/api/jobseekers/drafts/${draftData.id}`, requestData);
+    const response = await api.put(
+      `/api/jobseekers/drafts/${draftData.id}`,
+      requestData
+    );
     return response.data.draft;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Failed to save jobseeker draft');
+      throw new Error(
+        error.response.data.error || "Failed to save jobseeker draft"
+      );
     }
     throw error;
   }
 };
 
-export const deleteJobseekerDraft = async (id: string): Promise<{deletedId: string}> => {
+export const deleteJobseekerDraft = async (
+  id: string
+): Promise<{ deletedId: string }> => {
   try {
     const response = await api.delete(`/api/jobseekers/drafts/${id}`);
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Failed to delete jobseeker draft');
+      throw new Error(
+        error.response.data.error || "Failed to delete jobseeker draft"
+      );
     }
     throw error;
   }
 };
 
 // New function for validating credentials without creating session
-export const validateCredentialsAPI = async (email: string, password: string) => {
+export const validateCredentialsAPI = async (
+  email: string,
+  password: string
+) => {
   try {
     // Clear caches before validation
     clearTokenCache();
     clearRequestCache();
-    const response = await api.post('/api/auth/validate-credentials', {
+    const response = await api.post("/api/auth/validate-credentials", {
       email,
       password,
     });
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Credential validation failed');
+      throw new Error(
+        error.response.data.error || "Credential validation failed"
+      );
     }
     throw error;
   }
@@ -1420,17 +1709,35 @@ export const validateCredentialsAPI = async (email: string, password: string) =>
 // New function for completing 2FA and creating session
 export const complete2FAAPI = async (email: string, password: string) => {
   try {
-    const response = await api.post('/api/auth/complete-2fa', {
+    const response = await api.post("/api/auth/complete-2fa", {
       email,
       password,
     });
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || 'Failed to complete 2FA');
+      throw new Error(error.response.data.error || "Failed to complete 2FA");
     }
     throw error;
   }
 };
 
-export default api; 
+export const deletePositionDraft = async (
+  id: string
+): Promise<{ success: boolean; message: string; deletedId: string }> => {
+  try {
+    const response = await api.delete(`/api/positions/draft/${id}`);
+    // Clear cache for drafts list after deletion
+    clearCacheFor("/api/positions/drafts");
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(
+        error.response.data.error || "Failed to delete position draft"
+      );
+    }
+    throw error;
+  }
+};
+
+export default api;
