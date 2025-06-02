@@ -144,7 +144,8 @@
   color: var(--pending);
 }
 
-.status-text.need-attention {
+.status-text.need-attention,
+.status-text.needs.attention {
   color: #ff9900;
 }
 

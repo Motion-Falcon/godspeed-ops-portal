@@ -223,6 +223,7 @@ export function JobSeekerManagement() {
       case 'pending':
         return <Clock className="status-icon pending" size={12} />;
       case 'need-attention':
+      case 'needs attention':
         return <AlertTriangle className="status-icon need-attention" size={12} />;
       default:
         return <Clock className="status-icon pending" size={12} />;
