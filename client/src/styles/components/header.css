@@ -9,7 +9,8 @@
   background-color: var(--card);
   box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1);
   padding: var(--spacing-4) var(--spacing-6);
-  position: sticky;
+  position: fixed;
+  width: calc(100% - 68px);
   top: 0;
   z-index: 1000;
   font-family: var(--font-family);
@@ -65,8 +66,8 @@
 
 /* Page Title Styles */
 .page-title-container {
-  position: absolute;
-  top: -10px;
+  position: fixed;
+  top: -7px;
   left: 50%;
   transform: translateX(-50%);
   padding: var(--spacing-6) var(--spacing-6) var(--spacing-4);

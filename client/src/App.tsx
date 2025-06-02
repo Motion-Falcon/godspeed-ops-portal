@@ -32,6 +32,7 @@ import { PositionView } from './pages/PositionManagement/PositionView';
 import { JobseekerDrafts } from './pages/JobseekerProfile/JobseekerDrafts';
 import { JobseekerProfileDraftEdit } from './pages/JobseekerProfile/JobseekerProfileDraftEdit';
 import { TrainingModules } from './pages/TrainingModules';
+import { UserProfile } from './pages/UserProfile';
 import './styles/main.css';
 import { TwoFactorAuth } from './pages/TwoFactorAuth';
 
@@ -57,6 +58,7 @@ function App() {
             {/* Protected routes for all authenticated users */}
             <Route element={<ProtectedRoute />}>
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/profile" element={<UserProfile />} />
               <Route path="/profile/create" element={<ProfileCreate />} />
               <Route path="/jobseekers/:id/edit" element={<ProfileEdit />} />
               <Route path="/jobseekers/:id" element={<JobSeekerProfile />} />

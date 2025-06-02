@@ -1,6 +1,6 @@
 .client-view-container {
-  /* max-width: 1400px;
-  margin: 0 auto; */
+  margin-left: 68px;
+  margin-top: 100px;
 }
 
 .client-main {
@@ -8,13 +8,13 @@
   max-width: 1200px;
 }
 
-/* .section-card {
+.client-overview.section-card {
   background-color: white;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   padding: 20px;
   margin-bottom: 20px;
-} */
+}
 
 .client-overview {
   position: relative;

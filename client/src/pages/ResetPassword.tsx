@@ -155,7 +155,7 @@ export function ResetPassword() {
 
   if (isVerifying) {
     return (
-      <>
+      <div className="page-container">
         <AppHeader
           title="Reset Password"
           actions={
@@ -181,13 +181,13 @@ export function ResetPassword() {
             </p>
           </div>
         </div>
-      </>
+      </div>
     );
   }
 
   if (isSuccess) {
     return (
-      <>
+      <div className="page-container">
         <AppHeader
           title="Reset Password"
           actions={
@@ -224,13 +224,13 @@ export function ResetPassword() {
             </button>
           </div>
         </div>
-      </>
+      </div>
     );
   }
 
   if (!hasToken) {
     return (
-      <>
+      <div className="page-container">
         <AppHeader
           title="Reset Password"
           actions={
@@ -267,12 +267,12 @@ export function ResetPassword() {
             </button>
           </div>
         </div>
-      </>
+      </div>
     );
   }
 
   return (
-    <>
+    <div className="page-container">
       <AppHeader
         title="Reset Password"
         actions={
@@ -359,6 +359,6 @@ export function ResetPassword() {
           </form>
         </div>
       </div>
-    </>
+    </div>
   );
 }

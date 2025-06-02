@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { getPosition, PositionData, deletePosition } from '../../services/api';
+import { getPosition, PositionData } from '../../services/api';
 import { ConfirmationModal } from '../../components/ConfirmationModal';
 import { AppHeader } from '../../components/AppHeader';
-import { ArrowLeft, Edit, Trash2, Briefcase } from 'lucide-react';
+import { ArrowLeft, Edit, Briefcase } from 'lucide-react';
 import '../../styles/pages/ClientView.css';
 import '../../styles/pages/PositionManagement.css';
 import '../../styles/components/header.css';
@@ -18,7 +18,6 @@ export function PositionView() {
   const [position, setPosition] = useState<ExtendedPositionData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [showEditConfirmation, setShowEditConfirmation] = useState(false);
 
   const convertToCamelCase = (data: Record<string, unknown>): ExtendedPositionData => {
@@ -59,25 +58,6 @@ export function PositionView() {
 
   const confirmEditPosition = () => {
     setShowEditConfirmation(true);
-  };
-
-  const confirmDeletePosition = () => {
-    setShowDeleteConfirmation(true);
-  };
-
-  const handleDeletePosition = async () => {
-    if (!id) return;
-    
-    try {
-      await deletePosition(id);
-      navigate('/position-management', { 
-        state: { message: 'Position deleted successfully' } 
-      });
-    } catch (err) {
-      console.error('Error deleting position:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Failed to delete position';
-      setError(errorMessage);
-    }
   };
 
   // Format date with type checking
@@ -205,13 +185,6 @@ export function PositionView() {
               <Edit size={16} />
               Edit
             </button>
-            <button 
-              className="button danger"
-              onClick={confirmDeletePosition}
-            >
-              <Trash2 size={16} />
-              Delete
-            </button>
           </>
         }
         statusMessage={error}
@@ -237,7 +210,7 @@ export function PositionView() {
           </div>
         </div>
         
-        <div className="client-content grid-container">
+        <div className="profile-content grid-container">
           <div className="basic-details-section section-card">
             <h2 className="section-title">Basic Details</h2>
             <div className="detail-group">
@@ -331,18 +304,6 @@ export function PositionView() {
           </div>
         </div>
       </main>
-
-      {showDeleteConfirmation && (
-        <ConfirmationModal
-          isOpen={showDeleteConfirmation}
-          title="Delete Position"
-          message="Are you sure you want to delete this position? This action cannot be undone."
-          confirmText="Delete"
-          cancelText="Cancel"
-          onConfirm={handleDeletePosition}
-          onCancel={() => setShowDeleteConfirmation(false)}
-        />
-      )}
 
       {showEditConfirmation && (
         <ConfirmationModal

@@ -8,6 +8,7 @@ import {
   Building2, 
   BookOpen,
   User,
+  UserCircle,
   LogOut,
   X,
   ListChecks,
@@ -220,6 +221,12 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
       navigate(`/jobseekers/${jobseekerProfileId}`);
       onClose(); // Close the menu after navigation
     }
+  };
+  
+  // Handle profile navigation for all users
+  const handleUserProfileNavigation = () => {
+    navigate('/profile');
+    onClose(); // Close the menu after navigation
   };
   
   // Define all possible menu items
@@ -468,13 +475,22 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
         
         <div className="menu-footer">
           {isAuthenticated && (
-            <button 
-              className="logout-button" 
-              onClick={handleLogout}
-            >
-              <LogOut size={16} />
-              <span>Logout</span>
-            </button>
+            <>
+              <button 
+                className="profile-button" 
+                onClick={handleUserProfileNavigation}
+              >
+                <UserCircle size={16} />
+                <span>Profile</span>
+              </button>
+              <button 
+                className="logout-button" 
+                onClick={handleLogout}
+              >
+                <LogOut size={16} />
+                <span>Logout</span>
+              </button>
+            </>
           )}
         </div>
       </nav>

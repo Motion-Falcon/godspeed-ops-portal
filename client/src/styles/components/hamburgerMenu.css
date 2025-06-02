@@ -32,7 +32,6 @@
   top: 0;
   left: 0;
   width: 68px; /* Collapsed width */
-  height: 100vh;
   background-color: var(--card);
   z-index: 1100;
   padding: var(--spacing-6) var(--spacing-3);
@@ -52,6 +51,7 @@
 .hamburger-menu.open {
   width: 250px; /* Expanded width */
   padding: var(--spacing-6) var(--spacing-4);
+  height: 100vh;
 }
 
 /* Custom scrollbar for WebKit browsers */
@@ -440,18 +440,18 @@
   visibility: visible;
   height: auto;
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   gap: var(--spacing-4);
 }
 
 /* Logout button */
-.logout-button {
+.logout-button,
+.profile-button {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: var(--spacing-2);
-  background-color: var(--failure-bg);
-  color: var(--failure);
   border: 1px solid transparent;
   border-radius: var(--border-radius);
   padding: var(--spacing-3);
@@ -464,14 +464,26 @@
   opacity: 0;
 }
 
-.hamburger-menu.open .logout-button {
-  transform: translateY(0);
-  opacity: 1;
-  transition-delay: 0.2s;
+.logout-button {
+  background-color: var(--failure-bg);
+  color: var(--failure);
 }
 
-/* Logout button shine effect */
-.logout-button::before {
+.profile-button {
+  background-color: var(--pending-bg);
+  color: var(--text);
+}
+
+.hamburger-menu.open .logout-button,
+.hamburger-menu.open .profile-button {
+  transform: translateY(0);
+  opacity: 1;
+  /* transition-delay: 0.2s; */
+}
+
+/* Button shine effects */
+.logout-button::before,
+.profile-button::before {
   content: '';
   position: absolute;
   top: 0;
@@ -493,7 +505,14 @@
   border-color: var(--failure);
 }
 
-.logout-button:hover::before {
+.profile-button:hover {
+  background-color: var(--text);
+  color: var(--background);
+  border-color: var(--text);
+}
+
+.logout-button:hover::before,
+.profile-button:hover::before {
   left: 100%;
 }
 
