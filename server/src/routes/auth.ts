@@ -507,21 +507,24 @@ router.get('/check-email', async (req, res) => {
       return res.status(400).json({ error: 'Email parameter is required' });
     }
 
-    // Use Supabase Auth Admin API to check if user exists
-    const { data: { users }, error } = await supabase.auth.admin.listUsers();
+    // Use existing SQL function to check if user exists by email
+    const { data: userId, error } = await supabase.rpc(
+      'get_user_id_by_email',
+      { user_email: email }
+    );
     
     if (error) {
       console.error('Error checking email availability:', error);
       return res.status(500).json({ error: 'Failed to check email availability' });
     }
 
-    // Check if email already exists
-    const existingUser = users.find(user => user.email === email);
+    // If userId is not null, email is already taken
+    const emailExists = userId !== null;
     
     return res.json({
-      available: !existingUser,
+      available: !emailExists,
       email: email,
-      ...(existingUser && { existingUserId: existingUser.id })
+      ...(emailExists && { existingUserId: userId })
     });
     
   } catch (error) {
@@ -539,21 +542,24 @@ router.get('/check-phone', async (req, res) => {
       return res.status(400).json({ error: 'Phone parameter is required' });
     }
 
-    // Use Supabase Auth Admin API to check if phone exists
-    const { data: { users }, error } = await supabase.auth.admin.listUsers();
+    // Use SQL function to check if user exists by phone number
+    const { data: userId, error } = await supabase.rpc(
+      'get_user_id_by_phone',
+      { user_phone: phone }
+    );
     
     if (error) {
       console.error('Error checking phone availability:', error);
       return res.status(500).json({ error: 'Failed to check phone availability' });
     }
 
-    // Check if phone already exists
-    const existingUser = users.find(user => user.user_metadata.phoneNumber === phone);
+    // If userId is not null, phone is already taken
+    const phoneExists = userId !== null;
     
     return res.json({
-      available: !existingUser,
+      available: !phoneExists,
       phone: phone,
-      ...(existingUser && { existingUserId: existingUser.id })
+      ...(phoneExists && { existingUserId: userId })
     });
     
   } catch (error) {

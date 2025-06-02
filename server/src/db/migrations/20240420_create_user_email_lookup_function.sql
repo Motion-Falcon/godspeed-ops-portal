@@ -25,8 +25,33 @@ $$;
 -- Add comment to document the function
 COMMENT ON FUNCTION public.get_user_id_by_email(TEXT) IS 'Looks up a user ID by email address. Returns NULL if no user is found.';
 
+-- Create phone lookup function
+DROP FUNCTION IF EXISTS public.get_user_id_by_phone(TEXT);
+
+CREATE FUNCTION public.get_user_id_by_phone(user_phone TEXT)
+RETURNS TEXT
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+    -- Find the user with the given phone number
+    -- Check both the phone field and phoneNumber in user_metadata
+    RETURN (
+        SELECT id
+        FROM auth.users
+        WHERE phone = user_phone 
+           OR raw_user_meta_data->>'phoneNumber' = user_phone
+        LIMIT 1
+    );
+END;
+$$;
+
+-- Add comment to document the function
+COMMENT ON FUNCTION public.get_user_id_by_phone(TEXT) IS 'Looks up a user ID by phone number. Checks both phone field and phoneNumber in user_metadata. Returns NULL if no user is found.';
+
 -- Notify of successful function creation/update
 DO $$
 BEGIN
-    RAISE NOTICE 'Function get_user_id_by_email has been created/updated successfully';
+    RAISE NOTICE 'Functions get_user_id_by_email and get_user_id_by_phone have been created/updated successfully';
 END $$;
