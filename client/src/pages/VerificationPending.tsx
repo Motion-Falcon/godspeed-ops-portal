@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useLocation, Navigate, Link } from "react-router-dom";
-import { MailCheck, CheckCircle, LogOut } from "lucide-react";
-import { resendVerificationEmail, logoutUser } from "../lib/auth";
+import { MailCheck, CheckCircle } from "lucide-react";
+import { logoutUser, resendVerificationEmail } from "../lib/auth";
 import "../styles/variables.css";
 import "../styles/pages/VerificationPending.css";
 import "../styles/components/button.css";
@@ -14,7 +14,6 @@ export function VerificationPending() {
   const [resendSuccess, setResendSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fromLogin = location.state?.fromLogin || false;
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   // If the page is accessed directly without an email, redirect to signup
   if (!email) {
@@ -49,38 +48,9 @@ export function VerificationPending() {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      setIsLoggingOut(true);
-      await logoutUser();
-      // No need to navigate - the auth listener will handle this
-    } catch (error) {
-      console.error("Error logging out:", error);
-      setIsLoggingOut(false);
-    }
-  };
-
   return (
-    <>
-      <AppHeader
-        title="Email Verification"
-        actions={
-          <button
-            className="button button-icon"
-            onClick={handleLogout}
-            disabled={isLoggingOut}
-          >
-            {isLoggingOut ? (
-              <span className="loading-spinner"></span>
-            ) : (
-              <>
-                <LogOut className="icon" size={16} />
-                <span>Log out</span>
-              </>
-            )}
-          </button>
-        }
-      />
+    <div className="page-container">
+      <AppHeader title="Email Verification" />
       <div className="centered-container">
         <div className="centered-card">
           <div className="icon-circle">
@@ -136,6 +106,6 @@ export function VerificationPending() {
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }
