@@ -58,6 +58,9 @@ export interface ProfileData {
   overtimeBillRate?: string;
   overtimePayRate?: string;
   
+  // Employee identification
+  employeeId?: string;
+  
   // Document fields - now an array of documents
   documents: Document[];
   
@@ -112,6 +115,9 @@ export interface DbJobseekerProfile {
   overtime_hours?: string;
   overtime_bill_rate?: string;
   overtime_pay_rate?: string;
+  
+  // Employee identification
+  employee_id?: string;
   
   // Document fields - JSONB array in database
   documents: Document[];

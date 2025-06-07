@@ -93,6 +93,7 @@ interface FullJobseekerProfile {
     updatedAt: string;
   } | null; // New field for updater details
   rejectionReason?: string | null;
+  employeeId?: string | null;
   // Add any other potential fields from the DB
 }
 
@@ -808,6 +809,7 @@ export function JobSeekerProfile() {
             </div>
             <div className="profile-info-header">
               <div className="profile-info-details">
+                {renderDetailItem("Employee ID", profile.employeeId)}
                 {renderDetailItem("Email", profile.email)}
                 {renderDetailItem("Phone", profile.mobile)}
               </div>

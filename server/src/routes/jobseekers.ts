@@ -70,6 +70,7 @@ interface DbJobseekerProfile {
   overtime_hours?: string;
   overtime_bill_rate?: string;
   overtime_pay_rate?: string;
+  employee_id?: string; // Employee identification number
   documents?: DocumentRecord[];
   verification_status?: 'pending' | 'verified' | 'rejected';
   created_at: string;
@@ -91,6 +92,7 @@ interface JobSeekerProfile {
   location?: string;
   experience?: string;
   documents?: DocumentRecord[];
+  employeeId?: string; // Employee identification number
 }
 
 // Interface for the detailed JobSeekerProfile view (matches frontend expectation)
@@ -170,6 +172,7 @@ router.get('/', isAdminOrRecruiter, async (req, res) => {
       locationFilter = '',
       experienceFilter = '',
       statusFilter = '',
+      employeeIdFilter = '',
       creatorFilter = '', 
       updaterFilter = '',
       dateFilter = '',
@@ -184,6 +187,7 @@ router.get('/', isAdminOrRecruiter, async (req, res) => {
       locationFilter?: string;
       experienceFilter?: string;
       statusFilter?: string;
+      employeeIdFilter?: string;
       creatorFilter?: string;
       updaterFilter?: string;
       dateFilter?: string;
@@ -199,7 +203,7 @@ router.get('/', isAdminOrRecruiter, async (req, res) => {
     // Start building the query
     let query = supabaseAdmin
       .from('jobseeker_profiles')
-      .select<string, DbJobseekerProfile>('id, user_id, first_name, last_name, email, verification_status, created_at, city, province, experience, documents, mobile');
+      .select<string, DbJobseekerProfile>('id, user_id, first_name, last_name, email, verification_status, created_at, city, province, experience, mobile, employee_id');
 
     // Apply database-level filters (only if they meet minimum character requirement)
     if (emailFilter && emailFilter.length >= 3) {
@@ -212,6 +216,10 @@ router.get('/', isAdminOrRecruiter, async (req, res) => {
 
     if (statusFilter && statusFilter !== 'all') {
       query = query.eq('verification_status', statusFilter);
+    }
+
+    if (employeeIdFilter && employeeIdFilter.length >= 3) {
+      query = query.ilike('employee_id', `%${employeeIdFilter}%`);
     }
 
     if (creatorFilter && creatorFilter.length >= 3) {
@@ -262,6 +270,10 @@ router.get('/', isAdminOrRecruiter, async (req, res) => {
 
     if (statusFilter && statusFilter !== 'all') {
       countQuery = countQuery.eq('verification_status', statusFilter);
+    }
+
+    if (employeeIdFilter && employeeIdFilter.length >= 3) {
+      countQuery = countQuery.ilike('employee_id', `%${employeeIdFilter}%`);
     }
 
     if (creatorFilter && creatorFilter.length >= 3) {
@@ -359,10 +371,7 @@ router.get('/', isAdminOrRecruiter, async (req, res) => {
       createdAt: profile.created_at,
       experience: profile.experience,
       location: extractLocation(profile),
-      documents: profile.documents?.map((doc: DocumentRecord) => ({
-        ...doc,
-        aiValidation: null
-      })) || []
+      employeeId: profile.employee_id,
     }));
 
     // Apply client-side filters after formatting (for computed fields that need 3+ characters)
@@ -374,7 +383,8 @@ router.get('/', isAdminOrRecruiter, async (req, res) => {
         profile.email.toLowerCase().includes(search.toLowerCase()) ||
         (profile.phoneNumber && profile.phoneNumber.toLowerCase().includes(search.toLowerCase())) ||
         (profile.experience && profile.experience.toLowerCase().includes(search.toLowerCase())) ||
-        (profile.location && profile.location.toLowerCase().includes(search.toLowerCase()))
+        (profile.location && profile.location.toLowerCase().includes(search.toLowerCase())) ||
+        (profile.employeeId && profile.employeeId.toLowerCase().includes(search.toLowerCase()))
       );
     }
 
@@ -447,14 +457,15 @@ router.get('/', isAdminOrRecruiter, async (req, res) => {
     const actualFilteredCount = filteredProfiles.length;
     
     // For pagination calculation, we need to account for the fact that we applied client-side filters
-    // If we have client-side filters, we need to estimate the total filtered count
+    // If we have client-side filters that could reduce the count, use the actual count
     let totalFilteredForPagination = filteredCount || 0;
     
     // If we have client-side filters that could reduce the count, use the actual count
     const hasClientSideFilters = (search && search.length >= 3) || 
                                  (nameFilter && nameFilter.length >= 3) || 
                                  (phoneFilter && phoneFilter.length >= 3) || 
-                                 (locationFilter && locationFilter.length >= 3);
+                                 (locationFilter && locationFilter.length >= 3) ||
+                                 (employeeIdFilter && employeeIdFilter.length >= 3);
     
     if (hasClientSideFilters) {
       // For client-side filtered results, we can't easily calculate total across all pages
@@ -645,11 +656,68 @@ router.put('/profile/:id/status', async (req, res) => {
       return res.status(400).json({ error: 'Rejection reason is required when setting status to rejected' });
     }
 
+    // Get current profile to check existing status and employee_id
+    const { data: currentProfile, error: fetchError } = await supabaseAdmin
+      .from('jobseeker_profiles')
+      .select('id, verification_status, employee_id')
+      .eq('id', id)
+      .single();
+
+    if (fetchError) {
+      console.error('Error fetching current profile:', fetchError);
+      if (fetchError.code === 'PGRST116') { 
+        return res.status(404).json({ error: 'Profile not found' });
+      }
+      return res.status(500).json({ error: 'Failed to fetch profile' });
+    }
+
     // Prepare update data
     const updateData: any = { 
       verification_status: status,
       updated_at: new Date().toISOString() 
     };
+
+    // Generate employee code if status is being set to 'verified' and no employee_id exists
+    if (status === 'verified' && !currentProfile.employee_id) {
+      try {
+        // Get the highest existing employee code to determine the next number
+        const { data: existingCodes, error: codeError } = await supabaseAdmin
+          .from('jobseeker_profiles')
+          .select('employee_id')
+          .not('employee_id', 'is', null)
+          .like('employee_id', 'GS%')
+          .order('employee_id', { ascending: false })
+          .limit(1);
+
+        if (codeError) {
+          console.error('Error fetching existing employee codes:', codeError);
+          // Continue without generating code if we can't fetch existing codes
+        } else {
+          let nextNumber = 1; // Default starting number
+
+          if (existingCodes && existingCodes.length > 0) {
+            const highestCode = existingCodes[0].employee_id;
+            if (highestCode && highestCode.startsWith('GS')) {
+              // Extract the numeric part and increment
+              const numericPart = highestCode.substring(2); // Remove 'GS' prefix
+              const currentNumber = parseInt(numericPart, 10);
+              if (!isNaN(currentNumber)) {
+                nextNumber = currentNumber + 1;
+              }
+            }
+          }
+
+          // Format the employee code as GS + 6-digit number (e.g., GS000001)
+          const employeeCode = `GS${nextNumber.toString().padStart(6, '0')}`;
+          updateData.employee_id = employeeCode;
+          
+          console.log(`Generated employee code: ${employeeCode} for profile ${id}`);
+        }
+      } catch (codeGenerationError) {
+        console.error('Error generating employee code:', codeGenerationError);
+        // Continue with the status update even if code generation fails
+      }
+    }
 
     // Only set rejection_reason when status is rejected
     if (status === 'rejected') {
@@ -705,8 +773,14 @@ router.put('/profile/:id/status', async (req, res) => {
       rejectionReason: updatedDbProfile.rejection_reason
     };
 
+    // Include employee code in success message if one was generated
+    let message = 'Profile status updated successfully';
+    if (status === 'verified' && updateData.employee_id) {
+      message += ` and employee code ${updateData.employee_id} has been assigned`;
+    }
+
     res.json({ 
-      message: 'Profile status updated successfully', 
+      message, 
       profile: formattedProfile // Return the formatted updated profile
     });
 
@@ -865,6 +939,7 @@ router.put('/profile/:id/update', async (req, res) => {
     if (profileData.overtimeHours) updateData.overtime_hours = profileData.overtimeHours;
     if (profileData.overtimeBillRate) updateData.overtime_bill_rate = profileData.overtimeBillRate;
     if (profileData.overtimePayRate) updateData.overtime_pay_rate = profileData.overtimePayRate;
+    if (profileData.employeeId) updateData.employee_id = profileData.employeeId;
     
     // Handle documents array if present
     if (profileData.documents) {
@@ -1036,10 +1111,23 @@ router.get('/drafts', isAdminOrRecruiter, async (req, res) => {
     // Calculate offset for pagination
     const offset = (page - 1) * limit;
 
-    // Start building the query
+    // Only select the fields that are actually used in the client
+    // This reduces data transfer and improves performance
+    const selectedFields = [
+      'id',
+      'user_id',
+      'email',
+      'last_updated',
+      'created_at',
+      'created_by_user_id',
+      'updated_at',
+      'updated_by_user_id'
+    ].join(', ');
+
+    // Start building the query with optimized field selection
     let query = supabaseAdmin
       .from('jobseeker_profile_drafts')
-      .select('*');
+      .select(selectedFields);
 
     // Apply filters
     if (emailFilter) {
@@ -1126,8 +1214,8 @@ router.get('/drafts', isAdminOrRecruiter, async (req, res) => {
     }
 
     // Collect all user IDs to fetch their details
-    const creatorIds = [...new Set(drafts.map(draft => draft.created_by_user_id).filter(Boolean))];
-    const updaterIds = [...new Set(drafts.map(draft => draft.updated_by_user_id).filter(Boolean))];
+    const creatorIds = [...new Set(drafts.map((draft: any) => draft.created_by_user_id).filter(Boolean))];
+    const updaterIds = [...new Set(drafts.map((draft: any) => draft.updated_by_user_id).filter(Boolean))];
     const allUserIds = [...new Set([...creatorIds, ...updaterIds])];
 
     // Fetch user details for all users
@@ -1138,8 +1226,8 @@ router.get('/drafts', isAdminOrRecruiter, async (req, res) => {
           try {
             const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(userId);
             if (!userError && userData?.user) {
-              return { 
-                userId, 
+              return {
+                userId,
                 details: {
                   id: userData.user.id,
                   email: userData.user.email,
@@ -1155,7 +1243,7 @@ router.get('/drafts', isAdminOrRecruiter, async (req, res) => {
             return { userId, details: null };
           }
         });
-        
+
         const userResults = await Promise.all(userPromises);
         userResults.forEach(({ userId, details }) => {
           if (details) {
@@ -1169,22 +1257,21 @@ router.get('/drafts', isAdminOrRecruiter, async (req, res) => {
     }
 
     // Transform drafts format to match client expectations
-    const formattedDrafts = drafts.map(draft => {
-      // Extract email display
-      const email = draft.email || draft.form_data?.email || '';
+    const formattedDrafts = drafts.map((draft: any) => {
+      // Since we're only selecting specific fields, we don't have form_data or current_step
+      // But the client expects these fields, so we'll provide defaults or omit them
+      const email = draft.email || '';
       
-      // Create a formatted draft object
+      // Create a formatted draft object with only the available fields
       const formattedDraft = {
         id: draft.id,
         userId: draft.user_id,
         email: email,
         lastUpdated: draft.last_updated,
-        currentStep: draft.current_step,
         createdAt: draft.created_at,
         createdByUserId: draft.created_by_user_id,
         updatedAt: draft.updated_at,
         updatedByUserId: draft.updated_by_user_id,
-        data: draft.form_data,
         creatorDetails: draft.created_by_user_id ? userDetailsMap[draft.created_by_user_id] || null : null,
         updaterDetails: draft.updated_by_user_id ? userDetailsMap[draft.updated_by_user_id] || null : null
       };

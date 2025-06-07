@@ -110,8 +110,26 @@ router.get(
       // Calculate offset for pagination
       const offset = (pageNum - 1) * limitNum;
 
-      // Start building the query
-      let query = supabase.from("positions").select("*, clients(company_name)");
+      // Only select the fields that are actually used in the client
+      // This reduces data transfer and improves performance
+      const selectedFields = [
+        "id",
+        "position_code", 
+        "title",
+        "start_date",
+        "city", 
+        "province",
+        "employment_term",
+        "employment_type", 
+        "position_category",
+        "experience",
+        "show_on_job_portal",
+        "created_at", // Still needed for ordering
+        "clients(company_name)"
+      ].join(", ");
+
+      // Start building the query with optimized field selection
+      let query = supabase.from("positions").select(selectedFields);
 
       // Apply database-level filters (only if they meet minimum character requirement)
       if (positionIdFilter && positionIdFilter.length >= 3) {
@@ -245,10 +263,13 @@ router.get(
       }
 
       // Transform the response to include clientName and convert snake_case to camelCase
-      const formattedPositions = positions.map((position) => {
+      const formattedPositions = positions.map((position: any) => {
+        // Since we're only selecting specific fields, handle the clients data properly
         const clientName = position.clients?.company_name || null;
-        // Remove the clients object
-        const { clients, ...positionData } = position;
+        
+        // Create a clean position object without the clients nested object
+        const positionData = { ...position };
+        delete positionData.clients;
 
         // Convert snake_case to camelCase
         const formattedPosition = Object.entries(positionData).reduce(
@@ -279,14 +300,6 @@ router.get(
                 .includes(search.toLowerCase())) ||
             (position.positionCode &&
               position.positionCode
-                .toLowerCase()
-                .includes(search.toLowerCase())) ||
-            (position.positionNumber &&
-              position.positionNumber
-                .toLowerCase()
-                .includes(search.toLowerCase())) ||
-            (position.description &&
-              position.description
                 .toLowerCase()
                 .includes(search.toLowerCase())) ||
             (position.city &&

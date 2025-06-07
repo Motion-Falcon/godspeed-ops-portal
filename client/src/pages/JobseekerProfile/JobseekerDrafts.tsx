@@ -213,11 +213,6 @@ export function JobseekerDrafts() {
       return draft.email;
     }
 
-    // Try to extract from form data as fallback
-    if (typeof draft.data === "object" && draft.data && "email" in draft.data) {
-      return String(draft.data.email || "");
-    }
-
     return "No email";
   };
 

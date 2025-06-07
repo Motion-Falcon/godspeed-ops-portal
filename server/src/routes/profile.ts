@@ -221,6 +221,8 @@ router.post('/submit',
         overtime_hours: profileData.overtimeHours,
         overtime_bill_rate: profileData.overtimeBillRate,
         overtime_pay_rate: profileData.overtimePayRate,
+        // Employee identification - defaults to null
+        employee_id: profileData.employeeId || null,
         // Document info - now stored as a JSONB array
         documents: profileData.documents || [],
         // Set verification status to pending

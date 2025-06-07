@@ -585,6 +585,7 @@ interface PaginationParams {
   experienceFilter?: string;
   statusFilter?: string;
   dateFilter?: string;
+  employeeIdFilter?: string;
 }
 
 interface PaginatedJobSeekerResponse {
@@ -615,6 +616,7 @@ export const getJobseekerProfiles = async (
         ...(params.emailFilter && { emailFilter: params.emailFilter }),
         ...(params.phoneFilter && { phoneFilter: params.phoneFilter }),
         ...(params.locationFilter && { locationFilter: params.locationFilter }),
+        ...(params.employeeIdFilter && { employeeIdFilter: params.employeeIdFilter }),
         ...(params.experienceFilter &&
           params.experienceFilter !== "all" && {
             experienceFilter: params.experienceFilter,

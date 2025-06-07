@@ -73,6 +73,9 @@ export interface JobSeekerDetailedProfile extends JobSeekerProfile {
   overtimeBillRate?: string;
   overtimePayRate?: string;
   
+  // Employee identification
+  employeeId?: string; // Employee identification number
+  
   // Actual fields from the API response
   verificationStatus?: 'pending' | 'verified' | 'rejected'; // This is more accurate than 'status'
   createdByUserId?: string;

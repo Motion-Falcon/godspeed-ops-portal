@@ -26,6 +26,7 @@ import '../styles/components/CommonTable.css';
 // Extend the JobSeekerProfile type to include documents
 interface ExtendedJobSeekerProfile extends JobSeekerProfile {
   phoneNumber?: string | null;
+  employeeId?: string;
   documents?: Array<{
     id?: string;
     documentType: string;
@@ -74,6 +75,7 @@ export function JobSeekerManagement() {
   const [emailFilter, setEmailFilter] = useState('');
   const [phoneFilter, setPhoneFilter] = useState('');
   const [locationFilter, setLocationFilter] = useState('');
+  const [employeeIdFilter, setEmployeeIdFilter] = useState('');
   const [experienceFilter, setExperienceFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [dateFilter, setDateFilter] = useState<string>('');
@@ -113,6 +115,7 @@ export function JobSeekerManagement() {
       const effectiveEmailFilter = emailFilter.length >= 3 ? emailFilter : '';
       const effectivePhoneFilter = phoneFilter.length >= 3 ? phoneFilter : '';
       const effectiveLocationFilter = locationFilter.length >= 3 ? locationFilter : '';
+      const effectiveEmployeeIdFilter = employeeIdFilter.length >= 3 ? employeeIdFilter : '';
       
       const data = await getJobseekerProfiles({
         page: pagination.page,
@@ -122,6 +125,7 @@ export function JobSeekerManagement() {
         emailFilter: effectiveEmailFilter,
         phoneFilter: effectivePhoneFilter,
         locationFilter: effectiveLocationFilter,
+        employeeIdFilter: effectiveEmployeeIdFilter,
         experienceFilter,
         statusFilter,
         dateFilter
@@ -154,6 +158,7 @@ export function JobSeekerManagement() {
     emailFilter.length >= 3 || emailFilter === '' ? emailFilter : 'inactive',
     phoneFilter.length >= 3 || phoneFilter === '' ? phoneFilter : 'inactive',
     locationFilter.length >= 3 || locationFilter === '' ? locationFilter : 'inactive',
+    employeeIdFilter.length >= 3 || employeeIdFilter === '' ? employeeIdFilter : 'inactive',
     experienceFilter, 
     statusFilter, 
     dateFilter
@@ -181,6 +186,7 @@ export function JobSeekerManagement() {
     emailFilter.length >= 3 || emailFilter === '' ? emailFilter : null,
     phoneFilter.length >= 3 || phoneFilter === '' ? phoneFilter : null,
     locationFilter.length >= 3 || locationFilter === '' ? locationFilter : null,
+    employeeIdFilter.length >= 3 || employeeIdFilter === '' ? employeeIdFilter : null,
     experienceFilter, 
     statusFilter, 
     dateFilter
@@ -306,14 +312,16 @@ export function JobSeekerManagement() {
 
   // Helper to reset all filters
   const resetFilters = () => {
+    setSearchTerm('');
     setNameFilter('');
     setEmailFilter('');
     setPhoneFilter('');
     setLocationFilter('');
+    setEmployeeIdFilter('');
     setExperienceFilter('all');
     setStatusFilter('all');
     setDateFilter('');
-    setSearchTerm('');
+    setPagination(prev => ({ ...prev, page: 1 }));
   };
 
   // Pagination handlers
@@ -484,6 +492,20 @@ export function JobSeekerManagement() {
                   </th>
                   <th>
                     <div className="column-filter">
+                      <div className="column-title">Employee ID</div>
+                      <div className="column-search">
+                        <input
+                          type="text"
+                          placeholder="Search employee ID..."
+                          value={employeeIdFilter}
+                          onChange={(e) => setEmployeeIdFilter(e.target.value)}
+                          className="column-search-input"
+                        />
+                      </div>
+                    </div>
+                  </th>
+                  <th>
+                    <div className="column-filter">
                       <div className="column-title">Experience</div>
                       <div className="column-search">
                         <select
@@ -552,13 +574,13 @@ export function JobSeekerManagement() {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={8} className="loading-cell">
+                    <td colSpan={9} className="loading-cell">
                       <div className="loading">Loading profiles...</div>
                     </td>
                   </tr>
                 ) : profiles.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="empty-state-cell">
+                    <td colSpan={9} className="empty-state-cell">
                       <div className="empty-state">
                         <p>No profiles match your search criteria.</p>
                       </div>
@@ -573,6 +595,7 @@ export function JobSeekerManagement() {
                         <td className="email-cell">{profile.email}</td>
                         <td className="phone-cell">{profile.phoneNumber || 'N/A'}</td>
                         <td className="location-cell">{profile.location || 'N/A'}</td>
+                        <td className="employee-id-cell">{profile.employeeId || 'N/A'}</td>
                         <td className="experience-cell">{profile.experience}</td>
                         <td className="status-cell">
                           <span className="status-display">
