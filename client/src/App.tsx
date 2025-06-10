@@ -29,6 +29,7 @@ import { PositionEdit } from './pages/PositionManagement/PositionEdit';
 import { PositionDrafts } from './pages/PositionManagement/PositionDrafts';
 import { PositionDraftEdit } from './pages/PositionManagement/PositionDraftEdit';
 import { PositionView } from './pages/PositionManagement/PositionView';
+import { PositionMatching } from './pages/PositionMatching';
 import { JobseekerDrafts } from './pages/JobseekerProfile/JobseekerDrafts';
 import { JobseekerProfileDraftEdit } from './pages/JobseekerProfile/JobseekerProfileDraftEdit';
 import { TrainingModules } from './pages/TrainingModules';
@@ -82,6 +83,7 @@ function App() {
                 <Route path="/position-management/edit/:id" element={<PositionEdit />} />
                 <Route path="/position-management/drafts" element={<PositionDrafts />} />
                 <Route path="/position-management/drafts/edit/:id" element={<PositionDraftEdit />} />
+                <Route path="/position-matching" element={<PositionMatching />} />
                 {/* Add more recruiter-specific routes here */}
               </Route>
               

@@ -70,7 +70,7 @@
   border: 1px solid var(--text-muted);
   flex-direction: column;
   border-radius: 16px;
-  padding: 2rem 2rem 0 2rem;
+  padding: 1rem;
 }
 
 .form-row:last-child {

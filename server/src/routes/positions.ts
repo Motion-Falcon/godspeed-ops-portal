@@ -62,6 +62,46 @@ function camelToSnakeCase(str: string): string {
 }
 
 /**
+ * Helper function to sync assigned_jobseekers array with active assignments
+ * from position_candidate_assignments table
+ */
+async function syncAssignedJobseekers(positionId: string): Promise<string[]> {
+  try {
+    const { data: activeAssignments, error } = await supabase
+      .from("position_candidate_assignments")
+      .select("candidate_id")
+      .eq("position_id", positionId)
+      .eq("status", "active");
+
+    if (error) {
+      console.error("Error getting active assignments:", error);
+      return [];
+    }
+
+    return activeAssignments ? activeAssignments.map(assignment => assignment.candidate_id) : [];
+  } catch (error) {
+    console.error("Error syncing assigned jobseekers:", error);
+    return [];
+  }
+}
+
+/**
+ * Helper function to update position's assigned_jobseekers array based on active assignments
+ */
+async function updatePositionAssignedJobseekers(positionId: string): Promise<void> {
+  try {
+    const activeJobseekers = await syncAssignedJobseekers(positionId);
+    
+    await supabase
+      .from("positions")
+      .update({ assigned_jobseekers: activeJobseekers })
+      .eq("id", positionId);
+  } catch (error) {
+    console.error("Error updating position assigned jobseekers:", error);
+  }
+}
+
+/**
  * Get all positions with pagination and filtering
  * GET /api/positions
  * @access Private (Admin, Recruiter)
@@ -117,6 +157,7 @@ router.get(
         "position_code", 
         "title",
         "start_date",
+        "end_date",
         "city", 
         "province",
         "employment_term",
@@ -125,7 +166,9 @@ router.get(
         "experience",
         "show_on_job_portal",
         "created_at", // Still needed for ordering
-        "clients(company_name)"
+        "clients(company_name)",
+        "assigned_jobseekers",
+        "number_of_positions"
       ].join(", ");
 
       // Start building the query with optimized field selection
@@ -263,13 +306,22 @@ router.get(
       }
 
       // Transform the response to include clientName and convert snake_case to camelCase
-      const formattedPositions = positions.map((position: any) => {
+      const formattedPositions = await Promise.all(positions.map(async (position: any) => {
         // Since we're only selecting specific fields, handle the clients data properly
         const clientName = position.clients?.company_name || null;
         
         // Create a clean position object without the clients nested object
         const positionData = { ...position };
         delete positionData.clients;
+
+        // Sync assigned_jobseekers with active assignments from position_candidate_assignments table
+        const activeJobseekers = await syncAssignedJobseekers(position.id);
+        
+        // Update the position data with synced assignments if they differ
+        if (JSON.stringify(position.assigned_jobseekers || []) !== JSON.stringify(activeJobseekers)) {
+          await updatePositionAssignedJobseekers(position.id);
+          positionData.assigned_jobseekers = activeJobseekers;
+        }
 
         // Convert snake_case to camelCase
         const formattedPosition = Object.entries(positionData).reduce(
@@ -284,7 +336,7 @@ router.get(
         );
 
         return formattedPosition;
-      });
+      }));
 
       // Apply client-side filters after formatting (for computed fields that need 3+ characters)
       let filteredPositions = formattedPositions;
@@ -1153,12 +1205,57 @@ router.put(
         .from("positions")
         .update(dbPositionData)
         .eq("id", id)
-        .select()
+        .select(`
+          id,
+          client,
+          title,
+          position_code,
+          start_date,
+          end_date,
+          show_on_job_portal,
+          client_manager,
+          sales_manager,
+          position_number,
+          description,
+          street_address,
+          city,
+          province,
+          postal_code,
+          employment_term,
+          employment_type,
+          position_category,
+          experience,
+          documents_required,
+          payrate_type,
+          number_of_positions,
+          regular_pay_rate,
+          markup,
+          bill_rate,
+          overtime_enabled,
+          overtime_hours,
+          overtime_bill_rate,
+          overtime_pay_rate,
+          preferred_payment_method,
+          terms,
+          notes,
+          assigned_to,
+          proj_comp_date,
+          task_time,
+          assigned_jobseekers,
+          is_draft,
+          created_at,
+          updated_at,
+          created_by_user_id,
+          updated_by_user_id
+        `)
         .single();
 
       if (updateError) {
         console.error("Error updating position:", updateError);
-        return res.status(500).json({ error: "Failed to update position" });
+        // Assignment was already deleted, but position update failed
+        // This creates an inconsistent state, but we cannot easily rollback the deletion
+        console.error("Warning: Assignment was deleted but position update failed. Manual intervention may be required.");
+        return res.status(500).json({ error: "Failed to remove candidate" });
       }
 
       return res.status(200).json({
@@ -1497,6 +1594,365 @@ router.delete(
       });
     } catch (error) {
       console.error("Unexpected error deleting position:", error);
+      return res.status(500).json({ error: "An unexpected error occurred" });
+    }
+  }
+);
+
+/**
+ * Assign candidate to position
+ * POST /api/positions/:id/assign
+ * @access Private (Admin, Recruiter)
+ */
+router.post(
+  "/:id/assign",
+  authenticateToken,
+  authorizeRoles(["admin", "recruiter"]),
+  sanitizeInputs,
+  async (req: Request, res: Response) => {
+    try {
+      const { id: positionId } = req.params;
+      const { candidateId, startDate, endDate } = req.body;
+      const userId = req.user?.id;
+
+      if (!candidateId) {
+        return res.status(400).json({ error: "Candidate ID is required" });
+      }
+
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      // Get current position data
+      const { data: position, error: positionError } = await supabase
+        .from("positions")
+        .select("assigned_jobseekers, number_of_positions")
+        .eq("id", positionId)
+        .single();
+
+      if (positionError || !position) {
+        return res.status(404).json({ error: "Position not found" });
+      }
+
+      // Check if candidate exists
+      const { data: candidate, error: candidateError } = await supabase
+        .from("jobseeker_profiles")
+        .select("id")
+        .eq("id", candidateId)
+        .single();
+
+      if (candidateError || !candidate) {
+        return res.status(404).json({ error: "Candidate not found" });
+      }
+
+      // Check if there's already an active assignment for this position-candidate pair
+      const { data: existingAssignment, error: assignmentCheckError } = await supabase
+        .from("position_candidate_assignments")
+        .select("id, status")
+        .eq("position_id", positionId)
+        .eq("candidate_id", candidateId)
+        .eq("status", "active")
+        .maybeSingle();
+
+      if (assignmentCheckError) {
+        console.error("Error checking existing assignment:", assignmentCheckError);
+        return res.status(500).json({ error: "Failed to check existing assignment" });
+      }
+
+      if (existingAssignment) {
+        return res.status(400).json({ error: "Candidate already assigned to this position" });
+      }
+
+      // Get current active assignments for this position
+      const { data: activeAssignments, error: activeAssignmentsError } = await supabase
+        .from("position_candidate_assignments")
+        .select("candidate_id")
+        .eq("position_id", positionId)
+        .eq("status", "active");
+
+      if (activeAssignmentsError) {
+        console.error("Error getting active assignments:", activeAssignmentsError);
+        return res.status(500).json({ error: "Failed to check position capacity" });
+      }
+
+      // Check if position has available slots
+      if (activeAssignments && activeAssignments.length >= position.number_of_positions) {
+        return res.status(400).json({ error: "No available positions to assign" });
+      }
+
+      // Create assignment record
+      const { data: newAssignment, error: assignmentError } = await supabase
+        .from("position_candidate_assignments")
+        .insert({
+          position_id: positionId,
+          candidate_id: candidateId,
+          start_date: startDate,
+          end_date: endDate,
+          status: "active",
+          created_by_user_id: userId,
+          updated_by_user_id: userId
+        })
+        .select()
+        .single();
+
+      if (assignmentError) {
+        console.error("Error creating assignment:", assignmentError);
+        return res.status(500).json({ error: "Failed to create assignment" });
+      }
+
+      // Update the assigned_jobseekers array in positions table for backward compatibility
+      const currentAssigned = position.assigned_jobseekers || [];
+      const updatedAssigned = [...currentAssigned, candidateId];
+
+      const { data: updatedPosition, error: updateError } = await supabase
+        .from("positions")
+        .update({ assigned_jobseekers: updatedAssigned })
+        .eq("id", positionId)
+        .select(`
+          id,
+          client,
+          title,
+          position_code,
+          start_date,
+          end_date,
+          show_on_job_portal,
+          client_manager,
+          sales_manager,
+          position_number,
+          description,
+          street_address,
+          city,
+          province,
+          postal_code,
+          employment_term,
+          employment_type,
+          position_category,
+          experience,
+          documents_required,
+          payrate_type,
+          number_of_positions,
+          regular_pay_rate,
+          markup,
+          bill_rate,
+          overtime_enabled,
+          overtime_hours,
+          overtime_bill_rate,
+          overtime_pay_rate,
+          preferred_payment_method,
+          terms,
+          notes,
+          assigned_to,
+          proj_comp_date,
+          task_time,
+          assigned_jobseekers,
+          is_draft,
+          created_at,
+          updated_at,
+          created_by_user_id,
+          updated_by_user_id
+        `)
+        .single();
+
+      if (updateError) {
+        console.error("Error updating position:", updateError);
+        // Assignment was already deleted, but position update failed
+        // This creates an inconsistent state, but we cannot easily rollback the deletion
+        console.error("Warning: Assignment was deleted but position update failed. Manual intervention may be required.");
+        return res.status(500).json({ error: "Failed to remove candidate" });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "Candidate assigned successfully",
+        assignedJobseekers: updatedAssigned,
+        position: updatedPosition,
+        assignment: newAssignment
+      });
+    } catch (error) {
+      console.error("Unexpected error assigning candidate:", error);
+      return res.status(500).json({ error: "An unexpected error occurred" });
+    }
+  }
+);
+
+/**
+ * Remove candidate from position
+ * DELETE /api/positions/:id/assign/:candidateId
+ * @access Private (Admin, Recruiter)
+ */
+router.delete(
+  "/:id/assign/:candidateId",
+  authenticateToken,
+  authorizeRoles(["admin", "recruiter"]),
+  async (req: Request, res: Response) => {
+    try {
+      const { id: positionId, candidateId } = req.params;
+      const userId = req.user?.id;
+
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      // Get current position data
+      const { data: position, error: positionError } = await supabase
+        .from("positions")
+        .select("assigned_jobseekers")
+        .eq("id", positionId)
+        .single();
+
+      if (positionError || !position) {
+        return res.status(404).json({ error: "Position not found" });
+      }
+
+      // Check if there's an active assignment for this position-candidate pair
+      const { data: activeAssignment, error: assignmentCheckError } = await supabase
+        .from("position_candidate_assignments")
+        .select("id")
+        .eq("position_id", positionId)
+        .eq("candidate_id", candidateId)
+        .eq("status", "active")
+        .maybeSingle();
+
+      if (assignmentCheckError) {
+        console.error("Error checking assignment:", assignmentCheckError);
+        return res.status(500).json({ error: "Failed to check assignment" });
+      }
+
+      if (!activeAssignment) {
+        return res.status(400).json({ error: "Candidate not assigned to this position" });
+      }
+
+      // Delete the assignment row completely
+      const { error: deleteAssignmentError } = await supabase
+        .from("position_candidate_assignments")
+        .delete()
+        .eq("id", activeAssignment.id);
+
+      if (deleteAssignmentError) {
+        console.error("Error deleting assignment:", deleteAssignmentError);
+        return res.status(500).json({ error: "Failed to remove assignment" });
+      }
+
+      // Update the assigned_jobseekers array in positions table for backward compatibility
+      const currentAssigned = position.assigned_jobseekers || [];
+      const updatedAssigned = currentAssigned.filter((id: string) => id !== candidateId);
+
+      const { data: updatedPosition, error: updateError } = await supabase
+        .from("positions")
+        .update({ assigned_jobseekers: updatedAssigned })
+        .eq("id", positionId)
+        .select(`
+          id,
+          client,
+          title,
+          position_code,
+          start_date,
+          end_date,
+          show_on_job_portal,
+          client_manager,
+          sales_manager,
+          position_number,
+          description,
+          street_address,
+          city,
+          province,
+          postal_code,
+          employment_term,
+          employment_type,
+          position_category,
+          experience,
+          documents_required,
+          payrate_type,
+          number_of_positions,
+          regular_pay_rate,
+          markup,
+          bill_rate,
+          overtime_enabled,
+          overtime_hours,
+          overtime_bill_rate,
+          overtime_pay_rate,
+          preferred_payment_method,
+          terms,
+          notes,
+          assigned_to,
+          proj_comp_date,
+          task_time,
+          assigned_jobseekers,
+          is_draft,
+          created_at,
+          updated_at,
+          created_by_user_id,
+          updated_by_user_id
+        `)
+        .single();
+
+      if (updateError) {
+        console.error("Error updating position:", updateError);
+        // Assignment was already deleted, but position update failed
+        // This creates an inconsistent state, but we cannot easily rollback the deletion
+        console.error("Warning: Assignment was deleted but position update failed. Manual intervention may be required.");
+        return res.status(500).json({ error: "Failed to remove candidate" });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "Candidate removed successfully",
+        assignedJobseekers: updatedAssigned,
+        position: updatedPosition
+      });
+    } catch (error) {
+      console.error("Unexpected error removing candidate:", error);
+      return res.status(500).json({ error: "An unexpected error occurred" });
+    }
+  }
+);
+
+/**
+ * Get position assignments
+ * GET /api/positions/:id/assignments
+ * @access Private (Admin, Recruiter)
+ */
+router.get(
+  "/:id/assignments",
+  authenticateToken,
+  authorizeRoles(["admin", "recruiter"]),
+  async (req: Request, res: Response) => {
+    try {
+      const { id: positionId } = req.params;
+
+      // Get all assignments for this position
+      const { data: assignments, error } = await supabase
+        .from("position_candidate_assignments")
+        .select(`
+          id,
+          candidate_id,
+          start_date,
+          end_date,
+          status,
+          created_at,
+          updated_at,
+          jobseeker_profiles:candidate_id (
+            id,
+            first_name,
+            last_name,
+            email,
+            mobile
+          )
+        `)
+        .eq("position_id", positionId)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching assignments:", error);
+        return res.status(500).json({ error: "Failed to fetch assignments" });
+      }
+
+      return res.status(200).json({
+        success: true,
+        assignments: assignments || []
+      });
+    } catch (error) {
+      console.error("Unexpected error fetching assignments:", error);
       return res.status(500).json({ error: "An unexpected error occurred" });
     }
   }

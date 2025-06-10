@@ -1,5 +1,6 @@
 import { ReactNode, useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { RotateCcw } from 'lucide-react';
 import godspeedLogo from '../assets/logos/godspped-logo-fulllength.png';
 import { HamburgerMenu } from './HamburgerMenu';
 import '../styles/components/header.css';
@@ -23,6 +24,11 @@ export function AppHeader({
   const [menuOpen, setMenuOpen] = useState(false);
   const menuOpenRef = useRef(true); // Keep track of menu state with a ref as well
   const isInitialMount = useRef(true);
+  
+  // Scroll to top when component mounts (page loads)
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
   
   // Log state changes for debugging
   useEffect(() => {
@@ -56,6 +62,10 @@ export function AppHeader({
     }
   };
 
+  const handleRefreshPage = () => {
+    window.location.reload();
+  };
+
   return (
     <div className="header-wrapper">
       <header className="common-header">
@@ -73,6 +83,16 @@ export function AppHeader({
         {statusMessage && (
           <div className="status-update-container">
             <span className={`status-update-message ${statusType}`}>{statusMessage}</span>
+            {statusType === 'error' && (
+              <button 
+                className="refresh-page-btn"
+                onClick={handleRefreshPage}
+                title="Refresh page"
+              >
+                <RotateCcw size={16} />
+                Refresh
+              </button>
+            )}
           </div>
         )}
       </header>

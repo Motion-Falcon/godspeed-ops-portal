@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { getPosition, PositionData } from '../../services/api';
+import { getPosition, PositionData, getJobseekerProfile } from '../../services/api';
 import { ConfirmationModal } from '../../components/ConfirmationModal';
 import { AppHeader } from '../../components/AppHeader';
-import { ArrowLeft, Edit, Briefcase } from 'lucide-react';
+import { ArrowLeft, Edit, Briefcase, Users, Phone, Mail, User } from 'lucide-react';
 import '../../styles/pages/ClientView.css';
 import '../../styles/pages/PositionManagement.css';
 import '../../styles/components/header.css';
@@ -12,10 +12,19 @@ interface ExtendedPositionData extends PositionData {
   [key: string]: unknown;
 }
 
+interface AssignedJobseeker {
+  id: string;
+  name: string;
+  email: string;
+  mobile?: string;
+}
+
 export function PositionView() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const [position, setPosition] = useState<ExtendedPositionData | null>(null);
+  const [assignedJobseekers, setAssignedJobseekers] = useState<AssignedJobseeker[]>([]);
+  const [assignedJobseekersLoading, setAssignedJobseekersLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showEditConfirmation, setShowEditConfirmation] = useState(false);
@@ -40,6 +49,11 @@ export function PositionView() {
         const convertedPosition = convertToCamelCase(fetchedPosition as unknown as Record<string, unknown>);
         setPosition(convertedPosition);
         console.log("Position data loaded:", convertedPosition);
+        
+        // Fetch assigned jobseekers if there are any
+        if (convertedPosition.assignedJobseekers && Array.isArray(convertedPosition.assignedJobseekers) && convertedPosition.assignedJobseekers.length > 0) {
+          await fetchAssignedJobseekers(convertedPosition.assignedJobseekers);
+        }
       } catch (err) {
         console.error('Error fetching position:', err);
         const errorMessage = err instanceof Error ? err.message : 'Failed to fetch position details';
@@ -52,8 +66,45 @@ export function PositionView() {
     fetchPosition();
   }, [id]);
 
+  const fetchAssignedJobseekers = async (jobseekerIds: string[]) => {
+    setAssignedJobseekersLoading(true);
+    try {
+      const assignedCandidatesPromises = jobseekerIds.map(async (jobseekerId) => {
+        try {
+          const jobseekerProfile = await getJobseekerProfile(jobseekerId);
+          return {
+            id: jobseekerProfile.id,
+            name: `${jobseekerProfile.firstName} ${jobseekerProfile.lastName}`,
+            email: jobseekerProfile.email,
+            mobile: jobseekerProfile.mobile || undefined,
+          };
+        } catch (error) {
+          console.error(`Error fetching jobseeker profile for ID ${jobseekerId}:`, error);
+          return {
+            id: jobseekerId,
+            name: 'Profile Not Found',
+            email: 'N/A',
+            mobile: undefined,
+          };
+        }
+      });
+
+      const assignedCandidates = await Promise.all(assignedCandidatesPromises);
+      setAssignedJobseekers(assignedCandidates);
+    } catch (error) {
+      console.error('Error fetching assigned jobseekers:', error);
+      setAssignedJobseekers([]);
+    } finally {
+      setAssignedJobseekersLoading(false);
+    }
+  };
+
   const handleNavigateBack = () => {
     navigate('/position-management');
+  };
+
+  const handleNavigateToMatching = () => {
+    navigate(`/position-matching?positionId=${id}`);
   };
 
   const confirmEditPosition = () => {
@@ -200,12 +251,84 @@ export function PositionView() {
               <Briefcase size={40} />
             </div>
             <div className="client-info-header">
-              <h1 className="client-name">{positionTitle}</h1>
-              {renderDetailItem('Client', position.clientName)}
-              {renderDetailItem('Position Code', position.positionCode)}
-              {renderDetailItem('Duration', formatDateRange(position.startDate, position.endDate))}
-              {renderDetailItem('Created', formatDate(position.createdAt))}
-              {renderDetailItem('Updated', formatDate(position.updatedAt))}
+              <div className="position-basic-info">
+                <h1 className="client-name">{positionTitle}</h1>
+                {renderDetailItem('Client', position.clientName)}
+                {renderDetailItem('Position Id', position.positionCode)}
+                {renderDetailItem('Duration', formatDateRange(position.startDate, position.endDate))}
+                {renderDetailItem('Created', formatDate(position.createdAt))}
+                {renderDetailItem('Updated', formatDate(position.updatedAt))}
+              </div>
+              
+              <div className="position-assignment-info">
+                <div className="assignment-summary">
+                  <h3 className="assignment-title">
+                    <Users size={20} />
+                    Position Assignment
+                  </h3>
+                  
+                  <div className="assignment-stats">
+                    <div className="stat-item">
+                      <span className="stat-label">Total Positions:</span>
+                      <span className="stat-value">{position.numberOfPositions || 0}</span>
+                    </div>
+                    <div className="stat-item">
+                      <span className="stat-label">Assigned:</span>
+                      <span className="stat-value">{assignedJobseekers.length}</span>
+                    </div>
+                    <div className="stat-item">
+                      <span className="stat-label">Available:</span>
+                      <span className="stat-value">{Math.max(0, (position.numberOfPositions || 0) - assignedJobseekers.length)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="assigned-jobseekers">
+                  <h4 className="jobseekers-title">Assigned Jobseekers</h4>
+                  
+                  {assignedJobseekersLoading ? (
+                    <div className="loading-jobseekers">
+                      <div className="loading-spinner small"></div>
+                      <span>Loading assigned candidates...</span>
+                    </div>
+                  ) : assignedJobseekers.length === 0 ? (
+                    <div className="no-assignments">
+                      <User size={24} className="empty-icon" />
+                      <p>No jobseekers assigned yet</p>
+                    </div>
+                  ) : (
+                    <div className="jobseekers-list">
+                      {assignedJobseekers.map((jobseeker) => (
+                        <div key={jobseeker.id} className="jobseeker-card">
+                          <div className="jobseeker-details">
+                            <p className="jobseeker-name">{jobseeker.name}</p>
+                            <div className="jobseeker-contact">
+                              <span className="contact-item">
+                                <Mail size={12} />
+                                {jobseeker.email}
+                              </span>
+                              {jobseeker.mobile && (
+                                <span className="contact-item">
+                                  <Phone size={12} />
+                                  {jobseeker.mobile}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <button 
+                  className="button primary manage-assignment-btn"
+                  onClick={handleNavigateToMatching}
+                >
+                  <Users size={16} />
+                  Manage Position Assignment
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -216,13 +339,13 @@ export function PositionView() {
             <div className="detail-group">
               {renderDetailItem('Title', position.title)}
               {renderDetailItem('Client', position.clientName)}
-              {renderDetailItem('Position Code', position.positionCode)}
+              {renderDetailItem('Position Id', position.positionCode)}
               {renderDetailItem('Start Date', formatDate(position.startDate))}
               {renderDetailItem('End Date', position.endDate ? formatDate(position.endDate) : 'No end date (ongoing)')}
               {renderDetailItem('Show on Job Portal', position.showOnJobPortal)}
               {renderDetailItem('Client Manager', position.clientManager)}
               {renderDetailItem('Sales Manager', position.salesManager)}
-              {renderDetailItem('Position Number', position.positionNumber)}
+              {renderDetailItem('Position Code', position.positionNumber)}
               {renderDetailItem('Description', position.description)}
             </div>
           </div>

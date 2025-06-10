@@ -325,6 +325,12 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
           path: '/position-management/drafts', 
           icon: <FileEdit size={16} />,
           exact: true 
+        },
+        { 
+          label: 'Position Matching', 
+          path: '/position-matching', 
+          icon: <Users size={16} />,
+          exact: true 
         }
       ]
     },

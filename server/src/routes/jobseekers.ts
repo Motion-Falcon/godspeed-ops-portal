@@ -33,6 +33,40 @@ interface AIValidationResponse {
   document_status?: string;
 }
 
+// Interface for position candidate results from the database function
+interface PositionCandidateResult {
+  candidate_id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  mobile?: string;
+  bio?: string;
+  experience?: string;
+  weekend_availability?: boolean;
+  availability?: string;
+  similarity_score: number;
+  is_available: boolean;
+}
+
+// Interface for formatted position candidate (for frontend consumption)
+interface FormattedPositionCandidate {
+  id: string;
+  candidateId: string;
+  firstName: string;
+  lastName: string;
+  name: string;
+  email: string;
+  phoneNumber: string | null;
+  mobile?: string;
+  bio?: string;
+  experience?: string;
+  weekendAvailability?: boolean;
+  availability?: string;
+  similarityScore: number;
+  isAvailable: boolean;
+  status: string;
+}
+
 // Interface matching the actual database schema for jobseeker_profiles
 // Derived from the structure used in /api/profile/submit
 interface DbJobseekerProfile {
@@ -1621,6 +1655,239 @@ router.delete('/drafts/:id', isAdminOrRecruiter, async (req, res) => {
   } catch (error) {
     console.error('Unexpected error deleting draft:', error);
     return res.status(500).json({ error: 'An unexpected error occurred' });
+  }
+});
+
+/**
+ * @route GET /api/jobseekers/position-candidates/:positionId
+ * @desc Get candidates for a specific position using vector similarity matching
+ * @access Private (Admin, Recruiter)
+ * @param {string} positionId - The ID of the position to find candidates for
+ * @query {number} page - Page number for pagination (default: 1)
+ * @query {number} limit - Number of candidates per page (default: 10)
+ * @query {string} search - Search term for name, email, phone, experience, or bio
+ * @query {string} nameFilter - Filter by candidate name
+ * @query {string} emailFilter - Filter by candidate email
+ * @query {string} phoneFilter - Filter by candidate phone number
+ * @query {string} experienceFilter - Filter by candidate experience level
+ * @query {string} availabilityFilter - Filter by availability (Full-Time, Part-Time)
+ * @query {string} weekendAvailabilityFilter - Filter by weekend availability (true/false)
+ * @query {string} cityFilter - Filter by candidate city
+ * @query {string} provinceFilter - Filter by candidate province
+ * @query {string} onlyAvailable - Show only available candidates (true/false)
+ * @query {string} sortBy - Sort by field (similarity, name, experience)
+ * @query {string} sortOrder - Sort order (asc, desc)
+ * @returns {object} Paginated list of candidates with similarity scores and availability status
+ * 
+ * @example
+ * GET /api/jobseekers/position-candidates/123?page=1&limit=10&onlyAvailable=true&sortBy=similarity
+ * 
+ * Response:
+ * {
+ *   "candidates": [...],
+ *   "pagination": { "page": 1, "limit": 10, "total": 150, "totalFiltered": 25, ... },
+ *   "positionId": "123",
+ *   "position": { "id": "123", "title": "Software Developer", ... },
+ *   "filters": { ... }
+ * }
+ */
+router.get('/position-candidates/:positionId', isAdminOrRecruiter, async (req, res) => {
+  try {
+    const { positionId } = req.params;
+    
+    // Extract pagination and filter parameters from query
+    const { 
+      page = '1', 
+      limit = '10',
+      search = '',
+      nameFilter = '',
+      emailFilter = '', 
+      phoneFilter = '',
+      experienceFilter = '',
+      availabilityFilter = '',
+      weekendAvailabilityFilter = '',
+      cityFilter = '',
+      provinceFilter = '',
+      onlyAvailable = 'false',
+      sortBy = 'similarity', // similarity, name, experience
+      sortOrder = 'desc' // asc, desc
+    } = req.query as {
+      page?: string;
+      limit?: string;
+      search?: string;
+      nameFilter?: string;
+      emailFilter?: string;
+      phoneFilter?: string;
+      experienceFilter?: string;
+      availabilityFilter?: string;
+      weekendAvailabilityFilter?: string;
+      cityFilter?: string;
+      provinceFilter?: string;
+      onlyAvailable?: string;
+      sortBy?: string;
+      sortOrder?: string;
+    };
+
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const offset = (pageNum - 1) * limitNum;
+
+    // Validate position ID
+    if (!positionId) {
+      return res.status(400).json({ error: 'Position ID is required' });
+    }
+
+    // Build filters object for the stored procedure
+    const filters: { [key: string]: any } = {};
+    
+    if (experienceFilter && experienceFilter !== 'all') {
+      filters.experience = experienceFilter;
+    }
+    
+    if (availabilityFilter && availabilityFilter !== 'all') {
+      filters.availability = availabilityFilter;
+    }
+    
+    if (weekendAvailabilityFilter && weekendAvailabilityFilter !== 'all') {
+      filters.weekend_availability = weekendAvailabilityFilter === 'true';
+    }
+    
+    if (cityFilter && cityFilter.length >= 2) {
+      filters.city = cityFilter;
+    }
+    
+    if (provinceFilter && provinceFilter.length >= 2) {
+      filters.province = provinceFilter;
+    }
+    
+    if (onlyAvailable === 'true') {
+      filters.only_available = 'true';
+    }
+
+    // Call the stored procedure with a large limit to get all matching candidates
+    const { data: candidatesData, error: candidatesError } = await supabaseAdmin
+      .rpc('find_matching_candidates', {
+        p_position_id: positionId,
+        p_filters: filters,
+        p_limit: 100000 // Large limit to get all candidates, then paginate in-memory
+      });
+
+    if (candidatesError) {
+      console.error('Error calling get_position_candidates function:', candidatesError);
+      return res.status(500).json({ 
+        error: 'Failed to fetch position candidates',
+        details: candidatesError.message 
+      });
+    }
+
+    if (!candidatesData) {
+      return res.json({
+        candidates: [],
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total: 0,
+          totalPages: 0,
+          hasNextPage: false,
+          hasPrevPage: false
+        },
+        positionId
+      });
+    }
+
+    // Transform the database results to match frontend expectations
+    let formattedCandidates: FormattedPositionCandidate[] = candidatesData.map((candidate: PositionCandidateResult) => ({
+      id: candidate.candidate_id,
+      candidateId: candidate.candidate_id,
+      firstName: candidate.first_name,
+      lastName: candidate.last_name,
+      name: `${candidate.first_name || ''} ${candidate.last_name || ''}`.trim() || 'Unknown',
+      email: candidate.email,
+      phoneNumber: candidate.mobile || null,
+      mobile: candidate.mobile,
+      bio: candidate.bio,
+      experience: candidate.experience,
+      weekendAvailability: candidate.weekend_availability,
+      availability: candidate.availability,
+      similarityScore: parseFloat(candidate.similarity_score.toString() || '0'),
+      isAvailable: candidate.is_available,
+      status: candidate.is_available ? 'available' : 'unavailable'
+    }));
+
+    // Apply client-side filters for computed/formatted fields (minimum 3 characters for performance)
+    if (search && search.length >= 3) {
+      formattedCandidates = formattedCandidates.filter(candidate => 
+        candidate.name.toLowerCase().includes(search.toLowerCase()) ||
+        candidate.email.toLowerCase().includes(search.toLowerCase()) ||
+        (candidate.phoneNumber && candidate.phoneNumber.toLowerCase().includes(search.toLowerCase())) ||
+        (candidate.experience && candidate.experience.toLowerCase().includes(search.toLowerCase())) ||
+        (candidate.bio && candidate.bio.toLowerCase().includes(search.toLowerCase()))
+      );
+    }
+
+    if (nameFilter && nameFilter.length >= 3) {
+      formattedCandidates = formattedCandidates.filter(candidate => 
+        candidate.name.toLowerCase().includes(nameFilter.toLowerCase())
+      );
+    }
+
+    if (emailFilter && emailFilter.length >= 3) {
+      formattedCandidates = formattedCandidates.filter(candidate => 
+        candidate.email.toLowerCase().includes(emailFilter.toLowerCase())
+      );
+    }
+
+    if (phoneFilter && phoneFilter.length >= 3) {
+      formattedCandidates = formattedCandidates.filter(candidate => 
+        candidate.phoneNumber && candidate.phoneNumber.toLowerCase().includes(phoneFilter.toLowerCase())
+      );
+    }
+
+    // Get total count after filtering
+    const totalFiltered = formattedCandidates.length;
+
+    // Apply pagination to the filtered results
+    const paginatedCandidates = formattedCandidates.slice(offset, offset + limitNum);
+
+    // Calculate pagination metadata
+    const totalPages = Math.ceil(totalFiltered / limitNum);
+    const hasNextPage = pageNum < totalPages;
+    const hasPrevPage = pageNum > 1;
+
+    res.json({
+      candidates: paginatedCandidates,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total: candidatesData.length, // Total before client-side filtering
+        totalFiltered,
+        totalPages,
+        hasNextPage,
+        hasPrevPage
+      },
+      positionId,
+      filters: {
+        search,
+        nameFilter,
+        emailFilter,
+        phoneFilter,
+        experienceFilter,
+        availabilityFilter,
+        weekendAvailabilityFilter,
+        cityFilter,
+        provinceFilter,
+        onlyAvailable,
+        sortBy,
+        sortOrder
+      }
+    });
+
+  } catch (error) {
+    console.error('Unexpected error fetching position candidates:', error);
+    res.status(500).json({ 
+      error: 'An unexpected error occurred while fetching position candidates',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
 });
 

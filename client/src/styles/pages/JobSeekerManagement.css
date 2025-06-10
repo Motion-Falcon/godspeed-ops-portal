@@ -76,6 +76,7 @@
 .filter-container .reset-filters-btn {
   height: 30px;
   font-size: 0.7rem;
+  width: fit-content;
 }
 
 .status-filter {

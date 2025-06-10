@@ -1194,6 +1194,9 @@ export interface PositionData {
   projCompDate?: string;
   taskTime?: string;
 
+  // Assignment Management
+  assignedJobseekers?: string[];
+
   // Metadata
   isDraft?: boolean;
   createdAt?: string;
@@ -1739,6 +1742,227 @@ export const deletePositionDraft = async (
       );
     }
     throw error;
+  }
+};
+
+// Position Candidates API
+export interface PositionCandidate {
+  id: string;
+  candidateId: string;
+  firstName: string;
+  lastName: string;
+  name: string;
+  email: string;
+  mobile?: string;
+  bio?: string;
+  experience?: string;
+  weekendAvailability?: boolean;
+  availability?: string;
+  similarityScore: number;
+  isAvailable: boolean;
+  status: string;
+}
+
+export interface PositionCandidateFilters {
+  page?: number;
+  limit?: number;
+  search?: string;
+  nameFilter?: string;
+  emailFilter?: string;
+  phoneFilter?: string;
+  experienceFilter?: string;
+  availabilityFilter?: string;
+  weekendAvailabilityFilter?: string;
+  cityFilter?: string;
+  provinceFilter?: string;
+  onlyAvailable?: string;
+  sortBy?: string;
+  sortOrder?: string;
+}
+
+export interface PaginatedCandidateResponse {
+  candidates: PositionCandidate[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalFiltered: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+  };
+  positionId: string;
+  position?: PositionData | null;
+  filters?: PositionCandidateFilters;
+}
+
+export const getPositionCandidates = async (
+  positionId: string,
+  params: PositionCandidateFilters = {}
+): Promise<PaginatedCandidateResponse> => {
+  try {
+    const queryParams = new URLSearchParams();
+    
+    // Add pagination params
+    if (params.page) queryParams.append("page", params.page.toString());
+    if (params.limit) queryParams.append("limit", params.limit.toString());
+    
+    // Add filter params
+    if (params.search) queryParams.append("search", params.search);
+    if (params.nameFilter) queryParams.append("nameFilter", params.nameFilter);
+    if (params.emailFilter) queryParams.append("emailFilter", params.emailFilter);
+    if (params.phoneFilter) queryParams.append("phoneFilter", params.phoneFilter);
+    if (params.experienceFilter) queryParams.append("experienceFilter", params.experienceFilter);
+    if (params.availabilityFilter) queryParams.append("availabilityFilter", params.availabilityFilter);
+    if (params.weekendAvailabilityFilter) queryParams.append("weekendAvailabilityFilter", params.weekendAvailabilityFilter);
+    if (params.cityFilter) queryParams.append("cityFilter", params.cityFilter);
+    if (params.provinceFilter) queryParams.append("provinceFilter", params.provinceFilter);
+    if (params.onlyAvailable) queryParams.append("onlyAvailable", params.onlyAvailable);
+    if (params.sortBy) queryParams.append("sortBy", params.sortBy);
+    if (params.sortOrder) queryParams.append("sortOrder", params.sortOrder);
+
+    const response = await api.get(`/api/jobseekers/position-candidates/${positionId}?${queryParams.toString()}`);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(
+        error.response.data.error || "Failed to fetch position candidates"
+      );
+    }
+    throw error;
+  }
+};
+
+/**
+ * Assign candidate to position
+ */
+
+// Helper function to transform position data from snake_case to camelCase
+const transformPositionData = (data: Record<string, unknown>): PositionData => {
+  if (!data) return data as PositionData;
+  
+  return {
+    ...data,
+    numberOfPositions: data.number_of_positions as number,
+    assignedJobseekers: data.assigned_jobseekers as string[],
+    // Keep both formats for compatibility
+    number_of_positions: data.number_of_positions,
+    assigned_jobseekers: data.assigned_jobseekers
+  } as PositionData;
+};
+
+export const assignCandidateToPosition = async (
+  positionId: string,
+  candidateId: string,
+  startDate: string,
+  endDate: string,
+): Promise<{
+  success: boolean;
+  message: string;
+  assignedJobseekers: string[];
+  position: PositionData;
+  assignment?: Record<string, unknown>;
+}> => {
+  try {
+    const response = await api.post(
+      `/api/positions/${positionId}/assign`,
+      { 
+        candidateId,
+        startDate,
+        endDate
+      }
+    );
+
+    return {
+      success: response.data.success,
+      message: response.data.message,
+      assignedJobseekers: response.data.assignedJobseekers,
+      position: transformPositionData(response.data.position),
+      assignment: response.data.assignment
+    };
+  } catch (error: unknown) {
+    const axiosError = error as { response?: { data?: { error?: string } } };
+    console.error("Error assigning candidate to position:", error);
+    return {
+      success: false,
+      message: axiosError.response?.data?.error || "Failed to assign candidate",
+      assignedJobseekers: [],
+      position: {} as PositionData
+    };
+  }
+};
+
+/**
+ * Remove candidate from position
+ */
+export const removeCandidateFromPosition = async (
+  positionId: string,
+  candidateId: string
+): Promise<{
+  success: boolean;
+  message: string;
+  assignedJobseekers: string[];
+  position: PositionData;
+}> => {
+  try {
+    const response = await api.delete(
+      `/api/positions/${positionId}/assign/${candidateId}`
+    );
+
+    return {
+      success: response.data.success,
+      message: response.data.message,
+      assignedJobseekers: response.data.assignedJobseekers,
+      position: transformPositionData(response.data.position)
+    };
+  } catch (error: unknown) {
+    const axiosError = error as { response?: { data?: { error?: string } } };
+    console.error("Error removing candidate from position:", error);
+    return {
+      success: false,
+      message: axiosError.response?.data?.error || "Failed to remove candidate",
+      assignedJobseekers: [],
+      position: {} as PositionData
+    };
+  }
+};
+
+export interface AssignmentRecord {
+  id: string;
+  candidateId: string;
+  startDate: string;
+  endDate?: string;
+  status: 'active' | 'completed' | 'cancelled';
+  createdAt: string;
+  updatedAt: string;
+  jobseekerProfile?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    mobile?: string;
+  };
+}
+
+export const getPositionAssignments = async (
+  positionId: string
+): Promise<{
+  success: boolean;
+  assignments: AssignmentRecord[];
+}> => {
+  try {
+    const response = await api.get(`/api/positions/${positionId}/assignments`);
+
+    return {
+      success: response.data.success,
+      assignments: response.data.assignments || []
+    };
+  } catch (error: unknown) {
+    console.error("Error fetching position assignments:", error);
+    return {
+      success: false,
+      assignments: []
+    };
   }
 };
 

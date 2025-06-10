@@ -1,6 +1,6 @@
 /* Form Components Styles */
 .form-group {
-  margin-bottom: var(--spacing-6);
+  margin-bottom: var(--spacing-2);
   position: relative;
   transition: all var(--transition-normal);
   flex-grow: 1;
@@ -12,7 +12,7 @@
   display: block;
   margin-bottom: var(--spacing-2);
   font-weight: var(--font-weight-medium);
-  font-size: 0.9 rem;
+  font-size: 0.8rem;
   color: var(--text);
   transition: color var(--transition-normal);
   min-height: 1.25rem;
@@ -50,16 +50,16 @@
 .form-textarea,
 .form-select {
   width: 100%;
-  min-height: 48px;
+  min-height: 30px;
   padding: var(--spacing-3) var(--spacing-4);
   border: 1px solid var(--border);
   border-radius: var(--border-radius);
   background-color: var(--input-bg);
   color: var(--text);
-  font-size: 1rem;
+  font-size: 0.8rem;
   transition: all var(--transition-normal);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  line-height: 1.5;
+  /* line-height: 1.5; */
   font-family: var(--font-family);
 }
 
@@ -451,7 +451,7 @@ a:hover {
 .toggle-form::before {
   content: '';
   position: absolute;
-  top: 1px;
+  top: 1.7px;
   left: 1px;
   width: 18px;
   height: 18px;
