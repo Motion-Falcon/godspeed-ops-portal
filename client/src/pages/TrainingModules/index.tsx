@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { AppHeader } from "../components/AppHeader";
-import { BookOpen, FileText, Video, Award, ChevronRight, ArrowLeft, Search } from "lucide-react";
-import "../styles/pages/TrainingModules.css";
-import "../styles/pages/JobSeekerManagement.css";
+import { AppHeader } from "../../components/AppHeader";
+import { BookOpen, FileText, Video, Award, ChevronRight, ArrowLeft, Search, Play, Clock } from "lucide-react";
+import { VideoModal } from "./VideoModal";
+import { ComingSoonModal } from "./ComingSoonModal";
+import "../../styles/pages/TrainingModules.css";
+import "../../styles/pages/JobSeekerManagement.css";
 
 interface Module {
   id: string;
@@ -13,24 +15,42 @@ interface Module {
   duration: string;
   completed?: boolean;
   icon: JSX.Element;
+  youtubeId?: string;
+  comingSoon?: boolean;
 }
 
 export function TrainingModules() {
   const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [isVideoModalOpen, setIsVideoModalOpen] = useState<boolean>(false);
+  const [currentVideoId, setCurrentVideoId] = useState<string>("");
+  const [currentVideoTitle, setCurrentVideoTitle] = useState<string>("");
+  const [isComingSoonModalOpen, setIsComingSoonModalOpen] = useState<boolean>(false);
+  const [currentComingSoonModule, setCurrentComingSoonModule] = useState<Module | null>(null);
 
-  // Sample training modules data
+  // Sample training modules data - Videos moved first
   // In a real application, this would come from an API
   const trainingModules: Module[] = [
     {
-      id: "tm-001",
-      title: "Godspeed Platform Orientation",
-      description: "Introduction to the Godspeed recruiting platform and its features",
+      id: "tm-007",
+      title: "WHMIS Training",
+      description: "Workplace Hazardous Materials Information System training for safe handling of hazardous materials",
       type: "video",
-      duration: "25 min",
-      completed: true,
-      icon: <Video className="module-icon video" />
+      duration: "5 min",
+      completed: false,
+      icon: <Video className="module-icon video" />,
+      youtubeId: "IZY5r7_f6eE"
+    },
+    {
+      id: "tm-008",
+      title: "Health & Safety Training",
+      description: "Comprehensive workplace health and safety protocols to ensure a safe working environment",
+      type: "video",
+      duration: "6 min",
+      completed: false,
+      icon: <Video className="module-icon video" />,
+      youtubeId: "mzKdX6NeRGo"
     },
     {
       id: "tm-002",
@@ -39,7 +59,8 @@ export function TrainingModules() {
       type: "document",
       duration: "15 min",
       completed: false,
-      icon: <FileText className="module-icon document" />
+      icon: <FileText className="module-icon document" />,
+      comingSoon: true
     },
     {
       id: "tm-003",
@@ -48,7 +69,8 @@ export function TrainingModules() {
       type: "interactive",
       duration: "45 min",
       completed: false,
-      icon: <BookOpen className="module-icon interactive" />
+      icon: <BookOpen className="module-icon interactive" />,
+      comingSoon: true
     },
     {
       id: "tm-004",
@@ -57,16 +79,8 @@ export function TrainingModules() {
       type: "document",
       duration: "20 min",
       completed: false,
-      icon: <FileText className="module-icon document" />
-    },
-    {
-      id: "tm-005",
-      title: "Diversity & Inclusion in Hiring",
-      description: "Best practices for promoting diversity and inclusion in the hiring process",
-      type: "video",
-      duration: "35 min",
-      completed: true,
-      icon: <Video className="module-icon video" />
+      icon: <FileText className="module-icon document" />,
+      comingSoon: true
     },
     {
       id: "tm-006",
@@ -75,7 +89,8 @@ export function TrainingModules() {
       type: "interactive",
       duration: "30 min",
       completed: false,
-      icon: <BookOpen className="module-icon interactive" />
+      icon: <BookOpen className="module-icon interactive" />,
+      comingSoon: true
     }
   ];
 
@@ -83,9 +98,7 @@ export function TrainingModules() {
   const filteredModules = trainingModules.filter(module => {
     const matchesCategory = 
       selectedCategory === "all" || 
-      selectedCategory === module.type || 
-      (selectedCategory === "completed" && module.completed) ||
-      (selectedCategory === "incomplete" && !module.completed);
+      selectedCategory === module.type;
     
     const matchesSearch = 
       module.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -94,10 +107,32 @@ export function TrainingModules() {
     return matchesCategory && matchesSearch;
   });
 
-  const handleModuleClick = (moduleId: string) => {
-    // In a real application, this would navigate to the specific module
-    console.log(`Opening module: ${moduleId}`);
-    // navigate(`/training-modules/${moduleId}`);
+  const handleModuleClick = (module: Module) => {
+    if (module.comingSoon) {
+      // Open coming soon modal
+      setCurrentComingSoonModule(module);
+      setIsComingSoonModalOpen(true);
+    } else if (module.youtubeId) {
+      // Open YouTube video in modal
+      setCurrentVideoId(module.youtubeId);
+      setCurrentVideoTitle(module.title);
+      setIsVideoModalOpen(true);
+    } else {
+      // Handle other module types
+      console.log(`Opening module: ${module.id}`);
+      // navigate(`/training-modules/${module.id}`);
+    }
+  };
+
+  const closeVideoModal = () => {
+    setIsVideoModalOpen(false);
+    setCurrentVideoId("");
+    setCurrentVideoTitle("");
+  };
+
+  const closeComingSoonModal = () => {
+    setIsComingSoonModalOpen(false);
+    setCurrentComingSoonModule(null);
   };
 
   return (
@@ -157,18 +192,6 @@ export function TrainingModules() {
             >
               Interactive
             </button>
-            <button 
-              className={`filter-button ${selectedCategory === 'completed' ? 'active' : ''}`}
-              onClick={() => setSelectedCategory('completed')}
-            >
-              Completed
-            </button>
-            <button 
-              className={`filter-button ${selectedCategory === 'incomplete' ? 'active' : ''}`}
-              onClick={() => setSelectedCategory('incomplete')}
-            >
-              Incomplete
-            </button>
           </div>
           
           <div className="search-box">
@@ -189,8 +212,8 @@ export function TrainingModules() {
             filteredModules.map((module) => (
               <div 
                 key={module.id} 
-                className={`module-card ${module.completed ? 'completed' : ''}`}
-                onClick={() => handleModuleClick(module.id)}
+                className={`module-card ${module.completed ? 'completed' : ''} ${module.youtubeId ? 'video-module' : ''} ${module.comingSoon ? 'coming-soon-module' : ''}`}
+                onClick={() => handleModuleClick(module)}
               >
                 <div className="module-card-header">
                   {module.icon}
@@ -201,12 +224,28 @@ export function TrainingModules() {
                       Completed
                     </span>
                   )}
+                  {module.comingSoon && (
+                    <span className="coming-soon-badge">
+                      <Clock size={14} />
+                      Coming Soon
+                    </span>
+                  )}
                 </div>
                 <h3 className="module-title">{module.title}</h3>
                 <p className="module-description">{module.description}</p>
                 <div className="module-footer">
                   <span className="module-duration">{module.duration}</span>
-                  <ChevronRight size={16} className="arrow-icon" />
+                  {module.youtubeId ? (
+                    <div className="video-play-indicator">
+                      <Play size={16} className="play-icon" />
+                    </div>
+                  ) : module.comingSoon ? (
+                    <div className="coming-soon-indicator">
+                      <Clock size={16} className="clock-icon" />
+                    </div>
+                  ) : (
+                    <ChevronRight size={16} className="arrow-icon" />
+                  )}
                 </div>
               </div>
             ))
@@ -226,6 +265,21 @@ export function TrainingModules() {
           )}
         </div>
       </main>
+
+      {/* Video Modal */}
+      <VideoModal
+        isOpen={isVideoModalOpen}
+        videoId={currentVideoId}
+        title={currentVideoTitle}
+        onClose={closeVideoModal}
+      />
+
+      {/* Coming Soon Modal */}
+      <ComingSoonModal
+        isOpen={isComingSoonModalOpen}
+        module={currentComingSoonModule}
+        onClose={closeComingSoonModal}
+      />
     </div>
   );
 } 
