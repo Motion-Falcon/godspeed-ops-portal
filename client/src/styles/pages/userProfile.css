@@ -4,7 +4,6 @@
 
 .user-profile-page {
   min-height: 100vh;
-  background: var(--background-gradient);
   color: var(--text);
   font-family: var(--font-family);
   margin-left: 68px;

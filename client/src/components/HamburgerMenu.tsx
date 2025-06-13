@@ -19,7 +19,8 @@ import {
   Database,
   FileText,
   UserPlus,
-  Menu
+  Menu,
+  ChevronUp
 } from 'lucide-react';
 import { ThemeToggle } from './theme-toggle';
 import { logoutUser } from '../lib/auth';
@@ -445,6 +446,36 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
     return undefined;
   }, [location.pathname, isOpen, onClose]);
 
+  // Get user type display text
+  const getUserTypeDisplay = () => {
+    if (isAdmin) return 'Administrator';
+    if (isRecruiter) return 'Recruiter';
+    if (isJobSeeker) return 'Job Seeker';
+    return 'User';
+  };
+
+  // Get user display name
+  const getUserDisplayName = () => {
+    if (user?.user_metadata?.full_name) return user.user_metadata.full_name;
+    if (user?.user_metadata?.name) return user.user_metadata.name;
+    if (user?.email) {
+      // Extract name from email if no full name available
+      const emailName = user.email.split('@')[0];
+      return emailName.charAt(0).toUpperCase() + emailName.slice(1);
+    }
+    return 'User';
+  };
+
+  // Get user initials for avatar
+  const getUserInitials = () => {
+    const name = getUserDisplayName();
+    const words = name.split(' ');
+    if (words.length >= 2) {
+      return `${words[0][0]}${words[1][0]}`.toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
+  };
+
   return (
     <>
       <div 
@@ -481,22 +512,45 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
         
         <div className="menu-footer">
           {isAuthenticated && (
-            <>
-              <button 
-                className="profile-button" 
-                onClick={handleUserProfileNavigation}
-              >
-                <UserCircle size={16} />
-                <span>My Account</span>
-              </button>
-              <button 
-                className="logout-button" 
-                onClick={handleLogout}
-              >
-                <LogOut size={16} />
-                <span>Logout</span>
-              </button>
-            </>
+            <div className="user-profile-bar">
+              {/* User avatar and info */}
+              <div className="user-info">
+                <div className="user-avatar">
+                  {getUserInitials()}
+                </div>
+                <div className="user-details">
+                  <div className="user-name-row">
+                    <div className="user-name">{getUserDisplayName()}</div>
+                    <div className="user-type">{getUserTypeDisplay()}</div>
+                    <div className="dropdown-icon">
+                      <ChevronUp size={22} />
+                    </div>
+                  </div>
+                  <div className="user-email">{user?.email}</div>
+                </div>
+              </div>
+              
+              {/* Dropdown bridge and menu */}
+              <div className="dropdown-bridge">
+                <div className="user-dropdown">
+                  <button 
+                    className="dropdown-item" 
+                    onClick={handleUserProfileNavigation}
+                  >
+                    <UserCircle size={16} />
+                    <span>My Account</span>
+                  </button>
+                  <div className="dropdown-divider"></div>
+                  <button 
+                    className="dropdown-item logout-item" 
+                    onClick={handleLogout}
+                  >
+                    <LogOut size={16} />
+                    <span>Logout</span>
+                  </button>
+                </div>
+              </div>
+            </div>
           )}
         </div>
       </nav>

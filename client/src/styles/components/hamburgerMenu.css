@@ -35,43 +35,25 @@
   height: 100vh;
   background-color: var(--card);
   z-index: 1100;
-  padding: var(--spacing-6) var(--spacing-3);
+  padding: var(--spacing-2) var(--spacing-3);
   box-shadow: var(--card-shadow);
   transition: width 0.3s ease, padding 0.3s ease, box-shadow 0.3s ease;
-  overflow-x: hidden;
-  overflow-y: auto;
+  overflow: hidden; /* Change from overflow-x: hidden; overflow-y: auto; */
   display: flex;
   flex-direction: column;
   border-right: 1px solid var(--border);
   visibility: visible;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
 }
 
 /* Expanded state */
 .hamburger-menu.open {
   width: 250px; /* Expanded width */
-  padding: var(--spacing-6) var(--spacing-4);
-  height: 100vh;
+  padding: var(--spacing-2) var(--spacing-2);
 }
 
-/* Custom scrollbar for WebKit browsers */
+/* Remove custom scrollbar from main container */
 .hamburger-menu::-webkit-scrollbar {
-  width: 8px;
-}
-
-.hamburger-menu::-webkit-scrollbar-track {
-  background: transparent;
-  margin: var(--spacing-2) 0;
-}
-
-.hamburger-menu::-webkit-scrollbar-thumb {
-  background-color: var(--border);
-  border-radius: 20px;
-}
-
-.hamburger-menu::-webkit-scrollbar-thumb:hover {
-  background-color: var(--text-muted);
+  display: none;
 }
 
 /* --------------------------------------------------------------------------
@@ -81,8 +63,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  padding-bottom: var(--spacing-4);
-  margin-bottom: var(--spacing-2);
+  padding-bottom: var(--spacing-2);
   border-bottom: 1px solid var(--border);
   transition: all 0.3s ease;
 }
@@ -171,10 +152,33 @@
   padding: 0;
   margin: 0;
   flex: 1;
-  height: fit-content;
+  height: auto; /* Remove fixed height */
   display: flex;
   flex-direction: column;
   gap: 0; /* Remove default gap for more control */
+  overflow-y: auto; /* Add scrolling to menu items only */
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+/* Custom scrollbar for menu items */
+.menu-items::-webkit-scrollbar {
+  width: 8px;
+}
+
+.menu-items::-webkit-scrollbar-track {
+  background: transparent;
+  margin: var(--spacing-2) 0;
+}
+
+.menu-items::-webkit-scrollbar-thumb {
+  background-color: var(--border);
+  border-radius: 20px;
+}
+
+.menu-items::-webkit-scrollbar-thumb:hover {
+  background-color: var(--text-muted);
 }
 
 .menu-item {
@@ -194,7 +198,7 @@
 }
 
 .menu-item:hover {
-  transform: translateX(2px);
+  transform: translateY(2px);
 }
 
 .hamburger-menu.open .menu-item {
@@ -425,88 +429,295 @@
 }
 
 /* --------------------------------------------------------------------------
-   Menu Footer
+   Menu Footer - User Profile Bar
    -------------------------------------------------------------------------- */
 .menu-footer {
-  margin-top: auto;
-  padding-top: var(--spacing-4);
-  border-top: 1px solid var(--border);
+  margin-top: 0; /* Remove auto margin */
+  padding: 0;
+  box-shadow: 0 -8px 25px rgba(0, 0, 0, 0.15), 0 -4px 12px rgba(0, 0, 0, 0.1), 0 -2px 6px rgba(0, 0, 0, 0.05);
   display: none;
+  background-color: var(--card);
+  flex-shrink: 0; /* Prevent footer from shrinking */
+}
+
+.dark .menu-footer {
+  box-shadow: 0 -8px 25px rgba(255, 255, 255, 0.1), 0 -4px 12px rgba(255, 255, 255, 0.05), 0 -2px 6px rgba(255, 255, 255, 0.03);
 }
 
 .hamburger-menu.open .menu-footer {
-  height: auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--spacing-4);
-}
-
-/* Logout button */
-.logout-button,
-.profile-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--spacing-2);
-  border: 1px solid transparent;
-  border-radius: var(--border-radius);
-  padding: var(--spacing-3);
-  cursor: pointer;
-  font-weight: var(--font-weight-medium);
-  transition: all 0.3s ease;
+  display: block;
+  width: 254px;
   position: relative;
-  overflow: hidden;
-  transform: translateY(20px);
-  opacity: 0;
-  font-size: 0.7rem;
+  left: -9px;
+  bottom: -6px;
 }
 
-.logout-button {
-  background-color: var(--failure-bg);
+/* User Profile Bar */
+.user-profile-bar {
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  border-radius: var(--border-radius) var(--border-radius) 0 0;
+  overflow: visible;
+  position: relative;
+}
+
+.user-profile-bar:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.dark .user-profile-bar:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Dropdown Bridge - Creates seamless hover area */
+.dropdown-bridge {
+  position: absolute;
+  bottom: 100%;
+  left: 5px;
+  width: 240px;
+  height: calc(100% + var(--spacing-2)); /* Covers the margin gap */
+  background: transparent;
+  opacity: 0;
+  visibility: hidden;
+  transition: all var(--transition-normal);
+  z-index: 999;
+  pointer-events: none;
+}
+
+.user-profile-bar:hover .dropdown-bridge {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+/* User Info Section */
+.user-info {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-3);
+  padding: var(--spacing-2);
+  transition: all var(--transition-normal);
+}
+
+/* User Details */
+.user-details {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* User Name Row - Contains name, badge, and dropdown icon */
+.user-name-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  width: 100%;
+  min-width: 0;
+}
+
+.user-name {
+  font-weight: var(--font-weight-semibold);
+  font-size: 0.75rem;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+  max-width: 90px; /* Limit name width to make room for badge and icon */
+}
+
+.user-type {
+  font-size: 0.55rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  font-weight: var(--font-weight-medium);
+  background-color: var(--pending-bg);
+  color: var(--pending);
+  padding: 1px 3px;
+  border-radius: 6px;
+  white-space: nowrap;
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+/* Dropdown Icon */
+.dropdown-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  transition: all var(--transition-normal);
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
+.user-profile-bar:hover .dropdown-icon {
+  color: var(--text);
+  opacity: 1;
+  transform: translateY(-1px);
+}
+
+.user-email {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* User Avatar */
+.user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: var(--font-weight-bold);
+  font-size: 0.7rem;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  border: 2px solid var(--border);
+  transition: all var(--transition-normal);
+  align-self: flex-start;
+}
+
+.user-profile-bar:hover .user-avatar {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.dark .user-avatar {
+  border-color: #444;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* User Dropdown */
+.user-dropdown {
+  position: absolute;
+  bottom: 0;
+  left: 6px;
+  right: 0;
+  background-color: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius);
+  box-shadow: 0 -8px 25px rgba(0, 0, 0, 0.15), 0 -4px 12px rgba(0, 0, 0, 0.1), 0 -2px 6px rgba(0, 0, 0, 0.05);
+  padding: var(--spacing-2);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(10px);
+  transition: all var(--transition-normal);
+  z-index: 1000;
+  margin-bottom: var(--spacing-2);
+  width: 230px;
+}
+
+.dark .user-dropdown {
+  box-shadow: 0 -8px 25px rgba(255, 255, 255, 0.1), 0 -4px 12px rgba(255, 255, 255, 0.05), 0 -2px 6px rgba(255, 255, 255, 0.03);
+  border-color: #333;
+}
+
+.user-profile-bar:hover .user-dropdown,
+.dropdown-bridge:hover .user-dropdown {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+/* Dropdown Items */
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  width: 100%;
+  padding: var(--spacing-2);
+  background: none;
+  border: none;
+  border-radius: var(--border-radius);
+  color: var(--text);
+  font-size: 0.75rem;
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-align: left;
+}
+
+.dropdown-item:hover {
+  background-color: var(--text);
+  color: var(--background);
+  transform: translateX(2px);
+}
+
+.dropdown-item:active {
+  transform: translateX(1px) scale(0.98);
+}
+
+/* Logout item specific styling */
+.logout-item {
   color: var(--failure);
 }
 
-.hamburger-menu.open .logout-button,
-.hamburger-menu.open .profile-button {
-  transform: translateY(0);
-  opacity: 1;
-  /* transition-delay: 0.2s; */
-}
-
-/* Button shine effects */
-.logout-button::before,
-.profile-button::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.1),
-    transparent
-  );
-  transition: left 0.7s;
-}
-
-.logout-button:hover {
+.logout-item:hover {
   background-color: var(--failure);
   color: white;
-  border-color: var(--failure);
 }
 
-.profile-button:hover {
-  background-color: var(--text);
-  color: var(--background);
-  border-color: var(--text);
+/* Dropdown Divider */
+.dropdown-divider {
+  height: 1px;
+  background-color: var(--border);
+  margin: var(--spacing-1) var(--spacing-2);
+  opacity: 0.5;
 }
 
-.logout-button:hover::before,
-.profile-button:hover::before {
-  left: 100%;
+/* Animation for dropdown appearance */
+@keyframes dropdownSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.user-profile-bar:hover .user-dropdown {
+  animation: dropdownSlideUp 0.2s ease-out;
+}
+
+/* Ensure dropdown stays visible when hovering over it */
+.user-dropdown:hover {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .user-info {
+    padding: var(--spacing-2);
+  }
+  
+  .user-avatar {
+    width: 32px;
+    height: 32px;
+    font-size: 0.65rem;
+  }
+  
+  .user-name {
+    font-size: 0.7rem;
+  }
+  
+  .user-email {
+    font-size: 0.6rem;
+  }
 }
 
 /* --------------------------------------------------------------------------
