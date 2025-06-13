@@ -1590,7 +1590,7 @@ router.post(
       const { data: candidate, error: candidateError } = await supabase
         .from("jobseeker_profiles")
         .select("id")
-        .eq("id", candidateId)
+        .eq("user_id", candidateId)
         .single();
 
       if (candidateError || !candidate) {
@@ -1905,6 +1905,215 @@ router.get(
       });
     } catch (error) {
       console.error("Unexpected error fetching assignments:", error);
+      return res.status(500).json({ error: "An unexpected error occurred" });
+    }
+  }
+);
+
+/**
+ * Get position assignments for a specific candidate
+ * GET /api/positions/candidate/:candidateId/assignments
+ * @access Private (Admin, Recruiter)
+ */
+router.get(
+  "/candidate/:candidateId/assignments",
+  authenticateToken,
+  authorizeRoles(["admin", "recruiter", "jobseeker"]),
+  async (req: Request, res: Response) => {
+    try {
+      const { candidateId } = req.params;
+      const {
+        page = "1",
+        limit = "10",
+        status = "",
+        startDate = "",
+        endDate = ""
+      } = req.query as {
+        page?: string;
+        limit?: string;
+        status?: string;
+        startDate?: string;
+        endDate?: string;
+      };
+
+      const pageNum = parseInt(page);
+      const limitNum = parseInt(limit);
+      const offset = (pageNum - 1) * limitNum;
+
+      // Verify candidate exists
+      const { data: candidate, error: candidateError } = await supabase
+        .from("jobseeker_profiles")
+        .select("id, first_name, last_name, email")
+        .eq("user_id", candidateId)
+        .single();
+
+      if (candidateError || !candidate) {
+        return res.status(404).json({ error: "Candidate not found" });
+      }
+
+      // Build the base query for assignments with position details
+      let baseQuery = supabase
+        .from("position_candidate_assignments")
+        .select(`
+          id,
+          position_id,
+          candidate_id,
+          start_date,
+          end_date,
+          status,
+          created_at,
+          updated_at,
+          positions:position_id (
+            id,
+            position_code,
+            title,
+            client_name,
+            city,
+            province,
+            employment_term,
+            employment_type,
+            position_category,
+            experience,
+            show_on_job_portal,
+            start_date,
+            end_date,
+            regular_pay_rate,
+            overtime_pay_rate,
+            number_of_positions
+          )
+        `)
+        .eq("candidate_id", candidateId);
+
+      // Apply filters
+      if (status && status !== "all") {
+        baseQuery = baseQuery.eq("status", status);
+      }
+
+      if (startDate) {
+        baseQuery = baseQuery.gte("start_date", startDate);
+      }
+
+      if (endDate) {
+        baseQuery = baseQuery.lte("end_date", endDate);
+      }
+
+      // Get total count for pagination
+      let countQuery = supabase
+        .from("position_candidate_assignments")
+        .select("*", { count: "exact", head: true })
+        .eq("candidate_id", candidateId);
+
+      // Apply same filters to count query
+      if (status && status !== "all") {
+        countQuery = countQuery.eq("status", status);
+      }
+
+      if (startDate) {
+        countQuery = countQuery.gte("start_date", startDate);
+      }
+
+      if (endDate) {
+        countQuery = countQuery.lte("end_date", endDate);
+      }
+
+      const { count: totalCount, error: countError } = await countQuery;
+
+      if (countError) {
+        console.error("Error getting assignment count:", countError);
+        return res.status(500).json({ error: "Failed to get assignment count" });
+      }
+
+      // Execute main query with pagination
+      const { data: assignments, error } = await baseQuery
+        .range(offset, offset + limitNum - 1)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching candidate assignments:", error);
+        return res.status(500).json({ error: "Failed to fetch assignments" });
+      }
+
+      if (!assignments || assignments.length === 0) {
+        return res.json({
+          candidate: {
+            id: candidate.id,
+            firstName: candidate.first_name,
+            lastName: candidate.last_name,
+            email: candidate.email
+          },
+          assignments: [],
+          pagination: {
+            page: pageNum,
+            limit: limitNum,
+            total: totalCount || 0,
+            totalPages: Math.ceil((totalCount || 0) / limitNum),
+            hasNextPage: false,
+            hasPrevPage: false,
+          },
+        });
+      }
+
+      // Transform the response to match frontend expectations
+      const formattedAssignments = assignments.map((assignment: any) => {
+        const position = assignment.positions;
+        
+        // Convert assignment fields from snake_case to camelCase
+        const formattedAssignment = {
+          id: assignment.id,
+          positionId: assignment.position_id,
+          candidateId: assignment.candidate_id,
+          startDate: assignment.start_date,
+          endDate: assignment.end_date,
+          status: assignment.status,
+          createdAt: assignment.created_at,
+          updatedAt: assignment.updated_at,
+          position: position ? {
+            id: position.id,
+            positionCode: position.position_code,
+            title: position.title,
+            clientName: position.client_name,
+            city: position.city,
+            province: position.province,
+            employmentTerm: position.employment_term,
+            employmentType: position.employment_type,
+            positionCategory: position.position_category,
+            experience: position.experience,
+            showOnJobPortal: position.show_on_job_portal,
+            startDate: position.start_date,
+            endDate: position.end_date,
+            regularPayRate: position.regular_pay_rate,
+            billRate: position.bill_rate,
+            numberOfPositions: position.number_of_positions
+          } : null
+        };
+
+        return formattedAssignment;
+      });
+
+      // Calculate pagination metadata
+      const totalPages = Math.ceil((totalCount || 0) / limitNum);
+      const hasNextPage = pageNum < totalPages;
+      const hasPrevPage = pageNum > 1;
+
+      return res.json({
+        candidate: {
+          id: candidate.id,
+          firstName: candidate.first_name,
+          lastName: candidate.last_name,
+          email: candidate.email
+        },
+        assignments: formattedAssignments,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total: totalCount || 0,
+          totalPages,
+          hasNextPage,
+          hasPrevPage,
+        },
+      });
+    } catch (error) {
+      console.error("Unexpected error fetching candidate assignments:", error);
       return res.status(500).json({ error: "An unexpected error occurred" });
     }
   }

@@ -346,6 +346,14 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
       activePattern: '/jobseekers/',
       exact: true
     },
+    {
+      label: 'My Positions',
+      path: '/my-positions',
+      icon: <Briefcase size={16} />,
+      requiresAuth: true,
+      roles: ['jobseeker'],
+      exact: true
+    },
   ];
 
   // Filter menu items based on authentication status and user role

@@ -34,6 +34,7 @@ import { JobseekerDrafts } from './pages/JobseekerProfile/JobseekerDrafts';
 import { JobseekerProfileDraftEdit } from './pages/JobseekerProfile/JobseekerProfileDraftEdit';
 import { TrainingModules } from './pages/TrainingModules';
 import { UserProfile } from './pages/UserProfile';
+import { JobSeekerPositions } from './pages/JobSeekerPositions';
 import './styles/main.css';
 import { TwoFactorAuth } from './pages/TwoFactorAuth';
 
@@ -90,6 +91,7 @@ function App() {
               <Route element={<JobSeekerRoute />}>
                 <Route path="/profile-verification-pending" element={<ProfileVerificationPending />} />
                 <Route path="/profile-verification-rejected" element={<ProfileVerificationRejected />} />
+                <Route path="/my-positions" element={<JobSeekerPositions />} />
                 {/* Add more jobseeker-specific routes here */}
               </Route>
               

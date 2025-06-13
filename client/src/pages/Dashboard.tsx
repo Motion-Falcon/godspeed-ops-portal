@@ -18,18 +18,18 @@ export function Dashboard() {
       return;
     }
 
-    // Check jobseeker profile state and redirect accordingly
-    if (isJobSeeker) {
-      // Check if user has a profile using the hasProfile flag
-      if (!hasProfile) {
-        // No profile exists, redirect to create profile
-        navigate('/profile/create');
-      } else if (profileVerificationStatus === 'pending' || profileVerificationStatus === 'rejected') {
-        // Profile exists but not verified
-        navigate('/profile-verification-pending');
-      }
-      // If verified, continue to jobseeker dashboard which will render below
-    }
+    // // Check jobseeker profile state and redirect accordingly
+    // if (isJobSeeker) {
+    //   // Check if user has a profile using the hasProfile flag
+    //   if (!hasProfile) {
+    //     // No profile exists, redirect to create profile
+    //     navigate('/profile/create');
+    //   } else if (profileVerificationStatus === 'pending' || profileVerificationStatus === 'rejected') {
+    //     // Profile exists but not verified
+    //     navigate('/profile-verification-pending');
+    //   }
+    //   // If verified, continue to jobseeker dashboard which will render below
+    // }
     
     setIsLoading(false);
   }, [user, navigate, isJobSeeker, profileVerificationStatus, hasProfile]);

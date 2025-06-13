@@ -494,23 +494,42 @@ router.get('/profile/:id', async (req, res) => {
     const { id } = req.params;
 
     // Use the admin client to bypass RLS
-    const { data: profile, error } = await supabaseAdmin
+    // First try to find by profile ID, then by user_id if not found
+    let profile: DbJobseekerProfile | null = null;
+    let error: any = null;
+
+    // Try finding by profile ID first
+    const { data: profileById, error: profileByIdError } = await supabaseAdmin
       .from('jobseeker_profiles')
-      .select<string, DbJobseekerProfile>('*') // Select all fields for detail view
+      .select<string, DbJobseekerProfile>('*')
       .eq('id', id)
-      .single();
-      
-    if (error) {
-      console.error('Error fetching profile from database:', error);
-      // Handle specific Supabase error for not found
-      if (error.code === 'PGRST116') { 
-        return res.status(404).json({ error: 'Profile not found' });
-      }
+      .maybeSingle();
+
+    if (profileByIdError) {
+      console.error('Error fetching profile by ID:', profileByIdError);
       return res.status(500).json({ error: 'Failed to fetch detailed jobseeker profile' });
     }
-    
-    if (!profile) { // Should be redundant due to error handling above, but safe check
-       return res.status(404).json({ error: 'Profile not found' });
+
+    if (profileById) {
+      profile = profileById;
+    } else {
+      // If not found by profile ID, try finding by user_id
+      const { data: profileByUserId, error: profileByUserIdError } = await supabaseAdmin
+        .from('jobseeker_profiles')
+        .select<string, DbJobseekerProfile>('*')
+        .eq('user_id', id)
+        .maybeSingle();
+
+      if (profileByUserIdError) {
+        console.error('Error fetching profile by user_id:', profileByUserIdError);
+        return res.status(500).json({ error: 'Failed to fetch detailed jobseeker profile' });
+      }
+
+      profile = profileByUserId;
+    }
+      
+    if (!profile) {
+      return res.status(404).json({ error: 'Profile not found' });
     }
 
     // Convert snake_case keys to camelCase for the entire profile object
@@ -1692,7 +1711,6 @@ router.get('/position-candidates/:positionId', isAdminOrRecruiter, async (req, r
         p_filters: filters,
         p_limit: 100000 // Large limit to get all candidates, then paginate in-memory
       });
-
     if (candidatesError) {
       console.error('Error calling get_position_candidates function:', candidatesError);
       return res.status(500).json({ 

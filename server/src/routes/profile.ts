@@ -284,11 +284,22 @@ router.post('/submit',
       setTimeout(async () => {
         try {
           console.log(`Sending profile data to AI verification service at: ${aiVerificationUrl}`);
+          
+          // Extract the authorization header from the original request
+          const authHeader = req.headers.authorization;
+          console.log('authHeader', authHeader);
+          const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+          };
+          
+          // Add the bearer token if available
+          if (authHeader) {
+            headers['Authorization'] = authHeader;
+          }
+          
           const verificationResponse = await fetch(aiVerificationUrl, {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
+            headers,
             body: JSON.stringify(finalProfileData),
           });
           

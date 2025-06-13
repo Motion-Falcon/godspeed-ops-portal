@@ -69,13 +69,6 @@ div.logo {
   }
 }
 
-.card {
-  background-color: var(--card);
-  border-radius: var(--border-radius);
-  box-shadow: var(--card-shadow);
-  padding: var(--spacing-6);
-}
-
 .card-header {
   display: flex;
   align-items: center;

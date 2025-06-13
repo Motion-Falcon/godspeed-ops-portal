@@ -1151,34 +1151,37 @@ export function JobSeekerProfile() {
             </div>
           </div>
 
-          <div className="compensation-section section-card">
-            <h2 className="section-title">Compensation</h2>
-            <div className="detail-group">
-              {renderDetailItem("Payrate Type", profile.payrateType)}
-              {renderDetailItem("Bill Rate", profile.billRate)}
-              {renderDetailItem("Pay Rate", profile.payRate)}
-              {renderDetailItem("Payment Method", profile.paymentMethod)}
-              {renderDetailItem("HST/GST", profile.hstGst)}
-              {renderDetailItem("Cash Deduction", profile.cashDeduction)}
-              {renderDetailItem("Overtime Enabled", profile.overtimeEnabled)}
-              {profile.overtimeEnabled && (
-                <>
-                  {renderDetailItem(
-                    "Overtime Hours After",
-                    profile.overtimeHours
-                  )}
-                  {renderDetailItem(
-                    "Overtime Bill Rate",
-                    profile.overtimeBillRate
-                  )}
-                  {renderDetailItem(
-                    "Overtime Pay Rate",
-                    profile.overtimePayRate
-                  )}
-                </>
-              )}
+          {/* Only show compensation section for admins and recruiters */}
+          {!isJobSeeker && (
+            <div className="compensation-section section-card">
+              <h2 className="section-title">Compensation</h2>
+              <div className="detail-group">
+                {renderDetailItem("Payrate Type", profile.payrateType)}
+                {renderDetailItem("Bill Rate", profile.billRate)}
+                {renderDetailItem("Pay Rate", profile.payRate)}
+                {renderDetailItem("Payment Method", profile.paymentMethod)}
+                {renderDetailItem("HST/GST", profile.hstGst)}
+                {renderDetailItem("Cash Deduction", profile.cashDeduction)}
+                {renderDetailItem("Overtime Enabled", profile.overtimeEnabled)}
+                {profile.overtimeEnabled && (
+                  <>
+                    {renderDetailItem(
+                      "Overtime Hours After",
+                      profile.overtimeHours
+                    )}
+                    {renderDetailItem(
+                      "Overtime Bill Rate",
+                      profile.overtimeBillRate
+                    )}
+                    {renderDetailItem(
+                      "Overtime Pay Rate",
+                      profile.overtimePayRate
+                    )}
+                  </>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="meta-section section-card">
             <h2 className="section-title">Meta Information</h2>

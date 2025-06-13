@@ -13,6 +13,7 @@ export const ProtectedRoute = () => {
     isJobSeeker,
     profileVerificationStatus,
     hasProfile,
+    isProfileLoading,
   } = useAuth();
   const location = useLocation();
 
@@ -34,58 +35,47 @@ export const ProtectedRoute = () => {
     return <Navigate to="/dashboard" replace />;
   }
 
-  // Handle jobseeker profile-based routing for all protected routes
+  // Simplified jobseeker route access logic
   if (isJobSeeker) {
-    const path = location.pathname;
+    const currentPath = location.pathname;
 
-    // Define route access rules for job seekers
-    if (path === "/profile/create") {
-      // Redirect if user already has a profile
-      if (hasProfile) {
-        return (
-          <Navigate
-            to={
-              profileVerificationStatus === "verified"
-                ? "/dashboard"
-                : profileVerificationStatus === "pending"
-                ? "/profile-verification-pending"
-                : ""
-            }
-            replace
-          />
-        );
-      }
-      // Allow access to profile creation if no profile exists
-    } else if (path === "/profile-verification-pending") {
-      // Redirect to profile creation if no profile
-      if (!hasProfile) {
+    // Show loading state while profile data is being fetched
+    if (isProfileLoading) {
+      return (
+        <div className="flex h-screen w-screen items-center justify-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+        </div>
+      );
+    }
+
+    // Case 1: No profile - only allow profile creation
+    if (!hasProfile) {
+      if (currentPath !== "/profile/create") {
         return <Navigate to="/profile/create" replace />;
       }
-      // Redirect to dashboard if profile is verified
-      if (profileVerificationStatus === "verified") {
-        return <Navigate to="/dashboard" replace />;
+    }
+    // Case 2: Has profile but verification pending - only allow pending page
+    else if (profileVerificationStatus === "pending") {
+      if (currentPath !== "/profile-verification-pending") {
+        return <Navigate to="/profile-verification-pending" replace />;
       }
-      if (profileVerificationStatus === "rejected") {
+    }
+    // Case 3: Has profile but verification rejected - only allow rejected page
+    else if (profileVerificationStatus === "rejected") {
+      if (currentPath !== "/profile-verification-rejected") {
         return <Navigate to="/profile-verification-rejected" replace />;
       }
-      // Otherwise allow access to verification pending page
-    } else if (path === "/dashboard" || path.startsWith("/jobseekers/")) {
-      // Redirect to profile creation if no profile
-      if (!hasProfile) {
-        return <Navigate to="/profile/create" replace />;
-      }
-      // Redirect to verification pending if profile not verified
-      if (profileVerificationStatus === "pending") {
-        return <Navigate to="/profile-verification-pending" replace />;
-      }
-      // Allow access to dashboard/jobseeker routes if profile is verified
-    } else if (path === "/profile-verification-rejected") {
-      // Redirect to dashboard if profile is verified
-      if (profileVerificationStatus === "verified") {
+    }
+    // Case 4: Has profile and verified - block access to the first three routes
+    else if (profileVerificationStatus === "verified") {
+      const restrictedPaths = [
+        "/profile/create",
+        "/profile-verification-pending", 
+        "/profile-verification-rejected"
+      ];
+      
+      if (restrictedPaths.includes(currentPath)) {
         return <Navigate to="/dashboard" replace />;
-      }
-      if (profileVerificationStatus === "pending") {
-        return <Navigate to="/profile-verification-pending" replace />;
       }
     }
   }

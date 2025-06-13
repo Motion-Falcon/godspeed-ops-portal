@@ -1966,4 +1966,86 @@ export const getPositionAssignments = async (
   }
 };
 
+export interface CandidateAssignment {
+  id: string;
+  positionId: string;
+  candidateId: string;
+  startDate: string;
+  endDate?: string;
+  status: 'active' | 'completed' | 'cancelled';
+  createdAt: string;
+  updatedAt: string;
+  position?: {
+    id: string;
+    positionCode: string;
+    title: string;
+    clientName: string;
+    city: string;
+    province: string;
+    employmentTerm: string;
+    employmentType: string;
+    positionCategory: string;
+    experience: string;
+    showOnJobPortal: boolean;
+    startDate: string;
+    endDate?: string;
+    regularPayRate: string;
+    billRate: string;
+    numberOfPositions: number;
+  } | null;
+}
+
+export interface CandidateAssignmentsResponse {
+  candidate: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+  assignments: CandidateAssignment[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+  };
+}
+
+export interface CandidateAssignmentFilters {
+  page?: number;
+  limit?: number;
+  status?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
+/**
+ * Get assignments for a specific candidate
+ */
+export const getCandidateAssignments = async (
+  candidateId: string,
+  params: CandidateAssignmentFilters = {}
+): Promise<CandidateAssignmentsResponse> => {
+  try {
+    const queryParams = new URLSearchParams();
+    
+    if (params.page) queryParams.append('page', params.page.toString());
+    if (params.limit) queryParams.append('limit', params.limit.toString());
+    if (params.status && params.status !== 'all') queryParams.append('status', params.status);
+    if (params.startDate) queryParams.append('startDate', params.startDate);
+    if (params.endDate) queryParams.append('endDate', params.endDate);
+
+    const response = await api.get(
+      `/api/positions/candidate/${candidateId}/assignments?${queryParams.toString()}`
+    );
+
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching candidate assignments:', error);
+    throw error;
+  }
+};
+
 export default api;

@@ -5,23 +5,6 @@
   margin: 0 auto;
 }
 
-.card {
-  background: var(--card);
-  border-radius: var(--border-radius);
-  box-shadow: var(--card-shadow);
-  padding: var(--spacing-6);
-  border: 1px solid var(--border);
-  transition: all var(--transition-normal);
-}
-
-.card h2 {
-  font-size: var(--font-size-subheader);
-  font-weight: var(--font-weight-semibold);
-  color: var(--text);
-  margin: 0;
-  line-height: 1.4;
-}
-
 .filter-container {
   display: flex;
   justify-content: space-between;

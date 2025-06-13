@@ -3,7 +3,8 @@ import {
   User as UserIcon,
   Activity,
   BookOpen,
-  KeyRound
+  KeyRound,
+  Briefcase
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -169,6 +170,15 @@ export function JobSeekerDashboard() {
               >
                 <UserIcon size={16} className="icon" />
                 {isLoadingProfile ? "Loading Profile..." : "View My Profile"}
+              </button>
+
+              {/* My Positions button */}
+              <button
+                className="button outline"
+                onClick={() => navigate("/my-positions")}
+              >
+                <Briefcase size={16} className="icon" />
+                My Positions
               </button>
 
               {/* Training Modules button */}

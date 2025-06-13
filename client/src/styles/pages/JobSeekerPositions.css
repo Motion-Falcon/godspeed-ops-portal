@@ -1,0 +1,699 @@
+/* JobSeeker Positions Page Styles */
+.jsp-positions-container {
+  min-height: 100vh;
+  color: var(--text);
+  margin-left: 68px;
+  margin-top: 80px;
+  padding: 10px 0;
+  /* animation: fadeIn 0.5s ease-out; */
+}
+
+.jsp-positions-header {
+  max-width: 1200px;
+  margin: 20px auto var(--spacing-8);
+  text-align: center;
+}
+
+.jsp-positions-title {
+  font-size: var(--font-size-header);
+  font-weight: var(--font-weight-bold);
+  color: var(--text);
+  margin-bottom: var(--spacing-3);
+  background: linear-gradient(120deg, var(--text), var(--text-muted));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: slideInDown 0.6s ease-out;
+}
+
+
+.jsp-candidate-name {
+  font-size: var(--font-size-subheader);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text);
+  margin-bottom: var(--spacing-2);
+}
+
+.jsp-candidate-details {
+  display: flex;
+  gap: var(--spacing-4);
+  flex-wrap: wrap;
+  color: var(--text-muted);
+  font-size: var(--font-size-small);
+}
+
+.jsp-filter-panel {
+  background: var(--card);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-6);
+  margin-bottom: var(--spacing-6);
+  box-shadow: var(--card-shadow);
+  animation: slideInUp 0.6s ease-out 0.3s backwards;
+}
+
+.jsp-filter-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  cursor: pointer;
+  color: var(--text);
+  font-weight: var(--font-weight-medium);
+  margin-bottom: var(--spacing-4);
+  transition: all var(--transition-normal);
+  padding: var(--spacing-2) var(--spacing-4);
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius);
+  background: var(--card);
+}
+
+.jsp-filter-toggle:hover {
+  color: var(--primary);
+  border-color: var(--primary);
+  background: var(--background);
+}
+
+.jsp-filter-content {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--spacing-4);
+  margin-top: var(--spacing-4);
+}
+
+.jsp-filter-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr auto;
+  gap: var(--spacing-4);
+  align-items: end;
+}
+
+.jsp-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.jsp-filter-group label {
+  display: block;
+  margin-bottom: var(--spacing-1);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text);
+  font-size: 0.75rem;
+}
+
+.jsp-search-input {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.jsp-search-input svg {
+  position: absolute;
+  left: var(--spacing-2);
+  color: var(--text-muted);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.jsp-search-input input {
+  width: 100%;
+  padding: var(--spacing-2) 30px;
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius);
+  background-color: var(--input-bg);
+  color: var(--text);
+  font-size: 0.8rem;
+  height: 38px;
+  transition: all var(--transition-fast);
+}
+
+.jsp-search-input input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.2);
+}
+
+.dark .jsp-search-input input:focus {
+  box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.2);
+}
+
+.jsp-clear-search {
+  position: absolute;
+  right: var(--spacing-2);
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: var(--spacing-1);
+  border-radius: 50%;
+  transition: all var(--transition-fast);
+  z-index: 1;
+}
+
+.jsp-clear-search:hover {
+  color: var(--text);
+  background: var(--background);
+}
+
+.jsp-filter-group select {
+  cursor: pointer;
+  width: 100%;
+  padding: var(--spacing-2) var(--spacing-4) var(--spacing-2) var(--spacing-2);
+  border-radius: var(--border-radius);
+  border: 1px solid var(--border);
+  background-color: var(--input-bg);
+  color: var(--text);
+  font-size: 0.8rem;
+  appearance: none;
+  height: 38px;
+  transition: all var(--transition-fast);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+}
+
+.jsp-filter-group select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.2);
+}
+
+.dark .jsp-filter-group select:focus {
+  box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.2);
+}
+
+.jsp-status-tabs {
+  display: flex;
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-6);
+  flex-wrap: wrap;
+  justify-content: center;
+  animation: slideInUp 0.6s ease-out 0.4s backwards;
+}
+
+.jsp-status-tab {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-3) var(--spacing-5);
+  border: 2px solid var(--border);
+  border-radius: 9999px;
+  background: var(--card);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  font-weight: var(--font-weight-medium);
+  position: relative;
+  overflow: hidden;
+}
+
+.jsp-status-tab::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transition: left 0.5s ease;
+}
+
+.jsp-status-tab:hover::before {
+  left: 100%;
+}
+
+.jsp-status-tab:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--card-shadow);
+  border-color: var(--primary);
+}
+
+.jsp-status-tab.active {
+  background: var(--primary);
+  color: var(--card);
+  border-color: var(--primary);
+  box-shadow: var(--card-shadow);
+}
+
+.jsp-status-count {
+  background: var(--background);
+  color: var(--text);
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: var(--font-weight-bold);
+  min-width: 20px;
+  text-align: center;
+}
+
+.jsp-status-tab.active .jsp-status-count {
+  background: var(--card);
+  color: var(--primary);
+}
+
+.jsp-positions-list {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: var(--spacing-6);
+  animation: fadeIn 0.8s ease-out 0.5s backwards;
+}
+
+.jsp-position-card {
+  background: var(--card);
+  border-radius: var(--border-radius);
+  box-shadow: var(--card-shadow);
+  border: 1px solid var(--border);
+  padding: var(--spacing-6);
+  transition: all var(--transition-normal);
+  position: relative;
+  overflow: hidden;
+  animation: slideInUp 0.6s ease-out backwards;
+}
+
+.jsp-position-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, var(--success), var(--primary));
+  transform: scaleX(0);
+  transition: transform var(--transition-normal);
+}
+
+.jsp-position-card:hover::before {
+  transform: scaleX(1);
+}
+
+.jsp-position-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+.dark .jsp-position-card:hover {
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.jsp-position-header {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: var(--spacing-4);
+}
+
+.jsp-position-title {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text);
+  margin-bottom: var(--spacing-1);
+  line-height: 1.3;
+}
+
+.jsp-position-status {
+  padding: var(--spacing-1) var(--spacing-3);
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.jsp-position-status.current {
+  background: var(--success-bg);
+  color: var(--success);
+}
+
+.jsp-position-status.past {
+  background: var(--text-muted);
+  color: var(--card);
+}
+
+.jsp-position-status.future {
+  background: var(--pending-bg);
+  color: var(--pending);
+}
+
+.jsp-position-details {
+  margin-bottom: var(--spacing-4);
+}
+
+.jsp-detail-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-2);
+  color: var(--text-muted);
+  font-size: var(--font-size-small);
+}
+
+.jsp-detail-row svg {
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.jsp-position-dates {
+  background: var(--background);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-4);
+  margin-bottom: var(--spacing-4);
+  border: 1px solid var(--border);
+}
+
+.jsp-date-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-2);
+  font-size: var(--font-size-small);
+}
+
+.jsp-date-row:last-child {
+  margin-bottom: 0;
+}
+
+.jsp-date-label {
+  color: var(--text-muted);
+  font-weight: var(--font-weight-medium);
+}
+
+.jsp-date-value {
+  color: var(--text);
+  font-weight: var(--font-weight-semibold);
+}
+
+.jsp-duration-badge {
+  background: var(--primary);
+  color: var(--card);
+  padding: var(--spacing-1) var(--spacing-3);
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: var(--font-weight-bold);
+  text-align: center;
+  margin-top: var(--spacing-2);
+}
+
+.jsp-empty-state {
+  text-align: center;
+  padding: var(--spacing-8);
+  color: var(--text-muted);
+  grid-column: 1 / -1;
+  animation: fadeIn 0.5s ease-out;
+}
+
+.jsp-empty-state svg {
+  margin-bottom: var(--spacing-4);
+  color: var(--text-muted);
+  opacity: 0.5;
+}
+
+.jsp-empty-state h3 {
+  font-size: var(--font-size-subheader);
+  color: var(--text);
+  margin-bottom: var(--spacing-2);
+}
+
+.jsp-empty-state p {
+  font-size: var(--font-size-body);
+  max-width: 500px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+.jsp-loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-8);
+  color: var(--text-muted);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.jsp-loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border);
+  border-top: 3px solid var(--primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: var(--spacing-4);
+}
+
+.jsp-error-state {
+  text-align: center;
+  padding: var(--spacing-8);
+  background: var(--failure-bg);
+  border: 1px solid var(--failure);
+  border-radius: var(--border-radius);
+  color: var(--failure);
+  grid-column: 1 / -1;
+  animation: shake 0.5s ease-in-out;
+}
+
+.jsp-error-state svg {
+  margin-bottom: var(--spacing-4);
+  color: var(--failure);
+}
+
+.jsp-error-state h3 {
+  color: var(--failure);
+  margin-bottom: var(--spacing-2);
+}
+
+/* New classes for the updated structure */
+.jsp-positions-content {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.jsp-filter-toggle.active {
+  background: var(--primary);
+  color: var(--card);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-2) var(--spacing-4);
+}
+
+.jsp-filter-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.jsp-tab {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-3) var(--spacing-5);
+  border: 2px solid var(--border);
+  border-radius: 9999px;
+  background: var(--card);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  font-weight: var(--font-weight-medium);
+  position: relative;
+  overflow: hidden;
+}
+
+.jsp-tab.active {
+  background: var(--primary);
+  color: var(--card);
+  border-color: var(--primary);
+  box-shadow: var(--card-shadow);
+}
+
+.jsp-count {
+  background: var(--text);
+  color: var(--background);
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: var(--font-weight-bold);
+  min-width: 20px;
+  text-align: center;
+}
+
+.jsp-tab.active .jsp-count {
+  background: var(--card);
+  color: var(--text);
+  color: var(--primary);
+}
+
+.jsp-position-title-section {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+}
+
+.jsp-position-code {
+  font-size: var(--font-size-small);
+  color: var(--text-muted);
+  font-weight: var(--font-weight-medium);
+}
+
+.jsp-status-badge {
+  padding: var(--spacing-1) var(--spacing-3);
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: var(--spacing-2);
+}
+
+.jsp-status-badge.current {
+  background: var(--success-bg);
+  color: var(--success);
+}
+
+.jsp-status-badge.past {
+  background: var(--text-muted);
+  color: var(--card);
+}
+
+.jsp-status-badge.future {
+  background: var(--pending-bg);
+  color: var(--pending);
+}
+
+.jsp-position-meta {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  margin-top: var(--spacing-4);
+  padding-top: var(--spacing-4);
+  border-top: 1px solid var(--border);
+}
+
+.jsp-meta-tags {
+  display: flex;
+  gap: var(--spacing-2);
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.jsp-tag {
+  padding: var(--spacing-1) var(--spacing-2);
+  background: var(--background);
+  color: var(--text-muted);
+  border-radius: var(--border-radius);
+  font-size: 0.75rem;
+  font-weight: var(--font-weight-medium);
+}
+
+.jsp-tag.employment-term {
+  background: var(--pending-bg);
+  color: var(--pending);
+}
+
+.jsp-loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  color: var(--text-muted);
+}
+
+.jsp-empty-icon {
+  color: var(--text-muted);
+  opacity: 0.5;
+  margin-bottom: var(--spacing-4);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .jsp-positions-container {
+    margin-left: 0;
+  }
+
+  .jsp-positions-list {
+    grid-template-columns: 1fr;
+  }
+
+  .jsp-status-tabs {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .jsp-tab {
+    justify-content: space-between;
+  }
+
+  .jsp-filter-row {
+    grid-template-columns: 1fr;
+  }
+
+  .jsp-candidate-details {
+    flex-direction: column;
+    gap: var(--spacing-2);
+  }
+
+  .jsp-position-meta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-3);
+  }
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+} 

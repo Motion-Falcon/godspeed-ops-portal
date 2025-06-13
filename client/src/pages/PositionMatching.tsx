@@ -48,6 +48,7 @@ interface PaginationInfo {
 
 interface AssignedJobseeker {
   id: string;
+  userId: string;
   name: string;
   email: string;
   mobile?: string;
@@ -236,6 +237,7 @@ export function PositionMatching() {
               const jobseekerProfile = await getJobseekerProfile(id);
               return {
                 id: jobseekerProfile.id,
+                userId: jobseekerProfile.userId,
                 name:
                   jobseekerProfile.firstName + " " + jobseekerProfile.lastName,
                 email: jobseekerProfile.email,
@@ -250,6 +252,7 @@ export function PositionMatching() {
               // Return a fallback object if the fetch fails
               return {
                 id,
+                userId: id,
                 name: "Profile Not Found",
                 email: "N/A",
                 mobile: undefined,
@@ -312,6 +315,7 @@ export function PositionMatching() {
       if (response.success) {
         // Update the local assigned jobseekers state
         const newAssignedCandidate = {
+          userId: candidate.candidateId,
           id: candidate.candidateId,
           name: candidate.name,
           email: candidate.email,
@@ -364,12 +368,12 @@ export function PositionMatching() {
       if (response.success) {
         // Get the candidate name before removing
         const removedCandidate = assignedJobseekers.find(
-          (js) => js.id === candidateId
+          (js) => js.userId === candidateId
         );
 
         // Remove the candidate from local state
         setAssignedJobseekers((prev) =>
-          prev.filter((jobseeker) => jobseeker.id !== candidateId)
+          prev.filter((jobseeker) => jobseeker.userId !== candidateId)
         );
 
         // Update the selected position data
@@ -453,7 +457,7 @@ export function PositionMatching() {
             <div className="panel-header">
               <div className="header-left">
                 <Users className="header-icon" size={20} />
-                <h2>Best Match Candidates</h2>
+                <h2>Best Match Jobseekers</h2>
                 {selectedPosition && (
                   <span className="position-badge">
                     {selectedPosition.title}
@@ -468,7 +472,7 @@ export function PositionMatching() {
                       <Search className="search-icon" size={16} />
                       <input
                         type="text"
-                        placeholder="Search candidates..."
+                        placeholder="Search jobseekers..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="search-input"
@@ -540,7 +544,7 @@ export function PositionMatching() {
                   <h3>Select a Position</h3>
                   <p>
                     Choose a position from the dropdown to view matching
-                    candidates
+                    Jobseekers
                   </p>
                 </div>
               ) : candidatesLoading ? (
@@ -591,8 +595,8 @@ export function PositionMatching() {
               ) : candidates.length === 0 ? (
                 <div className="empty-state">
                   <Users className="empty-icon" size={48} />
-                  <h3>No Candidates Found</h3>
-                  <p>No candidates match the current filters</p>
+                  <h3>No Jobseekers Found</h3>
+                  <p>No jobseekers match the current filters</p>
                 </div>
               ) : (
                 <>
@@ -737,7 +741,7 @@ export function PositionMatching() {
                           pagination.page * pagination.limit,
                           pagination.totalFiltered
                         )}{" "}
-                        of {pagination.totalFiltered} candidates
+                        of {pagination.totalFiltered} jobseekers
                       </span>
                     </div>
 
@@ -973,7 +977,7 @@ export function PositionMatching() {
                       {assignedJobseekersLoading && (
                         <div className="slots-loading">
                           <div className="loading-spinner"></div>
-                          <span>Loading assigned candidates...</span>
+                          <span>Loading assigned jobseekers...</span>
                         </div>
                       )}
 
@@ -1010,7 +1014,7 @@ export function PositionMatching() {
                                 <button
                                   className="remove-slot-btn"
                                   onClick={() =>
-                                    handleRemoveCandidate(jobseeker.id)
+                                    handleRemoveCandidate(jobseeker.userId)
                                   }
                                   disabled={assignmentLoading === jobseeker.id}
                                   title={

@@ -11,6 +11,7 @@
   box-shadow: var(--card-shadow);
   border: 1px solid var(--border);
   margin-bottom: 1.5rem;
+  transition: all var(--transition-normal);
 }
 
 .card h2 {
