@@ -114,6 +114,25 @@ interface DbJobseekerProfile {
   rejection_reason?: string;
 }
 
+// Interface for the selected fields in the list view query
+interface DbJobseekerProfileListView {
+  id: string;
+  user_id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  verification_status?: 'pending' | 'verified' | 'rejected';
+  created_at: string;
+  city?: string;
+  province?: string;
+  experience?: string;
+  mobile?: string;
+  employee_id?: string;
+  created_by_user_id?: string;
+  updated_by_user_id?: string;
+  updated_at: string;
+}
+
 // Interface for the simplified JobSeekerProfile list view (matches frontend expectation)
 interface JobSeekerProfile {
   id: string;
@@ -176,21 +195,25 @@ router.use(authenticateToken);
 /**
  * Formats the full name from first and last name.
  */
-function formatName(profile: DbJobseekerProfile): string {
+function formatName(profile: DbJobseekerProfile): string;
+function formatName(profile: DbJobseekerProfileListView): string;
+function formatName(profile: DbJobseekerProfile | DbJobseekerProfileListView): string {
   return `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Unknown';
 }
 
 /**
  * Extracts a location string from city and province.
  */
-function extractLocation(profile: DbJobseekerProfile): string | undefined {
+function extractLocation(profile: DbJobseekerProfile): string | undefined;
+function extractLocation(profile: DbJobseekerProfileListView): string | undefined;
+function extractLocation(profile: DbJobseekerProfile | DbJobseekerProfileListView): string | undefined {
   const parts = [profile.city, profile.province].filter(Boolean); // Filter out null/undefined
   return parts.length > 0 ? parts.join(', ') : undefined;
 }
 
 /**
  * @route GET /api/jobseekers
- * @desc Get all jobseeker profiles (simplified view) with pagination
+ * @desc Get all jobseeker profiles (simplified view) with server-side pagination and filtering
  * @access Private (Admin, Recruiter)
  */
 router.get('/', isAdminOrRecruiter, async (req, res) => {
@@ -199,7 +222,7 @@ router.get('/', isAdminOrRecruiter, async (req, res) => {
     const { 
       page = '1', 
       limit = '10', 
-      search = '', // Frontend sends 'search', not 'searchTerm'
+      search = '',
       nameFilter = '',
       emailFilter = '', 
       phoneFilter = '',
@@ -230,55 +253,46 @@ router.get('/', isAdminOrRecruiter, async (req, res) => {
 
     const pageNum = parseInt(page);
     const limitNum = parseInt(limit);
-
-    // Calculate offset for pagination
     const offset = (pageNum - 1) * limitNum;
 
-    // Start building the query
-    let query = supabaseAdmin
+    // Build the base query with all necessary fields
+    let baseQuery = supabaseAdmin
       .from('jobseeker_profiles')
-      .select<string, DbJobseekerProfile>('id, user_id, first_name, last_name, email, verification_status, created_at, city, province, experience, mobile, employee_id');
+      .select(`
+        id, 
+        user_id, 
+        first_name, 
+        last_name, 
+        email, 
+        verification_status, 
+        created_at, 
+        city, 
+        province, 
+        experience, 
+        mobile, 
+        employee_id,
+        created_by_user_id,
+        updated_by_user_id,
+        updated_at
+      `);
 
-    // Apply database-level filters (only if they meet minimum character requirement)
-    if (emailFilter && emailFilter.length >= 3) {
-      query = query.ilike('email', `%${emailFilter}%`);
-    }
+    // Apply all filters at database level
+    baseQuery = applyFilters(baseQuery, {
+      search,
+      nameFilter,
+      emailFilter,
+      phoneFilter,
+      locationFilter,
+      experienceFilter,
+      statusFilter,
+      employeeIdFilter,
+      creatorFilter,
+      updaterFilter,
+      dateFilter,
+      createdDateFilter
+    });
 
-    if (experienceFilter && experienceFilter.length >= 3 && experienceFilter !== 'all') {
-      query = query.ilike('experience', `%${experienceFilter}%`);
-    }
-
-    if (statusFilter && statusFilter !== 'all') {
-      query = query.eq('verification_status', statusFilter);
-    }
-
-    if (employeeIdFilter && employeeIdFilter.length >= 3) {
-      query = query.ilike('employee_id', `%${employeeIdFilter}%`);
-    }
-
-    if (creatorFilter && creatorFilter.length >= 3) {
-      query = query.ilike('created_by_name', `%${creatorFilter}%`);
-    }
-
-    if (updaterFilter && updaterFilter.length >= 3) {
-      query = query.ilike('updated_by_name', `%${updaterFilter}%`);
-    }
-
-    if (dateFilter) {
-      const filterDate = new Date(dateFilter);
-      const nextDay = new Date(filterDate);
-      nextDay.setDate(nextDay.getDate() + 1);
-      query = query.gte('updated_at', filterDate.toISOString()).lt('updated_at', nextDay.toISOString());
-    }
-
-    if (createdDateFilter) {
-      const filterDate = new Date(createdDateFilter);
-      const nextDay = new Date(filterDate);
-      nextDay.setDate(nextDay.getDate() + 1);
-      query = query.gte('created_at', filterDate.toISOString()).lt('created_at', nextDay.toISOString());
-    }
-
-    // Get total count first (without pagination and without filters)
+    // Get total count (unfiltered)
     const { count: totalCount, error: countError } = await supabaseAdmin
       .from('jobseeker_profiles')
       .select('*', { count: 'exact', head: true });
@@ -288,49 +302,25 @@ router.get('/', isAdminOrRecruiter, async (req, res) => {
       return res.status(500).json({ error: 'Failed to get total count of profiles' });
     }
 
-    // Get filtered count (with filters but without pagination)
+    // Get filtered count
     let countQuery = supabaseAdmin
       .from('jobseeker_profiles')
       .select('*', { count: 'exact', head: true });
 
-    // Apply the same filters to the count query
-    if (emailFilter && emailFilter.length >= 3) {
-      countQuery = countQuery.ilike('email', `%${emailFilter}%`);
-    }
-
-    if (experienceFilter && experienceFilter.length >= 3 && experienceFilter !== 'all') {
-      countQuery = countQuery.ilike('experience', `%${experienceFilter}%`);
-    }
-
-    if (statusFilter && statusFilter !== 'all') {
-      countQuery = countQuery.eq('verification_status', statusFilter);
-    }
-
-    if (employeeIdFilter && employeeIdFilter.length >= 3) {
-      countQuery = countQuery.ilike('employee_id', `%${employeeIdFilter}%`);
-    }
-
-    if (creatorFilter && creatorFilter.length >= 3) {
-      countQuery = countQuery.ilike('created_by_name', `%${creatorFilter}%`);
-    }
-
-    if (updaterFilter && updaterFilter.length >= 3) {
-      countQuery = countQuery.ilike('updated_by_name', `%${updaterFilter}%`);
-    }
-
-    if (dateFilter) {
-      const filterDate = new Date(dateFilter);
-      const nextDay = new Date(filterDate);
-      nextDay.setDate(nextDay.getDate() + 1);
-      countQuery = countQuery.gte('updated_at', filterDate.toISOString()).lt('updated_at', nextDay.toISOString());
-    }
-
-    if (createdDateFilter) {
-      const filterDate = new Date(createdDateFilter);
-      const nextDay = new Date(filterDate);
-      nextDay.setDate(nextDay.getDate() + 1);
-      countQuery = countQuery.gte('created_at', filterDate.toISOString()).lt('created_at', nextDay.toISOString());
-    }
+    countQuery = applyFilters(countQuery, {
+      search,
+      nameFilter,
+      emailFilter,
+      phoneFilter,
+      locationFilter,
+      experienceFilter,
+      statusFilter,
+      employeeIdFilter,
+      creatorFilter,
+      updaterFilter,
+      dateFilter,
+      createdDateFilter
+    });
 
     const { count: filteredCount, error: filteredCountError } = await countQuery;
 
@@ -339,8 +329,8 @@ router.get('/', isAdminOrRecruiter, async (req, res) => {
       return res.status(500).json({ error: 'Failed to get filtered count of profiles' });
     }
 
-    // Apply pagination and execute query
-    const { data: dbProfiles, error } = await query
+    // Apply pagination and execute main query
+    const { data: dbProfiles, error } = await baseQuery
       .range(offset, offset + limitNum - 1)
       .order('created_at', { ascending: false });
       
@@ -349,58 +339,28 @@ router.get('/', isAdminOrRecruiter, async (req, res) => {
       return res.status(500).json({ error: 'Failed to fetch jobseeker profiles from database' });
     }
     
-    if (!dbProfiles) {
+    if (!dbProfiles || dbProfiles.length === 0) {
       return res.json({
         profiles: [],
         pagination: {
           page: pageNum,
           limit: limitNum,
           total: totalCount || 0,
-          totalPages: Math.ceil((totalCount || 0) / limitNum),
+          totalFiltered: filteredCount || 0,
+          totalPages: Math.ceil((filteredCount || 0) / limitNum),
           hasNextPage: false,
           hasPrevPage: false
         }
       });
     }
 
-    // Collect all user IDs to fetch their metadata
-    const userIds = dbProfiles.map(profile => profile.user_id).filter(Boolean);
-    
-    // Fetch user metadata for all users to get phone numbers
-    const userMetadataMap: { [key: string]: any } = {};
-    if (userIds.length > 0) {
-      try {
-        // Get user data for all user IDs
-        const userPromises = userIds.map(async (userId) => {
-          try {
-            const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(userId);
-            if (!userError && userData?.user) {
-              return { userId, metadata: userData.user.user_metadata || {} };
-            }
-            return { userId, metadata: {} };
-          } catch (err) {
-            console.error(`Error fetching user metadata for ${userId}:`, err);
-            return { userId, metadata: {} };
-          }
-        });
-        
-        const userResults = await Promise.all(userPromises);
-        userResults.forEach(({ userId, metadata }) => {
-          userMetadataMap[userId] = metadata;
-        });
-      } catch (error) {
-        console.error('Error fetching user metadata:', error);
-        // Continue without metadata if there's an error
-      }
-    }
-
-    // Transform database records to the simplified frontend format
-    const formattedProfiles: JobSeekerProfile[] = dbProfiles.map((profile) => ({
+    // Transform database records to frontend format (no client-side filtering)
+    const formattedProfiles: JobSeekerProfile[] = dbProfiles.map((profile: DbJobseekerProfileListView) => ({
       id: profile.id,
       userId: profile.user_id,
       name: formatName(profile),
       email: profile.email,
-      phoneNumber: userMetadataMap[profile.user_id]?.phoneNumber || profile.mobile || null,
+      phoneNumber: profile.mobile || null, // Use mobile from profile directly
       status: profile.verification_status || 'pending',
       createdAt: profile.created_at,
       experience: profile.experience,
@@ -408,121 +368,19 @@ router.get('/', isAdminOrRecruiter, async (req, res) => {
       employeeId: profile.employee_id,
     }));
 
-    // Apply client-side filters after formatting (for computed fields that need 3+ characters)
-    let filteredProfiles = formattedProfiles;
-    
-    if (search && search.length >= 3) {
-      filteredProfiles = filteredProfiles.filter(profile => 
-        profile.name.toLowerCase().includes(search.toLowerCase()) ||
-        profile.email.toLowerCase().includes(search.toLowerCase()) ||
-        (profile.phoneNumber && profile.phoneNumber.toLowerCase().includes(search.toLowerCase())) ||
-        (profile.experience && profile.experience.toLowerCase().includes(search.toLowerCase())) ||
-        (profile.location && profile.location.toLowerCase().includes(search.toLowerCase())) ||
-        (profile.employeeId && profile.employeeId.toLowerCase().includes(search.toLowerCase()))
-      );
-    }
-
-    if (nameFilter && nameFilter.length >= 3) {
-      filteredProfiles = filteredProfiles.filter(profile => 
-        profile.name.toLowerCase().includes(nameFilter.toLowerCase())
-      );
-    }
-
-    if (phoneFilter && phoneFilter.length >= 3) {
-      filteredProfiles = filteredProfiles.filter(profile => 
-        profile.phoneNumber && profile.phoneNumber.toLowerCase().includes(phoneFilter.toLowerCase())
-      );
-    }
-
-    if (locationFilter && locationFilter.length >= 3) {
-      filteredProfiles = filteredProfiles.filter(profile => 
-        profile.location && profile.location.toLowerCase().includes(locationFilter.toLowerCase())
-      );
-    }
-
-    // Collect all document IDs across all profiles for bulk AI validation fetching
-    const allDocumentIds: string[] = [];
-    dbProfiles.forEach(profile => {
-      if (profile.documents && profile.documents.length > 0) {
-        profile.documents
-          .filter(doc => doc.id)
-          .forEach(doc => doc.id && allDocumentIds.push(doc.id));
-      }
-    });
-
-    // If we have documents to validate, fetch their validation data
-    if (allDocumentIds.length > 0) {
-      const { data: aiValidations, error: aiError } = await supabaseAdmin
-        .from('ai_validation')
-        .select('document_id, ai_response, document_status')
-        .in('document_id', allDocumentIds);
-        
-      if (aiError) {
-        console.error('Error fetching AI validation data for profiles list:', aiError);
-        // Don't fail the whole request if we can't get validation data
-      } else if (aiValidations && aiValidations.length > 0) {
-        // Create a map of document_id to validation data for quick lookup
-        const validationMap = aiValidations.reduce((map, validation) => {
-          map[validation.document_id] = {
-            ...validation.ai_response,
-            document_status: validation.document_status
-          };
-          return map;
-        }, {} as { [key: string]: any });
-        
-        // Update documents with validation data where available
-        filteredProfiles.forEach(profile => {
-          if (profile.documents && profile.documents.length > 0) {
-            profile.documents = profile.documents.map((doc: DocumentRecord) => {
-              if (doc.id && validationMap[doc.id]) {
-                return {
-                  ...doc,
-                  aiValidation: validationMap[doc.id]
-                };
-              }
-              return doc; // Keep aiValidation: null from earlier
-            });
-          }
-        });
-      }
-    }
-
-    // Calculate pagination info based on the actual final filtered count
-    const actualFilteredCount = filteredProfiles.length;
-    
-    // For pagination calculation, we need to account for the fact that we applied client-side filters
-    // If we have client-side filters that could reduce the count, use the actual count
-    let totalFilteredForPagination = filteredCount || 0;
-    
-    // If we have client-side filters that could reduce the count, use the actual count
-    const hasClientSideFilters = (search && search.length >= 3) || 
-                                 (nameFilter && nameFilter.length >= 3) || 
-                                 (phoneFilter && phoneFilter.length >= 3) || 
-                                 (locationFilter && locationFilter.length >= 3) ||
-                                 (employeeIdFilter && employeeIdFilter.length >= 3);
-    
-    if (hasClientSideFilters) {
-      // For client-side filtered results, we can't easily calculate total across all pages
-      // So we'll use a conservative approach
-      totalFilteredForPagination = actualFilteredCount + ((pageNum - 1) * limitNum);
-      
-      // If we got a full page, there might be more
-      if (actualFilteredCount === limitNum && filteredCount && filteredCount > totalFilteredForPagination) {
-        totalFilteredForPagination = filteredCount;
-      }
-    }
-
-    const totalPages = Math.ceil(totalFilteredForPagination / limitNum);
-    const hasNextPage = pageNum < totalPages && actualFilteredCount === limitNum;
+    // Calculate pagination metadata
+    const totalFiltered = filteredCount || 0;
+    const totalPages = Math.ceil(totalFiltered / limitNum);
+    const hasNextPage = pageNum < totalPages;
     const hasPrevPage = pageNum > 1;
       
     res.json({
-      profiles: filteredProfiles,
+      profiles: formattedProfiles,
       pagination: {
         page: pageNum,
         limit: limitNum,
         total: totalCount || 0,
-        totalFiltered: totalFilteredForPagination,
+        totalFiltered,
         totalPages,
         hasNextPage,
         hasPrevPage
@@ -534,6 +392,97 @@ router.get('/', isAdminOrRecruiter, async (req, res) => {
     res.status(500).json({ error: 'An unexpected error occurred while fetching jobseeker profiles' });
   }
 });
+
+/**
+ * Helper function to apply filters to a Supabase query
+ */
+function applyFilters(query: any, filters: {
+  search?: string;
+  nameFilter?: string;
+  emailFilter?: string;
+  phoneFilter?: string;
+  locationFilter?: string;
+  experienceFilter?: string;
+  statusFilter?: string;
+  employeeIdFilter?: string;
+  creatorFilter?: string;
+  updaterFilter?: string;
+  dateFilter?: string;
+  createdDateFilter?: string;
+}) {
+  const {
+    search,
+    nameFilter,
+    emailFilter,
+    phoneFilter,
+    locationFilter,
+    experienceFilter,
+    statusFilter,
+    employeeIdFilter,
+    creatorFilter,
+    updaterFilter,
+    dateFilter,
+    createdDateFilter
+  } = filters;
+
+  // Global search across multiple fields
+  if (search && search.trim().length > 0) {
+    const searchTerm = search.trim();
+    query = query.or(`verification_status.ilike.%${searchTerm}%,first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,mobile.ilike.%${searchTerm}%,experience.ilike.%${searchTerm}%,employee_id.ilike.%${searchTerm}%,city.ilike.%${searchTerm}%,province.ilike.%${searchTerm}%`);
+  }
+
+  // Individual column filters
+  if (nameFilter && nameFilter.trim().length > 0) {
+    const nameTerm = nameFilter.trim();
+    query = query.or(`first_name.ilike.%${nameTerm}%,last_name.ilike.%${nameTerm}%`);
+  }
+
+  if (emailFilter && emailFilter.trim().length > 0) {
+    query = query.ilike('email', `%${emailFilter.trim()}%`);
+  }
+
+  if (phoneFilter && phoneFilter.trim().length > 0) {
+    query = query.ilike('mobile', `%${phoneFilter.trim()}%`);
+  }
+
+  if (locationFilter && locationFilter.trim().length > 0) {
+    const locationTerm = locationFilter.trim();
+    query = query.or(`city.ilike.%${locationTerm}%,province.ilike.%${locationTerm}%`);
+  }
+
+  if (experienceFilter && experienceFilter !== 'all' && experienceFilter.trim().length > 0) {
+    query = query.ilike('experience', `%${experienceFilter.trim()}%`);
+  }
+
+  if (statusFilter && statusFilter !== 'all') {
+    query = query.eq('verification_status', statusFilter);
+  }
+
+  if (employeeIdFilter && employeeIdFilter.trim().length > 0) {
+    query = query.ilike('employee_id', `%${employeeIdFilter.trim()}%`);
+  }
+
+  // Date filters
+  if (dateFilter) {
+    const filterDate = new Date(dateFilter);
+    const nextDay = new Date(filterDate);
+    nextDay.setDate(nextDay.getDate() + 1);
+    query = query.gte('updated_at', filterDate.toISOString()).lt('updated_at', nextDay.toISOString());
+  }
+
+  if (createdDateFilter) {
+    const filterDate = new Date(createdDateFilter);
+    const nextDay = new Date(filterDate);
+    nextDay.setDate(nextDay.getDate() + 1);
+    query = query.gte('created_at', filterDate.toISOString()).lt('created_at', nextDay.toISOString());
+  }
+
+  // Note: creatorFilter and updaterFilter would require JOINs with auth.users
+  // For now, we'll skip these as they require more complex queries
+  // TODO: Implement these filters with proper JOINs or stored procedures
+
+  return query;
+}
 
 /**
  * @route GET /api/jobseekers/:id
@@ -1135,18 +1084,72 @@ router.get('/drafts', isAdminOrRecruiter, async (req, res) => {
     // Extract pagination and filter parameters from query
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
-    const searchTerm = req.query.search as string || '';
-    const emailFilter = req.query.emailFilter as string || '';
-    const creatorFilter = req.query.creatorFilter as string || '';
-    const updaterFilter = req.query.updaterFilter as string || '';
-    const dateFilter = req.query.dateFilter as string || '';
-    const createdDateFilter = req.query.createdDateFilter as string || '';
+    const search = (req.query.search as string || '').trim();
+    const emailFilter = (req.query.emailFilter as string || '').trim();
+    const creatorFilter = (req.query.creatorFilter as string || '').trim();
+    const updaterFilter = (req.query.updaterFilter as string || '').trim();
+    const dateFilter = (req.query.dateFilter as string || '').trim();
+    const createdDateFilter = (req.query.createdDateFilter as string || '').trim();
 
     // Calculate offset for pagination
     const offset = (page - 1) * limit;
 
-    // Only select the fields that are actually used in the client
-    // This reduces data transfer and improves performance
+    // Helper function to apply filters to a query
+    const applyDraftFilters = (query: any) => {
+      // Global search across multiple fields
+      if (search) {
+        const searchTerm = search.trim();
+        query = query.or(`email.ilike.%${searchTerm}%`);
+      }
+
+      // Specific field filters
+      if (emailFilter) {
+        query = query.ilike('email', `%${emailFilter}%`);
+      }
+
+      // Date filters
+      if (dateFilter) {
+        const filterDate = new Date(dateFilter);
+        const nextDay = new Date(filterDate);
+        nextDay.setDate(nextDay.getDate() + 1);
+        query = query.gte('updated_at', filterDate.toISOString()).lt('updated_at', nextDay.toISOString());
+      }
+
+      if (createdDateFilter) {
+        const filterDate = new Date(createdDateFilter);
+        const nextDay = new Date(filterDate);
+        nextDay.setDate(nextDay.getDate() + 1);
+        query = query.gte('created_at', filterDate.toISOString()).lt('created_at', nextDay.toISOString());
+      }
+
+      return query;
+    };
+
+    // Get total count (unfiltered)
+    const { count: totalCount, error: totalCountError } = await supabaseAdmin
+      .from('jobseeker_profile_drafts')
+      .select('*', { count: 'exact', head: true });
+
+    if (totalCountError) {
+      console.error('Error getting total count of drafts:', totalCountError);
+      return res.status(500).json({ error: 'Failed to get total count of drafts' });
+    }
+
+    // Get filtered count
+    let filteredCountQuery = supabaseAdmin
+      .from('jobseeker_profile_drafts')
+      .select('*', { count: 'exact', head: true });
+
+    filteredCountQuery = applyDraftFilters(filteredCountQuery);
+
+    const { count: filteredCount, error: filteredCountError } = await filteredCountQuery;
+
+    if (filteredCountError) {
+      console.error('Error getting filtered count of drafts:', filteredCountError);
+      return res.status(500).json({ error: 'Failed to get filtered count of drafts' });
+    }
+
+    // Build main query with selected fields
     const selectedFields = [
       'id',
       'user_id',
@@ -1158,73 +1161,15 @@ router.get('/drafts', isAdminOrRecruiter, async (req, res) => {
       'updated_by_user_id'
     ].join(', ');
 
-    // Start building the query with optimized field selection
-    let query = supabaseAdmin
+    let mainQuery = supabaseAdmin
       .from('jobseeker_profile_drafts')
       .select(selectedFields);
 
-    // Apply filters
-    if (emailFilter) {
-      query = query.ilike('email', `%${emailFilter}%`);
-    }
-
-    if (dateFilter) {
-      const filterDate = new Date(dateFilter);
-      const nextDay = new Date(filterDate);
-      nextDay.setDate(nextDay.getDate() + 1);
-      query = query.gte('updated_at', filterDate.toISOString()).lt('updated_at', nextDay.toISOString());
-    }
-
-    if (createdDateFilter) {
-      const filterDate = new Date(createdDateFilter);
-      const nextDay = new Date(filterDate);
-      nextDay.setDate(nextDay.getDate() + 1);
-      query = query.gte('created_at', filterDate.toISOString()).lt('created_at', nextDay.toISOString());
-    }
-
-    // Get total count first (without pagination and without filters)
-    const { count: totalCount, error: countError } = await supabaseAdmin
-      .from('jobseeker_profile_drafts')
-      .select('*', { count: 'exact', head: true });
-
-    if (countError) {
-      console.error('Error getting total count:', countError);
-      return res.status(500).json({ error: 'Failed to get total count of drafts' });
-    }
-
-    // Get filtered count (with filters but without pagination)
-    let countQuery = supabaseAdmin
-      .from('jobseeker_profile_drafts')
-      .select('*', { count: 'exact', head: true });
-
-    // Apply the same filters to the count query
-    if (emailFilter) {
-      countQuery = countQuery.ilike('email', `%${emailFilter}%`);
-    }
-
-    if (dateFilter) {
-      const filterDate = new Date(dateFilter);
-      const nextDay = new Date(filterDate);
-      nextDay.setDate(nextDay.getDate() + 1);
-      countQuery = countQuery.gte('updated_at', filterDate.toISOString()).lt('updated_at', nextDay.toISOString());
-    }
-
-    if (createdDateFilter) {
-      const filterDate = new Date(createdDateFilter);
-      const nextDay = new Date(filterDate);
-      nextDay.setDate(nextDay.getDate() + 1);
-      countQuery = countQuery.gte('created_at', filterDate.toISOString()).lt('created_at', nextDay.toISOString());
-    }
-
-    const { count: filteredCount, error: filteredCountError } = await countQuery;
-
-    if (filteredCountError) {
-      console.error('Error getting filtered count:', filteredCountError);
-      return res.status(500).json({ error: 'Failed to get filtered count of drafts' });
-    }
+    // Apply filters to main query
+    mainQuery = applyDraftFilters(mainQuery);
 
     // Apply pagination and execute query
-    const { data: drafts, error } = await query
+    const { data: drafts, error } = await mainQuery
       .range(offset, offset + limit - 1)
       .order('last_updated', { ascending: false });
 
@@ -1233,14 +1178,15 @@ router.get('/drafts', isAdminOrRecruiter, async (req, res) => {
       return res.status(500).json({ error: 'Failed to fetch drafts' });
     }
 
-    if (!drafts) {
+    if (!drafts || drafts.length === 0) {
       return res.json({
         drafts: [],
         pagination: {
           page,
           limit,
           total: totalCount || 0,
-          totalPages: Math.ceil((totalCount || 0) / limit),
+          totalFiltered: filteredCount || 0,
+          totalPages: Math.ceil((filteredCount || 0) / limit),
           hasNextPage: false,
           hasPrevPage: false
         }
@@ -1254,53 +1200,33 @@ router.get('/drafts', isAdminOrRecruiter, async (req, res) => {
 
     // Fetch user details for all users
     const userDetailsMap: { [key: string]: any } = {};
-    if (allUserIds.length > 0) {
+    
+    for (const userId of allUserIds) {
       try {
-        const userPromises = allUserIds.map(async (userId) => {
-          try {
-            const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(userId);
-            if (!userError && userData?.user) {
-              return {
-                userId,
-                details: {
-                  id: userData.user.id,
-                  email: userData.user.email,
-                  name: userData.user.user_metadata?.name || 'Unknown',
-                  userType: userData.user.user_metadata?.user_type || 'Unknown',
-                  createdAt: userData.user.created_at
-                }
-              };
-            }
-            return { userId, details: null };
-          } catch (err) {
-            console.error(`Error fetching user details for ${userId}:`, err);
-            return { userId, details: null };
-          }
-        });
-
-        const userResults = await Promise.all(userPromises);
-        userResults.forEach(({ userId, details }) => {
-          if (details) {
-            userDetailsMap[userId] = details;
-          }
-        });
-      } catch (error) {
-        console.error('Error fetching user details:', error);
-        // Continue without user details if there's an error
+        const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(userId);
+        if (!userError && userData?.user) {
+          const user = userData.user;
+          userDetailsMap[userId] = {
+            id: user.id,
+            email: user.email,
+            name: user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'Unknown',
+            userType: user.user_metadata?.user_type || 'Unknown',
+            createdAt: user.created_at,
+            updatedAt: user.updated_at
+          };
+        }
+      } catch (userFetchError) {
+        console.error(`Error fetching user ${userId}:`, userFetchError);
+        userDetailsMap[userId] = null;
       }
     }
 
     // Transform drafts format to match client expectations
-    const formattedDrafts = drafts.map((draft: any) => {
-      // Since we're only selecting specific fields, we don't have form_data or current_step
-      // But the client expects these fields, so we'll provide defaults or omit them
-      const email = draft.email || '';
-      
-      // Create a formatted draft object with only the available fields
+    let formattedDrafts = drafts.map((draft: any) => {
       const formattedDraft = {
         id: draft.id,
-        userId: draft.user_id,
-        email: email,
+        user_id: draft.user_id,
+        email: draft.email || '',
         lastUpdated: draft.last_updated,
         createdAt: draft.created_at,
         createdByUserId: draft.created_by_user_id,
@@ -1313,46 +1239,41 @@ router.get('/drafts', isAdminOrRecruiter, async (req, res) => {
       return formattedDraft;
     });
 
-    // Apply client-side filters after formatting (since they involve computed fields)
-    let filteredDrafts = formattedDrafts;
-    
-    if (searchTerm) {
-      filteredDrafts = formattedDrafts.filter(draft => 
-        draft.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (draft.creatorDetails?.name && draft.creatorDetails.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (draft.creatorDetails?.email && draft.creatorDetails.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (draft.updaterDetails?.name && draft.updaterDetails.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (draft.updaterDetails?.email && draft.updaterDetails.email.toLowerCase().includes(searchTerm.toLowerCase()))
-      );
-    }
-
+    // Apply creator and updater filters (these need to be done after user details are fetched)
     if (creatorFilter) {
-      filteredDrafts = filteredDrafts.filter(draft => 
-        (draft.creatorDetails?.name && draft.creatorDetails.name.toLowerCase().includes(creatorFilter.toLowerCase())) ||
-        (draft.creatorDetails?.email && draft.creatorDetails.email.toLowerCase().includes(creatorFilter.toLowerCase()))
-      );
+      formattedDrafts = formattedDrafts.filter(draft => {
+        const creator = draft.creatorDetails;
+        if (!creator) return false;
+        const searchTerm = creatorFilter.toLowerCase();
+        return (creator.name && creator.name.toLowerCase().includes(searchTerm)) ||
+               (creator.email && creator.email.toLowerCase().includes(searchTerm));
+      });
     }
 
     if (updaterFilter) {
-      filteredDrafts = filteredDrafts.filter(draft => 
-        (draft.updaterDetails?.name && draft.updaterDetails.name.toLowerCase().includes(updaterFilter.toLowerCase())) ||
-        (draft.updaterDetails?.email && draft.updaterDetails.email.toLowerCase().includes(updaterFilter.toLowerCase()))
-      );
+      formattedDrafts = formattedDrafts.filter(draft => {
+        const updater = draft.updaterDetails;
+        if (!updater) return false;
+        const searchTerm = updaterFilter.toLowerCase();
+        return (updater.name && updater.name.toLowerCase().includes(searchTerm)) ||
+               (updater.email && updater.email.toLowerCase().includes(searchTerm));
+      });
     }
 
-    // Calculate pagination info based on filtered count
-    const totalFiltered = filteredCount || 0;
-    const totalPages = Math.ceil(totalFiltered / limit);
+    // Note: If creator/updater filters are applied, the pagination might not be accurate
+    // This is a limitation when filtering by related data that requires additional API calls
+    const finalCount = (creatorFilter || updaterFilter) ? formattedDrafts.length : (filteredCount || 0);
+    const totalPages = Math.ceil(finalCount / limit);
     const hasNextPage = page < totalPages;
     const hasPrevPage = page > 1;
 
     res.json({
-      drafts: filteredDrafts,
+      drafts: formattedDrafts,
       pagination: {
         page,
         limit,
         total: totalCount || 0,
-        totalFiltered,
+        totalFiltered: finalCount,
         totalPages,
         hasNextPage,
         hasPrevPage

@@ -98,19 +98,6 @@ export function PositionDrafts() {
       console.log("Fetching position drafts...");
       setLoading(true);
 
-      // Only apply filters if they meet the minimum character requirement
-      const effectiveTitleFilter = titleFilter.length >= 3 ? titleFilter : "";
-      const effectiveClientFilter =
-        clientFilter.length >= 3 ? clientFilter : "";
-      const effectivePositionIdFilter =
-        positionIdFilter.length >= 3 ? positionIdFilter : "";
-      const effectivePositionCodeFilter =
-        positionCodeFilter.length >= 3 ? positionCodeFilter : "";
-      const effectiveCreatorFilter =
-        creatorFilter.length >= 3 ? creatorFilter : "";
-      const effectiveUpdaterFilter =
-        updaterFilter.length >= 3 ? updaterFilter : "";
-
       const params: {
         page: number;
         limit: number;
@@ -130,14 +117,12 @@ export function PositionDrafts() {
       };
 
       if (searchTerm.trim()) params.search = searchTerm.trim();
-      if (effectiveTitleFilter) params.titleFilter = effectiveTitleFilter;
-      if (effectiveClientFilter) params.clientFilter = effectiveClientFilter;
-      if (effectivePositionIdFilter)
-        params.positionIdFilter = effectivePositionIdFilter;
-      if (effectivePositionCodeFilter)
-        params.positionCodeFilter = effectivePositionCodeFilter;
-      if (effectiveCreatorFilter) params.creatorFilter = effectiveCreatorFilter;
-      if (effectiveUpdaterFilter) params.updaterFilter = effectiveUpdaterFilter;
+      if (titleFilter.trim()) params.titleFilter = titleFilter.trim();
+      if (clientFilter.trim()) params.clientFilter = clientFilter.trim();
+      if (positionIdFilter.trim()) params.positionIdFilter = positionIdFilter.trim();
+      if (positionCodeFilter.trim()) params.positionCodeFilter = positionCodeFilter.trim();
+      if (creatorFilter.trim()) params.creatorFilter = creatorFilter.trim();
+      if (updaterFilter.trim()) params.updaterFilter = updaterFilter.trim();
       if (dateFilter) params.dateFilter = dateFilter;
       if (createdDateFilter) params.createdDateFilter = createdDateFilter;
       if (startDateFilter) params.startDateFilter = startDateFilter;
@@ -159,21 +144,12 @@ export function PositionDrafts() {
     pagination.page,
     pagination.limit,
     searchTerm,
-    // Only include text filters in dependencies when they meet minimum length or are empty
-    titleFilter.length >= 3 || titleFilter === "" ? titleFilter : "inactive",
-    clientFilter.length >= 3 || clientFilter === "" ? clientFilter : "inactive",
-    positionIdFilter.length >= 3 || positionIdFilter === ""
-      ? positionIdFilter
-      : "inactive",
-    positionCodeFilter.length >= 3 || positionCodeFilter === ""
-      ? positionCodeFilter
-      : "inactive",
-    creatorFilter.length >= 3 || creatorFilter === ""
-      ? creatorFilter
-      : "inactive",
-    updaterFilter.length >= 3 || updaterFilter === ""
-      ? updaterFilter
-      : "inactive",
+    titleFilter,
+    clientFilter,
+    positionIdFilter,
+    positionCodeFilter,
+    creatorFilter,
+    updaterFilter,
     dateFilter,
     createdDateFilter,
     startDateFilter,
@@ -190,17 +166,12 @@ export function PositionDrafts() {
     }
   }, [
     searchTerm,
-    // Only reset pagination for text filters when they meet the minimum length or are empty
-    titleFilter.length >= 3 || titleFilter === "" ? titleFilter : null,
-    clientFilter.length >= 3 || clientFilter === "" ? clientFilter : null,
-    positionIdFilter.length >= 3 || positionIdFilter === ""
-      ? positionIdFilter
-      : null,
-    positionCodeFilter.length >= 3 || positionCodeFilter === ""
-      ? positionCodeFilter
-      : null,
-    creatorFilter.length >= 3 || creatorFilter === "" ? creatorFilter : null,
-    updaterFilter.length >= 3 || updaterFilter === "" ? updaterFilter : null,
+    titleFilter,
+    clientFilter,
+    positionIdFilter,
+    positionCodeFilter,
+    creatorFilter,
+    updaterFilter,
     dateFilter,
     createdDateFilter,
     startDateFilter,

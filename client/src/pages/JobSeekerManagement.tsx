@@ -104,28 +104,21 @@ export function JobSeekerManagement() {
     }
   }, [location]);
 
-  // Debounced fetch function
+  // Simplified fetch function - all filtering is now server-side
   const fetchProfiles = useCallback(async () => {
     try {
       console.log('Fetching jobseeker profiles...');
       setLoading(true);
       
-      // Only apply filters if they meet the minimum character requirement
-      const effectiveNameFilter = nameFilter.length >= 3 ? nameFilter : '';
-      const effectiveEmailFilter = emailFilter.length >= 3 ? emailFilter : '';
-      const effectivePhoneFilter = phoneFilter.length >= 3 ? phoneFilter : '';
-      const effectiveLocationFilter = locationFilter.length >= 3 ? locationFilter : '';
-      const effectiveEmployeeIdFilter = employeeIdFilter.length >= 3 ? employeeIdFilter : '';
-      
       const data = await getJobseekerProfiles({
         page: pagination.page,
         limit: pagination.limit,
         search: searchTerm,
-        nameFilter: effectiveNameFilter,
-        emailFilter: effectiveEmailFilter,
-        phoneFilter: effectivePhoneFilter,
-        locationFilter: effectiveLocationFilter,
-        employeeIdFilter: effectiveEmployeeIdFilter,
+        nameFilter,
+        emailFilter,
+        phoneFilter,
+        locationFilter,
+        employeeIdFilter,
         experienceFilter,
         statusFilter,
         dateFilter
@@ -153,12 +146,11 @@ export function JobSeekerManagement() {
     pagination.page, 
     pagination.limit, 
     searchTerm, 
-    // Only include text filters in dependencies when they meet minimum length or are empty
-    nameFilter.length >= 3 || nameFilter === '' ? nameFilter : 'inactive',
-    emailFilter.length >= 3 || emailFilter === '' ? emailFilter : 'inactive',
-    phoneFilter.length >= 3 || phoneFilter === '' ? phoneFilter : 'inactive',
-    locationFilter.length >= 3 || locationFilter === '' ? locationFilter : 'inactive',
-    employeeIdFilter.length >= 3 || employeeIdFilter === '' ? employeeIdFilter : 'inactive',
+    nameFilter,
+    emailFilter,
+    phoneFilter,
+    locationFilter,
+    employeeIdFilter,
     experienceFilter, 
     statusFilter, 
     dateFilter
@@ -181,12 +173,11 @@ export function JobSeekerManagement() {
     }
   }, [
     searchTerm, 
-    // Only reset pagination for text filters when they meet the minimum length or are empty
-    nameFilter.length >= 3 || nameFilter === '' ? nameFilter : null,
-    emailFilter.length >= 3 || emailFilter === '' ? emailFilter : null,
-    phoneFilter.length >= 3 || phoneFilter === '' ? phoneFilter : null,
-    locationFilter.length >= 3 || locationFilter === '' ? locationFilter : null,
-    employeeIdFilter.length >= 3 || employeeIdFilter === '' ? employeeIdFilter : null,
+    nameFilter,
+    emailFilter,
+    phoneFilter,
+    locationFilter,
+    employeeIdFilter,
     experienceFilter, 
     statusFilter, 
     dateFilter

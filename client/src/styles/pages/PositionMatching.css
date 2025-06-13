@@ -19,7 +19,7 @@
 
 /* Left Panel - Candidates (60%) */
 .candidates-panel {
-  flex: 0 0 60%;
+  width: 60%;
   background: var(--card);
   border-radius: var(--border-radius);
   box-shadow: var(--card-shadow);
@@ -32,7 +32,7 @@
 
 /* Right Panel - Position Management (40%) */
 .position-panel {
-  width: 500px;
+  width: 36%;
   background: var(--card);
   border-radius: var(--border-radius);
   box-shadow: var(--card-shadow);
@@ -740,7 +740,7 @@
   color: var(--text);
 }
 
-.status-label {
+.assignment-summary .status-label {
   font-size: var(--font-size-small);
   color: var(--text-muted);
   font-weight: var(--font-weight-medium);

@@ -47,7 +47,7 @@
   transition: width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
   box-shadow: 0 0 10px rgba(76, 175, 80, 0.4);
   z-index: 1;
-  animation: progressPulse 3s infinite;
+  /* animation: progressPulse 3s infinite; */
 }
 
 @keyframes progressPulse {

@@ -305,7 +305,7 @@ export function ProfileCreate({
       lastName: "",
       dob: "",
       email: isJobSeeker && user?.email ? user.email : "",
-      mobile: "",
+      mobile: isJobSeeker && user?.user_metadata?.phoneNumber ? user.user_metadata.phoneNumber : "",
       licenseNumber: "",
       passportNumber: "",
       sinNumber: "",
@@ -499,11 +499,12 @@ export function ProfileCreate({
         try {
           setLoading("formLoading", true);
           const { draft, currentStep: savedStep } = await getDraft();
-
+          console.log(user, 'user');
           if (draft) {
             // If user is a jobseeker, preserve their email
-            if (isJobSeeker && user?.email) {
+            if (isJobSeeker && user?.email && user?.user_metadata?.phoneNumber) {
               draft.email = user.email;
+              draft.mobile = user.user_metadata.phoneNumber;
             }
 
             if (draft.id) {
@@ -1383,6 +1384,7 @@ export function ProfileCreate({
               setIsEmailAvailable(isAvailable)
             }
             disableEmail={isJobSeeker || isEditMode || isDraftEditMode}
+            disableMobile={isJobSeeker || isEditMode || isDraftEditMode}
           />
         );
       case 2:

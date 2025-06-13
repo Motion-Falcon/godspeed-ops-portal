@@ -90,20 +90,13 @@ export function JobseekerDrafts() {
       console.log("Fetching jobseeker drafts...");
       setLoading(true);
 
-      // Only apply filters if they meet the minimum character requirement
-      const effectiveEmailFilter = emailFilter.length >= 3 ? emailFilter : "";
-      const effectiveCreatorFilter =
-        creatorFilter.length >= 3 ? creatorFilter : "";
-      const effectiveUpdaterFilter =
-        updaterFilter.length >= 3 ? updaterFilter : "";
-
       const data = await getAllJobseekerDrafts({
         page: pagination.page,
         limit: pagination.limit,
         search: searchTerm,
-        emailFilter: effectiveEmailFilter,
-        creatorFilter: effectiveCreatorFilter,
-        updaterFilter: effectiveUpdaterFilter,
+        emailFilter: emailFilter,
+        creatorFilter: creatorFilter,
+        updaterFilter: updaterFilter,
         dateFilter,
         createdDateFilter,
       });
@@ -123,14 +116,9 @@ export function JobseekerDrafts() {
     pagination.page,
     pagination.limit,
     searchTerm,
-    // Only include text filters in dependencies when they meet minimum length or are empty
-    emailFilter.length >= 3 || emailFilter === "" ? emailFilter : "inactive",
-    creatorFilter.length >= 3 || creatorFilter === ""
-      ? creatorFilter
-      : "inactive",
-    updaterFilter.length >= 3 || updaterFilter === ""
-      ? updaterFilter
-      : "inactive",
+    emailFilter,
+    creatorFilter,
+    updaterFilter,
     dateFilter,
     createdDateFilter,
   ]);
@@ -146,10 +134,9 @@ export function JobseekerDrafts() {
     }
   }, [
     searchTerm,
-    // Only reset pagination for text filters when they meet the minimum length or are empty
-    emailFilter.length >= 3 || emailFilter === "" ? emailFilter : null,
-    creatorFilter.length >= 3 || creatorFilter === "" ? creatorFilter : null,
-    updaterFilter.length >= 3 || updaterFilter === "" ? updaterFilter : null,
+    emailFilter,
+    creatorFilter,
+    updaterFilter,
     dateFilter,
     createdDateFilter,
   ]);

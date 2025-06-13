@@ -487,7 +487,7 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
                 onClick={handleUserProfileNavigation}
               >
                 <UserCircle size={16} />
-                <span>Profile</span>
+                <span>My Account</span>
               </button>
               <button 
                 className="logout-button" 

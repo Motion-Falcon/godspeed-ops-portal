@@ -4,9 +4,7 @@ import { Eye, Pencil, Trash2, Plus, FileText, Search, ChevronLeft, ChevronRight 
 import { 
   getClients, 
   ClientData, 
-  deleteClient,
-  ClientPaginationParams,
-  PaginatedClientResponse
+  deleteClient
 } from '../services/api';
 import { AppHeader } from '../components/AppHeader';
 import { ConfirmationModal } from '../components/ConfirmationModal';
@@ -17,6 +15,27 @@ interface ExtendedClientData extends ClientData {
   company_name?: string;
   contact_person_name1?: string;
   work_province?: string;
+  [key: string]: unknown;
+}
+
+// Backend response interface with snake_case properties
+interface BackendClientData {
+  id?: string;
+  company_name?: string;
+  short_code?: string;
+  list_name?: string;
+  contact_person_name1?: string;
+  contact_person_name2?: string;
+  email_address1?: string;
+  email_address2?: string;
+  mobile1?: string;
+  mobile2?: string;
+  landline1?: string;
+  landline2?: string;
+  preferred_payment_method?: string;
+  pay_cycle?: string;
+  created_at?: string;
+  updated_at?: string;
   [key: string]: unknown;
 }
 
@@ -70,17 +89,6 @@ export function ClientManagement() {
   const [clientToEdit, setClientToEdit] = useState<ExtendedClientData | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-  const convertToCamelCase = (data: Record<string, unknown>): ExtendedClientData => {
-    const converted: Record<string, unknown> = {};
-    
-    Object.entries(data).forEach(([key, value]) => {
-        const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
-      converted[camelKey] = value;
-    });
-    
-    return converted as ExtendedClientData;
-  };
-
   const getFieldValue = (client: ExtendedClientData, field: string): string => {
     const value = client[field] || client[field.toLowerCase()] || client[field.replace(/([A-Z])/g, '_$1').toLowerCase()];
     
@@ -129,63 +137,57 @@ export function ClientManagement() {
     }
   };
 
-  // Fetch clients with debounced filters
+  // Fetch clients with filters
   const fetchClients = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    
     try {
-      setLoading(true);
-      setError(null);
-
-      // Prepare filter parameters - only include filters with at least 3 characters
-      const filterParams: Partial<ClientPaginationParams> = {
+      const params = {
         page: pagination.page,
         limit: pagination.limit,
+        searchTerm: searchTerm,
+        companyNameFilter: companyNameFilter,
+        shortCodeFilter: shortCodeFilter,
+        listNameFilter: listNameFilter,
+        contactFilter: contactFilter,
+        emailFilter: emailFilter,
+        mobileFilter: mobileFilter,
+        paymentMethodFilter: paymentMethodFilter,
+        paymentCycleFilter: paymentCycleFilter
       };
-      
-      if (searchTerm && searchTerm.length >= 3) {
-        filterParams.searchTerm = searchTerm;
-      }
-      if (companyNameFilter && companyNameFilter.length >= 3) {
-        filterParams.companyNameFilter = companyNameFilter;
-      }
-      if (shortCodeFilter && shortCodeFilter.length >= 3) {
-        filterParams.shortCodeFilter = shortCodeFilter;
-      }
-      if (listNameFilter && listNameFilter.length >= 3) {
-        filterParams.listNameFilter = listNameFilter;
-      }
-      if (contactFilter && contactFilter.length >= 3) {
-        filterParams.contactFilter = contactFilter;
-      }
-      if (emailFilter && emailFilter.length >= 3) {
-        filterParams.emailFilter = emailFilter;
-      }
-      if (mobileFilter && mobileFilter.length >= 3) {
-        filterParams.mobileFilter = mobileFilter;
-      }
-      if (paymentMethodFilter && paymentMethodFilter.length >= 3) {
-        filterParams.paymentMethodFilter = paymentMethodFilter;
-      }
-      if (paymentCycleFilter && paymentCycleFilter.length >= 3) {
-        filterParams.paymentCycleFilter = paymentCycleFilter;
-      }
 
-      const response: PaginatedClientResponse = await getClients(filterParams);
+      const response = await getClients(params);
       
-      // Convert each client's snake_case keys to camelCase if needed
-      const formattedClients = response.clients.map(client => 
-          convertToCamelCase(client as unknown as Record<string, unknown>)
-        );
-        
-        setClients(formattedClients);
+      // Convert snake_case to camelCase for frontend use
+      // Backend returns snake_case, frontend expects camelCase
+      const convertedClients = (response.clients as BackendClientData[]).map((client: BackendClientData) => ({
+        ...client,
+        companyName: client.company_name,
+        shortCode: client.short_code,
+        listName: client.list_name,
+        contactPersonName1: client.contact_person_name1,
+        contactPersonName2: client.contact_person_name2,
+        emailAddress1: client.email_address1,
+        emailAddress2: client.email_address2,
+        mobile1: client.mobile1,
+        mobile2: client.mobile2,
+        landline1: client.landline1,
+        landline2: client.landline2,
+        preferredPaymentMethod: client.preferred_payment_method,
+        payCycle: client.pay_cycle,
+        createdAt: client.created_at,
+        updatedAt: client.updated_at
+      }));
+
+      setClients(convertedClients);
       setPagination(response.pagination);
-      } catch (err) {
-        console.error('Error fetching clients:', err);
-        const errorMessage = err instanceof Error ? err.message : 'Failed to fetch clients';
-        setError(errorMessage);
-      setClients([]);
-      } finally {
-        setLoading(false);
-      }
+    } catch (err) {
+      console.error('Error fetching clients:', err);
+      setError('Failed to fetch clients. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   }, [
     pagination.page,
     pagination.limit,
@@ -197,17 +199,34 @@ export function ClientManagement() {
     emailFilter,
     mobileFilter,
     paymentMethodFilter,
-    paymentCycleFilter,
+    paymentCycleFilter
   ]);
 
   // Debounced fetch effect
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-    fetchClients();
+      fetchClients();
     }, 300);
 
     return () => clearTimeout(timeoutId);
   }, [fetchClients]);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    if (pagination.page !== 1) {
+      setPagination(prev => ({ ...prev, page: 1 }));
+    }
+  }, [
+    searchTerm,
+    companyNameFilter,
+    shortCodeFilter,
+    listNameFilter,
+    contactFilter,
+    emailFilter,
+    mobileFilter,
+    paymentMethodFilter,
+    paymentCycleFilter
+  ]);
 
   // Event handlers
   const handleCreateClient = () => {

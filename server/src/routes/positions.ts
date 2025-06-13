@@ -146,75 +146,46 @@ router.get(
 
       const pageNum = parseInt(page);
       const limitNum = parseInt(limit);
-
-      // Calculate offset for pagination
       const offset = (pageNum - 1) * limitNum;
 
-      // Only select the fields that are actually used in the client
-      // This reduces data transfer and improves performance
-      const selectedFields = [
-        "id",
-        "position_code", 
-        "title",
-        "start_date",
-        "end_date",
-        "city", 
-        "province",
-        "employment_term",
-        "employment_type", 
-        "position_category",
-        "experience",
-        "show_on_job_portal",
-        "created_at", // Still needed for ordering
-        "clients(company_name)",
-        "assigned_jobseekers",
-        "number_of_positions"
-      ].join(", ");
+      // Build the base query with all necessary fields
+      let baseQuery = supabase
+        .from("positions")
+        .select(`
+          id,
+          position_code, 
+          title,
+          start_date,
+          end_date,
+          city, 
+          province,
+          employment_term,
+          employment_type, 
+          position_category,
+          experience,
+          show_on_job_portal,
+          created_at,
+          client_name,
+          assigned_jobseekers,
+          number_of_positions
+        `);
 
-      // Start building the query with optimized field selection
-      let query = supabase.from("positions").select(selectedFields);
+      // Apply all filters at database level
+      baseQuery = applyPositionFilters(baseQuery, {
+        search,
+        positionIdFilter,
+        titleFilter,
+        clientFilter,
+        locationFilter,
+        employmentTermFilter,
+        employmentTypeFilter,
+        positionCategoryFilter,
+        experienceFilter,
+        showOnPortalFilter,
+        dateFilter
+      });
 
-      // Apply database-level filters (only if they meet minimum character requirement)
-      if (positionIdFilter && positionIdFilter.length >= 3) {
-        query = query.ilike("position_code", `%${positionIdFilter}%`);
-      }
-
-      if (titleFilter && titleFilter.length >= 3) {
-        query = query.ilike("title", `%${titleFilter}%`);
-      }
-
-      if (employmentTermFilter && employmentTermFilter !== "all") {
-        query = query.eq("employment_term", employmentTermFilter);
-      }
-
-      if (employmentTypeFilter && employmentTypeFilter !== "all") {
-        query = query.eq("employment_type", employmentTypeFilter);
-      }
-
-      if (positionCategoryFilter && positionCategoryFilter !== "all") {
-        query = query.eq("position_category", positionCategoryFilter);
-      }
-
-      if (experienceFilter && experienceFilter !== "all") {
-        query = query.eq("experience", experienceFilter);
-      }
-
-      if (showOnPortalFilter && showOnPortalFilter !== "all") {
-        const showOnPortal =
-          showOnPortalFilter === "true" || showOnPortalFilter === "Yes";
-        query = query.eq("show_on_job_portal", showOnPortal);
-      }
-
-      if (dateFilter) {
-        const filterDate = new Date(dateFilter);
-        const nextDay = new Date(filterDate);
-        nextDay.setDate(nextDay.getDate() + 1);
-        query = query
-          .gte("start_date", filterDate.toISOString().split("T")[0])
-          .lt("start_date", nextDay.toISOString().split("T")[0]);
-      }
-
-      // Get total count first (without pagination and without filters)
+      // Get total count (unfiltered)
       const { count: totalCount, error: countError } = await supabase
         .from("positions")
         .select("*", { count: "exact", head: true });
@@ -226,53 +197,26 @@ router.get(
           .json({ error: "Failed to get total count of positions" });
       }
 
-      // Get filtered count (with filters but without pagination)
+      // Get filtered count
       let countQuery = supabase
         .from("positions")
         .select("*", { count: "exact", head: true });
 
-      // Apply the same filters to the count query
-      if (positionIdFilter && positionIdFilter.length >= 3) {
-        countQuery = countQuery.ilike("position_code", `%${positionIdFilter}%`);
-      }
+      countQuery = applyPositionFilters(countQuery, {
+        search,
+        positionIdFilter,
+        titleFilter,
+        clientFilter,
+        locationFilter,
+        employmentTermFilter,
+        employmentTypeFilter,
+        positionCategoryFilter,
+        experienceFilter,
+        showOnPortalFilter,
+        dateFilter
+      });
 
-      if (titleFilter && titleFilter.length >= 3) {
-        countQuery = countQuery.ilike("title", `%${titleFilter}%`);
-      }
-
-      if (employmentTermFilter && employmentTermFilter !== "all") {
-        countQuery = countQuery.eq("employment_term", employmentTermFilter);
-      }
-
-      if (employmentTypeFilter && employmentTypeFilter !== "all") {
-        countQuery = countQuery.eq("employment_type", employmentTypeFilter);
-      }
-
-      if (positionCategoryFilter && positionCategoryFilter !== "all") {
-        countQuery = countQuery.eq("position_category", positionCategoryFilter);
-      }
-
-      if (experienceFilter && experienceFilter !== "all") {
-        countQuery = countQuery.eq("experience", experienceFilter);
-      }
-
-      if (showOnPortalFilter && showOnPortalFilter !== "all") {
-        const showOnPortal =
-          showOnPortalFilter === "true" || showOnPortalFilter === "Yes";
-        countQuery = countQuery.eq("show_on_job_portal", showOnPortal);
-      }
-
-      if (dateFilter) {
-        const filterDate = new Date(dateFilter);
-        const nextDay = new Date(filterDate);
-        nextDay.setDate(nextDay.getDate() + 1);
-        countQuery = countQuery
-          .gte("start_date", filterDate.toISOString().split("T")[0])
-          .lt("start_date", nextDay.toISOString().split("T")[0]);
-      }
-
-      const { count: filteredCount, error: filteredCountError } =
-        await countQuery;
+      const { count: filteredCount, error: filteredCountError } = await countQuery;
 
       if (filteredCountError) {
         console.error("Error getting filtered count:", filteredCountError);
@@ -281,8 +225,8 @@ router.get(
           .json({ error: "Failed to get filtered count of positions" });
       }
 
-      // Apply pagination and execute query
-      const { data: positions, error } = await query
+      // Apply pagination and execute main query
+      const { data: positions, error } = await baseQuery
         .range(offset, offset + limitNum - 1)
         .order("created_at", { ascending: false });
 
@@ -291,14 +235,15 @@ router.get(
         return res.status(500).json({ error: "Failed to fetch positions" });
       }
 
-      if (!positions) {
+      if (!positions || positions.length === 0) {
         return res.json({
           positions: [],
           pagination: {
             page: pageNum,
             limit: limitNum,
             total: totalCount || 0,
-            totalPages: Math.ceil((totalCount || 0) / limitNum),
+            totalFiltered: filteredCount || 0,
+            totalPages: Math.ceil((filteredCount || 0) / limitNum),
             hasNextPage: false,
             hasPrevPage: false,
           },
@@ -308,11 +253,11 @@ router.get(
       // Transform the response to include clientName and convert snake_case to camelCase
       const formattedPositions = await Promise.all(positions.map(async (position: any) => {
         // Since we're only selecting specific fields, handle the clients data properly
-        const clientName = position.clients?.company_name || null;
+        const clientName = position.client_name || null;
         
         // Create a clean position object without the clients nested object
         const positionData = { ...position };
-        delete positionData.clients;
+        delete positionData.client_name;
 
         // Sync assigned_jobseekers with active assignments from position_candidate_assignments table
         const activeJobseekers = await syncAssignedJobseekers(position.id);
@@ -338,100 +283,19 @@ router.get(
         return formattedPosition;
       }));
 
-      // Apply client-side filters after formatting (for computed fields that need 3+ characters)
-      let filteredPositions = formattedPositions;
-
-      if (search && search.length >= 3) {
-        filteredPositions = filteredPositions.filter(
-          (position) =>
-            (position.title &&
-              position.title.toLowerCase().includes(search.toLowerCase())) ||
-            (position.clientName &&
-              position.clientName
-                .toLowerCase()
-                .includes(search.toLowerCase())) ||
-            (position.positionCode &&
-              position.positionCode
-                .toLowerCase()
-                .includes(search.toLowerCase())) ||
-            (position.city &&
-              position.city.toLowerCase().includes(search.toLowerCase())) ||
-            (position.province &&
-              position.province.toLowerCase().includes(search.toLowerCase()))
-        );
-      }
-
-      if (clientFilter && clientFilter.length >= 3) {
-        filteredPositions = filteredPositions.filter(
-          (position) =>
-            position.clientName &&
-            position.clientName
-              .toLowerCase()
-              .includes(clientFilter.toLowerCase())
-        );
-      }
-
-      if (locationFilter && locationFilter.length >= 3) {
-        filteredPositions = filteredPositions.filter((position) => {
-          const location = `${position.city || ""} ${
-            position.province || ""
-          }`.trim();
-          return location.toLowerCase().includes(locationFilter.toLowerCase());
-        });
-      }
-
-      if (positionIdFilter && positionIdFilter.length >= 3) {
-        filteredPositions = filteredPositions.filter(
-          (position) =>
-            position.positionCode &&
-            position.positionCode
-              .toLowerCase()
-              .includes(positionIdFilter.toLowerCase())
-        );
-      }
-
-      // Calculate pagination info based on the actual final filtered count
-      const actualFilteredCount = filteredPositions.length;
-
-      // For pagination calculation, we need to account for the fact that we applied client-side filters
-      // If we have client-side filters, we need to estimate the total filtered count
-      let totalFilteredForPagination = filteredCount || 0;
-
-      // If we have client-side filters that could reduce the count, use the actual count
-      const hasClientSideFilters =
-        (search && search.length >= 3) ||
-        (positionIdFilter && positionIdFilter.length >= 3) ||
-        (clientFilter && clientFilter.length >= 3) ||
-        (locationFilter && locationFilter.length >= 3);
-
-      if (hasClientSideFilters) {
-        // For client-side filtered results, we can't easily calculate total across all pages
-        // So we'll use a conservative approach
-        totalFilteredForPagination =
-          actualFilteredCount + (pageNum - 1) * limitNum;
-
-        // If we got a full page, there might be more
-        if (
-          actualFilteredCount === limitNum &&
-          filteredCount &&
-          filteredCount > totalFilteredForPagination
-        ) {
-          totalFilteredForPagination = filteredCount;
-        }
-      }
-
-      const totalPages = Math.ceil(totalFilteredForPagination / limitNum);
-      const hasNextPage =
-        pageNum < totalPages && actualFilteredCount === limitNum;
+      // Calculate pagination metadata
+      const totalFiltered = filteredCount || 0;
+      const totalPages = Math.ceil(totalFiltered / limitNum);
+      const hasNextPage = pageNum < totalPages;
       const hasPrevPage = pageNum > 1;
 
       return res.json({
-        positions: filteredPositions,
+        positions: formattedPositions,
         pagination: {
           page: pageNum,
           limit: limitNum,
           total: totalCount || 0,
-          totalFiltered: totalFilteredForPagination,
+          totalFiltered,
           totalPages,
           hasNextPage,
           hasPrevPage,
@@ -447,6 +311,190 @@ router.get(
     }
   }
 );
+
+/**
+ * Helper function to apply filters to a Supabase query
+ */
+function applyPositionFilters(query: any, filters: {
+  search?: string;
+  positionIdFilter?: string;
+  titleFilter?: string;
+  clientFilter?: string;
+  locationFilter?: string;
+  employmentTermFilter?: string;
+  employmentTypeFilter?: string;
+  positionCategoryFilter?: string;
+  experienceFilter?: string;
+  showOnPortalFilter?: string;
+  dateFilter?: string;
+}) {
+  const {
+    search,
+    positionIdFilter,
+    titleFilter,
+    clientFilter,
+    locationFilter,
+    employmentTermFilter,
+    employmentTypeFilter,
+    positionCategoryFilter,
+    experienceFilter,
+    showOnPortalFilter,
+    dateFilter
+  } = filters;
+
+  // Global search across multiple fields
+  if (search && search.trim().length > 0) {
+    const searchTerm = search.trim();
+    query = query.or(`position_code.ilike.%${searchTerm}%,title.ilike.%${searchTerm}%,city.ilike.%${searchTerm}%,province.ilike.%${searchTerm}%,employment_term.ilike.%${searchTerm}%,employment_type.ilike.%${searchTerm}%,position_category.ilike.%${searchTerm}%,experience.ilike.%${searchTerm}%,client_name.ilike.%${searchTerm}%`);
+  }
+
+  // Individual column filters
+  if (positionIdFilter && positionIdFilter.trim().length > 0) {
+    query = query.ilike("position_code", `%${positionIdFilter.trim()}%`);
+  }
+
+  if (titleFilter && titleFilter.trim().length > 0) {
+    query = query.ilike("title", `%${titleFilter.trim()}%`);
+  }
+
+  if (locationFilter && locationFilter.trim().length > 0) {
+    const locationTerm = locationFilter.trim();
+    query = query.or(`city.ilike.%${locationTerm}%,province.ilike.%${locationTerm}%`);
+  }
+
+  if (employmentTermFilter && employmentTermFilter !== "all") {
+    query = query.eq("employment_term", employmentTermFilter);
+  }
+
+  if (employmentTypeFilter && employmentTypeFilter !== "all") {
+    query = query.eq("employment_type", employmentTypeFilter);
+  }
+
+  if (positionCategoryFilter && positionCategoryFilter !== "all") {
+    query = query.eq("position_category", positionCategoryFilter);
+  }
+
+  if (experienceFilter && experienceFilter !== "all") {
+    query = query.eq("experience", experienceFilter);
+  }
+
+  if (showOnPortalFilter && showOnPortalFilter !== "all") {
+    const showOnPortal = showOnPortalFilter === "true" || showOnPortalFilter === "Yes";
+    query = query.eq("show_on_job_portal", showOnPortal);
+  }
+
+  if (dateFilter) {
+    const filterDate = new Date(dateFilter);
+    const nextDay = new Date(filterDate);
+    nextDay.setDate(nextDay.getDate() + 1);
+    query = query
+      .gte("start_date", filterDate.toISOString().split("T")[0])
+      .lt("start_date", nextDay.toISOString().split("T")[0]);
+  }
+
+  if (clientFilter && clientFilter.trim().length > 0) {
+    query = query.ilike("client_name", `%${clientFilter.trim()}%`);
+  }
+
+  return query;
+}
+
+// Interface for position draft database record
+interface DbPositionDraft {
+  id: string;
+  user_id: string;
+  title: string;
+  client_name: string;
+  position_code: string;
+  position_number: string;
+  start_date: string;
+  show_on_job_portal: boolean;
+  last_updated: string;
+  created_at: string;
+  updated_at: string;
+  created_by_user_id: string;
+  updated_by_user_id: string;
+}
+
+// Helper function to apply filters to position drafts query
+function applyPositionDraftFilters(query: any, filters: {
+  search?: string;
+  titleFilter?: string;
+  clientFilter?: string;
+  positionIdFilter?: string;
+  positionCodeFilter?: string;
+  creatorFilter?: string;
+  updaterFilter?: string;
+  dateFilter?: string;
+  createdDateFilter?: string;
+  startDateFilter?: string;
+}) {
+  const {
+    search,
+    titleFilter,
+    clientFilter,
+    positionIdFilter,
+    positionCodeFilter,
+    creatorFilter,
+    updaterFilter,
+    dateFilter,
+    createdDateFilter,
+    startDateFilter
+  } = filters;
+
+  // Global search across multiple fields
+  if (search && search.trim()) {
+    const searchTerm = search.trim();
+    query = query.or(`title.ilike.%${searchTerm}%,position_code.ilike.%${searchTerm}%,position_number.ilike.%${searchTerm}%,client_name.ilike.%${searchTerm}%`);
+  }
+
+  // Individual field filters
+  if (titleFilter && titleFilter.trim()) {
+    query = query.ilike('title', `%${titleFilter.trim()}%`);
+  }
+
+  if (clientFilter && clientFilter.trim()) {
+    query = query.ilike('client_name', `%${clientFilter.trim()}%`);
+  }
+
+  if (positionIdFilter && positionIdFilter.trim()) {
+    query = query.ilike('position_code', `%${positionIdFilter.trim()}%`);
+  }
+
+  if (positionCodeFilter && positionCodeFilter.trim()) {
+    query = query.ilike('position_number', `%${positionCodeFilter.trim()}%`);
+  }
+
+  // Date filters
+  if (dateFilter) {
+    const filterDate = new Date(dateFilter);
+    const nextDay = new Date(filterDate);
+    nextDay.setDate(nextDay.getDate() + 1);
+    query = query
+      .gte('updated_at', filterDate.toISOString())
+      .lt('updated_at', nextDay.toISOString());
+  }
+
+  if (createdDateFilter) {
+    const filterDate = new Date(createdDateFilter);
+    const nextDay = new Date(filterDate);
+    nextDay.setDate(nextDay.getDate() + 1);
+    query = query
+      .gte('created_at', filterDate.toISOString())
+      .lt('created_at', nextDay.toISOString());
+  }
+
+  if (startDateFilter) {
+    const filterDate = new Date(startDateFilter);
+    const nextDay = new Date(filterDate);
+    nextDay.setDate(nextDay.getDate() + 1);
+    query = query
+      .gte('start_date', filterDate.toISOString())
+      .lt('start_date', nextDay.toISOString());
+  }
+
+  return query;
+}
 
 /**
  * Get all position drafts for the user with pagination and filtering
@@ -481,52 +529,25 @@ router.get(
       // Calculate offset
       const offset = (page - 1) * limit;
 
-      // Build base query
-      let query = supabase
+      // Build base query with selected fields for better performance
+      let baseQuery = supabase
         .from("position_drafts")
-        .select("*, clients(company_name)");
+        .select(`
+          id,
+          title,
+          client_name,
+          position_code,
+          position_number,
+          start_date,
+          show_on_job_portal,
+          last_updated,
+          created_at,
+          updated_at,
+          created_by_user_id,
+          updated_by_user_id
+        `);
 
-      // Apply database-level filters (only if they meet minimum character requirement)
-      if (titleFilter && titleFilter.length >= 3) {
-        query = query.ilike("title", `%${titleFilter}%`);
-      }
-
-      if (positionIdFilter && positionIdFilter.length >= 3) {
-        query = query.ilike("position_code", `%${positionIdFilter}%`);
-      }
-
-      if (positionCodeFilter && positionCodeFilter.length >= 3) {
-        query = query.ilike("position_number", `%${positionCodeFilter}%`);
-      }
-
-      if (dateFilter) {
-        const filterDate = new Date(dateFilter);
-        const nextDay = new Date(filterDate);
-        nextDay.setDate(nextDay.getDate() + 1);
-        query = query
-          .gte("updated_at", filterDate.toISOString())
-          .lt("updated_at", nextDay.toISOString());
-      }
-
-      if (createdDateFilter) {
-        const filterDate = new Date(createdDateFilter);
-        const nextDay = new Date(filterDate);
-        nextDay.setDate(nextDay.getDate() + 1);
-        query = query
-          .gte("created_at", filterDate.toISOString())
-          .lt("created_at", nextDay.toISOString());
-      }
-
-      if (startDateFilter) {
-        const filterDate = new Date(startDateFilter);
-        const nextDay = new Date(filterDate);
-        nextDay.setDate(nextDay.getDate() + 1);
-        query = query
-          .gte("start_date", filterDate.toISOString())
-          .lt("start_date", nextDay.toISOString());
-      }
-
-      // Get total count first (without pagination and without filters)
+      // Get total count (unfiltered)
       const { count: totalCount, error: countError } = await supabase
         .from("position_drafts")
         .select("*", { count: "exact", head: true });
@@ -538,56 +559,23 @@ router.get(
           .json({ error: "Failed to get total count of drafts" });
       }
 
-      // Get filtered count (with filters but without pagination)
-      let countQuery = supabase
+      // Apply filters to get filtered count
+      let filteredCountQuery = supabase
         .from("position_drafts")
         .select("*", { count: "exact", head: true });
 
-      // Apply the same filters to the count query
-      if (positionIdFilter && positionIdFilter.length >= 3) {
-        countQuery = countQuery.ilike("position_code", `%${positionIdFilter}%`);
-      }
+      filteredCountQuery = applyPositionDraftFilters(filteredCountQuery, {
+        search,
+        titleFilter,
+        clientFilter,
+        positionIdFilter,
+        positionCodeFilter,
+        dateFilter,
+        createdDateFilter,
+        startDateFilter
+      });
 
-      if (titleFilter && titleFilter.length >= 3) {
-        countQuery = countQuery.ilike("title", `%${titleFilter}%`);
-      }
-
-      if (positionCodeFilter && positionCodeFilter.length >= 3) {
-        countQuery = countQuery.ilike(
-          "position_number",
-          `%${positionCodeFilter}%`
-        );
-      }
-
-      if (dateFilter) {
-        const filterDate = new Date(dateFilter);
-        const nextDay = new Date(filterDate);
-        nextDay.setDate(nextDay.getDate() + 1);
-        countQuery = countQuery
-          .gte("updated_at", filterDate.toISOString())
-          .lt("updated_at", nextDay.toISOString());
-      }
-
-      if (createdDateFilter) {
-        const filterDate = new Date(createdDateFilter);
-        const nextDay = new Date(filterDate);
-        nextDay.setDate(nextDay.getDate() + 1);
-        countQuery = countQuery
-          .gte("created_at", filterDate.toISOString())
-          .lt("created_at", nextDay.toISOString());
-      }
-
-      if (startDateFilter) {
-        const filterDate = new Date(startDateFilter);
-        const nextDay = new Date(filterDate);
-        nextDay.setDate(nextDay.getDate() + 1);
-        countQuery = countQuery
-          .gte("start_date", filterDate.toISOString())
-          .lt("start_date", nextDay.toISOString());
-      }
-
-      const { count: filteredCount, error: filteredCountError } =
-        await countQuery;
+      const { count: filteredCount, error: filteredCountError } = await filteredCountQuery;
 
       if (filteredCountError) {
         console.error("Error getting filtered count:", filteredCountError);
@@ -596,8 +584,20 @@ router.get(
           .json({ error: "Failed to get filtered count of drafts" });
       }
 
+      // Apply filters to main query
+      let mainQuery = applyPositionDraftFilters(baseQuery, {
+        search,
+        titleFilter,
+        clientFilter,
+        positionIdFilter,
+        positionCodeFilter,
+        dateFilter,
+        createdDateFilter,
+        startDateFilter
+      });
+
       // Apply pagination and execute query
-      const { data: drafts, error } = await query
+      const { data: drafts, error } = await mainQuery
         .range(offset, offset + limit - 1)
         .order("updated_at", { ascending: false });
 
@@ -613,22 +613,26 @@ router.get(
             page,
             limit,
             total: totalCount || 0,
-            totalPages: Math.ceil((totalCount || 0) / limit),
+            totalFiltered: filteredCount || 0,
+            totalPages: Math.ceil((filteredCount || 0) / limit),
             hasNextPage: false,
             hasPrevPage: false,
           },
         });
       }
 
+      // Type the drafts array properly
+      const typedDrafts = drafts as DbPositionDraft[];
+
       // Collect all user IDs to fetch their details
       const creatorIds = [
         ...new Set(
-          drafts.map((draft) => draft.created_by_user_id).filter(Boolean)
+          typedDrafts.map((draft: DbPositionDraft) => draft.created_by_user_id).filter(Boolean)
         ),
       ];
       const updaterIds = [
         ...new Set(
-          drafts.map((draft) => draft.updated_by_user_id).filter(Boolean)
+          typedDrafts.map((draft: DbPositionDraft) => draft.updated_by_user_id).filter(Boolean)
         ),
       ];
       const allUserIds = [...new Set([...creatorIds, ...updaterIds])];
@@ -637,7 +641,7 @@ router.get(
       const userDetailsMap: { [key: string]: any } = {};
       if (allUserIds.length > 0) {
         try {
-          const userPromises = allUserIds.map(async (userId) => {
+          const userPromises = allUserIds.map(async (userId: string) => {
             try {
               const { data: userData, error: userError } =
                 await supabase.auth.admin.getUserById(userId);
@@ -674,15 +678,12 @@ router.get(
       }
 
       // Transform drafts format to match client expectations
-      const formattedDrafts = drafts.map((draft) => {
-        const clientName = draft.clients?.company_name || null;
-
-        // Create a formatted draft object
+      const formattedDrafts = typedDrafts.map((draft: DbPositionDraft) => {
         const formattedDraft = {
           id: draft.id,
-          userId: draft.user_id || draft.created_by_user_id, // fallback for user_id
+          userId: draft.user_id || draft.created_by_user_id,
           title: draft.title || "",
-          clientName: clientName,
+          clientName: draft.client_name,
           positionCode: draft.position_code,
           positionNumber: draft.position_number,
           startDate: draft.start_date,
@@ -703,88 +704,39 @@ router.get(
         return formattedDraft;
       });
 
-      // Apply client-side filters after formatting (since they involve computed fields)
-      let filteredDrafts = formattedDrafts;
+      // Apply server-side user-based filters (creator/updater) after user details are fetched
+      let finalFilteredDrafts = formattedDrafts;
 
-      if (search && search.length >= 3) {
-        filteredDrafts = formattedDrafts.filter(
-          (draft) =>
-            draft.title.toLowerCase().includes(search.toLowerCase()) ||
-            (draft.clientName &&
-              draft.clientName.toLowerCase().includes(search.toLowerCase())) ||
-            (draft.positionCode &&
-              draft.positionCode
-                .toLowerCase()
-                .includes(search.toLowerCase())) ||
-            (draft.positionNumber &&
-              draft.positionNumber.toLowerCase().includes(search.toLowerCase()))
-        );
-      }
-
-      if (clientFilter && clientFilter.length >= 3) {
-        filteredDrafts = filteredDrafts.filter(
-          (draft) =>
-            draft.clientName &&
-            draft.clientName.toLowerCase().includes(clientFilter.toLowerCase())
-        );
-      }
-
-      if (positionIdFilter && positionIdFilter.length >= 3) {
-        filteredDrafts = filteredDrafts.filter(
-          (draft) =>
-            draft.positionCode &&
-            draft.positionCode
-              .toLowerCase()
-              .includes(positionIdFilter.toLowerCase())
-        );
-      }
-
-      if (positionCodeFilter && positionCodeFilter.length >= 3) {
-        filteredDrafts = filteredDrafts.filter(
-          (draft) =>
-            draft.positionNumber &&
-            draft.positionNumber
-              .toLowerCase()
-              .includes(positionCodeFilter.toLowerCase())
-        );
-      }
-
-      if (creatorFilter && creatorFilter.length >= 3) {
-        filteredDrafts = filteredDrafts.filter(
+      if (creatorFilter && creatorFilter.trim()) {
+        const creatorTerm = creatorFilter.trim().toLowerCase();
+        finalFilteredDrafts = finalFilteredDrafts.filter(
           (draft) =>
             (draft.creatorDetails?.name &&
-              draft.creatorDetails.name
-                .toLowerCase()
-                .includes(creatorFilter.toLowerCase())) ||
+              draft.creatorDetails.name.toLowerCase().includes(creatorTerm)) ||
             (draft.creatorDetails?.email &&
-              draft.creatorDetails.email
-                .toLowerCase()
-                .includes(creatorFilter.toLowerCase()))
+              draft.creatorDetails.email.toLowerCase().includes(creatorTerm))
         );
       }
 
-      if (updaterFilter && updaterFilter.length >= 3) {
-        filteredDrafts = filteredDrafts.filter(
+      if (updaterFilter && updaterFilter.trim()) {
+        const updaterTerm = updaterFilter.trim().toLowerCase();
+        finalFilteredDrafts = finalFilteredDrafts.filter(
           (draft) =>
             (draft.updaterDetails?.name &&
-              draft.updaterDetails.name
-                .toLowerCase()
-                .includes(updaterFilter.toLowerCase())) ||
+              draft.updaterDetails.name.toLowerCase().includes(updaterTerm)) ||
             (draft.updaterDetails?.email &&
-              draft.updaterDetails.email
-                .toLowerCase()
-                .includes(updaterFilter.toLowerCase()))
+              draft.updaterDetails.email.toLowerCase().includes(updaterTerm))
         );
       }
 
-      // Calculate pagination info based on filtered count
+      // Calculate pagination info
       const totalFiltered = filteredCount || 0;
       const totalPages = Math.ceil(totalFiltered / limit);
       const hasNextPage = page < totalPages;
       const hasPrevPage = page > 1;
 
       res.json({
-        drafts: filteredDrafts,
+        drafts: finalFilteredDrafts,
         pagination: {
           page,
           limit,

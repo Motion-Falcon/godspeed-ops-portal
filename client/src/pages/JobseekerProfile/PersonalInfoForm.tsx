@@ -14,12 +14,14 @@ interface PersonalInfoFormProps {
   allFields: string[];
   onEmailAvailabilityChange?: (isAvailable: boolean | null) => void;
   disableEmail?: boolean;
+  disableMobile?: boolean;
 }
 
 export function PersonalInfoForm({
   allFields,
   onEmailAvailabilityChange,
   disableEmail = false,
+  disableMobile = false,
 }: PersonalInfoFormProps) {
   const { register, formState, watch, setError, clearErrors } =
     useFormContext<PersonalInfoFormData>();
@@ -382,7 +384,15 @@ export function PersonalInfoForm({
             className="form-input"
             placeholder="(XXX) XXX-XXXX"
             {...register("mobile")}
+            disabled={disableMobile}
+            readOnly={disableMobile}
           />
+          {disableMobile && (
+            <p className="field-note">
+              Mobile number cannot be changed as it's used as a unique identifier for
+              this profile.
+            </p>
+          )}
           {shouldShowError("mobile") && (
             <p className="error-message">{allErrors.mobile?.message}</p>
           )}

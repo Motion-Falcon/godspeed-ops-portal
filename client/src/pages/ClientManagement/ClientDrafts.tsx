@@ -74,26 +74,14 @@ export function ClientDrafts() {
       setLoading(true);
       setError(null);
 
-      // Only apply filters if they meet the minimum character requirement
-      const effectiveGlobalSearch =
-        globalSearch.length >= 3 ? globalSearch : "";
-      const effectiveCompanyNameFilter =
-        companyNameFilter.length >= 3 ? companyNameFilter : "";
-      const effectiveShortCodeFilter =
-        shortCodeFilter.length >= 3 ? shortCodeFilter : "";
-      const effectiveListNameFilter =
-        listNameFilter.length >= 3 ? listNameFilter : "";
-      const effectiveContactPersonFilter =
-        contactPersonFilter.length >= 3 ? contactPersonFilter : "";
-
       const params: ClientDraftPaginationParams = {
         page: pagination.page,
         limit: pagination.limit,
-        search: effectiveGlobalSearch,
-        companyNameFilter: effectiveCompanyNameFilter,
-        shortCodeFilter: effectiveShortCodeFilter,
-        listNameFilter: effectiveListNameFilter,
-        contactPersonFilter: effectiveContactPersonFilter,
+        search: globalSearch,
+        companyNameFilter: companyNameFilter,
+        shortCodeFilter: shortCodeFilter,
+        listNameFilter: listNameFilter,
+        contactPersonFilter: contactPersonFilter,
         dateFilter: dateFilter || undefined,
         createdDateFilter: createdDateFilter || undefined,
       };
@@ -112,20 +100,11 @@ export function ClientDrafts() {
   }, [
     pagination.page,
     pagination.limit,
-    // Only include text filters in dependencies when they meet minimum length or are empty
-    globalSearch.length >= 3 || globalSearch === "" ? globalSearch : "inactive",
-    companyNameFilter.length >= 3 || companyNameFilter === ""
-      ? companyNameFilter
-      : "inactive",
-    shortCodeFilter.length >= 3 || shortCodeFilter === ""
-      ? shortCodeFilter
-      : "inactive",
-    listNameFilter.length >= 3 || listNameFilter === ""
-      ? listNameFilter
-      : "inactive",
-    contactPersonFilter.length >= 3 || contactPersonFilter === ""
-      ? contactPersonFilter
-      : "inactive",
+    globalSearch,
+    companyNameFilter,
+    shortCodeFilter,
+    listNameFilter,
+    contactPersonFilter,
     dateFilter,
     createdDateFilter,
   ]);
@@ -140,18 +119,11 @@ export function ClientDrafts() {
       setPagination((prev) => ({ ...prev, page: 1 }));
     }
   }, [
-    // Only reset pagination for text filters when they meet the minimum length or are empty
-    globalSearch.length >= 3 || globalSearch === "" ? globalSearch : null,
-    companyNameFilter.length >= 3 || companyNameFilter === ""
-      ? companyNameFilter
-      : null,
-    shortCodeFilter.length >= 3 || shortCodeFilter === ""
-      ? shortCodeFilter
-      : null,
-    listNameFilter.length >= 3 || listNameFilter === "" ? listNameFilter : null,
-    contactPersonFilter.length >= 3 || contactPersonFilter === ""
-      ? contactPersonFilter
-      : null,
+    globalSearch,
+    companyNameFilter,
+    shortCodeFilter,
+    listNameFilter,
+    contactPersonFilter,
     dateFilter,
     createdDateFilter,
   ]);
@@ -263,7 +235,7 @@ export function ClientDrafts() {
                 <Search size={14} className="search-icon" />
                 <input
                   type="text"
-                  placeholder="Global search (min 3 chars)..."
+                  placeholder="Global search..."
                   value={globalSearch}
                   onChange={(e) => setGlobalSearch(e.target.value)}
                   className="search-input"
@@ -330,7 +302,7 @@ export function ClientDrafts() {
                       <div className="column-search">
                         <input
                           type="text"
-                          placeholder="Search (min 3 chars)..."
+                          placeholder="Search company name..."
                           value={companyNameFilter}
                           onChange={(e) => setCompanyNameFilter(e.target.value)}
                           className="column-search-input"
@@ -344,7 +316,7 @@ export function ClientDrafts() {
                       <div className="column-search">
                         <input
                           type="text"
-                          placeholder="Search (min 3 chars)..."
+                          placeholder="Search short code..."
                           value={shortCodeFilter}
                           onChange={(e) => setShortCodeFilter(e.target.value)}
                           className="column-search-input"
@@ -358,7 +330,7 @@ export function ClientDrafts() {
                       <div className="column-search">
                         <input
                           type="text"
-                          placeholder="Search (min 3 chars)..."
+                          placeholder="Search list name..."
                           value={listNameFilter}
                           onChange={(e) => setListNameFilter(e.target.value)}
                           className="column-search-input"
@@ -372,7 +344,7 @@ export function ClientDrafts() {
                       <div className="column-search">
                         <input
                           type="text"
-                          placeholder="Search (min 3 chars)..."
+                          placeholder="Search contact person..."
                           value={contactPersonFilter}
                           onChange={(e) =>
                             setContactPersonFilter(e.target.value)

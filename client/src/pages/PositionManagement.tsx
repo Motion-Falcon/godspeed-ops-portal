@@ -91,26 +91,20 @@ export function PositionManagement() {
     }
   }, [location]);
 
-  // Debounced fetch function
+  // Simplified fetch function - all filtering is now server-side
   const fetchPositions = useCallback(async () => {
     try {
       console.log('Fetching positions...');
       setLoading(true);
       
-      // Only apply filters if they meet the minimum character requirement
-      const effectiveTitleFilter = titleFilter.length >= 3 ? titleFilter : '';
-      const effectiveClientFilter = clientFilter.length >= 3 ? clientFilter : '';
-      const effectiveLocationFilter = locationFilter.length >= 3 ? locationFilter : '';
-      const effectivePositionIdFilter = positionIdFilter.length >= 3 ? positionIdFilter : '';
-      
       const params: PositionPaginationParams = {
         page: pagination.page,
         limit: pagination.limit,
         search: searchTerm,
-        positionIdFilter: effectivePositionIdFilter,
-        titleFilter: effectiveTitleFilter,
-        clientFilter: effectiveClientFilter,
-        locationFilter: effectiveLocationFilter,
+        positionIdFilter,
+        titleFilter,
+        clientFilter,
+        locationFilter,
         employmentTermFilter,
         employmentTypeFilter,
         positionCategoryFilter,
@@ -147,11 +141,10 @@ export function PositionManagement() {
     pagination.page, 
     pagination.limit, 
     searchTerm, 
-    // Only include text filters in dependencies when they meet minimum length or are empty
-    positionIdFilter.length >= 3 || positionIdFilter === '' ? positionIdFilter : 'inactive',
-    titleFilter.length >= 3 || titleFilter === '' ? titleFilter : 'inactive',
-    clientFilter.length >= 3 || clientFilter === '' ? clientFilter : 'inactive',
-    locationFilter.length >= 3 || locationFilter === '' ? locationFilter : 'inactive',
+    positionIdFilter,
+    titleFilter,
+    clientFilter,
+    locationFilter,
     employmentTermFilter,
     employmentTypeFilter,
     positionCategoryFilter,
@@ -171,11 +164,10 @@ export function PositionManagement() {
     }
   }, [
     searchTerm, 
-    // Only reset pagination for text filters when they meet the minimum length or are empty
-    positionIdFilter.length >= 3 || positionIdFilter === '' ? positionIdFilter : null,
-    titleFilter.length >= 3 || titleFilter === '' ? titleFilter : null,
-    clientFilter.length >= 3 || clientFilter === '' ? clientFilter : null,
-    locationFilter.length >= 3 || locationFilter === '' ? locationFilter : null,
+    positionIdFilter,
+    titleFilter,
+    clientFilter,
+    locationFilter,
     employmentTermFilter,
     employmentTypeFilter,
     positionCategoryFilter,

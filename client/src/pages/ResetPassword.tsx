@@ -11,6 +11,7 @@ import "../styles/pages/ForgotPassword.css";
 import "../styles/components/form.css";
 import "../styles/components/button.css";
 import { AppHeader } from "../components/AppHeader";
+import { useAuth } from "../contexts/AuthContext";
 
 const resetPasswordSchema = z
   .object({
@@ -43,6 +44,8 @@ export function ResetPassword() {
   const [isVerifying, setIsVerifying] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
+  const { isAuthenticated } = useAuth();
+console.log(isAuthenticated, 'isAuthenticated');
 
   useEffect(() => {
     // Check for token in URL hash or query params
@@ -167,6 +170,7 @@ export function ResetPassword() {
               <span>Back to Dashboard</span>
             </button>
           }
+          hideHamburgerMenu={!isAuthenticated}
         />
         <div className="centered-container">
           <div className="centered-card">
@@ -199,6 +203,7 @@ export function ResetPassword() {
               <span>Back to Dashboard</span>
             </button>
           }
+          hideHamburgerMenu={!isAuthenticated}
         />
         <div className="centered-container">
           <div className="centered-card">
@@ -242,6 +247,7 @@ export function ResetPassword() {
               <span>Back to Dashboard</span>
             </button>
           }
+          hideHamburgerMenu={!isAuthenticated}
         />
         <div className="centered-container">
           <div className="centered-card">
@@ -281,6 +287,7 @@ export function ResetPassword() {
             <span>Back to Dashboard</span>
           </button>
         }
+        hideHamburgerMenu={!isAuthenticated}
       />
       <div className="centered-container">
         <div className="centered-card">

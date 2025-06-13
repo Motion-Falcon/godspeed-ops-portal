@@ -18,6 +18,10 @@
   height: 80px;
 }
 
+.common-header.hide-hamburger-menu {
+  width: calc(100% - 0px);
+}
+
 .light .common-header {
   border-bottom: 0.1px solid #fafdff;
 }

@@ -24,7 +24,6 @@ export function AppHeader({
   const [menuOpen, setMenuOpen] = useState(false);
   const menuOpenRef = useRef(true); // Keep track of menu state with a ref as well
   const isInitialMount = useRef(true);
-  
   // Scroll to top when component mounts (page loads)
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -68,7 +67,7 @@ export function AppHeader({
 
   return (
     <div className="header-wrapper">
-      <header className="common-header">
+      <header className={`common-header ${hideHamburgerMenu ? "hide-hamburger-menu" : ""}`}>
         <div className="header-main">
           <div className="header-left">
             <div className="logo-container" onClick={() => navigate('/')}>

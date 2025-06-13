@@ -25,3 +25,7 @@
   margin-left: 68px;
   margin-top: 80px;
 }
+
+.page-container.hide-hamburger-menu {
+  margin: auto;
+}
