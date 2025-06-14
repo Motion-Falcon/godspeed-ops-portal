@@ -196,34 +196,13 @@
   color: var(--text);
 }
 
-.assignment-stats {
-  display: flex;
+.position-assignment-info .jsp-status-tabs {
+  margin-top: 1rem;
   gap: 1rem;
-  margin: 10px 0 10px 0;
-  flex-wrap: wrap;
 }
-
-.stat-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+.position-assignment-info .jsp-tab {
   padding: 0.5rem;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  min-width: 80px;
-  box-shadow: var(--card-shadow);
-}
-
-.stat-label {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  margin-bottom: 0.25rem;
-}
-
-.stat-value {
-  font-size: 1.2rem;
-  font-weight: 600;
-  color: var(--primary);
+  font-size: 0.8rem;
 }
 
 .jobseekers-title {

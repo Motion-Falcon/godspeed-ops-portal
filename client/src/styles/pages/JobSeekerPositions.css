@@ -5,7 +5,6 @@
   margin-left: 68px;
   margin-top: 80px;
   padding: 10px 0;
-  /* animation: fadeIn 0.5s ease-out; */
 }
 
 .jsp-positions-header {
@@ -23,7 +22,6 @@
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  animation: slideInDown 0.6s ease-out;
 }
 
 
@@ -48,6 +46,7 @@
   padding: var(--spacing-6);
   margin-bottom: var(--spacing-6);
   box-shadow: var(--card-shadow);
+  border: 1px solid var(--border);
   animation: slideInUp 0.6s ease-out 0.3s backwards;
 }
 
@@ -187,7 +186,6 @@
   margin-bottom: var(--spacing-6);
   flex-wrap: wrap;
   justify-content: center;
-  animation: slideInUp 0.6s ease-out 0.4s backwards;
 }
 
 .jsp-status-tab {
@@ -256,7 +254,6 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
   gap: var(--spacing-6);
-  animation: fadeIn 0.8s ease-out 0.5s backwards;
 }
 
 .jsp-position-card {
@@ -268,7 +265,6 @@
   transition: all var(--transition-normal);
   position: relative;
   overflow: hidden;
-  animation: slideInUp 0.6s ease-out backwards;
 }
 
 .jsp-position-card::before {
