@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useLocation, Navigate, useNavigate } from "react-router-dom";
 import { Shield, CheckCircle } from "lucide-react";
-import { sendOtpAPI, verifyOtpAPI } from "../services/api";
+import { sendOtpAPI, verifyOtpAPI } from "../services/api/auth";
 import { complete2FA } from "../lib/auth";
 import "../styles/variables.css";
 import "../styles/pages/TwoFactorAuth.css";

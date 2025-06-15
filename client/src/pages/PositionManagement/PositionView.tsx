@@ -3,8 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import {
   getPosition,
   PositionData,
-  getJobseekerProfile,
-} from "../../services/api";
+} from "../../services/api/position";
 import { ConfirmationModal } from "../../components/ConfirmationModal";
 import { AppHeader } from "../../components/AppHeader";
 import {
@@ -19,6 +18,7 @@ import {
 import "../../styles/pages/ClientView.css";
 import "../../styles/pages/PositionManagement.css";
 import "../../styles/components/header.css";
+import { getJobseekerProfile } from "../../services/api/jobseeker";
 
 interface ExtendedPositionData extends PositionData {
   [key: string]: unknown;

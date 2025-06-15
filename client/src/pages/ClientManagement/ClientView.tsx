@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Building, Edit } from 'lucide-react';
-import { getClient, ClientData } from '../../services/api';
+import { getClient, ClientData } from '../../services/api/client';
 import { AppHeader } from '../../components/AppHeader';
 import '../../styles/pages/ClientView.css';
 import '../../styles/components/header.css';

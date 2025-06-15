@@ -630,23 +630,6 @@
   animation: spin 1s linear infinite;
 }
 
-.position-dropdown {
-  width: 100%;
-  padding: var(--spacing-3);
-  border: 1px solid var(--border);
-  border-radius: var(--border-radius);
-  background: var(--input-bg);
-  color: var(--text);
-  font-size: var(--font-size-small);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.position-dropdown:focus {
-  outline: none;
-  border-color: var(--primary);
-}
-
 .position-details {
   margin-bottom: var(--spacing-5);
   padding: var(--spacing-4);

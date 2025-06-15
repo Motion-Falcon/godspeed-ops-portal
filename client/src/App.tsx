@@ -35,6 +35,7 @@ import { JobseekerProfileDraftEdit } from './pages/JobseekerProfile/JobseekerPro
 import { TrainingModules } from './pages/TrainingModules';
 import { UserProfile } from './pages/UserProfile';
 import { JobSeekerPositions } from './pages/JobSeekerPositions';
+import { TimesheetManagement } from './pages/TimesheetManagement/TimesheetManagement';
 import './styles/main.css';
 import { TwoFactorAuth } from './pages/TwoFactorAuth';
 
@@ -85,6 +86,7 @@ function App() {
                 <Route path="/position-management/drafts" element={<PositionDrafts />} />
                 <Route path="/position-management/drafts/edit/:id" element={<PositionDraftEdit />} />
                 <Route path="/position-matching" element={<PositionMatching />} />
+                <Route path="/timesheet-management" element={<TimesheetManagement />} />
                 {/* Add more recruiter-specific routes here */}
               </Route>
               

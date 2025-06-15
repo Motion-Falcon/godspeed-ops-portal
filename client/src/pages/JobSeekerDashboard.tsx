@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { checkApiHealth } from "../services/api";
+import { checkApiHealth } from "../services/api/auth";
 import { supabase } from "../lib/supabaseClient";
 import "../styles/components/header.css";
 import { AppHeader } from "../components/AppHeader";

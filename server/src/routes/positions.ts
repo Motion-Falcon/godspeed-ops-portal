@@ -313,6 +313,246 @@ router.get(
 );
 
 /**
+ * Get all positions for a specific client with pagination and filtering
+ * GET /api/positions/client/:clientId
+ * @access Private (Admin, Recruiter)
+ */
+router.get(
+  "/client/:clientId",
+  authenticateToken,
+  authorizeRoles(["admin", "recruiter"]),
+  // apiRateLimiter,
+  async (req: Request, res: Response) => {
+    try {
+      const { clientId } = req.params;
+      
+      // Extract pagination and filter parameters from query
+      const {
+        page = "1",
+        limit = "10",
+        search = "",
+        positionIdFilter = "",
+        titleFilter = "",
+        locationFilter = "",
+        employmentTermFilter = "",
+        employmentTypeFilter = "",
+        positionCategoryFilter = "",
+        experienceFilter = "",
+        showOnPortalFilter = "",
+        dateFilter = "",
+      } = req.query as {
+        page?: string;
+        limit?: string;
+        search?: string;
+        positionIdFilter?: string;
+        titleFilter?: string;
+        locationFilter?: string;
+        employmentTermFilter?: string;
+        employmentTypeFilter?: string;
+        positionCategoryFilter?: string;
+        experienceFilter?: string;
+        showOnPortalFilter?: string;
+        dateFilter?: string;
+      };
+
+      const pageNum = parseInt(page);
+      const limitNum = parseInt(limit);
+      const offset = (pageNum - 1) * limitNum;
+
+      // Verify that the client exists
+      const { data: client, error: clientError } = await supabase
+        .from("clients")
+        .select("id, company_name")
+        .eq("id", clientId)
+        .single();
+
+      if (clientError || !client) {
+        return res.status(404).json({ error: "Client not found" });
+      }
+
+      // Build the base query with all necessary fields, filtered by client
+      let baseQuery = supabase
+        .from("positions")
+        .select(`
+          id,
+          position_code, 
+          position_number,
+          title,
+          start_date,
+          end_date,
+          employment_term,
+          employment_type, 
+          position_category,
+          experience,
+          show_on_job_portal,
+          created_at,
+          client_name,
+          assigned_jobseekers,
+          number_of_positions,
+          payrate_type,
+          regular_pay_rate,
+          bill_rate,
+          preferred_payment_method,
+          terms,
+          markup,
+          overtime_enabled,
+          overtime_hours,
+          overtime_bill_rate,
+          overtime_pay_rate
+        `)
+        .eq("client", clientId);
+
+      // Apply additional filters at database level (excluding clientFilter since we're already filtering by client)
+      baseQuery = applyPositionFilters(baseQuery, {
+        search,
+        positionIdFilter,
+        titleFilter,
+        locationFilter,
+        employmentTermFilter,
+        employmentTypeFilter,
+        positionCategoryFilter,
+        experienceFilter,
+        showOnPortalFilter,
+        dateFilter
+      });
+
+      // Get total count for this client (unfiltered)
+      const { count: totalCount, error: countError } = await supabase
+        .from("positions")
+        .select("*", { count: "exact", head: true })
+        .eq("client", clientId);
+
+      if (countError) {
+        console.error("Error getting total count:", countError);
+        return res
+          .status(500)
+          .json({ error: "Failed to get total count of positions" });
+      }
+
+      // Get filtered count for this client
+      let countQuery = supabase
+        .from("positions")
+        .select("*", { count: "exact", head: true })
+        .eq("client", clientId);
+
+      countQuery = applyPositionFilters(countQuery, {
+        search,
+        positionIdFilter,
+        titleFilter,
+        locationFilter,
+        employmentTermFilter,
+        employmentTypeFilter,
+        positionCategoryFilter,
+        experienceFilter,
+        showOnPortalFilter,
+        dateFilter
+      });
+
+      const { count: filteredCount, error: filteredCountError } = await countQuery;
+
+      if (filteredCountError) {
+        console.error("Error getting filtered count:", filteredCountError);
+        return res
+          .status(500)
+          .json({ error: "Failed to get filtered count of positions" });
+      }
+
+      // Apply pagination and execute main query
+      const { data: positions, error } = await baseQuery
+        .range(offset, offset + limitNum - 1)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching client positions:", error);
+        return res.status(500).json({ error: "Failed to fetch client positions" });
+      }
+
+      if (!positions || positions.length === 0) {
+        return res.json({
+          positions: [],
+          client: {
+            id: client.id,
+            companyName: client.company_name
+          },
+          pagination: {
+            page: pageNum,
+            limit: limitNum,
+            total: totalCount || 0,
+            totalFiltered: filteredCount || 0,
+            totalPages: Math.ceil((filteredCount || 0) / limitNum),
+            hasNextPage: false,
+            hasPrevPage: false,
+          },
+        });
+      }
+
+      // Transform the response to include clientName and convert snake_case to camelCase
+      const formattedPositions = await Promise.all(positions.map(async (position: any) => {
+        // Since we're only selecting specific fields, handle the clients data properly
+        const clientName = position.client_name || client.company_name;
+        
+        // Create a clean position object
+        const positionData = { ...position };
+        delete positionData.client_name;
+
+        // Sync assigned_jobseekers with active assignments from position_candidate_assignments table
+        const activeJobseekers = await syncAssignedJobseekers(position.id);
+        
+        // Update the position data with synced assignments if they differ
+        if (JSON.stringify(position.assigned_jobseekers || []) !== JSON.stringify(activeJobseekers)) {
+          await updatePositionAssignedJobseekers(position.id);
+          positionData.assigned_jobseekers = activeJobseekers;
+        }
+
+        // Convert snake_case to camelCase
+        const formattedPosition = Object.entries(positionData).reduce(
+          (acc, [key, value]) => {
+            const camelKey = key.replace(/_([a-z])/g, (_, letter) =>
+              letter.toUpperCase()
+            );
+            acc[camelKey] = value;
+            return acc;
+          },
+          { clientName } as Record<string, any>
+        );
+
+        return formattedPosition;
+      }));
+
+      // Calculate pagination metadata
+      const totalFiltered = filteredCount || 0;
+      const totalPages = Math.ceil(totalFiltered / limitNum);
+      const hasNextPage = pageNum < totalPages;
+      const hasPrevPage = pageNum > 1;
+
+      return res.json({
+        positions: formattedPositions,
+        client: {
+          id: client.id,
+          companyName: client.company_name
+        },
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total: totalCount || 0,
+          totalFiltered,
+          totalPages,
+          hasNextPage,
+          hasPrevPage,
+        },
+      });
+    } catch (error) {
+      console.error("Unexpected error fetching client positions:", error);
+      return res
+        .status(500)
+        .json({
+          error: "An unexpected error occurred while fetching client positions",
+        });
+    }
+  }
+);
+
+/**
  * Helper function to apply filters to a Supabase query
  */
 function applyPositionFilters(query: any, filters: {
@@ -1326,7 +1566,7 @@ router.put(
         // Generate a new UUID for the draft
         const draftId = uuidv4();
 
-        // Convert position data to snake_case for database
+        // Convert position data to snake_check for database
         const dbDraftData = Object.entries(dataWithNullDates).reduce(
           (acc, [key, value]) => {
             const snakeKey = camelToSnakeCase(key);
@@ -1913,7 +2153,7 @@ router.get(
 /**
  * Get position assignments for a specific candidate
  * GET /api/positions/candidate/:candidateId/assignments
- * @access Private (Admin, Recruiter)
+ * @access Private (Admin, Recruiter, Jobseeker)
  */
 router.get(
   "/candidate/:candidateId/assignments",
@@ -1940,7 +2180,11 @@ router.get(
       const limitNum = parseInt(limit);
       const offset = (pageNum - 1) * limitNum;
 
-      // Verify candidate exists
+      // Check if user is NOT a jobseeker (admin or recruiter) to include compensation details
+      const isJobseeker = req.user?.user_metadata?.user_type === 'jobseeker';
+      const includeCompensation = !isJobseeker;
+
+      // Verify candidate exists and get basic info
       const { data: candidate, error: candidateError } = await supabase
         .from("jobseeker_profiles")
         .select("id, first_name, last_name, email")
@@ -1949,6 +2193,20 @@ router.get(
 
       if (candidateError || !candidate) {
         return res.status(404).json({ error: "Candidate not found" });
+      }
+
+      // Get compensation data if user is authorized
+      let compensationData = null;
+      if (includeCompensation) {
+        const { data: compData, error: compError } = await supabase
+          .from("jobseeker_profiles")
+          .select("payrate_type, bill_rate, pay_rate, payment_method, hst_gst, cash_deduction, overtime_enabled, overtime_hours, overtime_bill_rate, overtime_pay_rate")
+          .eq("user_id", candidateId)
+          .single();
+
+        if (!compError && compData) {
+          compensationData = compData;
+        }
       }
 
       // Build the base query for assignments with position details
@@ -1977,9 +2235,17 @@ router.get(
             show_on_job_portal,
             start_date,
             end_date,
+            payrate_type,
+            number_of_positions,
             regular_pay_rate,
-            overtime_pay_rate,
-            number_of_positions
+            bill_rate,
+            preferred_payment_method,
+            terms,
+            markup,
+            overtime_enabled,
+            overtime_hours,
+            overtime_bill_rate,
+            overtime_pay_rate
           )
         `)
         .eq("candidate_id", candidateId);
@@ -2083,7 +2349,12 @@ router.get(
             endDate: position.end_date,
             regularPayRate: position.regular_pay_rate,
             billRate: position.bill_rate,
-            numberOfPositions: position.number_of_positions
+            numberOfPositions: position.number_of_positions,
+            markup: position.markup,
+            overtimeEnabled: position.overtime_enabled,
+            overtimeHours: position.overtime_hours,
+            overtimeBillRate: position.overtime_bill_rate,
+            overtimePayRate: position.overtime_pay_rate
           } : null
         };
 
@@ -2095,13 +2366,28 @@ router.get(
       const hasNextPage = pageNum < totalPages;
       const hasPrevPage = pageNum > 1;
 
+      // Build candidate response with conditional compensation fields
+      const candidateResponse = {
+        id: candidate.id,
+        firstName: candidate.first_name,
+        lastName: candidate.last_name,
+        email: candidate.email,
+        ...(includeCompensation && compensationData && {
+          payrateType: compensationData.payrate_type,
+          billRate: compensationData.bill_rate,
+          payRate: compensationData.pay_rate,
+          paymentMethod: compensationData.payment_method,
+          hstGst: compensationData.hst_gst,
+          cashDeduction: compensationData.cash_deduction,
+          overtimeEnabled: compensationData.overtime_enabled,
+          overtimeHours: compensationData.overtime_hours,
+          overtimeBillRate: compensationData.overtime_bill_rate,
+          overtimePayRate: compensationData.overtime_pay_rate
+        })
+      };
+
       return res.json({
-        candidate: {
-          id: candidate.id,
-          firstName: candidate.first_name,
-          lastName: candidate.last_name,
-          email: candidate.email
-        },
+        candidate: candidateResponse,
         assignments: formattedAssignments,
         pagination: {
           page: pageNum,

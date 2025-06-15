@@ -15,8 +15,8 @@ import {
   ClientDraft,
   ClientDraftPaginationParams,
   PaginatedClientDraftResponse,
-} from "../../services/api";
-import { ClientData } from "../../services/api";
+  ClientData,
+} from "../../services/api/client";
 import { ConfirmationModal } from "../../components/ConfirmationModal";
 import { AppHeader } from "../../components/AppHeader";
 import "../../styles/pages/ClientManagement.css";

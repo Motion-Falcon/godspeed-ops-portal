@@ -11,10 +11,9 @@ import {
   deletePositionDraft,
   getPosition,
   updatePosition,
-  getClients,
-  getClient,
   generatePositionCode,
-} from "../../services/api";
+} from "../../services/api/position";
+import { getClients, getClient } from "../../services/api/client";
 import { ConfirmationModal } from "../../components/ConfirmationModal";
 import { ArrowLeft, ChevronDown, Save } from "lucide-react";
 import "../../styles/pages/PositionManagement.css";

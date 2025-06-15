@@ -22,12 +22,45 @@ export function AppHeader({
 }: AppHeaderProps) {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showStatusMessage, setShowStatusMessage] = useState(false);
   const menuOpenRef = useRef(true); // Keep track of menu state with a ref as well
   const isInitialMount = useRef(true);
+  const statusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   // Scroll to top when component mounts (page loads)
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
+
+  // Handle status message visibility and timeout
+  useEffect(() => {
+    if (statusMessage) {
+      setShowStatusMessage(true);
+      
+      // Clear existing timeout if any
+      if (statusTimeoutRef.current) {
+        clearTimeout(statusTimeoutRef.current);
+      }
+      
+      // Set timeout to hide message after 3 seconds
+      statusTimeoutRef.current = setTimeout(() => {
+        setShowStatusMessage(false);
+      }, 3000);
+    } else {
+      setShowStatusMessage(false);
+      // Clear timeout if statusMessage becomes null/undefined
+      if (statusTimeoutRef.current) {
+        clearTimeout(statusTimeoutRef.current);
+      }
+    }
+
+    // Cleanup timeout on unmount
+    return () => {
+      if (statusTimeoutRef.current) {
+        clearTimeout(statusTimeoutRef.current);
+      }
+    };
+  }, [statusMessage]);
   
   // Log state changes for debugging
   useEffect(() => {
@@ -79,7 +112,7 @@ export function AppHeader({
           </div>
         </div>
         
-        {statusMessage && (
+        {statusMessage && showStatusMessage && (
           <div className="status-update-container">
             <span className={`status-update-message ${statusType}`}>{statusMessage}</span>
             {statusType === 'error' && (

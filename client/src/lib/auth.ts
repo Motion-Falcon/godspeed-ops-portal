@@ -1,7 +1,7 @@
 import { supabase } from './supabaseClient';
 import type { User, AuthError } from '@supabase/supabase-js';
-import { resendVerificationEmailAPI, updatePasswordAPI } from '../services/api';
 import { VerificationStatus } from '../contexts/AuthContext';
+import { complete2FAAPI, registerUserAPI, resendVerificationEmailAPI, updatePasswordAPI, validateCredentialsAPI } from '../services/api/auth';
 
 // User role types
 export type UserRole = 'jobseeker' | 'recruiter' | 'admin';
@@ -87,7 +87,7 @@ export const registerUser = async (
   phoneNumber?: string
 ) => {
   // Use the API endpoint instead of direct Supabase call
-  const response = await import('../services/api').then(api => api.registerUserAPI(email, password, name, phoneNumber));
+  const response = await registerUserAPI(email, password, name, phoneNumber);
   return response;
 };
 
@@ -136,7 +136,6 @@ export const validateCredentials = async (
   email: string, 
   password: string
 ) => {
-  const { validateCredentialsAPI } = await import('../services/api');
   const result = await validateCredentialsAPI(email, password);
   
   if (!result.requiresTwoFactor) {
@@ -158,7 +157,6 @@ export const complete2FA = async (
   password: string,
   rememberMe: boolean = false
 ) => {
-  const { complete2FAAPI } = await import('../services/api');
   const result = await complete2FAAPI(email, password);
   
   if (result.session) {

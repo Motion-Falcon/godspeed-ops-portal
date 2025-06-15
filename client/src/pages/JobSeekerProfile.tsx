@@ -24,7 +24,7 @@ import {
   getJobseekerProfile,
   updateJobseekerStatus,
   deleteJobseeker,
-} from "../services/api";
+} from "../services/api/jobseeker";
 import { DocumentRecord } from "../types/jobseeker";
 import { supabase } from "../lib/supabaseClient";
 import PDFThumbnail from "../components/PDFThumbnail";

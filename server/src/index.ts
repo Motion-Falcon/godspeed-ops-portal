@@ -7,6 +7,7 @@ import profileRoutes from './routes/profile.js';
 import jobseekersRoutes from './routes/jobseekers.js';
 import clientsRoutes from './routes/clients.js';
 import positionsRoutes from './routes/positions.js';
+import timesheetsRoutes from './routes/timesheets.js';
 import { 
   configureSecurityHeaders, 
   forceTLS, 
@@ -76,6 +77,9 @@ app.use('/api/clients', clientsRoutes);
 
 // Positions routes
 app.use('/api/positions', positionsRoutes);
+
+// Timesheets routes
+app.use('/api/timesheets', timesheetsRoutes);
 
 // Error handling middleware
 app.use((err: Error & { code?: string }, req: Request, res: Response, next: NextFunction) => {

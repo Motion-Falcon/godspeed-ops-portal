@@ -20,7 +20,8 @@ import {
   FileText,
   UserPlus,
   Menu,
-  ChevronUp
+  ChevronUp,
+  Clock
 } from 'lucide-react';
 import { ThemeToggle } from './theme-toggle';
 import { logoutUser } from '../lib/auth';
@@ -164,6 +165,23 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
   const menuRef = useRef<HTMLElement>(null);
   const prevRouteRef = useRef(location.pathname);
   const [jobseekerProfileId, setJobseekerProfileId] = useState<string | null>(null);
+  
+  // Function to scroll to active menu item
+  const scrollToActiveItem = () => {
+    if (!menuRef.current) return;
+    
+    // Find the active menu item
+    const activeItem = menuRef.current.querySelector('.menu-item .active, .menu-action-button.active');
+    
+    if (activeItem) {
+      // Scroll the active item into view with smooth behavior
+      activeItem.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+        inline: 'nearest'
+      });
+    }
+  };
   
   // Handle expanding the menu
   const handleExpandMenu = (e: React.MouseEvent) => {
@@ -335,6 +353,20 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
         }
       ]
     },
+    {
+      label: 'Financial',
+      icon: <Clock size={16} />,
+      requiresAuth: true,
+      roles: ['admin', 'recruiter'],
+      submenu: [
+        { 
+          label: 'Timesheet Management', 
+          path: '/timesheet-management', 
+          icon: <Clock size={16} />,
+          exact: true 
+        }
+      ]
+    },
     
     // Jobseeker-specific items
     {
@@ -390,6 +422,18 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
   useEffect(() => {
     setMenuItems(getFilteredMenuItems());
   }, [isAuthenticated, isAdmin, isRecruiter, isJobSeeker, profileVerificationStatus, jobseekerProfileId]);
+
+  // Scroll to active item when menu opens
+  useEffect(() => {
+    if (isOpen) {
+      // Add a small delay to ensure the menu is fully rendered
+      const timeoutId = setTimeout(() => {
+        scrollToActiveItem();
+      }, 100);
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [isOpen]);
 
   // Click outside to close
   useEffect(() => {

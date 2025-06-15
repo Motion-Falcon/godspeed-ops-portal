@@ -15,7 +15,7 @@ import {
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
-import { getJobseekerProfiles, deleteJobseeker } from '../services/api';
+import { getJobseekerProfiles, deleteJobseeker } from '../services/api/jobseeker';
 import { JobSeekerProfile } from '../types/jobseeker';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import { AppHeader } from '../components/AppHeader';

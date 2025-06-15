@@ -11,7 +11,7 @@ import {
   deleteClientDraft,
   getClient,
   updateClient
-} from '../../services/api';
+} from '../../services/api/client';
 import { ConfirmationModal } from '../../components/ConfirmationModal';
 import { AppHeader } from '../../components/AppHeader';
 import { ArrowLeft, Save } from 'lucide-react';

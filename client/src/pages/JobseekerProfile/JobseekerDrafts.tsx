@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
   getAllJobseekerDrafts,
   deleteJobseekerDraft,
-} from "../../services/api";
+} from "../../services/api/jobseeker";
 import { ConfirmationModal } from "../../components/ConfirmationModal";
 import { AppHeader } from "../../components/AppHeader";
 import {

@@ -15,12 +15,14 @@ import {
   saveDraft as saveDraftAPI,
   getDraft,
   checkEmailAvailability,
-  getJobseekerProfile,
   updateProfile,
+} from "../../services/api/profile";
+import {
+  getJobseekerProfile,
   updateJobseekerStatus,
   getJobseekerDraft,
   saveJobseekerDraft,
-} from "../../services/api";
+} from "../../services/api/jobseeker";
 import { useAuth } from "../../contexts/AuthContext";
 import "../../styles/components/form.css";
 import "../../styles/pages/JobseekerProfileStyles.css";

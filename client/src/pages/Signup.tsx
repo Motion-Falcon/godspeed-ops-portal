@@ -21,7 +21,7 @@ import {
   checkPhoneAvailability,
   sendOtpAPI,
   verifyOtpAPI,
-} from "../services/api";
+} from "../services/api/auth";
 
 const signupSchema = z
   .object({

@@ -15,7 +15,7 @@ import {
   FileText,
   ArrowLeft,
 } from 'lucide-react';
-import { getCandidateAssignments, CandidateAssignment, CandidateAssignmentFilters } from '../services/api';
+import { getCandidateAssignments, CandidateAssignment, CandidateAssignmentFilters } from '../services/api/position';
 import { AppHeader } from '../components/AppHeader';
 import '../styles/pages/JobSeekerPositions.css';
 import '../styles/components/header.css';

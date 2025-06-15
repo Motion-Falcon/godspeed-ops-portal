@@ -2,7 +2,7 @@ import { useFormContext } from "react-hook-form";
 import { personalInfoSchema } from "./ProfileCreate";
 import { z } from "zod";
 import { useState, useEffect, useRef } from "react";
-import { checkEmailAvailability } from "../../services/api";
+import { checkEmailAvailability } from "../../services/api/profile";
 import { useNavigate } from "react-router-dom";
 import { Eye, Pencil } from "lucide-react";
 import { validateSIN, validateDOB, getMaxDobDate, logValidation } from "../../utils/validation";

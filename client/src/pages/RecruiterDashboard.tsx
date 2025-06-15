@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { checkApiHealth } from "../services/api";
+import { checkApiHealth } from "../services/api/auth";
 import { AppHeader } from "../components/AppHeader";
 import "../styles/components/header.css";
 

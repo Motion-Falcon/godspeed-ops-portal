@@ -10,7 +10,7 @@ import {
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
-import { getPositions, deletePosition, PositionData, PositionPaginationParams } from '../services/api';
+import { getPositions, deletePosition, PositionData, PositionPaginationParams } from '../services/api/position';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import { AppHeader } from '../components/AppHeader';
 import '../styles/pages/PositionManagement.css';

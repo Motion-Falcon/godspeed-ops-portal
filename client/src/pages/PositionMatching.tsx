@@ -27,10 +27,11 @@ import {
   PositionCandidate,
   assignCandidateToPosition,
   removeCandidateFromPosition,
-  getJobseekerProfile,
-} from "../services/api";
-import { PositionData } from "../services/api";
+  PositionData,
+} from "../services/api/position";
+import { getJobseekerProfile } from "../services/api/jobseeker";
 import { AppHeader } from "../components/AppHeader";
+import { CustomDropdown, DropdownOption } from "../components/CustomDropdown";
 import "../styles/pages/PositionMatching.css";
 import "../styles/components/CommonTable.css";
 import "../styles/components/form.css";
@@ -425,6 +426,19 @@ export function PositionMatching() {
     }
   };
 
+  // Create position options for CustomDropdown
+  const positionOptions: DropdownOption[] = positions.map((position) => ({
+    id: position.id || '',
+    value: position.id || '',
+    label: `${position.clientName || 'Unknown Client'} - ${position.title}`,
+    sublabel: `${position.positionCategory} • ${position.city}, ${position.province}`
+  }));
+
+  // Handle position selection for CustomDropdown
+  const handlePositionSelectDropdown = (option: DropdownOption) => {
+    handlePositionSelect(option.value as string);
+  };
+
   // Get similarity score color
   const getSimilarityColor = (score: number) => {
     if (score >= 80) return "var(--success)";
@@ -813,21 +827,20 @@ export function PositionMatching() {
                     <span>Loading positions...</span>
                   </div>
                 ) : (
-                  <select
-                    id="position-select"
-                    value={selectedPosition?.id || ""}
-                    onChange={(e) => handlePositionSelect(e.target.value)}
-                    className="position-dropdown"
-                  >
-                    <option value="">Choose a position...</option>
-                    {positions.map((position) => (
-                      <option key={position.id} value={position.id}>
-                        {position.clientName} - {position.title},{" "}
-                        {position.positionCategory} - {position.city},{" "}
-                        {position.province}
-                      </option>
-                    ))}
-                  </select>
+                  <CustomDropdown
+                    options={positionOptions}
+                    selectedOption={selectedPosition ? {
+                      id: selectedPosition.id || '',
+                      label: selectedPosition.title || 'Untitled Position',
+                      sublabel: `${selectedPosition.clientName || 'Unknown Client'} - ${selectedPosition.city || 'Unknown City'}, ${selectedPosition.province || 'Unknown Province'}`,
+                      value: selectedPosition
+                    } : null}
+                    onSelect={handlePositionSelectDropdown}
+                    placeholder="Select a position..."
+                    searchable={true}
+                    loading={positionsLoading}
+                    emptyMessage="No positions available"
+                  />
                 )}
               </div>
 

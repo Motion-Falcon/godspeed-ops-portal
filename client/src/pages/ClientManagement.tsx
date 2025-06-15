@@ -5,7 +5,7 @@ import {
   getClients, 
   ClientData, 
   deleteClient
-} from '../services/api';
+} from '../services/api/client';
 import { AppHeader } from '../components/AppHeader';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import '../styles/components/CommonTable.css';
@@ -19,7 +19,7 @@ interface ExtendedClientData extends ClientData {
 }
 
 // Backend response interface with snake_case properties
-interface BackendClientData {
+export interface BackendClientData {
   id?: string;
   company_name?: string;
   short_code?: string;

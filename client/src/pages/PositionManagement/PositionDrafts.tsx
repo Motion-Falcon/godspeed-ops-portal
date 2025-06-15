@@ -4,7 +4,7 @@ import {
   getAllPositionDrafts,
   deletePositionDraft,
   PositionDraft,
-} from "../../services/api";
+} from "../../services/api/position";
 import { ConfirmationModal } from "../../components/ConfirmationModal";
 import { AppHeader } from "../../components/AppHeader";
 import {

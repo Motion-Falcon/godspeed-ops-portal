@@ -19,7 +19,7 @@ import {
   getJobseekerVerificationStatus,
 } from "../lib/auth";
 import { supabase } from "../lib/supabaseClient";
-import { clearTokenCache } from "../services/api";
+import { clearTokenCache } from "../services/api/index";
 
 // Define possible verification statuses
 export type VerificationStatus =
