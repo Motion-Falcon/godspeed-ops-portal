@@ -641,7 +641,7 @@ export interface AssignmentRecord {
   candidateId: string;
   startDate: string;
   endDate?: string;
-  status: "active" | "completed" | "cancelled";
+  status: "active" | "completed" | "upcoming" | "cancelled";
   createdAt: string;
   updatedAt: string;
   jobseekerProfile?: {
@@ -680,7 +680,7 @@ export interface CandidateAssignment {
   candidateId: string;
   startDate: string;
   endDate?: string;
-  status: "active" | "completed" | "cancelled";
+  status: "active" | "completed" | "upcoming" | "cancelled";
   createdAt: string;
   updatedAt: string;
   position?: {
@@ -709,6 +709,12 @@ export interface CandidateAssignmentsResponse {
     firstName: string;
     lastName: string;
     email: string;
+  };
+  statusCounts: {
+    active: number;
+    completed: number;
+    upcoming: number;
+    total: number;
   };
   assignments: CandidateAssignment[];
   pagination: {

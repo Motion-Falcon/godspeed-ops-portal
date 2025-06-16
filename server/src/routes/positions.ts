@@ -2253,6 +2253,37 @@ router.get(
         }
       }
 
+      // Get status counts for this candidate
+      const { data: statusCounts, error: statusCountError } = await supabase
+        .from("position_candidate_assignments")
+        .select("status")
+        .eq("candidate_id", candidateId);
+
+      if (statusCountError) {
+        console.error("Error getting status counts:", statusCountError);
+        return res.status(500).json({ error: "Failed to get status counts" });
+      }
+
+      // Calculate status counts
+      const counts = {
+        active: 0,
+        completed: 0,
+        upcoming: 0,
+        total: statusCounts?.length || 0
+      };
+
+      if (statusCounts) {
+        statusCounts.forEach((assignment: any) => {
+          if (assignment.status === 'active') {
+            counts.active++;
+          } else if (assignment.status === 'completed') {
+            counts.completed++;
+          } else if (assignment.status === 'upcoming') {
+            counts.upcoming++;
+          }
+        });
+      }
+
       // Build the base query for assignments with position details
       let baseQuery = supabase
         .from("position_candidate_assignments")
@@ -2352,6 +2383,7 @@ router.get(
             email: candidate.email
           },
           assignments: [],
+          statusCounts: counts,
           pagination: {
             page: pageNum,
             limit: limitNum,
@@ -2448,6 +2480,49 @@ router.get(
         });
       }
 
+      // Sort assignments: active first, then upcoming by start date, then completed last
+      formattedAssignments.sort((a, b) => {
+        // Priority order: active (1), upcoming (2), completed (3)
+        const statusPriority = {
+          'active': 1,
+          'upcoming': 2,
+          'completed': 3
+        };
+
+        const aPriority = statusPriority[a.status as keyof typeof statusPriority] || 4;
+        const bPriority = statusPriority[b.status as keyof typeof statusPriority] || 4;
+
+        // First sort by status priority
+        if (aPriority !== bPriority) {
+          return aPriority - bPriority;
+        }
+
+        // For same status, sort by start date
+        if (a.status === 'upcoming' && b.status === 'upcoming') {
+          // For upcoming assignments, sort by start date (earliest first)
+          const aDate = new Date(a.startDate || '');
+          const bDate = new Date(b.startDate || '');
+          return aDate.getTime() - bDate.getTime();
+        }
+
+        if (a.status === 'active' && b.status === 'active') {
+          // For active assignments, sort by start date (most recent first)
+          const aDate = new Date(a.startDate || '');
+          const bDate = new Date(b.startDate || '');
+          return bDate.getTime() - aDate.getTime();
+        }
+
+        if (a.status === 'completed' && b.status === 'completed') {
+          // For completed assignments, sort by end date (most recent first)
+          const aDate = new Date(a.endDate || a.startDate || '');
+          const bDate = new Date(b.endDate || b.startDate || '');
+          return bDate.getTime() - aDate.getTime();
+        }
+
+        // Default case: maintain order
+        return 0;
+      });
+
       // Calculate pagination metadata
       const totalPages = Math.ceil((totalCount || 0) / limitNum);
       const hasNextPage = pageNum < totalPages;
@@ -2461,6 +2536,7 @@ router.get(
           email: candidate.email
         },
         assignments: formattedAssignments,
+        statusCounts: counts,
         pagination: {
           page: pageNum,
           limit: limitNum,

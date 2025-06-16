@@ -56,18 +56,6 @@
 /* Overall Progress Section */
 .overall-progress {
   margin-bottom: var(--spacing-8);
-  animation: slideInLeft 0.6s ease-out 0.2s both;
-}
-
-@keyframes slideInLeft {
-  from {
-    opacity: 0;
-    transform: translateX(-30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
 }
 
 .progress-header {
@@ -223,22 +211,6 @@
 
 .section-item:hover {
   transform: translateX(4px);
-}
-
-.section-item:nth-child(1) {
-  animation: slideInUp 0.5s ease-out 0.8s both;
-}
-
-.section-item:nth-child(2) {
-  animation: slideInUp 0.5s ease-out 0.9s both;
-}
-
-.section-item:nth-child(3) {
-  animation: slideInUp 0.5s ease-out 1s both;
-}
-
-.section-item:nth-child(4) {
-  animation: slideInUp 0.5s ease-out 1.1s both;
 }
 
 @keyframes slideInUp {
@@ -413,4 +385,55 @@
 
 .dark .section-progress-bar {
   background: rgba(255, 255, 255, 0.1);
+}
+
+/* Skeleton Loading Styles */
+.skeleton-text {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+  border-radius: 4px;
+}
+
+.skeleton-icon {
+  width: 16px;
+  height: 16px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+  border-radius: 50%;
+}
+
+.skeleton-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+  border-radius: inherit;
+  width: 60%; /* Show partial progress as placeholder */
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Dark mode skeleton adjustments */
+.dark .skeleton-text {
+  background: linear-gradient(90deg, #333 25%, #444 50%, #333 75%);
+  background-size: 200% 100%;
+}
+
+.dark .skeleton-icon {
+  background: linear-gradient(90deg, #333 25%, #444 50%, #333 75%);
+  background-size: 200% 100%;
+}
+
+.dark .skeleton-progress-fill {
+  background: linear-gradient(90deg, #333 25%, #444 50%, #333 75%);
+  background-size: 200% 100%;
 }

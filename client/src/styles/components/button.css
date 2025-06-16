@@ -1,13 +1,13 @@
 /* Button Component Styles */
 .button {
   width: 100%;
-  height: 40px;
+  height: 32px;
   padding: 8px 14px;
   border: none;
   border-radius: var(--border-radius);
   background: var(--text);
   color: var(--background);
-  font-size: 1rem;
+  font-size: .8rem;
   cursor: pointer;
   transition: all var(--transition-normal);
   position: relative;

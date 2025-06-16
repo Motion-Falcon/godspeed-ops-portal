@@ -7,7 +7,6 @@ import {
   Clock,
   Building,
   Briefcase,
-  Filter,
   Search,
   X,
   ArrowLeft,
@@ -55,15 +54,17 @@ export function JobSeekerPositions() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [assignments, setAssignments] = useState<CandidateAssignment[]>([]);
-  const [allAssignments, setAllAssignments] = useState<CandidateAssignment[]>([]); // For calculating counts
+  const [statusCounts, setStatusCounts] = useState({
+    active: 0,
+    completed: 0,
+    upcoming: 0,
+    total: 0
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<PositionStatus>('all');
-  const [showFilters, setShowFilters] = useState(false);
   
-  // Pagination settings - set PAGINATION_ENABLED to true to re-enable pagination
-  const PAGINATION_ENABLED = false;
-  const ITEMS_PER_PAGE = PAGINATION_ENABLED ? 5 : 10000; // High number to get all items when disabled
+  const ITEMS_PER_PAGE = 5;
   
   const [pagination, setPagination] = useState<PaginationInfo>({
     currentPage: 1,
@@ -92,27 +93,17 @@ export function JobSeekerPositions() {
   useEffect(() => {
     if (profileId) {
       fetchAssignments(1);
-      fetchAllAssignmentsForCounts(); // Fetch all assignments for tab counts
     }
   }, [profileId]);
 
   useEffect(() => {
-    if (PAGINATION_ENABLED) {
-      fetchAssignments(pagination.currentPage);
-    }
+    fetchAssignments(pagination.currentPage);
   }, [pagination.currentPage]);
 
   // Reset to first page when filters change
   useEffect(() => {
     fetchAssignments(1); // Reset to first page when filters change
   }, [profileId, activeTab, filters.search, filters.employmentType, filters.positionCategory]);
-
-  // Refetch counts when filters change (except activeTab)
-  useEffect(() => {
-    if (profileId) {
-      fetchAllAssignmentsForCounts();
-    }
-  }, [profileId, filters.search, filters.employmentType, filters.positionCategory]);
 
   // Note: The API only supports basic pagination and status filtering
   // Search, employment type, and position category filters are handled client-side
@@ -137,9 +128,14 @@ export function JobSeekerPositions() {
       
       // Map frontend tab status to backend status
       let backendStatus: string | undefined;
-      if (activeTab === 'current' || activeTab === 'future' || activeTab === 'past') {
-        // For current, future, and past, we need active assignments and will filter by date on frontend
-        backendStatus = 'active';
+      if (activeTab !== 'all') {
+        // Map frontend tabs to backend status values
+        const statusMap = {
+          current: 'active',
+          future: 'upcoming', 
+          past: 'completed'
+        };
+        backendStatus = statusMap[activeTab as keyof typeof statusMap];
       }
       // For 'all' tab, don't send status filter to get all assignments
       
@@ -158,54 +154,9 @@ export function JobSeekerPositions() {
 
       const response = await getCandidateAssignments(profileId, filterParams);
       
-      // Get all assignments and apply universal sorting first
-      const allFilteredAssignments = response.assignments || [];
-      
-      // Sort ALL assignments: active first, then upcoming by start date, then completed last
-      allFilteredAssignments.sort((a, b) => {
-        const statusA = getPositionStatus(a);
-        const statusB = getPositionStatus(b);
-        
-        // Priority order: current -> future -> past
-        const statusPriority = { current: 0, future: 1, past: 2 };
-        
-        if (statusA !== statusB) {
-          const priorityA = statusPriority[statusA as keyof typeof statusPriority] ?? 999;
-          const priorityB = statusPriority[statusB as keyof typeof statusPriority] ?? 999;
-          return priorityA - priorityB;
-        }
-        
-        // Within the same status category, sort by date
-        if (statusA === 'current' || statusA === 'past') {
-          // For current and past, sort by start date (newest first)
-          return new Date(b.startDate).getTime() - new Date(a.startDate).getTime();
-        } else if (statusA === 'future') {
-          // For upcoming, sort by start date (earliest first)
-          return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
-        }
-        
-        return 0;
-      });
-      
-      // Now apply frontend date-based filtering for specific tabs AFTER sorting
-      let finalAssignments = allFilteredAssignments;
-      
-      if (activeTab === 'current') {
-        finalAssignments = allFilteredAssignments.filter(assignment => 
-          getPositionStatus(assignment) === 'current'
-        );
-      } else if (activeTab === 'future') {
-        finalAssignments = allFilteredAssignments.filter(assignment => 
-          getPositionStatus(assignment) === 'future'
-        );
-      } else if (activeTab === 'past') {
-        finalAssignments = allFilteredAssignments.filter(assignment => 
-          getPositionStatus(assignment) === 'past'
-        );
-      }
-      // For 'all' tab, we keep all sorted assignments
-      
-      setAssignments(finalAssignments);
+      // Set status counts and assignments from the API response
+      setStatusCounts(response.statusCounts);
+      setAssignments( response.assignments);
       
       // Map API pagination structure to local interface
       setPagination({
@@ -228,63 +179,14 @@ export function JobSeekerPositions() {
     }
   };
 
-  // Fetch all assignments for calculating tab counts
-  const fetchAllAssignmentsForCounts = async () => {
-    if (!profileId) return;
-    
-    try {
-      const filterParams: CandidateAssignmentFilters = {
-        page: 1,
-        limit: 10000000, // Get a large number to capture all assignments for counting
-        search: filters.search || undefined,
-        employmentType: filters.employmentType !== 'all' ? filters.employmentType : undefined,
-        positionCategory: filters.positionCategory !== 'all' ? filters.positionCategory : undefined,
-        // Don't filter by status - we want all assignments for counting
-      };
-
-      const response = await getCandidateAssignments(profileId, filterParams);
-      setAllAssignments(response.assignments || []);
-    } catch (err) {
-      console.error('Error fetching all assignments for counts:', err);
-    }
-  };
-
-  const getPositionStatus = (assignment: CandidateAssignment): PositionStatus => {
-    const today = new Date();
-    const startDate = new Date(assignment.startDate);
-    const endDate = assignment.endDate ? new Date(assignment.endDate) : null;
-
-    // Compare dates without time components to avoid time-of-day issues
-    const todayDateOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const startDateOnly = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
-    const endDateOnly = endDate ? new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate()) : null;
-
-    if (endDateOnly && todayDateOnly > endDateOnly) {
-      return 'past';
-    } else if (todayDateOnly >= startDateOnly && (!endDateOnly || todayDateOnly <= endDateOnly)) {
-      return 'current';
-    } else if (todayDateOnly < startDateOnly) {
-      return 'future';
-    }
-    
-    return 'current'; // fallback
-  };
-
   const getStatusCounts = () => {
-    // Calculate counts from all assignments for tab display
-    const counts = {
-      all: allAssignments.length,
-      current: 0,
-      past: 0,
-      future: 0
+    // Use the status counts from the API response instead of calculating client-side
+    return {
+      all: statusCounts.total,
+      current: statusCounts.active,
+      past: statusCounts.completed,
+      future: statusCounts.upcoming
     };
-
-    allAssignments.forEach(assignment => {
-      const status = getPositionStatus(assignment);
-      counts[status]++;
-    });
-
-    return counts;
   };
 
   const formatDate = (dateString: string) => {
@@ -309,17 +211,23 @@ export function JobSeekerPositions() {
   };
 
   const getStatusBadgeClass = (assignment: CandidateAssignment) => {
-    const status = getPositionStatus(assignment);
-    return `jsp-status-badge ${status}`;
+    // Map backend status to CSS class names
+    const statusMap = {
+      active: 'current',
+      completed: 'past', 
+      upcoming: 'future'
+    };
+    const cssStatus = statusMap[assignment.status as keyof typeof statusMap] || assignment.status;
+    return `jsp-status-badge ${cssStatus}`;
   };
 
   const getStatusText = (assignment: CandidateAssignment) => {
-    const status = getPositionStatus(assignment);
-    switch (status) {
-      case 'current': return 'Active';
-      case 'past': return 'Completed';
-      case 'future': return 'Upcoming';
-      default: return 'Unknown';
+    // Use the assignment status directly from the backend
+    switch (assignment.status) {
+      case 'active': return 'Active';
+      case 'completed': return 'Completed';
+      case 'upcoming': return 'Upcoming';
+      default: return assignment.status || 'Unknown';
     }
   };
 
@@ -338,6 +246,80 @@ export function JobSeekerPositions() {
   };
 
   const counts = getStatusCounts();
+
+  // Skeleton Loading Components
+  const SkeletonFilterPanel = () => (
+    <div className="jsp-skeleton-filter-panel">
+      <div className="jsp-skeleton-filter-row">
+        <div className="jsp-skeleton-filter-group">
+          <div className="jsp-skeleton-filter-label skeleton-text"></div>
+          <div className="jsp-skeleton-filter-input skeleton-text"></div>
+        </div>
+        <div className="jsp-skeleton-filter-group">
+          <div className="jsp-skeleton-filter-label skeleton-text"></div>
+          <div className="jsp-skeleton-filter-input skeleton-text"></div>
+        </div>
+        <div className="jsp-skeleton-filter-group">
+          <div className="jsp-skeleton-filter-label skeleton-text"></div>
+          <div className="jsp-skeleton-filter-input skeleton-text"></div>
+        </div>
+        <div className="jsp-filter-actions">
+          <div className="jsp-skeleton-filter-button skeleton-button"></div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const SkeletonTabs = () => (
+    <div className="jsp-skeleton-tabs">
+      {[1, 2, 3, 4].map((index) => (
+        <div key={index} className={`jsp-skeleton-tab skeleton-button`}>
+          <div className="jsp-skeleton-tab-text skeleton-text"></div>
+          <div className="jsp-skeleton-tab-count skeleton-badge"></div>
+        </div>
+      ))}
+    </div>
+  );
+
+  const SkeletonCard = () => (
+    <div className="jsp-skeleton-card">
+      <div className="jsp-skeleton-card-header">
+        <div className="jsp-skeleton-card-title-section">
+          <div className="jsp-skeleton-card-title skeleton-text"></div>
+          <div className="jsp-skeleton-card-code skeleton-text"></div>
+        </div>
+        <div className="jsp-skeleton-card-status skeleton-badge"></div>
+      </div>
+
+      <div className="jsp-skeleton-card-details">
+        <div className="jsp-skeleton-detail-row">
+          <div className="jsp-skeleton-detail-icon skeleton-icon"></div>
+          <div className="jsp-skeleton-detail-text medium skeleton-text"></div>
+        </div>
+        <div className="jsp-skeleton-detail-row">
+          <div className="jsp-skeleton-detail-icon skeleton-icon"></div>
+          <div className="jsp-skeleton-detail-text short skeleton-text"></div>
+        </div>
+        <div className="jsp-skeleton-detail-row">
+          <div className="jsp-skeleton-detail-icon skeleton-icon"></div>
+          <div className="jsp-skeleton-detail-text long skeleton-text"></div>
+        </div>
+        <div className="jsp-skeleton-detail-row">
+          <div className="jsp-skeleton-detail-icon skeleton-icon"></div>
+          <div className="jsp-skeleton-detail-text medium skeleton-text"></div>
+        </div>
+      </div>
+
+      <div className="jsp-skeleton-card-meta">
+        <div className="jsp-skeleton-meta-tags">
+          <div className="jsp-skeleton-tag medium skeleton-badge"></div>
+          <div className="jsp-skeleton-tag small skeleton-badge"></div>
+          <div className="jsp-skeleton-tag large skeleton-badge"></div>
+          <div className="jsp-skeleton-tag medium skeleton-badge"></div>
+        </div>
+      </div>
+    </div>
+  );
 
   // Pagination handlers
   const handlePageChange = (page: number) => {
@@ -391,22 +373,10 @@ export function JobSeekerPositions() {
       />
 
       <div className="jsp-positions-content">
-        {/* Header Section */}
-        <div className="jsp-positions-header">
-          
-          <div className="jsp-header-actions">
-            <button
-              className={`jsp-filter-toggle ${showFilters ? 'active' : ''}`}
-              onClick={() => setShowFilters(!showFilters)}
-            >
-              <Filter size={16} />
-              Filters
-            </button>
-          </div>
-        </div>
-
         {/* Filter Panel */}
-        {showFilters && (
+        {loading ? (
+          <SkeletonFilterPanel />
+        ) : (
           <div className="jsp-filter-panel">
             <div className="jsp-filter-row">
               <div className="jsp-filter-group">
@@ -427,7 +397,7 @@ export function JobSeekerPositions() {
                         handleFilterChange('search', '');
                       }}
                     >
-                      <X size={14} />
+                      <X size={18} />
                     </button>
                   )}
                 </div>
@@ -472,64 +442,34 @@ export function JobSeekerPositions() {
           </div>
         )}
 
-        {/* Pagination Controls - Top */}
-        {PAGINATION_ENABLED && !loading && pagination.totalPages > 1 && (
-          <div className="jsp-pagination-controls top">
-            <div className="jsp-pagination-info">
-              <span className="jsp-pagination-text">
-                Showing {Math.min((pagination.currentPage - 1) * pagination.itemsPerPage + 1, pagination.totalItems)} to{' '}
-                {Math.min(pagination.currentPage * pagination.itemsPerPage, pagination.totalItems)} of {pagination.totalItems} entries
-              </span>
-            </div>
-            <div className="jsp-pagination-size-selector">
-              <label htmlFor="pageSize" className="jsp-page-size-label">Show:</label>
-              <select
-                id="pageSize"
-                value={pagination.itemsPerPage}
-                onChange={(e) => handleFilterChange('itemsPerPage', e.target.value)}
-                className="jsp-page-size-select"
-              >
-                <option value={5}>5</option>
-                <option value={10}>10</option>
-                <option value={20}>20</option>
-                <option value={50}>50</option>
-              </select>
-              <span className="jsp-page-size-label">per page</span>
-            </div>
-          </div>
-        )}
-
         {/* Status Tabs */}
         {loading ? (
-          <div className="jsp-loading-container">
-            <div className="jsp-loading-spinner"></div>
-            <p>Loading status...</p>
-          </div>
+          <SkeletonTabs />
         ) : (
           <div className="jsp-status-tabs">
             <button
-              className={`jsp-tab ${activeTab === 'all' ? 'active' : ''}`}
+              className={`jsp-tab all ${activeTab === 'all' ? 'active' : ''}`}
               onClick={() => handleTabChange('all')}
             >
               All Positions
               <span className="jsp-count">{counts.all}</span>
             </button>
             <button
-              className={`jsp-tab ${activeTab === 'current' ? 'active' : ''}`}
+              className={`jsp-tab current ${activeTab === 'current' ? 'active' : ''}`}
               onClick={() => handleTabChange('current')}
             >
               Current
               <span className="jsp-count">{counts.current}</span>
             </button>
             <button
-              className={`jsp-tab ${activeTab === 'future' ? 'active' : ''}`}
+              className={`jsp-tab future ${activeTab === 'future' ? 'active' : ''}`}
               onClick={() => handleTabChange('future')}
             >
               Upcoming
               <span className="jsp-count">{counts.future}</span>
             </button>
             <button
-              className={`jsp-tab ${activeTab === 'past' ? 'active' : ''}`}
+              className={`jsp-tab past ${activeTab === 'past' ? 'active' : ''}`}
               onClick={() => handleTabChange('past')}
             >
               Completed
@@ -538,11 +478,24 @@ export function JobSeekerPositions() {
           </div>
         )}
 
+        {/* Pagination Controls - Top */}
+        {!loading && pagination.totalPages > 1 && (
+          <div className="jsp-pagination-controls top">
+            <div className="jsp-pagination-info">
+              <span className="jsp-pagination-text">
+                Showing {Math.min((pagination.currentPage - 1) * pagination.itemsPerPage + 1, pagination.totalItems)} to{' '}
+                {Math.min(pagination.currentPage * pagination.itemsPerPage, pagination.totalItems)} of {pagination.totalItems} entries
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Positions List */}
         {loading ? (
-          <div className="jsp-loading-container">
-            <div className="jsp-loading-spinner"></div>
-            <p>Loading your positions...</p>
+          <div className="jsp-positions-list">
+            {Array.from({ length: ITEMS_PER_PAGE }, (_, index) => (
+              <SkeletonCard key={index} />
+            ))}
           </div>
         ) : (
           <div className="jsp-positions-list">
@@ -559,7 +512,14 @@ export function JobSeekerPositions() {
               </div>
             ) : (
               assignments.map((assignment) => (
-                <div key={assignment.id} className="jsp-position-card" data-status={getPositionStatus(assignment)}>
+                <div key={assignment.id} className="jsp-position-card" data-status={(() => {
+                  const statusMap = {
+                    active: 'current',
+                    completed: 'past',
+                    upcoming: 'future'
+                  };
+                  return statusMap[assignment.status as keyof typeof statusMap] || assignment.status;
+                })()}>
                   <div className="jsp-position-header">
                     <div className="jsp-position-title-section">
                       <h3 className="jsp-position-title">{assignment.position?.title}</h3>
@@ -626,7 +586,7 @@ export function JobSeekerPositions() {
         )}
 
         {/* Pagination Controls - Bottom */}
-        {PAGINATION_ENABLED && !loading && pagination.totalPages > 1 && (
+        {!loading && pagination.totalPages > 1 && (
           <div className="jsp-pagination-controls bottom">
             <div className="jsp-pagination-info">
               <span className="jsp-pagination-text">

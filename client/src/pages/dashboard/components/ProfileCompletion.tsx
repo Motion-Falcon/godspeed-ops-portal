@@ -27,6 +27,7 @@ export function ProfileCompletion({ userId }: ProfileCompletionProps) {
   // const [isLoadingProfile, setIsLoadingProfile] = useState(false);
   const [profile, setProfile] = useState<JobSeekerDetailedProfile | null>(null);
   const [profileId, setProfileId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [profileCompletion, setProfileCompletion] = useState<{
     overall: number;
     sections: ProfileCompletionSection[];
@@ -194,7 +195,7 @@ export function ProfileCompletion({ userId }: ProfileCompletionProps) {
 
   const fetchUserProfileId = async (userId: string) => {
     try {
-      // setIsLoadingProfile(true);
+      setIsLoading(true);
 
       const { data, error } = await supabase
         .from("jobseeker_profiles")
@@ -207,12 +208,12 @@ export function ProfileCompletion({ userId }: ProfileCompletionProps) {
       } else if (data) {
         setProfileId(data.id);
         // Fetch detailed profile data
-        fetchDetailedProfile(data.id);
+        await fetchDetailedProfile(data.id);
       }
     } catch (err) {
       console.error("Error fetching profile ID:", err);
     } finally {
-      // setIsLoadingProfile(false);
+      setIsLoading(false);
     }
   };
 
@@ -229,9 +230,62 @@ export function ProfileCompletion({ userId }: ProfileCompletionProps) {
     }
   };
 
-  // Don't render if no profile ID
-  if (!profileId) {
-    return null;
+  // Render loading skeleton instead of null to prevent layout shift
+  if (isLoading || !profileId) {
+    return (
+      <div className="card profile-completion-card">
+        <div className="card-header">
+          <div className="card-header-content">
+            <div className="card-title-section">
+              <CheckCircle className="icon" size={20} />
+              <h2 className="card-title">Profile Completion</h2>
+            </div>
+            <div className="verification-status-simple status-verified">
+              <CheckCircle className="status-icon verified" size={14} />
+              <span className="status-text-simple">Verified</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="profile-completion-content">
+          {/* Loading skeleton for overall progress */}
+          <div className="overall-progress">
+            <div className="progress-header">
+              <div className="skeleton-text" style={{ width: "120px", height: "14px" }}></div>
+              <div className="skeleton-text" style={{ width: "40px", height: "14px" }}></div>
+            </div>
+            <div className="progress-bar">
+              <div className="skeleton-progress-fill"></div>
+            </div>
+            <div className="skeleton-text" style={{ width: "280px", height: "14px", margin: "0 auto" }}></div>
+          </div>
+
+          {/* Loading skeleton for sections */}
+          <div className="sections-breakdown">
+            <div className="skeleton-text" style={{ width: "140px", height: "16px", marginBottom: "var(--spacing-5)" }}></div>
+            <div className="sections-list">
+              {[1, 2, 3, 4].map((index) => (
+                <div key={index} className="section-item">
+                  <div className="section-header">
+                    <div className="section-info">
+                      <div className="skeleton-icon"></div>
+                      <div className="skeleton-text" style={{ width: "100px", height: "14px" }}></div>
+                    </div>
+                    <div className="section-stats">
+                      <div className="skeleton-text" style={{ width: "30px", height: "14px" }}></div>
+                      <div className="skeleton-text" style={{ width: "35px", height: "14px" }}></div>
+                    </div>
+                  </div>
+                  <div className="section-progress-bar">
+                    <div className="skeleton-progress-fill"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const verificationStatus = getVerificationStatusDisplay();
