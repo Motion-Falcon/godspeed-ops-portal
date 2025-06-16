@@ -1,18 +1,23 @@
 import { useState, useEffect } from "react";
 import {
   User as UserIcon,
-  Activity,
-  BookOpen,
-  Briefcase
+  CheckCircle,
+  RotateCcw,
+  Calendar,
+  BarChart3,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
-import { checkApiHealth } from "../../services/api/auth";
 import { supabase } from "../../lib/supabaseClient";
 import "../../styles/components/header.css";
 import "../../styles/pages/Dashboard.css";
 import { AppHeader } from "../../components/AppHeader";
 import { ProfileCompletion } from "./components/ProfileCompletion";
+import { MetricCard } from "../../components/dashboard/MetricCard";
+import {
+  getJobseekerMetrics,
+  type JobseekerMetricsResponse,
+} from "../../services/api/jobseekerMetrics";
+import { MetricData } from "../../components/dashboard/types";
 
 interface UserData {
   id: string;
@@ -26,9 +31,12 @@ interface UserData {
 
 export function JobSeekerDashboard() {
   const { user } = useAuth();
-  const [healthStatus, setHealthStatus] = useState<string | null>(null);
-  const navigate = useNavigate();
   const [userData, setUserData] = useState<UserData | null>(null);
+  const [metricsData, setMetricsData] = useState<MetricData[]>([]);
+  const [metricsLoading, setMetricsLoading] = useState(false);
+  const [metricsError, setMetricsError] = useState<string | null>(null);
+  // Track which cards have expanded graphs for grid layout
+  const [expandedGraphs, setExpandedGraphs] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (user) {
@@ -59,27 +67,95 @@ export function JobSeekerDashboard() {
         console.error("Error fetching profile ID:", error);
       } else if (data) {
         setUserData((prev) => (prev ? { ...prev, profileId: data.id } : null));
+        // Fetch metrics once we have the profile ID
+        fetchJobseekerMetrics(userId);
       }
     } catch (err) {
       console.error("Error fetching profile ID:", err);
     }
   };
 
-  const handleCheckHealth = async () => {
-    setHealthStatus("Checking...");
+  const fetchJobseekerMetrics = async (candidateId: string) => {
+    setMetricsLoading(true);
+    setMetricsError(null);
+
     try {
-      const result = await checkApiHealth();
-      if (result.status === "healthy") {
-        setHealthStatus(`✅ Connection healthy: ${result.user}`);
-      } else {
-        setHealthStatus(`❌ Error: ${result.message}`);
-      }
-    } catch (error) {
-      setHealthStatus(
-        `❌ Check failed: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
+      const response: JobseekerMetricsResponse = await getJobseekerMetrics(
+        candidateId,
+        {
+          timeRange: "12", // 12 months of data
+        }
       );
+
+      // Define client-side colors and icons for each metric type
+      const metricConfig = {
+        jobs_completed: { color: "#4CAF50", icon: <CheckCircle size={20} /> },
+        active_jobs: { color: "#FF9800", icon: <RotateCcw size={20} /> },
+        upcoming_jobs: { color: "#2196F3", icon: <Calendar size={20} /> },
+        total_assignments: { color: "#795548", icon: <BarChart3 size={20} /> },
+      };
+
+      // Transform API response to MetricData format
+      const transformedMetrics: MetricData[] = response.metrics.map(
+        (metric) => ({
+          id: metric.id,
+          label: metric.label,
+          currentValue: metric.currentValue,
+          previousValue: metric.previousValue,
+          unit: metric.unit,
+          formatType: metric.formatType as
+            | "number"
+            | "currency"
+            | "percentage"
+            | "duration",
+          color:
+            metricConfig[metric.id as keyof typeof metricConfig]?.color ||
+            "#666666",
+          icon: metricConfig[metric.id as keyof typeof metricConfig]?.icon || (
+            <BarChart3 size={20} />
+          ),
+          description: metric.description,
+          historicalData: metric.historicalData.map((point) => ({
+            period: point.period,
+            value: point.value,
+            date:
+              typeof point.date === "string"
+                ? new Date(point.date)
+                : point.date,
+          })),
+        })
+      );
+
+      setMetricsData(transformedMetrics);
+    } catch (error) {
+      console.error("Error fetching jobseeker metrics:", error);
+      setMetricsError(
+        error instanceof Error ? error.message : "Failed to fetch metrics"
+      );
+    } finally {
+      setMetricsLoading(false);
+    }
+  };
+
+  const handleMetricClick = (metric: MetricData) => {
+    console.log("Metric clicked:", metric.label);
+    // You can implement navigation to detailed metric view here
+  };
+
+  const handleToggleGraph = (show: boolean, metricId?: string) => {
+    console.log("Graph toggled:", show, "for metric:", metricId);
+
+    // Track which cards have their graphs expanded for grid layout
+    if (metricId) {
+      setExpandedGraphs((prev) => {
+        const newSet = new Set(prev);
+        if (show) {
+          newSet.add(metricId);
+        } else {
+          newSet.delete(metricId);
+        }
+        return newSet;
+      });
     }
   };
 
@@ -94,9 +170,7 @@ export function JobSeekerDashboard() {
   return (
     <div className="dashboard-container">
       {/* Header */}
-      <AppHeader 
-        title="Job Seeker Portal" 
-      />
+      <AppHeader title="Dashboard" />
 
       {/* Main content */}
       <main className="dashboard-main">
@@ -108,83 +182,68 @@ export function JobSeekerDashboard() {
           </div>
         </div>
         <p className="dashboard-subtitle">
-          Discover opportunities at Godspeed pace with our intelligent job matching system
+          Discover opportunities at Godspeed pace with our intelligent job
+          matching system
         </p>
 
         <div className="dashboard-grid">
-          {/* Profile Completion Status Card */}
+          {/* Metrics Error Display */}
+          {metricsError && (
+            <div className="metrics-error">
+              <p>Error loading metrics: {metricsError}</p>
+              <button
+                className="metrics-error-button"
+                onClick={() =>
+                  userData?.id && fetchJobseekerMetrics(userData.id)
+                }
+              >
+                Retry
+              </button>
+            </div>
+          )}
+
+          {/* Metrics Cards - 2x2 Grid with Individual Expansion */}
+          <div className="metrics-grid compact">
+            {/* Always render 4 cards, with loading state or actual data */}
+            {Array.from({ length: 4 }, (_, index) => {
+              const metric = metricsData[index];
+              const isExpanded = metric ? expandedGraphs.has(metric.id) : false;
+
+              return (
+                <div
+                  key={metric?.id || `loading-${index}`}
+                  className={`metric-card-container ${
+                    isExpanded ? "expanded-grid-item" : ""
+                  }`}
+                >
+                  <MetricCard
+                    data={
+                      metric || {
+                        id: `loading-${index}`,
+                        label: "",
+                        currentValue: 0,
+                        previousValue: 0,
+                        historicalData: [],
+                      }
+                    }
+                    size="sm"
+                    showGraph={false}
+                    onClick={metric ? handleMetricClick : undefined}
+                    onToggleGraph={
+                      metric
+                        ? (show) => handleToggleGraph(show, metric.id)
+                        : undefined
+                    }
+                    loading={metricsLoading || !metric}
+                    className={`metric-transition-${index}`}
+                  />
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Profile Completion Status Card on the right */}
           <ProfileCompletion userId={userData.id} />
-
-          <div className="card">
-            <div className="card-header">
-              <UserIcon className="icon" size={20} />
-              <h2 className="card-title">Account Details</h2>
-            </div>
-
-            <div>
-              <div className="data-item">
-                <p className="data-label">Name</p>
-                <p className="data-value">{userData.name}</p>
-              </div>
-
-              <div className="data-item">
-                <p className="data-label">Email Address</p>
-                <p className="data-value">{userData.email}</p>
-              </div>
-
-              <div className="data-item">
-                <p className="data-label">Account ID</p>
-                <p className="data-value" style={{ fontSize: "0.875rem" }}>
-                  {userData.id}
-                </p>
-              </div>
-
-              <div className="data-item">
-                <p className="data-label">Account Created</p>
-                <p className="data-value">{userData.createdAt}</p>
-              </div>
-
-              <div className="data-item">
-                <p className="data-label">Last Login</p>
-                <p className="data-value">{userData.lastSignIn}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="card">
-            <h2 className="card-title" style={{ marginBottom: "1rem" }}>
-              Job Seeker Actions
-            </h2>
-            <div className="action-list">
-              {/* My Positions button */}
-              <button
-                className="button outline"
-                onClick={() => navigate("/my-positions")}
-              >
-                <Briefcase size={16} className="icon" />
-                My Positions
-              </button>
-
-              {/* Training Modules button */}
-              <button
-                className="button outline"
-                onClick={() => navigate("/training-modules")}
-              >
-                <BookOpen size={16} className="icon" />
-                Training & Development
-              </button>
-
-              {/* Health check button */}
-              <button className="button outline" onClick={handleCheckHealth}>
-                <Activity size={16} className="icon" />
-                Check Auth Status
-              </button>
-
-              {healthStatus && (
-                <div className="health-status">{healthStatus}</div>
-              )}
-            </div>
-          </div>
         </div>
       </main>
     </div>

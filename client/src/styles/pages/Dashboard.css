@@ -13,7 +13,7 @@
 }
 
 .dashboard-title {
-  font-size: 2rem;
+  font-size: 1.7rem;
   font-weight: 700;
   margin-bottom: var(--spacing-2);
 }
@@ -24,8 +24,10 @@
 }
 
 .dashboard-grid {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
   gap: var(--spacing-6);
+  align-items: start;
 }
 
 .dashboard-grid button {
@@ -33,9 +35,311 @@
   justify-content: flex-start;
 }
 
-@media (min-width: 768px) {
+/* Modern Dashboard Heading Styles */
+.dashboard-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--spacing-6);
+  padding: var(--spacing-6) var(--spacing-8);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius);
+  box-shadow: var(--card-shadow);
+  margin-bottom: var(--spacing-6);
+  position: relative;
+  overflow: hidden
+}
+
+.dashboard-heading::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(
+    90deg,
+    var(--border) 0%,
+    var(--text-muted) 50%,
+    var(--border) 100%
+  );
+  background-size: 200% 100%;
+}
+
+/* Role-specific gradient colors for dashboard heading */
+.dashboard-heading:has(.role-icon.jobseeker)::before {
+  background: linear-gradient(
+    90deg,
+    #10B981 0%,
+    #059669 25%,
+    #047857 50%,
+    #059669 75%,
+    #10B981 100%
+  );
+  background-size: 200% 100%;
+}
+
+.dashboard-heading:has(.role-icon.recruiter)::before {
+  background: linear-gradient(
+    90deg,
+    #3B82F6 0%,
+    #2563EB 25%,
+    #1D4ED8 50%,
+    #2563EB 75%,
+    #3B82F6 100%
+  );
+  background-size: 200% 100%;
+}
+
+.dashboard-heading:has(.role-icon.admin)::before {
+  background: linear-gradient(
+    90deg,
+    #F59E0B 0%,
+    #D97706 25%,
+    #B45309 50%,
+    #D97706 75%,
+    #F59E0B 100%
+  );
+  background-size: 200% 100%;
+}
+
+.dashboard-heading:hover {
+  transform: translateY(-2px);
+  box-shadow: 0px 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.dashboard-heading .dashboard-title {
+  margin-bottom: 0;
+  background: linear-gradient(135deg, var(--text) 0%, var(--text-muted) 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  position: relative;
+}
+
+/* Modern Role Badge Styles */
+.user-role-badge {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-3) var(--spacing-4);
+  background: linear-gradient(135deg, var(--card) 0%, var(--input-bg) 100%);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-medium);
+  color: var(--text);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Role-specific badge colors */
+.user-role-badge .role-icon {
+  width: 16px;
+  height: 16px;
+  transition: all var(--transition-fast);
+}
+
+.user-role-badge .role-icon.jobseeker {
+  color: #10B981; /* Emerald green */
+}
+
+.user-role-badge .role-icon.recruiter {
+  color: #3B82F6; /* Blue */
+}
+
+.user-role-badge .role-icon.admin {
+  color: #F59E0B; /* Amber */
+}
+
+.user-role-badge span {
+  position: relative;
+  z-index: 1;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.025em;
+}
+
+/* Job Seeker specific styling - Modern Emerald Theme */
+.user-role-badge:has(.role-icon.jobseeker) {
+  background: linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 50%, #A7F3D0 100%);
+  border: 1px solid #10B981;
+  color: #065F46;
+  box-shadow: 0 4px 14px 0 rgba(16, 185, 129, 0.2);
+}
+
+/* Recruiter specific styling - Modern Blue Theme */
+.user-role-badge:has(.role-icon.recruiter) {
+  background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 50%, #BFDBFE 100%);
+  border: 1px solid #3B82F6;
+  color: #1E40AF;
+  box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.2);
+}
+
+/* Admin specific styling - Modern Amber/Gold Theme */
+.user-role-badge:has(.role-icon.admin) {
+  background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 50%, #FDE68A 100%);
+  border: 1px solid #F59E0B;
+  color: #92400E;
+  box-shadow: 0 4px 14px 0 rgba(245, 158, 11, 0.2);
+}
+
+/* Dark mode variations */
+.dark .user-role-badge:has(.role-icon.jobseeker) {
+  background: linear-gradient(135deg, #065F46 0%, #047857 50%, #059669 100%);
+  box-shadow: 0 6px 20px 0 rgba(16, 185, 129, 0.4);
+  color: #A7F3D0;
+}
+
+.dark .user-role-badge:has(.role-icon.recruiter) {
+  background: linear-gradient(135deg, #1E40AF 0%, #1D4ED8 50%, #2563EB 100%);
+  box-shadow: 0 6px 20px 0 rgba(59, 130, 246, 0.4);
+  color: #BFDBFE;
+}
+
+.dark .user-role-badge:has(.role-icon.admin) {
+  background: linear-gradient(135deg, #92400E 0%, #B45309 50%, #D97706 100%);
+  box-shadow: 0 6px 20px 0 rgba(245, 158, 11, 0.4);
+  color: #FDE68A;
+}
+/* Metrics Grid - 2x2 layout with individual card expansion */
+.metrics-grid {
+  display: grid;
+  gap: var(--spacing-4);
+  height: fit-content;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Always maintain 2x2 grid structure */
+.metrics-grid.compact {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto;
+}
+
+/* Individual card expansion - spans both columns */
+.metrics-grid .expanded-card {
+  grid-column: 1 / -1;
+  z-index: 10;
+  position: relative;
+}
+
+/* Container for metric cards with expansion capability */
+.metric-card-container {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+/* Expanded grid item spans both columns but doesn't change the card size */
+.metric-card-container.expanded-grid-item {
+  grid-column: 1 / -1;
+  z-index: 10;
+}
+
+/* Add smooth transitions to individual metric cards during layout changes */
+.metrics-grid .metric-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Staggered animation delays for smooth cascading effect */
+.metrics-grid .metric-transition-0 {
+  transition-delay: 0ms;
+}
+
+.metrics-grid .metric-transition-1 {
+  transition-delay: 50ms;
+}
+
+.metrics-grid .metric-transition-2 {
+  transition-delay: 100ms;
+}
+
+.metrics-grid .metric-transition-3 {
+  transition-delay: 150ms;
+}
+
+/* Metrics Error Display */
+.metrics-error {
+  grid-column: 1 / -1;
+  padding: var(--spacing-4);
+  background-color: var(--failure-bg);
+  border: 1px solid var(--failure);
+  border-radius: var(--border-radius);
+  color: var(--failure);
+  text-align: center;
+}
+
+.metrics-error-button {
+  margin-top: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-4);
+  background-color: var(--failure);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.metrics-error-button:hover {
+  background-color: var(--failure-dark, #d32f2f);
+}
+
+@media (max-width: 768px) {
   .dashboard-grid {
-    grid-template-columns: 2fr 1fr;
+    grid-template-columns: 1fr;
+    gap: var(--spacing-4);
+  }
+  
+  .metrics-grid.compact {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+  }
+
+  .metrics-grid .expanded-card {
+    grid-column: 1;
+  }
+
+  .metric-card-container.expanded-grid-item {
+    grid-column: 1;
+  }
+
+  .dashboard-heading {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-4);
+    padding: var(--spacing-4) var(--spacing-5);
+  }
+  
+  .dashboard-heading .dashboard-title {
+    font-size: 1.5rem;
+  }
+  
+  .user-role-badge {
+    align-self: flex-end;
+    padding: var(--spacing-2) var(--spacing-3);
+    font-size: var(--font-size-tiny);
+  }
+  
+  .user-role-badge .role-icon {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1024px) {
+  .dashboard-grid {
+    grid-template-columns: 1.5fr 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-heading {
+    padding: var(--spacing-3) var(--spacing-4);
+  }
+  
+  .dashboard-heading .dashboard-title {
+    font-size: 1.25rem;
   }
 }
 
@@ -83,12 +387,4 @@
 
 .main-content {
   flex: 1;
-}
-
-.dashboard-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 1rem;
 }

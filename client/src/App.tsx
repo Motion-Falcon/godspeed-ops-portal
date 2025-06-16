@@ -38,6 +38,7 @@ import { TimesheetManagement } from './pages/TimesheetManagement/TimesheetManage
 import './styles/main.css';
 import { TwoFactorAuth } from './pages/TwoFactorAuth';
 import { Dashboard } from './pages/dashboard/Dashboard';
+import { MetricExamplePage } from './pages/dashboard/MetricExamplePage';
 
 function App() {
   return (
@@ -66,6 +67,7 @@ function App() {
               <Route path="/jobseekers/:id/edit" element={<ProfileEdit />} />
               <Route path="/jobseekers/:id" element={<JobSeekerProfile />} />
               <Route path="/training-modules" element={<TrainingModules />} />
+              <Route path="/metric-examples" element={<MetricExamplePage />} />
 
               <Route element={<RecruiterRoute />}>
                 <Route path="/jobseekers/profile/account-created" element={<ProfileAccountCreated />} />

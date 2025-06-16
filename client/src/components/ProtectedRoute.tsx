@@ -39,6 +39,17 @@ export const ProtectedRoute = () => {
   if (isJobSeeker) {
     const currentPath = location.pathname;
 
+    // Allow access to general utility/example routes regardless of verification status
+    const generalRoutes = [
+      "/metric-examples",
+      "/training-modules",
+      "/dashboard"
+    ];
+    
+    if (generalRoutes.includes(currentPath)) {
+      return <Outlet />;
+    }
+
     // Show loading state while profile data is being fetched
     if (isProfileLoading) {
       return (
