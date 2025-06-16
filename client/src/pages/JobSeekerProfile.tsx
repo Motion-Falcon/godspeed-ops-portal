@@ -646,15 +646,152 @@ export function JobSeekerProfile() {
     );
   };
 
-  if (loading) {
+  // Skeleton loader component
+  const renderSkeletonLoader = () => {
     return (
       <div className="profile-container">
-        <div className="loading-container">
-          <span className="loading-spinner"></span>
-          <p>Loading profile...</p>
-        </div>
+        <AppHeader
+          title="Job Seeker Profile"
+          actions={
+            <button className="button" disabled>
+              <ArrowLeft size={16} className="icon" />
+              <span>Back to Job Seeker Management</span>
+            </button>
+          }
+        />
+
+        <main className="profile-main">
+          {/* Profile Overview Skeleton */}
+          <div className="profile-overview section-card">
+            <div className="profile-banner">
+              <div className="profile-banner-status-container">
+                <div className="profile-status skeleton-status">
+                  <div className="skeleton-icon"></div>
+                  <div className="skeleton-text" style={{ width: '120px', height: '16px' }}></div>
+                </div>
+              </div>
+              <div className="profile-actions-container">
+                <div className="profile-actions" style={{padding: 0}}>
+                  <div className="skeleton-text" style={{ width: '100px', height: '32px', borderRadius: '2rem' }}></div>
+                </div>
+                <div className="profile-actions">
+                  <div className="skeleton-icon" style={{width: '32px', height: '32px', borderRadius: '2rem'}}></div>
+                  <div className="skeleton-icon" style={{width: '32px', height: '32px', borderRadius: '2rem'}}></div>
+                </div>
+              </div>
+            </div>
+
+            <div className="profile-details">
+              <div className="profile-avatar-container">
+                <div className="profile-avatar skeleton-avatar">
+                  <div className="skeleton-icon" style={{ width: '40px', height: '40px' }}></div>
+                </div>
+                <div className="skeleton-text" style={{ width: '200px', height: '32px', margin: '8px 0' }}></div>
+              </div>
+              <div className="profile-info-header">
+                <div className="profile-info-details">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="detail-item">
+                      <div className="skeleton-text" style={{ width: '80px', height: '14px' }}></div>
+                      <div className="skeleton-text" style={{ width: '120px', height: '16px', marginLeft: '10px' }}></div>
+                    </div>
+                  ))}
+                </div>
+                <div className="profile-info-details">
+                  {[1, 2].map((i) => (
+                    <div key={i} className="detail-item">
+                      <div className="skeleton-text" style={{ width: '80px', height: '14px' }}></div>
+                      <div className="skeleton-text" style={{ width: '120px', height: '16px', marginLeft: '10px' }}></div>
+                    </div>
+                  ))}
+                </div>
+                <div className="profile-info-details">
+                  {[1, 2].map((i) => (
+                    <div key={i} className="detail-item">
+                      <div className="skeleton-text" style={{ width: '80px', height: '14px' }}></div>
+                      <div className="skeleton-text" style={{ width: '120px', height: '16px', marginLeft: '10px' }}></div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Documents Section Skeleton */}
+          <div className="documents-section section-card">
+            <div className="skeleton-text" style={{ width: '180px', height: '24px', marginBottom: '20px' }}></div>
+            <div className="document-list">
+              {[1].map((i) => (
+                <div key={i} className="document-item skeleton-document">
+                  <div className="document-content">
+                    <div className="skeleton-icon" style={{ width: '18px', height: '18px' }}></div>
+                    <div className="document-info">
+                      <div className="skeleton-text" style={{ width: '150px', height: '16px', marginBottom: '8px' }}></div>
+                      <div className="skeleton-text" style={{ width: '100px', height: '14px', marginBottom: '8px' }}></div>
+                      <div className="document-actions">
+                        <div className="skeleton-text" style={{ width: '80px', height: '32px', borderRadius: '6px' }}></div>
+                        <div className="skeleton-text" style={{ width: '90px', height: '32px', borderRadius: '6px' }}></div>
+                      </div>
+                    </div>
+                    <div className="document-validation">
+                      <div className="validation-header">
+                        <div className="skeleton-icon" style={{ width: '16px', height: '16px' }}></div>
+                        <div className="skeleton-text" style={{ width: '140px', height: '16px' }}></div>
+                      </div>
+                      <div className="authentication-score">
+                        <div className="score-gauge skeleton-score-gauge">
+                          <div className="skeleton-progress-fill" style={{ width: '60%' }}></div>
+                        </div>
+                        <div className="skeleton-text" style={{ width: '120px', height: '14px' }}></div>
+                      </div>
+                      <div className="validation-status-list">
+                        {[1, 2, 3, 4].map((j) => (
+                          <div key={j} className="validation-status-item">
+                            <div className="skeleton-icon" style={{ width: '16px', height: '16px' }}></div>
+                            <div className="skeleton-text" style={{ width: '120px', height: '14px' }}></div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="document-preview">
+                    <div className="skeleton-text" style={{ width: '100%', height: '120px', borderRadius: '8px' }}></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Profile Content Grid Skeleton */}
+          <div className="profile-content grid-container">
+            {[
+              'Personal Information',
+              'Identification',
+              'Address',
+              'Qualifications',
+              'Compensation',
+              'Meta Information'
+            ].map((sectionTitle, index) => (
+              <div key={index} className="section-card">
+                <div className="skeleton-text" style={{ width: '180px', height: '20px', marginBottom: '20px' }}></div>
+                <div className="detail-group">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <div key={i} className="detail-item">
+                      <div className="skeleton-text" style={{ width: '100px', height: '14px' }}></div>
+                      <div className="skeleton-text" style={{ width: '140px', height: '16px', marginLeft: '10px' }}></div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </main>
       </div>
     );
+  };
+
+  if (loading) {
+    return renderSkeletonLoader();
   }
 
   if (error || !profile) {

@@ -11,7 +11,7 @@ import { supabase } from "../../lib/supabaseClient";
 import "../../styles/components/header.css";
 import "../../styles/pages/Dashboard.css";
 import { AppHeader } from "../../components/AppHeader";
-import { ProfileCompletion } from "./components/ProfileCompletion";
+import { ProfileCompletion } from "../../components/dashboard/ProfileCompletion";
 import { MetricCard } from "../../components/dashboard/MetricCard";
 import {
   getJobseekerMetrics,
@@ -187,21 +187,6 @@ export function JobSeekerDashboard() {
         </p>
 
         <div className="dashboard-grid">
-          {/* Metrics Error Display */}
-          {metricsError && (
-            <div className="metrics-error">
-              <p>Error loading metrics: {metricsError}</p>
-              <button
-                className="metrics-error-button"
-                onClick={() =>
-                  userData?.id && fetchJobseekerMetrics(userData.id)
-                }
-              >
-                Retry
-              </button>
-            </div>
-          )}
-
           {/* Metrics Cards - 2x2 Grid with Individual Expansion */}
           <div className="metrics-grid compact">
             {/* Always render 4 cards, with loading state or actual data */}
@@ -235,6 +220,8 @@ export function JobSeekerDashboard() {
                         : undefined
                     }
                     loading={metricsLoading || !metric}
+                    error={metricsError}
+                    onRetry={() => userData?.id && fetchJobseekerMetrics(userData.id)}
                     className={`metric-transition-${index}`}
                   />
                 </div>

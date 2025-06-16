@@ -15,7 +15,6 @@ import { ProfileSuccess } from './pages/JobseekerProfile/ProfileSuccess';
 import { JobSeekerProfile } from './pages/JobSeekerProfile';
 import { GeometricShapes } from './components/GeometricShapes';
 import { ProfileEdit } from './pages/JobseekerProfile/ProfileEdit';
-import { ClientManagement } from './pages/ClientManagement';
 import { ClientCreate } from './pages/ClientManagement/ClientCreate';
 import { ClientEdit } from './pages/ClientManagement/ClientEdit';
 import { ClientDrafts } from './pages/ClientManagement/ClientDrafts';
@@ -39,6 +38,7 @@ import './styles/main.css';
 import { TwoFactorAuth } from './pages/TwoFactorAuth';
 import { Dashboard } from './pages/dashboard/Dashboard';
 import { MetricExamplePage } from './pages/dashboard/MetricExamplePage';
+import { ClientManagement } from './pages/ClientManagement/ClientManagement';
 
 function App() {
   return (

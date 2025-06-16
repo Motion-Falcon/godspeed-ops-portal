@@ -402,11 +402,124 @@
   pointer-events: none;
 }
 
+/* Error State */
+.metric-card-error {
+  background: var(--card);
+  border: 1px solid var(--failure);
+  border-radius: var(--border-radius);
+  box-shadow: var(--card-shadow);
+  position: relative;
+  overflow: hidden;
+}
+
+.metric-card-error.size-sm {
+  padding: var(--spacing-4);
+}
+
+.metric-card-error.size-md {
+  padding: var(--spacing-6);
+}
+
+.metric-card-error.size-lg {
+  padding: var(--spacing-8);
+}
+
+.metric-card-error .metric-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-4);
+}
+
+.metric-card-error .metric-card-info {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  flex: 1;
+}
+
+.metric-card-error .metric-card-title-section {
+  flex: 1;
+}
+
+.metric-card-error .metric-card-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.error-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--border-radius);
+  background: var(--failure-bg);
+  color: var(--failure);
+  border: 1px solid var(--failure);
+}
+
+.retry-button {
+  padding: var(--spacing-2);
+  border: 1px solid var(--failure);
+  background: var(--failure-bg);
+  color: var(--failure);
+  cursor: pointer;
+  border-radius: var(--border-radius);
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.retry-button:hover {
+  background: var(--failure);
+  color: var(--card);
+}
+
+.metric-card-error-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 80px;
+  padding: var(--spacing-4);
+  background: var(--failure-bg);
+  border-radius: var(--border-radius);
+  border: 1px solid var(--failure);
+}
+
+.metric-card-error-message {
+  text-align: center;
+}
+
+.metric-card-error-text {
+  color: var(--failure);
+  margin: 0;
+  font-weight: var(--font-weight-medium);
+}
+
+.metric-card-error-text.size-sm {
+  font-size: var(--font-size-small);
+}
+
+.metric-card-error-text.size-md {
+  font-size: var(--font-size-body);
+}
+
+.metric-card-error-text.size-lg {
+  font-size: var(--font-size-subheader);
+}
+
+/* Skeleton header */
 .metric-card-skeleton {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--border-radius);
   box-shadow: var(--card-shadow);
+  position: relative;
+  overflow: hidden;
 }
 
 .metric-card-skeleton.size-sm {
@@ -421,6 +534,52 @@
   padding: var(--spacing-8);
 }
 
+/* Skeleton header */
+.metric-card-skeleton .metric-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-4);
+}
+
+.metric-card-skeleton .metric-card-info {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  flex: 1;
+}
+
+.metric-card-skeleton .metric-card-title-section {
+  flex: 1;
+}
+
+.metric-card-skeleton .metric-card-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+/* Skeleton content */
+.metric-card-skeleton .metric-card-content {
+  /* Inherits default layout */
+}
+
+.metric-card-skeleton .metric-card-value-section {
+  margin-bottom: var(--spacing-3);
+}
+
+.metric-card-skeleton .metric-card-growth-section {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  margin-bottom: var(--spacing-2);
+}
+
+.metric-card-skeleton .metric-card-value-container {
+  margin-bottom: var(--spacing-3);
+}
+
+/* Base skeleton styles */
 .skeleton-text {
   background: linear-gradient(
     90deg,
@@ -433,21 +592,95 @@
   border-radius: 4px;
 }
 
-.skeleton-title {
-  height: 16px;
-  margin-bottom: var(--spacing-4);
-  width: 60%;
+.skeleton-icon {
+  background: linear-gradient(
+    90deg,
+    var(--border) 25%,
+    var(--input-bg) 50%,
+    var(--border) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+  border-radius: var(--border-radius);
 }
 
-.skeleton-value {
-  height: 24px;
-  margin-bottom: var(--spacing-2);
-  width: 40%;
+/* Specific skeleton elements */
+.metric-card-icon-skeleton {
+  width: 40px;
+  height: 40px;
+}
+
+.skeleton-title {
+  height: 16px;
+  width: 70%;
+  margin-bottom: var(--spacing-1);
 }
 
 .skeleton-description {
   height: 12px;
-  width: 70%;
+  width: 50%;
+}
+
+.skeleton-chart-toggle {
+  width: 32px;
+  height: 32px;
+}
+
+.skeleton-growth-badge {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  padding: var(--spacing-1) var(--spacing-2);
+  background: var(--border);
+  border-radius: 15px;
+  animation: skeleton-loading 1.5s infinite;
+}
+
+.skeleton-growth-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.skeleton-growth-text {
+  height: 12px;
+  width: 40px;
+}
+
+.skeleton-period-comparison {
+  height: 12px;
+  width: 60px;
+}
+
+.skeleton-value {
+  height: 32px;
+  width: 80px;
+}
+
+/* Size variants for skeleton elements */
+.metric-card-skeleton.size-sm .skeleton-title {
+  height: 14px;
+}
+
+.metric-card-skeleton.size-sm .skeleton-value {
+  height: 24px;
+}
+
+.metric-card-skeleton.size-sm .skeleton-growth-text {
+  width: 35px;
+}
+
+.metric-card-skeleton.size-lg .skeleton-title {
+  height: 18px;
+  width: 75%;
+}
+
+.metric-card-skeleton.size-lg .skeleton-value {
+  height: 40px;
+  width: 100px;
+}
+
+.metric-card-skeleton.size-lg .skeleton-growth-text {
+  width: 50px;
 }
 
 @keyframes skeleton-loading {
@@ -460,9 +693,14 @@
 }
 
 /* Dark mode skeleton adjustments */
-.dark .skeleton-text {
+.dark .skeleton-text,
+.dark .skeleton-icon {
   background: linear-gradient(90deg, #333 25%, #444 50%, #333 75%);
   background-size: 200% 100%;
+}
+
+.dark .skeleton-growth-badge {
+  background: #333;
 }
 
 /* Responsive Design */

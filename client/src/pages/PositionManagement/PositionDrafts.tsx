@@ -119,8 +119,10 @@ export function PositionDrafts() {
       if (searchTerm.trim()) params.search = searchTerm.trim();
       if (titleFilter.trim()) params.titleFilter = titleFilter.trim();
       if (clientFilter.trim()) params.clientFilter = clientFilter.trim();
-      if (positionIdFilter.trim()) params.positionIdFilter = positionIdFilter.trim();
-      if (positionCodeFilter.trim()) params.positionCodeFilter = positionCodeFilter.trim();
+      if (positionIdFilter.trim())
+        params.positionIdFilter = positionIdFilter.trim();
+      if (positionCodeFilter.trim())
+        params.positionCodeFilter = positionCodeFilter.trim();
       if (creatorFilter.trim()) params.creatorFilter = creatorFilter.trim();
       if (updaterFilter.trim()) params.updaterFilter = updaterFilter.trim();
       if (dateFilter) params.dateFilter = dateFilter;
@@ -514,11 +516,66 @@ export function PositionDrafts() {
               </thead>
               <tbody>
                 {loading ? (
-                  <tr>
-                    <td colSpan={10} className="loading-cell">
-                      <div className="loading">Loading drafts...</div>
-                    </td>
-                  </tr>
+                  // Skeleton loading rows
+                  <>
+                    {Array.from({ length: pagination.limit }, (_, index) => (
+                      <tr key={`skeleton-${index}`} className="skeleton-row">
+                        {/* Regular columns - using generic skeleton-text */}
+                        <td className="skeleton-cell">
+                          <div className="skeleton-text"></div>
+                        </td>
+                        <td className="skeleton-cell">
+                          <div className="skeleton-text"></div>
+                        </td>
+                        <td className="skeleton-cell">
+                          <div className="skeleton-text"></div>
+                        </td>
+                        <td className="skeleton-cell">
+                          <div className="skeleton-text"></div>
+                        </td>
+
+                        {/* Status skeleton - needs special styling */}
+                        <td className="skeleton-cell">
+                          <div className="skeleton-status">
+                            <div className="skeleton-icon skeleton-status-icon"></div>
+                            <div className="skeleton-badge skeleton-status-text"></div>
+                          </div>
+                        </td>
+                        <td className="skeleton-cell">
+                          <div className="skeleton-status">
+                            <div className="skeleton-icon skeleton-status-icon"></div>
+                            <div className="skeleton-badge skeleton-status-text"></div>
+                          </div>
+                        </td>
+                        <td className="skeleton-cell">
+                          <div className="skeleton-status">
+                            <div className="skeleton-icon skeleton-status-icon"></div>
+                            <div className="skeleton-badge skeleton-status-text"></div>
+                          </div>
+                        </td>
+                        <td className="skeleton-cell">
+                          <div className="skeleton-status">
+                            <div className="skeleton-icon skeleton-status-icon"></div>
+                            <div className="skeleton-badge skeleton-status-text"></div>
+                          </div>
+                        </td>
+                        <td className="skeleton-cell">
+                          <div className="skeleton-status">
+                            <div className="skeleton-icon skeleton-status-icon"></div>
+                            <div className="skeleton-badge skeleton-status-text"></div>
+                          </div>
+                        </td>
+
+                        {/* Actions skeleton - needs special styling */}
+                        <td className="skeleton-cell">
+                          <div className="skeleton-actions">
+                            <div className="skeleton-icon skeleton-action-btn"></div>
+                            <div className="skeleton-icon skeleton-action-btn"></div>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </>
                 ) : drafts.length === 0 ? (
                   <tr>
                     <td colSpan={10} className="empty-state-cell">

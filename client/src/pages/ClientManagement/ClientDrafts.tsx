@@ -406,11 +406,45 @@ export function ClientDrafts() {
               </thead>
               <tbody>
                 {loading ? (
-                  <tr>
-                    <td colSpan={7} className="loading-cell">
-                      <div className="loading">Loading drafts...</div>
-                    </td>
-                  </tr>
+                   // Skeleton loading rows
+                   <>
+                   {Array.from({ length: pagination.limit }, (_, index) => (
+                     <tr key={`skeleton-${index}`} className="skeleton-row">
+                       {/* Regular columns - using generic skeleton-text */}
+                       <td className="skeleton-cell">
+                         <div className="skeleton-text"></div>
+                       </td>
+                       <td className="skeleton-cell">
+                         <div className="skeleton-text"></div>
+                       </td>
+                       <td className="skeleton-cell">
+                         <div className="skeleton-text"></div>
+                       </td>
+                       <td className="skeleton-cell">
+                         <div className="skeleton-text"></div>
+                       </td>
+                       <td className="skeleton-cell">
+                         <div className="skeleton-status">
+                           <div className="skeleton-icon skeleton-status-icon"></div>
+                           <div className="skeleton-badge skeleton-status-text"></div>
+                         </div>
+                       </td>
+                       <td className="skeleton-cell">
+                         <div className="skeleton-status">
+                           <div className="skeleton-icon skeleton-status-icon"></div>
+                           <div className="skeleton-badge skeleton-status-text"></div>
+                         </div>
+                       </td>
+                       {/* Actions skeleton - needs special styling */}
+                       <td className="skeleton-cell">
+                         <div className="skeleton-actions">
+                           <div className="skeleton-icon skeleton-action-btn"></div>
+                           <div className="skeleton-icon skeleton-action-btn"></div>
+                         </div>
+                       </td>
+                     </tr>
+                   ))}
+                 </>
                 ) : drafts.length === 0 && pagination.total === 0 ? (
                   <tr>
                     <td colSpan={7} className="empty-state-cell">

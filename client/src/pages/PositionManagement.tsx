@@ -1,22 +1,32 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { 
-  Plus, 
-  FileText, 
-  Eye, 
-  Trash2, 
-  Pencil, 
+import { useState, useEffect, useCallback } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import {
+  Plus,
+  FileText,
+  Eye,
+  Trash2,
+  Pencil,
   Search,
   ChevronLeft,
-  ChevronRight
-} from 'lucide-react';
-import { getPositions, deletePosition, PositionData, PositionPaginationParams } from '../services/api/position';
-import { ConfirmationModal } from '../components/ConfirmationModal';
-import { AppHeader } from '../components/AppHeader';
-import '../styles/pages/PositionManagement.css';
-import '../styles/components/header.css';
-import '../styles/components/CommonTable.css';
-import { EMPLOYMENT_TERMS, EMPLOYMENT_TYPES, POSITION_CATEGORIES, EXPERIENCE_LEVELS } from "../constants/formOptions";
+  ChevronRight,
+} from "lucide-react";
+import {
+  getPositions,
+  deletePosition,
+  PositionData,
+  PositionPaginationParams,
+} from "../services/api/position";
+import { ConfirmationModal } from "../components/ConfirmationModal";
+import { AppHeader } from "../components/AppHeader";
+import "../styles/pages/PositionManagement.css";
+import "../styles/components/header.css";
+import "../styles/components/CommonTable.css";
+import {
+  EMPLOYMENT_TERMS,
+  EMPLOYMENT_TYPES,
+  POSITION_CATEGORIES,
+  EXPERIENCE_LEVELS,
+} from "../constants/formOptions";
 
 interface ExtendedPositionData extends PositionData {
   [key: string]: unknown;
@@ -43,22 +53,22 @@ export function PositionManagement() {
     totalFiltered: 0,
     totalPages: 0,
     hasNextPage: false,
-    hasPrevPage: false
+    hasPrevPage: false,
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [positionIdFilter, setPositionIdFilter] = useState('');
-  const [titleFilter, setTitleFilter] = useState('');
-  const [clientFilter, setClientFilter] = useState('');
-  const [locationFilter, setLocationFilter] = useState('');
-  const [employmentTermFilter, setEmploymentTermFilter] = useState('all');
-  const [employmentTypeFilter, setEmploymentTypeFilter] = useState('all');
-  const [positionCategoryFilter, setPositionCategoryFilter] = useState('all');
-  const [experienceFilter, setExperienceFilter] = useState('all');
-  const [showOnPortalFilter, setShowOnPortalFilter] = useState('all');
-  const [dateFilter, setDateFilter] = useState<string>('');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [positionIdFilter, setPositionIdFilter] = useState("");
+  const [titleFilter, setTitleFilter] = useState("");
+  const [clientFilter, setClientFilter] = useState("");
+  const [locationFilter, setLocationFilter] = useState("");
+  const [employmentTermFilter, setEmploymentTermFilter] = useState("all");
+  const [employmentTypeFilter, setEmploymentTypeFilter] = useState("all");
+  const [positionCategoryFilter, setPositionCategoryFilter] = useState("all");
+  const [experienceFilter, setExperienceFilter] = useState("all");
+  const [showOnPortalFilter, setShowOnPortalFilter] = useState("all");
+  const [dateFilter, setDateFilter] = useState<string>("");
   const [positionToDelete, setPositionToDelete] = useState<string | null>(null);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [positionToEdit, setPositionToEdit] = useState<string | null>(null);
@@ -66,14 +76,18 @@ export function PositionManagement() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  const convertToCamelCase = (data: Record<string, unknown>): ExtendedPositionData => {
+  const convertToCamelCase = (
+    data: Record<string, unknown>
+  ): ExtendedPositionData => {
     const converted: Record<string, unknown> = {};
-    
+
     Object.entries(data).forEach(([key, value]) => {
-      const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+      const camelKey = key.replace(/_([a-z])/g, (_, letter) =>
+        letter.toUpperCase()
+      );
       converted[camelKey] = value;
     });
-    
+
     return converted as ExtendedPositionData;
   };
 
@@ -81,10 +95,10 @@ export function PositionManagement() {
     // Check for message in location state
     if (location.state?.message) {
       setMessage(location.state.message);
-      
+
       // Clear the message from location state after displaying
       window.history.replaceState({}, document.title);
-      
+
       // Auto-hide message after 3 seconds
       setTimeout(() => {
         setMessage(null);
@@ -95,9 +109,9 @@ export function PositionManagement() {
   // Simplified fetch function - all filtering is now server-side
   const fetchPositions = useCallback(async () => {
     try {
-      console.log('Fetching positions...');
+      console.log("Fetching positions...");
       setLoading(true);
-      
+
       const params: PositionPaginationParams = {
         page: pagination.page,
         limit: pagination.limit,
@@ -111,37 +125,40 @@ export function PositionManagement() {
         positionCategoryFilter,
         experienceFilter,
         showOnPortalFilter,
-        dateFilter
+        dateFilter,
       };
 
       const data = await getPositions(params);
-      console.log('Fetched positions:', data);
-      
-      const convertedPositions = data.positions.map((position) => 
+      console.log("Fetched positions:", data);
+
+      const convertedPositions = data.positions.map((position) =>
         convertToCamelCase(position as unknown as Record<string, unknown>)
       );
       setPositions(convertedPositions);
       setPagination(data.pagination);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An error occurred while fetching positions';
-      console.error('Error fetching positions:', err);
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : "An error occurred while fetching positions";
+      console.error("Error fetching positions:", err);
       setError(errorMessage);
-      
+
       // Show more detailed error info in console
       if (err instanceof Error) {
-        console.error('Error details:', {
+        console.error("Error details:", {
           message: err.message,
           stack: err.stack,
-          name: err.name
+          name: err.name,
         });
       }
     } finally {
       setLoading(false);
     }
   }, [
-    pagination.page, 
-    pagination.limit, 
-    searchTerm, 
+    pagination.page,
+    pagination.limit,
+    searchTerm,
     positionIdFilter,
     titleFilter,
     clientFilter,
@@ -151,7 +168,7 @@ export function PositionManagement() {
     positionCategoryFilter,
     experienceFilter,
     showOnPortalFilter,
-    dateFilter
+    dateFilter,
   ]);
 
   useEffect(() => {
@@ -161,10 +178,10 @@ export function PositionManagement() {
   // Reset to first page when filters change
   useEffect(() => {
     if (pagination.page !== 1) {
-      setPagination(prev => ({ ...prev, page: 1 }));
+      setPagination((prev) => ({ ...prev, page: 1 }));
     }
   }, [
-    searchTerm, 
+    searchTerm,
     positionIdFilter,
     titleFilter,
     clientFilter,
@@ -174,15 +191,15 @@ export function PositionManagement() {
     positionCategoryFilter,
     experienceFilter,
     showOnPortalFilter,
-    dateFilter
+    dateFilter,
   ]);
 
   const handleCreatePosition = () => {
-    navigate('/position-management/create');
+    navigate("/position-management/create");
   };
-  
+
   const handleViewDrafts = () => {
-    navigate('/position-management/drafts');
+    navigate("/position-management/drafts");
   };
 
   const handleViewPosition = (id: string) => {
@@ -202,25 +219,26 @@ export function PositionManagement() {
 
   const handleDeletePosition = async () => {
     if (!positionToDelete) return;
-    
+
     try {
       setIsDeleting(true);
       setDeleteError(null);
-      
+
       await deletePosition(positionToDelete);
-      
+
       // Refresh the positions list
       await fetchPositions();
-      
-      setMessage('Position deleted successfully');
-      
+
+      setMessage("Position deleted successfully");
+
       // Auto-hide message after 3 seconds
       setTimeout(() => {
         setMessage(null);
       }, 3000);
     } catch (err) {
-      console.error('Error deleting position:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Failed to delete position';
+      console.error("Error deleting position:", err);
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to delete position";
       setDeleteError(errorMessage);
     } finally {
       setIsDeleting(false);
@@ -231,26 +249,26 @@ export function PositionManagement() {
 
   // Helper to reset all filters
   const resetFilters = () => {
-    setPositionIdFilter('');
-    setTitleFilter('');
-    setClientFilter('');
-    setLocationFilter('');
-    setEmploymentTermFilter('all');
-    setEmploymentTypeFilter('all');
-    setPositionCategoryFilter('all');
-    setExperienceFilter('all');
-    setShowOnPortalFilter('all');
-    setDateFilter('');
-    setSearchTerm('');
+    setPositionIdFilter("");
+    setTitleFilter("");
+    setClientFilter("");
+    setLocationFilter("");
+    setEmploymentTermFilter("all");
+    setEmploymentTypeFilter("all");
+    setPositionCategoryFilter("all");
+    setExperienceFilter("all");
+    setShowOnPortalFilter("all");
+    setDateFilter("");
+    setSearchTerm("");
   };
 
   // Pagination handlers
   const handlePageChange = (newPage: number) => {
-    setPagination(prev => ({ ...prev, page: newPage }));
+    setPagination((prev) => ({ ...prev, page: newPage }));
   };
 
   const handleLimitChange = (newLimit: number) => {
-    setPagination(prev => ({ ...prev, limit: newLimit, page: 1 }));
+    setPagination((prev) => ({ ...prev, limit: newLimit, page: 1 }));
   };
 
   const handlePreviousPage = () => {
@@ -267,7 +285,7 @@ export function PositionManagement() {
 
   // Format date for display
   const formatDate = (dateString: string | undefined) => {
-    if (!dateString) return 'N/A';
+    if (!dateString) return "N/A";
     return new Date(dateString).toLocaleDateString();
   };
 
@@ -277,15 +295,15 @@ export function PositionManagement() {
         title="Position Management"
         actions={
           <>
-            <button 
-              className="button secondary button-icon" 
+            <button
+              className="button secondary button-icon"
               onClick={handleViewDrafts}
             >
               <FileText size={16} />
               <span>View Drafts</span>
             </button>
-            <button 
-              className="button primary button-icon" 
+            <button
+              className="button primary button-icon"
               onClick={handleCreatePosition}
             >
               <Plus size={16} />
@@ -294,16 +312,12 @@ export function PositionManagement() {
           </>
         }
         statusMessage={message || error}
-        statusType={error ? 'error' : 'success'}
+        statusType={error ? "error" : "success"}
       />
 
       <div className="content-container">
-        {error && (
-          <div className="error-message">{error}</div>
-        )}
-        {message && (
-          <div className="success-message">{message}</div>
-        )}
+        {error && <div className="error-message">{error}</div>}
+        {message && <div className="success-message">{message}</div>}
 
         <div className="card">
           <div className="card-header">
@@ -318,8 +332,8 @@ export function PositionManagement() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="search-input"
                 />
-                <button 
-                  className="button secondary button-icon reset-filters-btn" 
+                <button
+                  className="button secondary button-icon reset-filters-btn"
                   onClick={resetFilters}
                 >
                   <span>Reset Filters</span>
@@ -332,15 +346,26 @@ export function PositionManagement() {
           <div className="pagination-controls top">
             <div className="pagination-info">
               <span className="pagination-text">
-                Showing {Math.min((pagination.page - 1) * pagination.limit + 1, pagination.total)} to{' '}
-                {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} entries
+                Showing{" "}
+                {Math.min(
+                  (pagination.page - 1) * pagination.limit + 1,
+                  pagination.total
+                )}{" "}
+                to{" "}
+                {Math.min(pagination.page * pagination.limit, pagination.total)}{" "}
+                of {pagination.total} entries
                 {pagination.totalFiltered !== pagination.total && (
-                  <span className="filtered-info"> (filtered from {pagination.total} total entries)</span>
+                  <span className="filtered-info">
+                    {" "}
+                    (filtered from {pagination.total} total entries)
+                  </span>
                 )}
               </span>
             </div>
             <div className="pagination-size-selector">
-              <label htmlFor="pageSize" className="page-size-label">Show:</label>
+              <label htmlFor="pageSize" className="page-size-label">
+                Show:
+              </label>
               <select
                 id="pageSize"
                 value={pagination.limit}
@@ -438,7 +463,9 @@ export function PositionManagement() {
                       <div className="column-search">
                         <select
                           value={employmentTermFilter}
-                          onChange={(e) => setEmploymentTermFilter(e.target.value)}
+                          onChange={(e) =>
+                            setEmploymentTermFilter(e.target.value)
+                          }
                           className="column-filter-select"
                         >
                           <option value="all">All Terms</option>
@@ -457,7 +484,9 @@ export function PositionManagement() {
                       <div className="column-search">
                         <select
                           value={employmentTypeFilter}
-                          onChange={(e) => setEmploymentTypeFilter(e.target.value)}
+                          onChange={(e) =>
+                            setEmploymentTypeFilter(e.target.value)
+                          }
                           className="column-filter-select"
                         >
                           <option value="all">All Types</option>
@@ -476,7 +505,9 @@ export function PositionManagement() {
                       <div className="column-search">
                         <select
                           value={positionCategoryFilter}
-                          onChange={(e) => setPositionCategoryFilter(e.target.value)}
+                          onChange={(e) =>
+                            setPositionCategoryFilter(e.target.value)
+                          }
                           className="column-filter-select"
                         >
                           <option value="all">All Categories</option>
@@ -514,7 +545,9 @@ export function PositionManagement() {
                       <div className="column-search">
                         <select
                           value={showOnPortalFilter}
-                          onChange={(e) => setShowOnPortalFilter(e.target.value)}
+                          onChange={(e) =>
+                            setShowOnPortalFilter(e.target.value)
+                          }
                           className="column-filter-select"
                         >
                           <option value="all">All</option>
@@ -529,7 +562,9 @@ export function PositionManagement() {
                       <div className="column-title">Actions</div>
                       <div className="column-search">
                         <div className="actions-info">
-                          <span className="actions-help-text">View • Edit • Delete</span>
+                          <span className="actions-help-text">
+                            View • Edit • Delete
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -538,11 +573,53 @@ export function PositionManagement() {
               </thead>
               <tbody>
                 {loading ? (
-                  <tr>
-                    <td colSpan={11} className="loading-cell">
-                      <div className="loading">Loading positions...</div>
-                    </td>
-                  </tr>
+                  // Skeleton loading rows
+                  <>
+                    {Array.from({ length: pagination.limit }, (_, index) => (
+                      <tr key={`skeleton-${index}`} className="skeleton-row">
+                        {/* Regular columns - using generic skeleton-text */}
+                        <td className="skeleton-cell">
+                          <div className="skeleton-text"></div>
+                        </td>
+                        <td className="skeleton-cell">
+                          <div className="skeleton-text"></div>
+                        </td>
+                        <td className="skeleton-cell">
+                          <div className="skeleton-text"></div>
+                        </td>
+                        <td className="skeleton-cell">
+                          <div className="skeleton-text"></div>
+                        </td>
+                        <td className="skeleton-cell">
+                          <div className="skeleton-text"></div>
+                        </td>
+                        <td className="skeleton-cell">
+                          <div className="skeleton-text"></div>
+                        </td>
+                        <td className="skeleton-cell">
+                          <div className="skeleton-text"></div>
+                        </td>
+                        <td className="skeleton-cell">
+                          <div className="skeleton-text"></div>
+                        </td>
+                        <td className="skeleton-cell">
+                          <div className="skeleton-text"></div>
+                        </td>
+                        <td className="skeleton-cell">
+                          <div className="skeleton-text"></div>
+                        </td>
+
+                        {/* Actions skeleton - needs special styling */}
+                        <td className="skeleton-cell">
+                          <div className="skeleton-actions">
+                            <div className="skeleton-icon skeleton-action-btn"></div>
+                            <div className="skeleton-icon skeleton-action-btn"></div>
+                            <div className="skeleton-icon skeleton-action-btn"></div>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </>
                 ) : positions.length === 0 ? (
                   <tr>
                     <td colSpan={11} className="empty-state-cell">
@@ -554,43 +631,67 @@ export function PositionManagement() {
                 ) : (
                   positions.map((position) => (
                     <tr key={position.id}>
-                      <td className="position-id-cell">{position.positionCode || 'N/A'}</td>
+                      <td className="position-id-cell">
+                        {position.positionCode || "N/A"}
+                      </td>
                       <td className="title-cell">{position.title}</td>
                       <td className="client-cell">{position.clientName}</td>
                       <td className="date-cell">
-                        <div className="date-display">{formatDate(position.startDate)}</div>
+                        <div className="date-display">
+                          {formatDate(position.startDate)}
+                        </div>
                       </td>
-                      <td className="location-cell">{position.city}, {position.province}</td>
-                      <td className="employment-term-cell">{position.employmentTerm || 'N/A'}</td>
-                      <td className="employment-type-cell">{position.employmentType || 'N/A'}</td>
-                      <td className="position-category-cell">{position.positionCategory || 'N/A'}</td>
-                      <td className="experience-cell">{position.experience || 'N/A'}</td>
+                      <td className="location-cell">
+                        {position.city}, {position.province}
+                      </td>
+                      <td className="employment-term-cell">
+                        {position.employmentTerm || "N/A"}
+                      </td>
+                      <td className="employment-type-cell">
+                        {position.employmentType || "N/A"}
+                      </td>
+                      <td className="position-category-cell">
+                        {position.positionCategory || "N/A"}
+                      </td>
+                      <td className="experience-cell">
+                        {position.experience || "N/A"}
+                      </td>
                       <td className="status-cell">
-                        <span className={`status-badge ${position.showOnJobPortal ? 'active' : 'inactive'}`}>
-                          {position.showOnJobPortal ? 'Yes' : 'No'}
+                        <span
+                          className={`status-badge ${
+                            position.showOnJobPortal ? "active" : "inactive"
+                          }`}
+                        >
+                          {position.showOnJobPortal ? "Yes" : "No"}
                         </span>
                       </td>
                       <td className="actions-cell">
                         <div className="action-buttons">
-                          <button 
+                          <button
                             className="action-icon-btn view-btn"
-                            onClick={() => handleViewPosition(position.id as string)}
+                            onClick={() =>
+                              handleViewPosition(position.id as string)
+                            }
                             title="View position details"
                             aria-label="View position"
                           >
                             <Eye size={16} />
                           </button>
-                          <button 
+                          <button
                             className="action-icon-btn edit-btn"
-                            onClick={() => confirmEditPosition(position.id as string)}
+                            onClick={() =>
+                              confirmEditPosition(position.id as string)
+                            }
                             title="Edit position"
                             aria-label="Edit position"
                           >
                             <Pencil size={16} />
                           </button>
-                          <button 
+                          <button
                             className="action-icon-btn delete-btn"
-                            onClick={() => confirmDeletePosition(position.id as string)}
+                            onClick={() =>
+                              confirmDeletePosition(position.id as string)
+                            }
                             title="Delete position"
                             aria-label="Delete position"
                           >
@@ -624,32 +725,37 @@ export function PositionManagement() {
                   <ChevronLeft size={16} />
                   <span>Previous</span>
                 </button>
-                
+
                 {/* Page numbers */}
                 <div className="page-numbers">
-                  {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
-                    let pageNum;
-                    if (pagination.totalPages <= 5) {
-                      pageNum = i + 1;
-                    } else if (pagination.page <= 3) {
-                      pageNum = i + 1;
-                    } else if (pagination.page >= pagination.totalPages - 2) {
-                      pageNum = pagination.totalPages - 4 + i;
-                    } else {
-                      pageNum = pagination.page - 2 + i;
+                  {Array.from(
+                    { length: Math.min(5, pagination.totalPages) },
+                    (_, i) => {
+                      let pageNum;
+                      if (pagination.totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (pagination.page <= 3) {
+                        pageNum = i + 1;
+                      } else if (pagination.page >= pagination.totalPages - 2) {
+                        pageNum = pagination.totalPages - 4 + i;
+                      } else {
+                        pageNum = pagination.page - 2 + i;
+                      }
+
+                      return (
+                        <button
+                          key={pageNum}
+                          className={`page-number-btn ${
+                            pageNum === pagination.page ? "active" : ""
+                          }`}
+                          onClick={() => handlePageChange(pageNum)}
+                          aria-label={`Go to page ${pageNum}`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
                     }
-                    
-                    return (
-                      <button
-                        key={pageNum}
-                        className={`page-number-btn ${pageNum === pagination.page ? 'active' : ''}`}
-                        onClick={() => handlePageChange(pageNum)}
-                        aria-label={`Go to page ${pageNum}`}
-                      >
-                        {pageNum}
-                      </button>
-                    );
-                  })}
+                  )}
                 </div>
 
                 <button
@@ -672,7 +778,9 @@ export function PositionManagement() {
       <ConfirmationModal
         isOpen={showDeleteConfirmation}
         title="Delete Position"
-        message={`Are you sure you want to delete this position? This action cannot be undone.${deleteError ? `\n\nError: ${deleteError}` : ''}`}
+        message={`Are you sure you want to delete this position? This action cannot be undone.${
+          deleteError ? `\n\nError: ${deleteError}` : ""
+        }`}
         confirmText={isDeleting ? "Deleting..." : "Delete Position"}
         cancelText="Cancel"
         confirmButtonClass="danger"
@@ -699,4 +807,4 @@ export function PositionManagement() {
       />
     </div>
   );
-} 
+}

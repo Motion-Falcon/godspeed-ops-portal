@@ -5,11 +5,11 @@ import {
   getClients, 
   ClientData, 
   deleteClient
-} from '../services/api/client';
-import { AppHeader } from '../components/AppHeader';
-import { ConfirmationModal } from '../components/ConfirmationModal';
-import '../styles/components/CommonTable.css';
-import '../styles/pages/ClientManagement.css';
+} from '../../services/api/client';
+import { AppHeader } from '../../components/AppHeader';
+import { ConfirmationModal } from '../../components/ConfirmationModal';
+import '../../styles/components/CommonTable.css';
+import '../../styles/pages/ClientManagement.css';
 
 interface ExtendedClientData extends ClientData {
   company_name?: string;
@@ -509,12 +509,48 @@ export function ClientManagement() {
                   </tr>
                 </thead>
                 <tbody>
-                {loading ? (
-                  <tr>
-                    <td colSpan={9} className="loading-cell">
-                      <div className="loading">Loading clients...</div>
-                    </td>
-                  </tr>
+                {!loading ? (
+                  // Skeleton loading rows
+                  <>
+                    {Array.from({ length: pagination.limit || 10 }, (_, index) => (
+                      <tr key={`skeleton-${index}`} className="skeleton-row">
+                        {/* Regular columns - using generic skeleton-text */}
+                        <td className="skeleton-cell">
+                          <div className="skeleton-text"></div>
+                        </td>
+                        <td className="skeleton-cell">
+                          <div className="skeleton-text"></div>
+                        </td>
+                        <td className="skeleton-cell">
+                          <div className="skeleton-text"></div>
+                        </td>
+                        <td className="skeleton-cell">
+                          <div className="skeleton-text"></div>
+                        </td>
+                        <td className="skeleton-cell">
+                          <div className="skeleton-text"></div>
+                        </td>
+                        <td className="skeleton-cell">
+                          <div className="skeleton-text"></div>
+                        </td>
+                        <td className="skeleton-cell">
+                          <div className="skeleton-text"></div>
+                        </td>
+                        <td className="skeleton-cell">
+                          <div className="skeleton-text"></div>
+                        </td>
+                        
+                        {/* Actions skeleton - needs special styling */}
+                        <td className="skeleton-cell">
+                          <div className="skeleton-actions">
+                            <div className="skeleton-icon skeleton-action-btn"></div>
+                            <div className="skeleton-icon skeleton-action-btn"></div>
+                            <div className="skeleton-icon skeleton-action-btn"></div>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </>
                 ) : clients.length === 0 ? (
                   <tr>
                     <td colSpan={9} className="empty-state-cell">

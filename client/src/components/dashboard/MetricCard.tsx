@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { TrendingUp, TrendingDown, Minus, BarChart3 } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, BarChart3, AlertCircle, RotateCcw } from "lucide-react";
 import MetricChart from "./MetricChart";
 import {
   processMetricData,
@@ -20,6 +20,8 @@ export interface MetricCardProps {
   onClick?: (metric: MetricData) => void;
   onToggleGraph?: (show: boolean) => void;
   loading?: boolean;
+  error?: string | null;
+  onRetry?: () => void;
   className?: string;
 }
 
@@ -33,6 +35,8 @@ export const MetricCard: React.FC<MetricCardProps> = ({
   onClick,
   onToggleGraph,
   loading = false,
+  error,
+  onRetry,
   className = "",
 }) => {
   const [graphVisible, setGraphVisible] = useState(showGraph);
@@ -92,12 +96,84 @@ export const MetricCard: React.FC<MetricCardProps> = ({
     );
   };
 
+  if (error) {
+    return (
+      <div className={`metric-card-error size-${size} ${className}`}>
+        {/* Header */}
+        <div className="metric-card-header">
+          <div className="metric-card-info">
+            <div className="metric-card-icon error-icon">
+              <AlertCircle size={20} />
+            </div>
+            <div className="metric-card-title-section">
+              <h3 className={`metric-card-title size-${size}`}>{data.label || 'Metric'}</h3>
+              <p className={`metric-card-description size-${size}`}>
+                Failed to load data
+              </p>
+            </div>
+          </div>
+          {onRetry && (
+            <div className="metric-card-controls">
+              <button
+                className="retry-button"
+                onClick={onRetry}
+                title="Retry loading data"
+              >
+                <RotateCcw size={16} />
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Error Message */}
+        <div className="metric-card-content">
+          <div className="metric-card-error-content">
+            <div className="metric-card-error-message">
+              <p className={`metric-card-error-text size-${size}`}>
+                {error}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className={`metric-card-skeleton size-${size} ${className}`}>
-        <div className="skeleton-text skeleton-title"></div>
-        <div className="skeleton-text skeleton-value"></div>
-        <div className="skeleton-text skeleton-description"></div>
+        {/* Header Skeleton */}
+        <div className="metric-card-header">
+          <div className="metric-card-info">
+            <div className="skeleton-icon metric-card-icon-skeleton"></div>
+            <div className="metric-card-title-section">
+              <div className="skeleton-text skeleton-title"></div>
+              <div className="skeleton-text skeleton-description"></div>
+            </div>
+          </div>
+          <div className="metric-card-controls">
+            <div className="skeleton-icon skeleton-chart-toggle"></div>
+          </div>
+        </div>
+
+        {/* Content Skeleton */}
+        <div className="metric-card-content">
+          <div className="metric-card-value-section">
+            {/* Growth Section Skeleton */}
+            <div className="metric-card-growth-section">
+              <div className="skeleton-growth-badge">
+                <div className="skeleton-icon skeleton-growth-icon"></div>
+                <div className="skeleton-text skeleton-growth-text"></div>
+              </div>
+              <div className="skeleton-text skeleton-period-comparison"></div>
+            </div>
+
+            {/* Main Value Skeleton */}
+            <div className="metric-card-value-container">
+              <div className="skeleton-text skeleton-value"></div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }

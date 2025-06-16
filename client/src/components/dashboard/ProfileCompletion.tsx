@@ -6,9 +6,9 @@ import {
   MapPin,
   Award,
 } from "lucide-react";
-import { supabase } from "../../../lib/supabaseClient";
-import { getJobseekerProfile } from "../../../services/api/jobseeker";
-import { JobSeekerDetailedProfile } from "../../../types/jobseeker";
+import { supabase } from "../../lib/supabaseClient";
+import { getJobseekerProfile } from "../../services/api/jobseeker";
+import { JobSeekerDetailedProfile } from "../../types/jobseeker";
 import "./ProfileCompletion.css";
 
 interface ProfileCompletionSection {

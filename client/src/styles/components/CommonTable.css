@@ -533,4 +533,129 @@
     height: 32px;
     font-size: calc(var(--font-size-small) - 1px);
   }
+}
+
+/* ==================== SKELETON LOADING STYLES ==================== */
+
+/* Base skeleton styles */
+.skeleton-text {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+  border-radius: 4px;
+  height: 14px;
+  margin: 2px 0;
+}
+
+.skeleton-icon {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+  border-radius: 50%;
+}
+.skeleton-badge.skeleton-status-text {
+  width: 60%;
+}
+.skeleton-badge {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+  border-radius: 15px;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Table skeleton specific styles */
+.skeleton-cell {
+  padding: var(--spacing-1) var(--spacing-2);
+  vertical-align: middle;
+  border-bottom: 1px solid var(--border);
+}
+
+.skeleton-cell:first-child {
+  padding-left: var(--spacing-4);
+}
+
+/* Random width variations for skeleton elements */
+.skeleton-row:nth-child(10n+1) .skeleton-text { width: 75%; }
+.skeleton-row:nth-child(10n+2) .skeleton-text { width: 85%; }
+.skeleton-row:nth-child(10n+3) .skeleton-text { width: 60%; }
+.skeleton-row:nth-child(10n+4) .skeleton-text { width: 70%; }
+.skeleton-row:nth-child(10n+5) .skeleton-text { width: 90%; }
+.skeleton-row:nth-child(10n+6) .skeleton-text { width: 65%; }
+.skeleton-row:nth-child(10n+7) .skeleton-text { width: 80%; }
+.skeleton-row:nth-child(10n+8) .skeleton-text { width: 55%; }
+.skeleton-row:nth-child(10n+9) .skeleton-text { width: 75%; }
+.skeleton-row:nth-child(10n+10) .skeleton-text { width: 85%; }
+/* Status skeleton with icon */
+.skeleton-status {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.skeleton-status-icon {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
+.skeleton-status-text {
+  height: 14px;
+  width: 60px;
+}
+
+/* Action buttons skeleton */
+.skeleton-actions {
+  display: flex;
+  gap: var(--spacing-3);
+  justify-content: flex-end;
+  padding: var(--spacing-1) 0;
+}
+
+.skeleton-action-btn {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+/* Dark mode skeleton adjustments */
+.dark .skeleton-text,
+.dark .skeleton-icon,
+.dark .skeleton-badge {
+  background: linear-gradient(90deg, #333 25%, #444 50%, #333 75%);
+  background-size: 200% 100%;
+}
+
+/* Responsive adjustments for skeleton */
+@media (max-width: 768px) {
+  .skeleton-text {
+    height: 12px;
+  }
+  
+  .skeleton-actions {
+    gap: var(--spacing-2);
+  }
+  
+  .skeleton-action-btn {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+@media (max-width: 576px) {
+  .skeleton-cell {
+    padding: var(--spacing-2) var(--spacing-1);
+  }
+  
+  .skeleton-text {
+    height: 10px;
+  }
 } 

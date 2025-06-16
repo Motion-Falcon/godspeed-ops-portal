@@ -1,28 +1,31 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { 
-  Plus, 
+import React, { useState, useEffect, useCallback } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
+import {
+  Plus,
   Trash2,
-  Eye, 
-  Search, 
-  CheckCircle, 
-  XCircle, 
+  Eye,
+  Search,
+  CheckCircle,
+  XCircle,
   Clock,
   FileText,
   Pencil,
   AlertTriangle,
   ChevronLeft,
-  ChevronRight
-} from 'lucide-react';
-import { getJobseekerProfiles, deleteJobseeker } from '../services/api/jobseeker';
-import { JobSeekerProfile } from '../types/jobseeker';
-import { ConfirmationModal } from '../components/ConfirmationModal';
-import { AppHeader } from '../components/AppHeader';
-import { EXPERIENCE_LEVELS } from '../constants/formOptions';
-import '../styles/pages/JobSeekerManagement.css';
-import '../styles/components/header.css';
-import '../styles/components/CommonTable.css';
+  ChevronRight,
+} from "lucide-react";
+import {
+  getJobseekerProfiles,
+  deleteJobseeker,
+} from "../services/api/jobseeker";
+import { JobSeekerProfile } from "../types/jobseeker";
+import { ConfirmationModal } from "../components/ConfirmationModal";
+import { AppHeader } from "../components/AppHeader";
+import { EXPERIENCE_LEVELS } from "../constants/formOptions";
+import "../styles/pages/JobSeekerManagement.css";
+import "../styles/components/header.css";
+import "../styles/components/CommonTable.css";
 
 // Extend the JobSeekerProfile type to include documents
 interface ExtendedJobSeekerProfile extends JobSeekerProfile {
@@ -66,24 +69,26 @@ export function JobSeekerManagement() {
     totalFiltered: 0,
     totalPages: 0,
     hasNextPage: false,
-    hasPrevPage: false
+    hasPrevPage: false,
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [nameFilter, setNameFilter] = useState('');
-  const [emailFilter, setEmailFilter] = useState('');
-  const [phoneFilter, setPhoneFilter] = useState('');
-  const [locationFilter, setLocationFilter] = useState('');
-  const [employeeIdFilter, setEmployeeIdFilter] = useState('');
-  const [experienceFilter, setExperienceFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [dateFilter, setDateFilter] = useState<string>('');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [nameFilter, setNameFilter] = useState("");
+  const [emailFilter, setEmailFilter] = useState("");
+  const [phoneFilter, setPhoneFilter] = useState("");
+  const [locationFilter, setLocationFilter] = useState("");
+  const [employeeIdFilter, setEmployeeIdFilter] = useState("");
+  const [experienceFilter, setExperienceFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [dateFilter, setDateFilter] = useState<string>("");
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [profileToDelete, setProfileToDelete] = useState<ExtendedJobSeekerProfile | null>(null);
-  const [profileToEdit, setProfileToEdit] = useState<ExtendedJobSeekerProfile | null>(null);
+  const [profileToDelete, setProfileToDelete] =
+    useState<ExtendedJobSeekerProfile | null>(null);
+  const [profileToEdit, setProfileToEdit] =
+    useState<ExtendedJobSeekerProfile | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const { isAdmin, isRecruiter } = useAuth();
@@ -94,10 +99,10 @@ export function JobSeekerManagement() {
   useEffect(() => {
     if (location.state?.message) {
       setMessage(location.state.message);
-      
+
       // Clear the message from location state to prevent showing it again on refresh
       window.history.replaceState({}, document.title);
-      
+
       // Auto-dismiss the success message after 5 seconds
       setTimeout(() => {
         setMessage(null);
@@ -108,9 +113,9 @@ export function JobSeekerManagement() {
   // Simplified fetch function - all filtering is now server-side
   const fetchProfiles = useCallback(async () => {
     try {
-      console.log('Fetching jobseeker profiles...');
+      console.log("Fetching jobseeker profiles...");
       setLoading(true);
-      
+
       const data = await getJobseekerProfiles({
         page: pagination.page,
         limit: pagination.limit,
@@ -122,45 +127,48 @@ export function JobSeekerManagement() {
         employeeIdFilter,
         experienceFilter,
         statusFilter,
-        dateFilter
+        dateFilter,
       });
-      console.log('Fetched profiles:', data);
+      console.log("Fetched profiles:", data);
       setProfiles(data.profiles);
       setPagination(data.pagination);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An error occurred while fetching profiles';
-      console.error('Error fetching profiles:', err);
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : "An error occurred while fetching profiles";
+      console.error("Error fetching profiles:", err);
       setError(errorMessage);
-      
+
       // Show more detailed error info in console
       if (err instanceof Error) {
-        console.error('Error details:', {
+        console.error("Error details:", {
           message: err.message,
           stack: err.stack,
-          name: err.name
+          name: err.name,
         });
       }
     } finally {
       setLoading(false);
     }
   }, [
-    pagination.page, 
-    pagination.limit, 
-    searchTerm, 
+    pagination.page,
+    pagination.limit,
+    searchTerm,
     nameFilter,
     emailFilter,
     phoneFilter,
     locationFilter,
     employeeIdFilter,
-    experienceFilter, 
-    statusFilter, 
-    dateFilter
+    experienceFilter,
+    statusFilter,
+    dateFilter,
   ]);
 
   useEffect(() => {
     // Check if user has access
     if (!isAdmin && !isRecruiter) {
-      navigate('/dashboard');
+      navigate("/dashboard");
       return;
     }
 
@@ -170,31 +178,33 @@ export function JobSeekerManagement() {
   // Reset to first page when filters change
   useEffect(() => {
     if (pagination.page !== 1) {
-      setPagination(prev => ({ ...prev, page: 1 }));
+      setPagination((prev) => ({ ...prev, page: 1 }));
     }
   }, [
-    searchTerm, 
+    searchTerm,
     nameFilter,
     emailFilter,
     phoneFilter,
     locationFilter,
     employeeIdFilter,
-    experienceFilter, 
-    statusFilter, 
-    dateFilter
+    experienceFilter,
+    statusFilter,
+    dateFilter,
   ]);
 
   // Check if a profile needs attention based on AI validation
-  const profileNeedsAttention = (profile: ExtendedJobSeekerProfile): boolean => {
+  const profileNeedsAttention = (
+    profile: ExtendedJobSeekerProfile
+  ): boolean => {
     // Only check for pending profiles
-    if (profile.status !== 'pending') return false;
-    
+    if (profile.status !== "pending") return false;
+
     // Check if profile has documents with AI validation issues
     if (!profile.documents || profile.documents.length === 0) return false;
-    
-    return profile.documents.some(doc => {
+
+    return profile.documents.some((doc) => {
       if (!doc.aiValidation) return false;
-      
+
       return (
         doc.aiValidation.is_tampered === true ||
         doc.aiValidation.is_blurry === true ||
@@ -206,39 +216,41 @@ export function JobSeekerManagement() {
 
   // Get the effective status for display (including the 'need attention' status)
   const getEffectiveStatus = (profile: ExtendedJobSeekerProfile): string => {
-    if (profile.status === 'pending' && profileNeedsAttention(profile)) {
-      return 'need-attention';
+    if (profile.status === "pending" && profileNeedsAttention(profile)) {
+      return "need-attention";
     }
     return profile.status;
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'verified':
+      case "verified":
         return <CheckCircle className="status-icon verified" size={12} />;
-      case 'rejected':
+      case "rejected":
         return <XCircle className="status-icon rejected" size={12} />;
-      case 'pending':
+      case "pending":
         return <Clock className="status-icon pending" size={12} />;
-      case 'need-attention':
-      case 'needs attention':
-        return <AlertTriangle className="status-icon need-attention" size={12} />;
+      case "need-attention":
+      case "needs attention":
+        return (
+          <AlertTriangle className="status-icon need-attention" size={12} />
+        );
       default:
         return <Clock className="status-icon pending" size={12} />;
     }
   };
 
   const formatStatusLabel = (status: string): string => {
-    if (status === 'need-attention') return 'Needs Attention';
+    if (status === "need-attention") return "Needs Attention";
     return status.charAt(0).toUpperCase() + status.slice(1);
   };
 
   const handleCreateProfile = () => {
-    navigate('/profile/create', { state: { isNewForm: true } });
+    navigate("/profile/create", { state: { isNewForm: true } });
   };
 
   const handleViewDrafts = () => {
-    navigate('/jobseekers/drafts');
+    navigate("/jobseekers/drafts");
   };
 
   const handleViewProfile = (id: string) => {
@@ -253,7 +265,7 @@ export function JobSeekerManagement() {
 
   const handleConfirmEdit = () => {
     if (!profileToEdit) return;
-    
+
     // Navigate to edit page with the profile ID
     navigate(`/jobseekers/${profileToEdit.id}/edit`);
     setIsEditModalOpen(false);
@@ -273,24 +285,25 @@ export function JobSeekerManagement() {
 
   const handleConfirmDelete = async () => {
     if (!profileToDelete) return;
-    
+
     try {
       setIsDeleting(true);
       setDeleteError(null);
-      
+
       await deleteJobseeker(profileToDelete.id);
-      
+
       // Refresh the profiles list
       await fetchProfiles();
-      
+
       // Close the modal
       setIsDeleteModalOpen(false);
       setProfileToDelete(null);
       setMessage("Profile deleted successfully");
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to delete profile';
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to delete profile";
       setDeleteError(errorMessage);
-      console.error('Error deleting profile:', err);
+      console.error("Error deleting profile:", err);
     } finally {
       setIsDeleting(false);
     }
@@ -304,25 +317,25 @@ export function JobSeekerManagement() {
 
   // Helper to reset all filters
   const resetFilters = () => {
-    setSearchTerm('');
-    setNameFilter('');
-    setEmailFilter('');
-    setPhoneFilter('');
-    setLocationFilter('');
-    setEmployeeIdFilter('');
-    setExperienceFilter('all');
-    setStatusFilter('all');
-    setDateFilter('');
-    setPagination(prev => ({ ...prev, page: 1 }));
+    setSearchTerm("");
+    setNameFilter("");
+    setEmailFilter("");
+    setPhoneFilter("");
+    setLocationFilter("");
+    setEmployeeIdFilter("");
+    setExperienceFilter("all");
+    setStatusFilter("all");
+    setDateFilter("");
+    setPagination((prev) => ({ ...prev, page: 1 }));
   };
 
   // Pagination handlers
   const handlePageChange = (newPage: number) => {
-    setPagination(prev => ({ ...prev, page: newPage }));
+    setPagination((prev) => ({ ...prev, page: newPage }));
   };
 
   const handleLimitChange = (newLimit: number) => {
-    setPagination(prev => ({ ...prev, limit: newLimit, page: 1 }));
+    setPagination((prev) => ({ ...prev, limit: newLimit, page: 1 }));
   };
 
   const handlePreviousPage = () => {
@@ -343,15 +356,15 @@ export function JobSeekerManagement() {
         title="Job Seeker Management"
         actions={
           <>
-            <button 
-              className="button secondary button-icon" 
+            <button
+              className="button secondary button-icon"
               onClick={handleViewDrafts}
             >
               <FileText size={16} />
               <span>View Drafts</span>
             </button>
-            <button 
-              className="button primary button-icon" 
+            <button
+              className="button primary button-icon"
               onClick={handleCreateProfile}
             >
               <Plus size={16} />
@@ -360,16 +373,12 @@ export function JobSeekerManagement() {
           </>
         }
         statusMessage={message || error}
-        statusType={error ? 'error' : 'success'}
+        statusType={error ? "error" : "success"}
       />
 
       <div className="content-container">
-        {error && (
-          <div className="error-message">{error}</div>
-        )}
-        {message && (
-          <div className="success-message">{message}</div>
-        )}
+        {error && <div className="error-message">{error}</div>}
+        {message && <div className="success-message">{message}</div>}
 
         <div className="card">
           <div className="card-header">
@@ -384,8 +393,8 @@ export function JobSeekerManagement() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="search-input"
                 />
-                <button 
-                  className="button secondary button-icon reset-filters-btn" 
+                <button
+                  className="button secondary button-icon reset-filters-btn"
                   onClick={resetFilters}
                 >
                   <span>Reset Filters</span>
@@ -398,15 +407,26 @@ export function JobSeekerManagement() {
           <div className="pagination-controls top">
             <div className="pagination-info">
               <span className="pagination-text">
-                Showing {Math.min((pagination.page - 1) * pagination.limit + 1, pagination.total)} to{' '}
-                {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} entries
+                Showing{" "}
+                {Math.min(
+                  (pagination.page - 1) * pagination.limit + 1,
+                  pagination.total
+                )}{" "}
+                to{" "}
+                {Math.min(pagination.page * pagination.limit, pagination.total)}{" "}
+                of {pagination.total} entries
                 {pagination.totalFiltered !== pagination.total && (
-                  <span className="filtered-info"> (filtered from {pagination.total} total entries)</span>
+                  <span className="filtered-info">
+                    {" "}
+                    (filtered from {pagination.total} total entries)
+                  </span>
                 )}
               </span>
             </div>
             <div className="pagination-size-selector">
-              <label htmlFor="pageSize" className="page-size-label">Show:</label>
+              <label htmlFor="pageSize" className="page-size-label">
+                Show:
+              </label>
               <select
                 id="pageSize"
                 value={pagination.limit}
@@ -422,7 +442,11 @@ export function JobSeekerManagement() {
             </div>
           </div>
 
-          <div className="table-container">
+          <div
+            className={`table-container ${
+              loading ? "skeleton-table-container" : ""
+            }`}
+          >
             <table className="common-table">
               <thead>
                 <tr>
@@ -528,7 +552,9 @@ export function JobSeekerManagement() {
                           <option value="pending">Pending</option>
                           <option value="verified">Verified</option>
                           <option value="rejected">Rejected</option>
-                          <option value="need-attention">Needs Attention</option>
+                          <option value="need-attention">
+                            Needs Attention
+                          </option>
                         </select>
                       </div>
                     </div>
@@ -554,7 +580,9 @@ export function JobSeekerManagement() {
                       <div className="column-title">Actions</div>
                       <div className="column-search">
                         <div className="actions-info">
-                          <span className="actions-help-text">View • Edit • Delete</span>
+                          <span className="actions-help-text">
+                            View • Edit • Delete
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -563,11 +591,54 @@ export function JobSeekerManagement() {
               </thead>
               <tbody>
                 {loading ? (
-                  <tr>
-                    <td colSpan={9} className="loading-cell">
-                      <div className="loading">Loading profiles...</div>
-                    </td>
-                  </tr>
+                  // Skeleton loading rows
+                  <>
+                    {Array.from({ length: pagination.limit }, (_, index) => (
+                      <tr key={`skeleton-${index}`} className="skeleton-row">
+                        {/* Regular columns - using generic skeleton-text */}
+                        <td className="skeleton-cell">
+                          <div className="skeleton-text"></div>
+                        </td>
+                        <td className="skeleton-cell">
+                          <div className="skeleton-text"></div>
+                        </td>
+                        <td className="skeleton-cell">
+                          <div className="skeleton-text"></div>
+                        </td>
+                        <td className="skeleton-cell">
+                          <div className="skeleton-text"></div>
+                        </td>
+                        <td className="skeleton-cell">
+                          <div className="skeleton-text"></div>
+                        </td>
+                        <td className="skeleton-cell">
+                          <div className="skeleton-text"></div>
+                        </td>
+
+                        {/* Status skeleton - needs special styling */}
+                        <td className="skeleton-cell">
+                          <div className="skeleton-status">
+                            <div className="skeleton-icon skeleton-status-icon"></div>
+                            <div className="skeleton-badge skeleton-status-text"></div>
+                          </div>
+                        </td>
+
+                        {/* Date skeleton */}
+                        <td className="skeleton-cell">
+                          <div className="skeleton-text"></div>
+                        </td>
+
+                        {/* Actions skeleton - needs special styling */}
+                        <td className="skeleton-cell">
+                          <div className="skeleton-actions">
+                            <div className="skeleton-icon skeleton-action-btn"></div>
+                            <div className="skeleton-icon skeleton-action-btn"></div>
+                            <div className="skeleton-icon skeleton-action-btn"></div>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </>
                 ) : profiles.length === 0 ? (
                   <tr>
                     <td colSpan={9} className="empty-state-cell">
@@ -577,16 +648,24 @@ export function JobSeekerManagement() {
                     </td>
                   </tr>
                 ) : (
-                  profiles.map(profile => {
+                  profiles.map((profile) => {
                     const effectiveStatus = getEffectiveStatus(profile);
                     return (
                       <tr key={profile.id}>
                         <td className="name-cell">{profile.name}</td>
                         <td className="email-cell">{profile.email}</td>
-                        <td className="phone-cell">{profile.phoneNumber || 'N/A'}</td>
-                        <td className="location-cell">{profile.location || 'N/A'}</td>
-                        <td className="employee-id-cell">{profile.employeeId || 'N/A'}</td>
-                        <td className="experience-cell">{profile.experience}</td>
+                        <td className="phone-cell">
+                          {profile.phoneNumber || "N/A"}
+                        </td>
+                        <td className="location-cell">
+                          {profile.location || "N/A"}
+                        </td>
+                        <td className="employee-id-cell">
+                          {profile.employeeId || "N/A"}
+                        </td>
+                        <td className="experience-cell">
+                          {profile.experience}
+                        </td>
                         <td className="status-cell">
                           <span className="status-display">
                             {getStatusIcon(effectiveStatus)}
@@ -600,7 +679,7 @@ export function JobSeekerManagement() {
                         </td>
                         <td className="actions-cell">
                           <div className="action-buttons">
-                            <button 
+                            <button
                               className="action-icon-btn view-btn"
                               onClick={() => handleViewProfile(profile.id)}
                               title="View profile details"
@@ -608,7 +687,7 @@ export function JobSeekerManagement() {
                             >
                               <Eye size={16} />
                             </button>
-                            <button 
+                            <button
                               className="action-icon-btn edit-btn"
                               onClick={() => handleEditClick(profile)}
                               title="Edit this profile"
@@ -616,7 +695,7 @@ export function JobSeekerManagement() {
                             >
                               <Pencil size={16} />
                             </button>
-                            <button 
+                            <button
                               className="action-icon-btn delete-btn"
                               onClick={() => handleDeleteClick(profile)}
                               title="Delete this profile"
@@ -653,32 +732,37 @@ export function JobSeekerManagement() {
                   <ChevronLeft size={16} />
                   <span>Previous</span>
                 </button>
-                
+
                 {/* Page numbers */}
                 <div className="page-numbers">
-                  {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
-                    let pageNum;
-                    if (pagination.totalPages <= 5) {
-                      pageNum = i + 1;
-                    } else if (pagination.page <= 3) {
-                      pageNum = i + 1;
-                    } else if (pagination.page >= pagination.totalPages - 2) {
-                      pageNum = pagination.totalPages - 4 + i;
-                    } else {
-                      pageNum = pagination.page - 2 + i;
+                  {Array.from(
+                    { length: Math.min(5, pagination.totalPages) },
+                    (_, i) => {
+                      let pageNum;
+                      if (pagination.totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (pagination.page <= 3) {
+                        pageNum = i + 1;
+                      } else if (pagination.page >= pagination.totalPages - 2) {
+                        pageNum = pagination.totalPages - 4 + i;
+                      } else {
+                        pageNum = pagination.page - 2 + i;
+                      }
+
+                      return (
+                        <button
+                          key={pageNum}
+                          className={`page-number-btn ${
+                            pageNum === pagination.page ? "active" : ""
+                          }`}
+                          onClick={() => handlePageChange(pageNum)}
+                          aria-label={`Go to page ${pageNum}`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
                     }
-                    
-                    return (
-                      <button
-                        key={pageNum}
-                        className={`page-number-btn ${pageNum === pagination.page ? 'active' : ''}`}
-                        onClick={() => handlePageChange(pageNum)}
-                        aria-label={`Go to page ${pageNum}`}
-                      >
-                        {pageNum}
-                      </button>
-                    );
-                  })}
+                  )}
                 </div>
 
                 <button
@@ -701,7 +785,11 @@ export function JobSeekerManagement() {
       <ConfirmationModal
         isOpen={isDeleteModalOpen}
         title="Delete Profile"
-        message={`Are you sure you want to delete the profile for ${profileToDelete?.name}? This action cannot be undone.${deleteError ? `\n\nError: ${deleteError}` : ''}`}
+        message={`Are you sure you want to delete the profile for ${
+          profileToDelete?.name
+        }? This action cannot be undone.${
+          deleteError ? `\n\nError: ${deleteError}` : ""
+        }`}
         confirmText={isDeleting ? "Deleting..." : "Delete Profile"}
         cancelText="Cancel"
         confirmButtonClass="danger"
@@ -722,4 +810,4 @@ export function JobSeekerManagement() {
       />
     </div>
   );
-} 
+}
