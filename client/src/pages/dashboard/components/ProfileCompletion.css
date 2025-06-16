@@ -1,0 +1,416 @@
+/* Profile Completion Component Styles */
+.card.profile-completion-card {
+  max-width: 500px;
+  width: 100%;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0px 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.profile-completion-card .card-header {
+  padding: 0 var(--spacing-2) var(--spacing-4) var(--spacing-2);
+  border-bottom: 1px solid var(--border);
+  width: 100%;
+  margin: 0;
+}
+
+.card-header-content {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.card-title-section {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+.card-title-section .icon {
+  color: #4CAF50;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.profile-completion-card .card-title {
+  font-size: var(--font-size-subheader);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text);
+  margin: 0;
+}
+
+.profile-completion-content {
+  padding: var(--spacing-4) 0;
+}
+
+/* Overall Progress Section */
+.overall-progress {
+  margin-bottom: var(--spacing-8);
+  animation: slideInLeft 0.6s ease-out 0.2s both;
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-2);
+}
+
+.progress-label {
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-medium);
+  color: var(--text);
+}
+
+.progress-percentage {
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-bold);
+  color: var(--text);
+  background: linear-gradient(135deg, #9C27B0, #F44336);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 12px;
+  background: var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: var(--spacing-3);
+  position: relative;
+}
+
+.progress-bar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #9C27B0, #F44336);
+  border-radius: 6px;
+  transition: width var(--transition-slow);
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  animation: progressShine 3s infinite;
+}
+
+@keyframes progressShine {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.progress-text {
+  color: var(--text-muted);
+  font-size: var(--font-size-small);
+  margin: 0;
+  text-align: center;
+}
+
+/* Verification Status */
+.verification-status-simple {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: 15px;
+  animation: slideInRight 0.6s ease-out 0.4s both;
+  width: fit-content;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.status-verified {
+  background: #E8F5E9;
+  border: 1px solid #4CAF50;
+}
+
+.status-icon.verified {
+  color: #4CAF50;
+  width: 12px;
+  height: 12px;
+}
+
+.status-text-simple {
+  font-size: 12px;
+  font-weight: var(--font-weight-medium);
+  color: #4CAF50;
+}
+
+.sections-title {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text);
+  margin-bottom: var(--spacing-5);
+}
+
+.sections-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.section-item {
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  transition: all var(--transition-normal);
+  position: relative;
+  overflow: visible;
+}
+
+.section-item:hover {
+  transform: translateX(4px);
+}
+
+.section-item:nth-child(1) {
+  animation: slideInUp 0.5s ease-out 0.8s both;
+}
+
+.section-item:nth-child(2) {
+  animation: slideInUp 0.5s ease-out 0.9s both;
+}
+
+.section-item:nth-child(3) {
+  animation: slideInUp 0.5s ease-out 1s both;
+}
+
+.section-item:nth-child(4) {
+  animation: slideInUp 0.5s ease-out 1.1s both;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-2);
+}
+
+.section-info {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+/* Different colors for each section icon */
+.section-item:nth-child(1) .section-info svg {
+  color: #2196F3; /* Blue for Personal Info */
+}
+
+.section-item:nth-child(2) .section-info svg {
+  color: #FF9800; /* Orange for Address */
+}
+
+.section-item:nth-child(3) .section-info svg {
+  color: #9C27B0; /* Purple for Qualifications */
+}
+
+.section-item:nth-child(4) .section-info svg {
+  color: #F44336; /* Red for Documents */
+}
+
+.section-name {
+  font-weight: var(--font-weight-medium);
+  color: var(--text);
+  font-size: var(--font-size-small);
+}
+
+.section-stats {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+.section-completion {
+  font-size: var(--font-size-small);
+  color: var(--text-muted);
+  font-weight: var(--font-weight-medium);
+}
+
+.section-percentage {
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-bold);
+  color: var(--text);
+  min-width: 35px;
+  text-align: right;
+}
+
+/* Section Progress Bars with Different Colors */
+.section-progress-bar {
+  width: 100%;
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+}
+
+.section-progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width var(--transition-slow);
+  position: relative;
+  overflow: hidden;
+  filter: brightness(0.9);
+}
+
+/* Different gradient colors for each section */
+.section-item:nth-child(1) .section-progress-fill {
+  background: linear-gradient(90deg, #2196F3, #42A5F5, #64B5F6); /* Blue gradient */
+}
+
+.section-item:nth-child(2) .section-progress-fill {
+  background: linear-gradient(90deg, #FF9800, #FFB74D, #FFCC02); /* Orange gradient */
+}
+
+.section-item:nth-child(3) .section-progress-fill {
+  background: linear-gradient(90deg, #9C27B0, #BA68C8, #CE93D8); /* Purple gradient */
+}
+
+.section-item:nth-child(4) .section-progress-fill {
+  background: linear-gradient(90deg, #F44336, #EF5350, #E57373); /* Red gradient */
+}
+
+.section-progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  animation: sectionShine 2.5s infinite;
+}
+
+@keyframes sectionShine {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .card-header {
+    padding: var(--spacing-2);
+  }
+  
+  .profile-completion-content {
+    padding: var(--spacing-4);
+  }
+  
+  .card-header-content {
+    flex-direction: column;
+    gap: var(--spacing-3);
+    align-items: flex-start;
+  }
+  
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-2);
+  }
+  
+  .section-stats {
+    align-self: flex-end;
+  }
+}
+
+@media (max-width: 480px) {
+  .card-title {
+    font-size: var(--font-size-body);
+  }
+  
+  .sections-list {
+    gap: var(--spacing-3);
+  }
+}
+
+/* Dark mode specific adjustments */
+.dark .verification-status-simple.status-verified {
+  background: rgba(76, 175, 80, 0.1);
+  border-color: #4CAF50;
+}
+
+.dark .progress-bar {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.dark .section-progress-bar {
+  background: rgba(255, 255, 255, 0.1);
+}

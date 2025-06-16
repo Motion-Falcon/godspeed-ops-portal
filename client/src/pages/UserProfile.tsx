@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { AppHeader } from '../components/AppHeader';
+import { useNavigate } from 'react-router-dom';
 import { 
   User, 
   Mail, 
   Shield, 
   UserCheck, 
   Clock, 
-  Key
+  Key,
+  KeyRound
 } from 'lucide-react';
 import '../styles/pages/userProfile.css';
 
@@ -26,6 +28,7 @@ interface UserDetails {
 
 export function UserProfile() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [userDetails, setUserDetails] = useState<UserDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -227,7 +230,24 @@ export function UserProfile() {
                 </div>
               </div>
             </div>
+          {/* Account Actions */}
+          <div className="account-actions">
+            <h3 className="section-title">
+              <Key size={18} />
+              Account Actions
+            </h3>
+            <div className="action-buttons">
+              <button
+                className="button outline"
+                onClick={() => navigate("/reset-password")}
+              >
+                <KeyRound size={16} className="icon" />
+                Reset Password
+              </button>
+            </div>
           </div>
+          </div>
+
         </div>
       </div>
     </div>

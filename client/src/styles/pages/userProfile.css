@@ -282,6 +282,15 @@
   color: var(--text-muted);
 }
 
+.account-actions .action-buttons {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.account-actions .action-buttons button{
+  width: fit-content;
+}
+
 /* --------------------------------------------------------------------------
    Animations
    -------------------------------------------------------------------------- */

@@ -9,7 +9,6 @@ import { ProfileVerificationPending } from './pages/ProfileVerificationPending';
 import { ProfileVerificationRejected } from './pages/ProfileVerificationRejected';
 import { ForgotPassword } from './pages/ForgotPassword';
 import { ResetPassword } from './pages/ResetPassword';
-import { Dashboard } from './pages/Dashboard';
 import { ProfileCreate } from './pages/JobseekerProfile/ProfileCreate';
 import { ProfileAccountCreated } from './pages/JobseekerProfile/ProfileAccountCreated';
 import { ProfileSuccess } from './pages/JobseekerProfile/ProfileSuccess';
@@ -38,6 +37,7 @@ import { JobSeekerPositions } from './pages/JobSeekerPositions';
 import { TimesheetManagement } from './pages/TimesheetManagement/TimesheetManagement';
 import './styles/main.css';
 import { TwoFactorAuth } from './pages/TwoFactorAuth';
+import { Dashboard } from './pages/dashboard/Dashboard';
 
 function App() {
   return (

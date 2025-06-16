@@ -1,20 +1,18 @@
 import { useState, useEffect } from "react";
 import {
   User as UserIcon,
-  UserCheck,
-  Shield,
   Activity,
   BookOpen,
-  Users,
-  Building,
-  Briefcase,
-  KeyRound
+  Briefcase
 } from "lucide-react";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "../../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { checkApiHealth } from "../services/api/auth";
-import { AppHeader } from "../components/AppHeader";
-import "../styles/components/header.css";
+import { checkApiHealth } from "../../services/api/auth";
+import { supabase } from "../../lib/supabaseClient";
+import "../../styles/components/header.css";
+import "../../styles/pages/Dashboard.css";
+import { AppHeader } from "../../components/AppHeader";
+import { ProfileCompletion } from "./components/ProfileCompletion";
 
 interface UserData {
   id: string;
@@ -23,10 +21,11 @@ interface UserData {
   userType: string;
   createdAt: string;
   lastSignIn: string;
+  profileId?: string;
 }
 
-export function RecruiterDashboard() {
-  const { user, isAdmin, isRecruiter } = useAuth();
+export function JobSeekerDashboard() {
+  const { user } = useAuth();
   const [healthStatus, setHealthStatus] = useState<string | null>(null);
   const navigate = useNavigate();
   const [userData, setUserData] = useState<UserData | null>(null);
@@ -37,14 +36,34 @@ export function RecruiterDashboard() {
         id: user.id,
         email: user.email,
         name: user.user_metadata?.name || "User",
-        userType: user.user_metadata?.user_type || "recruiter",
+        userType: user.user_metadata?.user_type || "jobseeker",
         createdAt: new Date(user.created_at).toLocaleDateString(),
         lastSignIn: user.last_sign_in_at
           ? new Date(user.last_sign_in_at).toLocaleString()
           : "First login",
       });
+
+      fetchUserProfileId(user.id);
     }
   }, [user]);
+
+  const fetchUserProfileId = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("jobseeker_profiles")
+        .select("id")
+        .eq("user_id", userId)
+        .single();
+
+      if (error) {
+        console.error("Error fetching profile ID:", error);
+      } else if (data) {
+        setUserData((prev) => (prev ? { ...prev, profileId: data.id } : null));
+      }
+    } catch (err) {
+      console.error("Error fetching profile ID:", err);
+    }
+  };
 
   const handleCheckHealth = async () => {
     setHealthStatus("Checking...");
@@ -72,25 +91,11 @@ export function RecruiterDashboard() {
     );
   }
 
-  // Get the role icon based on user type
-  const getRoleIcon = () => {
-    if (isAdmin) return <Shield className="role-icon admin" />;
-    if (isRecruiter) return <UserCheck className="role-icon recruiter" />;
-    return <UserIcon className="role-icon jobseeker" />;
-  };
-
-  // Get role name for display
-  const getRoleName = () => {
-    if (isAdmin) return "Administrator";
-    if (isRecruiter) return "Recruiter";
-    return "Job Seeker";
-  };
-
   return (
     <div className="dashboard-container">
       {/* Header */}
       <AppHeader 
-        title="Recruiter Portal"
+        title="Job Seeker Portal" 
       />
 
       {/* Main content */}
@@ -98,15 +103,18 @@ export function RecruiterDashboard() {
         <div className="dashboard-heading">
           <h1 className="dashboard-title">Welcome, {userData.name}!</h1>
           <div className="user-role-badge">
-            {getRoleIcon()}
-            <span>{getRoleName()}</span>
+            <UserIcon className="role-icon jobseeker" />
+            <span>Job Seeker</span>
           </div>
         </div>
         <p className="dashboard-subtitle">
-          Manage talent acquisition with Godspeed's lightning-fast recruiting tools
+          Discover opportunities at Godspeed pace with our intelligent job matching system
         </p>
 
         <div className="dashboard-grid">
+          {/* Profile Completion Status Card */}
+          <ProfileCompletion userId={userData.id} />
+
           <div className="card">
             <div className="card-header">
               <UserIcon className="icon" size={20} />
@@ -122,11 +130,6 @@ export function RecruiterDashboard() {
               <div className="data-item">
                 <p className="data-label">Email Address</p>
                 <p className="data-value">{userData.email}</p>
-              </div>
-
-              <div className="data-item">
-                <p className="data-label">User Role</p>
-                <p className="data-value">{getRoleName()}</p>
               </div>
 
               <div className="data-item">
@@ -150,29 +153,16 @@ export function RecruiterDashboard() {
 
           <div className="card">
             <h2 className="card-title" style={{ marginBottom: "1rem" }}>
-              Recruiter Actions
+              Job Seeker Actions
             </h2>
             <div className="action-list">
+              {/* My Positions button */}
               <button
                 className="button outline"
-                onClick={() => navigate("/jobseeker-management")}
-              >
-                <Users size={16} className="icon" />
-                Job Seeker Management
-              </button>
-              <button
-                className="button outline"
-                onClick={() => navigate("/client-management")}
-              >
-                <Building size={16} className="icon" />
-                Manage Clients
-              </button>
-              <button
-                className="button outline"
-                onClick={() => navigate("/position-management")}
+                onClick={() => navigate("/my-positions")}
               >
                 <Briefcase size={16} className="icon" />
-                Position Management
+                My Positions
               </button>
 
               {/* Training Modules button */}
@@ -184,15 +174,6 @@ export function RecruiterDashboard() {
                 Training & Development
               </button>
 
-              {/* Reset Password button */}
-              <button
-                className="button outline"
-                onClick={() => navigate("/reset-password")}
-              >
-                <KeyRound size={16} className="icon" />
-                Reset Password
-              </button>
-
               {/* Health check button */}
               <button className="button outline" onClick={handleCheckHealth}>
                 <Activity size={16} className="icon" />
@@ -202,15 +183,6 @@ export function RecruiterDashboard() {
               {healthStatus && (
                 <div className="health-status">{healthStatus}</div>
               )}
-
-              {/* Admin-only actions */}
-              {isAdmin && (
-                <button className="button outline admin-action">
-                  <Shield size={16} className="icon" />
-                  Admin Dashboard
-                </button>
-              )}
-
             </div>
           </div>
         </div>

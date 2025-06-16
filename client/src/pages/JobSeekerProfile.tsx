@@ -723,7 +723,7 @@ export function JobSeekerProfile() {
         title="Job Seeker Profile"
         actions={
           <button className="button" onClick={() => navigate("/jobseeker-management")}>
-            <ArrowLeft size={16} />
+            <ArrowLeft size={16} className="icon" />
             <span>{isJobSeeker ? "Back to Dashboard" : "Back to Job Seeker Management"}</span>
           </button>
         }
@@ -772,7 +772,7 @@ export function JobSeekerProfile() {
                     aria-label="Update status"
                   >
                     <span className="status-text">Update Status</span>{" "}
-                    <RefreshCw size={16} />
+                    <RefreshCw size={16} className="icon"/>
                   </button>
                 </div>
               )}
@@ -783,7 +783,7 @@ export function JobSeekerProfile() {
                   title="Edit this profile"
                   aria-label="Edit profile"
                 >
-                  <Pencil size={20} />
+                  <Pencil size={20} className="icon"/>
                 </button>
                 {(isAdmin || isRecruiter) && (
                   <button
@@ -792,7 +792,7 @@ export function JobSeekerProfile() {
                     title="Delete this profile"
                     aria-label="Delete profile"
                   >
-                    <Trash2 size={20} />
+                    <Trash2 size={20} className="icon"/>
                   </button>
                 )}
               </div>
@@ -882,7 +882,7 @@ export function JobSeekerProfile() {
                               }
                               className="button primary"
                             >
-                              <Eye size={16} /> Preview
+                              <Eye size={16} className="icon"/> Preview
                             </button>
                             <button
                               onClick={() =>
@@ -902,7 +902,7 @@ export function JobSeekerProfile() {
                                 </>
                               ) : (
                                 <>
-                                  <Download size={16} /> Download
+                                  <Download size={16} className="icon"/> Download
                                 </>
                               )}
                             </button>
@@ -1269,7 +1269,7 @@ export function JobSeekerProfile() {
               className="close-button"
               onClick={() => setIsStatusModalOpen(false)}
             >
-              <XCircle size={20} />
+              <XCircle size={20} className="icon"/>
             </button>
           </div>
           <div className="modal-body">
