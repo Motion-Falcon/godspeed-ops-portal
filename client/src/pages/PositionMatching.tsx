@@ -131,7 +131,7 @@ export function PositionMatching() {
       setPositionsLoading(true);
       const data = await getPositions({
         page: 1,
-        limit: 1000, // Get all positions for dropdown
+        limit: 100000000, // Get all positions for dropdown
         search: "",
       });
       setPositions(data.positions);

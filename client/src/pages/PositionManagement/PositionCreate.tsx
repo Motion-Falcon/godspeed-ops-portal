@@ -21,6 +21,7 @@ import "../../styles/components/form.css";
 import "../../styles/components/header.css";
 import { AppHeader } from "../../components/AppHeader";
 import { CustomDropdown, DropdownOption } from "../../components/CustomDropdown";
+import { JOB_TITLES, EMPLOYMENT_TERMS, EMPLOYMENT_TYPES, POSITION_CATEGORIES, EXPERIENCE_LEVELS, PAYRATE_TYPES } from "../../constants/formOptions";
 
 // Helper function for date formatting and validation
 const formatDateForInput = (date: Date): string => {
@@ -163,139 +164,11 @@ export function PositionCreate({
   const [minEndDate, setMinEndDate] = useState<string>(getTodayFormatted());
 
   // Job title options
-  const jobTitles = [
-    "310S Mechanic",
-    "Account Clerk",
-    "Accounting Technician",
-    "Accounts Receivable Specialist",
-    "Admin Assistant",
-    "Admin Coordinator / Support",
-    "Administrative Roles (Various)",
-    "Amazon Delivery Associate",
-    "Analyst (AR/AP, Reporting, QA)",
-    "Assembler",
-    "Auditor",
-    "AV Technician",
-    "AZ Driver",
-    "Bartender",
-    "Basketball Coach/Official",
-    "BBQ Station Attendant",
-    "Bilingual Customer Service Representative",
-    "Billing Clerk",
-    "Blaster",
-    "Blender / Blending Operator",
-    "Blow Mold Operator",
-    "Book Department Associate",
-    "Boom DZ Driver",
-    "Bottle Packer",
-    "Business Analyst",
-    "Cabinet Maker",
-    "Car Cleaner / Shuttler",
-    "Car Wash Attendant",
-    "Cargo Handler",
-    "Chef",
-    "Cherry Picker Operator",
-    "Class 1/3/5 Driver",
-    "Cleaner / Janitor / Housekeeper",
-    "CNC Machinist / Operator",
-    "Counterbalance Operator",
-    "Cuber",
-    "Customer Service Representative (CSR)",
-    "Data Entry Clerk",
-    "Daycab Driver",
-    "Decking Labourer",
-    "Dishwasher",
-    "Dispatch Supervisor / Dispatcher",
-    "Dock Worker / Coordinator / Supervisor",
-    "Draftsman / Estimator",
-    "Driver Coordinator / Helper",
-    "DZ Driver",
-    "Engineer (Admin, Project, Process)",
-    "Equipment Operator (F/L, Machine, Line)",
-    "Feeder / Packer",
-    "Filler Operator",
-    "Fitter / Welder",
-    "Foreman",
-    "Forklift Operator",
-    "Front Desk Manager",
-    "G Class Driver",
-    "Garment Sorter / Hanger / Inspector",
-    "Gear Cutter",
-    "General Helper / Labourer",
-    "GL / Driver Helper",
-    "Handler",
-    "Handyman / Technician",
-    "Health and Safety Manager",
-    "Heavy Lifter / Packer",
-    "HR (Coordinator, Support, Generalist)",
-    "Industrial Painter",
-    "Industrial Sewer",
-    "Inspector / Quality Control",
-    "Inventory Clerk / Specialist / Supervisor",
-    "IT Tech Support",
-    "Kitchen Associate",
-    "Landscape Labourer",
-    "Laser Cutter",
-    "Lead Hand / Team Lead",
-    "Licensed Mechanic (Truck/Coach, Millwright)",
-    "Loader / Unloader",
-    "Logistics Coordinator / Associate",
-    "Low Voltage Technician",
-    "Lumper",
-    "Maintenance (Technician, Helper, Millwright)",
-    "Material Handler",
-    "Mig / TIG Welder",
-    "Office Admin / Clerk / Worker",
-    "Operations Support",
-    "Order Picker / Preparer",
-    "Orientation Facilitator",
-    "Package / Parcel Handler",
-    "Palletizer",
-    "Payroll Administrator",
-    "Permanent Position",
-    "Photographer",
-    "Powder Coater Painter",
-    "Press Operator",
-    "Production Associate (Aftn included)",
-    "PSW (Personal Support Worker)",
-    "Purchasing Coordinator",
-    "QA Associate",
-    "Raymond Reach Operator",
-    "Receiver",
-    "Receptionist",
-    "Reimbursements Clerk",
-    "Reno Run Driver",
-    "Retail Associate / Material Handler",
-    "Room Attendant",
-    "Runner",
-    "Sales Associate / Coordinator",
-    "Sanitation Worker (Light / Heavy)",
-    "Sawyer",
-    "Scanner",
-    "Seamstress",
-    "Security",
-    "Server / Service Agent",
-    "Shipper / Receiver",
-    "Shunt Driver",
-    "Skilled Labourer / Trade",
-    "Sorter",
-    "Stacker Operator",
-    "Stamp Operator",
-    "Standby Worker",
-    "Straight Truck Driver",
-    "Subcontractor",
-    "Supervisor",
-    "Table Head",
-    "TBNS (To Be Named Shift)",
-    "Technician",
-    "Tire Installer",
-    "Training Coordinator",
-    "Transportation Associate",
-    "Walkie Rider Operator",
-    "Warehouse Associate / Manager / Supervisor",
-    "Weld Operator / Welder-Fitter",
-    "Yard Cleaner / Coordinator",
-  ];
+  const titleOptions: DropdownOption[] = JOB_TITLES.map((title) => ({
+    id: title,
+    value: title,
+    label: title,
+  }));
 
   // Get ID from URL params or location state
   const idFromParams = params.id;
@@ -581,13 +454,6 @@ export function PositionCreate({
       // Don't show error to user as this is automatic
     }
   };
-
-  // Create title options for CustomDropdown
-  const titleOptions: DropdownOption[] = jobTitles.map((title) => ({
-    id: title,
-    value: title,
-    label: title,
-  }));
 
   // Handle title selection for CustomDropdown
   const handleTitleSelect = (option: DropdownOption) => {
@@ -1133,9 +999,11 @@ export function PositionCreate({
                       {...methods.register("employmentTerm")}
                     >
                       <option value="">Select employment term</option>
-                      <option value="Permanent">Permanent</option>
-                      <option value="Contract">Contract</option>
-                      <option value="Temporary">Temporary</option>
+                      {EMPLOYMENT_TERMS.map((term) => (
+                        <option key={term} value={term}>
+                          {term}
+                        </option>
+                      ))}
                     </select>
                     {methods.formState.errors.employmentTerm && (
                       <p className="form-error">
@@ -1158,9 +1026,11 @@ export function PositionCreate({
                       {...methods.register("employmentType")}
                     >
                       <option value="">Select employment type</option>
-                      <option value="Full-time">Full-time</option>
-                      <option value="Part-time">Part-time</option>
-                      <option value="Casual">Casual</option>
+                      {EMPLOYMENT_TYPES.map((type) => (
+                        <option key={type} value={type}>
+                          {type}
+                        </option>
+                      ))}
                     </select>
                     {methods.formState.errors.employmentType && (
                       <p className="form-error">
@@ -1183,13 +1053,11 @@ export function PositionCreate({
                       {...methods.register("positionCategory")}
                     >
                       <option value="">Select position category</option>
-                      <option value="Driver">Driver</option>
-                      <option value="Warehouse">Warehouse</option>
-                      <option value="Office">Office</option>
-                      <option value="Management">Management</option>
-                      <option value="Sales">Sales</option>
-                      <option value="Technician">Technician</option>
-                      <option value="Other">Other</option>
+                      {POSITION_CATEGORIES.map((category) => (
+                        <option key={category} value={category}>
+                          {category}
+                        </option>
+                      ))}
                     </select>
                     {methods.formState.errors.positionCategory && (
                       <p className="form-error">
@@ -1212,11 +1080,11 @@ export function PositionCreate({
                       {...methods.register("experience")}
                     >
                       <option value="">Select experience level</option>
-                      <option value="Entry Level">Entry Level</option>
-                      <option value="1-2 Years">1-2 Years</option>
-                      <option value="3-5 Years">3-5 Years</option>
-                      <option value="5-10 Years">5-10 Years</option>
-                      <option value="10+ Years">10+ Years</option>
+                      {EXPERIENCE_LEVELS.map((level) => (
+                        <option key={level} value={level}>
+                          {level}
+                        </option>
+                      ))}
                     </select>
                     {methods.formState.errors.experience && (
                       <p className="form-error">
@@ -1366,31 +1234,6 @@ export function PositionCreate({
                 <div className="form-row">
                   <div className="form-group">
                     <label
-                      htmlFor="payrateType"
-                      className="form-label"
-                      data-required="*"
-                    >
-                      Payrate Type
-                    </label>
-                    <select
-                      id="payrateType"
-                      className="form-input"
-                      {...methods.register("payrateType")}
-                    >
-                      <option value="">Select payrate type</option>
-                      <option value="Hourly">Hourly</option>
-                      <option value="Salary">Salary</option>
-                      <option value="Commission">Commission</option>
-                    </select>
-                    {methods.formState.errors.payrateType && (
-                      <p className="form-error">
-                        {methods.formState.errors.payrateType.message}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="form-group">
-                    <label
                       htmlFor="numberOfPositions"
                       className="form-label"
                       data-required="*"
@@ -1409,6 +1252,32 @@ export function PositionCreate({
                     {methods.formState.errors.numberOfPositions && (
                       <p className="form-error">
                         {methods.formState.errors.numberOfPositions.message}
+                      </p>
+                    )}
+                  </div>
+                  <div className="form-group">
+                    <label
+                      htmlFor="payrateType"
+                      className="form-label"
+                      data-required="*"
+                    >
+                      Payrate Type
+                    </label>
+                    <select
+                      id="payrateType"
+                      className="form-input"
+                      {...methods.register("payrateType")}
+                    >
+                      <option value="">Select payrate type</option>
+                      {PAYRATE_TYPES.map((type) => (
+                        <option key={type} value={type}>
+                          {type}
+                        </option>
+                      ))}
+                    </select>
+                    {methods.formState.errors.payrateType && (
+                      <p className="form-error">
+                        {methods.formState.errors.payrateType.message}
                       </p>
                     )}
                   </div>
@@ -1433,22 +1302,6 @@ export function PositionCreate({
                       </p>
                     )}
                   </div>
-                </div>
-
-                <div className="form-row">
-                  <div className="form-group">
-                    <label htmlFor="markup" className="form-label">
-                      Markup
-                    </label>
-                    <input
-                      type="text"
-                      id="markup"
-                      className="form-input"
-                      placeholder="Enter markup"
-                      {...methods.register("markup")}
-                    />
-                  </div>
-
                   <div className="form-group">
                     <label
                       htmlFor="billRate"
@@ -1469,6 +1322,18 @@ export function PositionCreate({
                         {methods.formState.errors.billRate.message}
                       </p>
                     )}
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="markup" className="form-label">
+                      Markup
+                    </label>
+                    <input
+                      type="text"
+                      id="markup"
+                      className="form-input"
+                      placeholder="Enter markup"
+                      {...methods.register("markup")}
+                    />
                   </div>
                 </div>
               </div>

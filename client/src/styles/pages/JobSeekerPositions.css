@@ -267,6 +267,84 @@
   overflow: hidden;
 }
 
+/* Status-based card styling */
+.jsp-position-card[data-status="current"] {
+  border-left: 4px solid #4CAF50; /* Green */
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.03) 0%, var(--card) 50%);
+  box-shadow: 0 4px 16px rgba(76, 175, 80, 0.1), var(--card-shadow);
+}
+
+.jsp-position-card[data-status="past"] {
+  border-left: 4px solid #757575; /* Gray */
+  background: linear-gradient(135deg, rgba(117, 117, 117, 0.03) 0%, var(--card) 50%);
+  box-shadow: 0 4px 16px rgba(117, 117, 117, 0.1), var(--card-shadow);
+  opacity: 0.85;
+}
+
+.jsp-position-card[data-status="future"] {
+  border-left: 4px solid #FF9800; /* Orange */
+  background: linear-gradient(135deg, rgba(255, 152, 0, 0.03) 0%, var(--card) 50%);
+  box-shadow: 0 4px 16px rgba(255, 152, 0, 0.1), var(--card-shadow);
+}
+
+/* Status-specific top accent bars */
+.jsp-position-card[data-status="current"]::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, #4CAF50, #66BB6A); /* Green gradient */
+  transform: scaleX(0);
+  transition: transform var(--transition-normal);
+}
+
+.jsp-position-card[data-status="past"]::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, #757575, #9E9E9E); /* Gray gradient */
+  transform: scaleX(0);
+  transition: transform var(--transition-normal);
+}
+
+.jsp-position-card[data-status="future"]::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, #FF9800, #FFB74D); /* Orange gradient */
+  transform: scaleX(0);
+  transition: transform var(--transition-normal);
+}
+
+/* Enhanced hover effects for different statuses */
+.jsp-position-card[data-status="current"]:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px rgba(76, 175, 80, 0.15), 0 8px 24px rgba(0, 0, 0, 0.1);
+  border-left-color: #388E3C; /* Darker green on hover */
+}
+
+.jsp-position-card[data-status="past"]:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 16px 32px rgba(117, 117, 117, 0.15), 0 6px 20px rgba(0, 0, 0, 0.1);
+  border-left-color: #616161; /* Darker gray on hover */
+  opacity: 1;
+}
+
+.jsp-position-card[data-status="future"]:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px rgba(255, 152, 0, 0.15), 0 8px 24px rgba(0, 0, 0, 0.1);
+  border-left-color: #F57C00; /* Darker orange on hover */
+}
+
+/* Fallback for cards without data-status attribute */
 .jsp-position-card::before {
   content: '';
   position: absolute;
@@ -286,6 +364,22 @@
 .jsp-position-card:hover {
   transform: translateY(-8px);
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+/* Dark mode adjustments for status-specific styling */
+.dark .jsp-position-card[data-status="current"] {
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.05) 0%, var(--card) 50%);
+  box-shadow: 0 4px 16px rgba(76, 175, 80, 0.15), var(--card-shadow);
+}
+
+.dark .jsp-position-card[data-status="past"] {
+  background: linear-gradient(135deg, rgba(117, 117, 117, 0.05) 0%, var(--card) 50%);
+  box-shadow: 0 4px 16px rgba(117, 117, 117, 0.15), var(--card-shadow);
+}
+
+.dark .jsp-position-card[data-status="future"] {
+  background: linear-gradient(135deg, rgba(255, 152, 0, 0.05) 0%, var(--card) 50%);
+  box-shadow: 0 4px 16px rgba(255, 152, 0, 0.15), var(--card-shadow);
 }
 
 .dark .jsp-position-card:hover {
@@ -691,5 +785,207 @@
   }
   75% {
     transform: translateX(5px);
+  }
+}
+
+/* ==================== PAGINATION STYLES ==================== */
+
+/* Pagination Controls */
+.jsp-pagination-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-4) 0;
+  border-top: 1px solid var(--border);
+  margin-top: var(--spacing-4);
+}
+
+.jsp-pagination-controls.top {
+  border-top: none;
+  border-bottom: 1px solid var(--border);
+  margin-top: 0;
+  margin-bottom: var(--spacing-4);
+}
+
+.jsp-pagination-info {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.jsp-pagination-text {
+  color: var(--text-muted);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-medium);
+}
+
+.jsp-pagination-size-selector {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.jsp-page-size-label {
+  color: var(--text-muted);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+}
+
+.jsp-page-size-select {
+  padding: var(--spacing-2) var(--spacing-3);
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius);
+  background: var(--input-bg);
+  color: var(--text);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  outline: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right var(--spacing-2) center;
+  background-size: 12px;
+  padding-right: calc(var(--spacing-3) + 16px);
+  min-width: 60px;
+}
+
+.jsp-page-size-select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.2);
+}
+
+.dark .jsp-page-size-select:focus {
+  box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.2);
+}
+
+.jsp-pagination-buttons {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.jsp-pagination-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-3);
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius);
+  background: var(--card);
+  color: var(--text);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  outline: none;
+}
+
+.jsp-pagination-btn:hover:not(:disabled) {
+  background: var(--primary);
+  color: var(--card);
+  border-color: var(--primary);
+  transform: translateY(-1px);
+}
+
+.jsp-pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: var(--border);
+  color: var(--text-muted);
+  border-color: var(--border);
+}
+
+.jsp-page-numbers {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
+.jsp-page-number-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius);
+  background: var(--card);
+  color: var(--text);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  outline: none;
+}
+
+.jsp-page-number-btn:hover {
+  background: var(--border);
+  border-color: var(--text-muted);
+  transform: translateY(-1px);
+}
+
+.jsp-page-number-btn.active {
+  background: var(--primary);
+  color: var(--card);
+  border-color: var(--primary);
+  font-weight: var(--font-weight-bold);
+}
+
+.jsp-page-number-btn.active:hover {
+  background: var(--primary);
+  color: var(--card);
+  transform: none;
+}
+
+/* Responsive adjustments for pagination */
+@media (max-width: 768px) {
+  .jsp-pagination-controls {
+    flex-direction: column;
+    gap: var(--spacing-3);
+    align-items: stretch;
+  }
+
+  .jsp-pagination-controls.top {
+    align-items: flex-start;
+  }
+
+  .jsp-pagination-size-selector {
+    justify-content: center;
+  }
+
+  .jsp-pagination-buttons {
+    justify-content: center;
+  }
+
+  .jsp-page-numbers {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .jsp-pagination-btn span {
+    display: none;
+  }
+
+  .jsp-pagination-text {
+    text-align: center;
+  }
+}
+
+@media (max-width: 576px) {
+  .jsp-pagination-controls {
+    padding: var(--spacing-3) 0;
+  }
+
+  .jsp-page-numbers {
+    gap: var(--spacing-1);
+  }
+
+  .jsp-page-number-btn {
+    width: 32px;
+    height: 32px;
+    font-size: calc(var(--font-size-small) - 1px);
   }
 } 

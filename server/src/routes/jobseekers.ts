@@ -1709,7 +1709,7 @@ router.get('/position-candidates/:positionId', isAdminOrRecruiter, async (req, r
       .rpc('find_matching_candidates', {
         p_position_id: positionId,
         p_filters: filters,
-        p_limit: 100000 // Large limit to get all candidates, then paginate in-memory
+        p_limit: 10000000 // Large limit to get all candidates, then paginate in-memory
       });
     if (candidatesError) {
       console.error('Error calling get_position_candidates function:', candidatesError);

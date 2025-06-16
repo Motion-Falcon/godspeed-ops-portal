@@ -2189,9 +2189,9 @@ router.get(
 );
 
 /**
- * Get position assignments for a specific candidate
+ * Get all position assignments for a specific candidate with advanced filtering
  * GET /api/positions/candidate/:candidateId/assignments
- * @access Private (Admin, Recruiter, Jobseeker)
+ * @access Private (Admin, Recruiter, JobSeeker - limited access for jobseekers)
  */
 router.get(
   "/candidate/:candidateId/assignments",
@@ -2205,13 +2205,19 @@ router.get(
         limit = "10",
         status = "",
         startDate = "",
-        endDate = ""
+        endDate = "",
+        search = "",
+        employmentType = "",
+        positionCategory = "",
       } = req.query as {
         page?: string;
         limit?: string;
         status?: string;
         startDate?: string;
         endDate?: string;
+        search?: string;
+        employmentType?: string;
+        positionCategory?: string;
       };
 
       const pageNum = parseInt(page);
@@ -2288,7 +2294,7 @@ router.get(
         `)
         .eq("candidate_id", candidateId);
 
-      // Apply filters
+      // Apply assignment-level filters
       if (status && status !== "all") {
         baseQuery = baseQuery.eq("status", status);
       }
@@ -2301,13 +2307,13 @@ router.get(
         baseQuery = baseQuery.lte("end_date", endDate);
       }
 
-      // Get total count for pagination
+      // Get total count for pagination (before position filters)
       let countQuery = supabase
         .from("position_candidate_assignments")
         .select("*", { count: "exact", head: true })
         .eq("candidate_id", candidateId);
 
-      // Apply same filters to count query
+      // Apply same assignment-level filters to count query
       if (status && status !== "all") {
         countQuery = countQuery.eq("status", status);
       }
@@ -2358,7 +2364,7 @@ router.get(
       }
 
       // Transform the response to match frontend expectations
-      const formattedAssignments = assignments.map((assignment: any) => {
+      let formattedAssignments = assignments.map((assignment: any) => {
         const position = assignment.positions;
         
         // Convert assignment fields from snake_case to camelCase
@@ -2399,33 +2405,61 @@ router.get(
         return formattedAssignment;
       });
 
+      // Apply position-level filters (client-side on server for now since we need to join data)
+      if (search && search.trim()) {
+        const searchTerm = search.trim().toLowerCase();
+        formattedAssignments = formattedAssignments.filter(assignment => {
+          const pos = assignment.position;
+          if (!pos) return false;
+          
+          return (
+            pos.title?.toLowerCase().includes(searchTerm) ||
+            pos.clientName?.toLowerCase().includes(searchTerm) ||
+            pos.city?.toLowerCase().includes(searchTerm) ||
+            pos.province?.toLowerCase().includes(searchTerm) ||
+            pos.positionCode?.toLowerCase().includes(searchTerm)
+          );
+        });
+      }
+
+      if (employmentType && employmentType !== "all") {
+        formattedAssignments = formattedAssignments.filter(assignment => {
+          const pos = assignment.position;
+          if (!pos) return false;
+
+          if (employmentType === "Full-Time") return pos.employmentType === "Full-time";
+          if (employmentType === "Part-Time") return pos.employmentType === "Part-time";
+          if (employmentType === "Contract") return pos.employmentTerm === "Contract";
+          return true;
+        });
+      }
+
+      if (positionCategory && positionCategory !== "all") {
+        formattedAssignments = formattedAssignments.filter(assignment => {
+          const pos = assignment.position;
+          if (!pos) return false;
+
+          if (positionCategory === "AZ") return pos.positionCategory === "Driver" && pos.title?.includes("AZ");
+          if (positionCategory === "DZ") return pos.positionCategory === "Driver" && pos.title?.includes("DZ");
+          if (positionCategory === "Admin") return pos.positionCategory === "Office";
+          if (positionCategory === "General Labour") return pos.positionCategory === "Other";
+          if (positionCategory === "Warehouse") return pos.positionCategory === "Warehouse";
+          return pos.positionCategory === positionCategory;
+        });
+      }
+
       // Calculate pagination metadata
       const totalPages = Math.ceil((totalCount || 0) / limitNum);
       const hasNextPage = pageNum < totalPages;
       const hasPrevPage = pageNum > 1;
 
-      // Build candidate response with conditional compensation fields
-      const candidateResponse = {
-        id: candidate.id,
-        firstName: candidate.first_name,
-        lastName: candidate.last_name,
-        email: candidate.email,
-        ...(includeCompensation && compensationData && {
-          payrateType: compensationData.payrate_type,
-          billRate: compensationData.bill_rate,
-          payRate: compensationData.pay_rate,
-          paymentMethod: compensationData.payment_method,
-          hstGst: compensationData.hst_gst,
-          cashDeduction: compensationData.cash_deduction,
-          overtimeEnabled: compensationData.overtime_enabled,
-          overtimeHours: compensationData.overtime_hours,
-          overtimeBillRate: compensationData.overtime_bill_rate,
-          overtimePayRate: compensationData.overtime_pay_rate
-        })
-      };
-
-      return res.json({
-        candidate: candidateResponse,
+      res.json({
+        candidate: {
+          id: candidate.id,
+          firstName: candidate.first_name,
+          lastName: candidate.last_name,
+          email: candidate.email
+        },
         assignments: formattedAssignments,
         pagination: {
           page: pageNum,
@@ -2438,7 +2472,9 @@ router.get(
       });
     } catch (error) {
       console.error("Unexpected error fetching candidate assignments:", error);
-      return res.status(500).json({ error: "An unexpected error occurred" });
+      res
+        .status(500)
+        .json({ error: "An unexpected error occurred while fetching candidate assignments" });
     }
   }
 );

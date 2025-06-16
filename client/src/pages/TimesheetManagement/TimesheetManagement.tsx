@@ -179,7 +179,7 @@ export function TimesheetManagement() {
   const fetchJobseekers = async () => {
     try {
       setJobseekerLoading(true);
-      const response = await getJobseekerProfiles({ limit: 1000 }); // Get all jobseekers
+      const response = await getJobseekerProfiles({ limit: 100000000 }); // Get all jobseekers
       setJobseekers(response.profiles);
     } catch (error) {
       console.error("Error fetching jobseekers:", error);
@@ -191,7 +191,7 @@ export function TimesheetManagement() {
   const fetchClients = async () => {
     try {
       setClientLoading(true);
-      const response = await getClients({ limit: 1000 }); // Get all clients
+      const response = await getClients({ limit: 100000000 }); // Get all clients
       const convertedClients = (response.clients as BackendClientData[]).map((client: BackendClientData) => ({
         ...client,
         companyName: client.company_name,
@@ -221,7 +221,7 @@ export function TimesheetManagement() {
   const fetchClientPositions = async (clientId: string) => {
     try {
       setPositionLoading(true);
-      const response = await getClientPositions(clientId, { limit: 1000 });
+      const response = await getClientPositions(clientId, { limit: 10000000 });
       // Transform positions to match our interface
       const transformedPositions: ClientPosition[] = response.positions.map(pos => ({
         id: pos.id!,

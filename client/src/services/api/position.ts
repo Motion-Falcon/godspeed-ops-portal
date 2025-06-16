@@ -545,34 +545,6 @@ export const getPositionCandidates = async (
     throw error;
   }
 };
-export const getAllCandidateAssignments = async (
-  params: CandidatePaginationParams = {}
-): Promise<PaginatedCandidateResponse> => {
-  try {
-    const queryParams = new URLSearchParams();
-
-    if (params.page) queryParams.append("page", params.page.toString());
-    if (params.limit) queryParams.append("limit", params.limit.toString());
-    if (params.search) queryParams.append("search", params.search);
-    if (params.statusFilter)
-      queryParams.append("statusFilter", params.statusFilter);
-    if (params.positionFilter)
-      queryParams.append("positionFilter", params.positionFilter);
-    if (params.dateFilter) queryParams.append("dateFilter", params.dateFilter);
-
-    const response = await api.get(
-      `/api/candidates/assignments?${queryParams.toString()}`
-    );
-    return response.data;
-  } catch (error) {
-    if (axios.isAxiosError(error) && error.response) {
-      throw new Error(
-        error.response.data.error || "Failed to fetch candidate assignments"
-      );
-    }
-    throw error;
-  }
-};
 /**
  * Assign candidate to position
  */
@@ -755,11 +727,12 @@ export interface CandidateAssignmentFilters {
   status?: string;
   startDate?: string;
   endDate?: string;
+  search?: string;
+  employmentType?: string;
+  positionCategory?: string;
 }
 
-/**
- * Get assignments for a specific candidate
- */
+// Get candidate assignments for a specific candidate
 export const getCandidateAssignments = async (
   candidateId: string,
   params: CandidateAssignmentFilters = {}
@@ -767,20 +740,28 @@ export const getCandidateAssignments = async (
   try {
     const queryParams = new URLSearchParams();
 
+    // Add pagination params
     if (params.page) queryParams.append("page", params.page.toString());
     if (params.limit) queryParams.append("limit", params.limit.toString());
-    if (params.status && params.status !== "all")
-      queryParams.append("status", params.status);
+
+    // Add filter params
+    if (params.status) queryParams.append("status", params.status);
     if (params.startDate) queryParams.append("startDate", params.startDate);
     if (params.endDate) queryParams.append("endDate", params.endDate);
+    if (params.search) queryParams.append("search", params.search);
+    if (params.employmentType) queryParams.append("employmentType", params.employmentType);
+    if (params.positionCategory) queryParams.append("positionCategory", params.positionCategory);
 
     const response = await api.get(
       `/api/positions/candidate/${candidateId}/assignments?${queryParams.toString()}`
     );
-
     return response.data;
   } catch (error) {
-    console.error("Error fetching candidate assignments:", error);
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(
+        error.response.data.error || "Failed to fetch candidate assignments"
+      );
+    }
     throw error;
   }
 };

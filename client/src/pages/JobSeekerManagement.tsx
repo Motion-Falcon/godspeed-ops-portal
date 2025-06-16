@@ -19,6 +19,7 @@ import { getJobseekerProfiles, deleteJobseeker } from '../services/api/jobseeker
 import { JobSeekerProfile } from '../types/jobseeker';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import { AppHeader } from '../components/AppHeader';
+import { EXPERIENCE_LEVELS } from '../constants/formOptions';
 import '../styles/pages/JobSeekerManagement.css';
 import '../styles/components/header.css';
 import '../styles/components/CommonTable.css';
@@ -505,13 +506,11 @@ export function JobSeekerManagement() {
                           className="column-filter-select"
                         >
                           <option value="all">All Experience</option>
-                          <option value="0-6 Months">0-6 Months</option>
-                          <option value="6-12 Months">6-12 Months</option>
-                          <option value="1-2 Years">1-2 Years</option>
-                          <option value="2-3 Years">2-3 Years</option>
-                          <option value="3-4 Years">3-4 Years</option>
-                          <option value="4-5 Years">4-5 Years</option>
-                          <option value="5+ Years">5+ Years</option>
+                          {EXPERIENCE_LEVELS.map((level) => (
+                            <option key={level} value={level}>
+                              {level}
+                            </option>
+                          ))}
                         </select>
                       </div>
                     </div>

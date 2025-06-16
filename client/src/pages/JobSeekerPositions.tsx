@@ -5,20 +5,35 @@ import {
   Calendar,
   MapPin,
   Clock,
-  DollarSign,
   Building,
   Briefcase,
   Filter,
   Search,
   X,
-  User,
-  FileText,
   ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { getCandidateAssignments, CandidateAssignment, CandidateAssignmentFilters } from '../services/api/position';
 import { AppHeader } from '../components/AppHeader';
 import '../styles/pages/JobSeekerPositions.css';
 import '../styles/components/header.css';
+import { EMPLOYMENT_TYPES, POSITION_CATEGORIES } from '../constants/formOptions';
+
+/**
+ * FILTER IMPLEMENTATION NOTES:
+ * 
+ * API Supported Filters (server-side):
+ * - page, limit (pagination)
+ * - status (assignment status)
+ * - startDate, endDate (date range filters - not currently used in UI)
+ * - search (title, client, location, position code)
+ * - employmentType (Full-Time, Part-Time, Contract)
+ * - positionCategory (AZ, DZ, Admin, General Labour, Warehouse)
+ * 
+ * This means all data is fetched from the API and filtered in the backend.
+ * For better performance, these filters should be moved to the backend in the future.
+ */
 
 type PositionStatus = 'current' | 'past' | 'future' | 'all';
 
@@ -29,15 +44,33 @@ interface FilterState {
   positionCategory: string;
 }
 
+interface PaginationInfo {
+  currentPage: number;
+  totalPages: number;
+  totalItems: number;
+  itemsPerPage: number;
+}
+
 export function JobSeekerPositions() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [assignments, setAssignments] = useState<CandidateAssignment[]>([]);
-  const [filteredAssignments, setFilteredAssignments] = useState<CandidateAssignment[]>([]);
+  const [allAssignments, setAllAssignments] = useState<CandidateAssignment[]>([]); // For calculating counts
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<PositionStatus>('all');
   const [showFilters, setShowFilters] = useState(false);
+  
+  // Pagination settings - set PAGINATION_ENABLED to true to re-enable pagination
+  const PAGINATION_ENABLED = false;
+  const ITEMS_PER_PAGE = PAGINATION_ENABLED ? 5 : 10000; // High number to get all items when disabled
+  
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    currentPage: 1,
+    totalPages: 1,
+    totalItems: 0,
+    itemsPerPage: ITEMS_PER_PAGE
+  });
   
   const [filters, setFilters] = useState<FilterState>({
     status: 'all',
@@ -58,13 +91,32 @@ export function JobSeekerPositions() {
 
   useEffect(() => {
     if (profileId) {
-      fetchAssignments();
+      fetchAssignments(1);
+      fetchAllAssignmentsForCounts(); // Fetch all assignments for tab counts
     }
   }, [profileId]);
 
   useEffect(() => {
-    filterAndSortAssignments();
-  }, [assignments, activeTab, filters]);
+    if (PAGINATION_ENABLED) {
+      fetchAssignments(pagination.currentPage);
+    }
+  }, [pagination.currentPage]);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    fetchAssignments(1); // Reset to first page when filters change
+  }, [profileId, activeTab, filters.search, filters.employmentType, filters.positionCategory]);
+
+  // Refetch counts when filters change (except activeTab)
+  useEffect(() => {
+    if (profileId) {
+      fetchAllAssignmentsForCounts();
+    }
+  }, [profileId, filters.search, filters.employmentType, filters.positionCategory]);
+
+  // Note: The API only supports basic pagination and status filtering
+  // Search, employment type, and position category filters are handled client-side
+  // This means all data is fetched and filtered in the frontend
 
   const fetchProfileId = async () => {
     try {
@@ -76,26 +128,124 @@ export function JobSeekerPositions() {
     }
   };
 
-  const fetchAssignments = async () => {
+  const fetchAssignments = async (page: number = 1) => {
     if (!profileId) return;
     
     try {
       setLoading(true);
       setError(null);
       
-      const params: CandidateAssignmentFilters = {
-        page: 1,
-        limit: 100, // Get all assignments for now
-        status: filters.status === 'all' ? undefined : filters.status
+      // Map frontend tab status to backend status
+      let backendStatus: string | undefined;
+      if (activeTab === 'current' || activeTab === 'future' || activeTab === 'past') {
+        // For current, future, and past, we need active assignments and will filter by date on frontend
+        backendStatus = 'active';
+      }
+      // For 'all' tab, don't send status filter to get all assignments
+      
+      const filterParams: CandidateAssignmentFilters = {
+        page,
+        limit: ITEMS_PER_PAGE,
+        // Send search filter to API
+        search: filters.search || undefined,
+        // Send employment type filter to API  
+        employmentType: filters.employmentType !== 'all' ? filters.employmentType : undefined,
+        // Send position category filter to API
+        positionCategory: filters.positionCategory !== 'all' ? filters.positionCategory : undefined,
+        // Send mapped backend status
+        status: backendStatus,
       };
 
-      const response = await getCandidateAssignments(profileId, params);
-      setAssignments(response.assignments);
-    } catch (error) {
-      console.error('Error fetching assignments:', error);
-      setError('Failed to load position assignments');
+      const response = await getCandidateAssignments(profileId, filterParams);
+      
+      // Get all assignments and apply universal sorting first
+      const allFilteredAssignments = response.assignments || [];
+      
+      // Sort ALL assignments: active first, then upcoming by start date, then completed last
+      allFilteredAssignments.sort((a, b) => {
+        const statusA = getPositionStatus(a);
+        const statusB = getPositionStatus(b);
+        
+        // Priority order: current -> future -> past
+        const statusPriority = { current: 0, future: 1, past: 2 };
+        
+        if (statusA !== statusB) {
+          const priorityA = statusPriority[statusA as keyof typeof statusPriority] ?? 999;
+          const priorityB = statusPriority[statusB as keyof typeof statusPriority] ?? 999;
+          return priorityA - priorityB;
+        }
+        
+        // Within the same status category, sort by date
+        if (statusA === 'current' || statusA === 'past') {
+          // For current and past, sort by start date (newest first)
+          return new Date(b.startDate).getTime() - new Date(a.startDate).getTime();
+        } else if (statusA === 'future') {
+          // For upcoming, sort by start date (earliest first)
+          return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
+        }
+        
+        return 0;
+      });
+      
+      // Now apply frontend date-based filtering for specific tabs AFTER sorting
+      let finalAssignments = allFilteredAssignments;
+      
+      if (activeTab === 'current') {
+        finalAssignments = allFilteredAssignments.filter(assignment => 
+          getPositionStatus(assignment) === 'current'
+        );
+      } else if (activeTab === 'future') {
+        finalAssignments = allFilteredAssignments.filter(assignment => 
+          getPositionStatus(assignment) === 'future'
+        );
+      } else if (activeTab === 'past') {
+        finalAssignments = allFilteredAssignments.filter(assignment => 
+          getPositionStatus(assignment) === 'past'
+        );
+      }
+      // For 'all' tab, we keep all sorted assignments
+      
+      setAssignments(finalAssignments);
+      
+      // Map API pagination structure to local interface
+      setPagination({
+        currentPage: response.pagination.page,
+        totalPages: response.pagination.totalPages,
+        totalItems: response.pagination.total,
+        itemsPerPage: response.pagination.limit,
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to fetch assignments");
+      setAssignments([]);
+      setPagination({
+        currentPage: 1,
+        totalPages: 1,
+        totalItems: 0,
+        itemsPerPage: ITEMS_PER_PAGE,
+      });
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Fetch all assignments for calculating tab counts
+  const fetchAllAssignmentsForCounts = async () => {
+    if (!profileId) return;
+    
+    try {
+      const filterParams: CandidateAssignmentFilters = {
+        page: 1,
+        limit: 10000000, // Get a large number to capture all assignments for counting
+        search: filters.search || undefined,
+        employmentType: filters.employmentType !== 'all' ? filters.employmentType : undefined,
+        positionCategory: filters.positionCategory !== 'all' ? filters.positionCategory : undefined,
+        // Don't filter by status - we want all assignments for counting
+      };
+
+      const response = await getCandidateAssignments(profileId, filterParams);
+      setAllAssignments(response.assignments || []);
+    } catch (err) {
+      console.error('Error fetching all assignments for counts:', err);
     }
   };
 
@@ -104,72 +254,32 @@ export function JobSeekerPositions() {
     const startDate = new Date(assignment.startDate);
     const endDate = assignment.endDate ? new Date(assignment.endDate) : null;
 
-    if (endDate && today > endDate) {
+    // Compare dates without time components to avoid time-of-day issues
+    const todayDateOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const startDateOnly = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+    const endDateOnly = endDate ? new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate()) : null;
+
+    if (endDateOnly && todayDateOnly > endDateOnly) {
       return 'past';
-    } else if (today >= startDate && (!endDate || today <= endDate)) {
+    } else if (todayDateOnly >= startDateOnly && (!endDateOnly || todayDateOnly <= endDateOnly)) {
       return 'current';
-    } else if (today < startDate) {
+    } else if (todayDateOnly < startDateOnly) {
       return 'future';
     }
     
     return 'current'; // fallback
   };
 
-  const filterAndSortAssignments = () => {
-    let filtered = assignments.filter(assignment => {
-      // Filter by tab status
-      if (activeTab !== 'all') {
-        const positionStatus = getPositionStatus(assignment);
-        if (positionStatus !== activeTab) return false;
-      }
-
-      // Filter by search term
-      if (filters.search) {
-        const searchTerm = filters.search.toLowerCase();
-        const position = assignment.position;
-        if (!position) return false;
-        
-        const searchableText = [
-          position.title,
-          position.clientName,
-          position.positionCode,
-          position.city,
-          position.province
-        ].join(' ').toLowerCase();
-        
-        if (!searchableText.includes(searchTerm)) return false;
-      }
-
-      // Filter by employment type
-      if (filters.employmentType !== 'all' && assignment.position?.employmentType !== filters.employmentType) {
-        return false;
-      }
-
-      // Filter by position category
-      if (filters.positionCategory !== 'all' && assignment.position?.positionCategory !== filters.positionCategory) {
-        return false;
-      }
-
-      return true;
-    });
-
-    // Sort by start date (newest first)
-    filtered = filtered.sort((a, b) => {
-      return new Date(b.startDate).getTime() - new Date(a.startDate).getTime();
-    });
-
-    setFilteredAssignments(filtered);
-  };
-
   const getStatusCounts = () => {
+    // Calculate counts from all assignments for tab display
     const counts = {
-      all: assignments.length,
+      all: allAssignments.length,
       current: 0,
       past: 0,
       future: 0
     };
 
-    assignments.forEach(assignment => {
+    allAssignments.forEach(assignment => {
       const status = getPositionStatus(assignment);
       counts[status]++;
     });
@@ -213,8 +323,9 @@ export function JobSeekerPositions() {
     }
   };
 
-  const handleFilterChange = (key: keyof FilterState, value: string) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+  const handleFilterChange = (key: string, value: string) => {
+    setFilters((prev) => ({ ...prev, [key]: value }));
+    setPagination((prev) => ({ ...prev, currentPage: 1 })); // Reset to first page
   };
 
   const clearFilters = () => {
@@ -228,17 +339,27 @@ export function JobSeekerPositions() {
 
   const counts = getStatusCounts();
 
-  if (loading) {
-    return (
-      <div className="jsp-positions-container">
-        <AppHeader title="My Positions" />
-        <div className="jsp-loading-container">
-          <div className="jsp-loading-spinner"></div>
-          <p>Loading your positions...</p>
-        </div>
-      </div>
-    );
-  }
+  // Pagination handlers
+  const handlePageChange = (page: number) => {
+    setPagination((prev) => ({ ...prev, currentPage: page }));
+  };
+
+  const handleTabChange = (tab: PositionStatus) => {
+    setActiveTab(tab);
+    setPagination((prev) => ({ ...prev, currentPage: 1 })); // Reset to first page
+  };
+
+  const handlePreviousPage = () => {
+    if (pagination.currentPage > 1) {
+      handlePageChange(pagination.currentPage - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (pagination.currentPage < pagination.totalPages) {
+      handlePageChange(pagination.currentPage + 1);
+    }
+  };
 
   if (error) {
     return (
@@ -246,7 +367,7 @@ export function JobSeekerPositions() {
         <AppHeader title="My Positions" />
         <div className="error-container">
           <p className="error-message">{error}</p>
-          <button className="button primary" onClick={fetchAssignments}>
+          <button className="button primary" onClick={() => fetchAssignments(1)}>
             Try Again
           </button>
         </div>
@@ -301,7 +422,10 @@ export function JobSeekerPositions() {
                   {filters.search && (
                     <button 
                       className="jsp-clear-search"
-                      onClick={() => handleFilterChange('search', '')}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleFilterChange('search', '');
+                      }}
                     >
                       <X size={14} />
                     </button>
@@ -316,9 +440,11 @@ export function JobSeekerPositions() {
                   onChange={(e) => handleFilterChange('employmentType', e.target.value)}
                 >
                   <option value="all">All Types</option>
-                  <option value="Full-Time">Full-Time</option>
-                  <option value="Part-Time">Part-Time</option>
-                  <option value="Contract">Contract</option>
+                  {EMPLOYMENT_TYPES.map((type) => (
+                    <option key={type} value={type}>
+                      {type}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -329,11 +455,11 @@ export function JobSeekerPositions() {
                   onChange={(e) => handleFilterChange('positionCategory', e.target.value)}
                 >
                   <option value="all">All Categories</option>
-                  <option value="Admin">Admin</option>
-                  <option value="AZ">AZ Driver</option>
-                  <option value="DZ">DZ Driver</option>
-                  <option value="General Labour">General Labour</option>
-                  <option value="Warehouse">Warehouse</option>
+                  {POSITION_CATEGORIES.map((category) => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -346,144 +472,219 @@ export function JobSeekerPositions() {
           </div>
         )}
 
+        {/* Pagination Controls - Top */}
+        {PAGINATION_ENABLED && !loading && pagination.totalPages > 1 && (
+          <div className="jsp-pagination-controls top">
+            <div className="jsp-pagination-info">
+              <span className="jsp-pagination-text">
+                Showing {Math.min((pagination.currentPage - 1) * pagination.itemsPerPage + 1, pagination.totalItems)} to{' '}
+                {Math.min(pagination.currentPage * pagination.itemsPerPage, pagination.totalItems)} of {pagination.totalItems} entries
+              </span>
+            </div>
+            <div className="jsp-pagination-size-selector">
+              <label htmlFor="pageSize" className="jsp-page-size-label">Show:</label>
+              <select
+                id="pageSize"
+                value={pagination.itemsPerPage}
+                onChange={(e) => handleFilterChange('itemsPerPage', e.target.value)}
+                className="jsp-page-size-select"
+              >
+                <option value={5}>5</option>
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={50}>50</option>
+              </select>
+              <span className="jsp-page-size-label">per page</span>
+            </div>
+          </div>
+        )}
+
         {/* Status Tabs */}
-        <div className="jsp-status-tabs">
-          <button
-            className={`jsp-tab ${activeTab === 'all' ? 'active' : ''}`}
-            onClick={() => setActiveTab('all')}
-          >
-            All Positions
-            <span className="jsp-count">{counts.all}</span>
-          </button>
-          <button
-            className={`jsp-tab ${activeTab === 'current' ? 'active' : ''}`}
-            onClick={() => setActiveTab('current')}
-          >
-            Current
-            <span className="jsp-count">{counts.current}</span>
-          </button>
-          <button
-            className={`jsp-tab ${activeTab === 'future' ? 'active' : ''}`}
-            onClick={() => setActiveTab('future')}
-          >
-            Upcoming
-            <span className="jsp-count">{counts.future}</span>
-          </button>
-          <button
-            className={`jsp-tab ${activeTab === 'past' ? 'active' : ''}`}
-            onClick={() => setActiveTab('past')}
-          >
-            Completed
-            <span className="jsp-count">{counts.past}</span>
-          </button>
-        </div>
+        {loading ? (
+          <div className="jsp-loading-container">
+            <div className="jsp-loading-spinner"></div>
+            <p>Loading status...</p>
+          </div>
+        ) : (
+          <div className="jsp-status-tabs">
+            <button
+              className={`jsp-tab ${activeTab === 'all' ? 'active' : ''}`}
+              onClick={() => handleTabChange('all')}
+            >
+              All Positions
+              <span className="jsp-count">{counts.all}</span>
+            </button>
+            <button
+              className={`jsp-tab ${activeTab === 'current' ? 'active' : ''}`}
+              onClick={() => handleTabChange('current')}
+            >
+              Current
+              <span className="jsp-count">{counts.current}</span>
+            </button>
+            <button
+              className={`jsp-tab ${activeTab === 'future' ? 'active' : ''}`}
+              onClick={() => handleTabChange('future')}
+            >
+              Upcoming
+              <span className="jsp-count">{counts.future}</span>
+            </button>
+            <button
+              className={`jsp-tab ${activeTab === 'past' ? 'active' : ''}`}
+              onClick={() => handleTabChange('past')}
+            >
+              Completed
+              <span className="jsp-count">{counts.past}</span>
+            </button>
+          </div>
+        )}
 
         {/* Positions List */}
-        <div className="jsp-positions-list">
-          {filteredAssignments.length === 0 ? (
-            <div className="jsp-empty-state">
-              <Briefcase size={48} className="jsp-empty-icon" />
-              <h3>No positions found</h3>
-              <p>
-                {activeTab === 'all' 
-                  ? "You don't have any position assignments yet."
-                  : `No ${activeTab} positions found.`
-                }
-              </p>
-            </div>
-          ) : (
-            filteredAssignments.map((assignment) => (
-              <div key={assignment.id} className="jsp-position-card">
-                <div className="jsp-position-header">
-                  <div className="jsp-position-title-section">
-                    <h3 className="jsp-position-title">{assignment.position?.title}</h3>
-                  <div className="jsp-position-code">
-                    {assignment.position?.positionCode}
-                  </div>
-                  </div>
-                    <div className={getStatusBadgeClass(assignment)}>
-                      {getStatusText(assignment)}
-                    </div>
-                </div>
-
-                <div className="jsp-position-details">
-                  <div className="jsp-detail-row">
-                    <Building size={16} />
-                    <span>{assignment.position?.clientName}</span>
-                  </div>
-                  
-                  <div className="jsp-detail-row">
-                    <MapPin size={16} />
-                    <span>
-                      {assignment.position?.city}, {assignment.position?.province}
-                    </span>
-                  </div>
-
-                  <div className="jsp-detail-row">
-                    <Calendar size={16} />
-                    <span>
-                      Assignment: {formatDate(assignment.startDate)}
-                      {assignment.endDate && ` - ${formatDate(assignment.endDate)}`}
-                    </span>
-                  </div>
-
-                  {assignment.position?.startDate && (
-                    <div className="jsp-detail-row">
-                      <Calendar size={16} />
-                      <span>
-                        Position Period: {formatDate(assignment.position.startDate)}
-                        {assignment.position.endDate && ` - ${formatDate(assignment.position.endDate)}`}
-                      </span>
-                    </div>
-                  )}
-
-                  <div className="jsp-detail-row">
-                    <Clock size={16} />
-                    <span>Duration: {formatDuration(assignment.startDate, assignment.endDate)}</span>
-                  </div>
-
-                  {assignment.position?.regularPayRate && (
-                    <div className="jsp-detail-row">
-                      <DollarSign size={16} />
-                      <span>Pay Rate: ${assignment.position.regularPayRate}/hour</span>
-                    </div>
-                  )}
-
-                  <div className="jsp-detail-row">
-                    <User size={16} />
-                    <span>Assignment Status: {assignment.status}</span>
-                  </div>
-
-                  {assignment.position?.numberOfPositions && (
-                    <div className="jsp-detail-row">
-                      <FileText size={16} />
-                      <span>Total Positions Available: {assignment.position.numberOfPositions}</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="jsp-position-meta">
-                  <div className="jsp-meta-tags">
-                    <span className="jsp-tag employment-type">
-                      {assignment.position?.employmentType}
-                    </span>
-                    {assignment.position?.employmentTerm && (
-                      <span className="jsp-tag employment-term">
-                        {assignment.position.employmentTerm}
-                      </span>
-                    )}
-                    <span className="jsp-tag position-category">
-                      {assignment.position?.positionCategory}
-                    </span>
-                    <span className="jsp-tag experience">
-                      {assignment.position?.experience}
-                    </span>
-                  </div>
-                </div>
+        {loading ? (
+          <div className="jsp-loading-container">
+            <div className="jsp-loading-spinner"></div>
+            <p>Loading your positions...</p>
+          </div>
+        ) : (
+          <div className="jsp-positions-list">
+            {assignments.length === 0 ? (
+              <div className="jsp-empty-state">
+                <Briefcase size={48} className="jsp-empty-icon" />
+                <h3>No positions found</h3>
+                <p>
+                  {activeTab === 'all' 
+                    ? "You don't have any position assignments yet."
+                    : `No ${activeTab} positions found.`
+                  }
+                </p>
               </div>
-            ))
-          )}
-        </div>
+            ) : (
+              assignments.map((assignment) => (
+                <div key={assignment.id} className="jsp-position-card" data-status={getPositionStatus(assignment)}>
+                  <div className="jsp-position-header">
+                    <div className="jsp-position-title-section">
+                      <h3 className="jsp-position-title">{assignment.position?.title}</h3>
+                    <div className="jsp-position-code">
+                      {assignment.position?.positionCode}
+                    </div>
+                    </div>
+                      <div className={getStatusBadgeClass(assignment)}>
+                        {getStatusText(assignment)}
+                      </div>
+                  </div>
+
+                  <div className="jsp-position-details">
+                    <div className="jsp-detail-row">
+                      <Building size={16} />
+                      <span>{assignment.position?.clientName}</span>
+                    </div>
+                    
+                    <div className="jsp-detail-row">
+                      <MapPin size={16} />
+                      <span>
+                        {assignment.position?.city}, {assignment.position?.province}
+                      </span>
+                    </div>
+
+                    {assignment.position?.startDate && (
+                      <div className="jsp-detail-row">
+                        <Calendar size={16} />
+                        <span>
+                          Position Period: {formatDate(assignment.position.startDate)}
+                          {assignment.position.endDate && ` - ${formatDate(assignment.position.endDate)}`}
+                        </span>
+                      </div>
+                    )}
+
+                    <div className="jsp-detail-row">
+                      <Clock size={16} />
+                      <span>Duration: {formatDuration(assignment.startDate, assignment.endDate)}</span>
+                    </div>
+                  </div>
+
+                  <div className="jsp-position-meta">
+                    <div className="jsp-meta-tags">
+                      <span className="jsp-tag employment-type">
+                        {assignment.position?.employmentType}
+                      </span>
+                      {assignment.position?.employmentTerm && (
+                        <span className="jsp-tag employment-term">
+                          {assignment.position.employmentTerm}
+                        </span>
+                      )}
+                      <span className="jsp-tag position-category">
+                        {assignment.position?.positionCategory}
+                      </span>
+                      <span className="jsp-tag experience">
+                        {assignment.position?.experience}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
+        {/* Pagination Controls - Bottom */}
+        {PAGINATION_ENABLED && !loading && pagination.totalPages > 1 && (
+          <div className="jsp-pagination-controls bottom">
+            <div className="jsp-pagination-info">
+              <span className="jsp-pagination-text">
+                Page {pagination.currentPage} of {pagination.totalPages}
+              </span>
+            </div>
+            <div className="jsp-pagination-buttons">
+              <button
+                className="jsp-pagination-btn prev"
+                onClick={handlePreviousPage}
+                disabled={pagination.currentPage === 1}
+                title="Previous page"
+                aria-label="Previous page"
+              >
+                <ChevronLeft size={16} />
+                <span>Previous</span>
+              </button>
+              
+              {/* Page numbers */}
+              <div className="jsp-page-numbers">
+                {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                  let pageNum;
+                  if (pagination.totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (pagination.currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (pagination.currentPage >= pagination.totalPages - 2) {
+                    pageNum = pagination.totalPages - 4 + i;
+                  } else {
+                    pageNum = pagination.currentPage - 2 + i;
+                  }
+                  
+                  return (
+                    <button
+                      key={pageNum}
+                      className={`jsp-page-number-btn ${pageNum === pagination.currentPage ? 'active' : ''}`}
+                      onClick={() => handlePageChange(pageNum)}
+                      aria-label={`Go to page ${pageNum}`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <button
+                className="jsp-pagination-btn next"
+                onClick={handleNextPage}
+                disabled={pagination.currentPage === pagination.totalPages}
+                title="Next page"
+                aria-label="Next page"
+              >
+                <span>Next</span>
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

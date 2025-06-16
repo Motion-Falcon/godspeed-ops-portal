@@ -16,6 +16,7 @@ import { AppHeader } from '../components/AppHeader';
 import '../styles/pages/PositionManagement.css';
 import '../styles/components/header.css';
 import '../styles/components/CommonTable.css';
+import { EMPLOYMENT_TERMS, EMPLOYMENT_TYPES, POSITION_CATEGORIES, EXPERIENCE_LEVELS } from "../constants/formOptions";
 
 interface ExtendedPositionData extends PositionData {
   [key: string]: unknown;
@@ -441,9 +442,11 @@ export function PositionManagement() {
                           className="column-filter-select"
                         >
                           <option value="all">All Terms</option>
-                          <option value="Permanent">Permanent</option>
-                          <option value="Contract">Contract</option>
-                          <option value="Temporary">Temporary</option>
+                          {EMPLOYMENT_TERMS.map((term) => (
+                            <option key={term} value={term}>
+                              {term}
+                            </option>
+                          ))}
                         </select>
                       </div>
                     </div>
@@ -458,9 +461,11 @@ export function PositionManagement() {
                           className="column-filter-select"
                         >
                           <option value="all">All Types</option>
-                          <option value="Full-time">Full-time</option>
-                          <option value="Part-time">Part-time</option>
-                          <option value="Casual">Casual</option>
+                          {EMPLOYMENT_TYPES.map((type) => (
+                            <option key={type} value={type}>
+                              {type}
+                            </option>
+                          ))}
                         </select>
                       </div>
                     </div>
@@ -475,13 +480,11 @@ export function PositionManagement() {
                           className="column-filter-select"
                         >
                           <option value="all">All Categories</option>
-                          <option value="Driver">Driver</option>
-                          <option value="Warehouse">Warehouse</option>
-                          <option value="Office">Office</option>
-                          <option value="Management">Management</option>
-                          <option value="Sales">Sales</option>
-                          <option value="Technician">Technician</option>
-                          <option value="Other">Other</option>
+                          {POSITION_CATEGORIES.map((category) => (
+                            <option key={category} value={category}>
+                              {category}
+                            </option>
+                          ))}
                         </select>
                       </div>
                     </div>
@@ -496,11 +499,11 @@ export function PositionManagement() {
                           className="column-filter-select"
                         >
                           <option value="all">All Experience</option>
-                          <option value="Entry Level">Entry Level</option>
-                          <option value="1-2 Years">1-2 Years</option>
-                          <option value="3-5 Years">3-5 Years</option>
-                          <option value="5-10 Years">5-10 Years</option>
-                          <option value="10+ Years">10+ Years</option>
+                          {EXPERIENCE_LEVELS.map((level) => (
+                            <option key={level} value={level}>
+                              {level}
+                            </option>
+                          ))}
                         </select>
                       </div>
                     </div>

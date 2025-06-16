@@ -320,11 +320,3 @@ export const onAuthStateChange = (callback: (user: User | null) => void) => {
 export const isRecruiterEmail = (email: string): boolean => {
   return email.includes('@godspeedxp') || email.includes('@motionfalcon');
 };
-
-// Function to mark 2FA session as complete (can be used to update session state)
-export const complete2FASession = async (userId: string): Promise<void> => {
-  // This is a placeholder for any session updates needed after 2FA
-  // Currently, we just need to complete the login process
-  // Additional session metadata could be stored here if needed
-  console.log(`2FA completed for user: ${userId}`);
-}; 
