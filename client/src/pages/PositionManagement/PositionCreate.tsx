@@ -15,11 +15,12 @@ import {
 } from "../../services/api/position";
 import { getClients, getClient } from "../../services/api/client";
 import { ConfirmationModal } from "../../components/ConfirmationModal";
-import { ArrowLeft, ChevronDown, Save } from "lucide-react";
+import { ArrowLeft, Save } from "lucide-react";
 import "../../styles/pages/PositionManagement.css";
 import "../../styles/components/form.css";
 import "../../styles/components/header.css";
 import { AppHeader } from "../../components/AppHeader";
+import { CustomDropdown, DropdownOption } from "../../components/CustomDropdown";
 
 // Helper function for date formatting and validation
 const formatDateForInput = (date: Date): string => {
@@ -57,20 +58,7 @@ const positionFormSchema = z.object({
   client: z.string().min(1, { message: "Client is required" }),
   title: z.string().min(1, { message: "Title is required" }),
   positionCode: z.string().optional(),
-  startDate: z
-    .string()
-    .min(1, { message: "Start date is required" })
-    .refine(
-      (date) => {
-        if (!date) return false;
-        const today = new Date();
-        today.setHours(0, 0, 0, 0); // Reset time to start of day
-        const selectedDate = new Date(date);
-        selectedDate.setHours(0, 0, 0, 0); // Reset time to start of day
-        return selectedDate >= today;
-      },
-      { message: "Start date must be today or in the future" }
-    ),
+  startDate: z.string().min(1, { message: "Start date is required" }),
   endDate: z.string().min(1, { message: "End date is required" }),
   showOnJobPortal: z.boolean().default(false),
   clientManager: z.string().optional(),
@@ -173,21 +161,6 @@ export function PositionCreate({
     Array<{ id: string; companyName: string }>
   >([]);
   const [minEndDate, setMinEndDate] = useState<string>(getTodayFormatted());
-  const [previousClientValue, setPreviousClientValue] = useState<string>("");
-
-  // Add search/filter states for client dropdown
-  const [clientSearchTerm, setClientSearchTerm] = useState<string>("");
-  const [isClientDropdownOpen, setIsClientDropdownOpen] =
-    useState<boolean>(false);
-  const [filteredClients, setFilteredClients] = useState<
-    Array<{ id: string; companyName: string }>
-  >([]);
-
-  // Add search/filter states for title dropdown
-  const [titleSearchTerm, setTitleSearchTerm] = useState<string>("");
-  const [isTitleDropdownOpen, setIsTitleDropdownOpen] =
-    useState<boolean>(false);
-  const [filteredTitles, setFilteredTitles] = useState<string[]>([]);
 
   // Job title options
   const jobTitles = [
@@ -411,48 +384,6 @@ export function PositionCreate({
     fetchClients();
   }, []);
 
-  // Filter clients based on search term
-  useEffect(() => {
-    if (clientSearchTerm.trim() === "") {
-      setFilteredClients(clients);
-    } else {
-      const filtered = clients.filter((client) =>
-        client.companyName
-          .toLowerCase()
-          .includes(clientSearchTerm.toLowerCase())
-      );
-      setFilteredClients(filtered);
-    }
-  }, [clients, clientSearchTerm]);
-
-  // Filter titles based on search term
-  useEffect(() => {
-    if (titleSearchTerm.trim() === "") {
-      setFilteredTitles(jobTitles);
-    } else {
-      const filtered = jobTitles.filter((title) =>
-        title.toLowerCase().includes(titleSearchTerm.toLowerCase())
-      );
-      setFilteredTitles(filtered);
-    }
-  }, [jobTitles, titleSearchTerm]);
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
-      if (!target.closest(".searchable-dropdown")) {
-        setIsClientDropdownOpen(false);
-        setIsTitleDropdownOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
-
   // Watch for form changes
   useEffect(() => {
     if (isDirty) {
@@ -472,8 +403,6 @@ export function PositionCreate({
         if (clientExists) {
           // Re-set the value to trigger the dropdown to show the selection
           methods.setValue("client", currentClientValue);
-          // Clear search term so the selected client name shows in placeholder
-          setClientSearchTerm("");
           console.log(
             "Re-set client value for dropdown display:",
             currentClientValue
@@ -616,16 +545,53 @@ export function PositionCreate({
     }
   }, [methods.watch("startDate")]);
 
-  // Function to handle "Create a new client" option
-  const handleCreateNewClient = () => {
-    // Save the current client value before navigating
-    setPreviousClientValue(methods.getValues("client"));
-    // Reset the dropdown in the next render cycle
-    setTimeout(() => {
-      methods.setValue("client", previousClientValue);
-    }, 0);
-    // Navigate to the client creation page
-    navigate("/client-management/create");
+  // Create client options for CustomDropdown
+  const clientOptions: DropdownOption[] = clients.map((client) => ({
+    id: client.id,
+    value: client.id,
+    label: client.companyName,
+  }));
+
+  // Handle client selection for CustomDropdown
+  const handleClientSelect = async (option: DropdownOption) => {
+    const clientId = option.value as string;
+    
+    // Set the client value
+    methods.setValue("client", clientId);
+
+    // Trigger client data fetch
+    fetchClientDetails(clientId);
+
+    // Generate position code for the selected client
+    try {
+      const result = await generatePositionCode(clientId);
+      console.log("Generated position code:", result);
+
+      // Only set position code if we're not in edit mode or if the field is currently empty
+      const currentPositionCode = methods.getValues("positionCode");
+      if (!isEditMode && !isEditDraftMode) {
+        // For new positions, always generate
+        methods.setValue("positionCode", result.positionCode);
+      } else if (!currentPositionCode) {
+        // For edit mode, only generate if empty
+        methods.setValue("positionCode", result.positionCode);
+      }
+    } catch (error) {
+      console.error("Error generating position code:", error);
+      // Don't show error to user as this is automatic
+    }
+  };
+
+  // Create title options for CustomDropdown
+  const titleOptions: DropdownOption[] = jobTitles.map((title) => ({
+    id: title,
+    value: title,
+    label: title,
+  }));
+
+  // Handle title selection for CustomDropdown
+  const handleTitleSelect = (option: DropdownOption) => {
+    methods.setValue("title", option.value as string);
   };
 
   const handleSaveDraft = async () => {
@@ -831,126 +797,29 @@ export function PositionCreate({
                     >
                       Client
                     </label>
-                    <div className="searchable-dropdown">
-                      {/* Hidden input for form registration */}
-                      <input type="hidden" {...methods.register("client")} />
-                      <div className="dropdown-container">
-                        <input
-                          type="text"
-                          className="form-input dropdown-input"
-                          placeholder={(() => {
-                            const selectedClientId =
-                              methods.getValues("client");
-                            if (selectedClientId && clientSearchTerm === "") {
-                              const selectedClient = clients.find(
-                                (c) => c.id === selectedClientId
-                              );
-                              return selectedClient
-                                ? selectedClient.companyName
-                                : "Select a client";
-                            }
-                            return "Search clients...";
-                          })()}
-                          value={clientSearchTerm}
-                          onChange={(e) => {
-                            setClientSearchTerm(e.target.value);
-                            setIsClientDropdownOpen(true);
-                          }}
-                          onFocus={() => setIsClientDropdownOpen(true)}
-                          onBlur={() => {
-                            // Delay closing to allow for option clicks
-                            setTimeout(
-                              () => setIsClientDropdownOpen(false),
-                              200
-                            );
-                          }}
-                        />
-                        <div
-                          className="dropdown-arrow"
-                          onClick={() =>
-                            setIsClientDropdownOpen(!isClientDropdownOpen)
-                          }
-                        >
-                          <ChevronDown size={16} />
-                        </div>
-                      </div>
-
-                      {isClientDropdownOpen && (
-                        <div className="dropdown-options">
-                          <div
-                            className="dropdown-option create-client-option"
-                            onClick={() => {
-                              handleCreateNewClient();
-                              setIsClientDropdownOpen(false);
-                            }}
-                          >
-                            ➕ Create a new client
-                          </div>
-                          {filteredClients.length > 0 ? (
-                            filteredClients.map((client) => (
-                              <div
-                                key={client.id}
-                                className={`dropdown-option ${
-                                  methods.getValues("client") === client.id
-                                    ? "selected"
-                                    : ""
-                                }`}
-                                onClick={async () => {
-                                  // Set the client value
-                                  methods.setValue("client", client.id);
-                                  setPreviousClientValue(client.id);
-                                  setClientSearchTerm("");
-                                  setIsClientDropdownOpen(false);
-
-                                  // Trigger client data fetch
-                                  fetchClientDetails(client.id);
-
-                                  // Generate position code for the selected client
-                                  try {
-                                    const result = await generatePositionCode(
-                                      client.id
-                                    );
-                                    console.log(
-                                      "Generated position code:",
-                                      result
-                                    );
-
-                                    // Only set position code if we're not in edit mode or if the field is currently empty
-                                    const currentPositionCode =
-                                      methods.getValues("positionCode");
-                                    if (!isEditMode && !isEditDraftMode) {
-                                      // For new positions, always generate
-                                      methods.setValue(
-                                        "positionCode",
-                                        result.positionCode
-                                      );
-                                    } else if (!currentPositionCode) {
-                                      // For edit mode, only generate if empty
-                                      methods.setValue(
-                                        "positionCode",
-                                        result.positionCode
-                                      );
-                                    }
-                                  } catch (error) {
-                                    console.error(
-                                      "Error generating position code:",
-                                      error
-                                    );
-                                    // Don't show error to user as this is automatic
-                                  }
-                                }}
-                              >
-                                {client.companyName}
-                              </div>
-                            ))
-                          ) : (
-                            <div className="dropdown-option no-results">
-                              No clients found
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
+                    {/* Hidden input for form registration */}
+                    <input type="hidden" {...methods.register("client")} />
+                    <CustomDropdown
+                      options={clientOptions}
+                      selectedOption={(() => {
+                        const selectedClientId = methods.getValues("client");
+                        if (selectedClientId) {
+                          const selectedClient = clients.find(c => c.id === selectedClientId);
+                          return selectedClient ? {
+                            id: selectedClient.id,
+                            label: selectedClient.companyName,
+                            value: selectedClient.id
+                          } : null;
+                        }
+                        return null;
+                      })()}
+                      onSelect={handleClientSelect}
+                      placeholder="Search clients..."
+                      searchable={true}
+                      clearable={true}
+                      onClear={() => methods.setValue("client", "")}
+                      emptyMessage="No clients found"
+                    />
                     {methods.formState.errors.client && (
                       <p className="form-error">
                         {methods.formState.errors.client.message}
@@ -966,73 +835,22 @@ export function PositionCreate({
                     >
                       Title
                     </label>
-                    <div className="searchable-dropdown">
-                      {/* Hidden input for form registration */}
-                      <input type="hidden" {...methods.register("title")} />
-                      <div className="dropdown-container">
-                        <input
-                          type="text"
-                          className="form-input dropdown-input"
-                          placeholder={(() => {
-                            const selectedTitle = methods.getValues("title");
-                            if (selectedTitle && titleSearchTerm === "") {
-                              return selectedTitle;
-                            }
-                            return "Search job titles...";
-                          })()}
-                          value={titleSearchTerm}
-                          onChange={(e) => {
-                            setTitleSearchTerm(e.target.value);
-                            setIsTitleDropdownOpen(true);
-                          }}
-                          onFocus={() => setIsTitleDropdownOpen(true)}
-                          onBlur={() => {
-                            // Delay closing to allow for option clicks
-                            setTimeout(
-                              () => setIsTitleDropdownOpen(false),
-                              200
-                            );
-                          }}
-                        />
-                        <div
-                          className="dropdown-arrow"
-                          onClick={() =>
-                            setIsTitleDropdownOpen(!isTitleDropdownOpen)
-                          }
-                        >
-                          <ChevronDown size={16} />
-                        </div>
-                      </div>
-
-                      {isTitleDropdownOpen && (
-                        <div className="dropdown-options">
-                          {filteredTitles.length > 0 ? (
-                            filteredTitles.map((title) => (
-                              <div
-                                key={title}
-                                className={`dropdown-option ${
-                                  methods.getValues("title") === title
-                                    ? "selected"
-                                    : ""
-                                }`}
-                                onClick={() => {
-                                  // Set the title value
-                                  methods.setValue("title", title);
-                                  setTitleSearchTerm("");
-                                  setIsTitleDropdownOpen(false);
-                                }}
-                              >
-                                {title}
-                              </div>
-                            ))
-                          ) : (
-                            <div className="dropdown-option no-results">
-                              No job titles found
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
+                    {/* Hidden input for form registration */}
+                    <input type="hidden" {...methods.register("title")} />
+                    <CustomDropdown
+                      options={titleOptions}
+                      selectedOption={methods.getValues("title") ? {
+                        id: methods.getValues("title"),
+                        label: methods.getValues("title"),
+                        value: methods.getValues("title")
+                      } : null}
+                      onSelect={handleTitleSelect}
+                      placeholder="Search job titles..."
+                      searchable={true}
+                      clearable={true}
+                      onClear={() => methods.setValue("title", "")}
+                      emptyMessage="No job titles found"
+                    />
                     {methods.formState.errors.title && (
                       <p className="form-error">
                         {methods.formState.errors.title.message}
@@ -1086,7 +904,6 @@ export function PositionCreate({
                         type="date"
                         id="startDate"
                         className="form-input"
-                        min={getTodayFormatted()}
                         {...methods.register("startDate")}
                         onClick={(e) => e.currentTarget.showPicker()}
                       />

@@ -831,7 +831,7 @@ export function PositionMatching() {
                     options={positionOptions}
                     selectedOption={selectedPosition ? {
                       id: selectedPosition.id || '',
-                      label: selectedPosition.title || 'Untitled Position',
+                      label: `${selectedPosition.clientName || 'Unknown Client'} - ${selectedPosition.title}`,
                       sublabel: `${selectedPosition.clientName || 'Unknown Client'} - ${selectedPosition.city || 'Unknown City'}, ${selectedPosition.province || 'Unknown Province'}`,
                       value: selectedPosition
                     } : null}

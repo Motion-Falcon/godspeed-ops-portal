@@ -1226,6 +1226,9 @@ router.post(
       dbPositionData.is_draft = false;
       dbPositionData.created_by_user_id = userId;
       dbPositionData.updated_by_user_id = userId;
+      
+      // Add client_name to the database data
+      dbPositionData.client_name = client.company_name;
 
       // Insert position into database
       const { data: newPosition, error: insertError } = await supabase
@@ -1391,6 +1394,9 @@ router.put(
       dbPositionData.is_draft = false;
       dbPositionData.updated_by_user_id = userId;
       dbPositionData.updated_at = new Date().toISOString();
+      
+      // Add client_name to the database data
+      dbPositionData.client_name = client.company_name;
 
       // Update position in database
       const { data: updatedPosition, error: updateError } = await supabase
@@ -1400,6 +1406,7 @@ router.put(
         .select(`
           id,
           client,
+          client_name,
           title,
           position_code,
           start_date,
@@ -1485,6 +1492,27 @@ router.put(
       // Remove clientName as it's not in the database schema
       const { clientName, ...positionDataWithoutClientName } = positionData;
 
+      // Validate client if provided
+      let client = null;
+      if (positionDataWithoutClientName.client) {
+        const { data: clientData, error: clientError } = await supabase
+          .from("clients")
+          .select("id, company_name")
+          .eq("id", positionDataWithoutClientName.client)
+          .maybeSingle();
+
+        if (clientError) {
+          console.error("Error checking client:", clientError);
+          return res.status(500).json({ error: "Failed to validate client" });
+        }
+
+        if (!clientData) {
+          return res.status(400).json({ error: "Invalid client ID" });
+        }
+
+        client = clientData;
+      }
+
       // Handle empty date fields - convert empty strings to null
       // Using a type-safe approach to avoid TypeScript errors
       const dataWithNullDates = { ...positionDataWithoutClientName };
@@ -1542,6 +1570,11 @@ router.put(
           {} as Record<string, any>
         );
 
+        // Add client_name if client is provided
+        if (client) {
+          dbUpdateData.client_name = client.company_name;
+        }
+
         // Update the draft
         const { data: updatedDraft, error: updateError } = await supabase
           .from("position_drafts")
@@ -1584,6 +1617,11 @@ router.put(
         dbDraftData.created_at = new Date().toISOString();
         dbDraftData.updated_at = new Date().toISOString();
         dbDraftData.last_updated = new Date().toISOString();
+
+        // Add client_name if client is provided
+        if (client) {
+          dbDraftData.client_name = client.company_name;
+        }
 
         // Insert new draft
         const { data: newDraft, error: insertError } = await supabase
@@ -2423,6 +2461,27 @@ router.post(
       // Remove clientName as it's not in the database schema
       const { clientName, ...positionDataWithoutClientName } = positionData;
 
+      // Validate client if provided
+      let client = null;
+      if (positionDataWithoutClientName.client) {
+        const { data: clientData, error: clientError } = await supabase
+          .from("clients")
+          .select("id, company_name")
+          .eq("id", positionDataWithoutClientName.client)
+          .maybeSingle();
+
+        if (clientError) {
+          console.error("Error checking client:", clientError);
+          return res.status(500).json({ error: "Failed to validate client" });
+        }
+
+        if (!clientData) {
+          return res.status(400).json({ error: "Invalid client ID" });
+        }
+
+        client = clientData;
+      }
+
       // Handle empty date fields - convert empty strings to null
       // Using a type-safe approach to avoid TypeScript errors
       const dataWithNullDates = { ...positionDataWithoutClientName };
@@ -2462,6 +2521,11 @@ router.post(
       dbDraftData.created_at = new Date().toISOString();
       dbDraftData.updated_at = new Date().toISOString();
       dbDraftData.last_updated = new Date().toISOString();
+
+      // Add client_name if client is provided
+      if (client) {
+        dbDraftData.client_name = client.company_name;
+      }
 
       // Insert new draft
       const { data: newDraft, error: insertError } = await supabase

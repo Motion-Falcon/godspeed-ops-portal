@@ -37,8 +37,8 @@ interface TimesheetEntry {
 }
 
 interface WeeklyTimesheet {
+  positionId: string;
   invoiceNumber: string;
-  assignmentId: string;
   weekStartDate: string;
   weekEndDate: string;
   entries: TimesheetEntry[];
@@ -94,7 +94,6 @@ interface ClientPosition {
 interface ExistingTimesheetData {
   id?: string;
   invoiceNumber: string;
-  assignmentId: string;
   positionId?: string;
   weekStartDate: string;
   weekEndDate: string;
@@ -266,7 +265,6 @@ export function TimesheetManagement() {
       const transformedTimesheets: ExistingTimesheetData[] = (response.timesheets || []).map((timesheet) => ({
         id: timesheet.id,
         invoiceNumber: timesheet.invoiceNumber, // Using id as invoice number for now
-        assignmentId: timesheet.assignmentId,
         positionId: timesheet.positionId, // Map the positionId field
         weekStartDate: timesheet.weekStartDate,
         weekEndDate: timesheet.weekEndDate,
@@ -482,10 +480,6 @@ export function TimesheetManagement() {
         overtimeHours: 0,
       }));
     }
-
-    // Create a synthetic assignment ID from position and jobseeker
-    const syntheticAssignmentId = `${selectedPosition.id}-${selectedJobseeker.id}`;
-
     // Generate invoice number for new timesheets
     let invoiceNumber = existingTimesheet?.invoiceNumber || "";
     if (!existingTimesheet) {
@@ -498,8 +492,8 @@ export function TimesheetManagement() {
     }
 
     const timesheet: WeeklyTimesheet = {
+      positionId: selectedPosition.id,
       invoiceNumber: invoiceNumber,
-      assignmentId: syntheticAssignmentId,
       weekStartDate: selectedWeekStart,
       weekEndDate: weekEndDate.toISOString().split("T")[0],
       entries,
@@ -513,20 +507,17 @@ export function TimesheetManagement() {
     };
 
     // Calculate totals for the timesheet
-    calculateTimesheetTotals(syntheticAssignmentId, entries);
+    calculateTimesheetTotals(entries);
 
     setTimesheets([timesheet]);
   };
 
   const updateTimesheetEntry = (
-    assignmentId: string,
     date: string,
     hours: number
   ) => {
     setTimesheets((prev) => {
       return prev.map((timesheet) => {
-        if (timesheet.assignmentId !== assignmentId) return timesheet;
-
         // Update the specific entry with raw hours
         const updatedEntries = timesheet.entries.map((entry) => {
           if (entry.date !== date) return entry;
@@ -539,10 +530,10 @@ export function TimesheetManagement() {
         });
 
         // Recalculate totals for this assignment (this will handle weekly overtime)
-        const totals = calculateTimesheetTotals(assignmentId, updatedEntries);
+        const totals = calculateTimesheetTotals(updatedEntries);
 
         // Get the assignment to check if overtime is enabled
-        const assignment = positions.find((p) => p.id === assignmentId);
+        const assignment = positions.find((p) => p.id === selectedPosition?.id);
         const position = assignment as PositionWithOvertime;
 
         // Only distribute overtime hours if overtime is enabled
@@ -584,11 +575,9 @@ export function TimesheetManagement() {
     });
   };
 
-  const updateTimesheetBonus = (assignmentId: string, bonusAmount: number) => {
+  const updateTimesheetBonus = (bonusAmount: number) => {
     setTimesheets((prev) => {
       return prev.map((timesheet) => {
-        if (timesheet.assignmentId !== assignmentId) return timesheet;
-
         return {
           ...timesheet,
           bonusAmount: bonusAmount || 0,
@@ -598,13 +587,10 @@ export function TimesheetManagement() {
   };
 
   const updateTimesheetDeduction = (
-    assignmentId: string,
     deductionAmount: number
   ) => {
     setTimesheets((prev) => {
       return prev.map((timesheet) => {
-        if (timesheet.assignmentId !== assignmentId) return timesheet;
-
         return {
           ...timesheet,
           deductionAmount: deductionAmount || 0,
@@ -614,10 +600,9 @@ export function TimesheetManagement() {
   };
 
   const calculateTimesheetTotals = (
-    assignmentId: string,
     entries: TimesheetEntry[]
   ) => {
-    const assignment = positions.find((p) => p.id === assignmentId);
+    const assignment = positions.find((p) => p.id === selectedPosition?.id);
     if (!assignment) {
       return {
         totalRegularHours: 0,
@@ -696,10 +681,12 @@ export function TimesheetManagement() {
     });
   };
 
-  const updateEmailPreference = (assignmentId: string, sendEmail: boolean) => {
+  const updateEmailPreference = (sendEmail: boolean) => {
+    if (!selectedPosition?.id) return;
+    
     setEmailPreferences((prev) => ({
       ...prev,
-      [assignmentId]: sendEmail,
+      [selectedPosition.id]: sendEmail,
     }));
   };
 
@@ -734,12 +721,11 @@ export function TimesheetManagement() {
       // Process each timesheet - either update existing or create new
       for (const timesheet of timesheetsToProcess) {
         const shouldSendEmail =
-          emailPreferences[timesheet.assignmentId] || false;
+          emailPreferences[timesheet.positionId] || false;
 
         const timesheetData: Partial<TimesheetData> = {
           jobseekerProfileId: selectedJobseeker.id,
           jobseekerUserId: selectedJobseeker.userId,
-          assignmentId: timesheet.assignmentId,
           positionId: selectedPosition.id,
           weekStartDate: selectedWeekStart,
           weekEndDate: weekEndDate.toISOString().split("T")[0],
@@ -786,7 +772,6 @@ export function TimesheetManagement() {
             email_sent: shouldSendEmail,
             assignments: [
               {
-                assignment_id: timesheet.assignmentId,
                 position_id: selectedPosition.id,
                 daily_hours: timesheet.entries.map((entry) => ({
                   date: entry.date,
@@ -831,7 +816,7 @@ export function TimesheetManagement() {
         (t) => !t.existingTimesheetId
       ).length;
       const emailCount = timesheetsToProcess.filter(
-        (t) => emailPreferences[t.assignmentId]
+        (t) => emailPreferences[t.positionId]
       ).length;
 
       let message = "";
@@ -1053,7 +1038,7 @@ export function TimesheetManagement() {
                 {timesheets.map((timesheet) => {
                   return (
                     <div
-                      key={timesheet.assignmentId}
+                      key={timesheet.positionId}
                       className="timesheet-assignment-card"
                     >
                       {/* Streamlined Unified Header */}
@@ -1181,7 +1166,6 @@ export function TimesheetManagement() {
                                     const hours =
                                       parseFloat(e.target.value) || 0;
                                     updateTimesheetEntry(
-                                      timesheet.assignmentId,
                                       entry.date,
                                       hours
                                     );
@@ -1216,7 +1200,6 @@ export function TimesheetManagement() {
                                   const amount =
                                     parseFloat(e.target.value) || 0;
                                   updateTimesheetBonus(
-                                    timesheet.assignmentId,
                                     amount
                                   );
                                 }}
@@ -1241,7 +1224,6 @@ export function TimesheetManagement() {
                                   const amount =
                                     parseFloat(e.target.value) || 0;
                                   updateTimesheetDeduction(
-                                    timesheet.assignmentId,
                                     amount
                                   );
                                 }}
@@ -1457,12 +1439,11 @@ export function TimesheetManagement() {
                                 <input
                                   type="checkbox"
                                   checked={
-                                    emailPreferences[timesheet.assignmentId] ||
+                                    emailPreferences[timesheet.positionId] ||
                                     false
                                   }
                                   onChange={(e) =>
                                     updateEmailPreference(
-                                      timesheet.assignmentId,
                                       e.target.checked
                                     )
                                   }

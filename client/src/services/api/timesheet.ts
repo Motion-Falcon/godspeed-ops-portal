@@ -7,7 +7,6 @@ export interface TimesheetData {
   invoiceNumber: string;
   jobseekerProfileId: string;
   jobseekerUserId: string;
-  assignmentId: string;
   positionId?: string;
   weekStartDate: string;
   weekEndDate: string;
@@ -54,7 +53,6 @@ export interface TimesheetFilters {
   limit?: number;
   searchTerm?: string;
   jobseekerFilter?: string;
-  assignmentFilter?: string;
   positionFilter?: string;
   weekStartFilter?: string;
   weekEndFilter?: string;
@@ -99,7 +97,6 @@ export const getTimesheets = async (
     // Add filter params
     if (params.searchTerm) queryParams.append("searchTerm", params.searchTerm);
     if (params.jobseekerFilter) queryParams.append("jobseekerFilter", params.jobseekerFilter);
-    if (params.assignmentFilter) queryParams.append("assignmentFilter", params.assignmentFilter);
     if (params.positionFilter) queryParams.append("positionFilter", params.positionFilter);
     if (params.weekStartFilter) queryParams.append("weekStartFilter", params.weekStartFilter);
     if (params.weekEndFilter) queryParams.append("weekEndFilter", params.weekEndFilter);
@@ -230,7 +227,6 @@ export const getJobseekerTimesheets = async (
     
     // Add filter params
     if (params.searchTerm) queryParams.append("searchTerm", params.searchTerm);
-    if (params.assignmentFilter) queryParams.append("assignmentFilter", params.assignmentFilter);
     if (params.positionFilter) queryParams.append("positionFilter", params.positionFilter);
     if (params.weekStartFilter) queryParams.append("weekStartFilter", params.weekStartFilter);
     if (params.weekEndFilter) queryParams.append("weekEndFilter", params.weekEndFilter);
@@ -278,7 +274,6 @@ export const createTimesheetFromFrontendData = async (
     week_end_date: string;
     email_sent: boolean;
     assignments: Array<{
-      assignment_id: string;
       position_id?: string;
       daily_hours: Array<{ date: string; hours: number }>;
       total_regular_hours: number;
@@ -308,7 +303,6 @@ export const createTimesheetFromFrontendData = async (
         invoiceNumber: invoiceNumber, // Add the generated invoice number
         jobseekerProfileId: frontendData.jobseeker_profile_id,
         jobseekerUserId: frontendData.jobseeker_user_id,
-        assignmentId: assignment.assignment_id,
         positionId: assignment.position_id,
         weekStartDate: frontendData.week_start_date,
         weekEndDate: frontendData.week_end_date,

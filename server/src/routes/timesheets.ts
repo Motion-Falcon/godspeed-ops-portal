@@ -24,7 +24,6 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 interface TimesheetData {
   jobseekerProfileId: string;
   jobseekerUserId: string;
-  assignmentId: string;
   positionId?: string;
   weekStartDate: string;
   weekEndDate: string;
@@ -50,7 +49,6 @@ interface DbTimesheetData {
   id?: string;
   jobseeker_profile_id: string;
   jobseeker_user_id: string;
-  assignment_id: string;
   position_id?: string;
   week_start_date: string;
   week_end_date: string;
@@ -97,7 +95,6 @@ function transformToDbFormat(data: TimesheetData): Omit<DbTimesheetData, 'id' | 
   return {
     jobseeker_profile_id: data.jobseekerProfileId,
     jobseeker_user_id: data.jobseekerUserId,
-    assignment_id: data.assignmentId,
     position_id: data.positionId,
     week_start_date: data.weekStartDate,
     week_end_date: data.weekEndDate,
@@ -228,7 +225,6 @@ router.get('/',
         limit = '10', 
         searchTerm = '', 
         jobseekerFilter = '',
-        assignmentFilter = '',
         positionFilter = '',
         weekStartFilter = '',
         weekEndFilter = '',
@@ -241,7 +237,6 @@ router.get('/',
         limit?: string;
         searchTerm?: string;
         jobseekerFilter?: string;
-        assignmentFilter?: string;
         positionFilter?: string;
         weekStartFilter?: string;
         weekEndFilter?: string;
@@ -261,7 +256,6 @@ router.get('/',
         .select(`
           *,
           jobseeker_profiles!inner(id, first_name, last_name, email),
-          position_candidate_assignments!inner(id),
           positions(id, position_code, title, client)
         `);
 
@@ -276,7 +270,6 @@ router.get('/',
       baseQuery = applyTimesheetFilters(baseQuery, {
         searchTerm,
         jobseekerFilter,
-        assignmentFilter,
         positionFilter,
         weekStartFilter,
         weekEndFilter,
@@ -308,7 +301,6 @@ router.get('/',
         .select(`
           *,
           jobseeker_profiles!inner(id, first_name, last_name, email),
-          position_candidate_assignments!inner(id),
           positions(id, position_code, title, client)
         `, { count: 'exact', head: true });
 
@@ -319,7 +311,6 @@ router.get('/',
       filteredCountQuery = applyTimesheetFilters(filteredCountQuery, {
         searchTerm,
         jobseekerFilter,
-        assignmentFilter,
         positionFilter,
         weekStartFilter,
         weekEndFilter,
@@ -367,12 +358,10 @@ router.get('/',
         
         // Add related data
         formatted.jobseekerProfile = timesheet.jobseeker_profiles;
-        formatted.assignment = timesheet.position_candidate_assignments;
         formatted.position = timesheet.positions;
         
         // Clean up the joined data from the main object
         delete formatted.jobseekerProfiles;
-        delete formatted.positionCandidateAssignments;
         delete formatted.positions;
         
         return formatted;
@@ -409,7 +398,6 @@ router.get('/',
 function applyTimesheetFilters(query: any, filters: {
   searchTerm?: string;
   jobseekerFilter?: string;
-  assignmentFilter?: string;
   positionFilter?: string;
   weekStartFilter?: string;
   weekEndFilter?: string;
@@ -421,7 +409,6 @@ function applyTimesheetFilters(query: any, filters: {
   const {
     searchTerm,
     jobseekerFilter,
-    assignmentFilter,
     positionFilter,
     weekStartFilter,
     weekEndFilter,
@@ -440,10 +427,6 @@ function applyTimesheetFilters(query: any, filters: {
   // Individual column filters
   if (jobseekerFilter && jobseekerFilter.trim().length > 0) {
     query = query.or(`jobseeker_profiles.name.ilike.%${jobseekerFilter.trim()}%,jobseeker_profiles.email.ilike.%${jobseekerFilter.trim()}%`);
-  }
-
-  if (assignmentFilter && assignmentFilter.trim().length > 0) {
-    query = query.eq('assignment_id', assignmentFilter.trim());
   }
 
   if (positionFilter && positionFilter.trim().length > 0) {
@@ -504,7 +487,6 @@ router.get('/:id',
         .select(`
           *,
           jobseeker_profiles!inner(id, first_name, last_name, email),
-          position_candidate_assignments!inner(id),
           positions(id, position_code, title, client)
         `)
         .eq('id', id);
@@ -524,12 +506,10 @@ router.get('/:id',
       // Transform to frontend format
       const formatted = transformToFrontendFormat(timesheet);
       formatted.jobseekerProfile = timesheet.jobseeker_profiles;
-      formatted.assignment = timesheet.position_candidate_assignments;
       formatted.position = timesheet.positions;
       
       // Clean up joined data
       delete formatted.jobseekerProfiles;
-      delete formatted.positionCandidateAssignments;
       delete formatted.positions;
 
       return res.status(200).json(formatted);
@@ -561,7 +541,7 @@ router.post('/',
       
       // Validate required fields
       const requiredFields = [
-        'jobseekerProfileId', 'jobseekerUserId', 'assignmentId', 
+        'jobseekerProfileId', 'jobseekerUserId', 'positionId', 
         'weekStartDate', 'weekEndDate', 'dailyHours',
         'totalRegularHours', 'totalOvertimeHours', 'regularPayRate',
         'overtimePayRate', 'regularBillRate', 'overtimeBillRate',
@@ -580,24 +560,24 @@ router.post('/',
       }
 
       // Check if timesheet already exists for this assignment and week
-      const { data: existingTimesheet, error: existingError } = await supabase
-        .from('timesheets')
-        .select('id')
-        .eq('assignment_id', timesheetData.assignmentId)
-        .eq('week_start_date', timesheetData.weekStartDate)
-        .maybeSingle();
+      // const { data: existingTimesheet, error: existingError } = await supabase
+      //   .from('timesheets')
+      //   .select('id')
+      //   .eq('', timesheetData.id)
+      //   .eq('week_start_date', timesheetData.weekStartDate)
+      //   .maybeSingle();
 
-      if (existingError) {
-        console.error('Error checking for existing timesheet:', existingError);
-        return res.status(500).json({ error: 'Failed to validate timesheet uniqueness' });
-      }
+      // if (existingError) {
+      //   console.error('Error checking for existing timesheet:', existingError);
+      //   return res.status(500).json({ error: 'Failed to validate timesheet uniqueness' });
+      // }
 
-      if (existingTimesheet) {
-        return res.status(409).json({ 
-          error: 'A timesheet for this assignment and week already exists',
-          field: 'assignmentId'
-        });
-      }
+      // if (existingTimesheet) {
+      //   return res.status(409).json({ 
+      //     error: 'A timesheet for this assignment and week already exists',
+      //     field: 'assignmentId'
+      //   });
+      // }
 
       // Prepare timesheet data for database
       const dbTimesheetData: Omit<DbTimesheetData, 'id' | 'created_at' | 'updated_at'> = {
@@ -656,7 +636,7 @@ router.put('/:id',
       // Check if timesheet exists and user has permission
       let existingQuery = supabase
         .from('timesheets')
-        .select('id, jobseeker_user_id, assignment_id, week_start_date')
+        .select('id, jobseeker_user_id, week_start_date')
         .eq('id', id);
 
       if (userType === 'jobseeker') {
@@ -675,13 +655,12 @@ router.put('/:id',
       }
 
       // Check for duplicate if assignment or week is being changed
-      if (timesheetData.assignmentId !== existingTimesheet.assignment_id || 
-          timesheetData.weekStartDate !== existingTimesheet.week_start_date) {
+      if (timesheetData.weekStartDate !== existingTimesheet.week_start_date) {
         
         const { data: duplicateTimesheet, error: duplicateCheckError } = await supabase
           .from('timesheets')
           .select('id')
-          .eq('assignment_id', timesheetData.assignmentId)
+          .eq('id', id)
           .eq('week_start_date', timesheetData.weekStartDate)
           .neq('id', id)
           .maybeSingle();
@@ -694,7 +673,7 @@ router.put('/:id',
         if (duplicateTimesheet) {
           return res.status(409).json({ 
             error: 'Another timesheet for this assignment and week already exists',
-            field: 'assignmentId'
+            field: 'positionId'
           });
         }
       }
@@ -837,7 +816,6 @@ router.get('/jobseeker/:jobseekerUserId',
         .select(`
           *,
           jobseeker_profiles!inner(id, first_name, last_name, email),
-          position_candidate_assignments!inner(id),
           positions(id, position_code, title, client)
         `)
         .eq('jobseeker_user_id', jobseekerUserId);
@@ -884,11 +862,9 @@ router.get('/jobseeker/:jobseekerUserId',
       const formattedTimesheets = (timesheets || []).map(timesheet => {
         const formatted = transformToFrontendFormat(timesheet);
         formatted.jobseekerProfile = timesheet.jobseeker_profiles;
-        formatted.assignment = timesheet.position_candidate_assignments;
         formatted.position = timesheet.positions;
         
         delete formatted.jobseekerProfiles;
-        delete formatted.positionCandidateAssignments;
         delete formatted.positions;
         
         return formatted;
