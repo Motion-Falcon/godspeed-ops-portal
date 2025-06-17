@@ -1,21 +1,65 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import {
   User as UserIcon,
   UserCheck,
-  Shield,
-  Activity,
-  BookOpen,
   Users,
-  Building,
-  Briefcase
+  CheckCircle,
+  RotateCcw,
+  BarChart3,
+  X,
+  Building2,
+  Briefcase,
+  Target,
+  CheckSquare,
+  Brain,
+  FileText,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
-import { checkApiHealth } from "../../services/api/auth";
 import { AppHeader } from "../../components/AppHeader";
+import { MetricCard } from "../../components/dashboard/MetricCard";
+import {
+  getAllRecruitersMetrics,
+  getRecruiterMetrics,
+  getAllRecruitersClientMetrics,
+  getRecruiterClientMetrics,
+  getAllRecruitersPositionMetrics,
+  getRecruiterPositionMetrics,
+} from "../../services/api/recruiterMetrics";
+import {
+  getAIInsightsWithTimeRange,
+  getAIInsights,
+  type AIInsightsResponse,
+} from "../../services/api/aiInsights";
+import { MetricData } from "../../components/dashboard/types";
 import "../../styles/components/header.css";
 import "../../styles/pages/Dashboard.css";
 
+// Constants
+const CACHE_DURATION = 30000; // 30 seconds
+
+// Configuration objects
+const METRIC_CONFIGS = {
+  recruiter: {
+    total_profiles: { color: "#3B82F6", icon: <Users size={20} /> },
+    pending_profiles: { color: "#F59E0B", icon: <RotateCcw size={20} /> },
+    verified_profiles: { color: "#10B981", icon: <CheckCircle size={20} /> },
+    rejected_profiles: { color: "#EF4444", icon: <X size={20} /> },
+  },
+  client: {
+    total_clients: { color: "#8B5CF6", icon: <Building2 size={20} /> },
+  },
+  position: {
+    total_positions_added: { color: "#6366F1", icon: <Briefcase size={20} /> },
+    total_position_slots: { color: "#F59E0B", icon: <Target size={20} /> },
+    total_positions_filled: { color: "#10B981", icon: <CheckSquare size={20} /> },
+  },
+  ai: {
+    documents_scanned: { color: "#8B5CF6", icon: <FileText size={20} /> },
+    jobseekers_matched: { color: "#06B6D4", icon: <Brain size={20} /> },
+  },
+} as const;
+
+// Types
 interface UserData {
   id: string;
   email: string | null | undefined;
@@ -25,14 +69,571 @@ interface UserData {
   lastSignIn: string;
 }
 
-export function RecruiterDashboard() {
-  const { user, isAdmin, isRecruiter } = useAuth();
-  const [healthStatus, setHealthStatus] = useState<string | null>(null);
-  const navigate = useNavigate();
-  const [userData, setUserData] = useState<UserData | null>(null);
+interface DataViewToggleProps {
+  id: string;
+  checked: boolean;
+  onChange: () => void;
+  label: string;
+  description: string;
+}
 
+interface MetricsState {
+  data: MetricData[];
+  loading: boolean;
+  error: string | null;
+}
+
+interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
+}
+
+interface MetricResponse {
+  id: string;
+  label: string;
+  currentValue: number;
+  previousValue: number;
+  unit: string;
+  formatType: string;
+  description: string;
+  historicalData: Array<{
+    period: string;
+    value: number;
+    date: string | Date;
+  }>;
+}
+
+interface APIResponse {
+  metrics: MetricResponse[];
+}
+
+// Utility functions
+const getCacheKey = (
+  type: "metrics" | "clients" | "positions" | "aiInsights",
+  showAll?: boolean,
+  userId?: string
+) => {
+  if (type === "aiInsights") {
+    return "aiInsights_all";
+  }
+  return showAll ? `${type}_all` : `${type}_${userId}`;
+};
+
+const isCacheValid = (timestamp: number) => {
+  return Date.now() - timestamp < CACHE_DURATION;
+};
+
+const transformMetricsResponse = (
+  response: APIResponse,
+  configType: keyof typeof METRIC_CONFIGS
+): MetricData[] => {
+  const config = METRIC_CONFIGS[configType];
+  
+  return response.metrics.map((metric) => {
+    // Type-safe config lookup
+    const metricConfig = config as Record<string, { color: string; icon: JSX.Element }>;
+    const metricInfo = metricConfig[metric.id];
+    
+    return {
+      id: metric.id,
+      label: metric.label,
+      currentValue: metric.currentValue,
+      previousValue: metric.previousValue,
+      unit: metric.unit,
+      formatType: metric.formatType as "number" | "currency" | "percentage" | "duration",
+      color: metricInfo?.color || "#666666",
+      icon: metricInfo?.icon || <BarChart3 size={20} />,
+      description: metric.description,
+      historicalData: metric.historicalData.map((point) => ({
+        period: point.period,
+        value: point.value,
+        date: typeof point.date === "string" ? new Date(point.date) : point.date,
+      })),
+    };
+  });
+};
+
+// Custom hooks
+function useCache<T>() {
+  const cache = useRef<Map<string, CacheEntry<T>>>(new Map());
+  
+  const getFromCache = useCallback((key: string): T | null => {
+    const cached = cache.current.get(key);
+    if (cached && isCacheValid(cached.timestamp)) {
+      return cached.data;
+    }
+    return null;
+  }, []);
+  
+  const setCache = useCallback((key: string, data: T) => {
+    cache.current.set(key, { data, timestamp: Date.now() });
+  }, []);
+  
+  const clearCache = useCallback((key?: string) => {
+    if (key) {
+      cache.current.delete(key);
+    } else {
+      cache.current.clear();
+    }
+  }, []);
+  
+  return { getFromCache, setCache, clearCache };
+}
+
+const useMetricsFetch = (
+  userId: string | null,
+  showAll: boolean,
+  type: "metrics" | "clients" | "positions" | "aiInsights"
+) => {
+  const [state, setState] = useState<MetricsState>({
+    data: [],
+    loading: false,
+    error: null,
+  });
+  
+  const { getFromCache, setCache, clearCache } = useCache<MetricData[]>();
+  const fetchingRef = useRef(false);
+  
+  const fetchData = useCallback(async (forceShowAll?: boolean) => {
+    if (!userId && type !== "aiInsights") return;
+    
+    const currentShowAll = forceShowAll !== undefined ? forceShowAll : showAll;
+    const cacheKey = getCacheKey(type, currentShowAll, userId || undefined);
+    
+    // Return cached data if valid
+    const cached = getFromCache(cacheKey);
+    if (cached) {
+      setState({ data: cached, loading: false, error: null });
+      return;
+    }
+    
+    // Prevent multiple simultaneous requests
+    if (fetchingRef.current) return;
+    
+    fetchingRef.current = true;
+    setState(prev => ({ ...prev, loading: true, error: null }));
+    
+    try {
+      let response: APIResponse;
+      let configType: keyof typeof METRIC_CONFIGS;
+      
+      switch (type) {
+        case "metrics":
+          response = currentShowAll
+            ? await getAllRecruitersMetrics({ timeRange: "12" })
+            : await getRecruiterMetrics(userId!, { timeRange: "12" });
+          configType = "recruiter";
+          break;
+        case "clients":
+          response = currentShowAll
+            ? await getAllRecruitersClientMetrics({ timeRange: "12" })
+            : await getRecruiterClientMetrics(userId!, { timeRange: "12" });
+          configType = "client";
+          break;
+        case "positions":
+          response = currentShowAll
+            ? await getAllRecruitersPositionMetrics({ timeRange: "12" })
+            : await getRecruiterPositionMetrics(userId!, { timeRange: "12" });
+          configType = "position";
+          break;
+        case "aiInsights":
+          response = await getAIInsightsWithTimeRange({ months: "12" });
+          configType = "ai";
+          break;
+      }
+      
+      const transformedData = transformMetricsResponse(response, configType);
+      
+      setCache(cacheKey, transformedData);
+      setState({ data: transformedData, loading: false, error: null });
+    } catch (error) {
+      console.error(`Error fetching ${type}:`, error);
+      setState({
+        data: [],
+        loading: false,
+        error: error instanceof Error ? error.message : `Failed to fetch ${type}`,
+      });
+    } finally {
+      fetchingRef.current = false;
+    }
+  }, [userId, showAll, type, getFromCache, setCache]);
+  
+  const retry = useCallback(() => {
+    const cacheKey = getCacheKey(type, showAll, userId || undefined);
+    clearCache(cacheKey);
+    fetchingRef.current = false;
+    fetchData();
+  }, [type, showAll, userId, clearCache, fetchData]);
+  
+  return { state, fetchData, retry, clearCache };
+};
+
+const useBasicAIInsights = () => {
+  const [state, setState] = useState<{
+    data: AIInsightsResponse | null;
+    loading: boolean;
+    error: string | null;
+  }>({
+    data: null,
+    loading: false,
+    error: null,
+  });
+  
+  const { getFromCache, setCache, clearCache } = useCache<AIInsightsResponse>();
+  const fetchingRef = useRef(false);
+  
+  const fetchData = useCallback(async () => {
+    const cacheKey = "basicAiInsights";
+    
+    // Return cached data if valid
+    const cached = getFromCache(cacheKey);
+    if (cached) {
+      setState({ data: cached, loading: false, error: null });
+      return;
+    }
+    
+    // Prevent multiple simultaneous requests
+    if (fetchingRef.current) return;
+    
+    fetchingRef.current = true;
+    setState(prev => ({ ...prev, loading: true, error: null }));
+    
+    try {
+      const response = await getAIInsights();
+      setCache(cacheKey, response);
+      setState({ data: response, loading: false, error: null });
+    } catch (error) {
+      console.error("Error fetching basic AI insights:", error);
+      setState({
+        data: null,
+        loading: false,
+        error: error instanceof Error ? error.message : "Failed to fetch basic AI insights",
+      });
+    } finally {
+      fetchingRef.current = false;
+    }
+  }, [getFromCache, setCache]);
+  
+  const retry = useCallback(() => {
+    clearCache("basicAiInsights");
+    fetchingRef.current = false;
+    fetchData();
+  }, [clearCache, fetchData]);
+  
+  return { state, fetchData, retry };
+};
+
+// Reusable Components
+function DataViewToggle({ id, checked, onChange, label, description }: DataViewToggleProps) {
+  return (
+    <div className="data-view-toggle">
+      <div className="data-view-info">
+        <span className="data-view-label">{label}</span>
+        <p className="data-view-description">{description}</p>
+      </div>
+      <div className="data-view-controls">
+        <input
+          type="checkbox"
+          id={id}
+          className="toggle-form"
+          checked={checked}
+          onChange={onChange}
+        />
+        <label htmlFor={id} className="label-form toggle-label">
+          Show All
+        </label>
+      </div>
+    </div>
+  );
+}
+
+interface MetricGridProps {
+  metricsState: MetricsState;
+  expandedGraphs: Set<string>;
+  onMetricClick: (metric: MetricData) => void;
+  onToggleGraph: (show: boolean, metricId?: string) => void;
+  onRetry: () => void;
+  gridSize: number;
+  size?: "sm" | "md" | "lg";
+  className?: string;
+}
+
+function MetricGrid({
+  metricsState,
+  expandedGraphs,
+  onMetricClick,
+  onToggleGraph,
+  onRetry,
+  gridSize,
+  size = "sm",
+  className = "",
+}: MetricGridProps) {
+  return (
+    <div className={`metrics-grid compact ${className}`}>
+      {Array.from({ length: gridSize }, (_, index) => {
+        const metric = metricsState.data[index];
+        const isExpanded = metric ? expandedGraphs.has(metric.id) : false;
+
+        return (
+          <div
+            key={metric?.id || `loading-${index}`}
+            className={`metric-card-container ${isExpanded ? "expanded-grid-item" : ""}`}
+          >
+            <MetricCard
+              data={
+                metric || {
+                  id: `loading-${index}`,
+                  label: "",
+                  currentValue: 0,
+                  previousValue: 0,
+                  historicalData: [],
+                }
+              }
+              size={size}
+              showGraph={false}
+              onClick={metric ? onMetricClick : undefined}
+              onToggleGraph={
+                metric ? (show) => onToggleGraph(show, metric.id) : undefined
+              }
+              loading={metricsState.loading || !metric}
+              error={metricsState.error}
+              onRetry={onRetry}
+              className={`metric-transition-${index}`}
+            />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+interface AccountDetailsProps {
+  userData: UserData;
+}
+
+function AccountDetails({ userData }: AccountDetailsProps) {
+  const getRoleName = () => "Recruiter";
+
+  return (
+    <div className="card">
+      <div className="card-header">
+        <UserIcon className="icon" size={20} />
+        <h2 className="card-title">Account Details</h2>
+      </div>
+
+      <div>
+        <div className="data-item">
+          <p className="data-label">Name</p>
+          <p className="data-value">{userData.name}</p>
+        </div>
+
+        <div className="data-item">
+          <p className="data-label">Email Address</p>
+          <p className="data-value">{userData.email}</p>
+        </div>
+
+        <div className="data-item">
+          <p className="data-label">User Role</p>
+          <p className="data-value">{getRoleName()}</p>
+        </div>
+
+        <div className="data-item">
+          <p className="data-label">Account ID</p>
+          <p className="data-value" style={{ fontSize: "0.875rem" }}>
+            {userData.id}
+          </p>
+        </div>
+
+        <div className="data-item">
+          <p className="data-label">Account Created</p>
+          <p className="data-value">{userData.createdAt}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+interface AISummaryProps {
+  basicAiInsights: AIInsightsResponse | null;
+  loading: boolean;
+  error: string | null;
+  onRetry: () => void;
+}
+
+function AISummary({ basicAiInsights, loading, error, onRetry }: AISummaryProps) {
+  if (loading) {
+    return (
+      <div className="ai-summary-loading">
+        <span className="loading-spinner"></span>
+        <p>Loading AI summary...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="ai-summary-error">
+        <p className="error-text">{error}</p>
+        <button className="retry-button" onClick={onRetry}>
+          Try Again
+        </button>
+      </div>
+    );
+  }
+
+  if (!basicAiInsights) {
+    return null;
+  }
+
+  return (
+    <div className="ai-summary-stats">
+      <div className="ai-stat-item">
+        <div className="ai-stat-icon documents">
+          <FileText size={28} />
+        </div>
+        <div className="ai-stat-details">
+          <p className="ai-stat-value">
+            {basicAiInsights.totalDocumentsScanned.toLocaleString()} Documents Scanned
+          </p>
+          <p className="ai-stat-description">
+            {basicAiInsights.summary.documentsScanned.description}
+          </p>
+        </div>
+      </div>
+
+      <div className="ai-stat-item">
+        <div className="ai-stat-icon positions">
+          <Target size={28} />
+        </div>
+        <div className="ai-stat-details">
+          <p className="ai-stat-value">
+            {basicAiInsights.totalJobseekersMatched.toLocaleString()} Position Slots
+          </p>
+          <p className="ai-stat-description">
+            {basicAiInsights.summary.jobseekersMatched.description}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Main component
+export function RecruiterDashboard() {
+  const { user, isRecruiter } = useAuth();
+  const [userData, setUserData] = useState<UserData | null>(null);
+  const [expandedGraphs, setExpandedGraphs] = useState<Set<string>>(new Set());
+  
+  // Toggle states for different views
+  const [showAllRecruiters, setShowAllRecruiters] = useState(false);
+  const [showAllRecruitersClients, setShowAllRecruitersClients] = useState(false);
+  const [showAllRecruitersPositions, setShowAllRecruitersPositions] = useState(false);
+
+  // Custom hooks for data fetching
+  const recruiterMetrics = useMetricsFetch(userData?.id || null, showAllRecruiters, "metrics");
+  const clientMetrics = useMetricsFetch(userData?.id || null, showAllRecruitersClients, "clients");
+  const positionMetrics = useMetricsFetch(userData?.id || null, showAllRecruitersPositions, "positions");
+  const aiMetrics = useMetricsFetch(null, false, "aiInsights");
+  const basicAiInsights = useBasicAIInsights();
+
+  // Memoized toggle descriptions
+  const toggleDescriptions = useMemo(() => ({
+    recruiter: showAllRecruiters
+      ? "Viewing aggregated data from all recruiters"
+      : "Viewing your personal recruiting metrics",
+    client: showAllRecruitersClients
+      ? "Viewing client data from all recruiters"
+      : "Viewing your personal client metrics",
+    position: showAllRecruitersPositions
+      ? "Viewing position data from all recruiters"
+      : "Viewing your personal position metrics",
+  }), [showAllRecruiters, showAllRecruitersClients, showAllRecruitersPositions]);
+
+  // Event handlers
+  const handleMetricClick = useCallback((metric: MetricData) => {
+    console.log("Metric clicked:", metric.label);
+  }, []);
+
+  const handleToggleGraph = useCallback((show: boolean, metricId?: string) => {
+    console.log("Graph toggled:", show, "for metric:", metricId);
+
+    if (metricId) {
+      setExpandedGraphs((prev) => {
+        const newSet = new Set(prev);
+        if (show) {
+          newSet.add(metricId);
+        } else {
+          newSet.delete(metricId);
+        }
+        return newSet;
+      });
+    }
+  }, []);
+
+  const createToggleHandler = useCallback((
+    type: "recruiter" | "client" | "position",
+    currentState: boolean,
+    setState: (value: boolean) => void,
+    fetchFunction: (forceShowAll?: boolean) => void,
+    clearCache: (key?: string) => void,
+    setStateData: (state: MetricsState) => void
+  ) => {
+    return () => {
+      const newState = !currentState;
+      setState(newState);
+
+      // Clear current data and show loading state
+      setStateData({ data: [], loading: true, error: null });
+
+      // Clear cache and fetch new data
+      if (userData?.id) {
+        const cacheTypes = {
+          recruiter: "metrics",
+          client: "clients", 
+          position: "positions"
+        };
+        const cacheType = cacheTypes[type] as "metrics" | "clients" | "positions";
+        
+        const oldCacheKey = getCacheKey(cacheType, currentState, userData.id);
+        const newCacheKey = getCacheKey(cacheType, newState, userData.id);
+        clearCache(oldCacheKey);
+        clearCache(newCacheKey);
+        
+        fetchFunction(newState);
+      }
+    };
+  }, [userData?.id]);
+
+  const handleToggleView = createToggleHandler(
+    "recruiter",
+    showAllRecruiters,
+    setShowAllRecruiters,
+    recruiterMetrics.fetchData,
+    recruiterMetrics.clearCache,
+    (state: MetricsState) => recruiterMetrics.state = state
+  );
+
+  const handleToggleClientView = createToggleHandler(
+    "client",
+    showAllRecruitersClients,
+    setShowAllRecruitersClients,
+    clientMetrics.fetchData,
+    clientMetrics.clearCache,
+    (state: MetricsState) => clientMetrics.state = state
+  );
+
+  const handleTogglePositionView = createToggleHandler(
+    "position",
+    showAllRecruitersPositions,
+    setShowAllRecruitersPositions,
+    positionMetrics.fetchData,
+    positionMetrics.clearCache,
+    (state: MetricsState) => positionMetrics.state = state
+  );
+
+  // Initialize user data and fetch initial data
   useEffect(() => {
-    if (user) {
+    if (user && isRecruiter) {
       setUserData({
         id: user.id,
         email: user.email,
@@ -43,26 +644,25 @@ export function RecruiterDashboard() {
           ? new Date(user.last_sign_in_at).toLocaleString()
           : "First login",
       });
-    }
-  }, [user]);
 
-  const handleCheckHealth = async () => {
-    setHealthStatus("Checking...");
-    try {
-      const result = await checkApiHealth();
-      if (result.status === "healthy") {
-        setHealthStatus(`✅ Connection healthy: ${result.user}`);
-      } else {
-        setHealthStatus(`❌ Error: ${result.message}`);
-      }
-    } catch (error) {
-      setHealthStatus(
-        `❌ Check failed: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
+      // Fetch all initial data
+      recruiterMetrics.fetchData();
+      clientMetrics.fetchData();
+      positionMetrics.fetchData();
+      aiMetrics.fetchData();
+      basicAiInsights.fetchData();
     }
-  };
+  }, [user, isRecruiter]);
+
+  // Cleanup effect
+  useEffect(() => {
+    return () => {
+      recruiterMetrics.clearCache();
+      clientMetrics.clearCache();
+      positionMetrics.clearCache();
+      aiMetrics.clearCache();
+    };
+  }, [user?.id]);
 
   if (!userData) {
     return (
@@ -72,28 +672,13 @@ export function RecruiterDashboard() {
     );
   }
 
-  // Get the role icon based on user type
-  const getRoleIcon = () => {
-    if (isAdmin) return <Shield className="role-icon admin" />;
-    if (isRecruiter) return <UserCheck className="role-icon recruiter" />;
-    return <UserIcon className="role-icon jobseeker" />;
-  };
-
-  // Get role name for display
-  const getRoleName = () => {
-    if (isAdmin) return "Administrator";
-    if (isRecruiter) return "Recruiter";
-    return "Job Seeker";
-  };
+  const getRoleIcon = () => <UserCheck className="role-icon recruiter" />;
+  const getRoleName = () => "Recruiter";
 
   return (
     <div className="dashboard-container">
-      {/* Header */}
-      <AppHeader 
-        title="Recruiter Portal"
-      />
+      <AppHeader title="Recruiter Portal" />
 
-      {/* Main content */}
       <main className="dashboard-main">
         <div className="dashboard-heading">
           <h1 className="dashboard-title">Welcome, {userData.name}!</h1>
@@ -107,105 +692,119 @@ export function RecruiterDashboard() {
         </p>
 
         <div className="dashboard-grid">
-          <div className="card">
-            <div className="card-header">
-              <UserIcon className="icon" size={20} />
-              <h2 className="card-title">Account Details</h2>
-            </div>
-
-            <div>
-              <div className="data-item">
-                <p className="data-label">Name</p>
-                <p className="data-value">{userData.name}</p>
-              </div>
-
-              <div className="data-item">
-                <p className="data-label">Email Address</p>
-                <p className="data-value">{userData.email}</p>
-              </div>
-
-              <div className="data-item">
-                <p className="data-label">User Role</p>
-                <p className="data-value">{getRoleName()}</p>
-              </div>
-
-              <div className="data-item">
-                <p className="data-label">Account ID</p>
-                <p className="data-value" style={{ fontSize: "0.875rem" }}>
-                  {userData.id}
-                </p>
-              </div>
-
-              <div className="data-item">
-                <p className="data-label">Account Created</p>
-                <p className="data-value">{userData.createdAt}</p>
-              </div>
-
-              <div className="data-item">
-                <p className="data-label">Last Login</p>
-                <p className="data-value">{userData.lastSignIn}</p>
-              </div>
+          <div className="dashboard-left-side">
+            <div className="metrics-grid-container">
+              <DataViewToggle
+                id="recruiterDataToggle"
+                checked={showAllRecruiters}
+                onChange={handleToggleView}
+                label={toggleDescriptions.recruiter}
+                description="Toggle to view data for all recruiters or your own"
+              />
+              <MetricGrid
+                metricsState={recruiterMetrics.state}
+                expandedGraphs={expandedGraphs}
+                onMetricClick={handleMetricClick}
+                onToggleGraph={handleToggleGraph}
+                onRetry={recruiterMetrics.retry}
+                gridSize={4}
+                size="sm"
+              />
             </div>
           </div>
 
-          <div className="card">
-            <h2 className="card-title" style={{ marginBottom: "1rem" }}>
-              Recruiter Actions
-            </h2>
-            <div className="action-list">
-              <button
-                className="button outline"
-                onClick={() => navigate("/jobseeker-management")}
-              >
-                <Users size={16} className="icon" />
-                Job Seeker Management
-              </button>
-              <button
-                className="button outline"
-                onClick={() => navigate("/client-management")}
-              >
-                <Building size={16} className="icon" />
-                Manage Clients
-              </button>
-              <button
-                className="button outline"
-                onClick={() => navigate("/position-management")}
-              >
-                <Briefcase size={16} className="icon" />
-                Position Management
-              </button>
-
-              {/* Training Modules button */}
-              <button
-                className="button outline"
-                onClick={() => navigate("/training-modules")}
-              >
-                <BookOpen size={16} className="icon" />
-                Training & Development
-              </button>
-
-              {/* Health check button */}
-              <button className="button outline" onClick={handleCheckHealth}>
-                <Activity size={16} className="icon" />
-                Check Auth Status
-              </button>
-
-              {healthStatus && (
-                <div className="health-status">{healthStatus}</div>
-              )}
-
-              {/* Admin-only actions */}
-              {isAdmin && (
-                <button className="button outline admin-action">
-                  <Shield size={16} className="icon" />
-                  Admin Dashboard
-                </button>
-              )}
-
+          <AccountDetails userData={userData} />
+        </div>
+        
+        <div className="dashboard-grid ai-insights">
+          <div className="ai-insights-container">
+            <div className="ai-insights-header">
+              <h3 className="ai-insights-title">AI Activity Insights</h3>
+              <p className="ai-insights-description">
+                Track AI-powered document processing and position matching activities
+              </p>
             </div>
+
+            <div className="ai-insights-grid">
+              <MetricGrid
+                metricsState={aiMetrics.state}
+                expandedGraphs={expandedGraphs}
+                onMetricClick={handleMetricClick}
+                onToggleGraph={handleToggleGraph}
+                onRetry={aiMetrics.retry}
+                gridSize={2}
+                size="sm"
+                className="ai-insights"
+              />
+            </div>
+          </div>
+
+          <div className="ai-summary-container">
+            <AISummary
+              basicAiInsights={basicAiInsights.state.data}
+              loading={basicAiInsights.state.loading}
+              error={basicAiInsights.state.error}
+              onRetry={basicAiInsights.retry}
+            />
+          </div>
+        </div>
+
+        <div className="client-metrics-container">
+          <DataViewToggle
+            id="clientDataToggle"
+            checked={showAllRecruitersClients}
+            onChange={handleToggleClientView}
+            label={toggleDescriptions.client}
+            description="Toggle to view client data for all recruiters or your own"
+          />
+          
+          <MetricCard
+            data={
+              clientMetrics.state.data[0] || {
+                id: "total_clients",
+                label: "Total Clients Created",
+                currentValue: 0,
+                previousValue: 0,
+                historicalData: [],
+              }
+            }
+            size="md"
+            layout="horizontal"
+            showGraph={true}
+            onClick={handleMetricClick}
+            onToggleGraph={(show) =>
+              handleToggleGraph(show, clientMetrics.state.data[0]?.id || "total_clients")
+            }
+            loading={clientMetrics.state.loading || clientMetrics.state.data.length === 0}
+            error={clientMetrics.state.error}
+            onRetry={clientMetrics.retry}
+          />
+        </div>
+
+        <div className="position-metrics-container">
+          <DataViewToggle
+            id="positionDataToggle"
+            checked={showAllRecruitersPositions}
+            onChange={handleTogglePositionView}
+            label={toggleDescriptions.position}
+            description="Toggle to view position data for all recruiters or your own"
+          />
+
+          <div className="position-metrics-grid">
+            <MetricGrid
+              metricsState={positionMetrics.state}
+              expandedGraphs={expandedGraphs}
+              onMetricClick={handleMetricClick}
+              onToggleGraph={handleToggleGraph}
+              onRetry={positionMetrics.retry}
+              gridSize={3}
+              size="sm"
+              className="position-metrics"
+            />
           </div>
         </div>
       </main>
     </div>
   );
 }
+

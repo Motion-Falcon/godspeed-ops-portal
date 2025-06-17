@@ -561,7 +561,7 @@ export function PositionMatching() {
                     Jobseekers
                   </p>
                 </div>
-              ) : candidatesLoading ? (
+              ) : !candidatesLoading ? (
                 <div className="advanced-loading-state">
                   <div className="lottie-animation">
                     {animationData ? (

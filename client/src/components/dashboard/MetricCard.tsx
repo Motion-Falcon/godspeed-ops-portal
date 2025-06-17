@@ -211,7 +211,12 @@ export const MetricCard: React.FC<MetricCardProps> = ({
 
   return (
     <div className={cardClasses} onClick={handleCardClick} ref={cardRef}>
-      {/* Header */}
+     
+
+      {/* Content */}
+      <div className={contentClasses}>
+        <div className={valueSectionClasses}>
+           {/* Header */}
       <div className="metric-card-header">
         <div className="metric-card-info">
           {data.icon && (
@@ -235,7 +240,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({
           </div>
         </div>
 
-        {data.historicalData && data.historicalData.length > 0 && (
+        {data.historicalData && data.historicalData.length > 0 && layout !== "horizontal" && (
           <div className="metric-card-controls">
             <button
               className={`chart-toggle-button ${graphVisible ? "active" : ""}`}
@@ -250,10 +255,6 @@ export const MetricCard: React.FC<MetricCardProps> = ({
           </div>
         )}
       </div>
-
-      {/* Content */}
-      <div className={contentClasses}>
-        <div className={valueSectionClasses}>
           {/* Growth Information */}
           {processedData.growth && (
             <div className="metric-card-growth-section">
@@ -289,15 +290,15 @@ export const MetricCard: React.FC<MetricCardProps> = ({
             data.previousValue !== undefined && data.previousValue !== 0 ? '' : 'invisible'
           }`}>
             {data.previousValue !== undefined && data.previousValue !== 0 
-              ? `Previous: ${processedData.displayPrevious}`
-              : 'Previous: --'
+              ? `Previous Month: ${processedData.displayPrevious}`
+              : 'Previous Month: --'
             }
           </p>
         </div>
 
         {/* Chart */}
         <AnimatePresence>
-          {graphVisible && chartData.length > 0 && (
+          {((graphVisible && layout !== "horizontal") || layout === "horizontal") && chartData.length > 0 && (
             <motion.div
               className={chartContainerClasses}
               initial={{ opacity: 0, height: 0 }}
@@ -310,7 +311,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({
                   data={chartData}
                   config={chartConfig}
                   width="100%"
-                  height={layout === "horizontal" ? 160 : 200}
+                  height={layout === "horizontal" ? 200 : 200}
                 />
               </div>
             </motion.div>

@@ -550,7 +550,6 @@ select.form-input {
 /* JobSeekerProfile Page Styles */
 .profile-container {
   min-height: 100vh;
-  background-color: var(--background);
   color: var(--text);
   margin-left: 68px;
   margin-top: 100px;
@@ -1053,11 +1052,6 @@ select.form-input {
 .document-item {
   display: flex;
   height: 100%;
-  background-color: var(--background);
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .document-content {
@@ -1715,10 +1709,21 @@ select.form-input {
 .document-validation {
   flex: 1;
   min-width: 280px;
-  padding-left: 16px;
-  padding-right: 16px;
-  border-left: 1px solid var(--border);
-  border-right: 1px solid var(--border);
+  padding: var(--spacing-4);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius);
+  background: radial-gradient(
+      circle at 20% 50%,
+      rgba(0, 100, 255, 0.12) 25%,
+      transparent 50%
+    ),
+    radial-gradient(
+      circle at 80% 50%,
+      rgba(255, 0, 150, 0.12) 25%,
+      transparent 50%
+    ),
+    linear-gradient(135deg, rgba(0, 0, 0, 0.05) 50%, rgba(0, 0, 0, 0.03) 100%);
 }
 
 .validation-header {
@@ -1743,20 +1748,12 @@ select.form-input {
   align-items: center;
   justify-content: center;
   text-align: center;
-  background-color: var(--background);
   border-radius: 8px;
   padding: 18px;
-  margin-top: 8px;
+  margin-top: 40px;
   margin-bottom: 8px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-  animation: subtle-pulse 2s infinite ease-in-out;
-  border: 1px solid rgba(var(--primary-rgb), 0.2);
 }
 
-.dark .validation-in-progress {
-  background-color: rgba(255, 255, 255, 0.05);
-  border-color: rgba(var(--primary-rgb), 0.3);
-}
 
 @keyframes subtle-pulse {
   0% { box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05); }
@@ -1882,12 +1879,16 @@ select.form-input {
 }
 
 .authentication-score {
-  background-color: var(--background);
+  background: #ffffff99;
   border-radius: 8px;
   padding: 12px;
   margin-bottom: 16px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
   text-align: center;
+}
+
+.dark .authentication-score {
+  background: #00000099;
 }
 
 .score-gauge {
@@ -1964,7 +1965,7 @@ select.form-input {
 
 .validation-status-item.valid {
   color: var(--success);
-  background-color: var(--success-bg);
+  background: #4CAF5025;
 }
 
 .validation-status-item.invalid {
@@ -1973,11 +1974,14 @@ select.form-input {
 }
 
 .validation-notes {
-  background-color: var(--background);
+  background: #ffffff99;;
   border-radius: 8px;
   padding: 12px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-  filter: brightness(0.8);
+}
+
+.dark .validation-notes {
+  background: #00000099;
 }
 
 .validation-notes-header {
@@ -1996,7 +2000,7 @@ select.form-input {
   margin-bottom: 10px;
   color: var(--text-muted);
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 5;
   -webkit-box-orient: vertical;
   overflow: hidden;
   transition: all 0.3s ease;

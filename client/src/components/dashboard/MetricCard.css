@@ -1,12 +1,16 @@
 /* MetricCard Component Styles */
 .metric-card {
-  background: var(--card);
+  background: #ffffff99;
   border: 1px solid var(--border);
   border-radius: var(--border-radius);
   box-shadow: var(--card-shadow);
   overflow: hidden;
   position: relative;
   transition: all var(--transition-normal);
+}
+
+.dark .metric-card {
+  background: #00000099;
 }
 
 .metric-card:hover {
@@ -184,7 +188,6 @@
 
 .metric-card-content.horizontal {
   display: flex;
-  align-items: center;
   justify-content: space-between;
 }
 

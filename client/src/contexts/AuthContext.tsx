@@ -4,6 +4,7 @@ import {
   useState,
   useEffect,
   useRef,
+  useMemo,
 } from "react";
 import { User } from "@supabase/supabase-js";
 import {
@@ -69,11 +70,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   // Use ref to track validation status and prevent duplicate validations
   const isValidatingRef = useRef(false);
 
-  // Compute user type and role flags
-  const userType = getUserType(user);
-  const isUserAdmin = isAdmin(user);
-  const isUserRecruiter = isRecruiter(user);
-  const isUserJobSeeker = isJobSeeker(user);
+  // Compute user type and role flags with memoization to prevent unnecessary re-renders
+  const userType = useMemo(() => getUserType(user), [user]);
+  const isUserAdmin = useMemo(() => isAdmin(user), [user]);
+  const isUserRecruiter = useMemo(() => isRecruiter(user), [user]);
+  const isUserJobSeeker = useMemo(() => isJobSeeker(user), [user]);
 
   // Function to fetch jobseeker profile status
   const fetchProfileStatus = async (userId: string, user: User | null) => {

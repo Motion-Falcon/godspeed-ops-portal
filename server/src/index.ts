@@ -9,6 +9,8 @@ import clientsRoutes from "./routes/clients.js";
 import positionsRoutes from "./routes/positions.js";
 import timesheetsRoutes from "./routes/timesheets.js";
 import jobseekerMetricsRoutes from "./routes/jobseekerMetrics.js";
+import recruiterMetricsRoutes from "./routes/recruiterMetrics.js";
+import aiInsightsRoutes from "./routes/aiInsights.js";
 import {
   configureSecurityHeaders,
   forceTLS,
@@ -90,7 +92,13 @@ app.use("/api/positions", positionsRoutes);
 app.use("/api/timesheets", timesheetsRoutes);
 
 // Jobseeker metrics routes
-app.use("/api/jobseeker-metrics", jobseekerMetricsRoutes);
+app.use("/api/metrics/jobseekers", jobseekerMetricsRoutes);
+
+// Recruiter metrics routes
+app.use("/api/metrics/recruiters", recruiterMetricsRoutes);
+
+// AI insights routes
+app.use("/api/ai", aiInsightsRoutes);
 
 // Error handling middleware
 app.use(

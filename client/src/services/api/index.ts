@@ -18,9 +18,23 @@ const requestCache: Record<string, CacheRecord> = {};
 
 // Generate cache key from request config
 const getCacheKey = (config: AxiosRequestConfig): string => {
-  return `${config.method}:${config.url}:${JSON.stringify(
-    config.params || {}
-  )}`;
+  // Build full URL with base URL and path
+  const fullUrl = config.baseURL ? 
+    `${config.baseURL}${config.url}` : 
+    config.url;
+  
+  // Include query parameters from both config.params and URL search params
+  const params = config.params || {};
+  const urlObj = new URL(fullUrl || '', 'http://localhost'); // Use dummy base for parsing
+  
+  // Merge URL search params with config params
+  const allParams: Record<string, string | number | boolean> = { ...params };
+  urlObj.searchParams.forEach((value, key) => {
+    allParams[key] = value;
+  });
+  
+  const cacheKey = `${config.method}:${urlObj.pathname}:${JSON.stringify(allParams)}`;
+  return cacheKey;
 };
 
 // Clear entire request cache
