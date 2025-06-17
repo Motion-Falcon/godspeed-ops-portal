@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { authenticateToken, isAdminOrRecruiter } from '../middleware/auth.js';
+import { activityLogger } from '../middleware/activityLogger.js';
 // Do not import the ANON client here, we'll create a service client
 // import { supabase } from '../utils/supabaseClient.js'; 
 import { createClient } from '@supabase/supabase-js';
@@ -643,7 +644,58 @@ router.get('/profile/:id', async (req, res) => {
  * @desc Update a jobseeker profile status
  * @access Public (Owner, Admin, Recruiter)
  */
-router.put('/profile/:id/status', async (req, res) => {
+router.put('/profile/:id/status', 
+  activityLogger({
+    onSuccess: (req, res) => {
+      const currentProfile = res.locals.currentProfile || {};
+      const updatedProfile = res.locals.updatedProfile || {};
+      const { status, rejectionReason } = req.body;
+      
+      // Determine the specific action type based on the status
+      let actionType = 'update_jobseeker';
+      let actionVerb = 'updated';
+      
+      if (status === 'verified') {
+        actionType = 'verify_jobseeker';
+        actionVerb = 'verified';
+      } else if (status === 'rejected') {
+        actionType = 'reject_jobseeker';
+        actionVerb = 'rejected';
+      } else if (status === 'pending') {
+        actionType = 'pending_jobseeker';
+        actionVerb = 'set to pending';
+      }
+      
+      const profileName = currentProfile.first_name && currentProfile.last_name 
+        ? `${currentProfile.first_name} ${currentProfile.last_name}`.trim()
+        : currentProfile.email || 'Unknown';
+      
+      return {
+        actionType,
+        actionVerb,
+        primaryEntityType: 'jobseeker',
+        primaryEntityId: req.params.id,
+        primaryEntityName: profileName,
+        displayMessage: `${actionVerb.charAt(0).toUpperCase() + actionVerb.slice(1)} jobseeker profile for ${profileName}${
+          status === 'rejected' && rejectionReason ? ` with reason: ${rejectionReason}` : ''
+        }${
+          status === 'verified' && updatedProfile.employee_id ? ` and assigned employee code ${updatedProfile.employee_id}` : ''
+        }`,
+        category: 'candidate_management',
+        priority: status === 'rejected' ? 'high' : 'normal',
+        status: 'completed',
+        metadata: {
+          profileId: req.params.id,
+          oldStatus: currentProfile.verification_status,
+          newStatus: status,
+          rejectionReason: status === 'rejected' ? rejectionReason : null,
+          employeeCodeAssigned: status === 'verified' && updatedProfile.employee_id ? updatedProfile.employee_id : null,
+          email: currentProfile.email
+        }
+      };
+    }
+  }),
+  async (req, res) => {
   try {
     const { id } = req.params;
     const { status, rejectionReason } = req.body;
@@ -661,7 +713,7 @@ router.put('/profile/:id/status', async (req, res) => {
     // Get current profile to check existing status and employee_id
     const { data: currentProfile, error: fetchError } = await supabaseAdmin
       .from('jobseeker_profiles')
-      .select('id, verification_status, employee_id')
+      .select('*')
       .eq('id', id)
       .single();
 
@@ -672,6 +724,9 @@ router.put('/profile/:id/status', async (req, res) => {
       }
       return res.status(500).json({ error: 'Failed to fetch profile' });
     }
+
+    // Store current profile for activity logger
+    res.locals.currentProfile = currentProfile;
 
     // Prepare update data
     const updateData: any = { 
@@ -750,6 +805,9 @@ router.put('/profile/:id/status', async (req, res) => {
       return res.status(404).json({ error: 'Profile not found after update attempt' });
     }
 
+    // Store updated profile for activity logger
+    res.locals.updatedProfile = data;
+
     // Format the updated profile to match the detailed frontend expectation
     const updatedDbProfile = data;
     const formattedProfile: JobSeekerDetailedProfile = {
@@ -797,301 +855,369 @@ router.put('/profile/:id/status', async (req, res) => {
  * @desc Update a jobseeker profile
  * @access Public (Owner, Admin, Recruiter)
  */
-router.put('/profile/:id/update', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const profileData = req.body;
-
-    // First check if the profile exists
-    const { data: existingProfile, error: fetchError } = await supabaseAdmin
-      .from('jobseeker_profiles')
-      .select('id, user_id, email')
-      .eq('id', id)
-      .single();
+router.put('/profile/:id/update', 
+  activityLogger({
+    onSuccess: (req, res) => {
+      // Get the updated profile data from the response
+      const updatedProfile = res.locals.updatedProfile || {};
+      const profileData = req.body;
       
-    if (fetchError) {
-      console.error('Error fetching profile for update:', fetchError);
-      if (fetchError.code === 'PGRST116') { 
+      return {
+        actionType: 'update_jobseeker',
+        actionVerb: 'updated',
+        primaryEntityType: 'jobseeker',
+        primaryEntityId: req.params.id,
+        primaryEntityName: updatedProfile.first_name && updatedProfile.last_name 
+          ? `${updatedProfile.first_name} ${updatedProfile.last_name}`.trim()
+          : profileData.firstName && profileData.lastName 
+            ? `${profileData.firstName} ${profileData.lastName}`.trim()
+            : updatedProfile.email || profileData.email || 'Unknown',
+        displayMessage: `Updated jobseeker profile for ${
+          updatedProfile.first_name && updatedProfile.last_name 
+            ? `${updatedProfile.first_name} ${updatedProfile.last_name}`.trim()
+            : profileData.firstName && profileData.lastName 
+              ? `${profileData.firstName} ${profileData.lastName}`.trim()
+              : updatedProfile.email || profileData.email || 'Unknown'
+        }`,
+        category: 'candidate_management',
+        priority: 'normal',
+        status: 'completed',
+        metadata: {
+          profileId: req.params.id,
+          updatedFields: Object.keys(profileData).filter(key => key !== 'documents'),
+          hasDocuments: !!(profileData.documents && profileData.documents.length > 0),
+          email: updatedProfile.email || profileData.email
+        }
+      };
+    }
+  }),
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const profileData = req.body;
+
+      // First check if the profile exists
+      const { data: existingProfile, error: fetchError } = await supabaseAdmin
+        .from('jobseeker_profiles')
+        .select('id, user_id, email')
+        .eq('id', id)
+        .single();
+      
+      if (fetchError) {
+        console.error('Error fetching profile for update:', fetchError);
+        if (fetchError.code === 'PGRST116') { 
+          return res.status(404).json({ error: 'Profile not found' });
+        }
+        return res.status(500).json({ error: 'Failed to verify profile existence' });
+      }
+      
+      if (!existingProfile) {
         return res.status(404).json({ error: 'Profile not found' });
       }
-      return res.status(500).json({ error: 'Failed to verify profile existence' });
-    }
-    
-    if (!existingProfile) {
-      return res.status(404).json({ error: 'Profile not found' });
-    }
 
-    // Check if updated email already exists in another profile
-    if (profileData.email && profileData.email !== existingProfile.email) {
-      const { data: emailExists, error: emailCheckError } = await supabaseAdmin
-        .from('jobseeker_profiles')
-        .select('id')
-        .eq('email', profileData.email)
-        .neq('id', id)  // Exclude the current profile
-        .maybeSingle();
+      // Check if updated email already exists in another profile
+      if (profileData.email && profileData.email !== existingProfile.email) {
+        const { data: emailExists, error: emailCheckError } = await supabaseAdmin
+          .from('jobseeker_profiles')
+          .select('id')
+          .eq('email', profileData.email)
+          .neq('id', id)  // Exclude the current profile
+          .maybeSingle();
 
-      if (emailCheckError) {
-        console.error('Error checking email uniqueness:', emailCheckError);
-        return res.status(500).json({ error: 'Failed to validate email uniqueness' });
+        if (emailCheckError) {
+          console.error('Error checking email uniqueness:', emailCheckError);
+          return res.status(500).json({ error: 'Failed to validate email uniqueness' });
+        }
+
+        if (emailExists) {
+          return res.status(409).json({ 
+            error: 'A profile with this email already exists',
+            field: 'email'
+          });
+        }
       }
 
-      if (emailExists) {
-        return res.status(409).json({ 
-          error: 'A profile with this email already exists',
-          field: 'email'
+      // Get current profile documents to compare with updated documents
+      const { data: currentProfile, error: docFetchError } = await supabaseAdmin
+        .from('jobseeker_profiles')
+        .select('documents')
+        .eq('id', id)
+        .single();
+      
+      if (docFetchError) {
+        console.error('Error fetching current documents:', docFetchError);
+        // Continue with update, but log the error
+      }
+
+      // Handle document IDs - update IDs only when document path changes
+      if (profileData.documents && currentProfile?.documents) {
+        const currentDocuments = currentProfile.documents;
+        
+        // Create a map of existing document IDs to document objects for quick lookup
+        const existingDocsMap = new Map();
+        currentDocuments.forEach((doc: DocumentRecord) => {
+          if (doc.id) {
+            existingDocsMap.set(doc.id, doc);
+          }
+        });
+        
+        // Update document IDs whenever any document metadata changes
+        profileData.documents = profileData.documents.map((doc: any) => {
+          // If doc has an ID and it exists in current documents
+          if (doc.id && existingDocsMap.has(doc.id)) {
+            const oldDoc = existingDocsMap.get(doc.id);
+            
+            // Check if any metadata has changed
+            const hasMetadataChanged = 
+              doc.documentPath !== oldDoc.documentPath || 
+              doc.documentType !== oldDoc.documentType || 
+              doc.documentTitle !== oldDoc.documentTitle || 
+              doc.documentFileName !== oldDoc.documentFileName || 
+              doc.documentNotes !== oldDoc.documentNotes;
+            
+            if (hasMetadataChanged) {
+              // Document metadata changed, generate new ID
+              const newId = generateUUID();
+              const changedFields = [];
+              
+              if (doc.documentPath !== oldDoc.documentPath) changedFields.push('path');
+              if (doc.documentType !== oldDoc.documentType) changedFields.push('type');
+              if (doc.documentTitle !== oldDoc.documentTitle) changedFields.push('title');
+              if (doc.documentFileName !== oldDoc.documentFileName) changedFields.push('fileName');
+              if (doc.documentNotes !== oldDoc.documentNotes) changedFields.push('notes');
+              
+              console.log(`Document metadata changed - Old ID: ${doc.id}, New ID: ${newId}, Changed fields: ${changedFields.join(', ')}`);
+              
+              return {
+                ...doc,
+                id: newId // Generate a new UUID for the updated document
+              };
+            }
+          }
+          // No changes or new document, keep as is
+          return doc;
         });
       }
-    }
 
-    // Get current profile documents to compare with updated documents
-    const { data: currentProfile, error: docFetchError } = await supabaseAdmin
-      .from('jobseeker_profiles')
-      .select('documents')
-      .eq('id', id)
-      .single();
+      // Prepare profile data for update - convert camelCase to snake_case
+      const updateData: { [key: string]: any } = {};
       
-    if (docFetchError) {
-      console.error('Error fetching current documents:', docFetchError);
-      // Continue with update, but log the error
-    }
-
-    // Handle document IDs - update IDs only when document path changes
-    if (profileData.documents && currentProfile?.documents) {
-      const currentDocuments = currentProfile.documents;
+      // Handle each field appropriately, mapping camelCase to snake_case
+      if (profileData.firstName) updateData.first_name = profileData.firstName;
+      if (profileData.lastName) updateData.last_name = profileData.lastName;
+      if (profileData.dob) updateData.dob = profileData.dob;
+      if (profileData.email) updateData.email = profileData.email;
+      if (profileData.mobile) updateData.mobile = profileData.mobile;
+      if (profileData.licenseNumber) updateData.license_number = profileData.licenseNumber;
+      if (profileData.passportNumber) updateData.passport_number = profileData.passportNumber;
+      if (profileData.sinNumber) updateData.sin_number = profileData.sinNumber;
+      if (profileData.sinExpiry) updateData.sin_expiry = profileData.sinExpiry;
+      if (profileData.businessNumber) updateData.business_number = profileData.businessNumber;
+      if (profileData.corporationName) updateData.corporation_name = profileData.corporationName;
+      if (profileData.street) updateData.street = profileData.street;
+      if (profileData.city) updateData.city = profileData.city;
+      if (profileData.province) updateData.province = profileData.province;
+      if (profileData.postalCode) updateData.postal_code = profileData.postalCode;
+      if (profileData.workPreference) updateData.work_preference = profileData.workPreference;
+      if (profileData.bio) updateData.bio = profileData.bio;
+      if (profileData.licenseType) updateData.license_type = profileData.licenseType;
+      if (profileData.experience) updateData.experience = profileData.experience;
+      if (profileData.manualDriving) updateData.manual_driving = profileData.manualDriving;
+      if (profileData.availability) updateData.availability = profileData.availability;
+      if (profileData.weekendAvailability !== undefined) updateData.weekend_availability = profileData.weekendAvailability;
+      if (profileData.payrateType) updateData.payrate_type = profileData.payrateType;
+      if (profileData.billRate) updateData.bill_rate = profileData.billRate;
+      if (profileData.payRate) updateData.pay_rate = profileData.payRate;
+      if (profileData.paymentMethod) updateData.payment_method = profileData.paymentMethod;
+      if (profileData.hstGst) updateData.hst_gst = profileData.hstGst;
+      if (profileData.cashDeduction) updateData.cash_deduction = profileData.cashDeduction;
+      if (profileData.overtimeEnabled !== undefined) updateData.overtime_enabled = profileData.overtimeEnabled;
+      if (profileData.overtimeHours) updateData.overtime_hours = profileData.overtimeHours;
+      if (profileData.overtimeBillRate) updateData.overtime_bill_rate = profileData.overtimeBillRate;
+      if (profileData.overtimePayRate) updateData.overtime_pay_rate = profileData.overtimePayRate;
+      if (profileData.employeeId) updateData.employee_id = profileData.employeeId;
       
-      // Create a map of existing document IDs to document objects for quick lookup
-      const existingDocsMap = new Map();
-      currentDocuments.forEach((doc: DocumentRecord) => {
-        if (doc.id) {
-          existingDocsMap.set(doc.id, doc);
-        }
-      });
-      
-      // Update document IDs whenever any document metadata changes
-      profileData.documents = profileData.documents.map((doc: any) => {
-        // If doc has an ID and it exists in current documents
-        if (doc.id && existingDocsMap.has(doc.id)) {
-          const oldDoc = existingDocsMap.get(doc.id);
-          
-          // Check if any metadata has changed
-          const hasMetadataChanged = 
-            doc.documentPath !== oldDoc.documentPath || 
-            doc.documentType !== oldDoc.documentType || 
-            doc.documentTitle !== oldDoc.documentTitle || 
-            doc.documentFileName !== oldDoc.documentFileName || 
-            doc.documentNotes !== oldDoc.documentNotes;
-          
-          if (hasMetadataChanged) {
-            // Document metadata changed, generate new ID
-            const newId = generateUUID();
-            const changedFields = [];
-            
-            if (doc.documentPath !== oldDoc.documentPath) changedFields.push('path');
-            if (doc.documentType !== oldDoc.documentType) changedFields.push('type');
-            if (doc.documentTitle !== oldDoc.documentTitle) changedFields.push('title');
-            if (doc.documentFileName !== oldDoc.documentFileName) changedFields.push('fileName');
-            if (doc.documentNotes !== oldDoc.documentNotes) changedFields.push('notes');
-            
-            console.log(`Document metadata changed - Old ID: ${doc.id}, New ID: ${newId}, Changed fields: ${changedFields.join(', ')}`);
-            
-            return {
-              ...doc,
-              id: newId // Generate a new UUID for the updated document
-            };
-          }
-        }
-        // No changes or new document, keep as is
-        return doc;
-      });
-    }
-
-    // Prepare profile data for update - convert camelCase to snake_case
-    const updateData: { [key: string]: any } = {};
-    
-    // Handle each field appropriately, mapping camelCase to snake_case
-    if (profileData.firstName) updateData.first_name = profileData.firstName;
-    if (profileData.lastName) updateData.last_name = profileData.lastName;
-    if (profileData.dob) updateData.dob = profileData.dob;
-    if (profileData.email) updateData.email = profileData.email;
-    if (profileData.mobile) updateData.mobile = profileData.mobile;
-    if (profileData.licenseNumber) updateData.license_number = profileData.licenseNumber;
-    if (profileData.passportNumber) updateData.passport_number = profileData.passportNumber;
-    if (profileData.sinNumber) updateData.sin_number = profileData.sinNumber;
-    if (profileData.sinExpiry) updateData.sin_expiry = profileData.sinExpiry;
-    if (profileData.businessNumber) updateData.business_number = profileData.businessNumber;
-    if (profileData.corporationName) updateData.corporation_name = profileData.corporationName;
-    if (profileData.street) updateData.street = profileData.street;
-    if (profileData.city) updateData.city = profileData.city;
-    if (profileData.province) updateData.province = profileData.province;
-    if (profileData.postalCode) updateData.postal_code = profileData.postalCode;
-    if (profileData.workPreference) updateData.work_preference = profileData.workPreference;
-    if (profileData.bio) updateData.bio = profileData.bio;
-    if (profileData.licenseType) updateData.license_type = profileData.licenseType;
-    if (profileData.experience) updateData.experience = profileData.experience;
-    if (profileData.manualDriving) updateData.manual_driving = profileData.manualDriving;
-    if (profileData.availability) updateData.availability = profileData.availability;
-    if (profileData.weekendAvailability !== undefined) updateData.weekend_availability = profileData.weekendAvailability;
-    if (profileData.payrateType) updateData.payrate_type = profileData.payrateType;
-    if (profileData.billRate) updateData.bill_rate = profileData.billRate;
-    if (profileData.payRate) updateData.pay_rate = profileData.payRate;
-    if (profileData.paymentMethod) updateData.payment_method = profileData.paymentMethod;
-    if (profileData.hstGst) updateData.hst_gst = profileData.hstGst;
-    if (profileData.cashDeduction) updateData.cash_deduction = profileData.cashDeduction;
-    if (profileData.overtimeEnabled !== undefined) updateData.overtime_enabled = profileData.overtimeEnabled;
-    if (profileData.overtimeHours) updateData.overtime_hours = profileData.overtimeHours;
-    if (profileData.overtimeBillRate) updateData.overtime_bill_rate = profileData.overtimeBillRate;
-    if (profileData.overtimePayRate) updateData.overtime_pay_rate = profileData.overtimePayRate;
-    if (profileData.employeeId) updateData.employee_id = profileData.employeeId;
-    
-    // Handle documents array if present
-    if (profileData.documents) {
-      updateData.documents = profileData.documents;
-    }
-    
-    // Always update the updated_at timestamp
-    updateData.updated_at = new Date().toISOString();
-
-    // Update the profile in the database
-    const { data: updatedProfile, error: updateError } = await supabaseAdmin
-      .from('jobseeker_profiles')
-      .update(updateData)
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (updateError) {
-      console.error('Error updating profile:', updateError);
-      return res.status(500).json({ error: 'Failed to update profile' });
-    }
-
-    console.log(updateData);
-    // Send profile data to AI verification service
-    try {
-      console.log(`Sending updated profile data to AI verification service at: ${aiVerificationUrl}`);
-      
-      // Create payload with user_id included
-      const verificationPayload = {
-        ...updateData,
-        user_id: existingProfile.user_id // Add the user_id to the payload
-      };
-      
-      const verificationResponse = await fetch(aiVerificationUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(verificationPayload),
-      });
-      
-      if (verificationResponse.ok) {
-        const verificationResult = await verificationResponse.json();
-        console.log('AI verification service response:', verificationResult);
-      } else {
-        console.error('AI verification service error:', verificationResponse.status, await verificationResponse.text());
+      // Handle documents array if present
+      if (profileData.documents) {
+        updateData.documents = profileData.documents;
       }
-    } catch (verificationError) {
-      console.error('Error sending data to AI verification service:', verificationError);
-      // Don't block profile update if verification service fails
+      
+      // Always update the updated_at timestamp
+      updateData.updated_at = new Date().toISOString();
+
+      // Update the profile in the database
+      const { data: updatedProfile, error: updateError } = await supabaseAdmin
+        .from('jobseeker_profiles')
+        .update(updateData)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (updateError) {
+        console.error('Error updating profile:', updateError);
+        return res.status(500).json({ error: 'Failed to update profile' });
+      }
+
+      // Store the updated profile for activity logging
+      res.locals.updatedProfile = updatedProfile;
+
+      console.log(updateData);
+      // Send profile data to AI verification service
+      try {
+        console.log(`Sending updated profile data to AI verification service at: ${aiVerificationUrl}`);
+        
+        // Create payload with user_id included
+        const verificationPayload = {
+          ...updateData,
+          user_id: existingProfile.user_id // Add the user_id to the payload
+        };
+        
+        const verificationResponse = await fetch(aiVerificationUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(verificationPayload),
+        });
+        
+        if (verificationResponse.ok) {
+          const verificationResult = await verificationResponse.json();
+          console.log('AI verification service response:', verificationResult);
+        } else {
+          console.error('AI verification service error:', verificationResponse.status, await verificationResponse.text());
+        }
+      } catch (verificationError) {
+        console.error('Error sending data to AI verification service:', verificationError);
+        // Don't block profile update if verification service fails
+      }
+
+      res.json({ 
+        message: 'Profile updated successfully',
+        profile: updatedProfile
+      });
+
+    } catch (error) {
+      console.error('Unexpected error updating jobseeker profile:', error);
+      res.status(500).json({ error: 'An unexpected error occurred while updating the profile' });
     }
-
-    res.json({ 
-      message: 'Profile updated successfully',
-      profile: updatedProfile
-    });
-
-  } catch (error) {
-    console.error('Unexpected error updating jobseeker profile:', error);
-    res.status(500).json({ error: 'An unexpected error occurred while updating the profile' });
-  }
-});
+  });
 
 /**
  * @route DELETE /api/jobseekers/:id
  * @desc Delete a specific jobseeker profile
  * @access Private (Admin, Recruiter)
  */
-router.delete('/profile/:id', isAdminOrRecruiter, async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    // First check if the profile exists and get the user_id
-    const { data: profile, error: fetchError } = await supabaseAdmin
-      .from('jobseeker_profiles')
-      .select('id, user_id')
-      .eq('id', id)
-      .single();
-      
-    if (fetchError) {
-      console.error('Error fetching profile for deletion:', fetchError);
-      if (fetchError.code === 'PGRST116') { 
-        return res.status(404).json({ error: 'Profile not found' });
-      }
-      return res.status(500).json({ error: 'Failed to verify profile existence' });
-    }
-    
-    if (!profile) {
-      return res.status(404).json({ error: 'Profile not found' });
-    }
-
-    // Store the user_id before deleting the profile
-    const userId = profile.user_id;
-
-    // Use the admin client to bypass RLS for the delete operation
-    const { error: deleteError } = await supabaseAdmin
-      .from('jobseeker_profiles')
-      .delete()
-      .eq('id', id);
-
-    if (deleteError) {
-      console.error('Error deleting profile from database:', deleteError);
-      return res.status(500).json({ error: 'Failed to delete jobseeker profile' });
-    }
-
-    // Update the user metadata to set hasProfile to false
-    try {
-      // Get existing user metadata to preserve other fields
-      const { data: userData, error: userDataError } = await supabaseAdmin.auth.admin.getUserById(userId);
-      
-      if (!userDataError && userData?.user) {
-        const existingUserMetadata = userData.user.user_metadata || {};
-        
-        // Create merged metadata with hasProfile set to false
-        const mergedMetadata = {
-          ...existingUserMetadata,
-          hasProfile: false
-        };
-        
-        // Update user metadata with merged data
-        const { error: metadataError } = await supabaseAdmin.auth.admin.updateUserById(
-          userId,
-          { 
-            user_metadata: mergedMetadata
-          }
-        );
-        
-        if (metadataError) {
-          console.error('Error updating user metadata to remove hasProfile flag:', metadataError);
-        } else {
-          console.log(`Successfully updated hasProfile flag to false for user ${userId}`);
+router.delete(
+  '/profile/:id',
+  authenticateToken,
+  isAdminOrRecruiter,
+  activityLogger({
+    onSuccess: (req, res) => {
+      const jobseekerProfile = res.locals.jobseekerProfile;
+      return {
+        actionType: 'delete_jobseeker',
+        actionVerb: 'deleted',
+        primaryEntityType: 'jobseeker',
+        primaryEntityId: req.params.id,
+        primaryEntityName: jobseekerProfile ? 
+          `${jobseekerProfile.first_name || ''} ${jobseekerProfile.last_name || ''}`.trim() || jobseekerProfile.email || `Jobseeker ${req.params.id}` :
+          `Jobseeker ${req.params.id}`,
+        displayMessage: `Deleted jobseeker profile ${jobseekerProfile ? `for ${jobseekerProfile.first_name || ''} ${jobseekerProfile.last_name || ''}`.trim() || jobseekerProfile.email : req.params.id}`,
+        category: 'candidate_management',
+        priority: 'normal',
+        status: 'completed',
+        metadata: {
+          profileId: req.params.id,
+          deletedProfile: jobseekerProfile ? {
+            firstName: jobseekerProfile.first_name,
+            lastName: jobseekerProfile.last_name,
+            email: jobseekerProfile.email,
+            phoneNumber: jobseekerProfile.phone_number,
+            status: jobseekerProfile.status
+          } : null
         }
-      } else {
-        console.error('Error fetching user data for updating metadata:', userDataError);
-      }
-    } catch (metadataError) {
-      // Log error but don't fail the profile deletion
-      console.error('Error updating user metadata to remove hasProfile flag:', metadataError);
+      };
     }
+  }),
+  async (req, res) => {
+    try {
+      const { id } = req.params;
 
-    res.json({ 
-      message: 'Profile deleted successfully',
-      deletedId: id
-    });
+      // First, get the jobseeker profile for activity logging
+      const { data: jobseekerProfile, error: fetchError } = await supabaseAdmin
+        .from('jobseeker_profiles')
+        .select('*')
+        .eq('id', id)
+        .single();
 
-  } catch (error) {
-    console.error('Unexpected error deleting jobseeker profile:', error);
-    res.status(500).json({ error: 'An unexpected error occurred while deleting the profile' });
-  }
-});
+      if (fetchError && fetchError.code !== 'PGRST116') {
+        console.error('Error fetching jobseeker profile:', fetchError);
+        return res.status(500).json({ error: 'Failed to fetch jobseeker profile' });
+      }
+
+      if (!jobseekerProfile) {
+        return res.status(404).json({ error: 'Jobseeker profile not found' });
+      }
+
+      // Store the profile for activity logging
+      res.locals.jobseekerProfile = jobseekerProfile;
+
+      // Delete the jobseeker profile
+      const { error: deleteError } = await supabaseAdmin
+        .from('jobseeker_profiles')
+        .delete()
+        .eq('id', id);
+
+      if (deleteError) {
+        console.error('Error deleting profile from database:', deleteError);
+        return res.status(500).json({ error: 'Failed to delete jobseeker profile' });
+      }
+
+      // Update the user metadata to set hasProfile to false
+      try {
+        // Get existing user metadata to preserve other fields
+        const { data: userData, error: userDataError } = await supabaseAdmin.auth.admin.getUserById(jobseekerProfile.user_id);
+        
+        if (!userDataError && userData?.user) {
+          const existingUserMetadata = userData.user.user_metadata || {};
+          
+          // Create merged metadata with hasProfile set to false
+          const mergedMetadata = {
+            ...existingUserMetadata,
+            hasProfile: false
+          };
+          
+          // Update user metadata with merged data
+          const { error: metadataError } = await supabaseAdmin.auth.admin.updateUserById(
+            jobseekerProfile.user_id,
+            { 
+              user_metadata: mergedMetadata
+            }
+          );
+          
+          if (metadataError) {
+            console.error('Error updating user metadata to remove hasProfile flag:', metadataError);
+          } else {
+            console.log(`Successfully updated hasProfile flag to false for user ${jobseekerProfile.user_id}`);
+          }
+        } else {
+          console.error('Error fetching user data for updating metadata:', userDataError);
+        }
+      } catch (metadataError) {
+        // Log error but don't fail the profile deletion
+        console.error('Error updating user metadata to remove hasProfile flag:', metadataError);
+      }
+
+      res.json({ 
+        message: 'Profile deleted successfully',
+        deletedId: id
+      });
+
+    } catch (error) {
+      console.error('Unexpected error deleting jobseeker profile:', error);
+      res.status(500).json({ error: 'An unexpected error occurred while deleting the profile' });
+    }
+  });
 
 /**
  * @route GET /api/jobseekers/drafts

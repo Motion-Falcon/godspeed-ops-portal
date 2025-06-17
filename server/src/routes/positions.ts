@@ -1,10 +1,11 @@
-import { Router, Request, Response } from "express";
-import { authenticateToken, authorizeRoles } from "../middleware/auth.js";
-import { createClient } from "@supabase/supabase-js";
-import { apiRateLimiter, sanitizeInputs } from "../middleware/security.js";
-import dotenv from "dotenv";
-import { PositionData, DbPositionData } from "../types.js";
-import { v4 as uuidv4 } from "uuid";
+import express, { Router, Request, Response } from 'express';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { authenticateToken, authorizeRoles } from '../middleware/auth.js';
+import { sanitizeInputs, apiRateLimiter } from '../middleware/security.js';
+import { activityLogger } from '../middleware/activityLogger.js';
+import dotenv from 'dotenv';
+import { PositionData, DbPositionData } from '../types.js';
+import { v4 as uuidv4 } from 'uuid';
 
 dotenv.config();
 
@@ -1103,6 +1104,31 @@ router.post(
   authenticateToken,
   authorizeRoles(["admin", "recruiter"]),
   sanitizeInputs,
+  activityLogger({
+    onSuccess: (req, res) => ({
+      actionType: 'create_position',
+      actionVerb: 'created',
+      primaryEntityType: 'position',
+      primaryEntityId: res.locals.newPosition?.id,
+      primaryEntityName: req.body.title,
+      secondaryEntityType: 'client',
+      secondaryEntityId: req.body.client,
+      secondaryEntityName: res.locals.clientName,
+      displayMessage: `Created position "${req.body.title}" for client "${res.locals.clientName}"`,
+      category: 'position_management',
+      priority: 'normal',
+      metadata: {
+        positionCode: res.locals.newPosition?.position_code,
+        startDate: req.body.startDate,
+        employmentTerm: req.body.employmentTerm,
+        employmentType: req.body.employmentType,
+        numberOfPositions: req.body.numberOfPositions,
+        regularPayRate: req.body.regularPayRate,
+        billRate: req.body.billRate,
+        location: `${req.body.city}, ${req.body.province}`
+      }
+    })
+  }),
   async (req: Request, res: Response) => {
     try {
       if (!req.user || !req.user.id) {
@@ -1198,6 +1224,9 @@ router.post(
         return res.status(404).json({ error: "Client not found" });
       }
 
+      // Store client name for activity logging
+      res.locals.clientName = client.company_name;
+
       // Validate documents required - at least one must be selected
       const documentsRequired = cleanedData.documentsRequired || {};
       const hasAtLeastOneDoc = Object.values(documentsRequired).some(
@@ -1242,6 +1271,9 @@ router.post(
         return res.status(500).json({ error: "Failed to create position" });
       }
 
+      // Store new position for activity logging
+      res.locals.newPosition = newPosition;
+
       return res.status(201).json({
         success: true,
         message: "Position created successfully",
@@ -1264,6 +1296,32 @@ router.put(
   authenticateToken,
   authorizeRoles(["admin", "recruiter"]),
   sanitizeInputs,
+  activityLogger({
+    onSuccess: (req, res) => ({
+      actionType: 'update_position',
+      actionVerb: 'updated',
+      primaryEntityType: 'position',
+      primaryEntityId: req.params.id,
+      primaryEntityName: req.body.title,
+      secondaryEntityType: 'client',
+      secondaryEntityId: req.body.client,
+      secondaryEntityName: res.locals.clientName,
+      displayMessage: `Updated position "${req.body.title}" for client "${res.locals.clientName}"`,
+      category: 'position_management',
+      priority: 'normal',
+      metadata: {
+        positionCode: res.locals.updatedPosition?.position_code,
+        startDate: req.body.startDate,
+        employmentTerm: req.body.employmentTerm,
+        employmentType: req.body.employmentType,
+        numberOfPositions: req.body.numberOfPositions,
+        regularPayRate: req.body.regularPayRate,
+        billRate: req.body.billRate,
+        location: `${req.body.city}, ${req.body.province}`,
+        updatedFields: Object.keys(req.body).filter(key => key !== 'clientName')
+      }
+    })
+  }),
   async (req: Request, res: Response) => {
     try {
       if (!req.user || !req.user.id) {
@@ -1366,6 +1424,9 @@ router.put(
         return res.status(404).json({ error: "Client not found" });
       }
 
+      // Store client name for activity logging
+      res.locals.clientName = client.company_name;
+
       // Validate documents required - at least one must be selected
       const documentsRequired = cleanedData.documentsRequired || {};
       const hasAtLeastOneDoc = Object.values(documentsRequired).some(
@@ -1456,6 +1517,9 @@ router.put(
         console.error("Warning: Assignment was deleted but position update failed. Manual intervention may be required.");
         return res.status(500).json({ error: "Failed to remove candidate" });
       }
+
+      // Store updated position for activity logging
+      res.locals.updatedPosition = updatedPosition;
 
       return res.status(200).json({
         success: true,
@@ -1790,21 +1854,49 @@ router.delete(
   "/:id",
   authenticateToken,
   authorizeRoles(["admin", "recruiter"]),
+  activityLogger({
+    onSuccess: (req, res) => ({
+      actionType: 'delete_position',
+      actionVerb: 'deleted',
+      primaryEntityType: 'position',
+      primaryEntityId: req.params.id,
+      primaryEntityName: res.locals.deletedPosition?.title || `Position ID: ${req.params.id}`,
+      secondaryEntityType: 'client',
+      secondaryEntityId: res.locals.deletedPosition?.client,
+      secondaryEntityName: res.locals.deletedPosition?.client_name,
+      displayMessage: `Deleted position "${res.locals.deletedPosition?.title || req.params.id}"`,
+      category: 'position_management',
+      priority: 'high',
+      metadata: {
+        positionCode: res.locals.deletedPosition?.position_code,
+        clientName: res.locals.deletedPosition?.client_name,
+        startDate: res.locals.deletedPosition?.start_date,
+        employmentTerm: res.locals.deletedPosition?.employment_term,
+        employmentType: res.locals.deletedPosition?.employment_type,
+        numberOfPositions: res.locals.deletedPosition?.number_of_positions,
+        location: res.locals.deletedPosition ? 
+          `${res.locals.deletedPosition.city}, ${res.locals.deletedPosition.province}` : null
+      }
+    })
+  }),
   async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
 
-      // Check if position exists
+      // Check if position exists and get position data for logging
       const { data: existingPosition, error: positionCheckError } =
         await supabase
           .from("positions")
-          .select("id")
+          .select("*")
           .eq("id", id)
           .maybeSingle();
 
       if (positionCheckError || !existingPosition) {
         return res.status(404).json({ error: "Position not found" });
       }
+
+      // Store position data for activity logging
+      res.locals.deletedPosition = existingPosition;
 
       // Delete position
       const { error: deleteError } = await supabase
@@ -1839,6 +1931,32 @@ router.post(
   authenticateToken,
   authorizeRoles(["admin", "recruiter"]),
   sanitizeInputs,
+  activityLogger({
+    onSuccess: (req, res) => ({
+      actionType: 'assign_jobseeker',
+      actionVerb: 'assigned',
+      primaryEntityType: 'jobseeker',
+      primaryEntityId: req.body.candidateId,
+      primaryEntityName: res.locals.candidateName || `Candidate ID: ${req.body.candidateId}`,
+      secondaryEntityType: 'position',
+      secondaryEntityId: req.params.id,
+      secondaryEntityName: res.locals.positionTitle,
+      tertiaryEntityType: 'client',
+      tertiaryEntityId: res.locals.clientId,
+      tertiaryEntityName: res.locals.clientName,
+      displayMessage: `Assigned candidate "${res.locals.candidateName || req.body.candidateId}" to position "${res.locals.positionTitle}"`,
+      category: 'candidate_management',
+      priority: 'normal',
+      status: 'active',
+      metadata: {
+        startDate: req.body.startDate,
+        endDate: req.body.endDate,
+        assignmentId: res.locals.newAssignment?.id,
+        positionCode: res.locals.positionCode,
+        totalAssignedCandidates: res.locals.totalAssigned
+      }
+    })
+  }),
   async (req: Request, res: Response) => {
     try {
       const { id: positionId } = req.params;
@@ -1856,7 +1974,7 @@ router.post(
       // Get current position data
       const { data: position, error: positionError } = await supabase
         .from("positions")
-        .select("assigned_jobseekers, number_of_positions")
+        .select("assigned_jobseekers, number_of_positions, title, position_code, client, client_name")
         .eq("id", positionId)
         .single();
 
@@ -1864,16 +1982,36 @@ router.post(
         return res.status(404).json({ error: "Position not found" });
       }
 
-      // Check if candidate exists
+      // Store position data for activity logging
+      res.locals.positionTitle = position.title;
+      res.locals.positionCode = position.position_code;
+      res.locals.clientId = position.client;
+      res.locals.clientName = position.client_name;
+
+      // Get candidate name for activity logging
+      const { data: candidateDetails, error: candidateNameError } = await supabase
+        .from("jobseeker_profiles")
+        .select("first_name, last_name")
+        .eq("user_id", candidateId)
+        .maybeSingle();
+
+      if (candidateDetails) {
+        res.locals.candidateName = `${candidateDetails.first_name} ${candidateDetails.last_name}`;
+      }
+
+      // Check if candidate exists and get candidate name
       const { data: candidate, error: candidateError } = await supabase
         .from("jobseeker_profiles")
-        .select("id")
+        .select("id, first_name, last_name")
         .eq("user_id", candidateId)
         .single();
 
       if (candidateError || !candidate) {
         return res.status(404).json({ error: "Candidate not found" });
       }
+
+      // Store candidate name for activity logging
+      res.locals.candidateName = `${candidate.first_name} ${candidate.last_name}`;
 
       // Check if there's already an active assignment for this position-candidate pair
       const { data: existingAssignment, error: assignmentCheckError } = await supabase
@@ -1930,9 +2068,15 @@ router.post(
         return res.status(500).json({ error: "Failed to create assignment" });
       }
 
+      // Store assignment for activity logging
+      res.locals.newAssignment = newAssignment;
+
       // Update the assigned_jobseekers array in positions table for backward compatibility
       const currentAssigned = position.assigned_jobseekers || [];
       const updatedAssigned = [...currentAssigned, candidateId];
+
+      // Store total assigned count for activity logging
+      res.locals.totalAssigned = updatedAssigned.length;
 
       const { data: updatedPosition, error: updateError } = await supabase
         .from("positions")
@@ -2014,6 +2158,30 @@ router.delete(
   "/:id/assign/:candidateId",
   authenticateToken,
   authorizeRoles(["admin", "recruiter"]),
+  activityLogger({
+    onSuccess: (req, res) => ({
+      actionType: 'remove_jobseeker',
+      actionVerb: 'removed',
+      primaryEntityType: 'jobseeker',
+      primaryEntityId: req.params.candidateId,
+      primaryEntityName: res.locals.candidateName || `Candidate ID: ${req.params.candidateId}`,
+      secondaryEntityType: 'position',
+      secondaryEntityId: req.params.id,
+      secondaryEntityName: res.locals.positionTitle,
+      tertiaryEntityType: 'client',
+      tertiaryEntityId: res.locals.clientId,
+      tertiaryEntityName: res.locals.clientName,
+      displayMessage: `Removed candidate "${res.locals.candidateName || req.params.candidateId}" from position "${res.locals.positionTitle}"`,
+      category: 'candidate_management',
+      priority: 'normal',
+      status: 'removed',
+      metadata: {
+        removedAssignmentId: res.locals.removedAssignmentId,
+        positionCode: res.locals.positionCode,
+        remainingAssignedCandidates: res.locals.remainingAssigned
+      }
+    })
+  }),
   async (req: Request, res: Response) => {
     try {
       const { id: positionId, candidateId } = req.params;
@@ -2551,115 +2719,6 @@ router.get(
       res
         .status(500)
         .json({ error: "An unexpected error occurred while fetching candidate assignments" });
-    }
-  }
-);
-
-// Create a new position draft
-router.post(
-  "/draft",
-  authenticateToken,
-  authorizeRoles(["admin", "recruiter"]),
-  sanitizeInputs,
-  async (req: Request, res: Response) => {
-    try {
-      if (!req.user || !req.user.id) {
-        return res.status(401).json({ error: "Authentication required" });
-      }
-
-      const userId = req.user.id;
-      const positionData: Partial<PositionData> = req.body;
-
-      // Remove clientName as it's not in the database schema
-      const { clientName, ...positionDataWithoutClientName } = positionData;
-
-      // Validate client if provided
-      let client = null;
-      if (positionDataWithoutClientName.client) {
-        const { data: clientData, error: clientError } = await supabase
-          .from("clients")
-          .select("id, company_name")
-          .eq("id", positionDataWithoutClientName.client)
-          .maybeSingle();
-
-        if (clientError) {
-          console.error("Error checking client:", clientError);
-          return res.status(500).json({ error: "Failed to validate client" });
-        }
-
-        if (!clientData) {
-          return res.status(400).json({ error: "Invalid client ID" });
-        }
-
-        client = clientData;
-      }
-
-      // Handle empty date fields - convert empty strings to null
-      // Using a type-safe approach to avoid TypeScript errors
-      const dataWithNullDates = { ...positionDataWithoutClientName };
-      if (dataWithNullDates.startDate === "")
-        dataWithNullDates.startDate = undefined;
-      if (dataWithNullDates.endDate === "")
-        dataWithNullDates.endDate = undefined;
-      if (dataWithNullDates.projCompDate === "")
-        dataWithNullDates.projCompDate = undefined;
-
-      // Ensure numberOfPositions is a number
-      if (dataWithNullDates.numberOfPositions !== undefined) {
-        dataWithNullDates.numberOfPositions = Number(
-          dataWithNullDates.numberOfPositions
-        );
-      }
-
-      // Generate a new UUID for the draft
-      const draftId = uuidv4();
-
-      // Use dataWithNullDates instead of positionData
-      // Convert position data to snake_case for database
-      const dbDraftData = Object.entries(dataWithNullDates).reduce(
-        (acc, [key, value]) => {
-          const snakeKey = camelToSnakeCase(key);
-          acc[snakeKey] = value;
-          return acc;
-        },
-        {} as Record<string, any>
-      );
-
-      // Add required fields
-      dbDraftData.id = draftId;
-      dbDraftData.is_draft = true;
-      dbDraftData.created_by_user_id = userId;
-      dbDraftData.updated_by_user_id = userId;
-      dbDraftData.created_at = new Date().toISOString();
-      dbDraftData.updated_at = new Date().toISOString();
-      dbDraftData.last_updated = new Date().toISOString();
-
-      // Add client_name if client is provided
-      if (client) {
-        dbDraftData.client_name = client.company_name;
-      }
-
-      // Insert new draft
-      const { data: newDraft, error: insertError } = await supabase
-        .from("position_drafts")
-        .insert([dbDraftData])
-        .select()
-        .single();
-
-      if (insertError) {
-        console.error("Error creating draft:", insertError);
-        return res.status(500).json({ error: "Failed to create draft" });
-      }
-
-      return res.status(201).json({
-        success: true,
-        message: "Draft created successfully",
-        draft: newDraft,
-        lastUpdated: newDraft.last_updated,
-      });
-    } catch (error) {
-      console.error("Unexpected error creating draft:", error);
-      return res.status(500).json({ error: "An unexpected error occurred" });
     }
   }
 );

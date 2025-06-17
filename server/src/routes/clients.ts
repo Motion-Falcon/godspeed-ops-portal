@@ -1,10 +1,11 @@
-import { Router, Request, Response } from 'express';
+import express, { Router, Request, Response } from 'express';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { authenticateToken, authorizeRoles } from '../middleware/auth.js';
-import { createClient } from '@supabase/supabase-js';
-import { apiRateLimiter, sanitizeInputs } from '../middleware/security.js';
+import { sanitizeInputs, apiRateLimiter } from '../middleware/security.js';
 import dotenv from 'dotenv';
 import { ClientData, DbClientData } from '../types.js';
 import { v4 as uuidv4 } from 'uuid';
+import { activityLogger } from '../middleware/activityLogger.js';
 
 dotenv.config();
 
@@ -550,6 +551,23 @@ router.post('/',
   authenticateToken, 
   authorizeRoles(['admin', 'recruiter']),
   sanitizeInputs,
+  activityLogger({
+    onSuccess: (req, res) => ({
+      actionType: 'create_client',
+      actionVerb: 'created',
+      primaryEntityType: 'client',
+      primaryEntityId: res.locals.newClient?.id,
+      primaryEntityName: req.body.companyName,
+      displayMessage: `Created client "${req.body.companyName}"`,
+      category: 'client_management',
+      priority: 'normal',
+      metadata: {
+        shortCode: req.body.shortCode,
+        clientManager: req.body.clientManager,
+        website: req.body.website
+      }
+    })
+  }),
   async (req: Request, res: Response) => {
     try {
       if (!req.user || !req.user.id) {
@@ -664,6 +682,9 @@ router.post('/',
         return res.status(500).json({ error: 'Failed to create client' });
       }
 
+      // Store client data for activity logging
+      res.locals.newClient = newClient;
+
       return res.status(201).json({
         success: true,
         message: 'Client created successfully',
@@ -685,6 +706,24 @@ router.put('/:id',
   authenticateToken, 
   authorizeRoles(['admin', 'recruiter']),
   sanitizeInputs,
+  activityLogger({
+    onSuccess: (req, res) => ({
+      actionType: 'update_client',
+      actionVerb: 'updated',
+      primaryEntityType: 'client',
+      primaryEntityId: req.params.id,
+      primaryEntityName: req.body.companyName,
+      displayMessage: `Updated client "${req.body.companyName}"`,
+      category: 'client_management',
+      priority: 'normal',
+      metadata: {
+        shortCode: req.body.shortCode,
+        clientManager: req.body.clientManager,
+        website: req.body.website,
+        updatedFields: Object.keys(req.body).filter(key => req.body[key] !== undefined)
+      }
+    })
+  }),
   async (req: Request, res: Response) => {
     try {
       if (!req.user || !req.user.id) {
@@ -1007,20 +1046,42 @@ router.get('/draft',
 router.delete('/:id', 
   authenticateToken, 
   authorizeRoles(['admin', 'recruiter']),
+  activityLogger({
+    onSuccess: (req, res) => ({
+      actionType: 'delete_client',
+      actionVerb: 'deleted',
+      primaryEntityType: 'client',
+      primaryEntityId: req.params.id,
+      primaryEntityName: res.locals.deletedClient?.company_name || `Client ID: ${req.params.id}`,
+      displayMessage: `Deleted client "${res.locals.deletedClient?.company_name || req.params.id}"`,
+      category: 'client_management',
+      priority: 'high',
+      metadata: {
+        deletedClientData: res.locals.deletedClient ? {
+          shortCode: res.locals.deletedClient.short_code,
+          billingName: res.locals.deletedClient.billing_name,
+          clientManager: res.locals.deletedClient.client_manager
+        } : null
+      }
+    })
+  }),
   async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
 
-      // Check if client exists
+      // Check if client exists and get client data for logging
       const { data: existingClient, error: clientCheckError } = await supabase
         .from('clients')
-        .select('id')
+        .select('*')
         .eq('id', id)
         .maybeSingle();
 
       if (clientCheckError || !existingClient) {
         return res.status(404).json({ error: 'Client not found' });
       }
+
+      // Store client data for activity logging
+      res.locals.deletedClient = existingClient;
 
       // Delete client
       const { error: deleteError } = await supabase

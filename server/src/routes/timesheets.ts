@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { authenticateToken, authorizeRoles } from '../middleware/auth.js';
 import { createClient } from '@supabase/supabase-js';
 import { apiRateLimiter, sanitizeInputs } from '../middleware/security.js';
+import { activityLogger } from '../middleware/activityLogger.js';
 import dotenv from 'dotenv';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -72,13 +73,6 @@ interface DbTimesheetData {
   created_by_user_id?: string;
   updated_at?: string;
   updated_by_user_id?: string;
-}
-
-/**
- * Convert camelCase to snake_case
- */
-function camelToSnakeCase(str: string): string {
-  return str.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
 }
 
 /**
@@ -529,6 +523,72 @@ router.post('/',
   authenticateToken, 
   authorizeRoles(['admin', 'recruiter', 'jobseeker']),
   sanitizeInputs,
+  activityLogger({
+    onSuccess: async (req: Request, res: Response) => {
+      const timesheetData = req.body;
+      const newTimesheet = res.locals.newTimesheet;
+      
+      // Get jobseeker name for display
+      let jobseekerName = 'Unknown Jobseeker';
+      if (timesheetData.jobseekerProfileId) {
+        try {
+          const { data: profile } = await supabase
+            .from('jobseeker_profiles')
+            .select('first_name, last_name')
+            .eq('id', timesheetData.jobseekerProfileId)
+            .single();
+          if (profile) {
+            jobseekerName = `${profile.first_name} ${profile.last_name}`;
+          }
+        } catch (error) {
+          console.warn('Could not fetch jobseeker name for activity log');
+        }
+      }
+
+      // Get position title for display
+      let positionTitle = 'Unknown Position';
+      if (timesheetData.positionId) {
+        try {
+          const { data: position } = await supabase
+            .from('positions')
+            .select('title, position_code')
+            .eq('id', timesheetData.positionId)
+            .single();
+          if (position) {
+            positionTitle = position.title || position.position_code;
+          }
+        } catch (error) {
+          console.warn('Could not fetch position title for activity log');
+        }
+      }
+
+      return {
+        actionType: 'create_timesheet',
+        actionVerb: 'created',
+        primaryEntityType: 'timesheet',
+        primaryEntityId: newTimesheet?.id,
+        primaryEntityName: `Timesheet for week ${timesheetData.weekStartDate}`,
+        secondaryEntityType: 'jobseeker',
+        secondaryEntityId: timesheetData.jobseekerProfileId,
+        secondaryEntityName: jobseekerName,
+        tertiaryEntityType: 'position',
+        tertiaryEntityId: timesheetData.positionId,
+        tertiaryEntityName: positionTitle,
+        displayMessage: `Created timesheet for ${jobseekerName} (${positionTitle}) - Week ${timesheetData.weekStartDate}`,
+        category: 'financial',
+        priority: 'normal' as const,
+        metadata: {
+          weekStartDate: timesheetData.weekStartDate,
+          weekEndDate: timesheetData.weekEndDate,
+          totalRegularHours: timesheetData.totalRegularHours,
+          totalOvertimeHours: timesheetData.totalOvertimeHours,
+          totalJobseekerPay: timesheetData.totalJobseekerPay,
+          totalClientBill: timesheetData.totalClientBill,
+          invoiceNumber: timesheetData.invoiceNumber
+        }
+      };
+    }
+  }),
   async (req: Request, res: Response) => {
     try {
       if (!req.user || !req.user.id) {
@@ -598,6 +658,9 @@ router.post('/',
         return res.status(500).json({ error: 'Failed to create timesheet' });
       }
 
+      // Store for activity logging
+      res.locals.newTimesheet = newTimesheet;
+
       // Transform response to frontend format
       const formatted = transformToFrontendFormat(newTimesheet);
 
@@ -622,6 +685,73 @@ router.put('/:id',
   authenticateToken, 
   authorizeRoles(['admin', 'recruiter', 'jobseeker']),
   sanitizeInputs,
+  activityLogger({
+    onSuccess: async (req: Request, res: Response) => {
+      const timesheetData = req.body;
+      const updatedTimesheet = res.locals.updatedTimesheet;
+      const { id } = req.params;
+      
+      // Get jobseeker name for display
+      let jobseekerName = 'Unknown Jobseeker';
+      if (timesheetData.jobseekerProfileId) {
+        try {
+          const { data: profile } = await supabase
+            .from('jobseeker_profiles')
+            .select('first_name, last_name')
+            .eq('id', timesheetData.jobseekerProfileId)
+            .single();
+          if (profile) {
+            jobseekerName = `${profile.first_name} ${profile.last_name}`;
+          }
+        } catch (error) {
+          console.warn('Could not fetch jobseeker name for activity log');
+        }
+      }
+
+      // Get position title for display
+      let positionTitle = 'Unknown Position';
+      if (timesheetData.positionId) {
+        try {
+          const { data: position } = await supabase
+            .from('positions')
+            .select('title, position_code')
+            .eq('id', timesheetData.positionId)
+            .single();
+          if (position) {
+            positionTitle = position.title || position.position_code;
+          }
+        } catch (error) {
+          console.warn('Could not fetch position title for activity log');
+        }
+      }
+
+      return {
+        actionType: 'update_timesheet',
+        actionVerb: 'updated',
+        primaryEntityType: 'timesheet',
+        primaryEntityId: id,
+        primaryEntityName: `Timesheet for week ${timesheetData.weekStartDate}`,
+        secondaryEntityType: 'jobseeker',
+        secondaryEntityId: timesheetData.jobseekerProfileId,
+        secondaryEntityName: jobseekerName,
+        tertiaryEntityType: 'position',
+        tertiaryEntityId: timesheetData.positionId,
+        tertiaryEntityName: positionTitle,
+        displayMessage: `Updated timesheet for ${jobseekerName} (${positionTitle}) - Week ${timesheetData.weekStartDate}`,
+        category: 'financial',
+        priority: 'normal' as const,
+        metadata: {
+          weekStartDate: timesheetData.weekStartDate,
+          weekEndDate: timesheetData.weekEndDate,
+          totalRegularHours: timesheetData.totalRegularHours,
+          totalOvertimeHours: timesheetData.totalOvertimeHours,
+          totalJobseekerPay: timesheetData.totalJobseekerPay,
+          totalClientBill: timesheetData.totalClientBill,
+          invoiceNumber: timesheetData.invoiceNumber
+        }
+      };
+    }
+  }),
   async (req: Request, res: Response) => {
     try {
       if (!req.user || !req.user.id) {
@@ -698,6 +828,9 @@ router.put('/:id',
         return res.status(500).json({ error: 'Failed to update timesheet' });
       }
 
+      // Store for activity logging
+      res.locals.updatedTimesheet = updatedTimesheet;
+
       // Transform response to frontend format
       const formatted = transformToFrontendFormat(updatedTimesheet);
 
@@ -721,6 +854,72 @@ router.put('/:id',
 router.delete('/:id', 
   authenticateToken, 
   authorizeRoles(['admin', 'recruiter', 'jobseeker']),
+  activityLogger({
+    onSuccess: async (req: Request, res: Response) => {
+      const { id } = req.params;
+      const deletedTimesheet = res.locals.deletedTimesheet;
+      
+      // Get jobseeker name for display
+      let jobseekerName = 'Unknown Jobseeker';
+      if (deletedTimesheet?.jobseeker_user_id) {
+        try {
+          const { data: profile } = await supabase
+            .from('jobseeker_profiles')
+            .select('first_name, last_name')
+            .eq('user_id', deletedTimesheet.jobseeker_user_id)
+            .single();
+          if (profile) {
+            jobseekerName = `${profile.first_name} ${profile.last_name}`;
+          }
+        } catch (error) {
+          console.warn('Could not fetch jobseeker name for activity log');
+        }
+      }
+
+      // Get position title for display
+      let positionTitle = 'Unknown Position';
+      if (deletedTimesheet?.position_id) {
+        try {
+          const { data: position } = await supabase
+            .from('positions')
+            .select('title, position_code')
+            .eq('id', deletedTimesheet.position_id)
+            .single();
+          if (position) {
+            positionTitle = position.title || position.position_code;
+          }
+        } catch (error) {
+          console.warn('Could not fetch position title for activity log');
+        }
+      }
+
+      return {
+        actionType: 'delete_timesheet',
+        actionVerb: 'deleted',
+        primaryEntityType: 'timesheet',
+        primaryEntityId: id,
+        primaryEntityName: `Timesheet for week ${deletedTimesheet?.week_start_date || 'Unknown'}`,
+        secondaryEntityType: 'jobseeker',
+        secondaryEntityId: deletedTimesheet?.jobseeker_profile_id,
+        secondaryEntityName: jobseekerName,
+        tertiaryEntityType: 'position',
+        tertiaryEntityId: deletedTimesheet?.position_id,
+        tertiaryEntityName: positionTitle,
+        displayMessage: `Deleted timesheet for ${jobseekerName} (${positionTitle}) - Week ${deletedTimesheet?.week_start_date || 'Unknown'}`,
+        category: 'financial',
+        priority: 'high' as const,
+        metadata: {
+          weekStartDate: deletedTimesheet?.week_start_date,
+          weekEndDate: deletedTimesheet?.week_end_date,
+          totalRegularHours: deletedTimesheet?.total_regular_hours,
+          totalOvertimeHours: deletedTimesheet?.total_overtime_hours,
+          totalJobseekerPay: deletedTimesheet?.total_jobseeker_pay,
+          totalClientBill: deletedTimesheet?.total_client_bill,
+          invoiceNumber: deletedTimesheet?.invoice_number
+        }
+      };
+    }
+  }),
   async (req: Request, res: Response) => {
     try {
       if (!req.user || !req.user.id) {
@@ -734,7 +933,7 @@ router.delete('/:id',
       // Check if timesheet exists and user has permission
       let existingQuery = supabase
         .from('timesheets')
-        .select('id, jobseeker_user_id')
+        .select('*')
         .eq('id', id);
 
       if (userType === 'jobseeker') {
@@ -746,6 +945,9 @@ router.delete('/:id',
       if (timesheetCheckError || !existingTimesheet) {
         return res.status(404).json({ error: 'Timesheet not found or access denied' });
       }
+
+      // Store for activity logging
+      res.locals.deletedTimesheet = existingTimesheet;
 
       // Delete timesheet
       const { error: deleteError } = await supabase
