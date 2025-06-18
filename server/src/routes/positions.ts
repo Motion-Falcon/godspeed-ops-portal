@@ -746,7 +746,6 @@ router.get(
   "/drafts",
   authenticateToken,
   authorizeRoles(["admin", "recruiter"]),
-  // apiRateLimiter,
   async (req: Request, res: Response) => {
     try {
       if (!req.user || !req.user.id) {
@@ -1006,7 +1005,6 @@ router.get(
   "/:id",
   authenticateToken,
   authorizeRoles(["admin", "recruiter"]),
-  // apiRateLimiter,
   async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
@@ -1047,7 +1045,6 @@ router.get(
   "/generate-code/:clientId",
   authenticateToken,
   authorizeRoles(["admin", "recruiter"]),
-  // apiRateLimiter,
   async (req: Request, res: Response) => {
     try {
       const { clientId } = req.params;
@@ -2318,7 +2315,7 @@ router.get(
     try {
       const { id: positionId } = req.params;
 
-      // Get all assignments for this position
+      // Get all assignments for this position with jobseeker profile data
       const { data: assignments, error } = await supabase
         .from("position_candidate_assignments")
         .select(`
@@ -2328,14 +2325,7 @@ router.get(
           end_date,
           status,
           created_at,
-          updated_at,
-          jobseeker_profiles:candidate_id (
-            id,
-            first_name,
-            last_name,
-            email,
-            mobile
-          )
+          updated_at
         `)
         .eq("position_id", positionId)
         .order("created_at", { ascending: false });
@@ -2345,9 +2335,45 @@ router.get(
         return res.status(500).json({ error: "Failed to fetch assignments" });
       }
 
+      // If no assignments, return empty array
+      if (!assignments || assignments.length === 0) {
+        return res.status(200).json({
+          success: true,
+          assignments: []
+        });
+      }
+
+      // Get candidate IDs to fetch jobseeker profiles
+      const candidateIds = assignments.map(assignment => assignment.candidate_id);
+
+      // Fetch jobseeker profiles for all candidates
+      const { data: jobseekerProfiles, error: profilesError } = await supabase
+        .from("jobseeker_profiles")
+        .select("user_id, first_name, last_name, email, mobile")
+        .in("user_id", candidateIds);
+
+      if (profilesError) {
+        console.error("Error fetching jobseeker profiles:", profilesError);
+        return res.status(500).json({ error: "Failed to fetch candidate profiles" });
+      }
+
+      // Create a map for quick lookup
+      const profilesMap = new Map();
+      if (jobseekerProfiles) {
+        jobseekerProfiles.forEach(profile => {
+          profilesMap.set(profile.user_id, profile);
+        });
+      }
+
+      // Combine assignments with jobseeker profile data
+      const enrichedAssignments = assignments.map(assignment => ({
+        ...assignment,
+        jobseekerProfile: profilesMap.get(assignment.candidate_id) || null
+      }));
+
       return res.status(200).json({
         success: true,
-        assignments: assignments || []
+        assignments: enrichedAssignments
       });
     } catch (error) {
       console.error("Unexpected error fetching assignments:", error);

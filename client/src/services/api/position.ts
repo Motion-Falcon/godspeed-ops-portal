@@ -582,6 +582,13 @@ export const assignCandidateToPosition = async (
       endDate,
     });
 
+    // Clear cache for position assignments after successful assignment
+    if (response.data.success) {
+      clearCacheFor(`/api/positions/${positionId}/assignments`);
+      clearCacheFor("/api/positions");
+      clearCacheFor(`/api/jobseekers/position-candidates/${positionId}`);
+    }
+
     return {
       success: response.data.success,
       message: response.data.message,
@@ -617,6 +624,13 @@ export const removeCandidateFromPosition = async (
     const response = await api.delete(
       `/api/positions/${positionId}/assign/${candidateId}`
     );
+
+    // Clear cache for position assignments after successful removal
+    if (response.data.success) {
+      clearCacheFor(`/api/positions/${positionId}/assignments`);
+      clearCacheFor("/api/positions");
+      clearCacheFor(`/api/jobseekers/position-candidates/${positionId}`);
+    }
 
     return {
       success: response.data.success,

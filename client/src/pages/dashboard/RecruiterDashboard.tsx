@@ -631,7 +631,7 @@ export function RecruiterDashboard() {
     (state: MetricsState) => positionMetrics.state = state
   );
 
-  // Initialize user data and fetch initial data
+  // Initialize user data
   useEffect(() => {
     if (user && isRecruiter) {
       setUserData({
@@ -644,7 +644,12 @@ export function RecruiterDashboard() {
           ? new Date(user.last_sign_in_at).toLocaleString()
           : "First login",
       });
+    }
+  }, [user, isRecruiter]);
 
+  // Fetch initial data when userData is available
+  useEffect(() => {
+    if (userData?.id) {
       // Fetch all initial data
       recruiterMetrics.fetchData();
       clientMetrics.fetchData();
@@ -652,7 +657,7 @@ export function RecruiterDashboard() {
       aiMetrics.fetchData();
       basicAiInsights.fetchData();
     }
-  }, [user, isRecruiter]);
+  }, [userData?.id, recruiterMetrics.fetchData, clientMetrics.fetchData, positionMetrics.fetchData, aiMetrics.fetchData, basicAiInsights.fetchData]);
 
   // Cleanup effect
   useEffect(() => {

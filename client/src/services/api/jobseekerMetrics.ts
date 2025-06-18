@@ -57,7 +57,7 @@ export const getJobseekerMetrics = async (
   params: MetricsQueryParams = {}
 ): Promise<JobseekerMetricsResponse> => {
   try {
-    const url = new URL(`/api/jobseeker-metrics/${candidateId}`, API_URL);
+    const url = new URL(`/api/metrics/jobseekers/${candidateId}`, API_URL);
 
     // Add query parameters
     if (params.timeRange) {

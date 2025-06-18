@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import Lottie from "lottie-react";
@@ -28,8 +28,8 @@ import {
   assignCandidateToPosition,
   removeCandidateFromPosition,
   PositionData,
+  getPositionAssignments,
 } from "../services/api/position";
-import { getJobseekerProfile } from "../services/api/jobseeker";
 import { AppHeader } from "../components/AppHeader";
 import { CustomDropdown, DropdownOption } from "../components/CustomDropdown";
 import "../styles/pages/PositionMatching.css";
@@ -54,6 +54,23 @@ interface AssignedJobseeker {
   email: string;
   mobile?: string;
   similarityScore?: number;
+}
+
+interface ActualAssignmentResponse {
+  id: string;
+  candidate_id: string;
+  start_date: string;
+  end_date: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  jobseekerProfile?: {
+    user_id: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+    mobile?: string;
+  };
 }
 
 const loadingMessages = [
@@ -106,7 +123,42 @@ export function PositionMatching() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  const animationData = aiLoadingAnimation; // Replace with your animation JSON data
+  const animationData = aiLoadingAnimation;
+
+  // Memoized values
+  const isAuthorized = useMemo(() => isAdmin || isRecruiter, [isAdmin, isRecruiter]);
+  
+  const positionOptions = useMemo((): DropdownOption[] => 
+    positions.map((position) => ({
+      id: position.id || '',
+      value: position.id || '',
+      label: `${position.clientName || 'Unknown Client'} - ${position.title}`,
+      sublabel: `${position.positionCategory} • ${position.city}, ${position.province}`
+    })), [positions]
+  );
+
+  const vacantSlotsCount = useMemo(() => {
+    if (!selectedPosition) return 0;
+    return Math.max(0, (selectedPosition.numberOfPositions || 0) - assignedJobseekers.length);
+  }, [selectedPosition, assignedJobseekers.length]);
+
+  const vacantSlots = useMemo(() => 
+    Array(vacantSlotsCount).fill(null), [vacantSlotsCount]
+  );
+
+  // Memoized callbacks
+  const setStatusWithTimeout = useCallback((message: string, type: "success" | "error" | "pending") => {
+    setStatusMessage(message);
+    setStatusType(type);
+    setTimeout(() => setStatusMessage(null), 3000);
+  }, []);
+
+  const getSimilarityColor = useCallback((score: number) => {
+    if (score >= 80) return "var(--success)";
+    if (score >= 60) return "#f59e0b";
+    if (score >= 40) return "#ef4444";
+    return "var(--text-muted)";
+  }, []);
 
   // Loading message animation effect
   useEffect(() => {
@@ -116,10 +168,9 @@ export function PositionMatching() {
     }
 
     const interval = setInterval(() => {
-      setLoadingMessageIndex((prevIndex) => {
-        const nextIndex = (prevIndex + 1) % loadingMessages.length;
-        return nextIndex;
-      });
+      setLoadingMessageIndex((prevIndex) => 
+        (prevIndex + 1) % loadingMessages.length
+      );
     }, loadingMessages[loadingMessageIndex]?.duration || 1000);
 
     return () => clearInterval(interval);
@@ -131,7 +182,7 @@ export function PositionMatching() {
       setPositionsLoading(true);
       const data = await getPositions({
         page: 1,
-        limit: 100000000, // Get all positions for dropdown
+        limit: 100000000,
         search: "",
       });
       setPositions(data.positions);
@@ -178,14 +229,47 @@ export function PositionMatching() {
     onlyAvailable,
   ]);
 
+  // Fetch assigned jobseekers for a position
+  const fetchAssignedJobseekers = useCallback(async (positionId: string) => {
+    try {
+      setAssignedJobseekersLoading(true);
+      const response = await getPositionAssignments(positionId);
+      
+      if (response.success) {
+        const assignedCandidates: AssignedJobseeker[] = (response.assignments as unknown as ActualAssignmentResponse[]).map(
+          (assignment) => ({
+            id: assignment.id,
+            userId: assignment.candidate_id,
+            name: assignment.jobseekerProfile
+              ? `${assignment.jobseekerProfile.first_name} ${assignment.jobseekerProfile.last_name}`
+              : "Unknown",
+            email: assignment.jobseekerProfile?.email || "N/A",
+            mobile: assignment.jobseekerProfile?.mobile || undefined,
+            similarityScore: undefined,
+          })
+        );
+        
+        setAssignedJobseekers(assignedCandidates);
+      } else {
+        console.error("Failed to fetch position assignments");
+        setAssignedJobseekers([]);
+      }
+    } catch (error) {
+      console.error("Error fetching assigned jobseekers:", error);
+      setAssignedJobseekers([]);
+    } finally {
+      setAssignedJobseekersLoading(false);
+    }
+  }, []);
+
   // Initialize component
   useEffect(() => {
-    if (!isAdmin && !isRecruiter) {
+    if (!isAuthorized) {
       navigate("/dashboard");
       return;
     }
     fetchPositions();
-  }, [isAdmin, isRecruiter, navigate, fetchPositions]);
+  }, [isAuthorized, navigate, fetchPositions]);
 
   // Auto-select position from URL parameter after positions are loaded
   useEffect(() => {
@@ -219,90 +303,31 @@ export function PositionMatching() {
   ]);
 
   // Handle position selection
-  const handlePositionSelect = async (positionId: string) => {
+  const handlePositionSelect = useCallback(async (positionId: string) => {
     const position = positions.find((p) => p.id === positionId);
     setSelectedPosition(position || null);
 
-    // Initialize assigned jobseekers from position data
-    if (
-      position &&
-      position.assignedJobseekers &&
-      position.assignedJobseekers.length > 0
-    ) {
-      setAssignedJobseekersLoading(true);
-      try {
-        // Fetch full jobseeker details for each assigned candidate
-        const assignedCandidatesPromises = position.assignedJobseekers.map(
-          async (id) => {
-            try {
-              const jobseekerProfile = await getJobseekerProfile(id);
-              return {
-                id: jobseekerProfile.id,
-                userId: jobseekerProfile.userId,
-                name:
-                  jobseekerProfile.firstName + " " + jobseekerProfile.lastName,
-                email: jobseekerProfile.email,
-                mobile: jobseekerProfile.mobile || undefined,
-                similarityScore: undefined, // Not available from profile data
-              };
-            } catch (error) {
-              console.error(
-                `Error fetching jobseeker profile for ID ${id}:`,
-                error
-              );
-              // Return a fallback object if the fetch fails
-              return {
-                id,
-                userId: id,
-                name: "Profile Not Found",
-                email: "N/A",
-                mobile: undefined,
-                similarityScore: undefined,
-              };
-            }
-          }
-        );
-
-        const assignedCandidates = await Promise.all(
-          assignedCandidatesPromises
-        );
-        setAssignedJobseekers(assignedCandidates);
-      } catch (error) {
-        console.error("Error fetching assigned jobseekers:", error);
-        // Set empty array if there's an error
-        setAssignedJobseekers([]);
-      } finally {
-        setAssignedJobseekersLoading(false);
-      }
+    if (position?.id) {
+      await fetchAssignedJobseekers(position.id);
     } else {
       setAssignedJobseekers([]);
     }
 
     setPagination((prev) => ({ ...prev, page: 1 }));
-  };
+  }, [positions, fetchAssignedJobseekers]);
 
   // Handle candidate assignment
-  const handleAssignCandidate = async (candidate: PositionCandidate) => {
-    console.log(selectedPosition);
+  const handleAssignCandidate = useCallback(async (candidate: PositionCandidate) => {
     if (!selectedPosition?.id) return;
 
-    // Check if all positions are filled
-    if (
-      assignedJobseekers.length >= (selectedPosition.numberOfPositions || 1)
-    ) {
-      setStatusMessage("All positions are filled for this role");
-      setStatusType("error");
-      setTimeout(() => setStatusMessage(null), 3000);
+    if (assignedJobseekers.length >= (selectedPosition.numberOfPositions || 1)) {
+      setStatusWithTimeout("All positions are filled for this role", "error");
       return;
     }
 
     setAssignmentLoading(candidate.candidateId);
     try {
-      if (
-        !selectedPosition.id ||
-        !selectedPosition.startDate ||
-        !selectedPosition.endDate
-      ) {
+      if (!selectedPosition.id || !selectedPosition.startDate || !selectedPosition.endDate) {
         throw new Error("Missing required position data");
       }
 
@@ -314,48 +339,24 @@ export function PositionMatching() {
       );
 
       if (response.success) {
-        // Update the local assigned jobseekers state
-        const newAssignedCandidate = {
-          userId: candidate.candidateId,
-          id: candidate.candidateId,
-          name: candidate.name,
-          email: candidate.email,
-          mobile: candidate.mobile,
-          similarityScore: candidate.similarityScore,
-        };
-        setAssignedJobseekers((prev) => [...prev, newAssignedCandidate]);
-
-        // Update the selected position data
-        // if (response.position) {
-        //   setSelectedPosition(response.position);
-        // }
-
-        // Show success message
-        setStatusMessage(
-          `${candidate.name} has been successfully assigned to the position`
+        await fetchAssignedJobseekers(selectedPosition.id);
+        setStatusWithTimeout(
+          `${candidate.name} has been successfully assigned to the position`,
+          "success"
         );
-        setStatusType("success");
-        setTimeout(() => setStatusMessage(null), 3000);
-
-        // Optional: Refresh positions list to sync any changes
-        // This would trigger a re-fetch of positions
       } else {
-        setStatusMessage(response.message || "Failed to assign candidate");
-        setStatusType("error");
-        setTimeout(() => setStatusMessage(null), 3000);
+        setStatusWithTimeout(response.message || "Failed to assign candidate", "error");
       }
     } catch (error) {
       console.error("Error assigning candidate:", error);
-      setStatusMessage("Failed to assign candidate. Please try again.");
-      setStatusType("error");
-      setTimeout(() => setStatusMessage(null), 3000);
+      setStatusWithTimeout("Failed to assign candidate. Please try again.", "error");
     } finally {
       setAssignmentLoading(null);
     }
-  };
+  }, [selectedPosition, assignedJobseekers.length, fetchAssignedJobseekers, setStatusWithTimeout]);
 
   // Handle candidate removal
-  const handleRemoveCandidate = async (candidateId: string) => {
+  const handleRemoveCandidate = useCallback(async (candidateId: string) => {
     if (!selectedPosition?.id) return;
 
     setAssignmentLoading(candidateId);
@@ -367,94 +368,50 @@ export function PositionMatching() {
       );
 
       if (response.success) {
-        // Get the candidate name before removing
         const removedCandidate = assignedJobseekers.find(
           (js) => js.userId === candidateId
         );
 
-        // Remove the candidate from local state
-        setAssignedJobseekers((prev) =>
-          prev.filter((jobseeker) => jobseeker.userId !== candidateId)
+        await fetchAssignedJobseekers(selectedPosition.id);
+        setStatusWithTimeout(
+          `${removedCandidate?.name || "Candidate"} has been successfully removed from the position`,
+          "success"
         );
-
-        // Update the selected position data
-        // if (response.position) {
-        //   setSelectedPosition(response.position);
-        // }
-
-        // Show success message
-        setStatusMessage(
-          `${
-            removedCandidate?.name || "Candidate"
-          } has been successfully removed from the position`
-        );
-        setStatusType("success");
-        setTimeout(() => setStatusMessage(null), 3000);
       } else {
-        setStatusMessage(response.message || "Failed to remove candidate");
-        setStatusType("error");
-        setTimeout(() => setStatusMessage(null), 3000);
+        setStatusWithTimeout(response.message || "Failed to remove candidate", "error");
       }
     } catch (error) {
       console.error("Error removing candidate:", error);
-      setStatusMessage("Failed to remove candidate. Please try again.");
-      setStatusType("error");
-      setTimeout(() => setStatusMessage(null), 3000);
+      setStatusWithTimeout("Failed to remove candidate. Please try again.", "error");
     } finally {
       setAssignmentLoading(null);
     }
-  };
+  }, [selectedPosition?.id, assignedJobseekers, fetchAssignedJobseekers, setStatusWithTimeout]);
 
   // Pagination handlers
-  const handlePageChange = (newPage: number) => {
+  const handlePageChange = useCallback((newPage: number) => {
     setPagination((prev) => ({ ...prev, page: newPage }));
-  };
+  }, []);
 
-  const handleLimitChange = (newLimit: number) => {
+  const handleLimitChange = useCallback((newLimit: number) => {
     setPagination((prev) => ({ ...prev, limit: newLimit, page: 1 }));
-  };
+  }, []);
 
-  const handlePreviousPage = () => {
+  const handlePreviousPage = useCallback(() => {
     if (pagination.hasPrevPage) {
       handlePageChange(pagination.page - 1);
     }
-  };
+  }, [pagination.hasPrevPage, pagination.page, handlePageChange]);
 
-  const handleNextPage = () => {
+  const handleNextPage = useCallback(() => {
     if (pagination.hasNextPage) {
       handlePageChange(pagination.page + 1);
     }
-  };
+  }, [pagination.hasNextPage, pagination.page, handlePageChange]);
 
-  // Create position options for CustomDropdown
-  const positionOptions: DropdownOption[] = positions.map((position) => ({
-    id: position.id || '',
-    value: position.id || '',
-    label: `${position.clientName || 'Unknown Client'} - ${position.title}`,
-    sublabel: `${position.positionCategory} • ${position.city}, ${position.province}`
-  }));
-
-  // Handle position selection for CustomDropdown
-  const handlePositionSelectDropdown = (option: DropdownOption) => {
+  const handlePositionSelectDropdown = useCallback((option: DropdownOption) => {
     handlePositionSelect(option.value as string);
-  };
-
-  // Get similarity score color
-  const getSimilarityColor = (score: number) => {
-    if (score >= 80) return "var(--success)";
-    if (score >= 60) return "#f59e0b"; // amber
-    if (score >= 40) return "#ef4444"; // red
-    return "var(--text-muted)";
-  };
-
-  // Generate vacant slots
-  const generateVacantSlots = () => {
-    const totalPositions = selectedPosition?.numberOfPositions || 0;
-    const filledSlots = assignedJobseekers.length;
-    const vacantCount = Math.max(0, totalPositions - filledSlots);
-
-    return Array(vacantCount).fill(null);
-  };
+  }, [handlePositionSelect]);
 
   return (
     <div className="position-matching">
@@ -644,7 +601,7 @@ export function PositionMatching() {
                             </div>
 
                             {assignedJobseekers.some(
-                              (js) => js.id === candidate.candidateId
+                              (js) => js.userId === candidate.candidateId
                             ) ? (
                               <button
                                 className="remove-btn"
@@ -965,11 +922,7 @@ export function PositionMatching() {
                       </div>
                       <div className="status-item vacant">
                         <span className="status-count">
-                          {Math.max(
-                            0,
-                            (selectedPosition.numberOfPositions || 0) -
-                              assignedJobseekers.length
-                          )}
+                          {vacantSlotsCount}
                         </span>
                         <span className="status-label">Vacant</span>
                       </div>
@@ -1049,7 +1002,7 @@ export function PositionMatching() {
 
                       {/* Vacant Slots */}
                       {!assignedJobseekersLoading &&
-                        generateVacantSlots().map((_, index) => (
+                        vacantSlots.map((_, index) => (
                           <div
                             key={`vacant-${index}`}
                             className="slot-card vacant"
