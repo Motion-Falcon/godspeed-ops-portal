@@ -383,6 +383,9 @@ async function logActivity(req: Request, activityData: ActivityData): Promise<vo
 
     console.log('💾 ActivityLogger: Inserting activity record into database...');
 
+    // Log the complete activity record for debugging
+    console.log('📋 ActivityLogger: Complete activity record object:', JSON.stringify(activityRecord, null, 2));
+
     // Insert activity into database
     const { error } = await supabaseAdmin
       .from('recent_activities')

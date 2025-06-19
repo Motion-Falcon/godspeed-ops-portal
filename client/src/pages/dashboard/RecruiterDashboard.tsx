@@ -1,6 +1,5 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import {
-  User as UserIcon,
   UserCheck,
   Users,
   CheckCircle,
@@ -12,7 +11,7 @@ import {
   Target,
   CheckSquare,
   Brain,
-  FileText,
+  FileText
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { AppHeader } from "../../components/AppHeader";
@@ -31,8 +30,10 @@ import {
   type AIInsightsResponse,
 } from "../../services/api/aiInsights";
 import { MetricData } from "../../components/dashboard/types";
+import { useRecentActivities } from "../../hooks/useRecentActivities";
 import "../../styles/components/header.css";
 import "../../styles/pages/Dashboard.css";
+import { RecentActivities } from '../../components/dashboard/RecentActivities';
 
 // Constants
 const CACHE_DURATION = 30000; // 30 seconds
@@ -407,52 +408,6 @@ function MetricGrid({
   );
 }
 
-interface AccountDetailsProps {
-  userData: UserData;
-}
-
-function AccountDetails({ userData }: AccountDetailsProps) {
-  const getRoleName = () => "Recruiter";
-
-  return (
-    <div className="card">
-      <div className="card-header">
-        <UserIcon className="icon" size={20} />
-        <h2 className="card-title">Account Details</h2>
-      </div>
-
-      <div>
-        <div className="data-item">
-          <p className="data-label">Name</p>
-          <p className="data-value">{userData.name}</p>
-        </div>
-
-        <div className="data-item">
-          <p className="data-label">Email Address</p>
-          <p className="data-value">{userData.email}</p>
-        </div>
-
-        <div className="data-item">
-          <p className="data-label">User Role</p>
-          <p className="data-value">{getRoleName()}</p>
-        </div>
-
-        <div className="data-item">
-          <p className="data-label">Account ID</p>
-          <p className="data-value" style={{ fontSize: "0.875rem" }}>
-            {userData.id}
-          </p>
-        </div>
-
-        <div className="data-item">
-          <p className="data-label">Account Created</p>
-          <p className="data-value">{userData.createdAt}</p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 interface AISummaryProps {
   basicAiInsights: AIInsightsResponse | null;
   loading: boolean;
@@ -464,8 +419,20 @@ function AISummary({ basicAiInsights, loading, error, onRetry }: AISummaryProps)
   if (loading) {
     return (
       <div className="ai-summary-loading">
-        <span className="loading-spinner"></span>
-        <p>Loading AI summary...</p>
+        {/* Loading skeleton for AI summary stats */}
+        <div className="ai-summary-stats">
+          {[1, 2].map((index) => (
+            <div key={index} className="ai-stat-item">
+              <div className="ai-stat-icon-skeleton">
+                <div className="skeleton-icon"></div>
+              </div>
+              <div className="ai-stat-details">
+                <div className="skeleton-text" style={{ width: "180px", height: "20px", marginBottom: "var(--spacing-1)" }}></div>
+                <div className="skeleton-text" style={{ width: "240px", height: "14px" }}></div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -528,6 +495,21 @@ export function RecruiterDashboard() {
   const [showAllRecruiters, setShowAllRecruiters] = useState(false);
   const [showAllRecruitersClients, setShowAllRecruitersClients] = useState(false);
   const [showAllRecruitersPositions, setShowAllRecruitersPositions] = useState(false);
+
+  // Real-time activities hook
+  const { 
+    activities, 
+    isConnected, 
+    error: activitiesError, 
+    isLoading: activitiesLoading, 
+    isLoadingMore: activitiesLoadingMore,
+    hasMore: activitiesHasMore,
+    retry: retryActivities,
+    loadMore: loadMoreActivities
+  } = useRecentActivities({
+    limit: 10,
+    enabled: true
+  });
 
   // Custom hooks for data fetching
   const recruiterMetrics = useMetricsFetch(userData?.id || null, showAllRecruiters, "metrics");
@@ -718,7 +700,19 @@ export function RecruiterDashboard() {
             </div>
           </div>
 
-          <AccountDetails userData={userData} />
+          {/* Recent Activities */}
+          <div className="dashboard-right-side">
+            <RecentActivities 
+              activities={activities}
+              isConnected={isConnected}
+              error={activitiesError}
+              isLoading={activitiesLoading}
+              isLoadingMore={activitiesLoadingMore}
+              hasMore={activitiesHasMore}
+              onRetry={retryActivities}
+              onLoadMore={loadMoreActivities}
+            />
+          </div>
         </div>
         
         <div className="dashboard-grid ai-insights">

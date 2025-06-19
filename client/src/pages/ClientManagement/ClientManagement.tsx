@@ -509,7 +509,7 @@ export function ClientManagement() {
                   </tr>
                 </thead>
                 <tbody>
-                {!loading ? (
+                {loading ? (
                   // Skeleton loading rows
                   <>
                     {Array.from({ length: pagination.limit || 10 }, (_, index) => (

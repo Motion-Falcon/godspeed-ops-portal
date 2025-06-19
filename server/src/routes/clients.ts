@@ -1,5 +1,5 @@
-import express, { Router, Request, Response } from 'express';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { Router, Request, Response } from 'express';
+import { createClient } from '@supabase/supabase-js';
 import { authenticateToken, authorizeRoles } from '../middleware/auth.js';
 import { sanitizeInputs, apiRateLimiter } from '../middleware/security.js';
 import dotenv from 'dotenv';

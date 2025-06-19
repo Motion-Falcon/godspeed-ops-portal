@@ -359,8 +359,23 @@ export function PositionCreate({
             console.log("Form reset with draft data");
             console.log("Client value after reset:", formattedDraft.client);
 
-            // Draft is already saved, so form is not dirty
-            setHasUnsavedChanges(false);
+            // Regenerate position code to ensure it's still unique
+            if (formattedDraft.client) {
+              try {
+                const result = await generatePositionCode(formattedDraft.client);
+                console.log("Regenerated position code for draft:", result);
+                methods.setValue("positionCode", result.positionCode);
+                
+                // Mark form as having changes since we updated the position code
+                setHasUnsavedChanges(true);
+              } catch (error) {
+                console.error("Error regenerating position code for draft:", error);
+                // Continue loading the draft even if position code regeneration fails
+              }
+            }
+
+            // Don't set form as clean since we regenerated the position code
+            // setHasUnsavedChanges(false);
           }
         } catch (err) {
           console.error("Error loading draft:", err);
@@ -375,7 +390,7 @@ export function PositionCreate({
 
       loadDraft();
     }
-  }, [id, isEditDraftMode, reset]);
+  }, [id, isEditDraftMode, reset, methods]);
 
   // Prevent accidental navigation
   useEffect(() => {
@@ -440,13 +455,14 @@ export function PositionCreate({
       const result = await generatePositionCode(clientId);
       console.log("Generated position code:", result);
 
-      // Only set position code if we're not in edit mode or if the field is currently empty
+      // Always generate new position code for new positions and draft edits
+      // For regular position edits, only generate if empty
       const currentPositionCode = methods.getValues("positionCode");
-      if (!isEditMode && !isEditDraftMode) {
-        // For new positions, always generate
+      if (!isEditMode) {
+        // For new positions and draft edits, always regenerate to ensure uniqueness
         methods.setValue("positionCode", result.positionCode);
       } else if (!currentPositionCode) {
-        // For edit mode, only generate if empty
+        // For position edit mode, only generate if empty
         methods.setValue("positionCode", result.positionCode);
       }
     } catch (error) {
@@ -747,10 +763,17 @@ export function PositionCreate({
                       type="text"
                       id="positionCode"
                       className="form-input auto-populated"
-                      placeholder="Auto-generated from client"
+                      placeholder={isEditDraftMode ? "Auto-regenerated for uniqueness" : "Auto-generated from client"}
                       disabled
                       {...methods.register("positionCode")}
                     />
+                    {isEditDraftMode && (
+                      <div className="form-info">
+                        <small>
+                          Position ID is regenerated when editing drafts to ensure uniqueness
+                        </small>
+                      </div>
+                    )}
                     {methods.formState.errors.positionCode && (
                       <p className="form-error">
                         {methods.formState.errors.positionCode.message}

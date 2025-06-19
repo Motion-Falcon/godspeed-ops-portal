@@ -1,10 +1,10 @@
-import express, { Router, Request, Response } from 'express';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { Router, Request, Response } from 'express';
+import { createClient } from '@supabase/supabase-js';
 import { authenticateToken, authorizeRoles } from '../middleware/auth.js';
 import { sanitizeInputs, apiRateLimiter } from '../middleware/security.js';
 import { activityLogger } from '../middleware/activityLogger.js';
 import dotenv from 'dotenv';
-import { PositionData, DbPositionData } from '../types.js';
+import { PositionData } from '../types.js';
 import { v4 as uuidv4 } from 'uuid';
 
 dotenv.config();
@@ -1942,7 +1942,7 @@ router.post(
       tertiaryEntityId: res.locals.clientId,
       tertiaryEntityName: res.locals.clientName,
       displayMessage: `Assigned candidate "${res.locals.candidateName || req.body.candidateId}" to position "${res.locals.positionTitle}"`,
-      category: 'candidate_management',
+      category: 'position_management',
       priority: 'normal',
       status: 'active',
       metadata: {
@@ -2161,15 +2161,15 @@ router.delete(
       actionVerb: 'removed',
       primaryEntityType: 'jobseeker',
       primaryEntityId: req.params.candidateId,
-      primaryEntityName: res.locals.candidateName || `Candidate ID: ${req.params.candidateId}`,
+      primaryEntityName: res.locals.candidateName,
       secondaryEntityType: 'position',
       secondaryEntityId: req.params.id,
       secondaryEntityName: res.locals.positionTitle,
       tertiaryEntityType: 'client',
       tertiaryEntityId: res.locals.clientId,
       tertiaryEntityName: res.locals.clientName,
-      displayMessage: `Removed candidate "${res.locals.candidateName || req.params.candidateId}" from position "${res.locals.positionTitle}"`,
-      category: 'candidate_management',
+      displayMessage: `Removed candidate "${res.locals.candidateName}" from position "${res.locals.positionTitle}"`,
+      category: 'position_management',
       priority: 'normal',
       status: 'removed',
       metadata: {
@@ -2188,16 +2188,47 @@ router.delete(
         return res.status(401).json({ error: "Authentication required" });
       }
 
-      // Get current position data
+      // Get current position data with client info
       const { data: position, error: positionError } = await supabase
         .from("positions")
-        .select("assigned_jobseekers")
+        .select(`
+          assigned_jobseekers,
+          title,
+          position_code,
+          client
+        `)
         .eq("id", positionId)
         .single();
 
       if (positionError || !position) {
         return res.status(404).json({ error: "Position not found" });
       }
+
+      // Get candidate info
+      const { data: candidate, error: candidateError } = await supabase
+        .from("jobseeker_profiles")
+        .select("first_name, last_name")
+        .eq("user_id", candidateId)
+        .single();
+
+      if (candidateError || !candidate) {
+        return res.status(404).json({ error: "Candidate not found" });
+      }
+
+      // Get client info
+      const { data: client, error: clientError } = await supabase
+        .from("clients")
+        .select("id, company_name")
+        .eq("id", position.client)
+        .single();
+
+      // Store data for activity logger
+      const candidateName = `${candidate.first_name} ${candidate.last_name}`.trim();
+      res.locals.candidateName = candidateName;
+      res.locals.positionTitle = position.title;
+      res.locals.positionCode = position.position_code;
+      res.locals.clientId = client?.id || null;
+      res.locals.clientName = client?.company_name || null;
 
       // Check if there's an active assignment for this position-candidate pair
       const { data: activeAssignment, error: assignmentCheckError } = await supabase
@@ -2217,6 +2248,9 @@ router.delete(
         return res.status(400).json({ error: "Candidate not assigned to this position" });
       }
 
+      // Store assignment ID for activity logger
+      res.locals.removedAssignmentId = activeAssignment.id;
+
       // Delete the assignment row completely
       const { error: deleteAssignmentError } = await supabase
         .from("position_candidate_assignments")
@@ -2231,6 +2265,9 @@ router.delete(
       // Update the assigned_jobseekers array in positions table for backward compatibility
       const currentAssigned = position.assigned_jobseekers || [];
       const updatedAssigned = currentAssigned.filter((id: string) => id !== candidateId);
+
+      // Store remaining assigned count for activity logger
+      res.locals.remainingAssigned = updatedAssigned.length;
 
       const { data: updatedPosition, error: updateError } = await supabase
         .from("positions")
