@@ -1073,7 +1073,7 @@ router.get(
           formatType: "number",
           description: targetRecruiterId
             ? "Total jobseeker profiles created by you awaiting verification"
-            : "Total jobseeker profiles awaiting verification",
+            : "Total jobseeker profiles which are awaiting verification",
           historicalData: formatHistoricalData(monthlyArray, "pending"),
         },
         {

@@ -19,9 +19,10 @@
   border-radius: var(--border-radius);
   box-shadow: var(--card-shadow);
   overflow: hidden;
-  transition: all 0.3s ease;
 }
-
+.recent-activities-card {
+  min-height: 470px;
+}
 .recent-activities-card:hover {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   transform: translateY(-1px);
@@ -253,6 +254,84 @@
   line-height: 1.4;
 }
 
+/* Entity Name Styling */
+.entity-actor {
+  font-weight: 600;
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 11px;
+  display: inline-block;
+}
+
+.entity-primary {
+  font-weight: 600;
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 11px;
+  display: inline-block;
+}
+
+.entity-secondary {
+  font-weight: 600;
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 11px;
+  display: inline-block;
+}
+
+.entity-tertiary {
+  font-weight: 600;
+  background: linear-gradient(135deg, #be185d 0%, #9d174d 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 11px;
+  display: inline-block;
+}
+
+/* Dark mode entity styling */
+.dark .entity-actor {
+  background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.dark .entity-primary {
+  background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.dark .entity-secondary {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.dark .entity-tertiary {
+  background: linear-gradient(135deg, #f472b6 0%, #ec4899 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
 .activity-meta {
   display: flex;
   align-items: center;
@@ -305,7 +384,6 @@
   background-color: #f3f4f6;
   color: #6b7280;
   transition: all 0.3s ease;
-  opacity: 0.8;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
@@ -314,9 +392,19 @@
   color: #1d4ed8;
 }
 
+.dark .category-candidate-management {
+  background-color: #1d4ed8;
+  color: #dbeafe;
+}
+
 .category-position-management {
   background-color: #fef3c7;
   color: #d97706;
+}
+
+.dark .category-position-management {
+  background-color: #d97706;
+  color: #fef3c7;
 }
 
 .category-client-management {
@@ -324,15 +412,16 @@
   color: #b62121;
 }
 
+.dark .category-client-management {
+  background-color: #b62121;
+  color: #ffe0e0;
+}
+
 .category-document-processing {
   background-color: #d1fae5;
   color: #059669;
 }
 
-.category-matching {
-  background-color: #fce7f3;
-  color: #be185d;
-}
 
 /* Footer */
 .activities-footer {
@@ -367,40 +456,9 @@
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
-  background-color: var(--primary);
-  color: white;
-  border: none;
-  border-radius: var(--border-radius);
-  font-size: 14px;
-  font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.retry-button:hover {
-  background-color: var(--primary-dark, #2563eb);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-}
-
-.retry-button:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.retry-button:focus {
-  outline: 2px solid var(--primary);
-  outline-offset: 2px;
-}
-
-.dark .retry-button {
-  background-color: var(--primary);
-  color: var(--primary-foreground);
-}
-
-.dark .retry-button:hover {
-  background-color: var(--primary-dark, #1d4ed8);
 }
 
 /* Animations */

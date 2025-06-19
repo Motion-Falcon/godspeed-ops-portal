@@ -104,7 +104,24 @@ const getStatusIcon = (actionType: string) => {
   }
 };
 
-const formatActivityMessage = (activity: RecentActivity): string => {
+// Helper components for styled entity names
+const ActorName: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <span className="entity-actor">{children}</span>
+);
+
+const PrimaryEntity: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => <span className="entity-primary">{children}</span>;
+
+const SecondaryEntity: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => <span className="entity-secondary">{children}</span>;
+
+const TertiaryEntity: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => <span className="entity-tertiary">{children}</span>;
+
+const formatActivityMessage = (activity: RecentActivity): React.ReactNode => {
   const {
     action_verb,
     actor_name,
@@ -127,77 +144,193 @@ const formatActivityMessage = (activity: RecentActivity): string => {
   // Extract tertiary entity name (client)
   const tertiaryEntityName = tertiary_entity_name;
 
-  // Create readable sentences
+  // Create readable sentences with styled entities
   switch (activity.action_type) {
     case "assign_jobseeker":
-      return cleanSecondaryName && tertiaryEntityName
-        ? `${actor_name} added Jobseeker "${cleanPrimaryName}" to position "${cleanSecondaryName}" of ${tertiaryEntityName}`
-        : cleanSecondaryName
-        ? `${actor_name} added Jobseeker "${cleanPrimaryName}" to position "${cleanSecondaryName}"`
-        : `${actor_name} added Jobseeker "${cleanPrimaryName}" to a position`;
+      return cleanSecondaryName && tertiaryEntityName ? (
+        <>
+          <ActorName>{actor_name}</ActorName> added Jobseeker
+          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity> to position
+          <SecondaryEntity>{cleanSecondaryName}</SecondaryEntity> of
+          <TertiaryEntity>{tertiaryEntityName}</TertiaryEntity>
+        </>
+      ) : cleanSecondaryName ? (
+        <>
+          <ActorName>{actor_name}</ActorName> added Jobseeker
+          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity> to position
+          <SecondaryEntity>{cleanSecondaryName}</SecondaryEntity>
+        </>
+      ) : (
+        <>
+          <ActorName>{actor_name}</ActorName> added Jobseeker
+          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity> to a position
+        </>
+      );
 
     case "remove_jobseeker":
-      return cleanSecondaryName && tertiaryEntityName
-        ? `${actor_name} removed Jobseeker "${cleanPrimaryName}" from position "${cleanSecondaryName}" of ${tertiaryEntityName}`
-        : cleanSecondaryName
-        ? `${actor_name} removed Jobseeker "${cleanPrimaryName}" from position "${cleanSecondaryName}"`
-        : `${actor_name} removed Jobseeker "${cleanPrimaryName}" from a position`;
+      return cleanSecondaryName && tertiaryEntityName ? (
+        <>
+          <ActorName>{actor_name}</ActorName> removed Jobseeker
+          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity> from position
+          <SecondaryEntity>{cleanSecondaryName}</SecondaryEntity> of
+          <TertiaryEntity>{tertiaryEntityName}</TertiaryEntity>
+        </>
+      ) : cleanSecondaryName ? (
+        <>
+          <ActorName>{actor_name}</ActorName> removed Jobseeker
+          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity> from position
+          <SecondaryEntity>{cleanSecondaryName}</SecondaryEntity>
+        </>
+      ) : (
+        <>
+          <ActorName>{actor_name}</ActorName> removed Jobseeker
+          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity> from a position
+        </>
+      );
 
     case "create_jobseeker":
-      return `${actor_name} created Jobseeker Profile for ${cleanPrimaryName}`;
+      return (
+        <>
+          <ActorName>{actor_name}</ActorName> created Jobseeker Profile for
+          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity>
+        </>
+      );
 
     case "update_jobseeker":
-      return `${actor_name} modified Jobseeker Profile for ${cleanPrimaryName}`;
+      return (
+        <>
+          <ActorName>{actor_name}</ActorName> modified Jobseeker Profile for
+          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity>
+        </>
+      );
 
     case "delete_jobseeker":
-      return `${actor_name} deleted Jobseeker Profile for ${cleanPrimaryName}`;
+      return (
+        <>
+          <ActorName>{actor_name}</ActorName> deleted Jobseeker Profile for
+          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity>
+        </>
+      );
 
     case "pending_jobseeker":
-      return `${actor_name} set Jobseeker "${cleanPrimaryName}" status to pending`;
+      return (
+        <>
+          <ActorName>{actor_name}</ActorName> set Jobseeker
+          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity> status to
+          <SecondaryEntity>pending</SecondaryEntity>
+        </>
+      );
 
     case "reject_jobseeker":
-      return `${actor_name} set Jobseeker "${cleanPrimaryName}" status to rejected`;
+      return (
+        <>
+          <ActorName>{actor_name}</ActorName> set Jobseeker
+          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity> status to
+          <TertiaryEntity>rejected</TertiaryEntity>
+        </>
+      );
 
     case "verify_jobseeker":
-      return `${actor_name} set Jobseeker "${cleanPrimaryName}" status to verified`;
+      return (
+        <>
+          <ActorName>{actor_name}</ActorName> set Jobseeker
+          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity> status to
+          <PrimaryEntity>verified</PrimaryEntity>
+        </>
+      );
 
     case "create_position":
-      return cleanSecondaryName
-        ? `${actor_name} added new position "${cleanPrimaryName}" for ${cleanSecondaryName}`
-        : `${actor_name} added new position "${cleanPrimaryName}"`;
+      return cleanSecondaryName ? (
+        <>
+          <ActorName>{actor_name}</ActorName> added new position
+          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity> for
+          <SecondaryEntity>{cleanSecondaryName}</SecondaryEntity>
+        </>
+      ) : (
+        <>
+          <ActorName>{actor_name}</ActorName> added new position
+          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity>
+        </>
+      );
 
     case "update_position":
-      return cleanSecondaryName
-        ? `${actor_name} modified position "${cleanPrimaryName}" for ${cleanSecondaryName}`
-        : `${actor_name} modified position "${cleanPrimaryName}"`;
+      return cleanSecondaryName ? (
+        <>
+          <ActorName>{actor_name}</ActorName> modified position
+          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity> for
+          <SecondaryEntity>{cleanSecondaryName}</SecondaryEntity>
+        </>
+      ) : (
+        <>
+          <ActorName>{actor_name}</ActorName> modified position
+          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity>
+        </>
+      );
 
     case "delete_position":
-      return cleanSecondaryName
-        ? `${actor_name} removed position "${cleanPrimaryName}" for ${cleanSecondaryName}`
-        : `${actor_name} removed position "${cleanPrimaryName}"`;
+      return cleanSecondaryName ? (
+        <>
+          <ActorName>{actor_name}</ActorName> removed position
+          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity> for
+          <SecondaryEntity>{cleanSecondaryName}</SecondaryEntity>
+        </>
+      ) : (
+        <>
+          <ActorName>{actor_name}</ActorName> removed position
+          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity>
+        </>
+      );
 
-    case "create_client": {
-      return `${actor_name} added a new client "${cleanPrimaryName}"`;
-    }
+    case "create_client":
+      return (
+        <>
+          <ActorName>{actor_name}</ActorName> added a new client
+          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity>
+        </>
+      );
 
-    case "update_client": {
-      return `${actor_name} modified Client "${cleanPrimaryName}"`;
-    }
+    case "update_client":
+      return (
+        <>
+          <ActorName>{actor_name}</ActorName> modified Client
+          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity>
+        </>
+      );
 
-    case "delete_client": {
-      return `${actor_name} deleted Client "${cleanPrimaryName}"`;
-    }
+    case "delete_client":
+      return (
+        <>
+          <ActorName>{actor_name}</ActorName> deleted Client
+          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity>
+        </>
+      );
 
     case "document_scan":
-      return `${actor_name} processed a document for analysis`;
+      return (
+        <>
+          <ActorName>{actor_name}</ActorName> processed a document for analysis
+        </>
+      );
 
     case "candidate_match":
-      return cleanSecondaryName
-        ? `${actor_name} matched candidates to position "${cleanSecondaryName}"`
-        : `${actor_name} matched candidates to a position`;
+      return cleanSecondaryName ? (
+        <>
+          <ActorName>{actor_name}</ActorName> matched candidates to position
+          <SecondaryEntity>{cleanSecondaryName}</SecondaryEntity>
+        </>
+      ) : (
+        <>
+          <ActorName>{actor_name}</ActorName> matched candidates to a position
+        </>
+      );
 
     default:
-      return `${actor_name} ${action_verb} ${cleanPrimaryName}`;
+      return (
+        <>
+          <ActorName>{actor_name}</ActorName> {action_verb}
+          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity>
+        </>
+      );
   }
 };
 
@@ -223,7 +356,10 @@ const formatTimeAgo = (timestamp: string): string => {
 };
 
 // Reusable Activity Skeleton Component
-const ActivitySkeleton: React.FC<{ index: number; keyPrefix?: string }> = ({ index, keyPrefix = "" }) => (
+const ActivitySkeleton: React.FC<{ index: number; keyPrefix?: string }> = ({
+  index,
+  keyPrefix = "",
+}) => (
   <div key={`${keyPrefix}${index}`} className="activity-item activity-skeleton">
     <div className="activity-icon activity-icon-skeleton">
       <div className="skeleton-icon"></div>
@@ -355,19 +491,16 @@ export const RecentActivities: React.FC<RecentActivitiesProps> = ({
         ) : (
           <div className="activities-list">
             {activities.map((activity) => (
-              <div
-                key={activity.id}
-                className="activity-item"
-              >
+              <div key={activity.id} className="activity-item">
                 <div className="activity-icon">
                   {getActivityIcon(activity.action_type, activity.category)}
                 </div>
 
                 <div className="activity-content">
                   <div className="activity-main">
-                    <p className="activity-message">
+                    <div className="activity-message">
                       {formatActivityMessage(activity)}
-                    </p>
+                    </div>
                     <div className="activity-meta">
                       <span className="activity-time">
                         {formatTimeAgo(activity.created_at)}
@@ -393,21 +526,27 @@ export const RecentActivities: React.FC<RecentActivitiesProps> = ({
                 </div>
               </div>
             ))}
-            
+
             {/* Loading More Skeleton */}
             {isLoadingMore && (
               <>
                 {[1, 2, 3, 4, 5].map((index) => (
-                  <ActivitySkeleton key={index} index={index} keyPrefix="loading-more-" />
+                  <ActivitySkeleton
+                    key={index}
+                    index={index}
+                    keyPrefix="loading-more-"
+                  />
                 ))}
               </>
             )}
-            
+
             {/* Load More Button */}
             {hasMore && onLoadMore && (
               <div className="load-more-container">
                 <button
-                  className={`load-more-button ${isLoadingMore ? 'loading' : ''}`}
+                  className={`load-more-button ${
+                    isLoadingMore ? "loading" : ""
+                  }`}
                   onClick={onLoadMore}
                   disabled={isLoadingMore}
                   aria-label="Load more activities"
@@ -433,7 +572,7 @@ export const RecentActivities: React.FC<RecentActivitiesProps> = ({
       {activities.length > 0 && (
         <div className="activities-footer">
           <span className="activities-count">
-            {activities.length} recent activit
+            {activities.length} recent activity
             {activities.length === 1 ? "y" : "ies"}
             {!hasMore && activities.length > 10 && (
               <span className="all-loaded"> • All activities loaded</span>

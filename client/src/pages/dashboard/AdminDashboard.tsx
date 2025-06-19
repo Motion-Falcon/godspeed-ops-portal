@@ -18,11 +18,8 @@ import { AppHeader } from "../../components/AppHeader";
 import { MetricCard } from "../../components/dashboard/MetricCard";
 import {
   getAllRecruitersMetrics,
-  getRecruiterMetrics,
   getAllRecruitersClientMetrics,
-  getRecruiterClientMetrics,
   getAllRecruitersPositionMetrics,
-  getRecruiterPositionMetrics,
 } from "../../services/api/recruiterMetrics";
 import {
   getAIInsightsWithTimeRange,
@@ -72,8 +69,8 @@ interface UserData {
 
 interface DataViewToggleProps {
   id: string;
-  checked: boolean;
-  onChange: () => void;
+  checked?: boolean;
+  onChange?: () => void;
   label: string;
   description: string;
 }
@@ -182,8 +179,6 @@ function useCache<T>() {
 }
 
 const useMetricsFetch = (
-  userId: string | null,
-  showAll: boolean,
   type: "metrics" | "clients" | "positions" | "aiInsights"
 ) => {
   const [state, setState] = useState<MetricsState>({
@@ -195,11 +190,9 @@ const useMetricsFetch = (
   const { getFromCache, setCache, clearCache } = useCache<MetricData[]>();
   const fetchingRef = useRef(false);
   
-  const fetchData = useCallback(async (forceShowAll?: boolean) => {
-    if (!userId && type !== "aiInsights") return;
+  const fetchData = useCallback(async () => {
     
-    const currentShowAll = forceShowAll !== undefined ? forceShowAll : showAll;
-    const cacheKey = getCacheKey(type, currentShowAll, userId || undefined);
+    const cacheKey = getCacheKey(type, true, undefined);
     
     // Return cached data if valid
     const cached = getFromCache(cacheKey);
@@ -220,21 +213,15 @@ const useMetricsFetch = (
       
       switch (type) {
         case "metrics":
-          response = currentShowAll
-            ? await getAllRecruitersMetrics({ timeRange: "12" })
-            : await getRecruiterMetrics(userId!, { timeRange: "12" });
+          response = await getAllRecruitersMetrics({ timeRange: "12" })
           configType = "recruiter";
           break;
         case "clients":
-          response = currentShowAll
-            ? await getAllRecruitersClientMetrics({ timeRange: "12" })
-            : await getRecruiterClientMetrics(userId!, { timeRange: "12" });
+          response =  await getAllRecruitersClientMetrics({ timeRange: "12" })
           configType = "client";
           break;
         case "positions":
-          response = currentShowAll
-            ? await getAllRecruitersPositionMetrics({ timeRange: "12" })
-            : await getRecruiterPositionMetrics(userId!, { timeRange: "12" });
+          response = await getAllRecruitersPositionMetrics({ timeRange: "12" })
           configType = "position";
           break;
         case "aiInsights":
@@ -257,14 +244,14 @@ const useMetricsFetch = (
     } finally {
       fetchingRef.current = false;
     }
-  }, [userId, showAll, type, getFromCache, setCache]);
+  }, [type, getFromCache, setCache]);
   
   const retry = useCallback(() => {
-    const cacheKey = getCacheKey(type, showAll, userId || undefined);
+    const cacheKey = getCacheKey(type);
     clearCache(cacheKey);
     fetchingRef.current = false;
     fetchData();
-  }, [type, showAll, userId, clearCache, fetchData]);
+  }, [type, clearCache, fetchData]);
   
   return { state, fetchData, retry, clearCache };
 };
@@ -333,16 +320,20 @@ function DataViewToggle({ id, checked, onChange, label, description }: DataViewT
         <p className="data-view-description">{description}</p>
       </div>
       <div className="data-view-controls">
-        <input
-          type="checkbox"
-          id={id}
-          className="toggle-form"
-          checked={checked}
-          onChange={onChange}
+        {onChange && checked && (
+          <>
+            <input
+              type="checkbox"
+              id={id}
+              className="toggle-form"
+              checked={checked}
+              onChange={onChange}
         />
-        <label htmlFor={id} className="label-form toggle-label">
-          Show All
-        </label>
+            <label htmlFor={id} className="label-form toggle-label">
+              Show All
+            </label>
+          </>
+        )}
       </div>
     </div>
   );
@@ -486,15 +477,10 @@ function AISummary({ basicAiInsights, loading, error, onRetry }: AISummaryProps)
 }
 
 // Main component
-export function RecruiterDashboard() {
-  const { user, isRecruiter } = useAuth();
+export function AdminDashboard() {
+  const { user, isAdmin } = useAuth();
   const [userData, setUserData] = useState<UserData | null>(null);
   const [expandedGraphs, setExpandedGraphs] = useState<Set<string>>(new Set());
-  
-  // Toggle states for different views
-  const [showAllRecruiters, setShowAllRecruiters] = useState(false);
-  const [showAllRecruitersClients, setShowAllRecruitersClients] = useState(false);
-  const [showAllRecruitersPositions, setShowAllRecruitersPositions] = useState(false);
 
   // Real-time activities hook
   const { 
@@ -512,24 +498,18 @@ export function RecruiterDashboard() {
   });
 
   // Custom hooks for data fetching
-  const recruiterMetrics = useMetricsFetch(userData?.id || null, showAllRecruiters, "metrics");
-  const clientMetrics = useMetricsFetch(userData?.id || null, showAllRecruitersClients, "clients");
-  const positionMetrics = useMetricsFetch(userData?.id || null, showAllRecruitersPositions, "positions");
-  const aiMetrics = useMetricsFetch(null, false, "aiInsights");
+  const recruiterMetrics = useMetricsFetch("metrics");
+  const clientMetrics = useMetricsFetch("clients");
+  const positionMetrics = useMetricsFetch("positions");
+  const aiMetrics = useMetricsFetch("aiInsights");
   const basicAiInsights = useBasicAIInsights();
 
   // Memoized toggle descriptions
   const toggleDescriptions = useMemo(() => ({
-    recruiter: showAllRecruiters
-      ? "Viewing aggregated data from all recruiters"
-      : "Viewing your personal recruiting metrics",
-    client: showAllRecruitersClients
-      ? "Viewing client data from all recruiters"
-      : "Viewing your personal client metrics",
-    position: showAllRecruitersPositions
-      ? "Viewing position data from all recruiters"
-      : "Viewing your personal position metrics",
-  }), [showAllRecruiters, showAllRecruitersClients, showAllRecruitersPositions]);
+    recruiter: "Viewing aggregated data from all recruiters",
+    client: "Viewing client data from all recruiters",
+    position: "Viewing position data from all recruiters",
+  }), []);
 
   // Event handlers
   const handleMetricClick = useCallback((metric: MetricData) => {
@@ -552,82 +532,21 @@ export function RecruiterDashboard() {
     }
   }, []);
 
-  const createToggleHandler = useCallback((
-    type: "recruiter" | "client" | "position",
-    currentState: boolean,
-    setState: (value: boolean) => void,
-    fetchFunction: (forceShowAll?: boolean) => void,
-    clearCache: (key?: string) => void,
-    setStateData: (state: MetricsState) => void
-  ) => {
-    return () => {
-      const newState = !currentState;
-      setState(newState);
-
-      // Clear current data and show loading state
-      setStateData({ data: [], loading: true, error: null });
-
-      // Clear cache and fetch new data
-      if (userData?.id) {
-        const cacheTypes = {
-          recruiter: "metrics",
-          client: "clients", 
-          position: "positions"
-        };
-        const cacheType = cacheTypes[type] as "metrics" | "clients" | "positions";
-        
-        const oldCacheKey = getCacheKey(cacheType, currentState, userData.id);
-        const newCacheKey = getCacheKey(cacheType, newState, userData.id);
-        clearCache(oldCacheKey);
-        clearCache(newCacheKey);
-        
-        fetchFunction(newState);
-      }
-    };
-  }, [userData?.id]);
-
-  const handleToggleView = createToggleHandler(
-    "recruiter",
-    showAllRecruiters,
-    setShowAllRecruiters,
-    recruiterMetrics.fetchData,
-    recruiterMetrics.clearCache,
-    (state: MetricsState) => recruiterMetrics.state = state
-  );
-
-  const handleToggleClientView = createToggleHandler(
-    "client",
-    showAllRecruitersClients,
-    setShowAllRecruitersClients,
-    clientMetrics.fetchData,
-    clientMetrics.clearCache,
-    (state: MetricsState) => clientMetrics.state = state
-  );
-
-  const handleTogglePositionView = createToggleHandler(
-    "position",
-    showAllRecruitersPositions,
-    setShowAllRecruitersPositions,
-    positionMetrics.fetchData,
-    positionMetrics.clearCache,
-    (state: MetricsState) => positionMetrics.state = state
-  );
-
   // Initialize user data
   useEffect(() => {
-    if (user && isRecruiter) {
+    if (user && isAdmin) {
       setUserData({
         id: user.id,
         email: user.email,
         name: user.user_metadata?.name || "User",
-        userType: user.user_metadata?.user_type || "recruiter",
+        userType: user.user_metadata?.user_type || "admin",
         createdAt: new Date(user.created_at).toLocaleDateString(),
         lastSignIn: user.last_sign_in_at
           ? new Date(user.last_sign_in_at).toLocaleString()
           : "First login",
       });
     }
-  }, [user, isRecruiter]);
+  }, [user, isAdmin]);
 
   // Fetch initial data when userData is available
   useEffect(() => {
@@ -651,6 +570,7 @@ export function RecruiterDashboard() {
     };
   }, [user?.id]);
 
+
   console.log(userData);
   if (!userData) {
     return (
@@ -660,12 +580,12 @@ export function RecruiterDashboard() {
     );
   }
 
-  const getRoleIcon = () => <UserCheck className="role-icon recruiter" />;
-  const getRoleName = () => "Recruiter";
+  const getRoleIcon = () => <UserCheck className="role-icon admin" />;
+  const getRoleName = () => "Administrator";
 
   return (
     <div className="dashboard-container">
-      <AppHeader title="Recruiter Portal" />
+      <AppHeader title="Admin Portal" />
 
       <main className="dashboard-main">
         <div className="dashboard-heading">
@@ -676,29 +596,12 @@ export function RecruiterDashboard() {
           </div>
         </div>
         <p className="dashboard-subtitle">
-          Manage talent acquisition with Godspeed's lightning-fast recruiting tools
+          Oversee platform operations and manage system-wide recruiting analytics
         </p>
 
         <div className="dashboard-grid">
           <div className="dashboard-left-side">
-            <div className="metrics-grid-container">
-              <DataViewToggle
-                id="recruiterDataToggle"
-                checked={showAllRecruiters}
-                onChange={handleToggleView}
-                label={toggleDescriptions.recruiter}
-                description="Toggle to view data for all recruiters or your own"
-              />
-              <MetricGrid
-                metricsState={recruiterMetrics.state}
-                expandedGraphs={expandedGraphs}
-                onMetricClick={handleMetricClick}
-                onToggleGraph={handleToggleGraph}
-                onRetry={recruiterMetrics.retry}
-                gridSize={4}
-                size="sm"
-              />
-            </div>
+
           </div>
 
           {/* Recent Activities */}
@@ -748,12 +651,31 @@ export function RecruiterDashboard() {
             />
           </div>
         </div>
+        
+        <div className="dashboard-grid">
+          <div className="dashboard-left-side">
+            <div className="metrics-grid-container">
+              <DataViewToggle
+                id="recruiterDataToggle"
+                label={toggleDescriptions.recruiter}
+                description="Toggle to view data for all recruiters or your own"
+              />
+              <MetricGrid
+                metricsState={recruiterMetrics.state}
+                expandedGraphs={expandedGraphs}
+                onMetricClick={handleMetricClick}
+                onToggleGraph={handleToggleGraph}
+                onRetry={recruiterMetrics.retry}
+                gridSize={4}
+                size="sm"
+              />
+            </div>
+          </div>
+        </div>
 
         <div className="client-metrics-container">
           <DataViewToggle
             id="clientDataToggle"
-            checked={showAllRecruitersClients}
-            onChange={handleToggleClientView}
             label={toggleDescriptions.client}
             description="Toggle to view client data for all recruiters or your own"
           />
@@ -784,8 +706,6 @@ export function RecruiterDashboard() {
         <div className="position-metrics-container">
           <DataViewToggle
             id="positionDataToggle"
-            checked={showAllRecruitersPositions}
-            onChange={handleTogglePositionView}
             label={toggleDescriptions.position}
             description="Toggle to view position data for all recruiters or your own"
           />

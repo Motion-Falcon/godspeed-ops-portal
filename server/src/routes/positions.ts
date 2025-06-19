@@ -2236,7 +2236,6 @@ router.delete(
         .select("id")
         .eq("position_id", positionId)
         .eq("candidate_id", candidateId)
-        .eq("status", "active")
         .maybeSingle();
 
       if (assignmentCheckError) {
