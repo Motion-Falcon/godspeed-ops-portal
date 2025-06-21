@@ -40,6 +40,7 @@ import { Dashboard } from './pages/dashboard/Dashboard';
 import { MetricExamplePage } from './pages/dashboard/MetricExamplePage';
 import { ClientManagement } from './pages/ClientManagement/ClientManagement';
 import { InvoiceManagement } from './pages/InvoiceManagement/InvoiceManagement';
+import { InvoiceList } from './pages/InvoiceManagement/InvoiceList';
 
 function App() {
   return (
@@ -91,6 +92,7 @@ function App() {
                 <Route path="/position-matching" element={<PositionMatching />} />
                 <Route path="/timesheet-management" element={<TimesheetManagement />} />
                 <Route path="/invoice-management" element={<InvoiceManagement />} />
+                <Route path="/invoice-management/list" element={<InvoiceList />} />
                 {/* Add more recruiter-specific routes here */}
               </Route>
               

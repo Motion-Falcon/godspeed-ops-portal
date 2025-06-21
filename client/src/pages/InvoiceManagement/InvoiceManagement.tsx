@@ -13,10 +13,6 @@ import {
   Plus,
   Minus,
   Loader2,
-  Eye,
-  Edit,
-  Trash2,
-  List,
   Download,
 } from "lucide-react";
 import { getClients, ClientData, getClient } from "../../services/api/client";
@@ -35,10 +31,7 @@ import "../../styles/pages/InvoiceManagement.css";
 import "../../styles/components/InvoiceAttachments.css";
 import {
   createInvoiceFromFrontendData,
-  getInvoices,
   InvoiceData,
-  PaginatedInvoiceResponse,
-  formatInvoiceForDisplay,
   generateInvoiceNumber,
   updateInvoiceDocument,
   updateInvoice,
@@ -162,17 +155,6 @@ export function InvoiceManagement() {
   const [invoiceNumber, setInvoiceNumber] = useState<string>("");
   const [invoiceNumberLoading, setInvoiceNumberLoading] = useState(false);
 
-  // State for invoice list
-  const [invoices, setInvoices] = useState<InvoiceData[]>([]);
-  const [invoicesLoading, setInvoicesLoading] = useState(false);
-  const [showInvoiceList, setShowInvoiceList] = useState(false);
-  const [invoicesPagination, setInvoicesPagination] = useState({
-    page: 1,
-    limit: 10,
-    totalCount: 0,
-    totalPages: 0,
-  });
-
   // State for position selection
   const [positions, setPositions] = useState<ClientPosition[]>([]);
   const [positionLoading, setPositionLoading] = useState(false);
@@ -289,15 +271,19 @@ export function InvoiceManagement() {
 
   useEffect(() => {
     if (showInvoiceSuccessModal && createdInvoice) {
-      setEmailToSend(
-        createdInvoice.invoice_sent_to ||
-          createdInvoice.client?.emailAddress1 ||
-          selectedClient?.emailAddress1 ||
-          ""
-      );
+      const emailToSet = createdInvoice.invoice_sent_to ||
+        createdInvoice.client?.emailAddress1 ||
+        selectedClient?.emailAddress1 ||
+        "";
+      console.log("Setting emailToSend:", {
+        invoice_sent_to: createdInvoice.invoice_sent_to,
+        client_email: createdInvoice.client?.emailAddress1,
+        selected_client_email: selectedClient?.emailAddress1,
+        final_email: emailToSet
+      });
+      setEmailToSend(emailToSet);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showInvoiceSuccessModal, createdInvoice]);
+  }, [showInvoiceSuccessModal, createdInvoice, selectedClient?.emailAddress1]);
 
   const fetchClients = async () => {
     try {
@@ -331,28 +317,6 @@ export function InvoiceManagement() {
       console.error("Error fetching clients:", error);
     } finally {
       setClientLoading(false);
-    }
-  };
-
-  const fetchInvoices = async (page: number = 1) => {
-    try {
-      setInvoicesLoading(true);
-      const response: PaginatedInvoiceResponse = await getInvoices({
-        page,
-        limit: invoicesPagination.limit,
-      });
-
-      setInvoices(response.invoices);
-      setInvoicesPagination({
-        page: response.pagination.page,
-        limit: response.pagination.limit,
-        totalCount: response.pagination.total,
-        totalPages: response.pagination.totalPages,
-      });
-    } catch (error) {
-      console.error("Error fetching invoices:", error);
-    } finally {
-      setInvoicesLoading(false);
     }
   };
 
@@ -1069,20 +1033,20 @@ export function InvoiceManagement() {
       // Only use the new message for PDF upload success
       const message = `Invoice ${pdfInvoiceNumber} created and PDF uploaded successfully for ${selectedClient.companyName}.`;
       setGenerationMessage(message);
-      console.log(message);
-
-      // Refresh the invoice list if it's currently shown
-      if (showInvoiceList) {
-        fetchInvoices(invoicesPagination.page);
-      }
 
       // Set created invoice and email states after successful invoice creation/upload
       setCreatedInvoice(result.invoice);
-      setEmailToSend(
-        result.invoice.invoice_sent_to ||
-          result.invoice.client?.emailAddress1 ||
-          ""
-      );
+      const emailToSet = result.invoice.invoice_sent_to ||
+        result.invoice.client?.emailAddress1 ||
+        selectedClient?.emailAddress1 ||
+        "";
+      console.log("Setting emailToSend in generateInvoice:", {
+        invoice_sent_to: result.invoice.invoice_sent_to,
+        client_email: result.invoice.client?.emailAddress1,
+        selected_client_email: selectedClient?.emailAddress1,
+        final_email: emailToSet
+      });
+      setEmailToSend(emailToSet);
       setShowInvoiceSuccessModal(true);
     } catch (error) {
       console.error("Error creating invoice:", error);
@@ -1204,16 +1168,46 @@ export function InvoiceManagement() {
 
   // Function to send invoice to client
   async function sendInvoiceToClient() {
+    if (!createdInvoice?.id || !emailToSend) {
+      setSendInvoiceMessage("Missing invoice ID or email address");
+      return;
+    }
+
     setIsSendingInvoice(true);
     setSendInvoiceMessage("");
+    
     try {
-      // Replace with your actual API call to send the invoice email
-      // Example: await sendInvoiceEmail(createdInvoice.id, emailToSend);
-      // Simulate API call
-      await new Promise((res) => setTimeout(res, 1200));
-      setSendInvoiceMessage("Invoice sent successfully to " + emailToSend);
+      console.log("=== SENDING INVOICE TO CLIENT ===");
+      console.log("Invoice ID:", createdInvoice.id);
+      console.log("Email to send:", emailToSend);
+      
+      // Update the invoice record with email-related fields
+      const updateData = {
+        emailSent: true,
+        emailSentDate: new Date().toISOString(),
+        invoice_sent_to: emailToSend
+      };
+      
+      console.log("Update data:", updateData);
+      
+      // Make API call to update the invoice
+      const response = await updateInvoice(createdInvoice.id, updateData);
+      
+      console.log("Update response:", response);
+      
+      if (response.success) {
+        // Update the local state with the updated invoice
+        setCreatedInvoice(response.invoice);
+        setSendInvoiceMessage(`Invoice sent successfully to ${emailToSend}`);
+      
+        console.log("Invoice updated successfully with email info");
+      } else {
+        throw new Error(response.message || "Failed to update invoice");
+      }
     } catch (err) {
-      setSendInvoiceMessage("Failed to send invoice. Please try again.");
+      console.error("Error sending invoice:", err);
+      const errorMessage = err instanceof Error ? err.message : "Failed to send invoice. Please try again.";
+      setSendInvoiceMessage(errorMessage);
     } finally {
       setIsSendingInvoice(false);
     }
@@ -1237,109 +1231,6 @@ export function InvoiceManagement() {
         hideHamburgerMenu={false}
         statusMessage={generationMessage || generationError}
       />
-
-      {/* Toggle Button for Invoice List */}
-      <div className="invoice-toggle-section">
-        <button
-          className={`invoice-toggle-btn ${showInvoiceList ? "active" : ""}`}
-          onClick={() => {
-            setShowInvoiceList(!showInvoiceList);
-            if (!showInvoiceList && invoices.length === 0) {
-              fetchInvoices();
-            }
-          }}
-        >
-          <List size={16} />
-          {showInvoiceList ? "Hide Invoice List" : "Show Invoice List"}
-        </button>
-      </div>
-
-      {/* Invoice List Section */}
-      {showInvoiceList && (
-        <div className="invoice-list-section">
-          <div className="invoice-list-header">
-            <h3>Recent Invoices</h3>
-            <div className="invoice-list-pagination">
-              <span>
-                Showing {invoices.length} of {invoicesPagination.totalCount}{" "}
-                invoices
-              </span>
-            </div>
-          </div>
-
-          {invoicesLoading ? (
-            <div className="invoice-list-loading">
-              <Loader2 size={24} className="timesheet-loading-spinner" />
-              <span>Loading invoices...</span>
-            </div>
-          ) : invoices.length === 0 ? (
-            <div className="invoice-list-empty">
-              <FileText size={48} />
-              <h4>No Invoices Found</h4>
-              <p>Create your first invoice using the form below.</p>
-            </div>
-          ) : (
-            <div className="invoice-list-table">
-              <div className="invoice-list-table-header">
-                <div className="invoice-list-col">Invoice #</div>
-                <div className="invoice-list-col">Client</div>
-                <div className="invoice-list-col">Date</div>
-                <div className="invoice-list-col">Status</div>
-                <div className="invoice-list-col">Amount</div>
-                <div className="invoice-list-col">Actions</div>
-              </div>
-              {invoices.map((invoice) => {
-                const formatted = formatInvoiceForDisplay(invoice);
-                return (
-                  <div key={invoice.id} className="invoice-list-table-row">
-                    <div className="invoice-list-col">
-                      <strong>{invoice.invoiceNumber}</strong>
-                    </div>
-                    <div className="invoice-list-col">
-                      {invoice.client?.companyName || "N/A"}
-                    </div>
-                    <div className="invoice-list-col">
-                      {formatted.invoiceDate}
-                    </div>
-                    <div className="invoice-list-col">
-                      <span
-                        className={`invoice-status-badge status-${invoice.status}`}
-                      >
-                        {formatted.statusDisplayName}
-                      </span>
-                    </div>
-                    <div className="invoice-list-col">
-                      <strong>{formatted.formattedGrandTotal}</strong>
-                    </div>
-                    <div className="invoice-list-col">
-                      <div className="invoice-actions">
-                        <button
-                          className="invoice-action-btn view"
-                          title="View Invoice"
-                        >
-                          <Eye size={14} />
-                        </button>
-                        <button
-                          className="invoice-action-btn edit"
-                          title="Edit Invoice"
-                        >
-                          <Edit size={14} />
-                        </button>
-                        <button
-                          className="invoice-action-btn delete"
-                          title="Delete Invoice"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
 
       <div className="invoice-content-container">
         {/* Client and Payment Terms Selection */}
@@ -2412,7 +2303,7 @@ export function InvoiceManagement() {
                     Invoice Number:
                   </span>
                   <span className="invoice-success-modal-detail-value">
-                    {createdInvoice.invoiceNumber}
+                    #{createdInvoice.invoiceNumber}
                   </span>
                 </div>
                 <div className="invoice-success-modal-detail-item">
@@ -2453,30 +2344,14 @@ export function InvoiceManagement() {
                       setEmailToSend(e.target.value);
                       setEmailUpdateMessage("");
                     }}
-                    onBlur={async () => {
-                      if (
-                        emailToSend &&
-                        emailToSend !== createdInvoice.invoice_sent_to
-                      ) {
-                        try {
-                          await updateInvoice(createdInvoice.id!, {
-                            invoice_sent_to: emailToSend,
-                          });
-                          setEmailUpdateMessage("Recipient email updated.");
-                        } catch (err) {
-                          setEmailUpdateMessage(
-                            "Failed to update recipient email."
-                          );
-                        }
-                      }
-                    }}
+                  
                   />
                 </label>
                 <button
                   className="button"
                   style={{ marginTop: 16, minWidth: 180 }}
                   onClick={sendInvoiceToClient}
-                  disabled={isSendingInvoice || !emailToSend}
+                  disabled={isSendingInvoice || !emailToSend || !emailToSend.trim()}
                 >
                   {isSendingInvoice ? "Sending..." : "Send Invoice to Client"}
                 </button>

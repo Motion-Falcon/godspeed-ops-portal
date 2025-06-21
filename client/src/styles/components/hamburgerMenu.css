@@ -35,7 +35,7 @@
   height: 100vh;
   background-color: var(--card);
   z-index: 1100;
-  padding: var(--spacing-2) var(--spacing-3);
+  padding: var(--spacing-2) 0 var(--spacing-3) var(--spacing-2);
   box-shadow: var(--card-shadow);
   transition: width 0.3s ease, padding 0.3s ease, box-shadow 0.3s ease;
   overflow: hidden; /* Change from overflow-x: hidden; overflow-y: auto; */
@@ -95,7 +95,7 @@
   width: 40px;
   height: 40px;
   color: var(--text);
-  margin: 0 auto;
+  margin: 0 24px 0 12px;
 }
 
 .menu-expand-button:hover {
@@ -150,6 +150,7 @@
 .menu-items {
   list-style-type: none;
   padding: 0;
+  padding-right: 4px;
   margin: 0;
   flex: 1;
   height: auto; /* Remove fixed height */

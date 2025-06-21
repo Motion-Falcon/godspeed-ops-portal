@@ -359,6 +359,24 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-2);
+  position: relative;
+}
+
+.pagination-size-selector::after {
+  content: '';
+  position: absolute;
+  right: calc(var(--spacing-2) + 80px); /* Adjust based on "per page" text width */
+  top: 50%;
+  right: 64px;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 6px solid currentColor;
+  pointer-events: none;
+  z-index: 1;
+  color: var(--text);
 }
 
 .page-size-label {

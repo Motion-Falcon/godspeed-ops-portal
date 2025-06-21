@@ -38,6 +38,7 @@ interface InvoiceData {
   totalHours: number;
   emailSent?: boolean;
   emailSentDate?: string;
+  invoice_sent_to?: string;
   documentGenerated?: boolean;
   documentPath?: string;
   documentFileName?: string;
@@ -64,6 +65,7 @@ interface DbInvoiceData {
   total_hours: number;
   email_sent: boolean;
   email_sent_date?: string;
+  invoice_sent_to?: string;
   document_generated: boolean;
   document_path?: string;
   document_file_name?: string;
@@ -104,6 +106,7 @@ function transformToDbFormat(data: InvoiceData): Omit<DbInvoiceData, 'id' | 'inv
     total_hours: data.totalHours,
     email_sent: data.emailSent || false,
     email_sent_date: data.emailSentDate || undefined,
+    invoice_sent_to: data.invoice_sent_to || undefined,
     document_generated: data.documentGenerated || false,
     document_path: data.documentPath || undefined,
     document_file_name: data.documentFileName || undefined,
@@ -258,22 +261,26 @@ router.get('/',
       const { 
         page = '1', 
         limit = '10', 
-        searchTerm = '', 
+        searchTerm = '',
         clientFilter = '',
-        statusFilter = '',
+        clientEmailFilter = '',
+        invoiceNumberFilter = '',
         dateRangeStart = '',
         dateRangeEnd = '',
         emailSentFilter = '',
+        invoiceSentFilter = '',
         documentGeneratedFilter = ''
       } = req.query as {
         page?: string;
         limit?: string;
         searchTerm?: string;
         clientFilter?: string;
-        statusFilter?: string;
+        clientEmailFilter?: string;
+        invoiceNumberFilter?: string;
         dateRangeStart?: string;
         dateRangeEnd?: string;
         emailSentFilter?: string;
+        invoiceSentFilter?: string;
         documentGeneratedFilter?: string;
       };
 
@@ -291,19 +298,19 @@ router.get('/',
 
       // Apply role-based filtering
       if (userType === 'jobseeker') {
-        // Jobseekers can only see their own invoices
         baseQuery = baseQuery.eq('created_by_user_id', userId);
       }
-      // Admin and recruiter can see all invoices (no additional filter needed)
 
-      // Apply filters
+      // Apply all filters at database level
       baseQuery = applyInvoiceFilters(baseQuery, {
         searchTerm,
         clientFilter,
-        statusFilter,
+        clientEmailFilter,
+        invoiceNumberFilter,
         dateRangeStart,
         dateRangeEnd,
         emailSentFilter,
+        invoiceSentFilter,
         documentGeneratedFilter
       });
 
@@ -338,10 +345,12 @@ router.get('/',
       filteredCountQuery = applyInvoiceFilters(filteredCountQuery, {
         searchTerm,
         clientFilter,
-        statusFilter,
+        clientEmailFilter,
+        invoiceNumberFilter,
         dateRangeStart,
         dateRangeEnd,
         emailSentFilter,
+        invoiceSentFilter,
         documentGeneratedFilter
       });
 
@@ -421,54 +430,61 @@ router.get('/',
 function applyInvoiceFilters(query: any, filters: {
   searchTerm?: string;
   clientFilter?: string;
-  statusFilter?: string;
+  clientEmailFilter?: string;
+  invoiceNumberFilter?: string;
   dateRangeStart?: string;
   dateRangeEnd?: string;
   emailSentFilter?: string;
+  invoiceSentFilter?: string;
   documentGeneratedFilter?: string;
 }) {
   const {
     searchTerm,
     clientFilter,
-    statusFilter,
+    clientEmailFilter,
+    invoiceNumberFilter,
     dateRangeStart,
     dateRangeEnd,
     emailSentFilter,
+    invoiceSentFilter,
     documentGeneratedFilter
   } = filters;
 
   // Global search across multiple fields
   if (searchTerm && searchTerm.trim().length > 0) {
     const searchTermTrimmed = searchTerm.trim();
-    query = query.or(`invoice_number.ilike.%${searchTermTrimmed}%,clients.company_name.ilike.%${searchTermTrimmed}%,clients.short_code.ilike.%${searchTermTrimmed}%`);
+    query = query.or(`invoice_number.ilike.%${searchTermTrimmed}%,clients.company_name.ilike.%${searchTermTrimmed}%,clients.short_code.ilike.%${searchTermTrimmed}%,clients.email_address1.ilike.%${searchTermTrimmed}%`);
   }
 
   // Individual column filters
   if (clientFilter && clientFilter.trim().length > 0) {
     query = query.or(`clients.company_name.ilike.%${clientFilter.trim()}%,clients.short_code.ilike.%${clientFilter.trim()}%`);
   }
-
-  if (statusFilter && statusFilter.trim().length > 0) {
-    query = query.eq('status', statusFilter.trim());
+  if (clientEmailFilter && clientEmailFilter.trim().length > 0) {
+    query = query.ilike('clients.email_address1', `%${clientEmailFilter.trim()}%`);
   }
-
+  if (invoiceNumberFilter && invoiceNumberFilter.trim().length > 0) {
+    query = query.ilike('invoice_number', `%${invoiceNumberFilter.trim()}%`);
+  } 
+  if (dateRangeStart && dateRangeStart.trim().length > 0) {
+    query = query.gte('invoice_date', dateRangeStart.trim());
+  }
+  if (dateRangeEnd && dateRangeEnd.trim().length > 0) {
+    query = query.lte('invoice_date', dateRangeEnd.trim());
+  }
   if (emailSentFilter && emailSentFilter.trim().length > 0) {
     const emailSentBool = emailSentFilter.toLowerCase() === 'true';
     query = query.eq('email_sent', emailSentBool);
   }
-
+  if (invoiceSentFilter && invoiceSentFilter.trim().length > 0) {
+    // If you have a separate field for invoice sent, filter here. Otherwise, skip or map to email_sent.
+    // For now, map to email_sent for demonstration.
+    const invoiceSentBool = invoiceSentFilter.toLowerCase() === 'true';
+    query = query.eq('email_sent', invoiceSentBool);
+  }
   if (documentGeneratedFilter && documentGeneratedFilter.trim().length > 0) {
     const documentGeneratedBool = documentGeneratedFilter.toLowerCase() === 'true';
     query = query.eq('document_generated', documentGeneratedBool);
-  }
-
-  // Date range filters
-  if (dateRangeStart && dateRangeStart.trim().length > 0) {
-    query = query.gte('invoice_date', dateRangeStart.trim());
-  }
-
-  if (dateRangeEnd && dateRangeEnd.trim().length > 0) {
-    query = query.lte('invoice_date', dateRangeEnd.trim());
   }
 
   return query;
@@ -783,6 +799,7 @@ router.put('/:id',
       if (invoiceData.totalHours !== undefined) updateData.total_hours = invoiceData.totalHours;
       if (invoiceData.emailSent !== undefined) updateData.email_sent = invoiceData.emailSent;
       if (invoiceData.emailSentDate) updateData.email_sent_date = invoiceData.emailSentDate;
+      if (invoiceData.invoice_sent_to) updateData.invoice_sent_to = invoiceData.invoice_sent_to;
       if (invoiceData.documentGenerated !== undefined) updateData.document_generated = invoiceData.documentGenerated;
       if (invoiceData.documentPath) updateData.document_path = invoiceData.documentPath;
       if (invoiceData.documentFileName) updateData.document_file_name = invoiceData.documentFileName;

@@ -57,10 +57,12 @@ export interface InvoicePaginationParams {
   limit?: number;
   searchTerm?: string;
   clientFilter?: string;
-  statusFilter?: string;
+  clientEmailFilter?: string;
+  invoiceNumberFilter?: string;
   dateRangeStart?: string;
   dateRangeEnd?: string;
   emailSentFilter?: string;
+  invoiceSentFilter?: string;
   documentGeneratedFilter?: string;
 }
 
@@ -113,10 +115,12 @@ export const getInvoices = async (
     if (params.limit) url.searchParams.append("limit", params.limit.toString());
     if (params.searchTerm) url.searchParams.append("searchTerm", params.searchTerm);
     if (params.clientFilter) url.searchParams.append("clientFilter", params.clientFilter);
-    if (params.statusFilter) url.searchParams.append("statusFilter", params.statusFilter);
+    if (params.clientEmailFilter) url.searchParams.append("clientEmailFilter", params.clientEmailFilter);
+    if (params.invoiceNumberFilter) url.searchParams.append("invoiceNumberFilter", params.invoiceNumberFilter);
     if (params.dateRangeStart) url.searchParams.append("dateRangeStart", params.dateRangeStart);
     if (params.dateRangeEnd) url.searchParams.append("dateRangeEnd", params.dateRangeEnd);
     if (params.emailSentFilter) url.searchParams.append("emailSentFilter", params.emailSentFilter);
+    if (params.invoiceSentFilter) url.searchParams.append("invoiceSentFilter", params.invoiceSentFilter);
     if (params.documentGeneratedFilter) url.searchParams.append("documentGeneratedFilter", params.documentGeneratedFilter);
 
     const response = await api.get(url.pathname + url.search);
@@ -361,25 +365,3 @@ export const formatInvoiceForDisplay = (invoice: InvoiceData) => {
     statusDisplayName: (invoice.status?.charAt(0).toUpperCase() || '') + (invoice.status?.slice(1) || '') || 'Draft'
   };
 };
-
-/**
- * Helper function to get invoice status options
- */
-export const getInvoiceStatusOptions = () => [
-  { value: 'draft', label: 'Draft' },
-  { value: 'pending', label: 'Pending' },
-  { value: 'sent', label: 'Sent' },
-  { value: 'paid', label: 'Paid' },
-  { value: 'overdue', label: 'Overdue' },
-  { value: 'cancelled', label: 'Cancelled' }
-];
-
-/**
- * Helper function to get currency options
- */
-export const getCurrencyOptions = () => [
-  { value: 'CAD', label: 'CAD - Canadian Dollar' },
-  { value: 'USD', label: 'USD - US Dollar' },
-  { value: 'EUR', label: 'EUR - Euro' },
-  { value: 'GBP', label: 'GBP - British Pound' }
-]; 

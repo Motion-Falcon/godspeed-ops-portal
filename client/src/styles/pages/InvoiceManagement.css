@@ -328,11 +328,11 @@
 }
 
 /* ===== Button Styling ===== */
-
 .line-item-buttons .button.secondary {
   background: var(--card);
   color: var(--text);
   border: 1px solid var(--border);
+  padding: 10px;
 }
 
 .line-item-buttons .button.secondary:hover {
@@ -344,6 +344,7 @@
   background: var(--danger);
   color: var(--background);
   border: 1px solid var(--border);
+  padding: 10px;
 }
 
 .line-item-buttons .button.danger:hover {
@@ -666,7 +667,7 @@
   height: 100vh;
   background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(4px);
-  z-index: 1000;
+  z-index: 10000;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -679,7 +680,7 @@
   border-radius: 12px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
   position: relative;
-  max-width: 1000px;
+  max-width: 1100px;
   width: 100%;
   height: 95vh;
   overflow: hidden;
@@ -703,6 +704,7 @@
   font-size: 18px;
   color: var(--text-muted);
   cursor: pointer;
+  line-height: 8px;
   transition: all var(--transition-normal);
   z-index: 10;
 }
@@ -718,7 +720,7 @@
   width: 60%;
   background: var(--background);
   border-right: 1px solid var(--border);
-  padding: 2rem 0 2rem 0;
+  padding: 1rem 0;
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -804,121 +806,183 @@
   margin: 0 8px;
 }
 
+/* Invoice Success Modal Info Panel - Modern Design with Smaller Fonts and Colors */
 .invoice-success-modal-info-panel {
-  /* flex: 1; */
-  width: 40%;
+  width: 38%;
   margin: 2rem;
   margin-top: 4rem;
   height: fit-content;
-  padding: 2rem;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
-  gap: 1rem;
+  gap: 0;
   background: var(--background);
-  border-radius: 16px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.07);
-
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
 }
 
 .dark .invoice-success-modal-info-panel {
+  background: var(--background);
   box-shadow: var(--glow), 0 0 25px rgba(0, 0, 0, 0.7);
 }
-.invoice-success-modal-info-panel h2 {
-  color: var(--primary);
-  font-size: 1.15rem;
-  font-weight: 800;
-  margin: 0 0 0.5rem 0;
-  text-align: left;
-  letter-spacing: 0.01em;
+
+/* Header section with subtle gradient */
+.invoice-success-modal-info-panel::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  background: linear-gradient(135deg, var(--primary) 0%, #fed500 100%);
+  z-index: -1;
 }
 
+.invoice-success-modal-info-panel h2 {
+  color: white;
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0;
+  margin-bottom: 1rem;
+  padding: 1.5rem 2rem;
+  background: linear-gradient(135deg, black 0%, #fed500 100%);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  position: relative;
+}
+
+/* Success checkmark icon */
+.invoice-success-modal-info-panel h2::before {
+  content: "✓";
+  display: inline-block;
+  margin-right: 0.5rem;
+  font-size: 1.2rem;
+  color: #10b981;
+  background: white;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  text-align: center;
+  line-height: 24px;
+  font-weight: bold;
+}
+
+/* Details section with colored cards */
 .invoice-success-modal-details {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  margin-bottom: 0.5rem;
+  padding: 1.5rem 2rem;
+  background: var(--background-secondary);
 }
 
 .invoice-success-modal-detail-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.35rem 0;
-  border-bottom: 1px solid var(--border);
-  font-size: 0.97rem;
+  padding: 0.75rem 1rem;
+  background: var(--background);
+  border-bottom: 2px solid var(--border);
+  transition: all 0.2s ease;
 }
 
-.invoice-success-modal-detail-item:last-child {
-  border-bottom: none;
-  font-weight: 700;
-  font-size: 1.05rem;
-  color: var(--primary);
+/* Add subtle colors to different detail items */
+.invoice-success-modal-detail-item:last-child .invoice-success-modal-detail-label,
+.invoice-success-modal-detail-item:last-child .invoice-success-modal-detail-value {
+  font-weight: 600;
 }
 
 .invoice-success-modal-detail-label {
-  color: var(--text-muted);
+  font-size: 0.75rem;
+  color: var(--text);
   font-weight: 500;
-  font-size: 0.93rem;
 }
 
 .invoice-success-modal-detail-value {
+  font-size: 0.8rem;
   color: var(--text);
-  font-weight: 600;
-  font-size: 0.97rem;
+  font-weight: 500;
 }
 
+/* Email section with subtle gradient */
 .invoice-success-modal-email-section {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 1rem 1rem 0.75rem 1rem;
-  margin-top: 0.5rem;
-  box-shadow: 0 1px 6px rgba(0,0,0,0.04);
+  padding: 1.5rem 2rem;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  border-top: 1px solid var(--border);
+}
+
+.dark .invoice-success-modal-email-section {
+  background: linear-gradient(135deg, black 0%, #fed500 100%);
+
 }
 
 .invoice-success-modal-email-section label {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
   color: var(--text);
-  font-weight: 600;
-  font-size: 0.98rem;
-  margin-bottom: 0.5rem;
+  position: relative;
 }
 
 .invoice-success-modal-email-section input[type="email"] {
-  width: 100%;
-  padding: 8px 12px;
-  border: 1.5px solid var(--border);
-  border-radius: 7px;
-  background: var(--input-bg);
-  color: var(--text);
-  font-size: 0.97rem;
-  transition: all var(--transition-normal);
+  padding: 0.75rem;
+  border: var(--text-muted);
+  border-radius: 6px;
+  font-size: 0.8rem;
 }
 
 .invoice-success-modal-email-section input[type="email"]:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.08);
+  box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.1);
 }
 
-.invoice-success-modal-email-section .button {
-  margin-top: 0.75rem;
-  min-width: 150px;
-  font-size: 0.97rem;
-  padding: 8px 0;
-  border-radius: 7px;
-}
-
+/* Success message with green gradient */
 .invoice-success-modal-message {
-  background: var(--success-bg);
-  color: var(--success);
-  border: 1px solid var(--success);
-  border-radius: 6px;
+  margin-top: 0.75rem;
   padding: 0.5rem 0.75rem;
-  font-size: 0.93rem;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border-radius: 6px;
+  font-size: 0.75rem;
   font-weight: 500;
   text-align: center;
-  margin-top: 0.7rem;
 }
 
+.invoice-success-modal-message::before {
+  content: "✓";
+  display: inline-block;
+  margin-right: 0.5rem;
+  font-weight: bold;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  text-align: center;
+  line-height: 16px;
+  font-size: 0.7rem;
+}
+
+/* Send Email Button Styles */
+.send-email-cell {
+  padding: 8px 12px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.send-email-cell button {
+  width: 100%;
+  height: 100%;
+  padding: 8px 12px;
+  text-align: center;
+  vertical-align: middle; 
+}
+
+.send-email-cell button.primary {
+  background: linear-gradient(135deg, #1a1a1a 0%, #307e02 100%);
+}
+
+.send-email-cell button.secondary {
+  background: linear-gradient(135deg, #2d2d2d 0%, #8B0000 100%);
+}

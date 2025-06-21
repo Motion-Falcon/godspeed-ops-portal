@@ -371,6 +371,12 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
           path: '/invoice-management', 
           icon: <Receipt size={16} />,
           exact: true 
+        },
+        { 
+          label: 'Invoice List',
+          path: '/invoice-management/list',
+          icon: <ListChecks size={16} />, // Use a list-style icon
+          exact: true
         }
       ]
     },
