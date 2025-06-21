@@ -13,7 +13,8 @@ import {
   Image as ImageIcon,
   FileSpreadsheet,
   Mail,
-  Plus
+  Plus,
+  Loader2 // <-- add Loader2 for spinner
 } from 'lucide-react';
 import '../styles/components/InvoiceAttachments.css';
 
@@ -51,6 +52,7 @@ interface AttachmentFile {
   filePath?: string;
   previewUrl?: string;
   isUploaded: boolean;
+  uploadStatus: 'pending' | 'uploading' | 'uploaded' | 'error';
 }
 
 interface InvoiceAttachmentsProps {
@@ -182,7 +184,8 @@ export const InvoiceAttachments: React.FC<InvoiceAttachmentsProps> = ({
         fileName: file.name,
         fileSize: file.size,
         fileType: file.type || 'application/octet-stream',
-        isUploaded: false
+        isUploaded: false,
+        uploadStatus: 'pending',
       }));
 
       onChange([...value, ...newAttachments]);
@@ -373,12 +376,25 @@ export const InvoiceAttachments: React.FC<InvoiceAttachmentsProps> = ({
                 </div>
                 <div className="attachment-details">
                   <span className="attachment-size">{formatFileSize(attachment.fileSize)}</span>
-                  {attachment.isUploaded ? (
+                  {attachment.uploadStatus === 'uploaded' && (
                     <div className="attachment-status uploaded">
                       <CheckCircle size={14} />
                       <span>Uploaded</span>
                     </div>
-                  ) : (
+                  )}
+                  {attachment.uploadStatus === 'uploading' && (
+                    <div className="attachment-status uploading">
+                      <Loader2 size={14} className="attachment-uploading-spinner" />
+                      <span>Uploading...</span>
+                    </div>
+                  )}
+                  {attachment.uploadStatus === 'error' && (
+                    <div className="attachment-status error">
+                      <AlertCircle size={14} />
+                      <span>Upload failed</span>
+                    </div>
+                  )}
+                  {attachment.uploadStatus === 'pending' && (
                     <div className="attachment-status pending">
                       <Upload size={14} />
                       <span>Will upload when saved</span>
@@ -395,6 +411,7 @@ export const InvoiceAttachments: React.FC<InvoiceAttachmentsProps> = ({
                     className="attachment-action-btn preview"
                     onClick={() => handlePreviewFile(attachment)}
                     title="Preview"
+                    disabled={attachment.uploadStatus === 'uploading'}
                   >
                     <Eye size={16} />
                   </button>
@@ -405,6 +422,7 @@ export const InvoiceAttachments: React.FC<InvoiceAttachmentsProps> = ({
                   className="attachment-action-btn download"
                   onClick={() => handleDownloadFile(attachment)}
                   title="Download"
+                  disabled={attachment.uploadStatus === 'uploading'}
                 >
                   <Download size={16} />
                 </button>
@@ -414,7 +432,7 @@ export const InvoiceAttachments: React.FC<InvoiceAttachmentsProps> = ({
                   className="attachment-action-btn delete"
                   onClick={() => handleRemoveAttachment(attachment.id)}
                   title="Remove"
-                  disabled={disabled}
+                  disabled={disabled || attachment.uploadStatus === 'uploading'}
                 >
                   <Trash size={16} />
                 </button>

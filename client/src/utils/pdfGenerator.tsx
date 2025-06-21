@@ -482,13 +482,11 @@ const InvoicePDFDocument: React.FC<{ data: InvoiceData }> = ({ data }) => {
               {/* Footer Messages */}
               {data.messageOnInvoice && (
                 <Text style={styles.footerMessage}>
-                  <Text style={{ fontWeight: 'bold' }}>Message: </Text>
                   {data.messageOnInvoice}
                 </Text>
               )}
               {data.termsOnInvoice && (
                 <Text style={styles.footerTerms}>
-                  <Text style={{ fontWeight: 'bold' }}>Terms: </Text>
                   {data.termsOnInvoice}
                 </Text>
               )}

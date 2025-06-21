@@ -42,6 +42,8 @@ export interface InvoiceData {
     province1?: string;
     postalCode1?: string;
   };
+  // Add invoice_sent_to field for recipient email
+  invoice_sent_to?: string;
 }
 
 export interface InvoiceResponse {

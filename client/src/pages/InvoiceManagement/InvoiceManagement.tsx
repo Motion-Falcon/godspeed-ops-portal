@@ -17,6 +17,7 @@ import {
   Edit,
   Trash2,
   List,
+  Download,
 } from "lucide-react";
 import { getClients, ClientData, getClient } from "../../services/api/client";
 import {
@@ -32,17 +33,23 @@ import {
 } from "../../components/InvoiceAttachments";
 import "../../styles/pages/InvoiceManagement.css";
 import "../../styles/components/InvoiceAttachments.css";
-import { 
-  createInvoiceFromFrontendData, 
-  getInvoices, 
+import {
+  createInvoiceFromFrontendData,
+  getInvoices,
   InvoiceData,
   PaginatedInvoiceResponse,
   formatInvoiceForDisplay,
-  generateInvoiceNumber
-} from '../../services/api/invoice';
+  generateInvoiceNumber,
+  updateInvoiceDocument,
+  updateInvoice,
+} from "../../services/api/invoice";
 import { useAuth } from "../../contexts/AuthContext";
 import { supabase } from "../../lib/supabaseClient";
-import { generateInvoicePDF as generatePDF, InvoiceData as PDFInvoiceData } from "../../utils/pdfGenerator.tsx";
+import {
+  generateInvoicePDF as generatePDF,
+  InvoiceData as PDFInvoiceData,
+} from "../../utils/pdfGenerator.tsx";
+import { Document, Page, pdfjs } from "react-pdf";
 // Backend response interface with snake_case properties for invoice management
 interface InvoiceBackendClientData {
   id?: string;
@@ -142,6 +149,8 @@ const COMBINED_OPTIONS = [
   { id: "po-no", type: "po", value: "PO No", label: "PO No" },
 ];
 
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
+
 export function InvoiceManagement() {
   const { user } = useAuth();
   // State for client selection
@@ -181,8 +190,12 @@ export function InvoiceManagement() {
   const [dueDate, setDueDate] = useState<string>("");
 
   // State for additional information
-  const [messageOnInvoice, setMessageOnInvoice] = useState<string>("We appreciate your business and look forward to helping you again soon.");
-  const [termsOnInvoice, setTermsOnInvoice] = useState<string>("Interest is payable at 24% annually after the agreed terms.");
+  const [messageOnInvoice, setMessageOnInvoice] = useState<string>(
+    "We appreciate your business and look forward to helping you again soon."
+  );
+  const [termsOnInvoice, setTermsOnInvoice] = useState<string>(
+    "Interest is payable at 24% annually after the agreed terms."
+  );
 
   // State for line items
   const [lineItems, setLineItems] = useState<InvoiceLineItem[]>([]);
@@ -198,6 +211,24 @@ export function InvoiceManagement() {
   const [generationMessage, setGenerationMessage] = useState<string>("");
   const [generationError, setGenerationError] = useState<string>("");
   const [emailSent, setEmailSent] = useState(false);
+  // Add state for pdfBlobUrl
+  const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
+  // Add state for showInvoiceSuccessModal and emailToSend
+  const [showInvoiceSuccessModal, setShowInvoiceSuccessModal] = useState(false);
+  const [createdInvoice, setCreatedInvoice] = useState<InvoiceData | null>(
+    null
+  );
+  const [emailToSend, setEmailToSend] = useState<string>("");
+  const [emailUpdateMessage, setEmailUpdateMessage] = useState<string>("");
+
+  // Add PDF preview state for modal
+  const [pdfPageNumber, setPdfPageNumber] = useState(1);
+  const [pdfNumPages, setPdfNumPages] = useState<number | null>(null);
+  const [pdfScale, setPdfScale] = useState(1.0);
+
+  // Add state for sending invoice
+  const [isSendingInvoice, setIsSendingInvoice] = useState(false);
+  const [sendInvoiceMessage, setSendInvoiceMessage] = useState<string>("");
 
   useEffect(() => {
     // Fetch clients on component mount
@@ -256,22 +287,41 @@ export function InvoiceManagement() {
     }
   }, [selectedTerms, invoiceDate]);
 
+  useEffect(() => {
+    if (showInvoiceSuccessModal && createdInvoice) {
+      setEmailToSend(
+        createdInvoice.invoice_sent_to ||
+          createdInvoice.client?.emailAddress1 ||
+          selectedClient?.emailAddress1 ||
+          ""
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showInvoiceSuccessModal, createdInvoice]);
+
   const fetchClients = async () => {
     try {
       setClientLoading(true);
       const response = await getClients({ limit: 100000000 }); // Get all clients
-      const convertedClients: ClientData[] = (response.clients as BackendClientData[]).map(
+      const convertedClients: ClientData[] = (
+        response.clients as BackendClientData[]
+      ).map(
         (client: BackendClientData): ClientData => ({
           ...client,
           // Convert backend snake_case to frontend camelCase if needed
           companyName: (client.company_name || client.companyName) as string,
           shortCode: (client.short_code || client.shortCode) as string,
-          emailAddress1: (client.email_address_1 || client.emailAddress1) as string,
+          emailAddress1: (client.email_address_1 ||
+            client.emailAddress1) as string,
           city1: (client.city_1 || client.city1) as string | undefined,
-          province1: (client.province_1 || client.province1) as string | undefined,
-          postalCode1: (client.postal_code_1 || client.postalCode1) as string | undefined,
-          preferredPaymentMethod:
-            (client.preferred_payment_method || client.preferredPaymentMethod) as string | undefined,
+          province1: (client.province_1 || client.province1) as
+            | string
+            | undefined,
+          postalCode1: (client.postal_code_1 || client.postalCode1) as
+            | string
+            | undefined,
+          preferredPaymentMethod: (client.preferred_payment_method ||
+            client.preferredPaymentMethod) as string | undefined,
           terms: (client.terms || "Net 30") as string,
           currency: (client.currency || "CAD") as string,
         })
@@ -291,7 +341,7 @@ export function InvoiceManagement() {
         page,
         limit: invoicesPagination.limit,
       });
-      
+
       setInvoices(response.invoices);
       setInvoicesPagination({
         page: response.pagination.page,
@@ -506,7 +556,9 @@ export function InvoiceManagement() {
       const newInvoiceNumber = await generateInvoiceNumber();
       setInvoiceNumber(newInvoiceNumber);
     } catch (error) {
-      setGenerationError("Failed to generate invoice number. Please try again.");
+      setGenerationError(
+        "Failed to generate invoice number. Please try again."
+      );
     } finally {
       setInvoiceNumberLoading(false);
     }
@@ -514,47 +566,55 @@ export function InvoiceManagement() {
 
   const handleClientSelect = async (option: DropdownOption) => {
     const basicClient = option.value as ClientData;
-    
+
     try {
       setClientLoading(true);
-      
+
       // Fetch detailed client information from the backend
       const detailedClientResponse = await getClient(basicClient.id!);
-      
+
       // Cast to InvoiceBackendClientData to handle snake_case properties from backend
-      const detailedClient = detailedClientResponse as unknown as InvoiceBackendClientData;
-      
+      const detailedClient =
+        detailedClientResponse as unknown as InvoiceBackendClientData;
+
       // Convert backend snake_case to frontend camelCase and ensure all required fields
       const processedClient: ClientData = {
         ...detailedClient,
         // Ensure camelCase fields are properly mapped
-        companyName: detailedClient.company_name || detailedClient.companyName || "",
+        companyName:
+          detailedClient.company_name || detailedClient.companyName || "",
         shortCode: detailedClient.short_code || detailedClient.shortCode || "",
-        emailAddress1: detailedClient.email_address1 || detailedClient.emailAddress1 || "",
+        emailAddress1:
+          detailedClient.email_address1 || detailedClient.emailAddress1 || "",
         city1: detailedClient.city1 || detailedClient.city_1 || "",
         province1: detailedClient.province1 || detailedClient.province_1 || "",
-        postalCode1: detailedClient.postal_code1 || detailedClient.postalCode1 || "",
-        preferredPaymentMethod: detailedClient.preferred_payment_method || detailedClient.preferredPaymentMethod || "",
+        postalCode1:
+          detailedClient.postal_code1 || detailedClient.postalCode1 || "",
+        preferredPaymentMethod:
+          detailedClient.preferred_payment_method ||
+          detailedClient.preferredPaymentMethod ||
+          "",
         terms: detailedClient.terms || "Net 30",
         currency: detailedClient.currency || "CAD",
       };
-      
+
       setSelectedClient(processedClient);
-      
+
       // Auto-select terms from client data if available
       if (processedClient.terms) {
         setSelectedTerms(processedClient.terms);
       }
-      
+
       // Generate invoice number when client is selected
       generateAndSetInvoiceNumber();
-      
     } catch (error) {
       console.error("Error fetching detailed client data:", error);
       // Fallback to basic client data if detailed fetch fails
       setSelectedClient(basicClient);
       generateAndSetInvoiceNumber();
-      setGenerationError("Warning: Could not fetch complete client details. Some information may be missing.");
+      setGenerationError(
+        "Warning: Could not fetch complete client details. Some information may be missing."
+      );
     } finally {
       setClientLoading(false);
     }
@@ -733,92 +793,6 @@ export function InvoiceManagement() {
     };
   };
 
-  // Add PDF generation function
-  const generateInvoicePDF = async () => {
-    try {
-      console.log("=== Generating PDF ===");
-
-      // Calculate totals to get tax percentage information
-      const { subtotal, totalTax, totalHST, totalGST, totalQST, grandTotal } = calculateLineItemTotals();
-
-      // Calculate overall tax percentages based on line items
-      let hstPercentage = 0;
-      let gstPercentage = 0;
-      let qstPercentage = 0;
-
-      // Get the dominant tax percentages from line items
-      const taxInfos = lineItems.map(item => getTaxInfo(item.salesTax));
-      if (taxInfos.length > 0) {
-        // Use the first tax info for percentages (assuming all items have same tax structure)
-        const primaryTaxInfo = taxInfos[0];
-        hstPercentage = primaryTaxInfo.hstPercentage;
-        gstPercentage = primaryTaxInfo.gstPercentage;
-        qstPercentage = primaryTaxInfo.qstPercentage;
-      }
-
-      const pdfData: PDFInvoiceData = {
-        invoiceNumber: invoiceNumber,
-        invoiceDate: invoiceDate,
-        dueDate: dueDate,
-        client: {
-          companyName: selectedClient?.companyName || '',
-          address: [
-            selectedClient?.city1 || '',
-            selectedClient?.province1 || '',
-            selectedClient?.postalCode1 || ''
-          ].filter(Boolean),
-          email: selectedClient?.emailAddress1
-        },
-        lineItems: lineItems.map(item => ({
-          positionName: item.position?.title,
-          description: item.description,
-          candidate: item.jobseeker ? `${item.jobseeker.firstName} ${item.jobseeker.lastName}` : undefined,
-          hours: parseFloat(item.hours) || 0,
-          rate: parseFloat(item.rate) || 0,
-          taxType: item.salesTax,
-          amount: (parseFloat(item.hours) || 0) * (parseFloat(item.rate) || 0)
-        })),
-        summary: {
-          subtotal: subtotal,
-          totalHST: totalHST,
-          totalGST: totalGST,
-          totalQST: totalQST,
-          totalTax: totalTax,
-          grandTotal: grandTotal,
-          totalHours: lineItems.reduce((total, item) => total + (parseFloat(item.hours) || 0), 0),
-          hstPercentage: hstPercentage,
-          gstPercentage: gstPercentage,
-          qstPercentage: qstPercentage
-        },
-        dateRange: {
-          startDate: invoiceDate,
-          endDate: dueDate
-        },
-        terms: selectedTerms,
-        messageOnInvoice: messageOnInvoice,
-        termsOnInvoice: termsOnInvoice
-      };
-
-      const pdfBlob = await generatePDF(pdfData);
-      
-      // Create download link
-      const url = URL.createObjectURL(pdfBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `Invoice_${invoiceNumber}_${selectedClient?.companyName?.replace(/\s+/g, '_')}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-
-      return true;
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      setGenerationError('Failed to generate PDF. Please try again.');
-      return false;
-    }
-  };
-
   // Generate invoice function
   const generateInvoice = async () => {
     console.log("=== DEBUG: generateInvoice called ===");
@@ -826,10 +800,12 @@ export function InvoiceManagement() {
     console.log("lineItems:", lineItems);
     console.log("lineItems.length:", lineItems.length);
     console.log("invoiceNumber:", invoiceNumber);
-    
+
     if (!selectedClient || lineItems.length === 0) {
       console.log("=== DEBUG: Early return - no client or no line items ===");
-      setGenerationError("Please select a client and add line items before generating invoice");
+      setGenerationError(
+        "Please select a client and add line items before generating invoice"
+      );
       return;
     }
 
@@ -839,8 +815,8 @@ export function InvoiceManagement() {
     }
 
     // Check if at least one line item has hours > 0
-    const hasValidLineItems = lineItems.some(item => 
-      parseFloat(item.hours) > 0 && parseFloat(item.rate) > 0
+    const hasValidLineItems = lineItems.some(
+      (item) => parseFloat(item.hours) > 0 && parseFloat(item.rate) > 0
     );
     lineItems.forEach((item, index) => {
       console.log(`Item ${index}:`, {
@@ -848,39 +824,62 @@ export function InvoiceManagement() {
         rate: item.rate,
         hoursFloat: parseFloat(item.hours),
         rateFloat: parseFloat(item.rate),
-        valid: parseFloat(item.hours) > 0 && parseFloat(item.rate) > 0
+        valid: parseFloat(item.hours) > 0 && parseFloat(item.rate) > 0,
       });
     });
 
     if (!hasValidLineItems) {
-      setGenerationError("At least one line item must have hours and rate greater than 0");
+      setGenerationError(
+        "At least one line item must have hours and rate greater than 0"
+      );
       return;
     }
 
     // Validate required client fields
-    if (!selectedClient.id || !selectedClient.companyName || !selectedClient.shortCode || !selectedClient.emailAddress1) {
-      setGenerationError("Selected client is missing required information (ID, company name, short code, or email)");
+    if (
+      !selectedClient.id ||
+      !selectedClient.companyName ||
+      !selectedClient.shortCode ||
+      !selectedClient.emailAddress1
+    ) {
+      setGenerationError(
+        "Selected client is missing required information (ID, company name, short code, or email)"
+      );
       return;
     }
 
+    // Check for attachment upload status before proceeding
+    if (attachments.some((att) => att.uploadStatus === "uploading")) {
+      setGenerationError(
+        "Please wait for all attachments to finish uploading."
+      );
+      return;
+    }
+    if (attachments.some((att) => att.uploadStatus === "error")) {
+      setGenerationError(
+        "One or more attachments failed to upload. Please remove or re-upload them before generating the invoice."
+      );
+      return;
+    }
     setIsGeneratingInvoice(true);
     setGenerationMessage("");
     setGenerationError("");
 
     try {
-      // Calculate totals for the invoice
-      const { lineItemTotals, subtotal, totalTax, totalHST, totalGST, totalQST, grandTotal } = calculateLineItemTotals();
-
-      // First, try to generate the PDF to ensure it works
-      console.log("=== Attempting PDF generation first ===");
-      const pdfGenerated = await generateInvoicePDF();
-      
-      if (!pdfGenerated) {
-        setGenerationError("Failed to generate PDF. Invoice was not created in database.");
+      if (!user || !user.id) {
+        setGenerationError("User not authenticated. Please log in again.");
         return;
       }
-
-      console.log("=== PDF generated successfully, proceeding with database creation ===");
+      // Calculate totals for the invoice
+      const {
+        lineItemTotals,
+        subtotal,
+        totalTax,
+        totalHST,
+        totalGST,
+        totalQST,
+        grandTotal,
+      } = calculateLineItemTotals();
 
       // Upload attachments after PDF generation succeeds
       const uploadedAttachments = await uploadAttachments();
@@ -899,10 +898,8 @@ export function InvoiceManagement() {
         invoiceNumber: invoiceNumber,
         invoiceDate: invoiceDate,
         dueDate: dueDate,
-        status: 'draft' as const,
-        currency: selectedClient.currency || 'CAD',
-        
-        // Convert line items to timesheet-like format for the API
+        status: "draft" as const,
+        currency: selectedClient.currency || "CAD",
         timesheets: lineItemTotals.map((item) => ({
           id: item.id,
           invoiceNumber: invoiceNumber,
@@ -913,72 +910,187 @@ export function InvoiceManagement() {
           regularBillRate: parseFloat(item.rate) || 0,
           overtimeBillRate: 0,
           totalClientBill: item.lineTotal,
-          jobseekerProfile: item.jobseeker ? {
-            firstName: item.jobseeker.firstName,
-            lastName: item.jobseeker.lastName,
-            email: item.jobseeker.email,
-            jobseekerUserId: item.jobseeker.id,
-            jobseekerProfileId: item.jobseeker.candidateId,
-          } : {
-            firstName: 'N/A',
-            lastName: 'N/A',
-            email: 'N/A',
-          },
-          position: item.position ? {
-            title: item.position.title,
-            positionCode: item.position.positionCode,
-            positionId: item.position.id,
-            positionCandidateAssignmentsId: item.jobseeker?.positionCandidateAssignmentsId,
-          } : {
-            title: item.description || 'Custom Line Item',
-            positionCode: 'CUSTOM',
-          },
+          jobseekerProfile: item.jobseeker
+            ? {
+                firstName: item.jobseeker.firstName,
+                lastName: item.jobseeker.lastName,
+                email: item.jobseeker.email,
+                jobseekerUserId: item.jobseeker.id,
+                jobseekerProfileId: item.jobseeker.candidateId,
+              }
+            : {
+                firstName: "N/A",
+                lastName: "N/A",
+                email: "N/A",
+              },
+          position: item.position
+            ? {
+                title: item.position.title,
+                positionCode: item.position.positionCode,
+                positionId: item.position.id,
+                positionCandidateAssignmentsId:
+                  item.jobseeker?.positionCandidateAssignmentsId,
+              }
+            : {
+                title: item.description || "Custom Line Item",
+                positionCode: "CUSTOM",
+              },
         })),
-        
-        // Use uploaded attachments with actual file paths
         attachments: uploadedAttachments,
-        
-        // Include additional information
         messageOnInvoice: messageOnInvoice,
         termsOnInvoice: termsOnInvoice,
-        
         subtotal: subtotal,
         totalTax: totalTax,
         totalHst: totalHST,
         totalGst: totalGST,
         totalQst: totalQST,
         grandTotal: grandTotal,
-        totalHours: lineItems.reduce((total, item) => total + (parseFloat(item.hours) || 0), 0),
+        totalHours: lineItems.reduce(
+          (total, item) => total + (parseFloat(item.hours) || 0),
+          0
+        ),
         emailSent: emailSent,
         emailSentDate: emailSent ? new Date().toISOString() : undefined,
       };
 
       // Log the data being sent to API
-      console.log('=== INVOICE DATA BEING SENT TO API ===');
-      console.log('Invoice API Data:', JSON.stringify(invoiceApiData, null, 2));
-      console.log('=== END API DATA ===');
+      console.log("=== INVOICE DATA BEING SENT TO API ===");
+      console.log("Invoice API Data:", JSON.stringify(invoiceApiData, null, 2));
+      console.log("=== END API DATA ===");
 
       // Call the API to create the invoice
       const result = await createInvoiceFromFrontendData(invoiceApiData);
-      
-      const message = `Invoice ${result.invoice.invoiceNumber} created successfully for ${selectedClient.companyName} - Total: $${grandTotal.toFixed(2)} ${selectedClient.currency || 'CAD'}`;
-      
-      if (emailSent) {
-        setGenerationMessage(`${message} (marked for email) - PDF downloaded`);
-      } else {
-        setGenerationMessage(`${message} - PDF downloaded`);
+      const pdfInvoiceId = result.invoice.id || "";
+      const pdfInvoiceNumber = result.invoice.invoiceNumber || "";
+
+      // Generate the PDF Blob
+      const pdfData: PDFInvoiceData = {
+        invoiceNumber: pdfInvoiceNumber,
+        invoiceDate: invoiceDate,
+        dueDate: dueDate,
+        client: {
+          companyName: selectedClient.companyName || "",
+          address: [
+            selectedClient.city1 || "",
+            selectedClient.province1 || "",
+            selectedClient.postalCode1 || "",
+          ].filter(Boolean),
+          email: selectedClient.emailAddress1,
+        },
+        lineItems: lineItems.map((item) => ({
+          positionName: item.position?.title,
+          description: item.description,
+          candidate: item.jobseeker
+            ? `${item.jobseeker.firstName} ${item.jobseeker.lastName}`
+            : undefined,
+          hours: parseFloat(item.hours) || 0,
+          rate: parseFloat(item.rate) || 0,
+          taxType: item.salesTax,
+          amount: (parseFloat(item.hours) || 0) * (parseFloat(item.rate) || 0),
+        })),
+        summary: {
+          subtotal: subtotal,
+          totalHST: totalHST,
+          totalGST: totalGST,
+          totalQST: totalQST,
+          totalTax: totalTax,
+          grandTotal: grandTotal,
+          totalHours: lineItems.reduce(
+            (total, item) => total + (parseFloat(item.hours) || 0),
+            0
+          ),
+          hstPercentage:
+            lineItems.length > 0
+              ? getTaxInfo(lineItems[0].salesTax).hstPercentage
+              : 0,
+          gstPercentage:
+            lineItems.length > 0
+              ? getTaxInfo(lineItems[0].salesTax).gstPercentage
+              : 0,
+          qstPercentage:
+            lineItems.length > 0
+              ? getTaxInfo(lineItems[0].salesTax).qstPercentage
+              : 0,
+        },
+        dateRange: {
+          startDate: invoiceDate,
+          endDate: dueDate,
+        },
+        terms: selectedTerms,
+        messageOnInvoice: messageOnInvoice,
+        termsOnInvoice: termsOnInvoice,
+      };
+      const pdfBlob = await generatePDF(pdfData);
+      const pdfObjectUrl = URL.createObjectURL(pdfBlob);
+      setPdfBlobUrl(pdfObjectUrl);
+
+      // Upload PDF to Supabase Storage
+      const safeCompanyName = selectedClient.companyName
+        ? selectedClient.companyName.replace(/\s+/g, "_")
+        : "";
+      const pdfFileName = `Invoice_${pdfInvoiceNumber}_${safeCompanyName}.pdf`;
+      const pdfPath = `${user.id}/${pdfInvoiceNumber}/documents/${pdfFileName}`;
+      const { data: pdfUploadData, error: pdfUploadError } =
+        await supabase.storage.from("invoices").upload(pdfPath, pdfBlob, {
+          cacheControl: "3600",
+          upsert: true,
+          contentType: "application/pdf",
+        });
+      if (pdfUploadError || !pdfUploadData || !pdfUploadData.path) {
+        setGenerationError("Failed to upload invoice PDF. Please try again.");
+        return;
       }
 
-      console.log("Invoice created successfully:", result);
+      // Update invoice record with PDF metadata (document PATCH route)
+      await updateInvoiceDocument(pdfInvoiceId, {
+        documentPath: pdfUploadData.path || "",
+        documentFileName: pdfFileName,
+        documentFileSize: pdfBlob.size,
+        documentGeneratedAt: new Date().toISOString(),
+      });
+
+      // Also update all document-related fields using the main updateInvoice route
+      try {
+        await updateInvoice(pdfInvoiceId, {
+          documentGenerated: true,
+          documentPath: pdfUploadData.path || "",
+          documentFileName: pdfFileName,
+          documentFileSize: pdfBlob.size,
+          documentMimeType: "application/pdf",
+          documentGeneratedAt: new Date().toISOString(),
+        });
+      } catch (err) {
+        setGenerationError(
+          "Invoice PDF uploaded, but failed to update all document fields."
+        );
+        return;
+      }
+
+      // Only use the new message for PDF upload success
+      const message = `Invoice ${pdfInvoiceNumber} created and PDF uploaded successfully for ${selectedClient.companyName}.`;
+      setGenerationMessage(message);
+      console.log(message);
 
       // Refresh the invoice list if it's currently shown
       if (showInvoiceList) {
         fetchInvoices(invoicesPagination.page);
       }
 
+      // Set created invoice and email states after successful invoice creation/upload
+      setCreatedInvoice(result.invoice);
+      setEmailToSend(
+        result.invoice.invoice_sent_to ||
+          result.invoice.client?.emailAddress1 ||
+          ""
+      );
+      setShowInvoiceSuccessModal(true);
     } catch (error) {
       console.error("Error creating invoice:", error);
-      setGenerationError(error instanceof Error ? error.message : "Failed to create invoice. Please try again.");
+      setGenerationError(
+        error instanceof Error
+          ? error.message
+          : "Failed to create invoice. Please try again."
+      );
     } finally {
       setIsGeneratingInvoice(false);
     }
@@ -988,51 +1100,79 @@ export function InvoiceManagement() {
   const uploadAttachments = async () => {
     if (!attachments.length) return [];
 
+    const updatedAttachments = [...attachments];
     const uploadedAttachments = [];
-    
-    for (const attachment of attachments) {
+
+    for (const attachment of updatedAttachments) {
       if (attachment.file && !attachment.isUploaded) {
+        // Set status to uploading
+        setAttachments((prev) =>
+          prev.map((att) =>
+            att.id === attachment.id
+              ? { ...att, uploadStatus: "uploading" }
+              : att
+          )
+        );
         try {
           // Create a unique filename to avoid conflicts
           const timestamp = Date.now();
-          const fileExtension = attachment.file.name.split('.').pop();
-          const fileNameWithoutExt = attachment.file.name.replace(/\.[^/.]+$/, "");
+          const fileExtension = attachment.file.name.split(".").pop();
+          const fileNameWithoutExt = attachment.file.name.replace(
+            /\.[^/.]+$/,
+            ""
+          );
           const uniqueFileName = `${fileNameWithoutExt}_${timestamp}.${fileExtension}`;
-          
           const filePath = `${user?.id}/${invoiceNumber}/attachments/${uniqueFileName}`;
-          
           // Upload to Supabase Storage with upsert enabled to handle duplicates
           const { data, error } = await supabase.storage
-            .from('invoices')
+            .from("invoices")
             .upload(filePath, attachment.file, {
-              cacheControl: '3600',
-              upsert: true // Allow overwriting existing files
+              cacheControl: "3600",
+              upsert: true, // Allow overwriting existing files
             });
-
           if (error) {
-            console.error('Error uploading file:', error);
-            throw new Error(`Failed to upload ${attachment.fileName}: ${error.message}`);
+            console.error("Error uploading file:", error);
+            // Set status to error
+            setAttachments((prev) =>
+              prev.map((att) =>
+                att.id === attachment.id
+                  ? { ...att, uploadStatus: "error" }
+                  : att
+              )
+            );
+            throw new Error(
+              `Failed to upload ${attachment.fileName}: ${error.message}`
+            );
           }
-
           // Add to uploaded attachments list
           uploadedAttachments.push({
             fileName: attachment.fileName,
             fileSize: attachment.fileSize,
             fileType: attachment.fileType,
-            uploadStatus: 'uploaded',
+            uploadStatus: "uploaded",
             filePath: data.path,
-            bucketName: 'invoices',
+            bucketName: "invoices",
           });
-
           // Update attachment state to show as uploaded
-          setAttachments(prev => prev.map(att => 
-            att.id === attachment.id 
-              ? { ...att, isUploaded: true, filePath: data.path }
-              : att
-          ));
-
+          setAttachments((prev) =>
+            prev.map((att) =>
+              att.id === attachment.id
+                ? {
+                    ...att,
+                    isUploaded: true,
+                    filePath: data.path,
+                    uploadStatus: "uploaded",
+                  }
+                : att
+            )
+          );
         } catch (error) {
-          console.error('Error uploading attachment:', error);
+          console.error("Error uploading attachment:", error);
+          setAttachments((prev) =>
+            prev.map((att) =>
+              att.id === attachment.id ? { ...att, uploadStatus: "error" } : att
+            )
+          );
           throw error;
         }
       } else if (attachment.isUploaded && attachment.filePath) {
@@ -1041,24 +1181,67 @@ export function InvoiceManagement() {
           fileName: attachment.fileName,
           fileSize: attachment.fileSize,
           fileType: attachment.fileType,
-          uploadStatus: 'uploaded',
+          uploadStatus: "uploaded",
           filePath: attachment.filePath,
-          bucketName: 'invoices',
+          bucketName: "invoices",
         });
       }
     }
-
     return uploadedAttachments;
   };
 
+  // Add PDF preview state for modal
+  const onPdfLoadSuccess = ({ numPages }: { numPages: number }) => {
+    setPdfNumPages(numPages);
+    setPdfPageNumber(1);
+  };
+  const goToPrevPage = () => setPdfPageNumber((prev) => Math.max(prev - 1, 1));
+  const goToNextPage = () =>
+    setPdfPageNumber((prev) => Math.min(prev + 1, pdfNumPages || 1));
+  const zoomIn = () => setPdfScale((prev) => Math.min(prev + 0.1, 2.0));
+  const zoomOut = () => setPdfScale((prev) => Math.max(prev - 0.1, 0.5));
+  const resetZoom = () => setPdfScale(1.0);
+
+  // Function to send invoice to client
+  async function sendInvoiceToClient() {
+    setIsSendingInvoice(true);
+    setSendInvoiceMessage("");
+    try {
+      // Replace with your actual API call to send the invoice email
+      // Example: await sendInvoiceEmail(createdInvoice.id, emailToSend);
+      // Simulate API call
+      await new Promise((res) => setTimeout(res, 1200));
+      setSendInvoiceMessage("Invoice sent successfully to " + emailToSend);
+    } catch (err) {
+      setSendInvoiceMessage("Failed to send invoice. Please try again.");
+    } finally {
+      setIsSendingInvoice(false);
+    }
+  }
+
+  // Add download handler for invoice PDF
+  function handleDownloadInvoice() {
+    if (!pdfBlobUrl || !createdInvoice?.invoiceNumber) return;
+    const link = document.createElement("a");
+    link.href = pdfBlobUrl;
+    link.download = `Invoice_${createdInvoice.invoiceNumber}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
   return (
     <div className="invoice-page-container">
-      <AppHeader title="Invoice Management" hideHamburgerMenu={false} />
+      <AppHeader
+        title="Invoice Management"
+        hideHamburgerMenu={false}
+        statusMessage={generationMessage || generationError}
+      />
 
       {/* Toggle Button for Invoice List */}
       <div className="invoice-toggle-section">
         <button
-          className={`invoice-toggle-btn ${showInvoiceList ? 'active' : ''}`}
+          className={`invoice-toggle-btn ${showInvoiceList ? "active" : ""}`}
           onClick={() => {
             setShowInvoiceList(!showInvoiceList);
             if (!showInvoiceList && invoices.length === 0) {
@@ -1067,7 +1250,7 @@ export function InvoiceManagement() {
           }}
         >
           <List size={16} />
-          {showInvoiceList ? 'Hide Invoice List' : 'Show Invoice List'}
+          {showInvoiceList ? "Hide Invoice List" : "Show Invoice List"}
         </button>
       </div>
 
@@ -1078,7 +1261,8 @@ export function InvoiceManagement() {
             <h3>Recent Invoices</h3>
             <div className="invoice-list-pagination">
               <span>
-                Showing {invoices.length} of {invoicesPagination.totalCount} invoices
+                Showing {invoices.length} of {invoicesPagination.totalCount}{" "}
+                invoices
               </span>
             </div>
           </div>
@@ -1112,13 +1296,15 @@ export function InvoiceManagement() {
                       <strong>{invoice.invoiceNumber}</strong>
                     </div>
                     <div className="invoice-list-col">
-                      {invoice.client?.companyName || 'N/A'}
+                      {invoice.client?.companyName || "N/A"}
                     </div>
                     <div className="invoice-list-col">
                       {formatted.invoiceDate}
                     </div>
                     <div className="invoice-list-col">
-                      <span className={`invoice-status-badge status-${invoice.status}`}>
+                      <span
+                        className={`invoice-status-badge status-${invoice.status}`}
+                      >
                         {formatted.statusDisplayName}
                       </span>
                     </div>
@@ -1324,7 +1510,10 @@ export function InvoiceManagement() {
                     <span className="timesheet-detail-value">
                       {invoiceNumberLoading ? (
                         <span className="invoice-number-loading">
-                          <Loader2 size={14} className="timesheet-loading-spinner" />
+                          <Loader2
+                            size={14}
+                            className="timesheet-loading-spinner"
+                          />
                           Generating...
                         </span>
                       ) : invoiceNumber ? (
@@ -1919,15 +2108,16 @@ export function InvoiceManagement() {
                   </span>
                 </label>
               </div>
-              
+
               <button
                 className={`button ${
                   isGeneratingInvoice ||
                   !selectedClient ||
                   !invoiceNumber ||
                   lineItems.length === 0 ||
-                  !lineItems.some(item => 
-                    parseFloat(item.hours) > 0 && parseFloat(item.rate) > 0
+                  !lineItems.some(
+                    (item) =>
+                      parseFloat(item.hours) > 0 && parseFloat(item.rate) > 0
                   )
                     ? "disabled"
                     : ""
@@ -1940,17 +2130,15 @@ export function InvoiceManagement() {
                   !selectedClient ||
                   !invoiceNumber ||
                   lineItems.length === 0 ||
-                  !lineItems.some(item => 
-                    parseFloat(item.hours) > 0 && parseFloat(item.rate) > 0
+                  !lineItems.some(
+                    (item) =>
+                      parseFloat(item.hours) > 0 && parseFloat(item.rate) > 0
                   )
                 }
               >
                 {isGeneratingInvoice ? (
                   <>
-                    <Loader2
-                      size={16}
-                      className="timesheet-loading-spinner"
-                    />
+                    <Loader2 size={16} className="timesheet-loading-spinner" />
                     Generating...
                   </>
                 ) : (
@@ -1960,19 +2148,6 @@ export function InvoiceManagement() {
                   </>
                 )}
               </button>
-
-              {/* Generation Messages */}
-              {generationMessage && (
-                <div className="timesheet-success-message">
-                  {generationMessage}
-                </div>
-              )}
-
-              {generationError && (
-                <div className="timesheet-error-message">
-                  {generationError}
-                </div>
-              )}
             </div>
           </>
         )}
@@ -1983,7 +2158,10 @@ export function InvoiceManagement() {
             {/* Line Items Skeleton */}
             <div className="invoice-line-items-container">
               <div className="invoice-line-items-header">
-                <div className="skeleton-text" style={{ width: "150px", height: "20px" }}></div>
+                <div
+                  className="skeleton-text"
+                  style={{ width: "150px", height: "20px" }}
+                ></div>
               </div>
               <div className="invoice-line-items-list">
                 <div className="invoice-line-item-group">
@@ -1991,8 +2169,18 @@ export function InvoiceManagement() {
                     <div className="invoice-field-row single-row">
                       {[1, 2, 3, 4, 5, 6].map((index) => (
                         <div key={index} className="selection-section">
-                          <div className="skeleton-text" style={{ width: "80px", height: "14px", marginBottom: "8px" }}></div>
-                          <div className="skeleton-text" style={{ width: "100%", height: "40px" }}></div>
+                          <div
+                            className="skeleton-text"
+                            style={{
+                              width: "80px",
+                              height: "14px",
+                              marginBottom: "8px",
+                            }}
+                          ></div>
+                          <div
+                            className="skeleton-text"
+                            style={{ width: "100%", height: "40px" }}
+                          ></div>
                         </div>
                       ))}
                     </div>
@@ -2005,7 +2193,10 @@ export function InvoiceManagement() {
             <div className="invoice-bottom-sections-container">
               <div className="invoice-line-items-container supplier-po-section">
                 <div className="invoice-line-items-header">
-                  <div className="skeleton-text" style={{ width: "200px", height: "20px" }}></div>
+                  <div
+                    className="skeleton-text"
+                    style={{ width: "200px", height: "20px" }}
+                  ></div>
                 </div>
                 <div className="invoice-line-items-list">
                   <div className="invoice-line-item-group">
@@ -2013,8 +2204,18 @@ export function InvoiceManagement() {
                       <div className="invoice-field-row single-row">
                         {[1, 2, 3].map((index) => (
                           <div key={index} className="selection-section">
-                            <div className="skeleton-text" style={{ width: "80px", height: "14px", marginBottom: "8px" }}></div>
-                            <div className="skeleton-text" style={{ width: "100%", height: "40px" }}></div>
+                            <div
+                              className="skeleton-text"
+                              style={{
+                                width: "80px",
+                                height: "14px",
+                                marginBottom: "8px",
+                              }}
+                            ></div>
+                            <div
+                              className="skeleton-text"
+                              style={{ width: "100%", height: "40px" }}
+                            ></div>
                           </div>
                         ))}
                       </div>
@@ -2025,16 +2226,39 @@ export function InvoiceManagement() {
 
               <div className="invoice-message-terms-container">
                 <div className="invoice-line-items-header">
-                  <div className="skeleton-text" style={{ width: "180px", height: "20px" }}></div>
+                  <div
+                    className="skeleton-text"
+                    style={{ width: "180px", height: "20px" }}
+                  ></div>
                 </div>
                 <div className="message-terms-grid">
                   <div className="selection-section">
-                    <div className="skeleton-text" style={{ width: "120px", height: "14px", marginBottom: "8px" }}></div>
-                    <div className="skeleton-text" style={{ width: "100%", height: "120px" }}></div>
+                    <div
+                      className="skeleton-text"
+                      style={{
+                        width: "120px",
+                        height: "14px",
+                        marginBottom: "8px",
+                      }}
+                    ></div>
+                    <div
+                      className="skeleton-text"
+                      style={{ width: "100%", height: "120px" }}
+                    ></div>
                   </div>
                   <div className="selection-section">
-                    <div className="skeleton-text" style={{ width: "80px", height: "14px", marginBottom: "8px" }}></div>
-                    <div className="skeleton-text" style={{ width: "100%", height: "120px" }}></div>
+                    <div
+                      className="skeleton-text"
+                      style={{
+                        width: "80px",
+                        height: "14px",
+                        marginBottom: "8px",
+                      }}
+                    ></div>
+                    <div
+                      className="skeleton-text"
+                      style={{ width: "100%", height: "120px" }}
+                    ></div>
                   </div>
                 </div>
               </div>
@@ -2046,7 +2270,10 @@ export function InvoiceManagement() {
                 <div className="timesheet-invoice-table-header">
                   {[1, 2, 3, 4, 5].map((index) => (
                     <div key={index} className="timesheet-col">
-                      <div className="skeleton-text" style={{ width: "80px", height: "14px" }}></div>
+                      <div
+                        className="skeleton-text"
+                        style={{ width: "80px", height: "14px" }}
+                      ></div>
                     </div>
                   ))}
                 </div>
@@ -2054,8 +2281,18 @@ export function InvoiceManagement() {
                   <div className="timesheet-invoice-line-item">
                     {[1, 2, 3, 4, 5].map((index) => (
                       <div key={index} className="timesheet-col">
-                        <div className="skeleton-text" style={{ width: "90%", height: "16px", marginBottom: "4px" }}></div>
-                        <div className="skeleton-text" style={{ width: "70%", height: "12px" }}></div>
+                        <div
+                          className="skeleton-text"
+                          style={{
+                            width: "90%",
+                            height: "16px",
+                            marginBottom: "4px",
+                          }}
+                        ></div>
+                        <div
+                          className="skeleton-text"
+                          style={{ width: "70%", height: "12px" }}
+                        ></div>
                       </div>
                     ))}
                   </div>
@@ -2063,8 +2300,14 @@ export function InvoiceManagement() {
                 <div className="timesheet-invoice-totals">
                   {[1, 2, 3, 4].map((index) => (
                     <div key={index} className="timesheet-total-line">
-                      <div className="skeleton-text" style={{ width: "100px", height: "14px" }}></div>
-                      <div className="skeleton-text" style={{ width: "80px", height: "14px" }}></div>
+                      <div
+                        className="skeleton-text"
+                        style={{ width: "100px", height: "14px" }}
+                      ></div>
+                      <div
+                        className="skeleton-text"
+                        style={{ width: "80px", height: "14px" }}
+                      ></div>
                     </div>
                   ))}
                 </div>
@@ -2073,20 +2316,188 @@ export function InvoiceManagement() {
 
             {/* Attachments Skeleton */}
             <div className="invoice-attachments-section">
-              <div className="skeleton-text" style={{ width: "140px", height: "20px", marginBottom: "16px" }}></div>
-              <div className="skeleton-text" style={{ width: "100%", height: "80px" }}></div>
+              <div
+                className="skeleton-text"
+                style={{ width: "140px", height: "20px", marginBottom: "16px" }}
+              ></div>
+              <div
+                className="skeleton-text"
+                style={{ width: "100%", height: "80px" }}
+              ></div>
             </div>
 
             {/* Generate Button Skeleton */}
             <div className="timesheet-action-section">
               <div className="timesheet-email-option">
-                <div className="skeleton-text" style={{ width: "150px", height: "16px" }}></div>
+                <div
+                  className="skeleton-text"
+                  style={{ width: "150px", height: "16px" }}
+                ></div>
               </div>
-              <div className="skeleton-text" style={{ width: "140px", height: "40px" }}></div>
+              <div
+                className="skeleton-text"
+                style={{ width: "140px", height: "40px" }}
+              ></div>
             </div>
           </div>
         )}
       </div>
+
+      {/* Show Invoice Success Modal */}
+      {showInvoiceSuccessModal && createdInvoice && (
+        <div className="invoice-success-modal-overlay">
+          <div className="invoice-success-modal-content">
+            <button
+              className="invoice-success-modal-close-btn"
+              onClick={() => setShowInvoiceSuccessModal(false)}
+            >
+              &times;
+            </button>
+
+            {/* PDF Preview Left Side */}
+            <div className="invoice-success-modal-pdf-preview">
+              <div className="invoice-success-modal-pdf-controls">
+                <button onClick={zoomOut}>-</button>
+                <button onClick={resetZoom}>100%</button>
+                <button onClick={zoomIn}>+</button>
+              </div>
+              <div className="invoice-success-modal-pdf-page-container">
+                <Document
+                  file={pdfBlobUrl || ""}
+                  onLoadSuccess={onPdfLoadSuccess}
+                  loading={<div>Loading PDF...</div>}
+                  error={<div>Failed to load PDF.</div>}
+                >
+                  <Page
+                    pageNumber={pdfPageNumber}
+                    width={400}
+                    scale={pdfScale}
+                    renderTextLayer={false}
+                    renderAnnotationLayer={false}
+                  />
+                </Document>
+              </div>
+              {pdfNumPages && (
+                <div className="invoice-success-modal-pdf-navigation">
+                  <button onClick={goToPrevPage} disabled={pdfPageNumber <= 1}>
+                    Previous
+                  </button>
+                  <span>
+                    Page {pdfPageNumber} of {pdfNumPages}
+                  </span>
+                  <button
+                    onClick={goToNextPage}
+                    disabled={pdfPageNumber >= pdfNumPages}
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Info Right Side */}
+            <div className="invoice-success-modal-info-panel">
+              <h2>Invoice Created Successfully!</h2>
+              <button
+                className="button"
+                style={{ alignSelf: "center", width: "fit-content" }}
+                onClick={handleDownloadInvoice}
+                disabled={!pdfBlobUrl}
+              >
+                <Download /> Download Invoice
+              </button>
+              <div className="invoice-success-modal-details">
+                <div className="invoice-success-modal-detail-item">
+                  <span className="invoice-success-modal-detail-label">
+                    Invoice Number:
+                  </span>
+                  <span className="invoice-success-modal-detail-value">
+                    {createdInvoice.invoiceNumber}
+                  </span>
+                </div>
+                <div className="invoice-success-modal-detail-item">
+                  <span className="invoice-success-modal-detail-label">
+                    Client:
+                  </span>
+                  <span className="invoice-success-modal-detail-value">
+                    {createdInvoice.client?.companyName ||
+                      selectedClient?.companyName ||
+                      "N/A"}
+                  </span>
+                </div>
+                <div className="invoice-success-modal-detail-item">
+                  <span className="invoice-success-modal-detail-label">
+                    Date:
+                  </span>
+                  <span className="invoice-success-modal-detail-value">
+                    {createdInvoice.invoiceDate}
+                  </span>
+                </div>
+                <div className="invoice-success-modal-detail-item">
+                  <span className="invoice-success-modal-detail-label">
+                    Total:
+                  </span>
+                  <span className="invoice-success-modal-detail-value">
+                    ${createdInvoice.grandTotal}
+                  </span>
+                </div>
+              </div>
+
+              <div className="invoice-success-modal-email-section">
+                <label>
+                  Send to Email:
+                  <input
+                    type="email"
+                    value={emailToSend}
+                    onChange={(e) => {
+                      setEmailToSend(e.target.value);
+                      setEmailUpdateMessage("");
+                    }}
+                    onBlur={async () => {
+                      if (
+                        emailToSend &&
+                        emailToSend !== createdInvoice.invoice_sent_to
+                      ) {
+                        try {
+                          await updateInvoice(createdInvoice.id!, {
+                            invoice_sent_to: emailToSend,
+                          });
+                          setEmailUpdateMessage("Recipient email updated.");
+                        } catch (err) {
+                          setEmailUpdateMessage(
+                            "Failed to update recipient email."
+                          );
+                        }
+                      }
+                    }}
+                  />
+                </label>
+                <button
+                  className="button"
+                  style={{ marginTop: 16, minWidth: 180 }}
+                  onClick={sendInvoiceToClient}
+                  disabled={isSendingInvoice || !emailToSend}
+                >
+                  {isSendingInvoice ? "Sending..." : "Send Invoice to Client"}
+                </button>
+                {/* Wrap both messages in a fragment to avoid adjacent JSX errors */}
+                <>
+                  {sendInvoiceMessage && (
+                    <div className="invoice-success-modal-message">
+                      {sendInvoiceMessage}
+                    </div>
+                  )}
+                  {emailUpdateMessage && (
+                    <div className="invoice-success-modal-message">
+                      {emailUpdateMessage}
+                    </div>
+                  )}
+                </>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
