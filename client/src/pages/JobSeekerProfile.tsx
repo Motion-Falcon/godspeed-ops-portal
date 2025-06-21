@@ -771,7 +771,7 @@ export function JobSeekerProfile() {
               'Qualifications',
               'Compensation',
               'Meta Information'
-            ].map((sectionTitle, index) => (
+            ].map((index) => (
               <div key={index} className="section-card">
                 <div className="skeleton-text" style={{ width: '180px', height: '20px', marginBottom: '20px' }}></div>
                 <div className="detail-group">

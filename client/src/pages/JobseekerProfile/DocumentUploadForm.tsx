@@ -11,7 +11,7 @@ import {
 import { supabase } from '../../lib/supabaseClient';
 import PDFThumbnail from '../../components/PDFThumbnail';
 import PDFViewerModal from '../../components/PDFViewerModal';
-import { FileText, Eye, Download, FileWarning, AlertCircle, CheckCircle, Upload, Trash, Plus } from 'lucide-react';
+import { FileText, Eye, FileWarning, AlertCircle, CheckCircle, Upload, Trash, Plus } from 'lucide-react';
 import '../../styles/components/form.css';
 import '../../styles/pages/JobseekerProfileStyles.css';
 
@@ -92,20 +92,38 @@ const decodePath = (path: string | undefined): string | undefined => {
   return decodedPath;
 };
 
+// Helper function to format file size
+const formatFileSize = (bytes: number): string => {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+};
+
 // Add this function to render file status indicators
 const renderFileStatus = (doc: DocumentItemData) => {
   if (doc.documentPath && doc.documentFileName) {
     return (
       <div className="file-status file-status-success">
         <CheckCircle size={16} />
-        <span>Uploaded: {doc.documentFileName}</span>
+        <div className="file-status-content">
+          <span className="file-status-name">Uploaded: {doc.documentFileName}</span>
+          {/* Note: For uploaded files, we don't have size info stored, but we could enhance this in the future */}
+          <span className="file-status-note"> • Previously uploaded document</span>
+        </div>
       </div>
     );
   } else if (doc.documentFile instanceof File) {
     return (
       <div className="file-status file-status-pending">
         <Upload size={16} />
-        <span>File selected, will be uploaded when you save</span>
+        <div className="file-status-content">
+          <span className="file-status-name">{doc.documentFile.name}</span>
+          <span className="file-status-details">
+            Size: {formatFileSize(doc.documentFile.size)} • Will be uploaded when you save
+          </span>
+        </div>
       </div>
     );
   }
@@ -137,6 +155,7 @@ function DocumentItem({
   const [isPreviewLoading, setIsPreviewLoading] = useState<boolean>(false);
   const [localPdfUrl, setLocalPdfUrl] = useState<string | null>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
   
   // Create an object that represents the current document data
   const currentDoc = {
@@ -178,24 +197,36 @@ function DocumentItem({
     };
   }, [documentPath, documentFile, pdfCache]);
 
+  // Helper function to validate file
+  const validateFile = (file: File): string | null => {
+    // Check file type
+    if (!ALLOWED_FILE_TYPES.includes(file.type)) {
+      return 'Invalid file type. Only PDF files are allowed.';
+    }
+
+    // Check file size
+    if (file.size > MAX_FILE_SIZE) {
+      return `File size exceeds the 2MB limit. Current size: ${formatFileSize(file.size)}`;
+    }
+
+    return null;
+  };
+
   // Modified handleFileChange to use the new prop
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
 
-      // Validate file type
-      if (!ALLOWED_FILE_TYPES.includes(file.type)) {
-        alert('Invalid file type. Only PDF files are allowed.');
+      // Validate file and set error state instead of using alert
+      const validationError = validateFile(file);
+      if (validationError) {
+        setFileError(validationError);
         e.target.value = ''; 
         return;
       }
 
-      // Validate file size
-      if (file.size > MAX_FILE_SIZE) {
-        alert('File size exceeds the 2MB limit.');
-        e.target.value = '';
-        return;
-      }
+      // Clear any previous error
+      setFileError(null);
 
       // Call the parent's file change handler
       onFileChange(file);
@@ -336,12 +367,21 @@ function DocumentItem({
           </div>
 
           <div className="document-file-section">
+            {/* Display file validation error */}
+            {fileError && (
+              <div className="attachment-error">
+                <AlertCircle size={16} />
+                <span>{fileError}</span>
+              </div>
+            )}
+            
             <div className="file-upload-container">
+              {/* Hidden file input */}
               <input
                 id={`documentFile-${index}`}
                 type="file"
                 accept=".pdf"
-                className="form-input file-input"
+                className="attachment-file-input"
                 onChange={(e) => {
                   if (e.target.files && e.target.files.length > 0) {
                     handleFileChange(e);
@@ -349,6 +389,15 @@ function DocumentItem({
                 }}
                 disabled={isLoading || disableSubmit}
               />
+              
+              {/* Styled upload button */}
+              <label 
+                htmlFor={`documentFile-${index}`}
+                className={`attachment-upload-button ${(isLoading || disableSubmit) ? 'disabled' : ''}`}
+              >
+                <Plus size={16} />
+                {documentFile || documentPath ? 'Replace Document' : 'Upload Document'}
+              </label>
               
               {renderFileStatus(currentDoc)}
               
@@ -363,24 +412,23 @@ function DocumentItem({
                   <button 
                     type="button"
                     onClick={handlePreviewFile} 
-                    className="button primary"
+                    className="attachment-action-btn preview"
                     disabled={isLoading || isPreviewLoading || disableSubmit}
+                    title="Preview"
                   >
-                    <Eye size={16} /> Preview
+                    <Eye size={16} />
                   </button>
                   <button 
                     type="button"
                     onClick={handleReplaceFile} 
-                    className="button secondary"
+                    className="attachment-action-btn delete"
                     disabled={isLoading}
+                    title="Remove File"
                   >
-                    <Download size={16} /> Replace File
+                    <Trash size={16} />
                   </button>
                 </>
               )}
-              <>
-             
-              </>
             </div>
           </div>
         </div>
@@ -409,12 +457,12 @@ function DocumentItem({
           </div>
         )}
         
-        {renderFileStatus(currentDoc)}
-        <div className="remove-document-container">
+        <div className="remove-document-container" >
         {index > 0 && (
               <button 
                 type="button" 
-                className="button remove-document" 
+                className="button attachment-upload-button" 
+                
                 onClick={() => remove(index)}
               >
                 <Trash size={16} />  Remove {documentLabel}
@@ -747,7 +795,7 @@ export function DocumentUploadForm({ allFields = [], disableSubmit = false, isEd
       <div className="add-document-container">
         <button 
           type="button" 
-          className="button primary add-document" 
+          className={`attachment-upload-button ${disableSubmit ? 'disabled' : ''}`}
           onClick={handleAddDocument}
           disabled={disableSubmit}
         >

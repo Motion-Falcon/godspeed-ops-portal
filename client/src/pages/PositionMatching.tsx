@@ -56,23 +56,6 @@ interface AssignedJobseeker {
   similarityScore?: number;
 }
 
-interface ActualAssignmentResponse {
-  id: string;
-  candidate_id: string;
-  start_date: string;
-  end_date: string;
-  status: string;
-  created_at: string;
-  updated_at: string;
-  jobseekerProfile?: {
-    user_id: string;
-    first_name: string;
-    last_name: string;
-    email: string;
-    mobile?: string;
-  };
-}
-
 const loadingMessages = [
   { text: "🧠 Initializing AI matching engine...", duration: 1000 },
   { text: "🔬 Processing candidate data vectors...", duration: 1200 },
@@ -236,7 +219,7 @@ export function PositionMatching() {
       const response = await getPositionAssignments(positionId);
       
       if (response.success) {
-        const assignedCandidates: AssignedJobseeker[] = (response.assignments as unknown as ActualAssignmentResponse[]).map(
+        const assignedCandidates: AssignedJobseeker[] = (response.assignments).map(
           (assignment) => ({
             id: assignment.id,
             userId: assignment.candidate_id,

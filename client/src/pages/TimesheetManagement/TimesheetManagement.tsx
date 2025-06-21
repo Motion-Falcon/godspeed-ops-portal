@@ -1,7 +1,10 @@
 import { useState, useEffect } from "react";
 import { JobSeekerProfile } from "../../types/jobseeker";
 import { AppHeader } from "../../components/AppHeader";
-import { CustomDropdown, DropdownOption } from "../../components/CustomDropdown";
+import {
+  CustomDropdown,
+  DropdownOption,
+} from "../../components/CustomDropdown";
 import {
   Clock,
   Calendar,
@@ -13,9 +16,7 @@ import {
   Loader2,
   Building,
 } from "lucide-react";
-import {
-  getClientPositions,
-} from "../../services/api/position";
+import { getClientPositions } from "../../services/api/position";
 import { getJobseekerProfiles } from "../../services/api/jobseeker";
 import { getClients, ClientData } from "../../services/api/client";
 import {
@@ -26,8 +27,8 @@ import {
   updateTimesheet,
   generateInvoiceNumber,
 } from "../../services/api/timesheet";
-import { BackendClientData } from "../ClientManagement";
 import "../../styles/pages/TimesheetManagement.css";
+import { BackendClientData } from "../ClientManagement/ClientManagement";
 
 // Types for timesheet
 interface TimesheetEntry {
@@ -112,7 +113,8 @@ interface ExistingTimesheetData {
 export function TimesheetManagement() {
   // State for jobseeker selection
   const [jobseekers, setJobseekers] = useState<JobSeekerProfile[]>([]);
-  const [selectedJobseeker, setSelectedJobseeker] = useState<JobSeekerProfile | null>(null);
+  const [selectedJobseeker, setSelectedJobseeker] =
+    useState<JobSeekerProfile | null>(null);
   const [jobseekerLoading, setJobseekerLoading] = useState(false);
 
   // State for client selection
@@ -122,7 +124,8 @@ export function TimesheetManagement() {
 
   // State for position selection
   const [positions, setPositions] = useState<ClientPosition[]>([]);
-  const [selectedPosition, setSelectedPosition] = useState<ClientPosition | null>(null);
+  const [selectedPosition, setSelectedPosition] =
+    useState<ClientPosition | null>(null);
   const [positionLoading, setPositionLoading] = useState(false);
 
   // State for timesheet
@@ -149,10 +152,10 @@ export function TimesheetManagement() {
   >({});
 
   useEffect(() => {
-  // Fetch jobseekers on component mount
+    // Fetch jobseekers on component mount
     fetchJobseekers();
 
-  // Generate week options (past 52 weeks)
+    // Generate week options (past 52 weeks)
     generateWeekOptions();
   }, []);
 
@@ -192,24 +195,26 @@ export function TimesheetManagement() {
     try {
       setClientLoading(true);
       const response = await getClients({ limit: 100000000 }); // Get all clients
-      const convertedClients = (response.clients as BackendClientData[]).map((client: BackendClientData) => ({
-        ...client,
-        companyName: client.company_name,
-        shortCode: client.short_code,
-        listName: client.list_name,
-        contactPersonName1: client.contact_person_name1,
-        contactPersonName2: client.contact_person_name2,
-        emailAddress1: client.email_address1,
-        emailAddress2: client.email_address2,
-        mobile1: client.mobile1,
-        mobile2: client.mobile2,
-        landline1: client.landline1,
-        landline2: client.landline2,
-        preferredPaymentMethod: client.preferred_payment_method,
-        payCycle: client.pay_cycle,
-        createdAt: client.created_at,
-        updatedAt: client.updated_at
-      }));
+      const convertedClients = (response.clients as BackendClientData[]).map(
+        (client: BackendClientData) => ({
+          ...client,
+          companyName: client.company_name,
+          shortCode: client.short_code,
+          listName: client.list_name,
+          contactPersonName1: client.contact_person_name1,
+          contactPersonName2: client.contact_person_name2,
+          emailAddress1: client.email_address1,
+          emailAddress2: client.email_address2,
+          mobile1: client.mobile1,
+          mobile2: client.mobile2,
+          landline1: client.landline1,
+          landline2: client.landline2,
+          preferredPaymentMethod: client.preferred_payment_method,
+          payCycle: client.pay_cycle,
+          createdAt: client.created_at,
+          updatedAt: client.updated_at,
+        })
+      );
       setClients(convertedClients);
     } catch (error) {
       console.error("Error fetching clients:", error);
@@ -223,18 +228,20 @@ export function TimesheetManagement() {
       setPositionLoading(true);
       const response = await getClientPositions(clientId, { limit: 10000000 });
       // Transform positions to match our interface
-      const transformedPositions: ClientPosition[] = response.positions.map(pos => ({
-        id: pos.id!,
-        positionCode: pos.positionCode!,
-        title: pos.title!,
-        regularPayRate: pos.regularPayRate!,
-        billRate: pos.billRate!,
-        overtimeEnabled: pos.overtimeEnabled,
-        overtimeHours: pos.overtimeHours,
-        overtimePayRate: pos.overtimePayRate,
-        overtimeBillRate: pos.overtimeBillRate,
-        markup: pos.markup,
-      }));
+      const transformedPositions: ClientPosition[] = response.positions.map(
+        (pos) => ({
+          id: pos.id!,
+          positionCode: pos.positionCode!,
+          title: pos.title!,
+          regularPayRate: pos.regularPayRate!,
+          billRate: pos.billRate!,
+          overtimeEnabled: pos.overtimeEnabled,
+          overtimeHours: pos.overtimeHours,
+          overtimePayRate: pos.overtimePayRate,
+          overtimeBillRate: pos.overtimeBillRate,
+          markup: pos.markup,
+        })
+      );
       setPositions(transformedPositions);
     } catch (error) {
       console.error("Error fetching client positions:", error);
@@ -262,7 +269,9 @@ export function TimesheetManagement() {
       });
 
       // Transform TimesheetData to ExistingTimesheetData format
-      const transformedTimesheets: ExistingTimesheetData[] = (response.timesheets || []).map((timesheet) => ({
+      const transformedTimesheets: ExistingTimesheetData[] = (
+        response.timesheets || []
+      ).map((timesheet) => ({
         id: timesheet.id,
         invoiceNumber: timesheet.invoiceNumber, // Using id as invoice number for now
         positionId: timesheet.positionId, // Map the positionId field
@@ -394,7 +403,7 @@ export function TimesheetManagement() {
   const handleJobseekerSelect = (option: DropdownOption) => {
     const jobseeker = option.value as JobSeekerProfile;
     setSelectedJobseeker(jobseeker);
-    
+
     // Reset other selections
     setSelectedClient(null);
     setSelectedPosition(null);
@@ -404,7 +413,7 @@ export function TimesheetManagement() {
   const handleClientSelect = (option: DropdownOption) => {
     const client = option.value as ClientData;
     setSelectedClient(client);
-    
+
     // Reset position selection and timesheets
     setSelectedPosition(null);
     setTimesheets([]);
@@ -413,7 +422,7 @@ export function TimesheetManagement() {
   const handlePositionSelect = (option: DropdownOption) => {
     const position = option.value as ClientPosition;
     setSelectedPosition(position);
-    
+
     // Reset timesheets
     setTimesheets([]);
   };
@@ -435,7 +444,12 @@ export function TimesheetManagement() {
     if (selectedJobseeker && selectedPosition && selectedWeekStart) {
       initializeTimesheetsForPosition();
     }
-  }, [selectedJobseeker, selectedPosition, selectedWeekStart, existingTimesheets]);
+  }, [
+    selectedJobseeker,
+    selectedPosition,
+    selectedWeekStart,
+    existingTimesheets,
+  ]);
 
   const initializeTimesheetsForPosition = async () => {
     if (!selectedJobseeker || !selectedPosition || !selectedWeekStart) {
@@ -512,10 +526,7 @@ export function TimesheetManagement() {
     setTimesheets([timesheet]);
   };
 
-  const updateTimesheetEntry = (
-    date: string,
-    hours: number
-  ) => {
+  const updateTimesheetEntry = (date: string, hours: number) => {
     setTimesheets((prev) => {
       return prev.map((timesheet) => {
         // Update the specific entry with raw hours
@@ -586,9 +597,7 @@ export function TimesheetManagement() {
     });
   };
 
-  const updateTimesheetDeduction = (
-    deductionAmount: number
-  ) => {
+  const updateTimesheetDeduction = (deductionAmount: number) => {
     setTimesheets((prev) => {
       return prev.map((timesheet) => {
         return {
@@ -599,9 +608,7 @@ export function TimesheetManagement() {
     });
   };
 
-  const calculateTimesheetTotals = (
-    entries: TimesheetEntry[]
-  ) => {
+  const calculateTimesheetTotals = (entries: TimesheetEntry[]) => {
     const assignment = positions.find((p) => p.id === selectedPosition?.id);
     if (!assignment) {
       return {
@@ -683,7 +690,7 @@ export function TimesheetManagement() {
 
   const updateEmailPreference = (sendEmail: boolean) => {
     if (!selectedPosition?.id) return;
-    
+
     setEmailPreferences((prev) => ({
       ...prev,
       [selectedPosition.id]: sendEmail,
@@ -720,8 +727,7 @@ export function TimesheetManagement() {
 
       // Process each timesheet - either update existing or create new
       for (const timesheet of timesheetsToProcess) {
-        const shouldSendEmail =
-          emailPreferences[timesheet.positionId] || false;
+        const shouldSendEmail = emailPreferences[timesheet.positionId] || false;
 
         const timesheetData: Partial<TimesheetData> = {
           jobseekerProfileId: selectedJobseeker.id,
@@ -748,7 +754,9 @@ export function TimesheetManagement() {
           bonusAmount: timesheet.bonusAmount || 0,
           deductionAmount: timesheet.deductionAmount || 0,
           overtimeEnabled: selectedPosition.overtimeEnabled || false,
-          markup: selectedPosition.markup ? parseFloat(selectedPosition.markup) : undefined,
+          markup: selectedPosition.markup
+            ? parseFloat(selectedPosition.markup)
+            : undefined,
           emailSent: shouldSendEmail,
         };
 
@@ -779,7 +787,9 @@ export function TimesheetManagement() {
                 })),
                 total_regular_hours: timesheet.totalRegularHours,
                 total_overtime_hours: timesheet.totalOvertimeHours,
-                regular_pay_rate: parseFloat(selectedPosition.regularPayRate || "0"),
+                regular_pay_rate: parseFloat(
+                  selectedPosition.regularPayRate || "0"
+                ),
                 overtime_pay_rate: selectedPosition.overtimePayRate
                   ? parseFloat(selectedPosition.overtimePayRate)
                   : parseFloat(selectedPosition.regularPayRate || "0"),
@@ -895,15 +905,25 @@ export function TimesheetManagement() {
               <User size={16} />
               Job Seeker
             </label>
-            <CustomDropdown
-              options={jobseekerOptions}
-              selectedOption={selectedJobseekerOption}
-              onSelect={handleJobseekerSelect}
-              placeholder="Search and select job seeker..."
-              loading={jobseekerLoading}
-              icon={<User size={16} />}
-              emptyMessage="No job seekers found"
-            />
+            {jobseekerLoading ? (
+              <div className="invoice-dropdown-skeleton">
+                <div className="skeleton-dropdown-trigger">
+                  <div className="skeleton-icon"></div>
+                  <div className="skeleton-text skeleton-dropdown-text"></div>
+                  <div className="skeleton-icon skeleton-chevron"></div>
+                </div>
+              </div>
+            ) : (
+              <CustomDropdown
+                options={jobseekerOptions}
+                selectedOption={selectedJobseekerOption}
+                onSelect={handleJobseekerSelect}
+                placeholder="Search and select job seeker..."
+                loading={false}
+                icon={<User size={16} />}
+                emptyMessage="No job seekers found"
+              />
+            )}
           </div>
 
           {/* Client Selection */}
@@ -912,24 +932,34 @@ export function TimesheetManagement() {
               <Building size={16} />
               Client
             </label>
-            <CustomDropdown
-              options={clientOptions}
-              selectedOption={selectedClientOption}
-              onSelect={handleClientSelect}
-              placeholder={
-                selectedJobseeker
-                  ? "Search and select client..."
-                  : "Please select a job seeker first"
-              }
-              disabled={!selectedJobseeker}
-              loading={clientLoading}
-              icon={<Building size={16} />}
-              emptyMessage={
-                selectedJobseeker
-                  ? "No clients found"
-                  : "Please select a job seeker first to view clients"
-              }
-            />
+            {clientLoading ? (
+              <div className="invoice-dropdown-skeleton">
+                <div className="skeleton-dropdown-trigger">
+                  <div className="skeleton-icon"></div>
+                  <div className="skeleton-text skeleton-dropdown-text"></div>
+                  <div className="skeleton-icon skeleton-chevron"></div>
+                </div>
+              </div>
+            ) : (
+              <CustomDropdown
+                options={clientOptions}
+                selectedOption={selectedClientOption}
+                onSelect={handleClientSelect}
+                placeholder={
+                  selectedJobseeker
+                    ? "Search and select client..."
+                    : "Please select a job seeker first"
+                }
+                disabled={!selectedJobseeker}
+                loading={false}
+                icon={<Building size={16} />}
+                emptyMessage={
+                  selectedJobseeker
+                    ? "No clients found"
+                    : "Please select a job seeker first to view clients"
+                }
+              />
+            )}
           </div>
 
           {/* Position Selection */}
@@ -938,28 +968,38 @@ export function TimesheetManagement() {
               <FileText size={16} />
               Position
             </label>
-            <CustomDropdown
-              options={positionOptions}
-              selectedOption={selectedPositionOption}
-              onSelect={handlePositionSelect}
-              placeholder={
-                selectedClient
-                  ? "Search and select position..."
-                  : selectedJobseeker
-                  ? "Please select a client first"
-                  : "Please select a job seeker and client first"
-              }
-              disabled={!selectedClient}
-              loading={positionLoading}
-              icon={<FileText size={16} />}
-              emptyMessage={
-                selectedClient
-                  ? "No positions found"
-                  : !selectedJobseeker
-                  ? "Please select a job seeker and client first to view positions"
-                  : "Please select a client first to view positions"
-              }
-            />
+            {positionLoading ? (
+              <div className="invoice-dropdown-skeleton">
+                <div className="skeleton-dropdown-trigger">
+                  <div className="skeleton-icon"></div>
+                  <div className="skeleton-text skeleton-dropdown-text"></div>
+                  <div className="skeleton-icon skeleton-chevron"></div>
+                </div>
+              </div>
+            ) : (
+              <CustomDropdown
+                options={positionOptions}
+                selectedOption={selectedPositionOption}
+                onSelect={handlePositionSelect}
+                placeholder={
+                  selectedClient
+                    ? "Search and select position..."
+                    : selectedJobseeker
+                    ? "Please select a client first"
+                    : "Please select a job seeker and client first"
+                }
+                disabled={!selectedClient}
+                loading={false}
+                icon={<FileText size={16} />}
+                emptyMessage={
+                  selectedClient
+                    ? "No positions found"
+                    : !selectedJobseeker
+                    ? "Please select a job seeker and client first to view positions"
+                    : "Please select a client first to view positions"
+                }
+              />
+            )}
           </div>
 
           <div className="selection-section">
@@ -979,52 +1019,27 @@ export function TimesheetManagement() {
           </div>
         </div>
 
-        {/* Loading States */}
-        {selectedJobseeker && clientLoading && (
-          <div className="timesheet-card loading-card">
-            <div className="timesheet-loading">Loading clients...</div>
-          </div>
-        )}
-
-        {selectedClient && positionLoading && (
-          <div className="timesheet-card loading-card">
-            <div className="timesheet-loading">Loading positions...</div>
-          </div>
-        )}
-
-        {selectedJobseeker && timesheetsLoading && (
-          <div className="timesheet-card loading-card">
-            <div className="timesheet-loading">
-              Loading existing timesheets...
-            </div>
-          </div>
-        )}
-
         {/* No Clients State */}
-        {selectedJobseeker &&
-          !clientLoading &&
-          clients.length === 0 && (
-            <div className="timesheet-card empty-state-card">
-              <div className="timesheet-empty-state">
-                <Building size={48} />
-                <h3>No Clients Available</h3>
-                <p>No clients found for timesheet creation.</p>
-              </div>
+        {selectedJobseeker && !clientLoading && clients.length === 0 && (
+          <div className="timesheet-card empty-state-card">
+            <div className="timesheet-empty-state">
+              <Building size={48} />
+              <h3>No Clients Available</h3>
+              <p>No clients found for timesheet creation.</p>
             </div>
-          )}
+          </div>
+        )}
 
         {/* No Positions State */}
-        {selectedClient &&
-          !positionLoading &&
-          positions.length === 0 && (
-            <div className="timesheet-card empty-state-card">
-              <div className="timesheet-empty-state">
-                <FileText size={48} />
-                <h3>No Positions Available</h3>
-                <p>No positions found for this client.</p>
-              </div>
+        {selectedClient && !positionLoading && positions.length === 0 && (
+          <div className="timesheet-card empty-state-card">
+            <div className="timesheet-empty-state">
+              <FileText size={48} />
+              <h3>No Positions Available</h3>
+              <p>No positions found for this client.</p>
             </div>
-          )}
+          </div>
+        )}
 
         {/* Timesheets Container */}
         {selectedJobseeker &&
@@ -1165,10 +1180,7 @@ export function TimesheetManagement() {
                                   onChange={(e) => {
                                     const hours =
                                       parseFloat(e.target.value) || 0;
-                                    updateTimesheetEntry(
-                                      entry.date,
-                                      hours
-                                    );
+                                    updateTimesheetEntry(entry.date, hours);
                                   }}
                                   placeholder="0.0"
                                   className="timesheet-hours-input"
@@ -1199,9 +1211,7 @@ export function TimesheetManagement() {
                                 onChange={(e) => {
                                   const amount =
                                     parseFloat(e.target.value) || 0;
-                                  updateTimesheetBonus(
-                                    amount
-                                  );
+                                  updateTimesheetBonus(amount);
                                 }}
                                 placeholder="0.00"
                                 className="timesheet-hours-input"
@@ -1223,9 +1233,7 @@ export function TimesheetManagement() {
                                 onChange={(e) => {
                                   const amount =
                                     parseFloat(e.target.value) || 0;
-                                  updateTimesheetDeduction(
-                                    amount
-                                  );
+                                  updateTimesheetDeduction(amount);
                                 }}
                                 placeholder="0.00"
                                 className="timesheet-hours-input"
@@ -1250,8 +1258,8 @@ export function TimesheetManagement() {
                                   Overtime Pay Rate
                                 </span>
                                 <span className="timesheet-pay-value">
-                                  $
-                                  {selectedPosition?.overtimePayRate || "N/A"}/h
+                                  ${selectedPosition?.overtimePayRate || "N/A"}
+                                  /h
                                 </span>
                               </div>
                             )}
@@ -1260,7 +1268,8 @@ export function TimesheetManagement() {
                                 Overtime Threshold
                               </span>
                               <span className="timesheet-pay-value">
-                                {(selectedPosition as PositionWithOvertime)?.overtimeHours || "8"}{" "}
+                                {(selectedPosition as PositionWithOvertime)
+                                  ?.overtimeHours || "8"}{" "}
                                 hours
                               </span>
                             </div>
@@ -1317,7 +1326,8 @@ export function TimesheetManagement() {
                                   </div>
                                   <div className="timesheet-item-subtitle">
                                     Hours exceeding{" "}
-                                    {(selectedPosition as PositionWithOvertime)?.overtimeHours || "8"}{" "}
+                                    {(selectedPosition as PositionWithOvertime)
+                                      ?.overtimeHours || "8"}{" "}
                                     hours/week
                                   </div>
                                 </div>
@@ -1326,7 +1336,8 @@ export function TimesheetManagement() {
                                 </div>
                                 <div className="timesheet-col-rate">
                                   $
-                                  {(selectedPosition as PositionWithOvertime)?.overtimePayRate ||
+                                  {(selectedPosition as PositionWithOvertime)
+                                    ?.overtimePayRate ||
                                     selectedPosition?.regularPayRate ||
                                     "0.00"}
                                 </div>
@@ -1335,7 +1346,8 @@ export function TimesheetManagement() {
                                   {(
                                     timesheet.totalOvertimeHours *
                                     parseFloat(
-                                      (selectedPosition as PositionWithOvertime)?.overtimePayRate ||
+                                      (selectedPosition as PositionWithOvertime)
+                                        ?.overtimePayRate ||
                                         selectedPosition?.regularPayRate ||
                                         "0"
                                     )
@@ -1431,88 +1443,206 @@ export function TimesheetManagement() {
                               </div>
                             </div>
                           </div>
-
-                          {/* Generate/Update Button for this timesheet */}
-                          <div className="timesheet-action-section">
-                            <div className="timesheet-email-option">
-                              <label className="timesheet-checkbox-label">
-                                <input
-                                  type="checkbox"
-                                  checked={
-                                    emailPreferences[timesheet.positionId] ||
-                                    false
-                                  }
-                                  onChange={(e) =>
-                                    updateEmailPreference(
-                                      e.target.checked
-                                    )
-                                  }
-                                  className="timesheet-checkbox"
-                                />
-                                <span className="timesheet-checkbox-text">
-                                  Send timesheet via email to jobseeker
-                                </span>
-                              </label>
-                            </div>
-
-                            <button
-                              className={`button ${
-                                timesheet.totalRegularHours +
-                                  timesheet.totalOvertimeHours <
-                                1
-                                  ? "disabled"
-                                  : ""
-                              }`}
-                              onClick={() => {
-                                // Generate timesheet for just this assignment
-                                const singleTimesheet = [timesheet];
-                                generateSingleTimesheet(singleTimesheet);
-                              }}
-                              disabled={
-                                timesheet.totalRegularHours +
-                                  timesheet.totalOvertimeHours <
-                                  1 || isGeneratingTimesheet
-                              }
-                              title={
-                                timesheet.totalRegularHours +
-                                  timesheet.totalOvertimeHours <
-                                1
-                                  ? "At least 1 hour must be entered to generate timesheet"
-                                  : ""
-                              }
-                            >
-                              {isGeneratingTimesheet ? (
-                                <>
-                                  <Loader2
-                                    size={16}
-                                    className="timesheet-loading-spinner"
-                                  />
-                                  {timesheet.existingTimesheetId
-                                    ? "Updating..."
-                                    : "Generating..."}
-                                </>
-                              ) : (
-                                <>
-                                  {timesheet.existingTimesheetId ? (
-                                    <>
-                                      <RefreshCw size={16} />
-                                      Update Timesheet
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Plus size={16} />
-                                      Generate Timesheet
-                                    </>
-                                  )}
-                                </>
-                              )}
-                            </button>
+                        </div>
+                        {/* Generate/Update Button for this timesheet */}
+                        <div className="timesheet-action-section">
+                          <div className="timesheet-email-option">
+                            <label className="timesheet-checkbox-label">
+                              <input
+                                type="checkbox"
+                                checked={
+                                  emailPreferences[timesheet.positionId] ||
+                                  false
+                                }
+                                onChange={(e) =>
+                                  updateEmailPreference(e.target.checked)
+                                }
+                                className="timesheet-checkbox"
+                              />
+                              <span className="timesheet-checkbox-text">
+                                Send timesheet via email to jobseeker
+                              </span>
+                            </label>
                           </div>
+
+                          <button
+                            className={`button ${
+                              timesheet.totalRegularHours +
+                                timesheet.totalOvertimeHours <
+                              1
+                                ? "disabled"
+                                : ""
+                            }`}
+                            onClick={() => {
+                              // Generate timesheet for just this assignment
+                              const singleTimesheet = [timesheet];
+                              generateSingleTimesheet(singleTimesheet);
+                            }}
+                            disabled={
+                              timesheet.totalRegularHours +
+                                timesheet.totalOvertimeHours <
+                                1 || isGeneratingTimesheet
+                            }
+                            title={
+                              timesheet.totalRegularHours +
+                                timesheet.totalOvertimeHours <
+                              1
+                                ? "At least 1 hour must be entered to generate timesheet"
+                                : ""
+                            }
+                          >
+                            {isGeneratingTimesheet ? (
+                              <>
+                                <Loader2
+                                  size={16}
+                                  className="timesheet-loading-spinner"
+                                />
+                                {timesheet.existingTimesheetId
+                                  ? "Updating..."
+                                  : "Generating..."}
+                              </>
+                            ) : (
+                              <>
+                                {timesheet.existingTimesheetId ? (
+                                  <>
+                                    <RefreshCw size={16} />
+                                    Update Timesheet
+                                  </>
+                                ) : (
+                                  <>
+                                    <Plus size={16} />
+                                    Generate Timesheet
+                                  </>
+                                )}
+                              </>
+                            )}
+                          </button>
                         </div>
                       </div>
                     </div>
                   );
                 })}
+              </div>
+            </div>
+          )}
+
+        {/* Skeleton Loading for Timesheet Forms */}
+        {selectedJobseeker &&
+          selectedClient &&
+          selectedPosition &&
+          selectedWeekStart &&
+          timesheetsLoading && (
+            <div className="invoice-skeleton-container">
+              {/* Unified Header Skeleton */}
+              <div className="timesheet-unified-header">
+                <div className="timesheet-header-sections">
+                  <div className="timesheet-section timesheet-client-section">
+                    <div className="skeleton-text" style={{ width: "140px", height: "20px", marginBottom: "16px" }}></div>
+                    <div className="timesheet-section-content">
+                      {[1, 2, 3].map((index) => (
+                        <div key={index} className="timesheet-detail-item">
+                          <div className="skeleton-text" style={{ width: "80px", height: "14px" }}></div>
+                          <div className="skeleton-text" style={{ width: "120px", height: "14px" }}></div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="timesheet-section timesheet-employee-section">
+                    <div className="skeleton-text" style={{ width: "120px", height: "20px", marginBottom: "16px" }}></div>
+                    <div className="timesheet-section-content">
+                      {[1, 2].map((index) => (
+                        <div key={index} className="timesheet-detail-item">
+                          <div className="skeleton-text" style={{ width: "60px", height: "14px" }}></div>
+                          <div className="skeleton-text" style={{ width: "140px", height: "14px" }}></div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="timesheet-section timesheet-invoice-section">
+                    <div className="skeleton-text" style={{ width: "110px", height: "20px", marginBottom: "16px" }}></div>
+                    <div className="timesheet-section-content">
+                      {[1, 2, 3, 4].map((index) => (
+                        <div key={index} className="timesheet-detail-item">
+                          <div className="skeleton-text" style={{ width: "70px", height: "14px" }}></div>
+                          <div className="skeleton-text" style={{ width: "100px", height: "14px" }}></div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Daily Hours Input Grid Skeleton */}
+              <div className="timesheet-grid-container timesheet-hours-adjustments-container">
+                <div className="timesheet-week-grid">
+                  <div className="timesheet-grid-header">
+                    <div className="skeleton-text" style={{ width: "100px", height: "16px" }}></div>
+                  </div>
+                  <div className="timesheet-days-grid">
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((index) => (
+                      <div key={index} className="timesheet-day-entry">
+                        <div className="timesheet-day-label">
+                          <div className="skeleton-text" style={{ width: "80px", height: "14px", marginBottom: "4px" }}></div>
+                          <div className="skeleton-text" style={{ width: "50px", height: "12px" }}></div>
+                        </div>
+                        <div className="skeleton-text" style={{ width: "100%", height: "40px" }}></div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Pay Info Skeleton */}
+                <div className="timesheet-pay-info-section">
+                  <div className="timesheet-pay-info-grid">
+                    {[1, 2, 3].map((index) => (
+                      <div key={index} className="timesheet-pay-info-item">
+                        <div className="skeleton-text" style={{ width: "90px", height: "14px", marginBottom: "4px" }}></div>
+                        <div className="skeleton-text" style={{ width: "60px", height: "16px" }}></div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Invoice Table Skeleton */}
+              <div className="timesheet-invoice-container">
+                <div className="timesheet-invoice-table">
+                  <div className="timesheet-invoice-table-header">
+                    {[1, 2, 3, 4].map((index) => (
+                      <div key={index} className="timesheet-col">
+                        <div className="skeleton-text" style={{ width: "80px", height: "14px" }}></div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="timesheet-invoice-table-body">
+                    {[1, 2].map((index) => (
+                      <div key={index} className="timesheet-invoice-line-item">
+                        {[1, 2, 3, 4].map((colIndex) => (
+                          <div key={colIndex} className="timesheet-col">
+                            <div className="skeleton-text" style={{ width: "90%", height: "16px", marginBottom: "4px" }}></div>
+                            <div className="skeleton-text" style={{ width: "70%", height: "12px" }}></div>
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="timesheet-invoice-totals">
+                    {[1, 2, 3, 4].map((index) => (
+                      <div key={index} className="timesheet-total-line">
+                        <div className="skeleton-text" style={{ width: "100px", height: "14px" }}></div>
+                        <div className="skeleton-text" style={{ width: "80px", height: "14px" }}></div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Action Section Skeleton */}
+                <div className="timesheet-action-section">
+                  <div className="timesheet-email-option">
+                    <div className="skeleton-text" style={{ width: "200px", height: "16px" }}></div>
+                  </div>
+                  <div className="skeleton-text" style={{ width: "150px", height: "40px" }}></div>
+                </div>
               </div>
             </div>
           )}

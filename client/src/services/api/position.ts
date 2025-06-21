@@ -652,16 +652,17 @@ export const removeCandidateFromPosition = async (
 
 export interface AssignmentRecord {
   id: string;
-  candidateId: string;
-  startDate: string;
-  endDate?: string;
+  candidate_id: string;
+  start_date: string;
+  end_date?: string;
   status: "active" | "completed" | "upcoming" | "cancelled";
-  createdAt: string;
-  updatedAt: string;
+  updated_at: string;
+  created_at: string;
   jobseekerProfile?: {
     id: string;
-    firstName: string;
-    lastName: string;
+    user_id: string;
+    first_name: string;
+    last_name: string;
     email: string;
     mobile?: string;
   };

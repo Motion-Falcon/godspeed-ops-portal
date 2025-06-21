@@ -21,7 +21,8 @@ import {
   UserPlus,
   Menu,
   ChevronUp,
-  Clock
+  Clock,
+  Receipt
 } from 'lucide-react';
 import { ThemeToggle } from './theme-toggle';
 import { logoutUser } from '../lib/auth';
@@ -363,6 +364,12 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
           label: 'Timesheet Management', 
           path: '/timesheet-management', 
           icon: <Clock size={16} />,
+          exact: true 
+        },
+        { 
+          label: 'Invoice Management', 
+          path: '/invoice-management', 
+          icon: <Receipt size={16} />,
           exact: true 
         }
       ]

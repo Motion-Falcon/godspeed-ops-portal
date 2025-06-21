@@ -361,6 +361,7 @@ select.form-input {
 /* File upload styles */
 .file-upload-container {
   margin-bottom: 1.5rem;
+  margin-top: 0.7rem;
 }
 
 .form-file-input {
@@ -1052,13 +1053,19 @@ select.form-input {
 .document-item {
   display: flex;
   height: 100%;
+  width: 100%;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 16px;
 }
 
 .document-content {
   padding: 20px 0 20px 20px;
   display: flex;
   gap: 16px;
-  flex: 1;
+  width: 72%;
 }
 
 .document-icon {
@@ -1092,12 +1099,13 @@ select.form-input {
 
 .document-actions {
   display: flex;
-  gap: 12px;
-  margin-top: 16px;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
 }
 
-.document-actions button {
-  width: fit-content;
+.document-preview-container {
+  width: 28%;
 }
 
 .document-preview-container .remove-document-container {
@@ -1106,11 +1114,13 @@ select.form-input {
   align-items: center;
 }
 
-.document-preview-container .remove-document {
-  margin-top: 28px;
-  margin-right: 10px;
+.document-preview-container .attachment-upload-button {
+  margin-top: 36px;
   width: fit-content;
-  
+  height: 44px;
+}
+.file-upload-container .attachment-upload-button {
+  padding: 0.6rem 0.7rem;
 }
 
 .document-preview {
@@ -2278,8 +2288,7 @@ select.form-input {
 }
 
 .dark .skeleton-progress-fill {
-  background: linear-gradient(90deg, #333 25%, #444 50%, #333 75%);
-  background-size: 200% 100%;
+  background: linear-gradient(90deg, #303030, #404040);
 }
 
 /* Skeleton animations for smooth transitions */
@@ -2288,36 +2297,13 @@ select.form-input {
 }
 
 @keyframes skeleton-fade-in {
-  from {
+  0% {
     opacity: 0;
     transform: translateY(10px);
   }
-  to {
-    opacity: 0.7;
+  100% {
+    opacity: 1;
     transform: translateY(0);
-  }
-}
-
-/* Skeleton responsive adjustments */
-@media (max-width: 768px) {
-  .skeleton-text {
-    max-width: 100%;
-  }
-  
-  .skeleton-icon {
-    width: 14px;
-    height: 14px;
-  }
-}
-
-@media (max-width: 480px) {
-  .skeleton-document .document-content {
-    flex-direction: column;
-    gap: var(--spacing-3);
-  }
-  
-  .skeleton-document .document-validation {
-    width: 100%;
   }
 }
 

@@ -39,6 +39,7 @@ import { TwoFactorAuth } from './pages/TwoFactorAuth';
 import { Dashboard } from './pages/dashboard/Dashboard';
 import { MetricExamplePage } from './pages/dashboard/MetricExamplePage';
 import { ClientManagement } from './pages/ClientManagement/ClientManagement';
+import { InvoiceManagement } from './pages/InvoiceManagement/InvoiceManagement';
 
 function App() {
   return (
@@ -89,6 +90,7 @@ function App() {
                 <Route path="/position-management/drafts/edit/:id" element={<PositionDraftEdit />} />
                 <Route path="/position-matching" element={<PositionMatching />} />
                 <Route path="/timesheet-management" element={<TimesheetManagement />} />
+                <Route path="/invoice-management" element={<InvoiceManagement />} />
                 {/* Add more recruiter-specific routes here */}
               </Route>
               

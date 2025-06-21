@@ -2385,7 +2385,7 @@ router.get(
       // Fetch jobseeker profiles for all candidates
       const { data: jobseekerProfiles, error: profilesError } = await supabase
         .from("jobseeker_profiles")
-        .select("user_id, first_name, last_name, email, mobile")
+        .select("id, user_id, first_name, last_name, email, mobile")
         .in("user_id", candidateIds);
 
       if (profilesError) {
@@ -2402,10 +2402,16 @@ router.get(
       }
 
       // Combine assignments with jobseeker profile data
-      const enrichedAssignments = assignments.map(assignment => ({
-        ...assignment,
-        jobseekerProfile: profilesMap.get(assignment.candidate_id) || null
-      }));
+      const enrichedAssignments = assignments.map(assignment => {
+        const profile = profilesMap.get(assignment.candidate_id);
+        return {
+          ...assignment,
+          jobseekerProfile: profile ? {
+            ...profile,
+            jobseeker_profile_id: profile.id
+          } : null
+        };
+      });
 
       return res.status(200).json({
         success: true,

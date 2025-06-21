@@ -8,6 +8,7 @@ import jobseekersRoutes from "./routes/jobseekers.js";
 import clientsRoutes from "./routes/clients.js";
 import positionsRoutes from "./routes/positions.js";
 import timesheetsRoutes from "./routes/timesheets.js";
+import invoicesRoutes from "./routes/invoices.js";
 import jobseekerMetricsRoutes from "./routes/jobseekerMetrics.js";
 import recruiterMetricsRoutes from "./routes/recruiterMetrics.js";
 import aiInsightsRoutes from "./routes/aiInsights.js";
@@ -90,6 +91,9 @@ app.use("/api/positions", positionsRoutes);
 
 // Timesheets routes
 app.use("/api/timesheets", timesheetsRoutes);
+
+// Invoices routes
+app.use("/api/invoices", invoicesRoutes);
 
 // Jobseeker metrics routes
 app.use("/api/metrics/jobseekers", jobseekerMetricsRoutes);
