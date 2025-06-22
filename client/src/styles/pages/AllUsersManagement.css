@@ -20,6 +20,11 @@
   margin: 0;
 }
 
+/* Dark mode support for column titles */
+.dark .all-users-management .column-filter.no-filter .column-title {
+  color: #d1d5db;
+}
+
 /* Ensure consistent spacing for all column filters */
 .all-users-management .column-filter {
   display: flex;
@@ -33,6 +38,11 @@
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+}
+
+/* Dark mode support for column titles */
+.dark .all-users-management .column-title {
+  color: #d1d5db;
 }
 
 /* User Type Row Styling - Subtle background differentiation */
@@ -56,6 +66,23 @@
   background-color: #fafafa; /* Very light gray */
 }
 
+/* Dark mode support for user rows */
+.dark .all-users-management .user-row.admin {
+  background-color: #1c0a00; /* Much darker amber */
+}
+
+.dark .all-users-management .user-row.recruiter {
+  background-color: #0f1629; /* Much darker blue */
+}
+
+.dark .all-users-management .user-row.jobseeker {
+  background-color: #0a1f0f; /* Much darker green */
+}
+
+.dark .all-users-management .user-row.default {
+  background-color: #1f2937; /* Much darker gray */
+}
+
 /* Hover effects for rows */
 .all-users-management .user-row.admin:hover {
   background-color: #fef3c7; /* Slightly more amber on hover */
@@ -71,6 +98,23 @@
 
 .all-users-management .user-row.default:hover {
   background-color: #f3f4f6; /* Slightly more gray on hover */
+}
+
+/* Dark mode support for hover effects */
+.dark .all-users-management .user-row.admin:hover {
+  background-color: #451a03; /* Lighter dark amber on hover */
+}
+
+.dark .all-users-management .user-row.recruiter:hover {
+  background-color: #1e3a8a; /* Lighter dark blue on hover */
+}
+
+.dark .all-users-management .user-row.jobseeker:hover {
+  background-color: #14532d; /* Lighter dark green on hover */
+}
+
+.dark .all-users-management .user-row.default:hover {
+  background-color: #374151; /* Lighter dark gray on hover */
 }
 
 /* User Type Badge Styling */
@@ -112,6 +156,31 @@
   border-color: #d1d5db;
 }
 
+/* Dark mode support for user type badges */
+.dark .all-users-management .user-type-badge.admin {
+  background-color: #451a03; /* Darker amber background */
+  color: #fbbf24; /* Brighter amber text */
+  border-color: #f59e0b;
+}
+
+.dark .all-users-management .user-type-badge.recruiter {
+  background-color: #1e3a8a; /* Darker blue background */
+  color: #60a5fa; /* Brighter blue text */
+  border-color: #3b82f6;
+}
+
+.dark .all-users-management .user-type-badge.jobseeker {
+  background-color: #14532d; /* Darker green background */
+  color: #34d399; /* Brighter green text */
+  border-color: #10b981;
+}
+
+.dark .all-users-management .user-type-badge.default {
+  background-color: #374151; /* Darker gray background */
+  color: #e5e7eb; /* Brighter gray text */
+  border-color: #6b7280;
+}
+
 /* Status display styling specific to all users management */
 .all-users-management .status-display {
   display: flex;
@@ -137,6 +206,15 @@
   color: #dc2626;
 }
 
+/* Dark mode support for status text */
+.dark .all-users-management .status-text.verified {
+  color: #10b981;
+}
+
+.dark .all-users-management .status-text.rejected {
+  color: #ef4444;
+}
+
 /* Table cell specific styles */
 .all-users-management .user-type-cell {
   padding: 12px 8px;
@@ -154,6 +232,12 @@
   vertical-align: middle;
   font-size: 14px;
   color: #6b7280;
+}
+
+/* Dark mode support for table cell text */
+.dark .all-users-management .created-at-cell,
+.dark .all-users-management .last-signin-cell {
+  color: #9ca3af;
 }
 
 /* Ensure consistent column widths */
