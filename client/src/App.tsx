@@ -6,16 +6,15 @@ import { Signup } from './pages/Signup';
 import { Login } from './pages/Login';
 import { VerificationPending } from './pages/VerificationPending';
 import { ProfileVerificationPending } from './pages/ProfileVerificationPending';
+import { ProfileVerificationRejected } from './pages/ProfileVerificationRejected';
 import { ForgotPassword } from './pages/ForgotPassword';
 import { ResetPassword } from './pages/ResetPassword';
-import { Dashboard } from './pages/Dashboard';
 import { ProfileCreate } from './pages/JobseekerProfile/ProfileCreate';
 import { ProfileAccountCreated } from './pages/JobseekerProfile/ProfileAccountCreated';
 import { ProfileSuccess } from './pages/JobseekerProfile/ProfileSuccess';
 import { JobSeekerProfile } from './pages/JobSeekerProfile';
 import { GeometricShapes } from './components/GeometricShapes';
 import { ProfileEdit } from './pages/JobseekerProfile/ProfileEdit';
-import { ClientManagement } from './pages/ClientManagement';
 import { ClientCreate } from './pages/ClientManagement/ClientCreate';
 import { ClientEdit } from './pages/ClientManagement/ClientEdit';
 import { ClientDrafts } from './pages/ClientManagement/ClientDrafts';
@@ -28,10 +27,20 @@ import { PositionEdit } from './pages/PositionManagement/PositionEdit';
 import { PositionDrafts } from './pages/PositionManagement/PositionDrafts';
 import { PositionDraftEdit } from './pages/PositionManagement/PositionDraftEdit';
 import { PositionView } from './pages/PositionManagement/PositionView';
+import { PositionMatching } from './pages/PositionMatching';
 import { JobseekerDrafts } from './pages/JobseekerProfile/JobseekerDrafts';
 import { JobseekerProfileDraftEdit } from './pages/JobseekerProfile/JobseekerProfileDraftEdit';
 import { TrainingModules } from './pages/TrainingModules';
+import { UserProfile } from './pages/UserProfile';
+import { JobSeekerPositions } from './pages/JobSeekerPositions';
+import { TimesheetManagement } from './pages/TimesheetManagement/TimesheetManagement';
 import './styles/main.css';
+import { TwoFactorAuth } from './pages/TwoFactorAuth';
+import { Dashboard } from './pages/dashboard/Dashboard';
+import { MetricExamplePage } from './pages/dashboard/MetricExamplePage';
+import { ClientManagement } from './pages/ClientManagement/ClientManagement';
+import { InvoiceManagement } from './pages/InvoiceManagement/InvoiceManagement';
+import { InvoiceList } from './pages/InvoiceManagement/InvoiceList';
 
 function App() {
   return (
@@ -50,14 +59,17 @@ function App() {
 
             {/* Routes accessible regardless of auth status */}
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/two-factor-auth" element={<TwoFactorAuth />} />
 
             {/* Protected routes for all authenticated users */}
             <Route element={<ProtectedRoute />}>
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/profile" element={<UserProfile />} />
               <Route path="/profile/create" element={<ProfileCreate />} />
               <Route path="/jobseekers/:id/edit" element={<ProfileEdit />} />
               <Route path="/jobseekers/:id" element={<JobSeekerProfile />} />
               <Route path="/training-modules" element={<TrainingModules />} />
+              <Route path="/metric-examples" element={<MetricExamplePage />} />
 
               <Route element={<RecruiterRoute />}>
                 <Route path="/jobseekers/profile/account-created" element={<ProfileAccountCreated />} />
@@ -77,11 +89,18 @@ function App() {
                 <Route path="/position-management/edit/:id" element={<PositionEdit />} />
                 <Route path="/position-management/drafts" element={<PositionDrafts />} />
                 <Route path="/position-management/drafts/edit/:id" element={<PositionDraftEdit />} />
+                <Route path="/position-matching" element={<PositionMatching />} />
+                <Route path="/timesheet-management" element={<TimesheetManagement />} />
+                <Route path="/invoice-management" element={<InvoiceManagement />} />
+                <Route path="/invoice-management/create" element={<InvoiceManagement />} />
+                <Route path="/invoice-management/list" element={<InvoiceList />} />
                 {/* Add more recruiter-specific routes here */}
               </Route>
               
               <Route element={<JobSeekerRoute />}>
                 <Route path="/profile-verification-pending" element={<ProfileVerificationPending />} />
+                <Route path="/profile-verification-rejected" element={<ProfileVerificationRejected />} />
+                <Route path="/my-positions" element={<JobSeekerPositions />} />
                 {/* Add more jobseeker-specific routes here */}
               </Route>
               

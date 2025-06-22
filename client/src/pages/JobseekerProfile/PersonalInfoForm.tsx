@@ -2,9 +2,10 @@ import { useFormContext } from "react-hook-form";
 import { personalInfoSchema } from "./ProfileCreate";
 import { z } from "zod";
 import { useState, useEffect, useRef } from "react";
-import { checkEmailAvailability } from "../../services/api";
+import { checkEmailAvailability } from "../../services/api/profile";
 import { useNavigate } from "react-router-dom";
 import { Eye, Pencil } from "lucide-react";
+import { validateSIN, validateDOB, getMaxDobDate, logValidation } from "../../utils/validation";
 
 type PersonalInfoFormData = z.infer<typeof personalInfoSchema>;
 
@@ -13,12 +14,14 @@ interface PersonalInfoFormProps {
   allFields: string[];
   onEmailAvailabilityChange?: (isAvailable: boolean | null) => void;
   disableEmail?: boolean;
+  disableMobile?: boolean;
 }
 
 export function PersonalInfoForm({
   allFields,
   onEmailAvailabilityChange,
   disableEmail = false,
+  disableMobile = false,
 }: PersonalInfoFormProps) {
   const { register, formState, watch, setError, clearErrors } =
     useFormContext<PersonalInfoFormData>();
@@ -41,13 +44,8 @@ export function PersonalInfoForm({
   const emailTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   // Add a ref to track the latest request
   const latestRequestRef = useRef<number>(0);
-
-  // Get the maximum valid DOB date (18 years ago from today)
-  const getMaxDobDate = (): string => {
-    const today = new Date();
-    today.setFullYear(today.getFullYear() - 18);
-    return today.toISOString().split("T")[0];
-  };
+  // Add debounce timeout ref for validation
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Function to check if we should show an error for a specific field
   const shouldShowError = (fieldName: string) => {
@@ -70,39 +68,15 @@ export function PersonalInfoForm({
     }
   };
 
-  // DOB validation function
-  const validateDob = (value: string) => {
-    // Check if value is empty
+  // DOB validation wrapper for react-hook-form
+  const validateDobField = (value: string) => {
     if (!value) return true; // Let the required validation handle this
 
-    // Get today's date and reset the time portion
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    // Parse the selected date and reset the time portion
-    const selectedDate = new Date(value);
-    selectedDate.setHours(0, 0, 0, 0);
-
-    // Calculate the minimum DOB date (18 years ago)
-    const minAge = 18;
-    const minDobDate = new Date();
-    minDobDate.setFullYear(today.getFullYear() - minAge);
-    minDobDate.setHours(0, 0, 0, 0);
-
-    // Check if date is in the future
-    if (selectedDate > today) {
+    const result = validateDOB(value);
+    if (!result.isValid && result.errorMessage) {
       setError("dob", {
         type: "manual",
-        message: "Date of birth cannot be in the future",
-      });
-      return false;
-    }
-
-    // Check if person is at least 18 years old
-    if (selectedDate > minDobDate) {
-      setError("dob", {
-        type: "manual",
-        message: "Must be at least 18 years old",
+        message: result.errorMessage,
       });
       return false;
     }
@@ -110,6 +84,38 @@ export function PersonalInfoForm({
     // Clear errors if validation passes
     clearErrors("dob");
     return true;
+  };
+
+  // SIN validation wrapper for react-hook-form with debouncing
+  const validateSinNumber = (value: string | undefined) => {
+    if (!value) {
+      clearErrors("sinNumber");
+      return true; // Field is optional, so empty is allowed
+    }
+    
+    const result = validateSIN(value);
+    if (!result.isValid && result.errorMessage) {
+      setError("sinNumber", {
+        type: "manual",
+        message: result.errorMessage,
+      });
+      return false;
+    }
+    
+    // Clear errors if validation passes
+    clearErrors("sinNumber");
+    return true;
+  };
+
+  // Debounced validation for SIN to prevent excessive validation
+  const debouncedValidateSin = (value: string | undefined) => {
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+    }
+    
+    debounceTimeoutRef.current = setTimeout(() => {
+      validateSinNumber(value);
+    }, 300); // Only validate after 300ms of inactivity
   };
 
   // Effect to check email availability when the email changes
@@ -163,9 +169,9 @@ export function PersonalInfoForm({
     // Set a timeout to delay the API call (similar to debounce)
     emailTimeoutRef.current = setTimeout(async () => {
       try {
-        console.log("Checking email availability for:", currentEmail);
+        logValidation("Checking email availability for: " + currentEmail);
         const result = await checkEmailAvailability(currentEmail);
-        console.log("Email check result:", result);
+        logValidation("Email check result: " + JSON.stringify(result));
 
         // Only update state if this is still the latest request
         if (latestRequestRef.current !== requestId) return;
@@ -232,6 +238,9 @@ export function PersonalInfoForm({
       if (emailTimeoutRef.current) {
         clearTimeout(emailTimeoutRef.current);
       }
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
     };
     // Disable the ESLint exhaustive-deps warning since we're handling dependencies manually
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -289,7 +298,13 @@ export function PersonalInfoForm({
               className="form-input"
               max={getMaxDobDate()}
               {...register("dob", {
-                validate: validateDob,
+                validate: validateDobField,
+                onChange: (e) => {
+                  // Trigger validation immediately after date change
+                  if (e.target.value) {
+                    setTimeout(() => validateDobField(e.target.value), 0);
+                  }
+                }
               })}
               onClick={(e) => e.currentTarget.showPicker()}
             />
@@ -297,7 +312,7 @@ export function PersonalInfoForm({
           {shouldShowError("dob") && (
             <p className="error-message">{allErrors.dob?.message}</p>
           )}
-          <p className="field-note">Must be at least 18 years old</p>
+          <p className="field-note">Must be at least 18 years old and cannot be in the future</p>
         </div>
       </div>
 
@@ -369,7 +384,15 @@ export function PersonalInfoForm({
             className="form-input"
             placeholder="(XXX) XXX-XXXX"
             {...register("mobile")}
+            disabled={disableMobile}
+            readOnly={disableMobile}
           />
+          {disableMobile && (
+            <p className="field-note">
+              Mobile number cannot be changed as it's used as a unique identifier for
+              this profile.
+            </p>
+          )}
           {shouldShowError("mobile") && (
             <p className="error-message">{allErrors.mobile?.message}</p>
           )}
@@ -435,11 +458,29 @@ export function PersonalInfoForm({
               id="sinNumber"
               type="text"
               className="form-input"
-              placeholder="XXX-XXX-XXX"
-              {...register("sinNumber")}
+              placeholder="XXXXXXXXX"
+              maxLength={9}
+              pattern="\d*"
+              inputMode="numeric"
+              {...register("sinNumber", {
+                validate: validateSinNumber,
+                onChange: (e) => {
+                  // Remove any non-digit characters as the user types
+                  const value = e.target.value;
+                  const digitsOnly = value.replace(/\D/g, '');
+                  if (value !== digitsOnly) {
+                    e.target.value = digitsOnly;
+                  }
+                  // Debounced validation on change for immediate feedback
+                  debouncedValidateSin(digitsOnly);
+                }
+              })}
             />
+            {shouldShowError("sinNumber") && (
+              <p className="error-message">{allErrors.sinNumber?.message}</p>
+            )}
             <p className="field-note">
-              This information is encrypted and securely stored.
+              Enter a valid 9-digit Canadian SIN using numbers only (no spaces or dashes). This information is encrypted and securely stored.
             </p>
           </div>
 

@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { loginUser } from '../lib/auth';
+import { validateCredentials } from '../lib/auth';
 import { Eye, EyeOff } from 'lucide-react';
 import { ThemeToggle } from '../components/theme-toggle';
 import '../styles/variables.css';
@@ -42,22 +42,48 @@ export function Login() {
     setError(null);
     
     try {
-      // Attempt to login
-      const result = await loginUser(data.email, data.password, !!data.rememberMe);
+      // Use the new secure credential validation
+      const result = await validateCredentials(data.email, data.password);
       
       // Check if email is verified
-      if (!result.emailVerified) {
+      if (!result.emailVerified && result.email) {
         // If not verified, redirect to verification pending page
         navigate('/verification-pending', { 
           state: { 
-            email: result.email || data.email,
+            email: result.email,
             fromLogin: true 
           } 
         });
-      } else {
-        // If verified, proceed to dashboard
-        navigate('/dashboard');
+        return;
       }
+
+      // Check if 2FA is required
+      if (result.requiresTwoFactor) {
+        // Check if user has a phone number for 2FA
+        const phoneNumber = result.user?.user_metadata?.phoneNumber;
+        
+        if (phoneNumber) {
+          // Redirect to 2FA verification - store credentials securely in session state
+          navigate('/two-factor-auth', {
+            state: { 
+              user: result.user,
+              email: data.email,
+              password: data.password,
+              rememberMe: data.rememberMe,
+              timestamp: Date.now()
+            }
+          });
+          return;
+        } else {
+          // No phone number available for 2FA
+          setError('Two-factor authentication is required but no phone number is registered. Please contact support.');
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      // Regular user - proceed to dashboard (session already set)
+      navigate('/dashboard');
     } catch (error) {
       if (error instanceof Error) {
         setError(error.message);

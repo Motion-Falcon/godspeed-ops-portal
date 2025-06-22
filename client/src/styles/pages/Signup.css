@@ -34,4 +34,143 @@
   font-size: 1.5rem;
   font-weight: bold;
   margin-bottom: var(--spacing-4);
+}
+
+/* Phone number input styling */
+.form-phone-input {
+  width: 100%;
+  margin-bottom: 0.5rem;
+}
+
+.form-phone-input input {
+  height: 44px;
+  border-radius: var(--border-radius);
+  border: 1px solid var(--border);
+  background-color: var(--input-bg);
+  color: var(--text);
+  width: 100%;
+  padding: 0 12px;
+}
+
+/* Phone input disabled state */
+.form-phone-input[disabled] input,
+.form-phone-input input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: var(--disabled-bg);
+}
+
+.form-phone-input .PhoneInputCountryIcon {
+  width: 24px;
+  height: 18px;
+}
+
+.form-phone-input .PhoneInputCountrySelectArrow {
+  opacity: 0.6;
+}
+
+/* OTP verification styling */
+.otp-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 15px;
+  margin-bottom: 15px;
+  padding: 10px;
+  border-radius: var(--border-radius);
+  background-color: rgba(var(--primary-rgb), 0.05);
+  border: 1px dashed rgba(var(--primary-rgb), 0.3);
+}
+
+.otp-header {
+  margin-bottom: 5px;
+}
+
+.otp-header p {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin: 0;
+  text-align: center;
+  font-weight: 500;
+}
+
+.otp-input {
+  flex: 1;
+  text-align: center;
+  letter-spacing: 4px;
+  font-size: 1.2rem;
+  padding: 8px !important;
+  height: 44px !important;
+}
+
+.otp-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Availability message styling */
+.availability-message {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin-top: 5px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.error-message {
+  color: var(--error);
+  font-size: 0.9rem;
+  margin-top: 5px;
+}
+
+.loading-spinner-small {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Input icon styling */
+.input-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.success-icon {
+  color: var(--success);
+}
+
+/* Ensure input containers are positioned relative */
+.input-container {
+  position: relative;
+}
+
+/* Add some padding to inputs when they have icons */
+.input-container .form-input {
+  padding-right: 40px;
+}
+
+/* Phone input container specific styling */
+.input-container .form-phone-input {
+  position: relative;
+}
+
+.input-container .form-phone-input input {
+  padding-right: 40px;
 } 

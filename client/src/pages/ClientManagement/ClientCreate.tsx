@@ -11,10 +11,11 @@ import {
   deleteClientDraft,
   getClient,
   updateClient
-} from '../../services/api';
+} from '../../services/api/client';
 import { ConfirmationModal } from '../../components/ConfirmationModal';
 import { AppHeader } from '../../components/AppHeader';
 import { ArrowLeft, Save } from 'lucide-react';
+import { PAYMENT_METHODS, PAYMENT_TERMS, PAY_CYCLES, CREDIT_LIMITS } from '../../constants/formOptions';
 import '../../styles/pages/ClientManagement.css';
 import '../../styles/components/form.css';
 import '../../styles/components/header.css';
@@ -24,7 +25,7 @@ const clientFormSchema = z.object({
   // Basic Details
   companyName: z.string().min(1, { message: 'Company name is required' }),
   billingName: z.string().min(1, { message: 'Billing name is required' }),
-  shortCode: z.string().max(3, { message: 'Short code must be 3 characters or less' }).optional(),
+  shortCode: z.string().min(2, { message: 'Short code must be at least 2 characters' }).max(4, { message: 'Short code must be 4 characters or less' }),
   listName: z.string().optional(),
   website: z.string().url({ message: 'Must be a valid URL' }).optional().or(z.literal('')),
   clientManager: z.string().optional(),
@@ -436,14 +437,14 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
                 <div className="form-row">
                   <div className="form-group">
                     <label htmlFor="shortCode" className="form-label">
-                      Short Code (3 letters)
+                      Short Code (2-4 letters)
                     </label>
                     <input
                       type="text"
                       id="shortCode"
                       className="form-input"
                       placeholder="ABC"
-                      maxLength={3}
+                      maxLength={4}
                       {...methods.register('shortCode')}
                     />
                     {methods.formState.errors.shortCode && (
@@ -1163,11 +1164,11 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
                       {...methods.register('preferredPaymentMethod')}
                     >
                       <option value="">Select payment method</option>
-                      <option value="Cash">Cash</option>
-                      <option value="Cheque">Cheque</option>
-                      <option value="Corporation">Corporation</option>
-                      <option value="Direct Deposit">Direct Deposit</option>
-                      <option value="e-Transfer">e-Transfer</option>
+                      {PAYMENT_METHODS.map((method) => (
+                        <option key={method} value={method}>
+                          {method}
+                        </option>
+                      ))}
                     </select>
                     {methods.formState.errors.preferredPaymentMethod && (
                       <p className="form-error">{methods.formState.errors.preferredPaymentMethod.message}</p>
@@ -1184,14 +1185,11 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
                       {...methods.register('terms')}
                     >
                       <option value="">Select terms</option>
-                      <option value="Due on Receipt">Due on Receipt</option>
-                      <option value="Net 15">Net 15</option>
-                      <option value="Net 22">Net 22</option>
-                      <option value="Net 30">Net 30</option>
-                      <option value="Net 45">Net 45</option>
-                      <option value="Net 60">Net 60</option>
-                      <option value="Net 65">Net 65</option>
-                      <option value="Net 90">Net 90</option>
+                      {PAYMENT_TERMS.map((term) => (
+                        <option key={term} value={term}>
+                          {term}
+                        </option>
+                      ))}
                     </select>
                     {methods.formState.errors.terms && (
                       <p className="form-error">{methods.formState.errors.terms.message}</p>
@@ -1210,10 +1208,11 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
                       {...methods.register('payCycle')}
                     >
                       <option value="">Select pay cycle</option>
-                      <option value="1 Week Hold - Weekly Pay">1 Week Hold - Weekly Pay</option>
-                      <option value="1 Week Hold - Biweekly Pay">1 Week Hold - Biweekly Pay</option>
-                      <option value="2 Week Hold - Weekly Pay">2 Week Hold - Weekly Pay</option>
-                      <option value="2 Week Hold - Biweekly Pay">2 Week Hold - Biweekly Pay</option>
+                      {PAY_CYCLES.map((cycle) => (
+                        <option key={cycle} value={cycle}>
+                          {cycle}
+                        </option>
+                      ))}
                     </select>
                     {methods.formState.errors.payCycle && (
                       <p className="form-error">{methods.formState.errors.payCycle.message}</p>
@@ -1230,9 +1229,11 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
                       {...methods.register('creditLimit')}
                     >
                       <option value="">Select credit limit</option>
-                      <option value="20000">$20,000</option>
-                      <option value="35000">$35,000</option>
-                      <option value="50000">$50,000</option>
+                      {CREDIT_LIMITS.map((limit) => (
+                        <option key={limit.value} value={limit.value}>
+                          {limit.label}
+                        </option>
+                      ))}
                     </select>
                     {methods.formState.errors.creditLimit && (
                       <p className="form-error">{methods.formState.errors.creditLimit.message}</p>
@@ -1260,7 +1261,7 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
               </div>
             </div>
 
-            <div className="form-footer">
+            <div className="form-navigation">
               <button 
                 type="button" 
                 className="button secondary" 

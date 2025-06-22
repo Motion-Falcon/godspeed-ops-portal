@@ -1,6 +1,7 @@
 import { useFormContext } from "react-hook-form";
 import { addressQualificationsSchema } from "./ProfileCreate";
 import { z } from "zod";
+import { LICENSE_TYPES, EXPERIENCE_LEVELS } from "../../constants/formOptions";
 
 type AddressQualificationsFormData = z.infer<
   typeof addressQualificationsSchema
@@ -177,18 +178,11 @@ export function AddressQualificationsForm({
                 {...register("licenseType")}
               >
                 <option value="">Select License Type</option>
-                <option value="None">None</option>
-                <option value="Forklifter">Forklifter</option>
-                <option value="G">G</option>
-                <option value="GZ">GZ</option>
-                <option value="DZ">DZ</option>
-                <option value="AZ">AZ</option>
-                <option value="Walk-in Operator">Walk-in Operator</option>
-                <option value="Raymond Reach">Raymond Reach</option>
-                <option value="Crown Reach">Crown Reach</option>
-                <option value="Auditor">Auditor</option>
-                <option value="GL">GL</option>
-                <option value="Clerk">Clerk</option>
+                {LICENSE_TYPES.map((license) => (
+                  <option key={license} value={license}>
+                    {license}
+                  </option>
+                ))}
               </select>
               {shouldShowError("licenseType") && (
                 <p className="error-message">
@@ -211,13 +205,11 @@ export function AddressQualificationsForm({
                 {...register("experience")}
               >
                 <option value="">Select Experience Level</option>
-                <option value="0-6 Months">0-6 Months</option>
-                <option value="6-12 Months">6-12 Months</option>
-                <option value="1-2 Years">1-2 Years</option>
-                <option value="2-3 Years">2-3 Years</option>
-                <option value="3-4 Years">3-4 Years</option>
-                <option value="4-5 Years">4-5 Years</option>
-                <option value="5+ Years">5+ Years</option>
+                {EXPERIENCE_LEVELS.map((level) => (
+                  <option key={level} value={level}>
+                    {level}
+                  </option>
+                ))}
               </select>
               {shouldShowError("experience") && (
                 <p className="error-message">{allErrors.experience?.message}</p>

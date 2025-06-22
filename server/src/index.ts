@@ -1,19 +1,26 @@
-import express, { Request, Response, NextFunction } from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
-import { createClient } from '@supabase/supabase-js';
-import authRoutes from './routes/auth.js';
-import profileRoutes from './routes/profile.js';
-import jobseekersRoutes from './routes/jobseekers.js';
-import clientsRoutes from './routes/clients.js';
-import positionsRoutes from './routes/positions.js';
-import { 
-  configureSecurityHeaders, 
-  forceTLS, 
-  requestTracker, 
-  apiRateLimiter, 
-  sanitizeInputs 
-} from './middleware/security.js';
+import express, { Request, Response, NextFunction } from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import { createClient } from "@supabase/supabase-js";
+import authRoutes from "./routes/auth.js";
+import profileRoutes from "./routes/profile.js";
+import jobseekersRoutes from "./routes/jobseekers.js";
+import clientsRoutes from "./routes/clients.js";
+import positionsRoutes from "./routes/positions.js";
+import timesheetsRoutes from "./routes/timesheets.js";
+import invoicesRoutes from "./routes/invoices.js";
+import jobseekerMetricsRoutes from "./routes/jobseekerMetrics.js";
+import recruiterMetricsRoutes from "./routes/recruiterMetrics.js";
+import aiInsightsRoutes from "./routes/aiInsights.js";
+import timesheetMetricsRoutes from "./routes/timesheetMetrics.js";
+import invoiceMetricsRoutes from "./routes/invoiceMetrics.js";
+import {
+  configureSecurityHeaders,
+  forceTLS,
+  requestTracker,
+  apiRateLimiter,
+  sanitizeInputs,
+} from "./middleware/security.js";
 
 // Load environment variables
 dotenv.config();
@@ -30,12 +37,19 @@ app.use(requestTracker);
 app.use(sanitizeInputs); // Global input sanitization
 
 // Standard Middleware
-app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:3000',
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'X-Request-ID']
-}));
+app.use(
+  cors({
+    origin: process.env.CLIENT_URL || "http://localhost:3000",
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-CSRF-Token",
+      "X-Request-ID",
+    ],
+  })
+);
 app.use(express.json());
 
 // Initialize Supabase client
@@ -43,60 +57,90 @@ const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
-  console.error('Missing Supabase credentials');
+  console.error("Missing Supabase credentials");
   process.exit(1);
 }
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Routes
-app.get('/', (req, res) => {
-  res.json({ message: 'Server is running' });
+app.get("/", (req, res) => {
+  res.json({ message: "Server is running" });
 });
 
 // Health check endpoint
-app.get('/health', (req, res) => {
+app.get("/health", (req, res) => {
   res.status(200).json({
-    status: 'healthy',
-    timestamp: new Date().toISOString()
+    status: "healthy",
+    timestamp: new Date().toISOString(),
   });
 });
 
 // Auth routes
-app.use('/api/auth', authRoutes);
+app.use("/api/auth", authRoutes);
 
 // Profile routes
-app.use('/api/profile', profileRoutes);
+app.use("/api/profile", profileRoutes);
 
 // Jobseekers routes
-app.use('/api/jobseekers', jobseekersRoutes);
+app.use("/api/jobseekers", jobseekersRoutes);
 
 // Clients routes
-app.use('/api/clients', clientsRoutes);
+app.use("/api/clients", clientsRoutes);
 
 // Positions routes
-app.use('/api/positions', positionsRoutes);
+app.use("/api/positions", positionsRoutes);
+
+// Timesheets routes
+app.use("/api/timesheets", timesheetsRoutes);
+
+// Invoices routes
+app.use("/api/invoices", invoicesRoutes);
+
+// Jobseeker metrics routes
+app.use("/api/metrics/jobseekers", jobseekerMetricsRoutes);
+
+// Recruiter metrics routes
+app.use("/api/metrics/recruiters", recruiterMetricsRoutes);
+
+// Timesheet metrics routes (NEW)
+app.use("/api/timesheet-metrics", timesheetMetricsRoutes);
+
+// Invoice metrics routes (NEW)
+app.use("/api/invoice-metrics", invoiceMetricsRoutes);
+
+// AI insights routes
+app.use("/api/ai", aiInsightsRoutes);
 
 // Error handling middleware
-app.use((err: Error & { code?: string }, req: Request, res: Response, next: NextFunction) => {
-  console.error('Unhandled error:', err);
-  
-  // Check for specific error types
-  if (err.code === 'EBADCSRFTOKEN') {
-    return res.status(403).json({
-      error: 'Invalid CSRF token. Please refresh the page and try again.'
+app.use(
+  (
+    err: Error & { code?: string },
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
+    console.error("Unhandled error:", err);
+
+    // Check for specific error types
+    if (err.code === "EBADCSRFTOKEN") {
+      return res.status(403).json({
+        error: "Invalid CSRF token. Please refresh the page and try again.",
+      });
+    }
+
+    // Generic error response
+    res.status(500).json({
+      error: "An unexpected error occurred",
+      requestId: req.headers["x-request-id"],
     });
   }
-  
-  // Generic error response
-  res.status(500).json({
-    error: 'An unexpected error occurred',
-    requestId: req.headers['x-request-id']
-  });
-});
+);
 
 // Start server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-  console.log(`Security measures enabled: TLS, CSP, XSS Protection, Rate Limiting`);
-}); 
+  console.log(
+    `Security measures enabled: TLS, CSP, XSS Protection, Rate Limiting`
+  );
+});

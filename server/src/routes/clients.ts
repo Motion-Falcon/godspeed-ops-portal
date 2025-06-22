@@ -1,10 +1,11 @@
 import { Router, Request, Response } from 'express';
-import { authenticateToken, authorizeRoles } from '../middleware/auth.js';
 import { createClient } from '@supabase/supabase-js';
-import { apiRateLimiter, sanitizeInputs } from '../middleware/security.js';
+import { authenticateToken, authorizeRoles } from '../middleware/auth.js';
+import { sanitizeInputs, apiRateLimiter } from '../middleware/security.js';
 import dotenv from 'dotenv';
 import { ClientData, DbClientData } from '../types.js';
 import { v4 as uuidv4 } from 'uuid';
+import { activityLogger } from '../middleware/activityLogger.js';
 
 dotenv.config();
 
@@ -61,7 +62,7 @@ function camelToSnakeCase(str: string): string {
 }
 
 /**
- * Get all clients
+ * Get all clients with pagination and filtering
  * GET /api/clients
  * @access Private (Admin, Recruiter)
  */
@@ -71,10 +72,92 @@ router.get('/',
   apiRateLimiter,
   async (req: Request, res: Response) => {
     try {
-      // Get clients from the database
-      const { data: clients, error } = await supabase
+      // Extract pagination and filter parameters from query
+      const { 
+        page = '1', 
+        limit = '10', 
+        searchTerm = '', 
+        companyNameFilter = '', 
+        shortCodeFilter = '',
+        listNameFilter = '',
+        contactFilter = '',
+        emailFilter = '', 
+        mobileFilter = '',
+        paymentMethodFilter = '',
+        paymentCycleFilter = ''
+      } = req.query as {
+        page?: string;
+        limit?: string;
+        searchTerm?: string;
+        companyNameFilter?: string;
+        shortCodeFilter?: string;
+        listNameFilter?: string;
+        contactFilter?: string;
+        emailFilter?: string;
+        mobileFilter?: string;
+        paymentMethodFilter?: string;
+        paymentCycleFilter?: string;
+      };
+
+      const pageNum = parseInt(page);
+      const limitNum = parseInt(limit);
+      const offset = (pageNum - 1) * limitNum;
+
+      // Build the base query
+      let baseQuery = supabase
         .from('clients')
-        .select('*')
+        .select('*');
+
+      // Apply all filters at database level
+      baseQuery = applyClientFilters(baseQuery, {
+        searchTerm,
+        companyNameFilter,
+        shortCodeFilter,
+        listNameFilter,
+        contactFilter,
+        emailFilter,
+        mobileFilter,
+        paymentMethodFilter,
+        paymentCycleFilter
+      });
+
+      // Get total count (unfiltered)
+      const { count: totalCount, error: countError } = await supabase
+        .from('clients')
+        .select('*', { count: 'exact', head: true });
+
+      if (countError) {
+        console.error('Error getting total count:', countError);
+        return res.status(500).json({ error: 'Failed to get total count of clients' });
+      }
+
+      // Get filtered count
+      let countQuery = supabase
+        .from('clients')
+        .select('*', { count: 'exact', head: true });
+
+      countQuery = applyClientFilters(countQuery, {
+        searchTerm,
+        companyNameFilter,
+        shortCodeFilter,
+        listNameFilter,
+        contactFilter,
+        emailFilter,
+        mobileFilter,
+        paymentMethodFilter,
+        paymentCycleFilter
+      });
+
+      const { count: filteredCount, error: filteredCountError } = await countQuery;
+
+      if (filteredCountError) {
+        console.error('Error getting filtered count:', filteredCountError);
+        return res.status(500).json({ error: 'Failed to get filtered count of clients' });
+      }
+
+      // Apply pagination and execute main query
+      const { data: clients, error } = await baseQuery
+        .range(offset, offset + limitNum - 1)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -82,7 +165,39 @@ router.get('/',
         return res.status(500).json({ error: 'Failed to fetch clients' });
       }
 
-      return res.status(200).json(clients);
+      if (!clients || clients.length === 0) {
+        return res.json({
+          clients: [],
+          pagination: {
+            page: pageNum,
+            limit: limitNum,
+            total: totalCount || 0,
+            totalFiltered: filteredCount || 0,
+            totalPages: Math.ceil((filteredCount || 0) / limitNum),
+            hasNextPage: false,
+            hasPrevPage: false
+          }
+        });
+      }
+
+      // Calculate pagination metadata
+      const totalFiltered = filteredCount || 0;
+      const totalPages = Math.ceil(totalFiltered / limitNum);
+      const hasNextPage = pageNum < totalPages;
+      const hasPrevPage = pageNum > 1;
+
+      return res.status(200).json({
+        clients,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total: totalCount || 0,
+          totalFiltered,
+          totalPages,
+          hasNextPage,
+          hasPrevPage
+        }
+      });
     } catch (error) {
       console.error('Unexpected error fetching clients:', error);
       return res.status(500).json({ error: 'An unexpected error occurred' });
@@ -91,7 +206,75 @@ router.get('/',
 );
 
 /**
- * Get all client drafts for the user
+ * Helper function to apply filters to a Supabase query
+ */
+function applyClientFilters(query: any, filters: {
+  searchTerm?: string;
+  companyNameFilter?: string;
+  shortCodeFilter?: string;
+  listNameFilter?: string;
+  contactFilter?: string;
+  emailFilter?: string;
+  mobileFilter?: string;
+  paymentMethodFilter?: string;
+  paymentCycleFilter?: string;
+}) {
+  const {
+    searchTerm,
+    companyNameFilter,
+    shortCodeFilter,
+    listNameFilter,
+    contactFilter,
+    emailFilter,
+    mobileFilter,
+    paymentMethodFilter,
+    paymentCycleFilter
+  } = filters;
+
+  // Global search across multiple fields
+  if (searchTerm && searchTerm.trim().length > 0) {
+    const searchTermTrimmed = searchTerm.trim();
+    query = query.or(`company_name.ilike.%${searchTermTrimmed}%,contact_person_name1.ilike.%${searchTermTrimmed}%,email_address1.ilike.%${searchTermTrimmed}%,short_code.ilike.%${searchTermTrimmed}%,list_name.ilike.%${searchTermTrimmed}%`);
+  }
+
+  // Individual column filters
+  if (companyNameFilter && companyNameFilter.trim().length > 0) {
+    query = query.ilike('company_name', `%${companyNameFilter.trim()}%`);
+  }
+
+  if (shortCodeFilter && shortCodeFilter.trim().length > 0) {
+    query = query.ilike('short_code', `%${shortCodeFilter.trim()}%`);
+  }
+
+  if (listNameFilter && listNameFilter.trim().length > 0) {
+    query = query.ilike('list_name', `%${listNameFilter.trim()}%`);
+  }
+
+  if (contactFilter && contactFilter.trim().length > 0) {
+    query = query.ilike('contact_person_name1', `%${contactFilter.trim()}%`);
+  }
+
+  if (emailFilter && emailFilter.trim().length > 0) {
+    query = query.ilike('email_address1', `%${emailFilter.trim()}%`);
+  }
+
+  if (mobileFilter && mobileFilter.trim().length > 0) {
+    query = query.ilike('mobile1', `%${mobileFilter.trim()}%`);
+  }
+
+  if (paymentMethodFilter && paymentMethodFilter.trim().length > 0) {
+    query = query.ilike('preferred_payment_method', `%${paymentMethodFilter.trim()}%`);
+  }
+
+  if (paymentCycleFilter && paymentCycleFilter.trim().length > 0) {
+    query = query.ilike('pay_cycle', `%${paymentCycleFilter.trim()}%`);
+  }
+
+  return query;
+}
+
+/**
+ * Get all client drafts with pagination and filtering
  * GET /api/clients/drafts
  * @access Private (Admin, Recruiter)
  */
@@ -101,37 +284,226 @@ router.get('/drafts',
   apiRateLimiter,
   async (req: Request, res: Response) => {
     try {
-      if (!req.user || !req.user.id) {
-        return res.status(401).json({ error: 'Authentication required' });
+      // Extract pagination and filter parameters from query
+      const { 
+        page = '1', 
+        limit = '10', 
+        search = '',
+        companyNameFilter = '',
+        shortCodeFilter = '',
+        listNameFilter = '',
+        contactPersonFilter = '',
+        creatorFilter = '', 
+        updaterFilter = '',
+        dateFilter = '',
+        createdDateFilter = ''
+      } = req.query as {
+        page?: string;
+        limit?: string;
+        search?: string;
+        companyNameFilter?: string;
+        shortCodeFilter?: string;
+        listNameFilter?: string;
+        contactPersonFilter?: string;
+        creatorFilter?: string;
+        updaterFilter?: string;
+        dateFilter?: string;
+        createdDateFilter?: string;
+      };
+
+      const pageNum = parseInt(page);
+      const limitNum = parseInt(limit);
+      const offset = (pageNum - 1) * limitNum;
+
+      // Helper function to apply filters to a query
+      const applyDraftFilters = (query: any) => {
+        // Global search across multiple fields
+        if (search && search.trim().length > 0) {
+          const searchTerm = search.trim();
+          query = query.or(`company_name.ilike.%${searchTerm}%,short_code.ilike.%${searchTerm}%,list_name.ilike.%${searchTerm}%,contact_person_name1.ilike.%${searchTerm}%`);
+        }
+
+        // Individual column filters
+        if (companyNameFilter && companyNameFilter.trim().length > 0) {
+          query = query.ilike('company_name', `%${companyNameFilter.trim()}%`);
+        }
+
+        if (shortCodeFilter && shortCodeFilter.trim().length > 0) {
+          query = query.ilike('short_code', `%${shortCodeFilter.trim()}%`);
+        }
+
+        if (listNameFilter && listNameFilter.trim().length > 0) {
+          query = query.ilike('list_name', `%${listNameFilter.trim()}%`);
+        }
+
+        if (contactPersonFilter && contactPersonFilter.trim().length > 0) {
+          query = query.ilike('contact_person_name1', `%${contactPersonFilter.trim()}%`);
+        }
+
+        // Date filters
+        if (dateFilter) {
+          const filterDate = new Date(dateFilter);
+          const nextDay = new Date(filterDate);
+          nextDay.setDate(nextDay.getDate() + 1);
+          query = query.gte('updated_at', filterDate.toISOString()).lt('updated_at', nextDay.toISOString());
+        }
+
+        if (createdDateFilter) {
+          const filterDate = new Date(createdDateFilter);
+          const nextDay = new Date(filterDate);
+          nextDay.setDate(nextDay.getDate() + 1);
+          query = query.gte('created_at', filterDate.toISOString()).lt('created_at', nextDay.toISOString());
+        }
+
+        return query;
+      };
+
+      // Get total count (unfiltered)
+      const { count: totalCount, error: totalCountError } = await supabase
+        .from('client_drafts')
+        .select('*', { count: 'exact', head: true });
+
+      if (totalCountError) {
+        console.error('Error getting total count of drafts:', totalCountError);
+        return res.status(500).json({ error: 'Failed to get total count of drafts' });
       }
 
-      const userId = req.user.id;
-
-      // Get all drafts for this user
-      const { data: drafts, error } = await supabase
+      // Get filtered count
+      let filteredCountQuery = supabase
         .from('client_drafts')
-        .select('*')
-        .eq('created_by_user_id', userId)
+        .select('*', { count: 'exact', head: true });
+
+      filteredCountQuery = applyDraftFilters(filteredCountQuery);
+
+      const { count: filteredCount, error: filteredCountError } = await filteredCountQuery;
+
+      if (filteredCountError) {
+        console.error('Error getting filtered count of drafts:', filteredCountError);
+        return res.status(500).json({ error: 'Failed to get filtered count of drafts' });
+      }
+
+      // Build main query
+      let mainQuery = supabase
+        .from('client_drafts')
+        .select('*');
+
+      // Apply filters to main query
+      mainQuery = applyDraftFilters(mainQuery);
+
+      // Apply pagination and execute query
+      const { data: drafts, error } = await mainQuery
+        .range(offset, offset + limitNum - 1)
         .order('updated_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching all drafts:', error);
+        console.error('Error fetching drafts:', error);
         return res.status(500).json({ error: 'Failed to fetch drafts' });
       }
 
-      // Convert snake_case to camelCase for frontend
-      const clientDrafts = drafts.map(draft => {
-        return Object.entries(draft).reduce((acc, [key, value]) => {
-          // Convert snake_case to camelCase
+      if (!drafts || drafts.length === 0) {
+        return res.json({
+          drafts: [],
+          pagination: {
+            page: pageNum,
+            limit: limitNum,
+            total: totalCount || 0,
+            totalFiltered: filteredCount || 0,
+            totalPages: Math.ceil((filteredCount || 0) / limitNum),
+            hasNextPage: false,
+            hasPrevPage: false
+          }
+        });
+      }
+
+      // Collect all user IDs to fetch their details
+      const creatorIds = [...new Set(drafts.map(draft => draft.created_by_user_id).filter(Boolean))];
+      const updaterIds = [...new Set(drafts.map(draft => draft.updated_by_user_id).filter(Boolean))];
+      const allUserIds = [...new Set([...creatorIds, ...updaterIds])];
+
+      // Fetch user details for all users
+      const userDetailsMap: { [key: string]: any } = {};
+      
+      for (const userId of allUserIds) {
+        try {
+          const { data: userData, error: userError } = await supabase.auth.admin.getUserById(userId);
+          if (!userError && userData?.user) {
+            const user = userData.user;
+            userDetailsMap[userId] = {
+              id: user.id,
+              email: user.email,
+              name: user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'Unknown',
+              userType: user.user_metadata?.user_type || 'Unknown',
+              createdAt: user.created_at,
+              updatedAt: user.updated_at
+            };
+          }
+        } catch (userFetchError) {
+          console.error(`Error fetching user ${userId}:`, userFetchError);
+          userDetailsMap[userId] = null;
+        }
+      }
+
+      // Transform drafts format to match client expectations and convert snake_case to camelCase
+      let formattedDrafts = drafts.map(draft => {
+        // Convert snake_case to camelCase for frontend
+        const camelCaseDraft = Object.entries(draft).reduce((acc, [key, value]) => {
           const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
           acc[camelKey] = value;
           return acc;
         }, {} as Record<string, any>);
+
+        // Add creator and updater details
+        const formattedDraft = {
+          ...camelCaseDraft,
+          creatorDetails: draft.created_by_user_id ? userDetailsMap[draft.created_by_user_id] || null : null,
+          updaterDetails: draft.updated_by_user_id ? userDetailsMap[draft.updated_by_user_id] || null : null
+        };
+
+        return formattedDraft;
       });
 
-      return res.status(200).json(clientDrafts);
+      // Apply creator and updater filters (these need to be done after user details are fetched)
+      if (creatorFilter && creatorFilter.trim().length > 0) {
+        formattedDrafts = formattedDrafts.filter(draft => {
+          const creator = draft.creatorDetails;
+          if (!creator) return false;
+          const searchTerm = creatorFilter.toLowerCase();
+          return (creator.name && creator.name.toLowerCase().includes(searchTerm)) ||
+                 (creator.email && creator.email.toLowerCase().includes(searchTerm));
+        });
+      }
+
+      if (updaterFilter && updaterFilter.trim().length > 0) {
+        formattedDrafts = formattedDrafts.filter(draft => {
+          const updater = draft.updaterDetails;
+          if (!updater) return false;
+          const searchTerm = updaterFilter.toLowerCase();
+          return (updater.name && updater.name.toLowerCase().includes(searchTerm)) ||
+                 (updater.email && updater.email.toLowerCase().includes(searchTerm));
+        });
+      }
+
+      // Note: If creator/updater filters are applied, the pagination might not be accurate
+      // This is a limitation when filtering by related data that requires additional API calls
+      const finalCount = (creatorFilter || updaterFilter) ? formattedDrafts.length : (filteredCount || 0);
+      const totalPages = Math.ceil(finalCount / limitNum);
+      const hasNextPage = pageNum < totalPages;
+      const hasPrevPage = pageNum > 1;
+
+      return res.status(200).json({
+        drafts: formattedDrafts,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total: totalCount || 0,
+          totalFiltered: finalCount,
+          totalPages,
+          hasNextPage,
+          hasPrevPage
+        }
+      });
     } catch (error) {
-      console.error('Unexpected error fetching all drafts:', error);
+      console.error('Unexpected error fetching drafts:', error);
       return res.status(500).json({ error: 'An unexpected error occurred' });
     }
   }
@@ -179,6 +551,23 @@ router.post('/',
   authenticateToken, 
   authorizeRoles(['admin', 'recruiter']),
   sanitizeInputs,
+  activityLogger({
+    onSuccess: (req, res) => ({
+      actionType: 'create_client',
+      actionVerb: 'created',
+      primaryEntityType: 'client',
+      primaryEntityId: res.locals.newClient?.id,
+      primaryEntityName: req.body.companyName,
+      displayMessage: `Created client "${req.body.companyName}"`,
+      category: 'client_management',
+      priority: 'normal',
+      metadata: {
+        shortCode: req.body.shortCode,
+        clientManager: req.body.clientManager,
+        website: req.body.website
+      }
+    })
+  }),
   async (req: Request, res: Response) => {
     try {
       if (!req.user || !req.user.id) {
@@ -293,6 +682,9 @@ router.post('/',
         return res.status(500).json({ error: 'Failed to create client' });
       }
 
+      // Store client data for activity logging
+      res.locals.newClient = newClient;
+
       return res.status(201).json({
         success: true,
         message: 'Client created successfully',
@@ -314,6 +706,24 @@ router.put('/:id',
   authenticateToken, 
   authorizeRoles(['admin', 'recruiter']),
   sanitizeInputs,
+  activityLogger({
+    onSuccess: (req, res) => ({
+      actionType: 'update_client',
+      actionVerb: 'updated',
+      primaryEntityType: 'client',
+      primaryEntityId: req.params.id,
+      primaryEntityName: req.body.companyName,
+      displayMessage: `Updated client "${req.body.companyName}"`,
+      category: 'client_management',
+      priority: 'normal',
+      metadata: {
+        shortCode: req.body.shortCode,
+        clientManager: req.body.clientManager,
+        website: req.body.website,
+        updatedFields: Object.keys(req.body).filter(key => req.body[key] !== undefined)
+      }
+    })
+  }),
   async (req: Request, res: Response) => {
     try {
       if (!req.user || !req.user.id) {
@@ -636,20 +1046,42 @@ router.get('/draft',
 router.delete('/:id', 
   authenticateToken, 
   authorizeRoles(['admin', 'recruiter']),
+  activityLogger({
+    onSuccess: (req, res) => ({
+      actionType: 'delete_client',
+      actionVerb: 'deleted',
+      primaryEntityType: 'client',
+      primaryEntityId: req.params.id,
+      primaryEntityName: res.locals.deletedClient?.company_name || `Client ID: ${req.params.id}`,
+      displayMessage: `Deleted client "${res.locals.deletedClient?.company_name || req.params.id}"`,
+      category: 'client_management',
+      priority: 'high',
+      metadata: {
+        deletedClientData: res.locals.deletedClient ? {
+          shortCode: res.locals.deletedClient.short_code,
+          billingName: res.locals.deletedClient.billing_name,
+          clientManager: res.locals.deletedClient.client_manager
+        } : null
+      }
+    })
+  }),
   async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
 
-      // Check if client exists
+      // Check if client exists and get client data for logging
       const { data: existingClient, error: clientCheckError } = await supabase
         .from('clients')
-        .select('id')
+        .select('*')
         .eq('id', id)
         .maybeSingle();
 
       if (clientCheckError || !existingClient) {
         return res.status(404).json({ error: 'Client not found' });
       }
+
+      // Store client data for activity logging
+      res.locals.deletedClient = existingClient;
 
       // Delete client
       const { error: deleteError } = await supabase

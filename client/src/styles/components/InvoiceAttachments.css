@@ -1,0 +1,424 @@
+/* Invoice Attachments Component Styles */
+
+.invoice-attachments-container {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.invoice-attachments-header {
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.invoice-attachments-header h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.attachments-description {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* Error Messages */
+.attachment-errors {
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.attachment-error {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: var(--danger-bg);
+  border: 1px solid var(--danger);
+  border-radius: 6px;
+  color: var(--danger);
+  font-size: 0.875rem;
+}
+
+.attachment-error svg {
+  color: var(--danger);
+  flex-shrink: 0;
+}
+
+/* Upload Section */
+.attachment-upload-section {
+  margin-bottom: 1rem;
+  position: relative;
+}
+
+.attachment-file-input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  width: 0;
+  height: 0;
+}
+
+.attachment-upload-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--primary);
+  color: var(--background);
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  border: 2px solid var(--primary);
+}
+
+.attachment-upload-button:hover:not(.disabled) {
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.attachment-upload-button.disabled {
+  background: var(--pending-bg);
+  color: var(--text-muted);
+  border-color: var(--border);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.upload-count {
+  font-size: 0.75rem;
+  opacity: 0.8;
+  margin-left: 0.25rem;
+}
+
+/* Attachments List */
+.attachment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.attachment-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.attachment-item:hover {
+  border-color: var(--primary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Attachment Thumbnail */
+.attachment-thumbnail {
+  width: 60px;
+  height: 60px;
+  flex-shrink: 0;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--pending-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.attachment-image-thumbnail {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.attachment-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.2s ease;
+}
+
+.attachment-image-thumbnail:hover .attachment-image {
+  transform: scale(1.1);
+}
+
+.attachment-image-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  color: white;
+}
+
+.attachment-image-thumbnail:hover .attachment-image-overlay {
+  opacity: 1;
+}
+
+.attachment-file-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: color 0.2s ease;
+}
+
+.attachment-file-placeholder:hover {
+  color: var(--primary);
+}
+
+.attachment-file-type {
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Attachment Info */
+.attachment-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.attachment-name {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.attachment-name span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.attachment-name svg {
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.attachment-details {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.attachment-size {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.attachment-status {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.attachment-status.uploaded {
+  color: var(--success);
+}
+
+.attachment-status.pending {
+  color: var(--warning);
+}
+
+.attachment-status svg {
+  flex-shrink: 0;
+}
+
+/* Attachment Actions */
+.attachment-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.attachment-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--card);
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0;
+}
+
+.attachment-action-btn:hover:not(:disabled) {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: var(--background);
+  transform: translateY(-1px);
+}
+
+.attachment-action-btn.preview:hover:not(:disabled) {
+  border-color: var(--primary);
+  background: var(--primary);
+}
+
+.attachment-action-btn.download:hover:not(:disabled) {
+  border-color: var(--success);
+  background: var(--success);
+}
+
+.attachment-action-btn.delete:hover:not(:disabled) {
+  border-color: var(--danger);
+  background: var(--danger);
+}
+
+.attachment-action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.attachment-action-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .attachment-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .attachment-thumbnail {
+    width: 80px;
+    height: 80px;
+    align-self: center;
+  }
+
+  .attachment-info {
+    width: 100%;
+    text-align: center;
+  }
+
+  .attachment-actions {
+    align-self: center;
+    gap: 0.5rem;
+  }
+
+  .attachment-action-btn {
+    width: 36px;
+    height: 36px;
+  }
+
+  .attachment-details {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+}
+
+/* PDF Thumbnail Integration */
+.attachment-thumbnail .pdf-thumbnail-container {
+  width: 100%;
+  height: 100%;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.attachment-thumbnail .pdf-thumbnail-page {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.attachment-thumbnail .pdf-thumbnail-overlay {
+  border-radius: 4px;
+}
+
+/* Dark mode adjustments */
+.dark .attachment-upload-button:not(.disabled) {
+  background: var(--primary);
+  color: var(--background);
+}
+
+.dark .attachment-upload-button.disabled {
+  background: var(--pending-bg);
+  color: var(--text-muted);
+  border-color: var(--border);
+}
+
+.dark .attachment-item:hover {
+  border-color: var(--primary);
+  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.1);
+}
+
+.dark .attachment-action-btn {
+  background: var(--card);
+  border-color: var(--border);
+  color: var(--text);
+}
+
+/* === Generated Invoice Section Styles === */
+.generated-invoice-item {
+  background: var(--success-bg, #e6f9f0);
+  border: 2px solid var(--success, #2ecc40);
+  box-shadow: 0 2px 8px rgba(46, 204, 64, 0.08);
+  position: relative;
+}
+.generated-invoice-item .attachment-file-placeholder,
+.generated-invoice-item .attachment-name svg {
+  color: var(--success, #2ecc40);
+}
+.generated-invoice-item .attachment-status.uploaded {
+  color: var(--success, #2ecc40);
+}
+.generated-invoice-item::before {
+  content: 'Generated Invoice';
+  position: absolute;
+  top: -1.2rem;
+  left: 1rem;
+  background: var(--success, #2ecc40);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.15rem 0.75rem;
+  border-radius: 4px 4px 0 0;
+  letter-spacing: 0.5px;
+} 

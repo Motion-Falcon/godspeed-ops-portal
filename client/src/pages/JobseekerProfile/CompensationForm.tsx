@@ -2,6 +2,7 @@ import { useFormContext } from "react-hook-form";
 import { useState, useEffect } from "react";
 import { z } from "zod";
 import { useAuth } from "../../contexts/AuthContext";
+import { PAYRATE_TYPES, PAYMENT_METHODS } from "../../constants/formOptions";
 
 // Will define this schema in ProfileCreate.tsx
 const compensationSchema = z.object({
@@ -85,9 +86,11 @@ export function CompensationForm({ allFields }: CompensationFormProps) {
             className="form-input"
             {...register("payrateType")}
           >
-            <option value="Hourly">Hourly</option>
-            <option value="Daily">Daily</option>
-            <option value="Monthly">Monthly</option>
+            {PAYRATE_TYPES.slice(0, 3).map((type) => (
+              <option key={type} value={type}>
+                {type}
+              </option>
+            ))}
           </select>
           {shouldShowError("payrateType") && (
             <p className="error-message">{allErrors.payrateType?.message}</p>
@@ -153,14 +156,11 @@ export function CompensationForm({ allFields }: CompensationFormProps) {
             {...register("paymentMethod")}
           >
             <option value="">Select Payment Method</option>
-            <option value="Cash">Cash</option>
-            <option value="Corporation-Cheque">Corporation - Cheque</option>
-            <option value="Corporation-Direct Deposit">
-              Corporation - Direct Deposit
-            </option>
-            <option value="e-Transfer">e-Transfer</option>
-            <option value="Direct Deposit">Direct Deposit</option>
-            <option value="Cheque">Cheque</option>
+            {PAYMENT_METHODS.map((method) => (
+              <option key={method} value={method}>
+                {method}
+              </option>
+            ))}
           </select>
           {shouldShowError("paymentMethod") && (
             <p className="error-message">{allErrors.paymentMethod?.message}</p>
@@ -207,15 +207,15 @@ export function CompensationForm({ allFields }: CompensationFormProps) {
       <div className="form-section">
         <h3>Overtime Settings</h3>
 
-        <div className="form-group checkbox-container">
+        <div className="container-form">
           <input
             id="overtimeEnabled"
             type="checkbox"
-            className="form-checkbox"
+            className="toggle-form"
             {...register("overtimeEnabled")}
           />
-          <label htmlFor="overtimeEnabled" className="checkbox-label">
-            Enable overtime rates
+          <label htmlFor="overtimeEnabled" className="label-form">
+            Enable Overtime
           </label>
           {shouldShowError("overtimeEnabled") && (
             <p className="error-message">

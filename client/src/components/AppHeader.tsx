@@ -1,5 +1,6 @@
 import { ReactNode, useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { RotateCcw } from 'lucide-react';
 import godspeedLogo from '../assets/logos/godspped-logo-fulllength.png';
 import { HamburgerMenu } from './HamburgerMenu';
 import '../styles/components/header.css';
@@ -9,18 +10,57 @@ interface AppHeaderProps {
   actions?: ReactNode;
   statusMessage?: string | null;
   statusType?: 'success' | 'error' | 'pending';
+  hideHamburgerMenu?: boolean;
 }
 
 export function AppHeader({
   title,
   actions,
   statusMessage,
-  statusType = 'success'
+  statusType = 'success',
+  hideHamburgerMenu = false
 }: AppHeaderProps) {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showStatusMessage, setShowStatusMessage] = useState(false);
   const menuOpenRef = useRef(true); // Keep track of menu state with a ref as well
   const isInitialMount = useRef(true);
+  const statusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Scroll to top when component mounts (page loads)
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  // Handle status message visibility and timeout
+  useEffect(() => {
+    if (statusMessage) {
+      setShowStatusMessage(true);
+      
+      // Clear existing timeout if any
+      if (statusTimeoutRef.current) {
+        clearTimeout(statusTimeoutRef.current);
+      }
+      
+      // Set timeout to hide message after 3 seconds
+      statusTimeoutRef.current = setTimeout(() => {
+        setShowStatusMessage(false);
+      }, 3000);
+    } else {
+      setShowStatusMessage(false);
+      // Clear timeout if statusMessage becomes null/undefined
+      if (statusTimeoutRef.current) {
+        clearTimeout(statusTimeoutRef.current);
+      }
+    }
+
+    // Cleanup timeout on unmount
+    return () => {
+      if (statusTimeoutRef.current) {
+        clearTimeout(statusTimeoutRef.current);
+      }
+    };
+  }, [statusMessage]);
   
   // Log state changes for debugging
   useEffect(() => {
@@ -54,9 +94,13 @@ export function AppHeader({
     }
   };
 
+  const handleRefreshPage = () => {
+    window.location.reload();
+  };
+
   return (
     <div className="header-wrapper">
-      <header className="common-header">
+      <header className={`common-header ${hideHamburgerMenu ? "hide-hamburger-menu" : ""}`}>
         <div className="header-main">
           <div className="header-left">
             <div className="logo-container" onClick={() => navigate('/')}>
@@ -68,9 +112,19 @@ export function AppHeader({
           </div>
         </div>
         
-        {statusMessage && (
+        {statusMessage && showStatusMessage && (
           <div className="status-update-container">
             <span className={`status-update-message ${statusType}`}>{statusMessage}</span>
+            {statusType === 'error' && (
+              <button 
+                className="refresh-page-btn"
+                onClick={handleRefreshPage}
+                title="Refresh page"
+              >
+                <RotateCcw size={16} />
+                Refresh
+              </button>
+            )}
           </div>
         )}
       </header>
@@ -79,7 +133,9 @@ export function AppHeader({
       </div>
       
       {/* Render the hamburger menu outside of the header for proper positioning */}
-      <HamburgerMenu isOpen={menuOpen} onClose={closeMenu} onOpen={toggleMenu}/>
+      {!hideHamburgerMenu && (
+        <HamburgerMenu isOpen={menuOpen} onClose={closeMenu} onOpen={toggleMenu}/>
+      )}
     </div>
   );
 } 

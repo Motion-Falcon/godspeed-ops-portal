@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -10,6 +10,7 @@ import "../styles/variables.css";
 import "../styles/pages/ForgotPassword.css";
 import "../styles/components/form.css";
 import "../styles/components/button.css";
+import { useAuth } from "../contexts/AuthContext";
 
 const forgotPasswordSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
@@ -22,7 +23,8 @@ export function ForgotPassword() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [emailSent, setEmailSent] = useState<string | null>(null);
-  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
+  const hideHamburgerMenu = !isAuthenticated;
 
   const {
     register,
@@ -53,18 +55,10 @@ export function ForgotPassword() {
 
   if (isSuccess) {
     return (
-      <div className="page-container">
+      <div className={`page-container ${hideHamburgerMenu ? "hide-hamburger-menu" : ""}`}>
         <AppHeader
           title="Password Reset"
-          actions={
-            <button
-              className="button button-icon"
-              onClick={() => navigate("/")}
-            >
-              <ArrowLeft className="icon" size={16} />
-              <span>Back to Dashboard</span>
-            </button>
-          }
+          hideHamburgerMenu={hideHamburgerMenu}
         />
         <div className="centered-container">
           <div className="centered-card">
@@ -107,15 +101,10 @@ export function ForgotPassword() {
   }
 
   return (
-    <div className="page-container">
+    <div className={`page-container ${hideHamburgerMenu ? "hide-hamburger-menu" : ""}`}>
       <AppHeader
         title="Password Reset"
-        actions={
-          <button className="button button-icon" onClick={() => navigate("/")}>
-            <ArrowLeft className="icon" size={16} />
-            <span>Back to Dashboard</span>
-          </button>
-        }
+        hideHamburgerMenu={hideHamburgerMenu}
       />
       <div className="centered-container">
         <div className="form-container">

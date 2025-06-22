@@ -24,7 +24,7 @@ import {
   getJobseekerProfile,
   updateJobseekerStatus,
   deleteJobseeker,
-} from "../services/api";
+} from "../services/api/jobseeker";
 import { DocumentRecord } from "../types/jobseeker";
 import { supabase } from "../lib/supabaseClient";
 import PDFThumbnail from "../components/PDFThumbnail";
@@ -92,6 +92,8 @@ interface FullJobseekerProfile {
     userType: string;
     updatedAt: string;
   } | null; // New field for updater details
+  rejectionReason?: string | null;
+  employeeId?: string | null;
   // Add any other potential fields from the DB
 }
 
@@ -127,7 +129,7 @@ const profileNeedsAttention = (profile: FullJobseekerProfile | null): boolean =>
     return (
       doc.aiValidation.is_tampered === true ||
       doc.aiValidation.is_blurry === true ||
-      doc.aiValidation.is_text_clear === true ||
+      doc.aiValidation.is_text_clear === false ||
       doc.aiValidation.is_resubmission_required === true
     );
   });
@@ -164,9 +166,12 @@ export function JobSeekerProfile() {
   const [selectedStatus, setSelectedStatus] = useState<
     "pending" | "verified" | "rejected"
   >("pending");
+  const [rejectionReason, setRejectionReason] = useState<string>("");
+  const [rejectionReasonError, setRejectionReasonError] = useState<string | null>(null);
   const [expandedNotesIds, setExpandedNotesIds] = useState<Set<string>>(
     new Set()
   );
+  const [showFullRejectionReason, setShowFullRejectionReason] = useState<boolean>(false);
   const { id } = useParams<{ id: string }>();
   const { isAdmin, isRecruiter, isJobSeeker } = useAuth();
   const navigate = useNavigate();
@@ -248,9 +253,18 @@ export function JobSeekerProfile() {
   ) => {
     if (!profile || !id) return;
 
+    // Clear previous error
+    setRejectionReasonError(null);
+
+    // Require rejection reason when rejecting a profile
+    if (newStatus === "rejected" && !rejectionReason.trim()) {
+      setRejectionReasonError("Please provide a reason for rejection");
+      return;
+    }
+
     try {
       setUpdateStatus("Updating status...");
-      const response = await updateJobseekerStatus(id, newStatus);
+      const response = await updateJobseekerStatus(id, newStatus, newStatus === "rejected" ? rejectionReason : null);
 
       // Check the structure of the response to find the correct property
       console.log("Status update response:", response);
@@ -270,13 +284,20 @@ export function JobSeekerProfile() {
             response.profile.status ||
             response.profile.verificationStatus ||
             newStatus,
+          rejectionReason: newStatus === "rejected" ? rejectionReason : null,
         });
       } else {
         // If direct response or unknown structure, just update the local status
         setProfile({
           ...profile,
           verificationStatus: newStatus,
+          rejectionReason: newStatus === "rejected" ? rejectionReason : null,
         });
+      }
+
+      // Clear rejection reason after successful update
+      if (newStatus === "rejected") {
+        setRejectionReason("");
       }
 
       setUpdateStatus(`Profile status updated to ${newStatus}`);
@@ -541,14 +562,37 @@ export function JobSeekerProfile() {
   };
 
   const openStatusModal = () => {
+    // Set the current status from profile
     setSelectedStatus(
       (profile?.verificationStatus as "pending" | "verified" | "rejected") ||
         "pending"
     );
+    
+    // If profile is rejected, prefill the rejection reason from profile data
+    if (profile?.verificationStatus === "rejected" && profile?.rejectionReason) {
+      setRejectionReason(profile.rejectionReason);
+    } else {
+      // Otherwise clear the rejection reason
+      setRejectionReason("");
+    }
+    
+    // Clear any error message
+    setRejectionReasonError(null);
+    
     setIsStatusModalOpen(true);
   };
 
   const handleUpdateStatusFromModal = () => {
+    // If status is rejected and no reason is provided, show error but don't close the modal
+    if (selectedStatus === "rejected" && !rejectionReason.trim()) {
+      setRejectionReasonError("Please provide a reason for rejection");
+      return;
+    }
+    
+    // Clear any error before proceeding
+    setRejectionReasonError(null);
+    
+    // Only proceed with status update and close modal if validation passes
     handleStatusUpdate(selectedStatus);
     setIsStatusModalOpen(false);
   };
@@ -574,15 +618,180 @@ export function JobSeekerProfile() {
     return "failure";
   };
 
-  if (loading) {
+  const renderRejectionReason = () => {
+    if (profile?.verificationStatus !== "rejected" || !profile?.rejectionReason) {
+      return null;
+    }
+    
+    const showToggle = profile.rejectionReason.length > 200;
+    
     return (
-      <div className="profile-container">
-        <div className="loading-container">
-          <span className="loading-spinner"></span>
-          <p>Loading profile...</p>
+      <div className="profile-rejection-reason">
+        <div className="rejection-reason-header">
+          <AlertCircle size={16} className="rejection-reason-icon" />
+          <span className="rejection-reason-title">Rejection Reason</span>
         </div>
+        <div className={`rejection-reason-content ${showFullRejectionReason ? 'expanded' : ''}`}>
+          {profile.rejectionReason}
+        </div>
+        {showToggle && (
+          <button 
+            className="toggle-rejection-btn"
+            onClick={() => setShowFullRejectionReason(!showFullRejectionReason)}
+          >
+            {showFullRejectionReason ? 'Show less' : 'Show full reason'}
+          </button>
+        )}
       </div>
     );
+  };
+
+  // Skeleton loader component
+  const renderSkeletonLoader = () => {
+    return (
+      <div className="profile-container">
+        <AppHeader
+          title="Job Seeker Profile"
+          actions={
+            <button className="button" disabled>
+              <ArrowLeft size={16} className="icon" />
+              <span>Back to Job Seeker Management</span>
+            </button>
+          }
+        />
+
+        <main className="profile-main">
+          {/* Profile Overview Skeleton */}
+          <div className="profile-overview section-card">
+            <div className="profile-banner">
+              <div className="profile-banner-status-container">
+                <div className="profile-status skeleton-status">
+                  <div className="skeleton-icon"></div>
+                  <div className="skeleton-text" style={{ width: '120px', height: '16px' }}></div>
+                </div>
+              </div>
+              <div className="profile-actions-container">
+                <div className="profile-actions" style={{padding: 0}}>
+                  <div className="skeleton-text" style={{ width: '100px', height: '32px', borderRadius: '2rem' }}></div>
+                </div>
+                <div className="profile-actions">
+                  <div className="skeleton-icon" style={{width: '32px', height: '32px', borderRadius: '2rem'}}></div>
+                  <div className="skeleton-icon" style={{width: '32px', height: '32px', borderRadius: '2rem'}}></div>
+                </div>
+              </div>
+            </div>
+
+            <div className="profile-details">
+              <div className="profile-avatar-container">
+                <div className="profile-avatar skeleton-avatar">
+                  <div className="skeleton-icon" style={{ width: '40px', height: '40px' }}></div>
+                </div>
+                <div className="skeleton-text" style={{ width: '200px', height: '32px', margin: '8px 0' }}></div>
+              </div>
+              <div className="profile-info-header">
+                <div className="profile-info-details">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="detail-item">
+                      <div className="skeleton-text" style={{ width: '80px', height: '14px' }}></div>
+                      <div className="skeleton-text" style={{ width: '120px', height: '16px', marginLeft: '10px' }}></div>
+                    </div>
+                  ))}
+                </div>
+                <div className="profile-info-details">
+                  {[1, 2].map((i) => (
+                    <div key={i} className="detail-item">
+                      <div className="skeleton-text" style={{ width: '80px', height: '14px' }}></div>
+                      <div className="skeleton-text" style={{ width: '120px', height: '16px', marginLeft: '10px' }}></div>
+                    </div>
+                  ))}
+                </div>
+                <div className="profile-info-details">
+                  {[1, 2].map((i) => (
+                    <div key={i} className="detail-item">
+                      <div className="skeleton-text" style={{ width: '80px', height: '14px' }}></div>
+                      <div className="skeleton-text" style={{ width: '120px', height: '16px', marginLeft: '10px' }}></div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Documents Section Skeleton */}
+          <div className="documents-section section-card">
+            <div className="skeleton-text" style={{ width: '180px', height: '24px', marginBottom: '20px' }}></div>
+            <div className="document-list">
+              {[1].map((i) => (
+                <div key={i} className="document-item skeleton-document">
+                  <div className="document-content">
+                    <div className="skeleton-icon" style={{ width: '18px', height: '18px' }}></div>
+                    <div className="document-info">
+                      <div className="skeleton-text" style={{ width: '150px', height: '16px', marginBottom: '8px' }}></div>
+                      <div className="skeleton-text" style={{ width: '100px', height: '14px', marginBottom: '8px' }}></div>
+                      <div className="document-actions">
+                        <div className="skeleton-text" style={{ width: '80px', height: '32px', borderRadius: '6px' }}></div>
+                        <div className="skeleton-text" style={{ width: '90px', height: '32px', borderRadius: '6px' }}></div>
+                      </div>
+                    </div>
+                    <div className="document-validation">
+                      <div className="validation-header">
+                        <div className="skeleton-icon" style={{ width: '16px', height: '16px' }}></div>
+                        <div className="skeleton-text" style={{ width: '140px', height: '16px' }}></div>
+                      </div>
+                      <div className="authentication-score">
+                        <div className="score-gauge skeleton-score-gauge">
+                          <div className="skeleton-progress-fill" style={{ width: '60%' }}></div>
+                        </div>
+                        <div className="skeleton-text" style={{ width: '120px', height: '14px' }}></div>
+                      </div>
+                      <div className="validation-status-list">
+                        {[1, 2, 3, 4].map((j) => (
+                          <div key={j} className="validation-status-item">
+                            <div className="skeleton-icon" style={{ width: '16px', height: '16px' }}></div>
+                            <div className="skeleton-text" style={{ width: '120px', height: '14px' }}></div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="document-preview">
+                    <div className="skeleton-text" style={{ width: '100%', height: '120px', borderRadius: '8px' }}></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Profile Content Grid Skeleton */}
+          <div className="profile-content grid-container">
+            {[
+              'Personal Information',
+              'Identification',
+              'Address',
+              'Qualifications',
+              'Compensation',
+              'Meta Information'
+            ].map((index) => (
+              <div key={index} className="section-card">
+                <div className="skeleton-text" style={{ width: '180px', height: '20px', marginBottom: '20px' }}></div>
+                <div className="detail-group">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <div key={i} className="detail-item">
+                      <div className="skeleton-text" style={{ width: '100px', height: '14px' }}></div>
+                      <div className="skeleton-text" style={{ width: '140px', height: '16px', marginLeft: '10px' }}></div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </main>
+      </div>
+    );
+  };
+
+  if (loading) {
+    return renderSkeletonLoader();
   }
 
   if (error || !profile) {
@@ -651,7 +860,7 @@ export function JobSeekerProfile() {
         title="Job Seeker Profile"
         actions={
           <button className="button" onClick={() => navigate("/jobseeker-management")}>
-            <ArrowLeft size={16} />
+            <ArrowLeft size={16} className="icon" />
             <span>{isJobSeeker ? "Back to Dashboard" : "Back to Job Seeker Management"}</span>
           </button>
         }
@@ -700,7 +909,7 @@ export function JobSeekerProfile() {
                     aria-label="Update status"
                   >
                     <span className="status-text">Update Status</span>{" "}
-                    <RefreshCw size={16} />
+                    <RefreshCw size={16} className="icon"/>
                   </button>
                 </div>
               )}
@@ -711,7 +920,7 @@ export function JobSeekerProfile() {
                   title="Edit this profile"
                   aria-label="Edit profile"
                 >
-                  <Pencil size={20} />
+                  <Pencil size={20} className="icon"/>
                 </button>
                 {(isAdmin || isRecruiter) && (
                   <button
@@ -720,7 +929,7 @@ export function JobSeekerProfile() {
                     title="Delete this profile"
                     aria-label="Delete profile"
                   >
-                    <Trash2 size={20} />
+                    <Trash2 size={20} className="icon"/>
                   </button>
                 )}
               </div>
@@ -728,6 +937,7 @@ export function JobSeekerProfile() {
           </div>
 
           <div className="profile-details">
+            {renderRejectionReason()}
             <div className="profile-avatar-container">
               <div className="profile-avatar">
                 <User size={40} />
@@ -736,6 +946,7 @@ export function JobSeekerProfile() {
             </div>
             <div className="profile-info-header">
               <div className="profile-info-details">
+                {renderDetailItem("Employee ID", profile.employeeId)}
                 {renderDetailItem("Email", profile.email)}
                 {renderDetailItem("Phone", profile.mobile)}
               </div>
@@ -808,7 +1019,7 @@ export function JobSeekerProfile() {
                               }
                               className="button primary"
                             >
-                              <Eye size={16} /> Preview
+                              <Eye size={16} className="icon"/> Preview
                             </button>
                             <button
                               onClick={() =>
@@ -828,7 +1039,7 @@ export function JobSeekerProfile() {
                                 </>
                               ) : (
                                 <>
-                                  <Download size={16} /> Download
+                                  <Download size={16} className="icon"/> Download
                                 </>
                               )}
                             </button>
@@ -1077,34 +1288,37 @@ export function JobSeekerProfile() {
             </div>
           </div>
 
-          <div className="compensation-section section-card">
-            <h2 className="section-title">Compensation</h2>
-            <div className="detail-group">
-              {renderDetailItem("Payrate Type", profile.payrateType)}
-              {renderDetailItem("Bill Rate", profile.billRate)}
-              {renderDetailItem("Pay Rate", profile.payRate)}
-              {renderDetailItem("Payment Method", profile.paymentMethod)}
-              {renderDetailItem("HST/GST", profile.hstGst)}
-              {renderDetailItem("Cash Deduction", profile.cashDeduction)}
-              {renderDetailItem("Overtime Enabled", profile.overtimeEnabled)}
-              {profile.overtimeEnabled && (
-                <>
-                  {renderDetailItem(
-                    "Overtime Hours After",
-                    profile.overtimeHours
-                  )}
-                  {renderDetailItem(
-                    "Overtime Bill Rate",
-                    profile.overtimeBillRate
-                  )}
-                  {renderDetailItem(
-                    "Overtime Pay Rate",
-                    profile.overtimePayRate
-                  )}
-                </>
-              )}
+          {/* Only show compensation section for admins and recruiters */}
+          {!isJobSeeker && (
+            <div className="compensation-section section-card">
+              <h2 className="section-title">Compensation</h2>
+              <div className="detail-group">
+                {renderDetailItem("Payrate Type", profile.payrateType)}
+                {renderDetailItem("Bill Rate", profile.billRate)}
+                {renderDetailItem("Pay Rate", profile.payRate)}
+                {renderDetailItem("Payment Method", profile.paymentMethod)}
+                {renderDetailItem("HST/GST", profile.hstGst)}
+                {renderDetailItem("Cash Deduction", profile.cashDeduction)}
+                {renderDetailItem("Overtime Enabled", profile.overtimeEnabled)}
+                {profile.overtimeEnabled && (
+                  <>
+                    {renderDetailItem(
+                      "Overtime Hours After",
+                      profile.overtimeHours
+                    )}
+                    {renderDetailItem(
+                      "Overtime Bill Rate",
+                      profile.overtimeBillRate
+                    )}
+                    {renderDetailItem(
+                      "Overtime Pay Rate",
+                      profile.overtimePayRate
+                    )}
+                  </>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="meta-section section-card">
             <h2 className="section-title">Meta Information</h2>
@@ -1192,7 +1406,7 @@ export function JobSeekerProfile() {
               className="close-button"
               onClick={() => setIsStatusModalOpen(false)}
             >
-              <XCircle size={20} />
+              <XCircle size={20} className="icon"/>
             </button>
           </div>
           <div className="modal-body">
@@ -1260,6 +1474,30 @@ export function JobSeekerProfile() {
                 </label>
               </div>
             </div>
+
+            {/* Rejection reason textarea - only visible when rejected status is selected */}
+            {selectedStatus === "rejected" && (
+              <div className="rejection-reason-container">
+                <label htmlFor="rejection-reason" className="form-label">Rejection Reason <span className="required">*</span></label>
+                <textarea
+                  id="rejection-reason"
+                  className={`form-textarea ${rejectionReasonError ? 'error-input' : ''}`}
+                  placeholder="Please provide a reason for rejecting this profile"
+                  value={rejectionReason}
+                  onChange={(e) => {
+                    setRejectionReason(e.target.value);
+                    if (e.target.value.trim()) {
+                      setRejectionReasonError(null);
+                    }
+                  }}
+                  required
+                />
+                {rejectionReasonError && (
+                  <p className="error-message rejection-error">{rejectionReasonError}</p>
+                )}
+                <p className="field-note">This reason will be stored with the profile and may be shown to the user</p>
+              </div>
+            )}
           </div>
           <div className="modal-footer">
             <button

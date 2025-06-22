@@ -1,0 +1,608 @@
+# CLIENT DOCUMENTATION - GODSPEED OPS PORTAL
+
+## Project Overview
+
+### Technology Stack
+- **Framework**: React 18.2.0 with TypeScript 5.2.2
+- **Build Tool**: Vite 5.0.8
+- **Routing**: React Router DOM 6.22.3
+- **Backend Integration**: Supabase 2.39.2
+- **UI Components**: Custom components with Lucide React icons
+- **Styling**: CSS modules with autoprefixer
+- **Form Handling**: React Hook Form 7.51.3 with Zod 3.22.4 validation
+- **State Management**: React Context API
+- **Theme Management**: next-themes 0.2.1
+- **Notifications**: React Hot Toast 2.5.2
+- **PDF Handling**: React PDF 8.0.2
+- **Animations**: Lottie React 2.4.1
+
+### Project Structure
+The client application is a recruitment/operations portal with role-based access control supporting different user types (JobSeekers, Recruiters). It features comprehensive user management, profile creation, position management, and client management capabilities.
+
+### Key Features
+- Multi-role authentication system (JobSeeker, Recruiter, Admin)
+- Profile management with verification workflow
+- Client and position management
+- PDF document handling and viewing
+- Real-time notifications
+- Dark/light theme support
+- Two-factor authentication
+- Training modules system
+- Position matching functionality
+
+---
+
+## Folder Structure
+
+```
+client/src/
+├── App.tsx                 # Main application component with routing
+├── main.tsx               # Application entry point
+├── vite-env.d.ts         # Vite type definitions
+├── components/            # Reusable UI components
+├── pages/                 # Page components and routes
+├── lib/                  # Core library functions (auth, supabase)
+├── services/             # API service layer
+├── contexts/             # React context providers
+├── types/                # TypeScript type definitions
+├── utils/                # Utility functions
+├── styles/               # CSS stylesheets
+└── assets/               # Static assets
+```
+
+---
+
+## Main Application Architecture
+
+### Entry Point (main.tsx)
+Simple entry point that renders the App component and imports the main CSS styles.
+
+### App Component (App.tsx)
+- **Purpose**: Root application component that sets up routing, themes, and authentication context
+- **Key Features**:
+  - Wraps app in ThemeProvider for dark/light mode support
+  - Provides AuthProvider for authentication state management
+  - Implements React Router with nested route protection
+  - Includes GeometricShapes background component
+  - Defines comprehensive routing structure with role-based access
+
+- **Route Structure**:
+  - **Public Routes**: signup, login, verification-pending, forgot-password
+  - **Universal Routes**: reset-password, two-factor-auth
+  - **Protected Routes**: dashboard, profile, training-modules
+  - **Recruiter-Only Routes**: client management, position management, jobseeker management
+  - **JobSeeker-Only Routes**: profile verification pages
+
+---
+
+## Components Directory
+
+### Theme System
+
+#### theme-provider.tsx
+- **Purpose**: Provides theme context and management throughout the application
+- **Key Features**:
+  - Supports "dark", "light", and "system" themes
+  - Persists theme preference to localStorage with configurable storage key
+  - Automatically applies theme classes to document root
+  - Respects system color scheme preference when theme is set to "system"
+- **Context Export**: useTheme hook for consuming theme state
+- **Storage**: Uses localStorage with key "godspeed-theme" (configurable)
+
+#### theme-toggle.tsx
+- **Purpose**: UI component for switching between light and dark themes
+- **Dependencies**: Lucide React (Moon, Sun icons), theme-provider
+- **Key Features**:
+  - Toggles between light and dark themes (ignores system theme)
+  - Provides smooth transition animation via CSS classes
+  - Uses proper ARIA labeling for accessibility
+  - Shows moon icon in light mode, sun icon in dark mode
+
+### Authentication & Route Protection
+
+#### ProtectedRoute.tsx
+- **Purpose**: Comprehensive route protection system with role-based access control
+- **Key Components**:
+  - **ProtectedRoute**: Base authentication check with JobSeeker profile verification logic
+  - **RoleRoute**: Generic role-based route protection
+  - **AdminRoute**: Admin-only route protection
+  - **RecruiterRoute**: Recruiter and Admin access
+  - **JobSeekerRoute**: JobSeeker-only access
+  - **PublicRoute**: Prevents authenticated users from accessing public routes
+
+- **JobSeeker Profile Logic**:
+  - Redirects to profile creation if no profile exists
+  - Handles profile verification status (pending, verified, rejected)
+  - Manages complex routing flow for profile verification workflow
+  - Prevents bypassing verification requirements
+
+- **Loading States**: Shows spinner during authentication checks
+- **Dependencies**: React Router, AuthContext, UserRole types
+
+### Navigation & Layout
+
+#### AppHeader.tsx
+- **Purpose**: Main application header with navigation and status messaging
+- **Props Interface**:
+  ```typescript
+  interface AppHeaderProps {
+    title: string;
+    actions?: ReactNode;
+    statusMessage?: string | null;
+    statusType?: 'success' | 'error' | 'pending';
+    hideHamburgerMenu?: boolean;
+  }
+  ```
+- **Key Features**:
+  - Displays Godspeed logo and navigation
+  - Supports dynamic action buttons in header
+  - Status message system with success/error/pending states
+  - Refresh button for error states
+  - Integrates with HamburgerMenu component
+  - Auto-scrolls to top on page load
+- **State Management**: Internal menu state management with debugging logs
+- **Dependencies**: React Router, HamburgerMenu, Lucide icons
+
+#### HamburgerMenu.tsx
+- **Purpose**: Mobile/responsive navigation menu (15KB, 505 lines - complex component)
+- **Key Features**: Advanced menu functionality (detailed analysis needed)
+
+### UI Components
+
+#### GeometricShapes.tsx
+- **Purpose**: Background decorative element for visual enhancement
+- **Implementation**: Adds geometric shapes as background elements
+
+#### ConfirmationModal.tsx
+- **Purpose**: Reusable confirmation dialog component
+- **Size**: 1.4KB, 56 lines - lightweight modal implementation
+
+### PDF Handling Components
+
+#### PDFViewerModal.tsx
+- **Purpose**: Modal component for viewing PDF documents
+- **Size**: 5.6KB, 179 lines - comprehensive PDF viewing functionality
+- **Dependencies**: React PDF library
+
+#### PDFThumbnail.tsx  
+- **Purpose**: Thumbnail preview component for PDF documents
+- **Size**: 2.4KB, 84 lines - PDF preview generation
+- **Dependencies**: React PDF library
+
+### Profile Management
+
+#### ProfileRedirect.tsx
+- **Purpose**: Handles profile-related redirects and routing logic
+- **Size**: 1.8KB, 62 lines
+- **Integration**: Works with authentication system for profile flow management
+
+---
+
+## Pages Directory
+
+The pages directory contains the main application views organized by functionality:
+
+### Authentication Pages
+
+#### Login.tsx
+- **Purpose**: User authentication with comprehensive login flow
+- **Size**: 6.9KB, 219 lines
+- **Key Features**:
+  - Form validation using React Hook Form + Zod schema
+  - Email verification check and redirect to verification pending
+  - Two-factor authentication (2FA) flow for users with phone numbers
+  - Password visibility toggle with Lucide icons
+  - Remember me functionality
+  - Error handling with user-friendly messages
+  - Responsive design with branding column
+
+- **Form Schema**:
+  ```typescript
+  const loginSchema = z.object({
+    email: z.string().email(),
+    password: z.string().min(1),
+    rememberMe: z.boolean().optional()
+  });
+  ```
+
+- **Authentication Flow**:
+  1. Validates credentials using `validateCredentials()` from auth lib
+  2. Checks email verification status
+  3. Handles 2FA requirement if phone number exists
+  4. Sets session and redirects to dashboard for standard users
+
+- **Dependencies**: React Router, React Hook Form, Zod, Lucide React, auth lib
+
+#### Signup.tsx
+- **Purpose**: User registration with role selection and validation
+- **Size**: 18KB, 561 lines - complex registration flow
+- **Key Features**: Multi-step registration with validation (detailed analysis needed)
+
+#### Dashboard.tsx
+- **Purpose**: Main dashboard with role-based routing
+- **Size**: 1.8KB, 53 lines
+- **Key Features**:
+  - Role-based dashboard rendering (JobSeeker vs Recruiter/Admin)
+  - JobSeeker profile validation and redirect logic
+  - Automatic navigation to profile creation or verification pages
+  - Loading state management
+
+- **Dashboard Types**:
+  - **JobSeekerDashboard**: For verified job seekers
+  - **RecruiterDashboard**: For recruiters and admins
+
+#### Other Authentication Pages
+
+- **VerificationPending.tsx**: Email verification waiting page
+- **ForgotPassword.tsx**: Password reset request (4.9KB, 167 lines)
+- **ResetPassword.tsx**: Password reset form (12KB, 365 lines)
+- **TwoFactorAuth.tsx**: 2FA verification (6.4KB, 192 lines)
+- **ProfileVerificationPending.tsx**: JobSeeker profile verification status
+- **ProfileVerificationRejected.tsx**: Rejection handling with feedback
+
+---
+
+## Authentication System & State Management
+
+### AuthContext.tsx
+- **Purpose**: Central authentication state management using React Context
+- **Size**: 6.1KB, 225 lines
+- **Key Features**:
+  - Comprehensive user state management with role detection
+  - Profile verification status tracking for JobSeekers
+  - Token validation and session management
+  - Automatic logout on invalid sessions
+  - Concurrent validation prevention with refs
+
+- **Context Interface**:
+  ```typescript
+  type AuthContextType = {
+    user: User | null;
+    isLoading: boolean;
+    isAuthenticated: boolean;
+    userType: UserRole;
+    isAdmin: boolean;
+    isRecruiter: boolean;
+    isJobSeeker: boolean;
+    profileVerificationStatus: VerificationStatus;
+    hasProfile: boolean;
+    refetchProfileStatus: () => Promise<void>;
+  }
+  ```
+
+- **Profile Status Management**:
+  - Tracks JobSeeker profile creation and verification
+  - Handles verification statuses: "pending", "verified", "rejected", "not_created"
+  - Provides `refetchProfileStatus()` for manual status updates
+
+- **Session Management**:
+  - Token validation on startup and auth state changes
+  - Automatic session cleanup on token expiry
+  - Integration with Supabase auth state changes
+
+---
+
+## Core Libraries (lib/ directory)
+
+### auth.ts
+- **Purpose**: Backward compatibility layer for authentication types
+- **Size**: 675B, 22 lines
+- **Key Features**:
+  - Re-exports UserRole type from lib/auth
+  - Re-exports authentication utility functions
+  - Defines AppUser interface extending Supabase User
+
+- **AppUser Interface**:
+  ```typescript
+  export interface AppUser extends User {
+    user_metadata: {
+      name: string;
+      user_type: UserRole;
+      hasProfile?: boolean;
+      [key: string]: unknown;
+    };
+  }
+  ```
+
+### jobseeker.ts
+- **Purpose**: Comprehensive type definitions for JobSeeker profile data
+- **Size**: 2.8KB, 95 lines
+- **Key Interfaces**:
+
+#### DocumentRecord
+```typescript
+export interface DocumentRecord {
+  documentType: string;
+  documentTitle?: string;
+  documentPath?: string;
+  documentFileName?: string;
+  documentNotes?: string;
+  id?: string;
+  aiValidation?: AIValidationResponse | null;
+}
+```
+
+#### JobSeekerProfile (Basic)
+- Core profile information with status tracking
+- Includes basic contact and experience data
+
+#### JobSeekerDetailedProfile (Extended)
+- Comprehensive profile extending basic profile
+- Includes personal details (DOB, phone, address)
+- Government identification (SIN, license, passport)
+- Business information (business number, corporation name)
+- Work preferences and availability settings
+- Payment and billing rate configuration
+- Document management with AI validation
+- Creator tracking and verification status
+
+---
+
+## API Integration (services/ directory)
+
+### api.ts
+- **Purpose**: Comprehensive API service layer for all backend communication
+- **Size**: 53KB, 1,970 lines - extensive API integration
+- **Key Features**: (Detailed analysis needed for such a large file)
+  - Authentication API calls
+  - Profile management endpoints
+  - Client management operations
+  - Position management operations
+  - PDF handling and file uploads
+  - Error handling and response processing
+
+---
+
+## Management Pages
+
+### Client Management
+- **ClientManagement.tsx**: Main client listing and management (23KB, 641 lines)
+- **ClientCreate.tsx**: New client creation form
+- **ClientEdit.tsx**: Client editing interface
+- **ClientView.tsx**: Client details view
+- **ClientDrafts.tsx**: Draft client management
+- **ClientDraftEdit.tsx**: Draft editing interface
+
+### Position Management
+- **PositionManagement.tsx**: Position listing and management (27KB, 707 lines)
+- **PositionCreate.tsx**: New position creation
+- **PositionEdit.tsx**: Position editing
+- **PositionView.tsx**: Position details view
+- **PositionDrafts.tsx**: Draft position management
+- **PositionDraftEdit.tsx**: Draft editing
+
+### Job Seeker Management
+- **JobSeekerManagement.tsx**: Job seeker administration (28KB, 735 lines)
+- **JobSeekerProfile.tsx**: Individual profile view (50KB, 1,381 lines - very comprehensive)
+
+### Advanced Features
+- **PositionMatching.tsx**: Position-candidate matching system (40KB, 1,066 lines)
+- **TrainingModules/**: Training system (directory with multiple components)
+- **UserProfile.tsx**: User profile management (7.3KB, 235 lines)
+
+---
+
+## Profile Management System
+
+### JobSeeker Profile Pages
+Located in `/pages/JobseekerProfile/` directory:
+- **ProfileCreate.tsx**: Multi-step profile creation wizard
+- **ProfileEdit.tsx**: Profile editing interface  
+- **ProfileSuccess.tsx**: Success confirmation page
+- **ProfileAccountCreated.tsx**: Account creation confirmation
+- **JobseekerDrafts.tsx**: Draft profile management
+- **JobseekerProfileDraftEdit.tsx**: Draft editing interface
+
+### Profile Workflow
+1. **Registration**: User creates account with basic information
+2. **Profile Creation**: Multi-step form for detailed profile information
+3. **Verification**: Profile submitted for admin review
+4. **Status Tracking**: Real-time verification status updates
+5. **Profile Management**: Edit and update verified profiles
+
+---
+
+## Type System (types/ directory)
+
+### validation.ts
+- **Purpose**: Comprehensive form validation utilities for Canadian context
+- **Size**: 5.9KB, 201 lines
+- **Key Functions**:
+
+#### Canadian SIN Validation
+- `validateSIN(sin)`: Validates Canadian Social Insurance Numbers using modified Luhn algorithm
+- Checks format, length, starting digits, and checksum validation
+- Returns detailed error messages for specific validation failures
+
+#### Date of Birth Validation
+- `validateDOB(dob)`: Ensures user is at least 18 years old
+- Prevents future dates and handles timezone issues
+- `getMaxDobDate()`: Returns maximum valid DOB (18 years ago)
+
+#### Phone Number Validation
+- `isValidCanadianPhone(phone)`: Validates Canadian phone number format
+- `isValidIndianPhone(phone)`: Validates Indian phone number format  
+- `isValidPhoneNumber(phone, country)`: Multi-country phone validation
+
+#### Development Utilities
+- `logValidation(message)`: Development-only logging for validation debugging
+
+---
+
+## Assets (assets/ directory)
+
+### Organization
+- **logos/**: Company branding assets (Godspeed logo variants)
+- **animations/**: Lottie animation files for UI enhancement
+- **react.svg**: Default React logo asset
+
+### Usage
+- Logo assets are imported and used in headers and branding
+- Animations provide visual feedback and loading states
+- Assets are organized by type for easy maintenance
+
+---
+
+## Styles (styles/ directory)
+
+### CSS Architecture
+- **Modular CSS**: Organized by components and pages
+- **CSS Variables**: Centralized design tokens in variables.css
+- **Utility Classes**: Common utilities in utils.css
+- **Component Styles**: Specific component styling in components/
+- **Page Styles**: Page-specific styling in pages/
+
+### Key Files
+- **main.css**: Global styles and CSS imports
+- **variables.css**: Design system variables (5.5KB, 171 lines)
+  - Color palette for light/dark themes
+  - Typography scale and font definitions
+  - Spacing and layout variables
+  - Component-specific design tokens
+
+- **utils.css**: Utility classes for common patterns
+- **components/**: Component-specific stylesheets
+- **pages/**: Page-specific stylesheets
+
+### Theme System
+- CSS custom properties for theme switching
+- Light and dark mode color schemes
+- Consistent spacing and typography scales
+- Responsive design patterns
+
+---
+
+## Configuration Files
+
+### Build Configuration
+- **vite.config.ts**: Vite build tool configuration
+- **tsconfig.json**: TypeScript compiler configuration
+- **tsconfig.node.json**: Node.js specific TypeScript config
+- **.eslintrc.cjs**: ESLint linting rules and configuration
+
+### Environment Configuration
+- **.env**: Environment variables for Supabase integration
+- **.env.example**: Template for required environment variables
+- **Required Variables**:
+  - `VITE_SUPABASE_URL`: Supabase project URL
+  - `VITE_SUPABASE_ANON_KEY`: Supabase anonymous key
+
+### Deployment Configuration
+- **vercel.json**: Vercel deployment configuration
+- **Procfile**: Heroku deployment configuration
+- **package.json**: Dependencies and build scripts
+
+---
+
+## Key Patterns & Conventions
+
+### Component Structure
+1. **Imports**: External libraries → internal components → styles
+2. **Type Definitions**: Interfaces and types near component declaration
+3. **Component Logic**: Hooks, state management, and effects
+4. **Event Handlers**: Grouped together with descriptive names
+5. **Render Logic**: Clean JSX with conditional rendering
+
+### State Management
+- **Context API**: Authentication and global state
+- **Local State**: Component-specific useState and useEffect
+- **Form State**: React Hook Form for complex forms
+- **Loading States**: Consistent loading indicators across components
+
+### Error Handling
+- **User-Friendly Messages**: Clear error communication
+- **Validation Feedback**: Real-time form validation
+- **Fallback UI**: Graceful degradation for errors
+- **Logging**: Development logging for debugging
+
+### API Integration
+- **Service Layer**: Centralized API calls in services/api.ts
+- **Error Handling**: Consistent error response handling
+- **Token Management**: Automatic token validation and refresh
+- **Type Safety**: Full TypeScript coverage for API responses
+
+---
+
+## Security Considerations
+
+### Authentication Security
+- **JWT Token Management**: Automatic token validation and refresh
+- **Session Security**: Secure session handling with expiration
+- **Role-Based Access**: Multiple layers of route protection
+- **2FA Integration**: Two-factor authentication for enhanced security
+
+### Data Protection
+- **Sensitive Data**: Careful handling of SIN, passport numbers
+- **Validation**: Server-side validation with client-side feedback
+- **Document Security**: Secure file upload and storage
+- **AI Validation**: Document authenticity checking
+
+### Privacy Features
+- **Profile Verification**: Admin approval for sensitive data
+- **Access Control**: Role-based data access restrictions
+- **Audit Trail**: User action tracking and logging
+
+---
+
+## Performance Optimizations
+
+### Code Splitting
+- **Route-Based**: Automatic code splitting by routes
+- **Component Lazy Loading**: Dynamic imports for large components
+- **Asset Optimization**: Optimized images and animations
+
+### State Optimization
+- **Context Splitting**: Separate contexts for different concerns
+- **Memoization**: React.memo and useMemo for expensive computations
+- **Efficient Re-renders**: Optimized dependency arrays
+
+### Bundle Optimization
+- **Tree Shaking**: Dead code elimination
+- **Vendor Splitting**: Separate vendor and application bundles
+- **Compression**: Gzip compression for production builds
+
+---
+
+## Future Considerations
+
+### Scalability
+- **Component Library**: Potential extraction of reusable components
+- **State Management**: Consider Redux Toolkit for complex state
+- **Micro-frontends**: Potential module federation for large teams
+
+### Feature Enhancements
+- **Progressive Web App**: PWA features for mobile experience
+- **Offline Support**: Service worker for offline functionality
+- **Real-time Updates**: WebSocket integration for live updates
+
+### Maintenance
+- **Testing Strategy**: Unit, integration, and E2E testing
+- **Documentation**: Component documentation with Storybook
+- **Monitoring**: Error tracking and performance monitoring
+
+---
+
+## Development Workflow
+
+### Getting Started
+1. Clone repository and navigate to client directory
+2. Install dependencies: `pnpm install`
+3. Set up environment variables in `.env` file
+4. Start development server: `pnpm dev`
+5. Build for production: `pnpm build`
+
+### Code Quality
+- **Linting**: ESLint with TypeScript rules
+- **Type Checking**: Full TypeScript coverage
+- **Code Formatting**: Consistent code style
+- **Git Hooks**: Pre-commit validation
+
+### Deployment Process
+- **Development**: Local development with hot reload
+- **Staging**: Vercel preview deployments
+- **Production**: Automated deployment pipeline
+- **Environment Management**: Separate configs per environment
+
+---
+
+This documentation provides a comprehensive overview of the Godspeed Ops Portal client application, covering architecture, components, authentication, API integration, and development practices. The application demonstrates modern React development patterns with a focus on security, user experience, and maintainability.

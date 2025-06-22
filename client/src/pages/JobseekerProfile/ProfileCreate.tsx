@@ -15,17 +15,20 @@ import {
   saveDraft as saveDraftAPI,
   getDraft,
   checkEmailAvailability,
-  getJobseekerProfile,
   updateProfile,
+} from "../../services/api/profile";
+import {
+  getJobseekerProfile,
   updateJobseekerStatus,
   getJobseekerDraft,
   saveJobseekerDraft,
-} from "../../services/api";
+} from "../../services/api/jobseeker";
 import { useAuth } from "../../contexts/AuthContext";
 import "../../styles/components/form.css";
 import "../../styles/pages/JobseekerProfileStyles.css";
 import "../../styles/components/header.css";
 import { ArrowLeft, Check, Save } from "lucide-react";
+import { validateSIN, validateDOB, logValidation } from "../../utils/validation";
 
 // Define the form schema types for each step
 export const personalInfoSchema = z
@@ -304,7 +307,7 @@ export function ProfileCreate({
       lastName: "",
       dob: "",
       email: isJobSeeker && user?.email ? user.email : "",
-      mobile: "",
+      mobile: isJobSeeker && user?.user_metadata?.phoneNumber ? user.user_metadata.phoneNumber : "",
       licenseNumber: "",
       passportNumber: "",
       sinNumber: "",
@@ -498,11 +501,12 @@ export function ProfileCreate({
         try {
           setLoading("formLoading", true);
           const { draft, currentStep: savedStep } = await getDraft();
-
+          console.log(user, 'user');
           if (draft) {
             // If user is a jobseeker, preserve their email
-            if (isJobSeeker && user?.email) {
+            if (isJobSeeker && user?.email && user?.user_metadata?.phoneNumber) {
               draft.email = user.email;
+              draft.mobile = user.user_metadata.phoneNumber;
             }
 
             if (draft.id) {
@@ -657,13 +661,46 @@ export function ProfileCreate({
       currentFields as Array<keyof JobseekerProfileFormData>
     );
 
-    // Special case for step 1 (ID document requirement)
-    if (currentStep === 1 && isValid) {
-      if (!values.licenseNumber && !values.passportNumber) {
+    // Special case for step 1 (Personal info validation)
+    if (currentStep === 1) {
+      let personalInfoValid = isValid;
+
+      // Check for DOB validation - ensure it's not in the future and user is at least 18
+      if (values.dob) {
+        const dobResult = validateDOB(values.dob);
+        if (!dobResult.isValid && dobResult.errorMessage) {
+          methods.setError("dob", {
+            type: "custom",
+            message: dobResult.errorMessage,
+          });
+          personalInfoValid = false;
+          logValidation("validateCurrentStep: DOB validation failed: " + dobResult.errorMessage);
+        }
+      }
+
+      // Check for ID document requirement
+      if (personalInfoValid && !values.licenseNumber && !values.passportNumber) {
         methods.setError("licenseNumber", {
           type: "custom",
           message: "Either a license number or passport number is required",
         });
+        personalInfoValid = false;
+      }
+
+      // Check for valid SIN if provided
+      if (personalInfoValid && values.sinNumber) {
+        const sinResult = validateSIN(values.sinNumber);
+        if (!sinResult.isValid && sinResult.errorMessage) {
+          methods.setError("sinNumber", {
+            type: "custom",
+            message: sinResult.errorMessage,
+          });
+          personalInfoValid = false;
+          logValidation("validateCurrentStep: SIN validation failed: " + sinResult.errorMessage);
+        }
+      }
+
+      if (!personalInfoValid) {
         return false;
       }
     }
@@ -1349,6 +1386,7 @@ export function ProfileCreate({
               setIsEmailAvailable(isAvailable)
             }
             disableEmail={isJobSeeker || isEditMode || isDraftEditMode}
+            disableMobile={isJobSeeker || isEditMode || isDraftEditMode}
           />
         );
       case 2:

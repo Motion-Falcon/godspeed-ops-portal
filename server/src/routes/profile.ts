@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { authenticateToken } from '../middleware/auth.js';
 import { createClient } from '@supabase/supabase-js';
 import { apiRateLimiter, sensitiveRateLimiter, sanitizeInputs } from '../middleware/security.js';
+import { activityLogger } from '../middleware/activityLogger.js';
 import dotenv from 'dotenv';
 import { ProfileData, Document, DbJobseekerProfile } from '../types.js';
 
@@ -31,6 +32,26 @@ router.post('/submit',
   authenticateToken, 
   sanitizeInputs,
   // sensitiveRateLimiter,
+  activityLogger({
+    onSuccess: (req, res) => ({
+      actionType: 'create_jobseeker',
+      actionVerb: 'created',
+      primaryEntityType: 'jobseeker',
+      primaryEntityId: res.locals.newProfile?.id,
+      primaryEntityName: `${req.body.firstName} ${req.body.lastName}`,
+      displayMessage: `Created jobseeker profile for "${req.body.firstName} ${req.body.lastName}"`,
+      category: 'candidate_management',
+      priority: 'normal',
+      metadata: {
+        email: req.body.email,
+        mobile: req.body.mobile,
+        licenseNumber: req.body.licenseNumber,
+        passportNumber: req.body.passportNumber,
+        workPreference: req.body.workPreference,
+        accountCreated: res.locals.accountCreated || false
+      }
+    })
+  }),
   async (req: Request, res: Response) => {
     try {
       if (!req.user || !req.user.id) {
@@ -149,6 +170,7 @@ router.post('/submit',
                 name: `${profileData.firstName} ${profileData.lastName}`,
                 user_type: 'jobseeker',
                 hasProfile: true, // Set hasProfile flag for new users
+                phoneNumber: profileData.mobile,
               },
             },
           });
@@ -165,6 +187,9 @@ router.post('/submit',
             responseData.accountCreated = true;
             responseData.email = profileData.email;
             responseData.password = randomPassword;
+            
+            // Store account creation flag for activity logging
+            res.locals.accountCreated = true;
           } else {
             console.error('User creation returned no user');
             profileUserId = userId; // Fallback to creator's ID
@@ -220,6 +245,8 @@ router.post('/submit',
         overtime_hours: profileData.overtimeHours,
         overtime_bill_rate: profileData.overtimeBillRate,
         overtime_pay_rate: profileData.overtimePayRate,
+        // Employee identification - defaults to null
+        employee_id: profileData.employeeId || null,
         // Document info - now stored as a JSONB array
         documents: profileData.documents || [],
         // Set verification status to pending
@@ -242,11 +269,15 @@ router.post('/submit',
         return res.status(500).json({ error: 'Failed to create profile' });
       }
 
+      // Store the created profile for activity logging
+      res.locals.newProfile = data && data.length > 0 ? data[0] : null;
+
       // Update user metadata to set hasProfile=true while preserving existing metadata
       try {
         const mergedMetadata = {
           ...existingUserMetadata,
-          hasProfile: true 
+          hasProfile: true,
+          phoneNumber: profileData.mobile
         };
         
         // Update user metadata with merged data
@@ -280,11 +311,22 @@ router.post('/submit',
       setTimeout(async () => {
         try {
           console.log(`Sending profile data to AI verification service at: ${aiVerificationUrl}`);
+          
+          // Extract the authorization header from the original request
+          const authHeader = req.headers.authorization;
+          console.log('authHeader', authHeader);
+          const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+          };
+          
+          // Add the bearer token if available
+          if (authHeader) {
+            headers['Authorization'] = authHeader;
+          }
+          
           const verificationResponse = await fetch(aiVerificationUrl, {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
+            headers,
             body: JSON.stringify(finalProfileData),
           });
           
@@ -351,6 +393,9 @@ router.get('/',
         if (key === 'documents') {
           // Keep documents as is - they're already in camelCase in the JSONB
           profileData.documents = value as Document[];
+        } else if (key === 'rejection_reason') {
+          // Handle rejection reason specifically
+          profileData.rejectionReason = value;
         } else if (key.includes('_')) {
           // Convert snake_case to camelCase
           const camelKey = key.replace(/_([a-z])/g, (m, p1) => p1.toUpperCase()) as keyof ProfileData;
@@ -364,65 +409,6 @@ router.get('/',
       return res.status(200).json({ profile: profileData });
     } catch (error) {
       console.error('Profile fetch error:', error);
-      return res.status(500).json({ error: 'An unexpected error occurred' });
-    }
-  }
-);
-
-/**
- * Update verification status (Admin/Recruiter only)
- * PATCH /api/profile/:profileId/verify
- */
-router.patch('/:profileId/verify', 
-  authenticateToken,
-  sensitiveRateLimiter,
-  async (req: Request, res: Response) => {
-    try {
-      if (!req.user || !req.user.id) {
-        return res.status(401).json({ error: 'Authentication required' });
-      }
-
-      // Check if user has admin or recruiter role
-      if (!req.user.user_metadata?.user_type || 
-         (req.user.user_metadata.user_type !== 'admin' && 
-          req.user.user_metadata.user_type !== 'recruiter')) {
-        return res.status(403).json({ error: 'Insufficient permissions' });
-      }
-
-      const { profileId } = req.params;
-      const { status } = req.body;
-
-      if (!status || !['pending', 'verified', 'rejected'].includes(status)) {
-        return res.status(400).json({ 
-          error: 'Invalid status. Must be one of: pending, verified, rejected' 
-        });
-      }
-
-      // Update verification status
-      const { data, error } = await supabase
-        .from('jobseeker_profiles')
-        .update({ 
-          verification_status: status,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', profileId)
-        .select('id, user_id');
-
-      if (error) {
-        console.error('Error updating verification status:', error);
-        return res.status(500).json({ error: 'Failed to update verification status' });
-      }
-
-      if (!data || data.length === 0) {
-        return res.status(404).json({ error: 'Profile not found' });
-      }
-
-      return res.status(200).json({ 
-        success: true,
-        message: `Profile verification status updated to ${status}` 
-      });
-    } catch (error) {
-      console.error('Verification status update error:', error);
       return res.status(500).json({ error: 'An unexpected error occurred' });
     }
   }

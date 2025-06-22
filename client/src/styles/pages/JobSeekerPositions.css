@@ -1,0 +1,1303 @@
+/* JobSeeker Positions Page Styles */
+.jsp-positions-container {
+  min-height: 100vh;
+  color: var(--text);
+  margin-left: 68px;
+  margin-top: 80px;
+  padding: 6px 0;
+}
+
+.jsp-positions-title {
+  font-size: var(--font-size-header);
+  font-weight: var(--font-weight-bold);
+  color: var(--text);
+  margin-bottom: var(--spacing-3);
+  background: linear-gradient(120deg, var(--text), var(--text-muted));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.jsp-candidate-name {
+  font-size: var(--font-size-subheader);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text);
+  margin-bottom: var(--spacing-2);
+}
+
+.jsp-candidate-details {
+  display: flex;
+  gap: var(--spacing-4);
+  flex-wrap: wrap;
+  color: var(--text-muted);
+  font-size: var(--font-size-small);
+}
+
+.jsp-filter-panel {
+  background: var(--card);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-4);
+  margin-top: var(--spacing-2);
+  margin-bottom: var(--spacing-6);
+  box-shadow: var(--card-shadow);
+  border: 1px solid var(--border);
+}
+
+.jsp-filter-content {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--spacing-4);
+  margin-top: var(--spacing-4);
+}
+
+.jsp-filter-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr auto;
+  gap: var(--spacing-4);
+  align-items: end;
+}
+
+.jsp-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.jsp-filter-group label {
+  display: block;
+  margin-bottom: var(--spacing-1);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text);
+  font-size: var(--font-size-tiny);
+}
+
+.jsp-search-input {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.jsp-search-input svg {
+  position: absolute;
+  left: var(--spacing-2);
+  color: var(--text-muted);
+  pointer-events: none;
+  z-index: 1;
+  width: 14px;
+  height: 14px;
+}
+
+.jsp-search-input input {
+  width: 100%;
+  padding: var(--spacing-2) 24px;
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius);
+  background-color: var(--input-bg);
+  color: var(--text);
+  font-size: var(--font-size-small);
+  height: 32px;
+  transition: all var(--transition-fast);
+}
+
+.jsp-search-input input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.2);
+}
+
+.dark .jsp-search-input input:focus {
+  box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.2);
+}
+
+.jsp-clear-search {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  background: none;
+  height: 16px;
+  width: 16px;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  z-index: 100;
+}
+.jsp-clear-search svg {
+  left: unset;
+  position: unset;
+}
+
+.jsp-clear-search:hover {
+  color: var(--text);
+  background: var(--background);
+}
+
+.jsp-filter-group select {
+  cursor: pointer;
+  width: 100%;
+  padding: var(--spacing-2) var(--spacing-4) var(--spacing-2) var(--spacing-2);
+  border-radius: var(--border-radius);
+  border: 1px solid var(--border);
+  background-color: var(--input-bg);
+  color: var(--text);
+  font-size: var(--font-size-small);
+  appearance: none;
+  height: 32px;
+  transition: all var(--transition-fast);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.4rem center;
+}
+
+.jsp-filter-group select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.2);
+}
+
+.dark .jsp-filter-group select:focus {
+  box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.2);
+}
+
+.jsp-status-tabs {
+  display: flex;
+  gap: var(--spacing-2);
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: var(--spacing-4);
+}
+
+.jsp-status-tab {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: 9px 14px;
+  border: 2px solid var(--border);
+  border-radius: 9999px;
+  background: var(--card);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  font-weight: var(--font-weight-medium);
+  position: relative;
+  overflow: hidden;
+  font-size: var(--font-size-small);
+}
+
+.jsp-status-tab::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transition: left 0.5s ease;
+}
+
+.jsp-status-tab:hover::before {
+  left: 100%;
+}
+
+.jsp-status-tab:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--card-shadow);
+  border-color: var(--primary);
+}
+
+.jsp-status-tab.active {
+  background: var(--primary);
+  color: var(--card);
+  border-color: var(--primary);
+  box-shadow: var(--card-shadow);
+}
+
+.jsp-status-count {
+  background: var(--background);
+  color: var(--text);
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: 9999px;
+  font-size: var(--font-size-tiny);
+  font-weight: var(--font-weight-bold);
+  min-width: 18px;
+  text-align: center;
+}
+
+.jsp-status-tab.active .jsp-status-count {
+  background: var(--card);
+  color: var(--primary);
+}
+
+.jsp-positions-list {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 17px;
+}
+
+.jsp-position-card {
+  background: var(--card);
+  border-radius: var(--border-radius);
+  box-shadow: var(--card-shadow);
+  border: 1px solid var(--border);
+  padding: var(--spacing-4);
+  transition: all var(--transition-normal);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Status-based card styling */
+.jsp-position-card[data-status="current"] {
+  border-left: 3px solid #4CAF50; /* Green */
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.03) 0%, var(--card) 50%);
+  box-shadow: 0 3px 12px rgba(76, 175, 80, 0.1), var(--card-shadow);
+}
+
+.jsp-position-card[data-status="past"] {
+  border-left: 3px solid #757575; /* Gray */
+  background: linear-gradient(135deg, rgba(117, 117, 117, 0.03) 0%, var(--card) 50%);
+  box-shadow: 0 3px 12px rgba(117, 117, 117, 0.1), var(--card-shadow);
+  opacity: 0.85;
+}
+
+.jsp-position-card[data-status="future"] {
+  border-left: 3px solid #FF9800; /* Orange */
+  background: linear-gradient(135deg, rgba(255, 152, 0, 0.03) 0%, var(--card) 50%);
+  box-shadow: 0 3px 12px rgba(255, 152, 0, 0.1), var(--card-shadow);
+}
+
+/* Status-specific top accent bars */
+.jsp-position-card[data-status="current"]::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(90deg, #4CAF50, #66BB6A); /* Green gradient */
+  transform: scaleX(0);
+  transition: transform var(--transition-normal);
+}
+
+.jsp-position-card[data-status="past"]::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(90deg, #757575, #9E9E9E); /* Gray gradient */
+  transform: scaleX(0);
+  transition: transform var(--transition-normal);
+}
+
+.jsp-position-card[data-status="future"]::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(90deg, #FF9800, #FFB74D); /* Orange gradient */
+  transform: scaleX(0);
+  transition: transform var(--transition-normal);
+}
+
+/* Enhanced hover effects for different statuses */
+.jsp-position-card[data-status="current"]:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(76, 175, 80, 0.15), 0 4px 16px rgba(0, 0, 0, 0.1);
+  border-left-color: #388E3C; /* Darker green on hover */
+}
+
+.jsp-position-card[data-status="past"]:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(117, 117, 117, 0.15), 0 3px 12px rgba(0, 0, 0, 0.1);
+  border-left-color: #616161; /* Darker gray on hover */
+  opacity: 1;
+}
+
+.jsp-position-card[data-status="future"]:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(255, 152, 0, 0.15), 0 4px 16px rgba(0, 0, 0, 0.1);
+  border-left-color: #F57C00; /* Darker orange on hover */
+}
+
+/* Fallback for cards without data-status attribute */
+.jsp-position-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(90deg, var(--success), var(--primary));
+  transform: scaleX(0);
+  transition: transform var(--transition-normal);
+}
+
+.jsp-position-card:hover::before {
+  transform: scaleX(1);
+}
+
+.jsp-position-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+}
+
+/* Dark mode adjustments for status-specific styling */
+.dark .jsp-position-card[data-status="current"] {
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.05) 0%, var(--card) 50%);
+  box-shadow: 0 3px 12px rgba(76, 175, 80, 0.15), var(--card-shadow);
+}
+
+.dark .jsp-position-card[data-status="past"] {
+  background: linear-gradient(135deg, rgba(117, 117, 117, 0.05) 0%, var(--card) 50%);
+  box-shadow: 0 3px 12px rgba(117, 117, 117, 0.15), var(--card-shadow);
+}
+
+.dark .jsp-position-card[data-status="future"] {
+  background: linear-gradient(135deg, rgba(255, 152, 0, 0.05) 0%, var(--card) 50%);
+  box-shadow: 0 3px 12px rgba(255, 152, 0, 0.15), var(--card-shadow);
+}
+
+.dark .jsp-position-card:hover {
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+}
+
+.jsp-position-header {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: var(--spacing-4);
+}
+
+.jsp-position-title {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text);
+  margin-bottom: var(--spacing-1);
+  line-height: 1.3;
+}
+
+.jsp-position-status {
+  padding: var(--spacing-1) var(--spacing-3);
+  border-radius: 9999px;
+  font-size: var(--font-size-tiny);
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.jsp-position-status.current {
+  background: var(--success-bg);
+  color: var(--success);
+}
+
+.jsp-position-status.past {
+  background: var(--text-muted);
+  color: var(--card);
+}
+
+.jsp-position-status.future {
+  background: var(--pending-bg);
+  color: var(--pending);
+}
+
+.jsp-position-details {
+  margin-bottom: var(--spacing-4);
+}
+
+.jsp-detail-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-2);
+  color: var(--text-muted);
+  font-size: var(--font-size-small);
+}
+
+.jsp-detail-row svg {
+  color: var(--primary);
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+}
+
+.jsp-position-dates {
+  background: var(--background);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-4);
+  margin-bottom: var(--spacing-4);
+  border: 1px solid var(--border);
+}
+
+.jsp-date-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-2);
+  font-size: var(--font-size-small);
+}
+
+.jsp-date-row:last-child {
+  margin-bottom: 0;
+}
+
+.jsp-date-label {
+  color: var(--text-muted);
+  font-weight: var(--font-weight-medium);
+}
+
+.jsp-date-value {
+  color: var(--text);
+  font-weight: var(--font-weight-semibold);
+}
+
+.jsp-duration-badge {
+  background: var(--primary);
+  color: var(--card);
+  padding: var(--spacing-1) var(--spacing-3);
+  border-radius: 9999px;
+  font-size: var(--font-size-tiny);
+  font-weight: var(--font-weight-bold);
+  text-align: center;
+  margin-top: var(--spacing-2);
+}
+
+.jsp-empty-state {
+  text-align: center;
+  padding: var(--spacing-8);
+  color: var(--text-muted);
+  grid-column: 1 / -1;
+  animation: fadeIn 0.5s ease-out;
+}
+
+.jsp-empty-state svg {
+  margin-bottom: var(--spacing-4);
+  color: var(--text-muted);
+  opacity: 0.5;
+  width: 40px;
+  height: 40px;
+}
+
+.jsp-empty-state h3 {
+  font-size: var(--font-size-subheader);
+  color: var(--text);
+  margin-bottom: var(--spacing-2);
+}
+
+.jsp-empty-state p {
+  font-size: var(--font-size-body);
+  max-width: 500px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+.jsp-loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-8);
+  color: var(--text-muted);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.jsp-loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 2px solid var(--border);
+  border-top: 2px solid var(--primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: var(--spacing-4);
+}
+
+.jsp-error-state {
+  text-align: center;
+  padding: var(--spacing-8);
+  background: var(--failure-bg);
+  border: 1px solid var(--failure);
+  border-radius: var(--border-radius);
+  color: var(--failure);
+  grid-column: 1 / -1;
+  animation: shake 0.5s ease-in-out;
+}
+
+.jsp-error-state svg {
+  margin-bottom: var(--spacing-4);
+  color: var(--failure);
+  width: 40px;
+  height: 40px;
+}
+
+.jsp-error-state h3 {
+  color: var(--failure);
+  margin-bottom: var(--spacing-2);
+}
+
+/* New classes for the updated structure */
+.jsp-positions-content {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.jsp-filter-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.jsp-tab {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: 9px 14px;
+  border: 2px solid var(--border);
+  border-radius: 9999px;
+  background: var(--card);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  font-weight: var(--font-weight-medium);
+  position: relative;
+  overflow: hidden;
+  font-size: var(--font-size-small);
+}
+
+.jsp-tab.active {
+  background: var(--primary);
+  color: var(--card);
+  border-color: var(--primary);
+  box-shadow: var(--card-shadow);
+}
+
+.jsp-count {
+  background: var(--text);
+  color: var(--background);
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: 9999px;
+  font-size: var(--font-size-tiny);
+  font-weight: var(--font-weight-bold);
+  min-width: 18px;
+  text-align: center;
+}
+
+.jsp-tab.active .jsp-count {
+  background: var(--card);
+  color: var(--text);
+  color: var(--primary);
+}
+
+.jsp-position-title-section {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+}
+
+.jsp-position-code {
+  font-size: var(--font-size-small);
+  color: var(--text-muted);
+  font-weight: var(--font-weight-medium);
+}
+
+.jsp-status-badge {
+  padding: var(--spacing-1) var(--spacing-3);
+  border-radius: 9999px;
+  font-size: var(--font-size-tiny);
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: var(--spacing-2);
+}
+
+.jsp-status-badge.current {
+  background: var(--success-bg);
+  color: var(--success);
+}
+
+.jsp-status-badge.past {
+  background: var(--text-muted);
+  color: var(--card);
+}
+
+.jsp-status-badge.future {
+  background: var(--pending-bg);
+  color: var(--pending);
+}
+
+.jsp-position-meta {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  margin-top: var(--spacing-4);
+  padding-top: var(--spacing-4);
+  border-top: 1px solid var(--border);
+}
+
+.jsp-meta-tags {
+  display: flex;
+  gap: var(--spacing-2);
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.jsp-tag {
+  padding: var(--spacing-1) var(--spacing-2);
+  background: var(--background);
+  color: var(--text-muted);
+  border-radius: var(--border-radius);
+  font-size: var(--font-size-tiny);
+  font-weight: var(--font-weight-medium);
+}
+
+.jsp-tag.employment-term {
+  background: var(--pending-bg);
+  color: var(--pending);
+}
+
+.jsp-loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  color: var(--text-muted);
+}
+
+.jsp-empty-icon {
+  color: var(--text-muted);
+  opacity: 0.5;
+  margin-bottom: var(--spacing-4);
+}
+
+/* ==================== PAGINATION STYLES ==================== */
+
+/* Pagination Controls */
+.jsp-pagination-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-4) 0;
+  border-top: 1px solid var(--border);
+  margin-top: var(--spacing-4);
+}
+
+.jsp-pagination-controls.top {
+  border-top: none;
+  border-bottom: 1px solid var(--border);
+  margin-top: 0;
+  margin-bottom: var(--spacing-4);
+}
+
+.jsp-pagination-info {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.jsp-pagination-text {
+  color: var(--text-muted);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-medium);
+}
+
+.jsp-pagination-size-selector {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.jsp-page-size-label {
+  color: var(--text-muted);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+}
+
+.jsp-page-size-select {
+  padding: var(--spacing-2) var(--spacing-3);
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius);
+  background: var(--input-bg);
+  color: var(--text);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  outline: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right var(--spacing-2) center;
+  background-size: 10px;
+  padding-right: 24px;
+  min-width: 50px;
+}
+
+.jsp-page-size-select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.2);
+}
+
+.dark .jsp-page-size-select:focus {
+  box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.2);
+}
+
+.jsp-pagination-buttons {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.jsp-pagination-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-3);
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius);
+  background: var(--card);
+  color: var(--text);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  outline: none;
+}
+
+.jsp-pagination-btn:hover:not(:disabled) {
+  background: var(--primary);
+  color: var(--card);
+  border-color: var(--primary);
+  transform: translateY(-1px);
+}
+
+.jsp-pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: var(--border);
+  color: var(--text-muted);
+  border-color: var(--border);
+}
+
+.jsp-page-numbers {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
+.jsp-page-number-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius);
+  background: var(--card);
+  color: var(--text);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  outline: none;
+}
+
+.jsp-page-number-btn:hover {
+  background: var(--border);
+  border-color: var(--text-muted);
+  transform: translateY(-1px);
+}
+
+.jsp-page-number-btn.active {
+  background: var(--primary);
+  color: var(--card);
+  border-color: var(--primary);
+  font-weight: var(--font-weight-bold);
+}
+
+.jsp-page-number-btn.active:hover {
+  background: var(--primary);
+  color: var(--card);
+  transform: none;
+}
+
+/* Responsive adjustments for pagination */
+@media (max-width: 768px) {
+  .jsp-pagination-controls {
+    flex-direction: column;
+    gap: var(--spacing-3);
+    align-items: stretch;
+  }
+
+  .jsp-pagination-controls.top {
+    align-items: flex-start;
+  }
+
+  .jsp-pagination-size-selector {
+    justify-content: center;
+  }
+
+  .jsp-pagination-buttons {
+    justify-content: center;
+  }
+
+  .jsp-page-numbers {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .jsp-pagination-btn span {
+    display: none;
+  }
+
+  .jsp-pagination-text {
+    text-align: center;
+  }
+}
+
+@media (max-width: 576px) {
+  .jsp-pagination-controls {
+    padding: var(--spacing-3) 0;
+  }
+
+  .jsp-page-numbers {
+    gap: var(--spacing-1);
+  }
+
+  .jsp-page-number-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 11px;
+  }
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+}
+
+/* Status-specific tab colors to match card styling */
+.jsp-status-tab.active.current,
+.jsp-tab.active.current {
+  background: #4CAF50; /* Green - matches current cards */
+  color: white;
+  border-color: #4CAF50;
+}
+
+.jsp-status-tab.active.past,
+.jsp-tab.active.past {
+  background: #757575; /* Gray - matches past cards */
+  color: white;
+  border-color: #757575;
+}
+
+.jsp-status-tab.active.future,
+.jsp-tab.active.future {
+  background: #FF9800; /* Orange - matches future cards */
+  color: white;
+  border-color: #FF9800;
+}
+
+.jsp-status-tab.active.all,
+.jsp-tab.active.all {
+  background: var(--primary); /* Keep default primary for all */
+  color: var(--card);
+  border-color: var(--primary);
+}
+
+/* Hover effects for status-specific tabs */
+.jsp-status-tab.current:hover,
+.jsp-tab.current:hover {
+  border-color: #4CAF50;
+  background: rgba(76, 175, 80, 0.1);
+}
+
+.jsp-status-tab.past:hover,
+.jsp-tab.past:hover {
+  border-color: #757575;
+  background: rgba(117, 117, 117, 0.1);
+}
+
+.jsp-status-tab.future:hover,
+.jsp-tab.future:hover {
+  border-color: #FF9800;
+  background: rgba(255, 152, 0, 0.1);
+}
+
+.jsp-status-tab.all:hover,
+.jsp-tab.all:hover {
+  border-color: var(--primary);
+}
+
+/* Count badge colors for status-specific tabs */
+.jsp-status-tab.active.current .jsp-status-count,
+.jsp-tab.active.current .jsp-count {
+  background: white;
+  color: #4CAF50;
+}
+
+.jsp-status-tab.active.past .jsp-status-count,
+.jsp-tab.active.past .jsp-count {
+  background: white;
+  color: #757575;
+}
+
+.jsp-status-tab.active.future .jsp-status-count,
+.jsp-tab.active.future .jsp-count {
+  background: white;
+  color: #FF9800;
+}
+
+.jsp-status-tab.active.all .jsp-status-count,
+.jsp-tab.active.all .jsp-count {
+  background: var(--card);
+  color: var(--primary);
+}
+
+/* Skeleton Loading Styles */
+.skeleton-text {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+  border-radius: 4px;
+}
+
+.skeleton-icon {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+  border-radius: 50%;
+}
+
+.skeleton-badge {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+  border-radius: 9999px;
+}
+
+.skeleton-button {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+  border-radius: 9999px;
+  border: 2px solid transparent;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Dark mode skeleton adjustments */
+.dark .skeleton-text {
+  background: linear-gradient(90deg, #333 25%, #444 50%, #333 75%);
+  background-size: 200% 100%;
+}
+
+.dark .skeleton-icon {
+  background: linear-gradient(90deg, #333 25%, #444 50%, #333 75%);
+  background-size: 200% 100%;
+}
+
+.dark .skeleton-badge {
+  background: linear-gradient(90deg, #333 25%, #444 50%, #333 75%);
+  background-size: 200% 100%;
+}
+
+.dark .skeleton-button {
+  background: linear-gradient(90deg, #333 25%, #444 50%, #333 75%);
+  background-size: 200% 100%;
+}
+
+/* Skeleton Tab Styles */
+.jsp-skeleton-tabs {
+  display: flex;
+  gap: var(--spacing-2);
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: var(--spacing-4);
+}
+
+.jsp-skeleton-tab {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: 9px 14px;
+  border-radius: 9999px;
+  font-size: var(--font-size-small);
+  min-width: 100px;
+  height: 36px;
+}
+
+.jsp-skeleton-tab-text {
+  width: 60px;
+  height: 14px;
+}
+
+.jsp-skeleton-tab-count {
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+}
+
+/* Skeleton Card Styles */
+.jsp-skeleton-card {
+  background: var(--card);
+  border-radius: var(--border-radius);
+  box-shadow: var(--card-shadow);
+  border: 1px solid var(--border);
+  padding: var(--spacing-4);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.jsp-skeleton-card-header {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: var(--spacing-4);
+}
+
+.jsp-skeleton-card-title-section {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-2);
+}
+
+.jsp-skeleton-card-title {
+  width: 180px;
+  height: 16px;
+}
+
+.jsp-skeleton-card-code {
+  width: 60px;
+  height: 14px;
+}
+
+.jsp-skeleton-card-status {
+  width: 70px;
+  height: 22px;
+  margin-top: var(--spacing-2);
+}
+
+.jsp-skeleton-card-details {
+  margin-bottom: var(--spacing-4);
+}
+
+.jsp-skeleton-detail-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-2);
+}
+
+.jsp-skeleton-detail-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.jsp-skeleton-detail-text {
+  height: 14px;
+  flex: 1;
+}
+
+.jsp-skeleton-detail-text.short {
+  width: 120px;
+}
+
+.jsp-skeleton-detail-text.medium {
+  width: 160px;
+}
+
+.jsp-skeleton-detail-text.long {
+  width: 200px;
+}
+
+.jsp-skeleton-card-meta {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  margin-top: var(--spacing-4);
+  padding-top: var(--spacing-4);
+  border-top: 1px solid var(--border);
+}
+
+.jsp-skeleton-meta-tags {
+  display: flex;
+  gap: var(--spacing-2);
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.jsp-skeleton-tag {
+  height: 20px;
+  border-radius: var(--border-radius);
+}
+
+.jsp-skeleton-tag.small {
+  width: 60px;
+}
+
+.jsp-skeleton-tag.medium {
+  width: 80px;
+}
+
+.jsp-skeleton-tag.large {
+  width: 100px;
+}
+
+/* Skeleton Filter Panel */
+.jsp-skeleton-filter-panel {
+  background: var(--card);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-4);
+  margin-bottom: var(--spacing-6);
+  box-shadow: var(--card-shadow);
+  border: 1px solid var(--border);
+}
+
+.jsp-skeleton-filter-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr auto;
+  gap: var(--spacing-4);
+  align-items: end;
+}
+
+.jsp-skeleton-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.jsp-skeleton-filter-label {
+  width: 80px;
+  height: 12px;
+  margin-bottom: var(--spacing-1);
+}
+
+.jsp-skeleton-filter-input {
+  width: 100%;
+  height: 32px;
+  border-radius: var(--border-radius);
+}
+
+.jsp-skeleton-filter-button {
+  width: 80px;
+  height: 32px;
+  border-radius: var(--border-radius);
+}
+
+/* Animation variations for different skeleton elements */
+.jsp-skeleton-card:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.jsp-skeleton-card:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+.jsp-skeleton-card:nth-child(3) {
+  animation-delay: 0.2s;
+}
+
+.jsp-skeleton-card:nth-child(4) {
+  animation-delay: 0.3s;
+}
+
+.jsp-skeleton-card:nth-child(5) {
+  animation-delay: 0.4s;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+/* Responsive adjustments for skeleton */
+@media (max-width: 768px) {
+  .jsp-skeleton-filter-row {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-3);
+  }
+  
+  .jsp-skeleton-tabs {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .jsp-skeleton-tab {
+    min-width: 150px;
+  }
+}
+
+@media (max-width: 576px) {
+  .jsp-skeleton-card-title-section {
+    flex-direction: column;
+    gap: var(--spacing-2);
+    align-items: flex-start;
+  }
+  
+  .jsp-skeleton-detail-text.long {
+    width: 140px;
+  }
+  
+  .jsp-skeleton-detail-text.medium {
+    width: 120px;
+  }
+} 

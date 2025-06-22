@@ -1,0 +1,988 @@
+/* Invoice Management - Modern UI Styles */
+@import "./TimesheetManagement.css";
+
+.invoice-page-container {
+  display: flex;
+  flex-direction: column;
+  color: var(--text);
+  font-family: var(--font-family);
+  margin-left: 68px;
+  margin-top: 80px;
+}
+
+.invoice-content-container {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.invoice-page-container .timesheet-unified-header {
+  padding-bottom: 0;
+}
+
+.invoice-content-container .timesheet-invoice-table-header {
+  grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+}
+
+.invoice-content-container .timesheet-invoice-line-item {
+  grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+}
+
+/* ===== Empty State Cards ===== */
+.invoice-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--card-shadow);
+  transition: all var(--transition-normal);
+}
+
+.empty-state-card {
+  padding: 2rem;
+  text-align: center;
+}
+
+.invoice-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  color: var(--text-muted);
+}
+
+/* ===== Selection Bar ===== */
+.invoice-selection-bar {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: var(--card-shadow);
+  display: flex;
+  gap: 1.5rem;
+  justify-content: space-between;
+  transition: all var(--transition-normal);
+}
+
+.selection-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.selection-section.position-selection,
+.selection-section.jobseeker-selection {
+  min-width: 220px;
+}
+
+.selection-section.hours-selection,
+.selection-section.rate-selection {
+  width: 80px;
+}
+
+.selection-section.description-selection {
+  min-width: 360px;
+}
+
+.selection-section.combined-selection,
+.selection-section.supplier-po-number-selection {
+  min-width: 210px;
+}
+
+.selection-section.tax-selection {
+  min-width: 155px;
+}
+
+.selection-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  color: var(--text);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.selection-label svg {
+  color: var(--primary);
+  opacity: 1;
+  filter: brightness(1);
+  width: 14px;
+  height: 14px;
+}
+
+/* Dark mode specific adjustments for icons */
+.dark .selection-label svg {
+  color: var(--primary);
+  filter: brightness(1.2);
+  opacity: 1;
+}
+
+/* ===== Date Input Styling ===== */
+.invoice-date-input {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background-color: var(--input-bg);
+  color: var(--text);
+  font-size: 12px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  color-scheme: light dark;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  position: relative;
+}
+
+.invoice-date-input:hover {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+}
+
+.invoice-date-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Ensure date input calendar icon is visible in dark mode */
+.invoice-date-input::-webkit-calendar-picker-indicator {
+  background: transparent;
+  bottom: 0;
+  color: var(--text);
+  cursor: pointer;
+  height: auto;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: auto;
+  opacity: 0;
+  z-index: 2;
+}
+
+/* Dark mode focus shadow */
+.dark .invoice-date-input:focus {
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
+}
+
+.invoice-date-input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+/* ===== Input Field Styling ===== */
+.invoice-text-input,
+.invoice-number-input {
+  padding: 8px;
+  min-height: 40px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  background-color: var(--input-bg);
+  color: var(--text);
+  font-size: 12px;
+  transition: all 0.2s ease;
+}
+
+.invoice-text-input:focus,
+.invoice-number-input:focus {
+  outline: none;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+}
+
+.invoice-number-input.readonly {
+  background-color: var(--pending-bg);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* ===== Line Items Styling ===== */
+.invoice-line-items-container {
+  background: var(--card);
+  border-radius: 6px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  box-shadow: var(--card-shadow);
+}
+.invoice-line-items-container.supplier-po-section {
+  width: 44%;
+}
+.invoice-line-items-header {
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.invoice-line-items-header h3 {
+  font-size: 14px;
+  margin: 0;
+  color: var(--text);
+}
+
+.invoice-line-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.invoice-line-item-group {
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 10px;
+  transition: box-shadow 0.2s ease;
+}
+
+.invoice-line-item-group:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.invoice-field-row.single-row {
+  display: flex;
+  gap: 12px;
+  align-items: end;
+}
+
+.line-item-actions {
+  display: flex;
+  flex-direction: column;
+}
+
+.line-item-buttons {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  min-height: 40px;
+}
+
+/* ===== Skeleton Loading Styles ===== */
+.invoice-dropdown-skeleton {
+  position: relative;
+  width: 100%;
+}
+
+.skeleton-dropdown-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--background);
+  min-height: 40px;
+  cursor: not-allowed;
+}
+
+.skeleton-icon {
+  width: 14px;
+  height: 14px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+}
+
+.skeleton-text {
+  border-radius: 4px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+}
+
+.skeleton-dropdown-text {
+  height: 12px;
+  flex: 1;
+  margin: 0 8px;
+}
+
+.skeleton-chevron {
+  width: 12px;
+  height: 12px;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Dark mode skeleton styles */
+[data-theme="dark"] .skeleton-icon,
+[data-theme="dark"] .skeleton-text {
+  background: linear-gradient(90deg, #2a2a2a 25%, #3a3a3a 50%, #2a2a2a 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+}
+
+[data-theme="dark"] .skeleton-dropdown-trigger {
+  background: var(--background);
+  border-color: var(--border);
+}
+
+/* ===== Button Styling ===== */
+.line-item-buttons .button.secondary {
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 10px;
+}
+
+.line-item-buttons .button.secondary:hover {
+  background: var(--primary);
+  color: var(--background);
+}
+
+.line-item-buttons .button.danger {
+  background: var(--danger);
+  color: var(--background);
+  border: 1px solid var(--border);
+  padding: 10px;
+}
+
+.line-item-buttons .button.danger:hover {
+  background: var(--danger);
+  opacity: 0.9;
+}
+
+/* ===== Icon Color Styling ===== */
+/* Green color for add (Plus) icons */
+.line-item-buttons .button .lucide-plus {
+  color: var(--success);
+}
+
+.line-item-buttons .button:hover .lucide-plus {
+  color: var(--background);
+}
+
+/* Red color for remove (Minus) icons */
+.line-item-buttons .button .lucide-minus {
+  color: var(--danger);
+}
+
+.line-item-buttons .button:hover .lucide-minus {
+  color: var(--background);
+}
+
+/* When the button itself is danger type, keep the icon white on hover */
+.line-item-buttons .button .lucide-minus {
+  color: var(--background);
+}
+
+/* ===== Responsive Design ===== */
+@media (max-width: 1400px) {
+  .invoice-field-row.single-row {
+    grid-template-columns: 1fr 1fr 1fr 0.8fr 0.8fr 0.8fr 0.6fr;
+    gap: 10px;
+  }
+
+  .invoice-header-sections {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+}
+/* ===== Bottom Sections Container ===== */
+.invoice-bottom-sections-container {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  width: 100%;
+}
+
+/* ===== Message and Terms Section ===== */
+.invoice-message-terms-container {
+  flex: 1;
+  min-width: 0; /* Prevent flex item from overflowing */
+  background: var(--card);
+  border-radius: 6px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  box-shadow: var(--card-shadow);
+}
+
+.message-terms-grid {
+  display: flex;
+  gap: 1rem;
+  height: 86px;
+}
+
+.message-section,
+.terms-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* ===== Textarea Styling ===== */
+.invoice-textarea {
+  padding: 12px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  background-color: var(--input-bg);
+  color: var(--text);
+  font-size: 12px;
+}
+
+.invoice-attachments-container {
+  box-shadow: var(--card-shadow);
+}
+
+/* ===== Invoice List Styles ===== */
+.invoice-toggle-section {
+  padding: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.invoice-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+}
+
+.invoice-toggle-btn:hover {
+  background: var(--card-hover);
+  border-color: var(--primary);
+}
+
+.invoice-toggle-btn.active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.invoice-list-section {
+  margin: 1rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--card-shadow);
+}
+
+.invoice-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.invoice-list-header h3 {
+  margin: 0;
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.invoice-list-pagination {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.invoice-list-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 2rem;
+  color: var(--text-muted);
+}
+
+.invoice-list-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.invoice-list-empty svg {
+  color: var(--text-muted);
+  opacity: 0.5;
+}
+
+.invoice-list-empty h4 {
+  margin: 0;
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.invoice-list-empty p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.invoice-list-table {
+  display: flex;
+  flex-direction: column;
+}
+
+.invoice-list-table-header {
+  display: grid;
+  grid-template-columns: 1.2fr 1.5fr 1fr 1fr 1fr 1fr;
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--card-secondary);
+  border-bottom: 1px solid var(--border);
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.invoice-list-table-row {
+  display: grid;
+  grid-template-columns: 1.2fr 1.5fr 1fr 1fr 1fr 1fr;
+  gap: 1rem;
+  padding: 1rem;
+  border-bottom: 1px solid var(--border);
+  transition: all var(--transition-normal);
+}
+
+.invoice-list-table-row:hover {
+  background: var(--card-hover);
+}
+
+.invoice-list-table-row:last-child {
+  border-bottom: none;
+}
+
+.invoice-list-col {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.invoice-status-badge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.invoice-status-badge.status-draft {
+  background: var(--warning-bg);
+  color: var(--warning-text);
+}
+
+.invoice-status-badge.status-sent {
+  background: var(--info-bg);
+  color: var(--info-text);
+}
+
+.invoice-status-badge.status-paid {
+  background: var(--success-bg);
+  color: var(--success-text);
+}
+
+.invoice-status-badge.status-overdue {
+  background: var(--error-bg);
+  color: var(--error-text);
+}
+
+.invoice-status-badge.status-cancelled {
+  background: var(--muted-bg);
+  color: var(--text-muted);
+}
+
+.invoice-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.invoice-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--card);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+}
+
+.invoice-action-btn:hover {
+  background: var(--card-hover);
+  color: var(--text);
+}
+
+.invoice-action-btn.view:hover {
+  background: var(--info-bg);
+  color: var(--info-text);
+  border-color: var(--info);
+}
+
+.invoice-action-btn.edit:hover {
+  background: var(--warning-bg);
+  color: var(--warning-text);
+  border-color: var(--warning);
+}
+
+.invoice-action-btn.delete:hover {
+  background: var(--error-bg);
+  color: var(--error-text);
+  border-color: var(--error);
+}
+
+/* ===== Invoice Number Loading State ===== */
+.invoice-number-loading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.invoice-number-loading .timesheet-loading-spinner {
+  animation: spin 1s linear infinite;
+}
+
+/* ===== Invoice Success Modal Styles ===== */
+.invoice-success-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.invoice-success-modal-content {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  position: relative;
+  max-width: 1100px;
+  width: 100%;
+  height: 95vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: row;
+  gap: 0;
+}
+
+.invoice-success-modal-close-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: var(--text-muted);
+  cursor: pointer;
+  line-height: 8px;
+  transition: all var(--transition-normal);
+  z-index: 10;
+}
+
+.invoice-success-modal-close-btn:hover {
+  background: var(--danger);
+  color: white;
+  border-color: var(--danger);
+  transform: scale(1.05);
+}
+
+.invoice-success-modal-pdf-preview {
+  width: 60%;
+  background: var(--background);
+  border-right: 1px solid var(--border);
+  padding: 1rem 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  overflow: hidden;
+}
+
+.invoice-success-modal-pdf-controls {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 1rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0 2rem;
+}
+
+.invoice-success-modal-pdf-controls button {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 12px;
+  color: var(--text);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+}
+
+.invoice-success-modal-pdf-controls button:hover:not(:disabled) {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.invoice-success-modal-pdf-controls button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.invoice-success-modal-pdf-page-container {
+  flex: 1 1 0;
+  overflow: auto;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 0;
+  min-width: 0;
+}
+
+.invoice-success-modal-pdf-navigation {
+  display: flex;
+  gap: 8px;
+  margin-top: 1rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0 2rem;
+}
+
+.invoice-success-modal-pdf-navigation button {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 16px;
+  color: var(--text);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+}
+
+.invoice-success-modal-pdf-navigation button:hover:not(:disabled) {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.invoice-success-modal-pdf-navigation button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.invoice-success-modal-pdf-navigation span {
+  color: var(--text-muted);
+  font-size: 14px;
+  margin: 0 8px;
+}
+
+/* Invoice Success Modal Info Panel - Modern Design with Smaller Fonts and Colors */
+.invoice-success-modal-info-panel {
+  width: 38%;
+  margin: 2rem;
+  margin-top: 4rem;
+  height: fit-content;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: var(--background);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+}
+
+.dark .invoice-success-modal-info-panel {
+  background: var(--background);
+  box-shadow: var(--glow), 0 0 25px rgba(0, 0, 0, 0.7);
+}
+
+/* Header section with subtle gradient */
+.invoice-success-modal-info-panel::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  background: linear-gradient(135deg, var(--primary) 0%, #fed500 100%);
+  z-index: -1;
+}
+
+.invoice-success-modal-info-panel h2 {
+  color: white;
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0;
+  margin-bottom: 1rem;
+  padding: 1.5rem 2rem;
+  background: linear-gradient(135deg, black 0%, #fed500 100%);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  position: relative;
+}
+
+/* Success checkmark icon */
+.invoice-success-modal-info-panel h2::before {
+  content: "✓";
+  display: inline-block;
+  margin-right: 0.5rem;
+  font-size: 1.2rem;
+  color: #10b981;
+  background: white;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  text-align: center;
+  line-height: 24px;
+  font-weight: bold;
+}
+
+/* Details section with colored cards */
+.invoice-success-modal-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1.5rem 2rem;
+  background: var(--background-secondary);
+}
+
+.invoice-success-modal-detail-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: var(--background);
+  border-bottom: 2px solid var(--border);
+  transition: all 0.2s ease;
+}
+
+/* Add subtle colors to different detail items */
+.invoice-success-modal-detail-item:last-child .invoice-success-modal-detail-label,
+.invoice-success-modal-detail-item:last-child .invoice-success-modal-detail-value {
+  font-weight: 600;
+}
+
+.invoice-success-modal-detail-label {
+  font-size: 0.75rem;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.invoice-success-modal-detail-value {
+  font-size: 0.8rem;
+  color: var(--text);
+  font-weight: 500;
+}
+
+/* Email section with subtle gradient */
+.invoice-success-modal-email-section {
+  padding: 1.5rem 2rem;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  border-top: 1px solid var(--border);
+}
+
+.dark .invoice-success-modal-email-section {
+  background: linear-gradient(135deg, black 0%, #fed500 100%);
+
+}
+
+.invoice-success-modal-email-section label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text);
+  position: relative;
+}
+
+.invoice-success-modal-email-section input[type="email"] {
+  padding: 0.75rem;
+  border: var(--text-muted);
+  border-radius: 6px;
+  font-size: 0.8rem;
+}
+
+.invoice-success-modal-email-section input[type="email"]:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.1);
+}
+
+/* Success message with green gradient */
+.invoice-success-modal-message {
+  margin-top: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-align: center;
+}
+
+.invoice-success-modal-message::before {
+  content: "✓";
+  display: inline-block;
+  margin-right: 0.5rem;
+  font-weight: bold;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  text-align: center;
+  line-height: 16px;
+  font-size: 0.7rem;
+}
+
+/* Send Email Button Styles */
+.send-email-cell {
+  padding: 8px 12px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.send-email-cell button {
+  width: 100%;
+  height: 100%;
+  padding: 8px 12px;
+  text-align: center;
+  vertical-align: middle; 
+}
+
+.send-email-cell button.primary {
+  background: linear-gradient(135deg, #1a1a1a 0%, #307e02 100%);
+}
+
+.send-email-cell button.secondary {
+  background: linear-gradient(135deg, #2d2d2d 0%, #8B0000 100%);
+}
