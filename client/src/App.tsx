@@ -41,6 +41,7 @@ import { MetricExamplePage } from './pages/dashboard/MetricExamplePage';
 import { ClientManagement } from './pages/ClientManagement/ClientManagement';
 import { InvoiceManagement } from './pages/InvoiceManagement/InvoiceManagement';
 import { InvoiceList } from './pages/InvoiceManagement/InvoiceList';
+import { AllUsersManagement } from './pages/AllUsersManagement';
 
 function App() {
   return (
@@ -75,6 +76,7 @@ function App() {
                 <Route path="/jobseekers/profile/account-created" element={<ProfileAccountCreated />} />
                 <Route path="/jobseekers/profile/success" element={<ProfileSuccess />} />
                 <Route path="/jobseeker-management" element={<JobSeekerManagement />} />
+                <Route path="/all-users-management" element={<AllUsersManagement />} />
                 <Route path="/jobseekers/drafts" element={<JobseekerDrafts />} />
                 <Route path="/jobseekers/drafts/edit/:id" element={<JobseekerProfileDraftEdit />} />
                 <Route path="/client-management" element={<ClientManagement />} />

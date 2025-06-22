@@ -1,0 +1,401 @@
+import { useState, useEffect, useCallback } from "react";
+import { useAuth } from "../contexts/AuthContext";
+import { getAllAuthUsersAPI } from "../services/api/auth";
+import { AllAuthUserListItem, AllAuthUserListResponse } from "../types/auth";
+import { AppHeader } from "../components/AppHeader";
+import {
+  Search,
+  CheckCircle,
+  XCircle,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
+import "../styles/pages/JobSeekerManagement.css";
+import "../styles/components/CommonTable.css";
+import "../styles/pages/AllUsersManagement.css";
+
+interface PaginationInfo {
+  page: number;
+  limit: number;
+  total: number;
+  totalFiltered: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+}
+
+// Helper function to get user type badge class
+const getUserTypeBadgeClass = (userType: string | undefined): string => {
+  if (!userType) return 'default';
+  return userType.toLowerCase();
+};
+
+export function AllUsersManagement() {
+  const [users, setUsers] = useState<AllAuthUserListItem[]>([]);
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalFiltered: 0,
+    totalPages: 0,
+    hasNextPage: false,
+    hasPrevPage: false,
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [nameFilter, setNameFilter] = useState("");
+  const [emailFilter, setEmailFilter] = useState("");
+  const [mobileFilter, setMobileFilter] = useState("");
+  const [userTypeFilter, setUserTypeFilter] = useState("");
+  const [emailVerifiedFilter, setEmailVerifiedFilter] = useState("");
+  const { isAdmin, isRecruiter } = useAuth();
+
+  // Fetch users
+  const fetchUsers = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data: AllAuthUserListResponse = await getAllAuthUsersAPI({
+        page: pagination.page,
+        limit: pagination.limit,
+        search: searchTerm,
+        nameFilter,
+        emailFilter,
+        mobileFilter,
+        userTypeFilter,
+        emailVerifiedFilter,
+      });
+      setUsers(data.users);
+      setPagination(data.pagination);
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "An error occurred while fetching users";
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, [pagination.page, pagination.limit, searchTerm, nameFilter, emailFilter, mobileFilter, userTypeFilter, emailVerifiedFilter]);
+
+  useEffect(() => {
+    if (!isAdmin && !isRecruiter) return;
+    fetchUsers();
+  }, [isAdmin, isRecruiter, fetchUsers]);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    if (pagination.page !== 1) {
+      setPagination((prev) => ({ ...prev, page: 1 }));
+    }
+  }, [searchTerm, nameFilter, emailFilter, mobileFilter, userTypeFilter, emailVerifiedFilter]);
+
+  // Pagination handlers
+  const handlePageChange = (newPage: number) => {
+    setPagination((prev) => ({ ...prev, page: newPage }));
+  };
+  const handleLimitChange = (newLimit: number) => {
+    setPagination((prev) => ({ ...prev, limit: newLimit, page: 1 }));
+  };
+  const handlePreviousPage = () => {
+    if (pagination.hasPrevPage) {
+      handlePageChange(pagination.page - 1);
+    }
+  };
+  const handleNextPage = () => {
+    if (pagination.hasNextPage) {
+      handlePageChange(pagination.page + 1);
+    }
+  };
+  const resetFilters = () => {
+    setSearchTerm("");
+    setNameFilter("");
+    setEmailFilter("");
+    setMobileFilter("");
+    setUserTypeFilter("");
+    setEmailVerifiedFilter("");
+    setPagination((prev) => ({ ...prev, page: 1 }));
+  };
+
+  return (
+    <div className="page-container all-users-management">
+      <AppHeader title="All Users Management" />
+      <div className="content-container">
+        {error && <div className="error-message">{error}</div>}
+        <div className="card">
+          <div className="card-header">
+            <h2>All Signed Up Users</h2>
+            <div className="filter-container">
+              <div className="search-box">
+                <Search size={14} className="search-icon" />
+                <input
+                  type="text"
+                  placeholder="Global search..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="search-input"
+                />
+                <button
+                  className="button secondary button-icon reset-filters-btn"
+                  onClick={resetFilters}
+                >
+                  <span>Reset Filters</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Pagination Controls - Top */}
+          <div className="pagination-controls top">
+            <div className="pagination-info">
+              <span className="pagination-text">
+                Showing {Math.min((pagination.page - 1) * pagination.limit + 1, pagination.totalFiltered)} to {Math.min(pagination.page * pagination.limit, pagination.totalFiltered)} of {pagination.totalFiltered} entries
+                {pagination.totalFiltered !== pagination.total && (
+                  <span className="filtered-info"> (filtered from {pagination.total} total entries)</span>
+                )}
+              </span>
+            </div>
+            <div className="pagination-size-selector">
+              <label htmlFor="pageSize" className="page-size-label">Show:</label>
+              <select
+                id="pageSize"
+                value={pagination.limit}
+                onChange={(e) => handleLimitChange(parseInt(e.target.value))}
+                className="page-size-select"
+              >
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+              <span className="page-size-label">per page</span>
+            </div>
+          </div>
+
+          <div className={`table-container ${loading ? "skeleton-table-container" : ""}`}>
+            <table className="common-table">
+              <thead>
+                <tr>
+                  <th>
+                    <div className="column-filter">
+                      <div className="column-title">Name</div>
+                      <div className="column-search">
+                        <input
+                          type="text"
+                          placeholder="Search name..."
+                          value={nameFilter}
+                          onChange={(e) => setNameFilter(e.target.value)}
+                          className="column-search-input"
+                        />
+                      </div>
+                    </div>
+                  </th>
+                  <th>
+                    <div className="column-filter">
+                      <div className="column-title">Email</div>
+                      <div className="column-search">
+                        <input
+                          type="text"
+                          placeholder="Search email..."
+                          value={emailFilter}
+                          onChange={(e) => setEmailFilter(e.target.value)}
+                          className="column-search-input"
+                        />
+                      </div>
+                    </div>
+                  </th>
+                  <th>
+                    <div className="column-filter">
+                      <div className="column-title">Phone</div>
+                      <div className="column-search">
+                        <input
+                          type="text"
+                          placeholder="Search phone..."
+                          value={mobileFilter}
+                          onChange={(e) => setMobileFilter(e.target.value)}
+                          className="column-search-input"
+                        />
+                      </div>
+                    </div>
+                  </th>
+                  <th>
+                    <div className="column-filter">
+                      <div className="column-title">User Type</div>
+                      <div className="column-search">
+                        <select
+                          value={userTypeFilter}
+                          onChange={(e) => setUserTypeFilter(e.target.value)}
+                          className="column-filter-select"
+                        >
+                          <option value="">All User Types</option>
+                          <option value="admin">Admin</option>
+                          <option value="recruiter">Recruiter</option>
+                          <option value="jobseeker">Jobseeker</option>
+                        </select>
+                      </div>
+                    </div>
+                  </th>
+                  <th>
+                    <div className="column-filter">
+                      <div className="column-title">Email Verified</div>
+                      <div className="column-search">
+                        <select
+                          value={emailVerifiedFilter}
+                          onChange={(e) => setEmailVerifiedFilter(e.target.value)}
+                          className="column-filter-select"
+                        >
+                          <option value="">All Email Status</option>
+                          <option value="true">Verified</option>
+                          <option value="false">Not Verified</option>
+                        </select>
+                      </div>
+                    </div>
+                  </th>
+                  <th>
+                    <div className="column-filter no-filter">
+                      <div className="column-title">Created At</div>
+                    </div>
+                  </th>
+                  <th>
+                    <div className="column-filter no-filter">
+                      <div className="column-title">Last Sign In</div>
+                    </div>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  Array.from({ length: pagination.limit }, (_, index) => (
+                    <tr key={`skeleton-${index}`} className="skeleton-row">
+                      <td className="name-cell skeleton-cell">
+                        <div className="skeleton-text"></div>
+                      </td>
+                      <td className="email-cell skeleton-cell">
+                        <div className="skeleton-text"></div>
+                      </td>
+                      <td className="phone-cell skeleton-cell">
+                        <div className="skeleton-text"></div>
+                      </td>
+                      <td className="user-type-cell skeleton-cell">
+                        <div className="skeleton-text"></div>
+                      </td>
+                      <td className="email-verified-cell skeleton-cell">
+                        <div className="skeleton-status">
+                          <div className="skeleton-icon skeleton-status-icon"></div>
+                          <div className="skeleton-badge skeleton-status-text"></div>
+                        </div>
+                      </td>
+                      <td className="created-at-cell skeleton-cell">
+                        <div className="skeleton-text"></div>
+                      </td>
+                      <td className="last-signin-cell skeleton-cell">
+                        <div className="skeleton-text"></div>
+                      </td>
+                    </tr>
+                  ))
+                ) : users.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="empty-state-cell">
+                      <div className="empty-state">
+                        <p>No users match your search criteria.</p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  users.map((user) => (
+                    <tr key={user.id} className={`user-row ${getUserTypeBadgeClass(user.userType)}`}>
+                      <td className="name-cell">{user.name || "N/A"}</td>
+                      <td className="email-cell">{user.email}</td>
+                      <td className="phone-cell">{user.phoneNumber || "N/A"}</td>
+                      <td className="user-type-cell">
+                        {user.userType ? (
+                          <span className={`user-type-badge ${getUserTypeBadgeClass(user.userType)}`}>
+                            {user.userType}
+                          </span>
+                        ) : (
+                          <span className="user-type-badge default">N/A</span>
+                        )}
+                      </td>
+                      <td className="email-verified-cell">
+                        <span className="status-display">
+                          {user.emailVerified ? (
+                            <>
+                              <CheckCircle className="status-icon verified" size={14} />
+                              <span className="status-text verified">Verified</span>
+                            </>
+                          ) : (
+                            <>
+                              <XCircle className="status-icon rejected" size={14} />
+                              <span className="status-text rejected">Not Verified</span>
+                            </>
+                          )}
+                        </span>
+                      </td>
+                      <td className="created-at-cell">{new Date(user.createdAt).toLocaleDateString()}</td>
+                      <td className="last-signin-cell">{user.lastSignInAt ? new Date(user.lastSignInAt).toLocaleDateString() : "-"}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination Controls - Bottom */}
+          {!loading && pagination.totalPages > 1 && (
+            <div className="pagination-controls bottom">
+              <div className="pagination-info">
+                <span className="pagination-text">
+                  Page {pagination.page} of {pagination.totalPages}
+                </span>
+              </div>
+              <div className="pagination-buttons">
+                <button
+                  className="pagination-btn prev"
+                  onClick={handlePreviousPage}
+                  disabled={!pagination.hasPrevPage}
+                  title="Previous page"
+                  aria-label="Previous page"
+                >
+                  <ChevronLeft size={16} />
+                  <span>Previous</span>
+                </button>
+                <div className="page-numbers">
+                  {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                    let pageNum;
+                    if (pagination.totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (pagination.page <= 3) {
+                      pageNum = i + 1;
+                    } else if (pagination.page >= pagination.totalPages - 2) {
+                      pageNum = pagination.totalPages - 4 + i;
+                    } else {
+                      pageNum = pagination.page - 2 + i;
+                    }
+                    return (
+                      <button
+                        key={pageNum}
+                        className={`page-number-btn ${pageNum === pagination.page ? "active" : ""}`}
+                        onClick={() => handlePageChange(pageNum)}
+                        aria-label={`Go to page ${pageNum}`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                </div>
+                <button
+                  className="pagination-btn next"
+                  onClick={handleNextPage}
+                  disabled={!pagination.hasNextPage}
+                  title="Next page"
+                  aria-label="Next page"
+                >
+                  <span>Next</span>
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+} 

@@ -374,10 +374,34 @@ const formatActivityMessage = (activity: RecentActivity): React.ReactNode => {
         </>
       );
 
+    case "create_timesheet": {
+      const jobseekerName = secondary_entity_name || "";
+      const positionTitle = tertiary_entity_name || "";
+      const weekStart = typeof activity.metadata?.weekStartDate === "string" ? activity.metadata.weekStartDate : "";
+      const weekEnd = typeof activity.metadata?.weekEndDate === "string" ? activity.metadata.weekEndDate : "";
+
+      return (
+        <>
+          <ActorName>{actor_name}</ActorName> created Timesheet for{" "}
+          <PrimaryEntity>{jobseekerName}</PrimaryEntity>
+          {positionTitle && (
+            <>
+              {" "}(<SecondaryEntity>{positionTitle}</SecondaryEntity>)
+            </>
+          )}
+          {weekStart && weekEnd && (
+            <>
+              {" "}for period '{weekStart}' - '{weekEnd}'
+            </>
+          )}
+        </>
+      );
+    }
+
     default:
       return (
         <>
-          <ActorName>{actor_name}</ActorName> {action_verb}
+          <ActorName>{actor_name}</ActorName> {action_verb}{" "}
           <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity>
         </>
       );

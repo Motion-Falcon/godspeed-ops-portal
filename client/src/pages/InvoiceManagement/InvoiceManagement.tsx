@@ -657,6 +657,7 @@ export function InvoiceManagement() {
   const handleTermsSelect = (option: DropdownOption) => {
     const terms = option.value as string;
     setSelectedTerms(terms);
+    calculateDueDate(invoiceDate, terms);
   };
 
   const handleInvoiceDateChange = (date: string) => {

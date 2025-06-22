@@ -715,7 +715,32 @@ export function RecruiterDashboard() {
             />
           </div>
         </div>
-        
+
+        {/* Position Metrics */}
+        <div className="position-metrics-container">
+          <DataViewToggle
+            id="positionDataToggle"
+            checked={showAllRecruitersPositions}
+            onChange={handleTogglePositionView}
+            label={toggleDescriptions.position}
+            description="Toggle to view position data for all recruiters or your own"
+          />
+
+          <div className="position-metrics-grid">
+            <MetricGrid
+              metricsState={positionMetrics.state}
+              expandedGraphs={expandedGraphs}
+              onMetricClick={handleMetricClick}
+              onToggleGraph={handleToggleGraph}
+              onRetry={positionMetrics.retry}
+              gridSize={3}
+              size="sm"
+              className="position-metrics"
+            />
+          </div>
+        </div>
+
+        {/* AI Insights */}
         <div className="dashboard-grid ai-insights">
           <div className="ai-insights-container">
             <div className="ai-insights-header">
@@ -749,6 +774,7 @@ export function RecruiterDashboard() {
           </div>
         </div>
 
+        {/* Client Metrics */}
         <div className="client-metrics-container">
           <DataViewToggle
             id="clientDataToggle"
@@ -779,29 +805,6 @@ export function RecruiterDashboard() {
             error={clientMetrics.state.error}
             onRetry={clientMetrics.retry}
           />
-        </div>
-
-        <div className="position-metrics-container">
-          <DataViewToggle
-            id="positionDataToggle"
-            checked={showAllRecruitersPositions}
-            onChange={handleTogglePositionView}
-            label={toggleDescriptions.position}
-            description="Toggle to view position data for all recruiters or your own"
-          />
-
-          <div className="position-metrics-grid">
-            <MetricGrid
-              metricsState={positionMetrics.state}
-              expandedGraphs={expandedGraphs}
-              onMetricClick={handleMetricClick}
-              onToggleGraph={handleToggleGraph}
-              onRetry={positionMetrics.retry}
-              gridSize={3}
-              size="sm"
-              className="position-metrics"
-            />
-          </div>
         </div>
       </main>
     </div>

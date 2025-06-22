@@ -271,6 +271,14 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
     
     // Recruiter-specific items
     {
+      label: 'All Users',
+      path: '/all-users-management',
+      icon: <Users size={16} />,
+      requiresAuth: true,
+      roles: ['admin'],
+      exact: true
+    },
+    {
       label: 'Jobseeker Management',
       icon: <Users size={16} />,
       requiresAuth: true,
@@ -279,19 +287,19 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
         { 
           label: 'All Jobseekers', 
           path: '/jobseeker-management', 
-          icon: <ListChecks size={16} />,
+          icon: <ListChecks size={16} />, 
           exact: true 
         },
         { 
           label: 'Create Jobseeker', 
           path: '/profile/create', 
-          icon: <UserPlus size={16} />,
+          icon: <UserPlus size={16} />, 
           exact: true 
         },
         { 
           label: 'Jobseeker Drafts', 
           path: '/jobseekers/drafts', 
-          icon: <FileEdit size={16} />,
+          icon: <FileEdit size={16} />, 
           exact: true 
         }
       ]

@@ -1,7 +1,7 @@
 import express from 'express';
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
-import { authenticateToken } from '../middleware/auth.js';
+import { authenticateToken, isAdminOrRecruiter } from '../middleware/auth.js';
 import twilio from 'twilio';
 
 dotenv.config();
@@ -565,6 +565,149 @@ router.get('/check-phone', async (req, res) => {
   } catch (error) {
     console.error('Error checking phone availability:', error);
     return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * @route GET /api/auth/users
+ * @desc Get all auth users with filters and pagination
+ * @access Private (Admin, Recruiter)
+ */
+router.get('/users', authenticateToken, isAdminOrRecruiter, async (req, res) => {
+  try {
+    // Extract pagination and filter parameters from query
+    const {
+      page = '1',
+      limit = '10',
+      search = '',
+      nameFilter = '',
+      emailFilter = '',
+      mobileFilter = '',
+      userTypeFilter = '',
+      emailVerifiedFilter = ''
+    } = req.query as {
+      page?: string;
+      limit?: string;
+      search?: string;
+      nameFilter?: string;
+      emailFilter?: string;
+      mobileFilter?: string;
+      userTypeFilter?: string;
+      emailVerifiedFilter?: string;
+    };
+
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const offset = (pageNum - 1) * limitNum;
+
+    // Fetch all users (no filters, no pagination)
+    const { data: allUsers, error } = await supabase.rpc('list_auth_users', {
+      search: null,
+      name_filter: null,
+      email_filter: null,
+      mobile_filter: null,
+      user_type_filter: null,
+      email_verified_filter: null,
+      limit_count: 10000, // fetch a large number
+      offset_count: 0
+    });
+
+    if (error) {
+      console.error('Error calling list_auth_users function:', error);
+      return res.status(500).json({ error: 'Failed to fetch users' });
+    }
+
+    // Format for frontend (raw user JSON, plus some display fields)
+    type ListAuthUser = {
+      id: string;
+      email: string;
+      user_metadata: {
+        name?: string;
+        user_type?: string;
+        phoneNumber?: string;
+        [key: string]: any;
+      } | null;
+      created_at: string;
+      last_sign_in_at: string | null;
+      email_confirmed_at: string | null;
+      [key: string]: any;
+    };
+    let formattedUsers = (allUsers || []).map((user: ListAuthUser) => {
+      const meta = user.user_metadata || {};
+      return {
+        id: user.id,
+        email: user.email,
+        name: meta.name || '',
+        userType: meta.user_type || '',
+        phoneNumber: meta.phoneNumber || '',
+        emailVerified: !!user.email_confirmed_at,
+        createdAt: user.created_at,
+        lastSignInAt: user.last_sign_in_at,
+        raw: user // full raw user JSON
+      };
+    });
+
+    // Apply filtering in Node.js
+    type FormattedUser = {
+      id: string;
+      email: string;
+      name: string;
+      userType: string;
+      phoneNumber: string;
+      emailVerified: boolean;
+      createdAt: string;
+      lastSignInAt: string | null;
+      raw: ListAuthUser;
+    };
+    if (search && search.trim().length > 0) {
+      const s = search.trim().toLowerCase();
+      formattedUsers = formattedUsers.filter((u: FormattedUser) =>
+        u.email.toLowerCase().includes(s) ||
+        u.name.toLowerCase().includes(s) ||
+        u.phoneNumber.toLowerCase().includes(s) ||
+        u.userType.toLowerCase().includes(s)
+      );
+    }
+    if (nameFilter) {
+      formattedUsers = formattedUsers.filter((u: FormattedUser) => u.name.toLowerCase().includes(nameFilter.toLowerCase()));
+    }
+    if (emailFilter) {
+      formattedUsers = formattedUsers.filter((u: FormattedUser) => u.email.toLowerCase().includes(emailFilter.toLowerCase()));
+    }
+    if (mobileFilter) {
+      formattedUsers = formattedUsers.filter((u: FormattedUser) => u.phoneNumber.toLowerCase().includes(mobileFilter.toLowerCase()));
+    }
+    if (userTypeFilter) {
+      formattedUsers = formattedUsers.filter((u: FormattedUser) => u.userType === userTypeFilter);
+    }
+    if (emailVerifiedFilter) {
+      if (emailVerifiedFilter === 'true') {
+        formattedUsers = formattedUsers.filter((u: FormattedUser) => u.emailVerified);
+      } else if (emailVerifiedFilter === 'false') {
+        formattedUsers = formattedUsers.filter((u: FormattedUser) => !u.emailVerified);
+      }
+    }
+
+    const total = allUsers ? allUsers.length : 0;
+    const totalFiltered = formattedUsers.length;
+    const totalPages = Math.ceil(totalFiltered / limitNum);
+    const paginatedUsers = formattedUsers.slice(offset, offset + limitNum);
+
+    res.json({
+      users: paginatedUsers,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalFiltered,
+        totalPages,
+        hasNextPage: pageNum < totalPages,
+        hasPrevPage: pageNum > 1
+      }
+    });
+  } catch (error) {
+    console.error('Unexpected error fetching auth users:', error);
+    res.status(500).json({ error: 'An unexpected error occurred while fetching auth users' });
   }
 });
 

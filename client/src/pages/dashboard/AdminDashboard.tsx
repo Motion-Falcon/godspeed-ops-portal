@@ -822,27 +822,22 @@ export function AdminDashboard() {
         </p>
 
         <div className="dashboard-grid">
-          {/* Invoice Metrics Section */}
+          {/* Jobseeker Metrics Section */}
           <div className="dashboard-left-side">
             <div className="metrics-grid-container">
               <DataViewToggle
-                id="invoiceDataToggle"
-                label={toggleDescriptions.invoice}
-                description="Toggle to view invoice data for all recruiters"
+                id="recruiterDataToggle"
+                label={toggleDescriptions.recruiter}
+                description="Toggle to view data for all recruiters"
               />
               <MetricGrid
-                metricsState={{
-                  data: invoiceMetricData,
-                  loading: invoiceLoading,
-                  error: invoiceError,
-                }}
+                metricsState={recruiterMetrics.state}
                 expandedGraphs={expandedGraphs}
                 onMetricClick={handleMetricClick}
                 onToggleGraph={handleToggleGraph}
-                onRetry={fetchInvoiceMetrics}
+                onRetry={recruiterMetrics.retry}
                 gridSize={4}
                 size="sm"
-                className="invoice-metrics"
               />
             </div>
           </div>
@@ -860,6 +855,51 @@ export function AdminDashboard() {
               onLoadMore={loadMoreActivities}
             />
           </div>
+        </div>
+
+        {/* Position Metrics */}
+        <div className="position-metrics-container">
+          <DataViewToggle
+            id="positionDataToggle"
+            label={toggleDescriptions.position}
+            description="Toggle to view position data for all recruiters"
+          />
+
+          <div className="position-metrics-grid">
+            <MetricGrid
+              metricsState={positionMetrics.state}
+              expandedGraphs={expandedGraphs}
+              onMetricClick={handleMetricClick}
+              onToggleGraph={handleToggleGraph}
+              onRetry={positionMetrics.retry}
+              gridSize={3}
+              size="sm"
+              className="position-metrics"
+            />
+          </div>
+        </div>
+
+        {/* Invoice Metrics */}
+        <div className="position-metrics-container">
+          <DataViewToggle
+            id="invoiceDataToggle"
+            label={toggleDescriptions.invoice}
+            description="Toggle to view invoice data for all recruiters"
+          />
+          <MetricGrid
+            metricsState={{
+              data: invoiceMetricData,
+              loading: invoiceLoading,
+              error: invoiceError,
+            }}
+            expandedGraphs={expandedGraphs}
+            onMetricClick={handleMetricClick}
+            onToggleGraph={handleToggleGraph}
+            onRetry={fetchInvoiceMetrics}
+            gridSize={4}
+            size="sm"
+            className="invoice-metrics"
+          />
         </div>
 
         {/* Timesheet Metrics Section */}
@@ -957,45 +997,6 @@ export function AdminDashboard() {
             error={clientMetrics.state.error}
             onRetry={clientMetrics.retry}
           />
-        </div>
-
-        {/* Jobseeker Metrics Section */}
-        <div className="position-metrics-container">
-          <DataViewToggle
-            id="recruiterDataToggle"
-            label={toggleDescriptions.recruiter}
-            description="Toggle to view data for all recruiters"
-          />
-          <MetricGrid
-            metricsState={recruiterMetrics.state}
-            expandedGraphs={expandedGraphs}
-            onMetricClick={handleMetricClick}
-            onToggleGraph={handleToggleGraph}
-            onRetry={recruiterMetrics.retry}
-            gridSize={4}
-            size="sm"
-          />
-        </div>
-
-        <div className="position-metrics-container">
-          <DataViewToggle
-            id="positionDataToggle"
-            label={toggleDescriptions.position}
-            description="Toggle to view position data for all recruiters"
-          />
-
-          <div className="position-metrics-grid">
-            <MetricGrid
-              metricsState={positionMetrics.state}
-              expandedGraphs={expandedGraphs}
-              onMetricClick={handleMetricClick}
-              onToggleGraph={handleToggleGraph}
-              onRetry={positionMetrics.retry}
-              gridSize={3}
-              size="sm"
-              className="position-metrics"
-            />
-          </div>
         </div>
       </main>
     </div>

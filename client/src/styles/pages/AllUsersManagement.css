@@ -1,0 +1,168 @@
+/* AllUsersManagement.css - Specific styles for All Users Management page */
+
+.all-users-management {
+  /* Override column-filter styles for columns without filters */
+}
+
+.all-users-management .column-filter.no-filter {
+  min-height: 60px; /* Match the height of columns with filters */
+  display: flex;
+  align-items: left;
+  justify-content: flex-start;
+}
+
+.all-users-management .column-filter.no-filter .column-title {
+  font-weight: 600;
+  color: #374151;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0;
+}
+
+/* Ensure consistent spacing for all column filters */
+.all-users-management .column-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.all-users-management .column-title {
+  font-weight: 600;
+  color: #374151;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* User Type Row Styling - Subtle background differentiation */
+.all-users-management .user-row {
+  transition: background-color 0.2s ease;
+}
+
+.all-users-management .user-row.admin {
+  background-color: #fffbeb; /* Very light amber */
+}
+
+.all-users-management .user-row.recruiter {
+  background-color: #eff6ff; /* Very light blue */
+}
+
+.all-users-management .user-row.jobseeker {
+  background-color: #f0fdf4; /* Very light green */
+}
+
+.all-users-management .user-row.default {
+  background-color: #fafafa; /* Very light gray */
+}
+
+/* Hover effects for rows */
+.all-users-management .user-row.admin:hover {
+  background-color: #fef3c7; /* Slightly more amber on hover */
+}
+
+.all-users-management .user-row.recruiter:hover {
+  background-color: #dbeafe; /* Slightly more blue on hover */
+}
+
+.all-users-management .user-row.jobseeker:hover {
+  background-color: #dcfce7; /* Slightly more green on hover */
+}
+
+.all-users-management .user-row.default:hover {
+  background-color: #f3f4f6; /* Slightly more gray on hover */
+}
+
+/* User Type Badge Styling */
+.all-users-management .user-type-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  min-width: 70px;
+  justify-content: center;
+  border: 1px solid transparent;
+}
+
+.all-users-management .user-type-badge.admin {
+  background-color: #fef3c7;
+  color: #92400e;
+  border-color: #f59e0b;
+}
+
+.all-users-management .user-type-badge.recruiter {
+  background-color: #dbeafe;
+  color: #1e40af;
+  border-color: #3b82f6;
+}
+
+.all-users-management .user-type-badge.jobseeker {
+  background-color: #d1fae5;
+  color: #065f46;
+  border-color: #10b981;
+}
+
+.all-users-management .user-type-badge.default {
+  background-color: #f3f4f6;
+  color: #6b7280;
+  border-color: #d1d5db;
+}
+
+/* Status display styling specific to all users management */
+.all-users-management .status-display {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.all-users-management .status-icon {
+  flex-shrink: 0;
+}
+
+.all-users-management .status-text {
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.all-users-management .status-text.verified {
+  color: #059669;
+}
+
+.all-users-management .status-text.rejected {
+  color: #dc2626;
+}
+
+/* Table cell specific styles */
+.all-users-management .user-type-cell {
+  padding: 12px 8px;
+  vertical-align: middle;
+}
+
+.all-users-management .email-verified-cell {
+  padding: 12px 8px;
+  vertical-align: middle;
+}
+
+.all-users-management .created-at-cell,
+.all-users-management .last-signin-cell {
+  padding: 12px 8px;
+  vertical-align: middle;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+/* Ensure consistent column widths */
+.all-users-management .common-table th:nth-child(6) { /* Created At */
+  width: 120px;
+  min-width: 120px;
+}
+
+.all-users-management .common-table th:nth-child(7) { /* Last Sign In */
+  width: 120px;
+  min-width: 120px;
+} 

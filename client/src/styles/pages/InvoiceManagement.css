@@ -976,7 +976,8 @@
   height: 100%;
   padding: 8px 12px;
   text-align: center;
-  vertical-align: middle; 
+  vertical-align: middle;
+  color: white;
 }
 
 .send-email-cell button.primary {
@@ -984,5 +985,13 @@
 }
 
 .send-email-cell button.secondary {
+  background: linear-gradient(135deg, #2d2d2d 0%, #8B0000 100%);
+}
+
+.dark .send-email-cell button.primary {
+  background: linear-gradient(135deg, #1a1a1a 0%, #307e02 100%);
+}
+
+.dark .send-email-cell button.secondary {
   background: linear-gradient(135deg, #2d2d2d 0%, #8B0000 100%);
 }

@@ -300,3 +300,25 @@ export const complete2FAAPI = async (email: string, password: string) => {
     throw error;
   }
 };
+
+// Get all auth users with filters and pagination
+export const getAllAuthUsersAPI = async (params: {
+  page?: number;
+  limit?: number;
+  search?: string;
+  nameFilter?: string;
+  emailFilter?: string;
+  mobileFilter?: string;
+  userTypeFilter?: string;
+  emailVerifiedFilter?: string;
+} = {}) => {
+  try {
+    const response = await api.get('/api/auth/users', { params });
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(error.response.data.error || 'Failed to fetch auth users');
+    }
+    throw error;
+  }
+};
