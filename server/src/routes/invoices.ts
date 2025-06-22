@@ -29,6 +29,7 @@ interface InvoiceData {
   dueDate: string;
   status?: string;
   currency?: string;
+  paymentTerms?: string;
   subtotal: number;
   totalTax: number;
   totalHst?: number;
@@ -90,30 +91,33 @@ function snakeToCamelCase(str: string): string {
 /**
  * Transform invoice data from camelCase to snake_case for database
  */
-function transformToDbFormat(data: InvoiceData): Omit<DbInvoiceData, 'id' | 'invoice_number' | 'created_at' | 'updated_at' | 'version'> {
+function transformToDbFormat(invoiceData: InvoiceData): DbInvoiceData {
   return {
-    client_id: data.clientId,
-    invoice_date: data.invoiceDate,
-    due_date: data.dueDate,
-    status: data.status || 'draft',
-    currency: data.currency || 'CAD',
-    subtotal: data.subtotal,
-    total_tax: data.totalTax,
-    total_hst: data.totalHst || 0,
-    total_gst: data.totalGst || 0,
-    total_qst: data.totalQst || 0,
-    grand_total: data.grandTotal,
-    total_hours: data.totalHours,
-    email_sent: data.emailSent || false,
-    email_sent_date: data.emailSentDate || undefined,
-    invoice_sent_to: data.invoice_sent_to || undefined,
-    document_generated: data.documentGenerated || false,
-    document_path: data.documentPath || undefined,
-    document_file_name: data.documentFileName || undefined,
-    document_file_size: data.documentFileSize || undefined,
-    document_mime_type: data.documentMimeType || 'application/pdf',
-    document_generated_at: data.documentGeneratedAt || undefined,
-    invoice_data: data.invoiceData
+    client_id: invoiceData.clientId,
+    invoice_date: invoiceData.invoiceDate,
+    due_date: invoiceData.dueDate,
+    status: invoiceData.status || 'draft',
+    currency: invoiceData.currency || 'CAD',
+    subtotal: invoiceData.subtotal,
+    total_tax: invoiceData.totalTax,
+    total_hst: invoiceData.totalHst,
+    total_gst: invoiceData.totalGst,
+    total_qst: invoiceData.totalQst,
+    grand_total: invoiceData.grandTotal,
+    total_hours: invoiceData.totalHours,
+    email_sent: invoiceData.emailSent || false,
+    email_sent_date: invoiceData.emailSentDate,
+    invoice_sent_to: invoiceData.invoice_sent_to,
+    document_generated: invoiceData.documentGenerated || false,
+    document_path: invoiceData.documentPath,
+    document_file_name: invoiceData.documentFileName,
+    document_file_size: invoiceData.documentFileSize,
+    document_mime_type: invoiceData.documentMimeType,
+    document_generated_at: invoiceData.documentGeneratedAt,
+    invoice_data: {
+      ...invoiceData.invoiceData,
+      paymentTerms: invoiceData.paymentTerms
+    }
   };
 }
 
@@ -564,12 +568,14 @@ router.post('/',
       
       // Get client name for display
       let clientName = 'Unknown Client';
-      if (invoiceData.clientId) {
+      let clientId = invoiceData.clientId || newInvoice?.client_id;
+      
+      if (clientId) {
         try {
           const { data: client } = await supabase
             .from('clients')
             .select('company_name, short_code')
-            .eq('id', invoiceData.clientId)
+            .eq('id', clientId)
             .single();
           if (client) {
             clientName = client.company_name || client.short_code || 'Unknown Client';
@@ -579,6 +585,10 @@ router.post('/',
         }
       }
 
+      // Use created invoice data for accurate values, fallback to request data
+      const finalGrandTotal = newInvoice?.grand_total ?? invoiceData.grandTotal ?? 0;
+      const finalCurrency = newInvoice?.currency ?? invoiceData.currency ?? 'CAD';
+
       return {
         actionType: 'create_invoice',
         actionVerb: 'created',
@@ -586,20 +596,20 @@ router.post('/',
         primaryEntityId: newInvoice?.id,
         primaryEntityName: `Invoice ${newInvoice?.invoice_number}`,
         secondaryEntityType: 'client',
-        secondaryEntityId: invoiceData.clientId,
+        secondaryEntityId: clientId || null,
         secondaryEntityName: clientName,
-        displayMessage: `Created invoice ${newInvoice?.invoice_number} for ${clientName} - $${invoiceData.grandTotal} ${invoiceData.currency || 'CAD'}`,
+        displayMessage: `Created invoice ${newInvoice?.invoice_number} for ${clientName} - $${finalGrandTotal.toFixed(2)} ${finalCurrency}`,
         category: 'financial',
         priority: 'normal' as const,
         metadata: {
           invoiceNumber: newInvoice?.invoice_number,
-          invoiceDate: invoiceData.invoiceDate,
-          dueDate: invoiceData.dueDate,
-          status: invoiceData.status || 'draft',
-          currency: invoiceData.currency || 'CAD',
-          subtotal: invoiceData.subtotal,
-          grandTotal: invoiceData.grandTotal,
-          totalHours: invoiceData.totalHours
+          invoiceDate: newInvoice?.invoice_date ?? invoiceData.invoiceDate,
+          dueDate: newInvoice?.due_date ?? invoiceData.dueDate,
+          status: newInvoice?.status ?? invoiceData.status ?? 'draft',
+          currency: finalCurrency,
+          subtotal: newInvoice?.subtotal ?? invoiceData.subtotal ?? 0,
+          grandTotal: finalGrandTotal,
+          totalHours: newInvoice?.total_hours ?? invoiceData.totalHours ?? 0
         }
       };
     }
@@ -690,14 +700,16 @@ router.put('/:id',
       const updatedInvoice = res.locals.updatedInvoice;
       const { id } = req.params;
       
-      // Get client name for display
+      // Get client name for display - check multiple sources for client ID
       let clientName = 'Unknown Client';
-      if (invoiceData.clientId) {
+      let clientId = invoiceData.clientId || updatedInvoice?.client_id;
+      
+      if (clientId) {
         try {
           const { data: client } = await supabase
             .from('clients')
             .select('company_name, short_code')
-            .eq('id', invoiceData.clientId)
+            .eq('id', clientId)
             .single();
           if (client) {
             clientName = client.company_name || client.short_code || 'Unknown Client';
@@ -707,6 +719,11 @@ router.put('/:id',
         }
       }
 
+      // Use updated invoice data for accurate values, fallback to request data
+      const finalGrandTotal = updatedInvoice?.grand_total ?? invoiceData.grandTotal ?? 0;
+      const finalCurrency = updatedInvoice?.currency ?? invoiceData.currency ?? 'CAD';
+      const finalStatus = updatedInvoice?.status ?? invoiceData.status ?? 'draft';
+
       return {
         actionType: 'update_invoice',
         actionVerb: 'updated',
@@ -714,20 +731,20 @@ router.put('/:id',
         primaryEntityId: id,
         primaryEntityName: `Invoice ${updatedInvoice?.invoice_number}`,
         secondaryEntityType: 'client',
-        secondaryEntityId: invoiceData.clientId,
+        secondaryEntityId: clientId || null,
         secondaryEntityName: clientName,
-        displayMessage: `Updated invoice ${updatedInvoice?.invoice_number} for ${clientName} - $${invoiceData.grandTotal} ${invoiceData.currency || 'CAD'}`,
+        displayMessage: `Updated invoice ${updatedInvoice?.invoice_number} for ${clientName} - $${finalGrandTotal.toFixed(2)} ${finalCurrency}`,
         category: 'financial',
         priority: 'normal' as const,
         metadata: {
           invoiceNumber: updatedInvoice?.invoice_number,
-          invoiceDate: invoiceData.invoiceDate,
-          dueDate: invoiceData.dueDate,
-          status: invoiceData.status || 'draft',
-          currency: invoiceData.currency || 'CAD',
-          subtotal: invoiceData.subtotal,
-          grandTotal: invoiceData.grandTotal,
-          totalHours: invoiceData.totalHours
+          invoiceDate: updatedInvoice?.invoice_date ?? invoiceData.invoiceDate,
+          dueDate: updatedInvoice?.due_date ?? invoiceData.dueDate,
+          status: finalStatus,
+          currency: finalCurrency,
+          subtotal: updatedInvoice?.subtotal ?? invoiceData.subtotal ?? 0,
+          grandTotal: finalGrandTotal,
+          totalHours: updatedInvoice?.total_hours ?? invoiceData.totalHours ?? 0
         }
       };
     }
@@ -880,7 +897,7 @@ router.delete('/:id',
         secondaryEntityType: 'client',
         secondaryEntityId: deletedInvoice?.client_id,
         secondaryEntityName: clientName,
-        displayMessage: `Deleted invoice ${deletedInvoice?.invoice_number} for ${clientName} - $${deletedInvoice?.grand_total} ${deletedInvoice?.currency || 'CAD'}`,
+        displayMessage: `Deleted invoice ${deletedInvoice?.invoice_number} for ${clientName} - $${(deletedInvoice?.grand_total ?? 0).toFixed(2)} ${deletedInvoice?.currency || 'CAD'}`,
         category: 'financial',
         priority: 'high' as const,
         metadata: {

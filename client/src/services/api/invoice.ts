@@ -10,6 +10,7 @@ export interface InvoiceData {
   dueDate: string;
   status?: string;
   currency?: string;
+  paymentTerms?: string;
   subtotal: number;
   totalTax: number;
   totalHst?: number;
@@ -254,15 +255,14 @@ export const createInvoiceFromFrontendData = async (
     dueDate: string;
     status?: string;
     currency?: string;
+    paymentTerms?: string;
     timesheets: Array<{
       id: string;
       invoiceNumber: string;
       weekStartDate: string;
       weekEndDate: string;
       totalRegularHours: number;
-      totalOvertimeHours: number;
       regularBillRate: number;
-      overtimeBillRate: number;
       totalClientBill: number;
       jobseekerProfile: {
         firstName: string;
@@ -281,6 +281,11 @@ export const createInvoiceFromFrontendData = async (
       uploadStatus: string;
       filePath: string;
       bucketName: string;
+    }>;
+    supplierPOItems?: Array<{
+      id: string;
+      selectedOption: string;
+      supplierPoNumber: string;
     }>;
     subtotal: number;
     totalTax: number;
@@ -303,6 +308,7 @@ export const createInvoiceFromFrontendData = async (
       dueDate: frontendData.dueDate,
       status: frontendData.status || 'draft',
       currency: frontendData.currency || 'CAD',
+      paymentTerms: frontendData.paymentTerms,
       subtotal: frontendData.subtotal,
       totalTax: frontendData.totalTax,
       totalHst: frontendData.totalHst || 0,
@@ -317,6 +323,7 @@ export const createInvoiceFromFrontendData = async (
         client: frontendData.client,
         timesheets: frontendData.timesheets,
         attachments: frontendData.attachments || [],
+        supplierPOItems: frontendData.supplierPOItems || [],
         messageOnInvoice: frontendData.messageOnInvoice,
         termsOnInvoice: frontendData.termsOnInvoice,
         document: {

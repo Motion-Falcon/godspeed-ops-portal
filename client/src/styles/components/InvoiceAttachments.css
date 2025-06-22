@@ -393,4 +393,32 @@
   background: var(--card);
   border-color: var(--border);
   color: var(--text);
+}
+
+/* === Generated Invoice Section Styles === */
+.generated-invoice-item {
+  background: var(--success-bg, #e6f9f0);
+  border: 2px solid var(--success, #2ecc40);
+  box-shadow: 0 2px 8px rgba(46, 204, 64, 0.08);
+  position: relative;
+}
+.generated-invoice-item .attachment-file-placeholder,
+.generated-invoice-item .attachment-name svg {
+  color: var(--success, #2ecc40);
+}
+.generated-invoice-item .attachment-status.uploaded {
+  color: var(--success, #2ecc40);
+}
+.generated-invoice-item::before {
+  content: 'Generated Invoice';
+  position: absolute;
+  top: -1.2rem;
+  left: 1rem;
+  background: var(--success, #2ecc40);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.15rem 0.75rem;
+  border-radius: 4px 4px 0 0;
+  letter-spacing: 0.5px;
 } 

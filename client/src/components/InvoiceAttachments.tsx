@@ -53,6 +53,7 @@ interface AttachmentFile {
   previewUrl?: string;
   isUploaded: boolean;
   uploadStatus: 'pending' | 'uploading' | 'uploaded' | 'error';
+  bucketName?: string;
 }
 
 interface InvoiceAttachmentsProps {
@@ -132,9 +133,11 @@ export const InvoiceAttachments: React.FC<InvoiceAttachmentsProps> = ({
             return { ...attachment, previewUrl };
           } else if (attachment.filePath && attachment.fileType.startsWith('image/') && !attachment.previewUrl) {
             try {
+              const bucket = attachment.bucketName || bucketName;
+              const decodedFilePath = attachment.filePath.replace(/&#x2F;/g, '/');
               const { data } = await supabase.storage
-                .from(bucketName)
-                .createSignedUrl(attachment.filePath, 300);
+                .from(bucket)
+                .createSignedUrl(decodedFilePath, 300);
               if (data?.signedUrl) {
                 return { ...attachment, previewUrl: data.signedUrl };
               }
@@ -218,9 +221,11 @@ export const InvoiceAttachments: React.FC<InvoiceAttachmentsProps> = ({
       } else if (attachment.filePath) {
         // Get signed URL for uploaded file
         try {
+          const bucket = attachment.bucketName || bucketName;
+          const decodedFilePath = attachment.filePath.replace(/&#x2F;/g, '/');
           const { data } = await supabase.storage
-            .from(bucketName)
-            .createSignedUrl(attachment.filePath, 300);
+            .from(bucket)
+            .createSignedUrl(decodedFilePath, 300);
           pdfUrl = data?.signedUrl || null;
         } catch (error) {
           console.error('Error creating signed URL for PDF:', error);
@@ -257,9 +262,11 @@ export const InvoiceAttachments: React.FC<InvoiceAttachmentsProps> = ({
     } else if (attachment.filePath) {
       // Download uploaded file
       try {
+        const bucket = attachment.bucketName || bucketName;
+        const decodedFilePath = attachment.filePath.replace(/&#x2F;/g, '/');
         const { data } = await supabase.storage
-          .from(bucketName)
-          .createSignedUrl(attachment.filePath, 300);
+          .from(bucket)
+          .createSignedUrl(decodedFilePath, 300);
         
         if (data?.signedUrl) {
           const a = document.createElement('a');

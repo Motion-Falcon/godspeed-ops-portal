@@ -1,0 +1,214 @@
+{
+    "id": "c5bfe8db-4149-4d58-9a92-8ed5b4822d46",
+    "invoiceNumber": "000002",
+    "invoiceDate": "2025-06-21",
+    "dueDate": "2025-06-21",
+    "status": "draft",
+    "currency": "CAD",
+    "clientId": "e3ab7d0d-3c0f-4044-9fd0-98726b8d9da8",
+    "subtotal": 2706,
+    "totalTax": 79.8,
+    "totalHst": 31.46,
+    "totalGst": 24.2,
+    "totalQst": 24.14,
+    "grandTotal": 2785.8,
+    "totalHours": 35,
+    "emailSent": true,
+    "emailSentDate": "2025-06-22T04:24:20.565+00:00",
+    "documentGenerated": true,
+    "documentPath": "7822e2e2-48c5-4894-9d2d-c594e1254f3f&#x2F;000002&#x2F;documents&#x2F;Invoice_000002_QuantumTech_11.pdf",
+    "documentFileName": "Invoice_000002_QuantumTech_11.pdf",
+    "documentFileSize": 85759,
+    "documentMimeType": "application&#x2F;pdf",
+    "documentGeneratedAt": "2025-06-22T04:42:13.077+00:00",
+    "invoiceData": {
+        "client": {
+            "id": "e3ab7d0d-3c0f-4044-9fd0-98726b8d9da8",
+            "city1": "Vancouver",
+            "province1": "BC",
+            "shortCode": "Q1",
+            "companyName": "QuantumTech 11",
+            "postalCode1": "A1A 1A1",
+            "emailAddress1": "contact11@quantumtech11.com"
+        },
+        "timesheets": [
+            {
+                "id": "1750564542378",
+                "position": {
+                    "title": "Billing Clerk",
+                    "positionId": "efb7e022-ed7a-4a06-9574-d632b5a63ce7",
+                    "positionCode": "Q1001",
+                    "positionCandidateAssignmentsId": "b0e88d54-7d88-4560-9088-e55bc2827c5c"
+                },
+                "salesTax": "5.00% [AB]",
+                "description": "desc 1 5",
+                "weekEndDate": "2025-06-21",
+                "invoiceNumber": "000002",
+                "weekStartDate": "2025-06-21",
+                "regularBillRate": 22,
+                "totalClientBill": 242,
+                "jobseekerProfile": {
+                    "email": "adam58@yahoo.com",
+                    "lastName": "Bell",
+                    "firstName": "Veronica",
+                    "jobseekerUserId": "26590c22-7f5e-474e-b2cf-2e2e0bb6d58c",
+                    "jobseekerProfileId": "87855aaf-f49e-4a19-b969-77a4b4c965d9"
+                },
+                "totalRegularHours": 11
+            },
+            {
+                "id": "1750564547481",
+                "position": {
+                    "title": "Billing Clerk",
+                    "positionId": "efb7e022-ed7a-4a06-9574-d632b5a63ce7",
+                    "positionCode": "Q1001",
+                    "positionCandidateAssignmentsId": "a7e0202d-f417-4b90-8a25-c15875d34fd0"
+                },
+                "salesTax": "14.975% [QC]",
+                "description": "desc 2 14",
+                "weekEndDate": "2025-06-21",
+                "invoiceNumber": "000002",
+                "weekStartDate": "2025-06-21",
+                "regularBillRate": 22,
+                "totalClientBill": 242,
+                "jobseekerProfile": {
+                    "email": "vwalsh@williams-mercer.info",
+                    "lastName": "Moreno",
+                    "firstName": "Alicia",
+                    "jobseekerUserId": "310e5fc0-c6e3-4818-9462-8e8ee3198340",
+                    "jobseekerProfileId": "49d7613f-60ad-4faf-9181-510bb770f99a"
+                },
+                "totalRegularHours": 11
+            },
+            {
+                "id": "1750564547713",
+                "position": {
+                    "title": "Billing Clerk",
+                    "positionId": "efb7e022-ed7a-4a06-9574-d632b5a63ce7",
+                    "positionCode": "Q1001",
+                    "positionCandidateAssignmentsId": "f5ef7eb4-ed6b-430c-aebf-85110787e4cd"
+                },
+                "salesTax": "13.00% [ON]",
+                "description": "desc 3 13",
+                "weekEndDate": "2025-06-21",
+                "invoiceNumber": "000002",
+                "weekStartDate": "2025-06-21",
+                "regularBillRate": 22,
+                "totalClientBill": 242,
+                "jobseekerProfile": {
+                    "email": "troyhunt@yahoo.com",
+                    "lastName": "Stone",
+                    "firstName": "Robert",
+                    "jobseekerUserId": "1ae12d3b-5dc2-4f04-821e-870136b9ea3d",
+                    "jobseekerProfileId": "813a959e-9abf-469d-9a6d-a33dbf2f2519"
+                },
+                "totalRegularHours": 11
+            },
+            {
+                "id": "1750564547998",
+                "position": {
+                    "title": "Billing Clerk",
+                    "positionId": "efb7e022-ed7a-4a06-9574-d632b5a63ce7",
+                    "positionCode": "Q1001",
+                    "positionCandidateAssignmentsId": "03385ff9-4560-4d79-9317-f7fef4c2508b"
+                },
+                "salesTax": "0.00% [ZERO RATED]",
+                "description": "minus",
+                "weekEndDate": "2025-06-21",
+                "invoiceNumber": "000002",
+                "weekStartDate": "2025-06-21",
+                "regularBillRate": -220,
+                "totalClientBill": -220,
+                "jobseekerProfile": {
+                    "email": "john47@garner-baker.net",
+                    "lastName": "Valenzuela",
+                    "firstName": "Kristina",
+                    "jobseekerUserId": "1acde6e3-80d7-4623-86b7-83794663feb2",
+                    "jobseekerProfileId": "d59c540a-a69a-40b1-8cec-b78a3a2689d3"
+                },
+                "totalRegularHours": 1
+            },
+            {
+                "id": "1750564548231",
+                "position": {
+                    "title": "Billing Clerk",
+                    "positionId": "efb7e022-ed7a-4a06-9574-d632b5a63ce7",
+                    "positionCode": "Q1001",
+                    "positionCandidateAssignmentsId": "596dbe93-188a-4383-8e60-78639e84fc1e"
+                },
+                "salesTax": "0.00% [ZERO RATED]",
+                "description": "bonous",
+                "weekEndDate": "2025-06-21",
+                "invoiceNumber": "000002",
+                "weekStartDate": "2025-06-21",
+                "regularBillRate": 2200,
+                "totalClientBill": 2200,
+                "jobseekerProfile": {
+                    "email": "aschente297@gmail.com",
+                    "lastName": "God",
+                    "firstName": "Aschente",
+                    "jobseekerUserId": "eb2fef88-b3cf-413c-9a21-5bffa5c788b8",
+                    "jobseekerProfileId": "572ee0d3-aaef-4235-8485-52eb94bc1c90"
+                },
+                "totalRegularHours": 1
+            }
+        ],
+        "attachments": [
+            {
+                "fileName": "screencapture-localhost-5173-my-positions-2025-06-16-16_20_03.png",
+                "filePath": "7822e2e2-48c5-4894-9d2d-c594e1254f3f&#x2F;000002&#x2F;attachments&#x2F;screencapture-localhost-5173-my-positions-2025-06-16-16_20_03_1750564669136.png",
+                "fileSize": 444796,
+                "fileType": "image&#x2F;png",
+                "bucketName": "invoices",
+                "uploadStatus": "uploaded"
+            },
+            {
+                "fileName": "screencapture-localhost-5173-timesheet-management-2025-06-15-22_56_17.png",
+                "filePath": "7822e2e2-48c5-4894-9d2d-c594e1254f3f&#x2F;000002&#x2F;attachments&#x2F;screencapture-localhost-5173-timesheet-management-2025-06-15-22_56_17_1750564669530.png",
+                "fileSize": 258399,
+                "fileType": "image&#x2F;png",
+                "bucketName": "invoices",
+                "uploadStatus": "uploaded"
+            },
+            {
+                "fileName": "position_candidate_assignments_rows.csv",
+                "filePath": "7822e2e2-48c5-4894-9d2d-c594e1254f3f&#x2F;000002&#x2F;attachments&#x2F;position_candidate_assignments_rows_1750564669938.csv",
+                "fileSize": 392,
+                "fileType": "text&#x2F;csv",
+                "bucketName": "invoices",
+                "uploadStatus": "uploaded"
+            }
+        ],
+        "paymentTerms": "Due on Receipt",
+        "termsOnInvoice": "Interest is payable at 24% annually after the agreed terms. rfdvsfvds",
+        "supplierPOItems": [
+            {
+                "id": "1750564542378",
+                "selectedOption": "Supplier No",
+                "supplierPoNumber": "#fgvsdfds"
+            },
+            {
+                "id": "1750564651499",
+                "selectedOption": "PO No",
+                "supplierPoNumber": "#fvdsfgvdsrf"
+            }
+        ],
+        "messageOnInvoice": "We appreciate your business and look forward to helping you again soon. srfvwsedfvcsd"
+    },
+    "searchVector": "'000002':1 '11':3 'q1':4 'quantumtech':2",
+    "createdAt": "2025-06-22T03:57:50.595429+00:00",
+    "createdByUserId": "7822e2e2-48c5-4894-9d2d-c594e1254f3f",
+    "updatedAt": "2025-06-22T04:42:13.268571+00:00",
+    "updatedByUserId": "7822e2e2-48c5-4894-9d2d-c594e1254f3f",
+    "version": 19,
+    "invoiceSentTo": "contact11@quantumtech11.com",
+    "client": {
+        "id": "e3ab7d0d-3c0f-4044-9fd0-98726b8d9da8",
+        "city1": "Vancouver",
+        "province1": "BC",
+        "short_code": "Q1",
+        "company_name": "QuantumTech 11",
+        "postal_code1": "A1A 1A1",
+        "email_address1": "contact11@quantumtech11.com"
+    }
+}

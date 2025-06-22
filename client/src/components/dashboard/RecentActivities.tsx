@@ -71,6 +71,8 @@ const getActivityIcon = (actionType: string, category: string) => {
       return <FileText size={16} />;
     case "matching":
       return <Target size={16} />;
+    case "financial":
+      return <FileText size={16} />;
     default:
       return <AlertCircle size={16} />;
   }
@@ -91,6 +93,12 @@ const getStatusIcon = (actionType: string) => {
     case "delete_position":
     case "delete_jobseeker":
     case "delete_client":
+      return <Trash size={12} className="status-error" />;
+    case "create_invoice":
+      return <PlusCircleIcon size={12} className="status-success" />;
+    case "update_invoice":
+      return <Pencil size={12} className="status-success" />;
+    case "delete_invoice":
       return <Trash size={12} className="status-error" />;
     case "verify_jobseeker":
       return <CheckCircle size={12} className="status-success" />;
@@ -149,49 +157,49 @@ const formatActivityMessage = (activity: RecentActivity): React.ReactNode => {
     case "assign_jobseeker":
       return cleanSecondaryName && tertiaryEntityName ? (
         <>
-          <ActorName>{actor_name}</ActorName> added Jobseeker
-          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity> to position
-          <SecondaryEntity>{cleanSecondaryName}</SecondaryEntity> of
+          <ActorName>{actor_name}</ActorName> added Jobseeker{" "}
+          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity> to position{" "}
+          <SecondaryEntity>{cleanSecondaryName}</SecondaryEntity> of{" "}
           <TertiaryEntity>{tertiaryEntityName}</TertiaryEntity>
         </>
       ) : cleanSecondaryName ? (
         <>
-          <ActorName>{actor_name}</ActorName> added Jobseeker
-          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity> to position
+          <ActorName>{actor_name}</ActorName> added Jobseeker{" "}
+          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity> to position{" "}
           <SecondaryEntity>{cleanSecondaryName}</SecondaryEntity>
         </>
       ) : (
         <>
-          <ActorName>{actor_name}</ActorName> added Jobseeker
-          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity> to a position
+          <ActorName>{actor_name}</ActorName> added Jobseeker{" "}
+          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity> to a position{" "}
         </>
       );
 
     case "remove_jobseeker":
       return cleanSecondaryName && tertiaryEntityName ? (
         <>
-          <ActorName>{actor_name}</ActorName> removed Jobseeker
-          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity> from position
+          <ActorName>{actor_name}</ActorName> removed Jobseeker{" "}
+          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity> from position{" "}
           <SecondaryEntity>{cleanSecondaryName}</SecondaryEntity> of
           <TertiaryEntity>{tertiaryEntityName}</TertiaryEntity>
         </>
       ) : cleanSecondaryName ? (
         <>
-          <ActorName>{actor_name}</ActorName> removed Jobseeker
-          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity> from position
+          <ActorName>{actor_name}</ActorName> removed Jobseeker{" "}
+          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity> from position{" "}
           <SecondaryEntity>{cleanSecondaryName}</SecondaryEntity>
         </>
       ) : (
         <>
-          <ActorName>{actor_name}</ActorName> removed Jobseeker
-          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity> from a position
+          <ActorName>{actor_name}</ActorName> removed Jobseeker{" "}
+          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity> from a position{" "}
         </>
       );
 
     case "create_jobseeker":
       return (
         <>
-          <ActorName>{actor_name}</ActorName> created Jobseeker Profile for
+          <ActorName>{actor_name}</ActorName> created Jobseeker Profile for{" "}
           <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity>
         </>
       );
@@ -199,7 +207,7 @@ const formatActivityMessage = (activity: RecentActivity): React.ReactNode => {
     case "update_jobseeker":
       return (
         <>
-          <ActorName>{actor_name}</ActorName> modified Jobseeker Profile for
+          <ActorName>{actor_name}</ActorName> modified Jobseeker Profile for{" "}
           <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity>
         </>
       );
@@ -207,7 +215,7 @@ const formatActivityMessage = (activity: RecentActivity): React.ReactNode => {
     case "delete_jobseeker":
       return (
         <>
-          <ActorName>{actor_name}</ActorName> deleted Jobseeker Profile for
+          <ActorName>{actor_name}</ActorName> deleted Jobseeker Profile for{" "}
           <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity>
         </>
       );
@@ -215,8 +223,8 @@ const formatActivityMessage = (activity: RecentActivity): React.ReactNode => {
     case "pending_jobseeker":
       return (
         <>
-          <ActorName>{actor_name}</ActorName> set Jobseeker
-          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity> status to
+          <ActorName>{actor_name}</ActorName> set Jobseeker{" "}
+          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity> status to{" "}
           <SecondaryEntity>pending</SecondaryEntity>
         </>
       );
@@ -224,8 +232,8 @@ const formatActivityMessage = (activity: RecentActivity): React.ReactNode => {
     case "reject_jobseeker":
       return (
         <>
-          <ActorName>{actor_name}</ActorName> set Jobseeker
-          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity> status to
+          <ActorName>{actor_name}</ActorName> set Jobseeker{" "}
+          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity> status to{" "}
           <TertiaryEntity>rejected</TertiaryEntity>
         </>
       );
@@ -233,8 +241,8 @@ const formatActivityMessage = (activity: RecentActivity): React.ReactNode => {
     case "verify_jobseeker":
       return (
         <>
-          <ActorName>{actor_name}</ActorName> set Jobseeker
-          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity> status to
+          <ActorName>{actor_name}</ActorName> set Jobseeker{" "}
+          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity> status to{" "}
           <PrimaryEntity>verified</PrimaryEntity>
         </>
       );
@@ -242,13 +250,13 @@ const formatActivityMessage = (activity: RecentActivity): React.ReactNode => {
     case "create_position":
       return cleanSecondaryName ? (
         <>
-          <ActorName>{actor_name}</ActorName> added new position
-          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity> for
+          <ActorName>{actor_name}</ActorName> added new position{" "}
+          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity> for{" "}
           <SecondaryEntity>{cleanSecondaryName}</SecondaryEntity>
         </>
       ) : (
         <>
-          <ActorName>{actor_name}</ActorName> added new position
+          <ActorName>{actor_name}</ActorName> added new position{" "}
           <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity>
         </>
       );
@@ -256,13 +264,13 @@ const formatActivityMessage = (activity: RecentActivity): React.ReactNode => {
     case "update_position":
       return cleanSecondaryName ? (
         <>
-          <ActorName>{actor_name}</ActorName> modified position
-          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity> for
+          <ActorName>{actor_name}</ActorName> modified position{" "}
+          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity> for{" "}
           <SecondaryEntity>{cleanSecondaryName}</SecondaryEntity>
         </>
       ) : (
         <>
-          <ActorName>{actor_name}</ActorName> modified position
+          <ActorName>{actor_name}</ActorName> modified position{" "}
           <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity>
         </>
       );
@@ -270,13 +278,13 @@ const formatActivityMessage = (activity: RecentActivity): React.ReactNode => {
     case "delete_position":
       return cleanSecondaryName ? (
         <>
-          <ActorName>{actor_name}</ActorName> removed position
-          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity> for
+          <ActorName>{actor_name}</ActorName> removed position{" "}
+          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity> for{" "}
           <SecondaryEntity>{cleanSecondaryName}</SecondaryEntity>
         </>
       ) : (
         <>
-          <ActorName>{actor_name}</ActorName> removed position
+          <ActorName>{actor_name}</ActorName> removed position{" "}
           <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity>
         </>
       );
@@ -284,7 +292,7 @@ const formatActivityMessage = (activity: RecentActivity): React.ReactNode => {
     case "create_client":
       return (
         <>
-          <ActorName>{actor_name}</ActorName> added a new client
+          <ActorName>{actor_name}</ActorName> added a new client{" "}
           <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity>
         </>
       );
@@ -292,7 +300,7 @@ const formatActivityMessage = (activity: RecentActivity): React.ReactNode => {
     case "update_client":
       return (
         <>
-          <ActorName>{actor_name}</ActorName> modified Client
+          <ActorName>{actor_name}</ActorName> modified Client{" "}
           <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity>
         </>
       );
@@ -300,7 +308,49 @@ const formatActivityMessage = (activity: RecentActivity): React.ReactNode => {
     case "delete_client":
       return (
         <>
-          <ActorName>{actor_name}</ActorName> deleted Client
+          <ActorName>{actor_name}</ActorName> deleted Client{" "}
+          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity>
+        </>
+      );
+
+    case "create_invoice":
+      return cleanSecondaryName ? (
+        <>
+          <ActorName>{actor_name}</ActorName> created{" "}
+          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity> of{" "}
+          <SecondaryEntity>{cleanSecondaryName}</SecondaryEntity>
+        </>
+      ) : (
+        <>
+          <ActorName>{actor_name}</ActorName> created{" "}
+          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity>
+        </>
+      );
+
+    case "update_invoice":
+      return cleanSecondaryName ? (
+        <>
+          <ActorName>{actor_name}</ActorName> updated{" "}
+          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity> of{" "}
+          <SecondaryEntity>{cleanSecondaryName}</SecondaryEntity>
+        </>
+      ) : (
+        <>
+          <ActorName>{actor_name}</ActorName> updated{" "}
+          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity>
+        </>
+      );
+
+    case "delete_invoice":
+      return cleanSecondaryName ? (
+        <>
+          <ActorName>{actor_name}</ActorName> deleted{" "}
+          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity> of{" "}
+          <SecondaryEntity>{cleanSecondaryName}</SecondaryEntity>
+        </>
+      ) : (
+        <>
+          <ActorName>{actor_name}</ActorName> deleted{" "}
           <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity>
         </>
       );

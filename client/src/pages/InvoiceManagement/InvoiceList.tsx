@@ -191,7 +191,7 @@ export function InvoiceList() {
   };
 
   const handleViewInvoice = (id: string) => {
-    navigate(`/invoice-management/view/${id}`);
+    navigate(`/invoice-management/create?id=${id}`);
   };
 
   const handleDeleteClick = (invoice: InvoiceData) => {
@@ -208,6 +208,12 @@ export function InvoiceList() {
       await deleteInvoice(invoiceToDelete.id as string);
       setInvoices(invoices.filter(i => i.id !== invoiceToDelete.id));
       setMessage(`Invoice "${invoiceToDelete.invoiceNumber}" deleted successfully.`);
+      
+      // Close modal and reset state after successful deletion
+      setIsDeleteModalOpen(false);
+      setInvoiceToDelete(null);
+      setDeleteError(null);
+      
       setTimeout(() => {
         setMessage(null);
       }, 3000);

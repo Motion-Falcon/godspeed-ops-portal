@@ -261,7 +261,7 @@
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  padding: 1px 4px;
+  padding: 0;
   border-radius: 3px;
   font-size: 11px;
   display: inline-block;
@@ -273,7 +273,7 @@
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  padding: 1px 4px;
+  padding: 0;
   border-radius: 3px;
   font-size: 11px;
   display: inline-block;
@@ -285,7 +285,7 @@
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  padding: 1px 4px;
+  padding: 0;
   border-radius: 3px;
   font-size: 11px;
   display: inline-block;
@@ -297,7 +297,7 @@
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  padding: 1px 4px;
+  padding: 0;
   border-radius: 3px;
   font-size: 11px;
   display: inline-block;

@@ -92,6 +92,7 @@ function App() {
                 <Route path="/position-matching" element={<PositionMatching />} />
                 <Route path="/timesheet-management" element={<TimesheetManagement />} />
                 <Route path="/invoice-management" element={<InvoiceManagement />} />
+                <Route path="/invoice-management/create" element={<InvoiceManagement />} />
                 <Route path="/invoice-management/list" element={<InvoiceList />} />
                 {/* Add more recruiter-specific routes here */}
               </Route>

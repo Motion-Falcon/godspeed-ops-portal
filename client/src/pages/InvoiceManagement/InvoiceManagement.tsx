@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { AppHeader } from "../../components/AppHeader";
 import {
   CustomDropdown,
@@ -14,6 +15,8 @@ import {
   Minus,
   Loader2,
   Download,
+  CheckCircle,
+  Eye,
 } from "lucide-react";
 import { getClients, ClientData, getClient } from "../../services/api/client";
 import {
@@ -35,6 +38,7 @@ import {
   generateInvoiceNumber,
   updateInvoiceDocument,
   updateInvoice,
+  getInvoice,
 } from "../../services/api/invoice";
 import { useAuth } from "../../contexts/AuthContext";
 import { supabase } from "../../lib/supabaseClient";
@@ -44,8 +48,7 @@ import {
 } from "../../utils/pdfGenerator.tsx";
 import { Document, Page, pdfjs } from "react-pdf";
 // Backend response interface with snake_case properties for invoice management
-interface InvoiceBackendClientData {
-  id?: string;
+interface InvoiceBackendClientData extends ClientData {
   company_name?: string;
   short_code?: string;
   list_name?: string;
@@ -66,13 +69,6 @@ interface InvoiceBackendClientData {
   currency?: string;
   created_at?: string;
   updated_at?: string;
-  // Include camelCase versions as fallback
-  companyName?: string;
-  shortCode?: string;
-  emailAddress1?: string;
-  postalCode1?: string;
-  preferredPaymentMethod?: string;
-  [key: string]: unknown;
 }
 
 // Interface for position data
@@ -82,10 +78,6 @@ interface ClientPosition {
   title: string;
   regularPayRate: string;
   billRate: string;
-  overtimeEnabled?: boolean;
-  overtimeHours?: string;
-  overtimePayRate?: string;
-  overtimeBillRate?: string;
   markup?: string;
 }
 
@@ -144,11 +136,51 @@ const COMBINED_OPTIONS = [
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
 
+interface TimesheetData {
+  id: string;
+  totalRegularHours: number;
+  regularBillRate: number;
+  jobseekerProfile?: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    jobseekerUserId?: string;
+    jobseekerProfileId?: string;
+  };
+  position?: {
+    title: string;
+    positionCode: string;
+    positionId: string;
+    positionCandidateAssignmentsId?: string;
+  };
+  description?: string;
+  salesTax?: string;
+}
+
+// Interface for client API response that handles both camelCase and snake_case
+interface ClientApiResponse extends ClientData {
+  company_name?: string;
+  short_code?: string;
+  email_address1?: string;
+  email_address2?: string;
+  contact_person_name1?: string;
+  contact_person_name2?: string;
+  postal_code1?: string;
+  preferred_payment_method?: string;
+  pay_cycle?: string;
+}
+
 export function InvoiceManagement() {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+  
+  // Edit mode state
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editingInvoiceId, setEditingInvoiceId] = useState<string | null>(null);
+
   // State for client selection
-  const [clients, setClients] = useState<ClientData[]>([]);
-  const [selectedClient, setSelectedClient] = useState<ClientData | null>(null);
+  const [clients, setClients] = useState<InvoiceBackendClientData[]>([]);
+  const [selectedClient, setSelectedClient] = useState<InvoiceBackendClientData | null>(null);
   const [clientLoading, setClientLoading] = useState(false);
 
   // State for invoice number
@@ -192,7 +224,6 @@ export function InvoiceManagement() {
   const [isGeneratingInvoice, setIsGeneratingInvoice] = useState(false);
   const [generationMessage, setGenerationMessage] = useState<string>("");
   const [generationError, setGenerationError] = useState<string>("");
-  const [emailSent, setEmailSent] = useState(false);
   // Add state for pdfBlobUrl
   const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
   // Add state for showInvoiceSuccessModal and emailToSend
@@ -200,6 +231,8 @@ export function InvoiceManagement() {
   const [createdInvoice, setCreatedInvoice] = useState<InvoiceData | null>(
     null
   );
+  // Add state for loaded invoice in edit/view mode
+  const [loadedInvoice, setLoadedInvoice] = useState<InvoiceData | null>(null);
   const [emailToSend, setEmailToSend] = useState<string>("");
   const [emailUpdateMessage, setEmailUpdateMessage] = useState<string>("");
 
@@ -211,6 +244,11 @@ export function InvoiceManagement() {
   // Add state for sending invoice
   const [isSendingInvoice, setIsSendingInvoice] = useState(false);
   const [sendInvoiceMessage, setSendInvoiceMessage] = useState<string>("");
+
+  // Add after all useState hooks, before the return statement in InvoiceManagement
+  const documentPath = (createdInvoice?.documentPath || loadedInvoice?.documentPath) || "";
+  const documentFileName = (createdInvoice?.documentFileName || loadedInvoice?.documentFileName) || "";
+  const documentFileSize = (createdInvoice?.documentFileSize || loadedInvoice?.documentFileSize) || 0;
 
   useEffect(() => {
     // Fetch clients on component mount
@@ -251,23 +289,18 @@ export function InvoiceManagement() {
   // Update currency and terms when client is selected
   useEffect(() => {
     if (selectedClient) {
-      // Set terms from client data and calculate due date
-      const clientTerms = selectedClient.terms || "Net 30";
-      setSelectedTerms(clientTerms);
+      // Only set terms from client if not in edit mode
+      if (!isEditMode) {
+        const clientTerms = selectedClient.terms || "Net 30";
+        setSelectedTerms(clientTerms);
 
-      // Calculate due date based on terms
-      if (invoiceDate) {
-        calculateDueDate(invoiceDate, clientTerms);
+        // Calculate due date based on terms
+        if (invoiceDate) {
+          calculateDueDate(invoiceDate, clientTerms);
+        }
       }
     }
-  }, [selectedClient, invoiceDate]);
-
-  // Update due date when terms change
-  useEffect(() => {
-    if (invoiceDate && selectedTerms) {
-      calculateDueDate(invoiceDate, selectedTerms);
-    }
-  }, [selectedTerms, invoiceDate]);
+  }, [selectedClient, invoiceDate, isEditMode]);
 
   useEffect(() => {
     if (showInvoiceSuccessModal && createdInvoice) {
@@ -289,21 +322,21 @@ export function InvoiceManagement() {
     try {
       setClientLoading(true);
       const response = await getClients({ limit: 100000000 }); // Get all clients
-      const convertedClients: ClientData[] = (
+      const convertedClients: InvoiceBackendClientData[] = (
         response.clients as BackendClientData[]
       ).map(
-        (client: BackendClientData): ClientData => ({
+        (client: BackendClientData): InvoiceBackendClientData => ({
           ...client,
           // Convert backend snake_case to frontend camelCase if needed
           companyName: (client.company_name || client.companyName) as string,
           shortCode: (client.short_code || client.shortCode) as string,
-          emailAddress1: (client.email_address_1 ||
+          emailAddress1: (client.email_address1 ||
             client.emailAddress1) as string,
-          city1: (client.city_1 || client.city1) as string | undefined,
-          province1: (client.province_1 || client.province1) as
+          city1: (client.city1 || client.city1) as string | undefined,
+          province1: (client.province1 || client.province1) as
             | string
             | undefined,
-          postalCode1: (client.postal_code_1 || client.postalCode1) as
+          postalCode1: (client.postal_code1 || client.postalCode1) as
             | string
             | undefined,
           preferredPaymentMethod: (client.preferred_payment_method ||
@@ -332,10 +365,6 @@ export function InvoiceManagement() {
           title: pos.title!,
           regularPayRate: pos.regularPayRate!,
           billRate: pos.billRate!,
-          overtimeEnabled: pos.overtimeEnabled,
-          overtimeHours: pos.overtimeHours,
-          overtimePayRate: pos.overtimePayRate,
-          overtimeBillRate: pos.overtimeBillRate,
           markup: pos.markup,
         })
       );
@@ -530,52 +559,93 @@ export function InvoiceManagement() {
 
   const handleClientSelect = async (option: DropdownOption) => {
     const basicClient = option.value as ClientData;
+    setSelectedClient(basicClient as InvoiceBackendClientData);
+    setClientLoading(true);
+    setGenerationError("");
 
     try {
-      setClientLoading(true);
+      // Fetch detailed client data using the proper API function
+      const detailedClient = await getClient(basicClient.id!) as ClientApiResponse;
 
-      // Fetch detailed client information from the backend
-      const detailedClientResponse = await getClient(basicClient.id!);
-
-      // Cast to InvoiceBackendClientData to handle snake_case properties from backend
-      const detailedClient =
-        detailedClientResponse as unknown as InvoiceBackendClientData;
-
-      // Convert backend snake_case to frontend camelCase and ensure all required fields
+      // Process the client data to match our frontend interface
       const processedClient: ClientData = {
-        ...detailedClient,
-        // Ensure camelCase fields are properly mapped
+        id: detailedClient.id || basicClient.id,
         companyName:
-          detailedClient.company_name || detailedClient.companyName || "",
-        shortCode: detailedClient.short_code || detailedClient.shortCode || "",
+          detailedClient.company_name ||
+          detailedClient.companyName ||
+          basicClient.companyName,
+        shortCode:
+          detailedClient.short_code ||
+          detailedClient.shortCode ||
+          basicClient.shortCode,
+        contactPersonName1:
+          detailedClient.contact_person_name1 || basicClient.contactPersonName1,
+        contactPersonName2:
+          detailedClient.contact_person_name2 || basicClient.contactPersonName2,
         emailAddress1:
-          detailedClient.email_address1 || detailedClient.emailAddress1 || "",
-        city1: detailedClient.city1 || detailedClient.city_1 || "",
-        province1: detailedClient.province1 || detailedClient.province_1 || "",
+          detailedClient.email_address1 ||
+          detailedClient.emailAddress1 ||
+          basicClient.emailAddress1,
+        emailAddress2:
+          detailedClient.email_address2 || basicClient.emailAddress2,
+        mobile1: detailedClient.mobile1 || basicClient.mobile1,
+        mobile2: detailedClient.mobile2 || basicClient.mobile2,
+        city1: detailedClient.city1 || basicClient.city1,
+        province1: detailedClient.province1 || basicClient.province1,
         postalCode1:
-          detailedClient.postal_code1 || detailedClient.postalCode1 || "",
+          detailedClient.postal_code1 ||
+          detailedClient.postalCode1 ||
+          basicClient.postalCode1,
         preferredPaymentMethod:
           detailedClient.preferred_payment_method ||
           detailedClient.preferredPaymentMethod ||
-          "",
+          basicClient.preferredPaymentMethod,
+        payCycle: detailedClient.pay_cycle || basicClient.payCycle,
         terms: detailedClient.terms || "Net 30",
         currency: detailedClient.currency || "CAD",
       };
 
-      setSelectedClient(processedClient);
+      setSelectedClient(processedClient as InvoiceBackendClientData);
 
       // Auto-select terms from client data if available
       if (processedClient.terms) {
         setSelectedTerms(processedClient.terms);
       }
 
-      // Generate invoice number when client is selected
-      generateAndSetInvoiceNumber();
+      // Only generate invoice number when not in edit mode
+      if (!isEditMode) {
+        generateAndSetInvoiceNumber();
+      }
     } catch (error) {
       console.error("Error fetching detailed client data:", error);
-      // Fallback to basic client data if detailed fetch fails
-      setSelectedClient(basicClient);
-      generateAndSetInvoiceNumber();
+      
+      // Fallback to basic client data but ensure all required fields are present
+      const fallbackClient: InvoiceBackendClientData = {
+        id: basicClient.id,
+        companyName: basicClient.companyName || "",
+        shortCode: basicClient.shortCode || "",
+        emailAddress1: basicClient.emailAddress1 || "",
+        emailAddress2: basicClient.emailAddress2,
+        contactPersonName1: basicClient.contactPersonName1,
+        contactPersonName2: basicClient.contactPersonName2,
+        mobile1: basicClient.mobile1,
+        mobile2: basicClient.mobile2,
+        city1: basicClient.city1,
+        province1: basicClient.province1,
+        postalCode1: basicClient.postalCode1,
+        preferredPaymentMethod: basicClient.preferredPaymentMethod,
+        payCycle: basicClient.payCycle,
+        terms: basicClient.terms || "Net 30",
+        currency: basicClient.currency || "CAD",
+      };
+      
+      setSelectedClient(fallbackClient);
+      
+      // Only generate invoice number when not in edit mode
+      if (!isEditMode) {
+        generateAndSetInvoiceNumber();
+      }
+      
       setGenerationError(
         "Warning: Could not fetch complete client details. Some information may be missing."
       );
@@ -757,18 +827,11 @@ export function InvoiceManagement() {
     };
   };
 
-  // Generate invoice function
-  const generateInvoice = async () => {
-    console.log("=== DEBUG: generateInvoice called ===");
-    console.log("selectedClient:", selectedClient);
-    console.log("lineItems:", lineItems);
-    console.log("lineItems.length:", lineItems.length);
-    console.log("invoiceNumber:", invoiceNumber);
-
+  // Generate/Update invoice function
+  const handleInvoiceSubmit = async () => {
     if (!selectedClient || lineItems.length === 0) {
-      console.log("=== DEBUG: Early return - no client or no line items ===");
       setGenerationError(
-        "Please select a client and add line items before generating invoice"
+        "Please select a client and add line items before " + (isEditMode ? "updating" : "generating") + " invoice"
       );
       return;
     }
@@ -799,16 +862,15 @@ export function InvoiceManagement() {
       return;
     }
 
-    // Validate required client fields
-    if (
-      !selectedClient.id ||
-      !selectedClient.companyName ||
-      !selectedClient.shortCode ||
-      !selectedClient.emailAddress1
-    ) {
-      setGenerationError(
-        "Selected client is missing required information (ID, company name, short code, or email)"
-      );
+    const missingFields = [];
+    if (!selectedClient.id) missingFields.push("ID");
+    if (!selectedClient.companyName) missingFields.push("company name");
+    if (!selectedClient.shortCode) missingFields.push("short code");
+    if (!selectedClient.emailAddress1) missingFields.push("email");
+    
+    if (missingFields.length > 0) {
+      const errorMessage = `Selected client is missing required information: ${missingFields.join(", ")}`;
+      setGenerationError(errorMessage);
       return;
     }
 
@@ -821,7 +883,7 @@ export function InvoiceManagement() {
     }
     if (attachments.some((att) => att.uploadStatus === "error")) {
       setGenerationError(
-        "One or more attachments failed to upload. Please remove or re-upload them before generating the invoice."
+        "One or more attachments failed to upload. Please remove or re-upload them before " + (isEditMode ? "updating" : "generating") + " the invoice."
       );
       return;
     }
@@ -848,84 +910,158 @@ export function InvoiceManagement() {
       // Upload attachments after PDF generation succeeds
       const uploadedAttachments = await uploadAttachments();
 
-      // Create invoice data for API
-      const invoiceApiData = {
-        client: {
-          id: selectedClient.id,
-          companyName: selectedClient.companyName,
-          shortCode: selectedClient.shortCode,
-          emailAddress1: selectedClient.emailAddress1,
-          city1: selectedClient.city1,
-          province1: selectedClient.province1,
-          postalCode1: selectedClient.postalCode1,
-        },
-        invoiceNumber: invoiceNumber,
-        invoiceDate: invoiceDate,
-        dueDate: dueDate,
-        status: "draft" as const,
-        currency: selectedClient.currency || "CAD",
-        timesheets: lineItemTotals.map((item) => ({
-          id: item.id,
-          invoiceNumber: invoiceNumber,
-          weekStartDate: invoiceDate, // Using invoice date as reference
-          weekEndDate: dueDate, // Using due date as reference
-          totalRegularHours: parseFloat(item.hours) || 0,
-          totalOvertimeHours: 0, // Line items don't have overtime
-          regularBillRate: parseFloat(item.rate) || 0,
-          overtimeBillRate: 0,
-          totalClientBill: item.lineTotal,
-          jobseekerProfile: item.jobseeker
-            ? {
-                firstName: item.jobseeker.firstName,
-                lastName: item.jobseeker.lastName,
+      let result;
+      let pdfInvoiceId: string;
+      let pdfInvoiceNumber: string;
+
+      if (isEditMode && editingInvoiceId) {
+        // Update existing invoice
+        const updateData = {
+          clientId: selectedClient.id!,
+          invoiceDate: invoiceDate,
+          dueDate: dueDate,
+          status: "draft" as const,
+          currency: selectedClient.currency || "CAD",
+          paymentTerms: selectedTerms,
+          subtotal: subtotal,
+          totalTax: totalTax,
+          totalHst: totalHST,
+          totalGst: totalGST,
+          totalQst: totalQST,
+          grandTotal: grandTotal,
+          totalHours: lineItems.reduce(
+            (total, item) => total + (parseFloat(item.hours) || 0),
+            0
+          ),
+          invoiceData: {
+            client: {
+              id: selectedClient.id!,
+              companyName: selectedClient.companyName!,
+              shortCode: selectedClient.shortCode!,
+              emailAddress1: selectedClient.emailAddress1!,
+              city1: selectedClient.city1,
+              province1: selectedClient.province1,
+              postalCode1: selectedClient.postalCode1,
+            },
+            timesheets: lineItems.map(item => ({
+              id: item.id,
+              position: item.position ? {
+                title: item.position.title,
+                positionId: item.position.id,
+                positionCode: item.position.positionCode,
+                positionCandidateAssignmentsId: item.jobseeker?.positionCandidateAssignmentsId,
+              } : undefined,
+              salesTax: item.salesTax,
+              description: item.description,
+              weekEndDate: dueDate,
+              invoiceNumber: invoiceNumber,
+              weekStartDate: invoiceDate,
+              regularBillRate: parseFloat(item.rate) || 0,
+              totalClientBill: (parseFloat(item.hours) || 0) * (parseFloat(item.rate) || 0),
+              jobseekerProfile: item.jobseeker ? {
                 email: item.jobseeker.email,
+                lastName: item.jobseeker.lastName,
+                firstName: item.jobseeker.firstName,
                 jobseekerUserId: item.jobseeker.id,
                 jobseekerProfileId: item.jobseeker.candidateId,
-              }
-            : {
-                firstName: "N/A",
-                lastName: "N/A",
-                email: "N/A",
-              },
-          position: item.position
-            ? {
-                title: item.position.title,
-                positionCode: item.position.positionCode,
-                positionId: item.position.id,
-                positionCandidateAssignmentsId:
-                  item.jobseeker?.positionCandidateAssignmentsId,
-              }
-            : {
-                title: item.description || "Custom Line Item",
-                positionCode: "CUSTOM",
-              },
-        })),
-        attachments: uploadedAttachments,
-        messageOnInvoice: messageOnInvoice,
-        termsOnInvoice: termsOnInvoice,
-        subtotal: subtotal,
-        totalTax: totalTax,
-        totalHst: totalHST,
-        totalGst: totalGST,
-        totalQst: totalQST,
-        grandTotal: grandTotal,
-        totalHours: lineItems.reduce(
-          (total, item) => total + (parseFloat(item.hours) || 0),
-          0
-        ),
-        emailSent: emailSent,
-        emailSentDate: emailSent ? new Date().toISOString() : undefined,
-      };
+              } : undefined,
+              totalRegularHours: parseFloat(item.hours) || 0,
+            })),
+            supplierPOItems: supplierPOItems,
+            attachments: uploadedAttachments,
+            messageOnInvoice: messageOnInvoice,
+            termsOnInvoice: termsOnInvoice,
+            paymentTerms: selectedTerms,
+            // summary and document are intentionally omitted
+          },
+        };
 
-      // Log the data being sent to API
-      console.log("=== INVOICE DATA BEING SENT TO API ===");
-      console.log("Invoice API Data:", JSON.stringify(invoiceApiData, null, 2));
-      console.log("=== END API DATA ===");
+        result = await updateInvoice(editingInvoiceId, updateData);
+        pdfInvoiceId = editingInvoiceId;
+        pdfInvoiceNumber = invoiceNumber;
+      } else {
+        // Create new invoice
+        const invoiceApiData = {
+          client: {
+            id: selectedClient.id!,
+            companyName: selectedClient.companyName!,
+            shortCode: selectedClient.shortCode!,
+            emailAddress1: selectedClient.emailAddress1!,
+            city1: selectedClient.city1,
+            province1: selectedClient.province1,
+            postalCode1: selectedClient.postalCode1,
+          },
+          invoiceNumber: invoiceNumber,
+          invoiceDate: invoiceDate,
+          dueDate: dueDate,
+          status: "draft" as const,
+          currency: selectedClient.currency || "CAD",
+          paymentTerms: selectedTerms,
+          timesheets: lineItemTotals.map((item) => ({
+            id: item.id,
+            invoiceNumber: invoiceNumber,
+            weekStartDate: invoiceDate, // Using invoice date as reference
+            weekEndDate: dueDate, // Using due date as reference
+            totalRegularHours: parseFloat(item.hours) || 0,
+            regularBillRate: parseFloat(item.rate) || 0,
+            totalClientBill: item.lineTotal,
+            description: item.description, // Add description field
+            salesTax: item.salesTax, // Add salesTax field
+            jobseekerProfile: item.jobseeker
+              ? {
+                  firstName: item.jobseeker.firstName,
+                  lastName: item.jobseeker.lastName,
+                  email: item.jobseeker.email,
+                  jobseekerUserId: item.jobseeker.id,
+                  jobseekerProfileId: item.jobseeker.candidateId,
+                }
+              : {
+                  firstName: "N/A",
+                  lastName: "N/A",
+                  email: "N/A",
+                },
+            position: item.position
+              ? {
+                  title: item.position.title,
+                  positionCode: item.position.positionCode,
+                  positionId: item.position.id,
+                  positionCandidateAssignmentsId:
+                    item.jobseeker?.positionCandidateAssignmentsId,
+                }
+              : {
+                  title: item.description || "Custom Line Item",
+                  positionCode: "CUSTOM",
+                },
+          })),
+          attachments: uploadedAttachments,
+          supplierPOItems: supplierPOItems,
+          messageOnInvoice: messageOnInvoice,
+          termsOnInvoice: termsOnInvoice,
+          subtotal: subtotal,
+          totalTax: totalTax,
+          totalHst: totalHST,
+          totalGst: totalGST,
+          totalQst: totalQST,
+          grandTotal: grandTotal,
+          totalHours: lineItems.reduce(
+            (total, item) => total + (parseFloat(item.hours) || 0),
+            0
+          ),
+          emailSent: false,
+          emailSentDate: undefined,
+          // summary and document are intentionally omitted
+        };
 
-      // Call the API to create the invoice
-      const result = await createInvoiceFromFrontendData(invoiceApiData);
-      const pdfInvoiceId = result.invoice.id || "";
-      const pdfInvoiceNumber = result.invoice.invoiceNumber || "";
+        // Log the data being sent to API
+        console.log("=== INVOICE DATA BEING SENT TO API ===");
+        console.log("Invoice API Data:", JSON.stringify(invoiceApiData, null, 2));
+        console.log("=== END API DATA ===");
+
+        // Call the API to create the invoice
+        result = await createInvoiceFromFrontendData(invoiceApiData);
+        pdfInvoiceId = result.invoice.id || "";
+        pdfInvoiceNumber = result.invoice.invoiceNumber || "";
+      }
 
       // Generate the PDF Blob
       const pdfData: PDFInvoiceData = {
@@ -1031,7 +1167,8 @@ export function InvoiceManagement() {
       }
 
       // Only use the new message for PDF upload success
-      const message = `Invoice ${pdfInvoiceNumber} created and PDF uploaded successfully for ${selectedClient.companyName}.`;
+      const actionText = isEditMode ? "updated" : "created";
+      const message = `Invoice ${pdfInvoiceNumber} ${actionText} and PDF uploaded successfully for ${selectedClient.companyName}.`;
       setGenerationMessage(message);
 
       // Set created invoice and email states after successful invoice creation/upload
@@ -1040,7 +1177,7 @@ export function InvoiceManagement() {
         result.invoice.client?.emailAddress1 ||
         selectedClient?.emailAddress1 ||
         "";
-      console.log("Setting emailToSend in generateInvoice:", {
+      console.log("Setting emailToSend in handleInvoiceSubmit:", {
         invoice_sent_to: result.invoice.invoice_sent_to,
         client_email: result.invoice.client?.emailAddress1,
         selected_client_email: selectedClient?.emailAddress1,
@@ -1049,11 +1186,11 @@ export function InvoiceManagement() {
       setEmailToSend(emailToSet);
       setShowInvoiceSuccessModal(true);
     } catch (error) {
-      console.error("Error creating invoice:", error);
+      console.error("Error " + (isEditMode ? "updating" : "creating") + " invoice:", error);
       setGenerationError(
         error instanceof Error
           ? error.message
-          : "Failed to create invoice. Please try again."
+          : "Failed to " + (isEditMode ? "update" : "create") + " invoice. Please try again."
       );
     } finally {
       setIsGeneratingInvoice(false);
@@ -1223,6 +1360,149 @@ export function InvoiceManagement() {
     link.click();
     document.body.removeChild(link);
   }
+
+  // Fetch existing invoice data for editing
+  const fetchInvoiceForEdit = async (invoiceId: string) => {
+    try {
+      const invoiceData = await getInvoice(invoiceId);
+      
+      // Populate form with existing data
+      setInvoiceNumber(invoiceData.invoiceNumber || "");
+      setInvoiceDate(invoiceData.invoiceDate);
+      setDueDate(invoiceData.dueDate);
+      setMessageOnInvoice(invoiceData.invoiceData?.messageOnInvoice as string || "");
+      setTermsOnInvoice(invoiceData.invoiceData?.termsOnInvoice as string || "");
+      
+      // Set client data
+      if (invoiceData.clientId) {
+        const clientData = await getClient(invoiceData.clientId) as ClientApiResponse;
+        
+        // Handle both camelCase and snake_case field names from API
+        const backendClient: InvoiceBackendClientData = {
+          id: clientData.id || "",
+          companyName: clientData.company_name || clientData.companyName || "",
+          shortCode: clientData.short_code || clientData.shortCode || "",
+          emailAddress1: clientData.email_address1 || clientData.emailAddress1 || "",
+          emailAddress2: clientData.email_address2 || clientData.emailAddress2,
+          contactPersonName1: clientData.contact_person_name1 || clientData.contactPersonName1,
+          contactPersonName2: clientData.contact_person_name2 || clientData.contactPersonName2,
+          mobile1: clientData.mobile1,
+          mobile2: clientData.mobile2,
+          streetAddress1: clientData.streetAddress1 || "",
+          city1: clientData.city1 || "",
+          province1: clientData.province1 || "",
+          postalCode1: clientData.postal_code1 || clientData.postalCode1 || "",
+          preferredPaymentMethod: clientData.preferred_payment_method || clientData.preferredPaymentMethod || "",
+          payCycle: clientData.pay_cycle || clientData.payCycle || "",
+          currency: clientData.currency || "CAD",
+          terms: clientData.terms || "Net 30",
+        };
+        setSelectedClient(backendClient);
+        
+        // Prefer paymentTerms from invoiceData.invoiceData if present
+        if (invoiceData.invoiceData?.paymentTerms) {
+          setSelectedTerms(invoiceData.invoiceData.paymentTerms as string);
+        } else {
+          setSelectedTerms(clientData.terms || "Net 30");
+        }
+        
+        // Fetch positions for this client
+        await fetchClientPositions(invoiceData.clientId);
+      }
+      
+      // Set line items from invoiceData.invoiceData.timesheets (not lineItems)
+      if (invoiceData.invoiceData?.timesheets && Array.isArray(invoiceData.invoiceData.timesheets)) {
+        const mappedLineItems: InvoiceLineItem[] = (invoiceData.invoiceData.timesheets as TimesheetData[]).map((timesheet: TimesheetData) => {
+          // Map position data
+          const position: ClientPosition | null = timesheet.position ? {
+            id: timesheet.position.positionId,
+            positionCode: timesheet.position.positionCode,
+            title: timesheet.position.title,
+            regularPayRate: "0", // Not available in timesheet data
+            billRate: timesheet.regularBillRate.toString(),
+            markup: "0"
+          } : null;
+
+          // Map jobseeker data
+          const jobseeker: AssignedJobseeker | null = timesheet.jobseekerProfile ? {
+            id: timesheet.jobseekerProfile.jobseekerUserId,
+            positionCandidateAssignmentsId: timesheet.position?.positionCandidateAssignmentsId,
+            candidateId: timesheet.jobseekerProfile.jobseekerProfileId || timesheet.jobseekerProfile.jobseekerUserId || "",
+            firstName: timesheet.jobseekerProfile.firstName,
+            lastName: timesheet.jobseekerProfile.lastName,
+            email: timesheet.jobseekerProfile.email,
+            mobile: "",
+            status: "active",
+            startDate: "",
+            endDate: ""
+          } : null;
+
+          return {
+            id: timesheet.id || Date.now().toString() + Math.random().toString(36).substr(2, 9),
+            position: position,
+            jobseeker: jobseeker,
+            description: timesheet.description || "",
+            hours: timesheet.totalRegularHours.toString(),
+            rate: timesheet.regularBillRate.toString(),
+            salesTax: timesheet.salesTax || "13.00% [ON]"
+          };
+        });
+        setLineItems(mappedLineItems);
+
+        // Ensure jobseeker dropdowns are populated for each position in loaded line items
+        const uniquePositionIds = [
+          ...new Set(
+            mappedLineItems
+              .map((item) => item.position?.id)
+              .filter((id): id is string => !!id)
+          ),
+        ];
+        uniquePositionIds.forEach((positionId) => {
+          if (positionId && !assignedJobseekersByPosition[positionId]) {
+            fetchPositionAssignments(positionId);
+          }
+        });
+      }
+      
+      // Set supplier PO items from invoiceData.invoiceData
+      if (invoiceData.invoiceData?.supplierPOItems && Array.isArray(invoiceData.invoiceData.supplierPOItems)) {
+        setSupplierPOItems(invoiceData.invoiceData.supplierPOItems as SupplierPOItem[]);
+      }
+      
+      // Set attachments from invoiceData.invoiceData
+      if (invoiceData.invoiceData?.attachments && Array.isArray(invoiceData.invoiceData.attachments)) {
+        const attachmentFiles: AttachmentFile[] = (invoiceData.invoiceData.attachments).map(att => ({
+          id: att.id || Date.now().toString() + Math.random().toString(36).substr(2, 9),
+          fileName: att.fileName || att.name || "Unknown file",
+          fileSize: att.fileSize || att.size || 0,
+          fileType: att.fileType || att.type || "application/octet-stream",
+          filePath: att.filePath || att.url,
+          isUploaded: true,
+          uploadStatus: 'uploaded' as const,
+        }));
+        setAttachments(attachmentFiles);
+      }
+      
+      // Set loaded invoice state
+      setLoadedInvoice(invoiceData);
+    } catch (error) {
+      console.error("Error fetching invoice for edit:", error);
+      alert("Failed to load invoice data for editing");
+    }
+  };
+
+  // Initialize edit mode when invoice ID is present in query params
+  useEffect(() => {
+    const invoiceId = searchParams.get('id');
+    if (invoiceId && invoiceId.trim() !== '') {
+      setIsEditMode(true);
+      setEditingInvoiceId(invoiceId);
+      fetchInvoiceForEdit(invoiceId);
+    } else {
+      setIsEditMode(false);
+      setEditingInvoiceId(null);
+    }
+  }, [searchParams]);
 
   return (
     <div className="invoice-page-container">
@@ -1982,23 +2262,85 @@ export function InvoiceManagement() {
               value={attachments}
               onChange={setAttachments}
               disabled={false}
+              bucketName="invoices"
             />
+
+            {/* Generated Invoice Section (view/edit mode only) */}
+            {isEditMode && documentPath && documentFileName && (
+              <div className="attachment-list">
+                <div className="attachment-item generated-invoice-item">
+                  <div className="attachment-thumbnail">
+                    <div
+                      className="attachment-file-placeholder"
+                      onClick={async () => {
+                        const { data } = await supabase.storage
+                          .from("invoices")
+                          .createSignedUrl(documentPath.replace(/&#x2F;/g, "/"), 300);
+                        if (data?.signedUrl) window.open(data.signedUrl, "_blank");
+                      }}
+                    >
+                      <FileText size={16} />
+                      <span className="attachment-file-type">
+                        {documentFileName.split('.').pop()?.toUpperCase() || 'PDF'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="attachment-info">
+                    <div className="attachment-name" title={documentFileName}>
+                      <FileText size={16} />
+                      <span>{documentFileName}</span>
+                    </div>
+                    <div className="attachment-details">
+                      <span className="attachment-size">
+                        {documentFileSize ? `${(documentFileSize / 1024 / 1024).toFixed(2)} MB` : ""}
+                      </span>
+                      <div className="attachment-status uploaded">
+                        <CheckCircle size={14} />
+                        <span>Generated</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="attachment-actions">
+                    <button
+                      type="button"
+                      className="attachment-action-btn preview"
+                      onClick={async () => {
+                        const { data } = await supabase.storage
+                          .from("invoices")
+                          .createSignedUrl(documentPath.replace(/&#x2F;/g, "/"), 300);
+                        if (data?.signedUrl) window.open(data.signedUrl, "_blank");
+                      }}
+                      title="Preview"
+                    >
+                      <Eye size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      className="attachment-action-btn download"
+                      onClick={async () => {
+                        const { data } = await supabase.storage
+                          .from("invoices")
+                          .createSignedUrl(documentPath.replace(/&#x2F;/g, "/"), 300);
+                        if (data?.signedUrl) {
+                          const a = document.createElement("a");
+                          a.href = data.signedUrl;
+                          a.download = documentFileName;
+                          document.body.appendChild(a);
+                          a.click();
+                          document.body.removeChild(a);
+                        }
+                      }}
+                      title="Download"
+                    >
+                      <Download size={16} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Generate Invoice Section */}
             <div className="timesheet-action-section">
-              <div className="timesheet-email-option">
-                <label className="timesheet-checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={emailSent}
-                    onChange={(e) => setEmailSent(e.target.checked)}
-                    className="timesheet-checkbox"
-                  />
-                  <span className="timesheet-checkbox-text">
-                    Send invoice via email
-                  </span>
-                </label>
-              </div>
 
               <button
                 className={`button ${
@@ -2014,7 +2356,7 @@ export function InvoiceManagement() {
                     : ""
                 }`}
                 onClick={() => {
-                  generateInvoice();
+                  handleInvoiceSubmit();
                 }}
                 disabled={
                   isGeneratingInvoice ||
@@ -2030,12 +2372,12 @@ export function InvoiceManagement() {
                 {isGeneratingInvoice ? (
                   <>
                     <Loader2 size={16} className="timesheet-loading-spinner" />
-                    Generating...
+                    {isEditMode ? "Updating..." : "Generating..."}
                   </>
                 ) : (
                   <>
                     <Plus size={16} />
-                    Generate Invoice
+                    {isEditMode ? "Update Invoice" : "Generate Invoice"}
                   </>
                 )}
               </button>
