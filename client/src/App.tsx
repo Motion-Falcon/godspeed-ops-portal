@@ -42,6 +42,7 @@ import { ClientManagement } from './pages/ClientManagement/ClientManagement';
 import { InvoiceManagement } from './pages/InvoiceManagement/InvoiceManagement';
 import { InvoiceList } from './pages/InvoiceManagement/InvoiceList';
 import { AllUsersManagement } from './pages/AllUsersManagement';
+import FloatingChat from './components/FloatingChat';
 
 function App() {
   return (
@@ -49,6 +50,7 @@ function App() {
       <AuthProvider>
         <Router>
           <GeometricShapes />
+          <FloatingChat />
           <Routes>
             {/* Public routes */}
             <Route element={<PublicRoute />}>

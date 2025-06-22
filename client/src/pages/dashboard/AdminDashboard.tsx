@@ -381,6 +381,7 @@ interface MetricGridProps {
   gridSize: number;
   size?: "sm" | "md" | "lg";
   className?: string;
+  redirectToValue?: string;
 }
 
 function MetricGrid({
@@ -392,13 +393,13 @@ function MetricGrid({
   gridSize,
   size = "sm",
   className = "",
+  redirectToValue,
 }: MetricGridProps) {
   return (
     <div className={`metrics-grid compact ${className}`}>
       {Array.from({ length: gridSize }, (_, index) => {
         const metric = metricsState.data[index];
         const isExpanded = metric ? expandedGraphs.has(metric.id) : false;
-
         return (
           <div
             key={metric?.id || `loading-${index}`}
@@ -426,6 +427,7 @@ function MetricGrid({
               error={metricsState.error}
               onRetry={onRetry}
               className={`metric-transition-${index}`}
+              redirectTo={redirectToValue}
             />
           </div>
         );
@@ -838,6 +840,7 @@ export function AdminDashboard() {
                 onRetry={recruiterMetrics.retry}
                 gridSize={4}
                 size="sm"
+                redirectToValue="/jobseeker-management"
               />
             </div>
           </div>
@@ -875,6 +878,7 @@ export function AdminDashboard() {
               gridSize={3}
               size="sm"
               className="position-metrics"
+              redirectToValue="/position-management"
             />
           </div>
         </div>
@@ -899,6 +903,7 @@ export function AdminDashboard() {
             gridSize={4}
             size="sm"
             className="invoice-metrics"
+            redirectToValue="/invoice-management/list"
           />
         </div>
 
@@ -923,6 +928,7 @@ export function AdminDashboard() {
               gridSize={6}
               size="sm"
               className="position-metrics"
+              redirectToValue="/timesheet-management"
             />
           </div>
         </div>
@@ -996,6 +1002,7 @@ export function AdminDashboard() {
             }
             error={clientMetrics.state.error}
             onRetry={clientMetrics.retry}
+            redirectTo="/client-management"
           />
         </div>
       </main>

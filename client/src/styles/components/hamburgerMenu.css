@@ -150,6 +150,7 @@
 .menu-items {
   list-style-type: none;
   padding: 0;
+  padding-top: 6px;
   padding-right: 4px;
   margin: 0;
   flex: 1;

@@ -9,6 +9,7 @@ import {
 } from "./utils";
 import type { MetricData, ChartConfig, FormattedMetric } from "./types";
 import "./MetricCard.css";
+import { useNavigate } from "react-router-dom";
 
 export interface MetricCardProps {
   data: MetricData;
@@ -23,6 +24,7 @@ export interface MetricCardProps {
   error?: string | null;
   onRetry?: () => void;
   className?: string;
+  redirectTo?: string;
 }
 
 export const MetricCard: React.FC<MetricCardProps> = ({
@@ -38,9 +40,11 @@ export const MetricCard: React.FC<MetricCardProps> = ({
   error,
   onRetry,
   className = "",
+  redirectTo,
 }) => {
   const [graphVisible, setGraphVisible] = useState(showGraph);
   const cardRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
 
   const processedData: FormattedMetric = useMemo(() => {
     return processMetricData(data);
@@ -83,6 +87,9 @@ export const MetricCard: React.FC<MetricCardProps> = ({
   const handleCardClick = () => {
     if (onClick) {
       onClick(data);
+    }
+    if (redirectTo) {
+      navigate(redirectTo);
     }
   };
 

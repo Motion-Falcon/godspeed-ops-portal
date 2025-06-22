@@ -1071,12 +1071,20 @@ router.put('/profile/:id/update',
           ...updateData,
           user_id: existingProfile.user_id // Add the user_id to the payload
         };
-        
+         // Extract the authorization header from the original request
+         const authHeader = req.headers.authorization;
+         console.log('authHeader', authHeader);
+         const headers: Record<string, string> = {
+           'Content-Type': 'application/json',
+         };
+         
+         // Add the bearer token if available
+         if (authHeader) {
+           headers['Authorization'] = authHeader;
+         }
         const verificationResponse = await fetch(aiVerificationUrl, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers,
           body: JSON.stringify(verificationPayload),
         });
         

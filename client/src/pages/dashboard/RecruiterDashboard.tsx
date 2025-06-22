@@ -357,6 +357,7 @@ interface MetricGridProps {
   gridSize: number;
   size?: "sm" | "md" | "lg";
   className?: string;
+  redirectToValue?: string;
 }
 
 function MetricGrid({
@@ -368,6 +369,7 @@ function MetricGrid({
   gridSize,
   size = "sm",
   className = "",
+  redirectToValue,
 }: MetricGridProps) {
   return (
     <div className={`metrics-grid compact ${className}`}>
@@ -400,6 +402,7 @@ function MetricGrid({
               error={metricsState.error}
               onRetry={onRetry}
               className={`metric-transition-${index}`}
+              redirectTo={redirectToValue}
             />
           </div>
         );
@@ -697,6 +700,7 @@ export function RecruiterDashboard() {
                 onRetry={recruiterMetrics.retry}
                 gridSize={4}
                 size="sm"
+                redirectToValue="/jobseeker-management"
               />
             </div>
           </div>
@@ -736,6 +740,7 @@ export function RecruiterDashboard() {
               gridSize={3}
               size="sm"
               className="position-metrics"
+              redirectToValue="/position-management"
             />
           </div>
         </div>
@@ -804,6 +809,7 @@ export function RecruiterDashboard() {
             loading={clientMetrics.state.loading || clientMetrics.state.data.length === 0}
             error={clientMetrics.state.error}
             onRetry={clientMetrics.retry}
+            redirectTo="/client-management"
           />
         </div>
       </main>
