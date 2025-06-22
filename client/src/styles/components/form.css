@@ -451,7 +451,7 @@ a:hover {
 .toggle-form::before {
   content: '';
   position: absolute;
-  top: 1.7px;
+  top: 1px;
   left: 1px;
   width: 18px;
   height: 18px;

@@ -280,6 +280,9 @@ export function ClientManagement() {
       setTimeout(() => {
         setMessage(null);
       }, 3000);
+      setIsDeleteModalOpen(false);
+      setClientToDelete(null);
+      setDeleteError(null);
     } catch (err) {
       console.error('Error deleting client:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to delete client';
