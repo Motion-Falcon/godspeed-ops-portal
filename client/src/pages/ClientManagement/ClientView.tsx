@@ -104,12 +104,61 @@ export function ClientView() {
   };
 
   if (loading) {
+    // Skeleton loader modeled after JobSeekerProfile/PositionView
     return (
       <div className="client-view-container">
-        <div className="loading-container">
-          <span className="loading-spinner"></span>
-          <p>Loading client details...</p>
-        </div>
+        <AppHeader
+          title="Client Details"
+          actions={
+            <button className="button" disabled>
+              <ArrowLeft size={16} className="icon" />
+              <span>Back to Clients</span>
+            </button>
+          }
+        />
+        <main className="client-main">
+          {/* Overview Skeleton */}
+          <div className="client-overview section-card">
+            <div className="client-banner"></div>
+            <div className="client-details">
+              <div className="client-avatar skeleton-avatar">
+                <div className="skeleton-icon" style={{ width: '40px', height: '40px' }}></div>
+              </div>
+              <div className="client-info-header">
+                <div className="skeleton-text" style={{ width: '200px', height: '32px', margin: '8px 0' }}></div>
+                {[1,2,3,4].map((i) => (
+                  <div key={i} className="detail-item">
+                    <div className="skeleton-text" style={{ width: '80px', height: '14px' }}></div>
+                    <div className="skeleton-text" style={{ width: '120px', height: '16px', marginLeft: '10px' }}></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          {/* Details Grid Skeleton */}
+          <div className="profile-content grid-container">
+            {[
+              'Company Information',
+              'Primary Contact',
+              'Secondary Contact',
+              'Tertiary Contact',
+              'Department Information',
+              'Payment & Billing',
+            ].map((section) => (
+              <div key={section} className="section-card">
+                <div className="skeleton-text" style={{ width: '180px', height: '20px', marginBottom: '20px' }}></div>
+                <div className="detail-group">
+                  {[1,2,3,4].map((i) => (
+                    <div key={i} className="detail-item">
+                      <div className="skeleton-text" style={{ width: '100px', height: '14px' }}></div>
+                      <div className="skeleton-text" style={{ width: '140px', height: '16px', marginLeft: '10px' }}></div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </main>
       </div>
     );
   }

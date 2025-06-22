@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import {
   getPosition,
   PositionData,
+  getPositionAssignments,
 } from "../../services/api/position";
 import { ConfirmationModal } from "../../components/ConfirmationModal";
 import { AppHeader } from "../../components/AppHeader";
@@ -18,28 +19,22 @@ import {
 import "../../styles/pages/ClientView.css";
 import "../../styles/pages/PositionManagement.css";
 import "../../styles/components/header.css";
-import { getJobseekerProfile } from "../../services/api/jobseeker";
 
 interface ExtendedPositionData extends PositionData {
   [key: string]: unknown;
-}
-
-interface AssignedJobseeker {
-  id: string;
-  name: string;
-  email: string;
-  mobile?: string;
 }
 
 export function PositionView() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const [position, setPosition] = useState<ExtendedPositionData | null>(null);
-  const [assignedJobseekers, setAssignedJobseekers] = useState<
-    AssignedJobseeker[]
-  >([]);
-  const [assignedJobseekersLoading, setAssignedJobseekersLoading] =
-    useState(false);
+  const [assignedJobseekers, setAssignedJobseekers] = useState<{
+    id: string;
+    name: string;
+    email: string;
+    mobile?: string;
+  }[]>([]);
+  const [assignedJobseekersLoading, setAssignedJobseekersLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showEditConfirmation, setShowEditConfirmation] = useState(false);
@@ -60,24 +55,36 @@ export function PositionView() {
   };
 
   useEffect(() => {
-    const fetchPosition = async () => {
+    const fetchPositionAndAssignments = async () => {
       if (!id) return;
-
+      setLoading(true);
       try {
         const fetchedPosition = await getPosition(id);
         const convertedPosition = convertToCamelCase(
           fetchedPosition as unknown as Record<string, unknown>
         );
         setPosition(convertedPosition);
-        console.log("Position data loaded:", convertedPosition);
-
-        // Fetch assigned jobseekers if there are any
-        if (
-          convertedPosition.assignedJobseekers &&
-          Array.isArray(convertedPosition.assignedJobseekers) &&
-          convertedPosition.assignedJobseekers.length > 0
-        ) {
-          await fetchAssignedJobseekers(convertedPosition.assignedJobseekers);
+        // Fetch assigned jobseekers using getPositionAssignments
+        setAssignedJobseekersLoading(true);
+        try {
+          const response = await getPositionAssignments(id);
+          if (response.success) {
+            const assigned = response.assignments.map((assignment) => ({
+              id: assignment.id,
+              name: assignment.jobseekerProfile
+                ? `${assignment.jobseekerProfile.first_name} ${assignment.jobseekerProfile.last_name}`
+                : "Unknown",
+              email: assignment.jobseekerProfile?.email || "N/A",
+              mobile: assignment.jobseekerProfile?.mobile || undefined,
+            }));
+            setAssignedJobseekers(assigned);
+          } else {
+            setAssignedJobseekers([]);
+          }
+        } catch (err) {
+          setAssignedJobseekers([]);
+        } finally {
+          setAssignedJobseekersLoading(false);
         }
       } catch (err) {
         console.error("Error fetching position:", err);
@@ -90,47 +97,8 @@ export function PositionView() {
         setLoading(false);
       }
     };
-
-    fetchPosition();
+    fetchPositionAndAssignments();
   }, [id]);
-
-  const fetchAssignedJobseekers = async (jobseekerIds: string[]) => {
-    setAssignedJobseekersLoading(true);
-    try {
-      const assignedCandidatesPromises = jobseekerIds.map(
-        async (jobseekerId) => {
-          try {
-            const jobseekerProfile = await getJobseekerProfile(jobseekerId);
-            return {
-              id: jobseekerProfile.id,
-              name: `${jobseekerProfile.firstName} ${jobseekerProfile.lastName}`,
-              email: jobseekerProfile.email,
-              mobile: jobseekerProfile.mobile || undefined,
-            };
-          } catch (error) {
-            console.error(
-              `Error fetching jobseeker profile for ID ${jobseekerId}:`,
-              error
-            );
-            return {
-              id: jobseekerId,
-              name: "Profile Not Found",
-              email: "N/A",
-              mobile: undefined,
-            };
-          }
-        }
-      );
-
-      const assignedCandidates = await Promise.all(assignedCandidatesPromises);
-      setAssignedJobseekers(assignedCandidates);
-    } catch (error) {
-      console.error("Error fetching assigned jobseekers:", error);
-      setAssignedJobseekers([]);
-    } finally {
-      setAssignedJobseekersLoading(false);
-    }
-  };
 
   const handleNavigateBack = () => {
     navigate("/position-management");
@@ -219,12 +187,98 @@ export function PositionView() {
   };
 
   if (loading) {
+    // Skeleton loader modeled after JobSeekerProfile
     return (
       <div className="client-view-container">
-        <div className="loading-container">
-          <span className="loading-spinner"></span>
-          <p>Loading position details...</p>
-        </div>
+        <AppHeader
+          title="Position Details"
+          actions={
+            <button className="button" disabled>
+              <ArrowLeft size={16} className="icon" />
+              <span>Back to Position Management</span>
+            </button>
+          }
+        />
+        <main className="client-main">
+          {/* Overview Skeleton */}
+          <div className="client-overview section-card">
+            <div className="client-banner">
+ 
+            </div>
+            <div className="client-details">
+              <div className="client-avatar skeleton-avatar">
+                <div className="skeleton-icon" style={{ width: '40px', height: '40px' }}></div>
+              </div>
+              <div className="client-info-header">
+                <div className="position-basic-info">
+                  <div className="skeleton-text" style={{ width: '200px', height: '32px', margin: '8px 0' }}></div>
+                  {[1,2,3,4,5].map((i) => (
+                    <div key={i} className="detail-item">
+                      <div className="skeleton-text" style={{ width: '80px', height: '14px' }}></div>
+                      <div className="skeleton-text" style={{ width: '120px', height: '16px', marginLeft: '10px' }}></div>
+                    </div>
+                  ))}
+                </div>
+                <div className="position-assignment-info">
+                  <div className="assignment-summary">
+                    <div className="skeleton-text" style={{ width: '180px', height: '20px', marginBottom: '10px' }}></div>
+                    <div className="jsp-status-tabs">
+                      {[1,2,3].map((i) => (
+                        <div key={i} className="jsp-tab">
+                          <div className="skeleton-text" style={{ width: '60px', height: '16px' }}></div>
+                          <div className="skeleton-icon" style={{ width: '16px', height: '16px' }}></div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="assigned-jobseekers">
+                    <div className="skeleton-text" style={{ width: '140px', height: '18px', marginBottom: '10px' }}></div>
+                    <div className="jobseekers-list">
+                      {[1,2].map((i) => (
+                        <div key={i} className="jobseeker-card">
+                          <div className="jobseeker-details">
+                            <div className="skeleton-text" style={{ width: '120px', height: '16px', marginBottom: '6px' }}></div>
+                            <div className="jobseeker-contact">
+                              <div className="skeleton-text" style={{ width: '100px', height: '14px', marginRight: '8px' }}></div>
+                              <div className="skeleton-text" style={{ width: '80px', height: '14px' }}></div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="skeleton-text" style={{ width: '220px', height: '32px', marginTop: '16px', borderRadius: '6px' }}></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          {/* Details Grid Skeleton */}
+          <div className="profile-content grid-container">
+            {[
+              'Basic Details',
+              'Address Details',
+              'Employment Categorization',
+              'Documents Required',
+              'Position Details',
+              'Overtime',
+              'Payment & Billings',
+              'Notes',
+              'Tasks',
+            ].map((section) => (
+              <div key={section} className="section-card">
+                <div className="skeleton-text" style={{ width: '180px', height: '20px', marginBottom: '20px' }}></div>
+                <div className="detail-group">
+                  {[1,2,3,4].map((i) => (
+                    <div key={i} className="detail-item">
+                      <div className="skeleton-text" style={{ width: '100px', height: '14px' }}></div>
+                      <div className="skeleton-text" style={{ width: '140px', height: '16px', marginLeft: '10px' }}></div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </main>
       </div>
     );
   }
@@ -327,7 +381,6 @@ export function PositionView() {
 
                 <div className="assigned-jobseekers">
                   <h4 className="jobseekers-title">Assigned Jobseekers</h4>
-
                   {assignedJobseekersLoading ? (
                     <div className="loading-jobseekers">
                       <div className="loading-spinner small"></div>
