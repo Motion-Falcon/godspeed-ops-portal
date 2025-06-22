@@ -12,6 +12,8 @@ import invoicesRoutes from "./routes/invoices.js";
 import jobseekerMetricsRoutes from "./routes/jobseekerMetrics.js";
 import recruiterMetricsRoutes from "./routes/recruiterMetrics.js";
 import aiInsightsRoutes from "./routes/aiInsights.js";
+import timesheetMetricsRoutes from "./routes/timesheetMetrics.js";
+import invoiceMetricsRoutes from "./routes/invoiceMetrics.js";
 import {
   configureSecurityHeaders,
   forceTLS,
@@ -100,6 +102,12 @@ app.use("/api/metrics/jobseekers", jobseekerMetricsRoutes);
 
 // Recruiter metrics routes
 app.use("/api/metrics/recruiters", recruiterMetricsRoutes);
+
+// Timesheet metrics routes (NEW)
+app.use("/api/timesheet-metrics", timesheetMetricsRoutes);
+
+// Invoice metrics routes (NEW)
+app.use("/api/invoice-metrics", invoiceMetricsRoutes);
 
 // AI insights routes
 app.use("/api/ai", aiInsightsRoutes);

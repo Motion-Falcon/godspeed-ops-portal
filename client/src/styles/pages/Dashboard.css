@@ -309,8 +309,8 @@
 
 
 .data-view-label {
-  font-size: var(--font-size-small);
-  font-weight: var(--font-weight-medium);
+  font-size: 1.2rem;
+  font-weight: 600;
   color: var(--text);
   margin: 0;
 }
