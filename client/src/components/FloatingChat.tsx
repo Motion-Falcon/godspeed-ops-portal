@@ -18,7 +18,74 @@ import { supabase } from '../lib/supabaseClient';
 import Lottie from "lottie-react";
 import chatbotBlueAnimation from "../assets/animations/chatbot-blue.json";
 
+// Extend window interface for TypeScript
+declare global {
+  interface Window {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    marked?: any;
+    Prism?: {
+      languages: Record<string, unknown>;
+      highlight: (code: string, grammar: unknown, language: string) => string;
+    };
+  }
+}
+
 const CHAT_API_URL = 'https://godspeed-ops-ai-1ba0.onrender.com';
+
+// Load marked and Prism.js libraries dynamically
+const loadMarkdownLibraries = async () => {
+  if (typeof window !== 'undefined' && !window.marked) {
+    // Load marked library
+    await new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js';
+      script.onload = resolve;
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
+
+    // Load Prism.js core
+    await new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js';
+      script.onload = resolve;
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
+
+    // Load Prism.js autoloader
+    await new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/prismjs@1.29.0/plugins/autoloader/prism-autoloader.min.js';
+      script.onload = resolve;
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
+
+    // Load Prism.js CSS
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css';
+    document.head.appendChild(link);
+
+    // Configure marked for consistent rendering
+    if (window.marked) {
+      const marked = window.marked;
+      marked.setOptions({
+        breaks: true,
+        gfm: true,
+        tables: true,
+        sanitize: false,
+        highlight: function(code: string, lang: string) {
+          if (lang && window.Prism?.languages?.[lang]) {
+            return window.Prism.highlight(code, window.Prism.languages[lang], lang);
+          }
+          return code;
+        }
+      });
+    }
+  }
+};
 
 interface ChatMessageMeta {
   processing_time?: number;
@@ -47,6 +114,7 @@ const FloatingChat: React.FC = () => {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [markdownReady, setMarkdownReady] = useState(false);
 
   useEffect(() => {
     // Apply theme to document for chat component
@@ -54,12 +122,30 @@ const FloatingChat: React.FC = () => {
   }, [theme]);
 
   useEffect(() => {
-    // Get token on mount
+    // Load markdown libraries when component mounts
+    loadMarkdownLibraries().then(() => {
+      setMarkdownReady(true);
+    }).catch(error => {
+      console.error('Failed to load markdown libraries:', error);
+      setMarkdownReady(true); // Set to true anyway to allow fallback rendering
+    });
+  }, []);
+
+  useEffect(() => {
+    // Get token on mount and whenever auth state changes
     const fetchToken = async () => {
       const { data } = await supabase.auth.getSession();
       setToken(data.session?.access_token || null);
     };
     fetchToken();
+
+    // Listen for auth state changes
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setToken(session?.access_token || null);
+    });
+    return () => {
+      listener?.subscription.unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
@@ -70,7 +156,7 @@ const FloatingChat: React.FC = () => {
 
   useEffect(() => {
     // Add welcome message when first opened
-    if (open && messages.length === 0) {
+    if (open && messages.length === 0 && markdownReady) {
       const welcomeContent = `# 🤖 Welcome to Godspeed Ops AI!
 
 I'm your **intelligent database assistant** for querying the Godspeed database. I can help you find information about:
@@ -99,7 +185,7 @@ Watch as I process your queries through multiple AI agents:
         timestamp: Date.now()
       }]);
     }
-  }, [open, messages.length]);
+  }, [open, messages.length, markdownReady]);
 
   // Auto-resize textarea
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -248,31 +334,57 @@ Watch as I process your queries through multiple AI agents:
     }
   };
 
-  // Enhanced markdown rendering
+  // Enhanced markdown rendering using the same approach as chat_ui.html
   const renderMarkdown = (text: string) => {
-    const html = text
-      // Headers
-      .replace(/^### (.*$)/gim, '<h3>$1</h3>')
-      .replace(/^## (.*$)/gim, '<h2>$1</h2>')
-      .replace(/^# (.*$)/gim, '<h1>$1</h1>')
-      // Bold and italic
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.*?)\*/g, '<em>$1</em>')
-      // Code blocks and inline code
-      .replace(/```(\w+)?\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
-      .replace(/`([^`]+)`/g, '<code>$1</code>')
-      // Lists
-      .replace(/^- (.*$)/gim, '<li>$1</li>')
-      .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
-      .replace(/^\d+\. (.*$)/gim, '<li>$1</li>')
-      // Links
-      .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
-      // Horizontal rule
-      .replace(/^---$/gim, '<hr>')
-      // Line breaks
-      .replace(/\n/g, '<br>');
-    
-    return { __html: html };
+    // If markdown libraries are not loaded yet, use fallback
+    if (!markdownReady || !window.marked) {
+      return { __html: text.replace(/\n/g, '<br>') };
+    }
+
+    try {
+      // Configure marked exactly like in chat_ui.html
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const marked = window.marked as any;
+      marked.setOptions({
+        breaks: true,
+        gfm: true,
+        tables: true,
+        sanitize: false,
+        highlight: function(code: string, lang: string) {
+          if (lang && window.Prism?.languages?.[lang]) {
+            return window.Prism.highlight(code, window.Prism.languages[lang], lang);
+          }
+          return code;
+        }
+      });
+
+      return { __html: marked.parse(text) };
+    } catch (e) {
+      console.error('Markdown parsing error:', e);
+      // Fallback to plain text with line breaks if markdown parsing fails
+      return { __html: text.replace(/\n/g, '<br>') };
+    }
+  };
+
+  // Apply syntax highlighting to code blocks after rendering
+  const applySyntaxHighlighting = (element: HTMLElement) => {
+    if (!window.Prism) return;
+
+    const codeBlocks = element.querySelectorAll('pre code');
+    codeBlocks.forEach((block) => {
+      // Try to detect language from class name
+      const langClass = (block as HTMLElement).className.match(/language-(\w+)/);
+      const lang = langClass ? langClass[1] : null;
+      
+      if (lang && window.Prism?.languages?.[lang]) {
+        (block as HTMLElement).innerHTML = window.Prism.highlight(
+          block.textContent || '', 
+          window.Prism.languages[lang], 
+          lang
+        );
+        (block as HTMLElement).className = `language-${lang}`;
+      }
+    });
   };
 
   const exampleQueries = [
@@ -318,9 +430,6 @@ Watch as I process your queries through multiple AI agents:
               />
             </div>
           </div>
-          {/* <div className="chat-toggle-pill-outer">
-            <span className="chat-toggle-pill">AI Assistant</span>
-          </div> */}
         </button>
       )}
       
@@ -347,7 +456,13 @@ Watch as I process your queries through multiple AI agents:
               <div key={i} className={`message ${msg.role}`}> 
                 <div 
                   className="message-content" 
-                  dangerouslySetInnerHTML={renderMarkdown(msg.content)} 
+                  dangerouslySetInnerHTML={msg.role === 'assistant' ? renderMarkdown(msg.content) : { __html: msg.content.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>') }}
+                  ref={(el) => {
+                    if (el && msg.role === 'assistant' && window.Prism) {
+                      // Apply syntax highlighting after the element is rendered
+                      setTimeout(() => applySyntaxHighlighting(el), 0);
+                    }
+                  }}
                 />
                 {msg.role === 'assistant' && msg.metadata && (
                   <div className="metadata-info">

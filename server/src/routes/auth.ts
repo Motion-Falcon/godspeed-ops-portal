@@ -254,11 +254,11 @@ router.post('/validate-credentials', async (req, res) => {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    // Determine if user is a recruiter based on email
-    const isRecruiter = email.includes('@godspeedxp') || email.includes('@motionfalcon');
+    // Determine if user is a recruiter or admin based on email
+    const isRecruiterOrAdmin = email.includes('@godspeedxp') || email.includes('@motionfalcon') || email.includes('@godspeed'); // Add your admin email domain(s) here
 
-    // For recruiters, we validate credentials without creating a session
-    if (isRecruiter) {
+    // For recruiters or admins, we validate credentials without creating a session
+    if (isRecruiterOrAdmin) {
       // First, try to sign in to validate credentials
       const { data, error } = await supabase.auth.signInWithPassword({
         email,

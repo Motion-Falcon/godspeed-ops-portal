@@ -597,8 +597,8 @@ export function AdminDashboard() {
       setUserData({
         id: user.id,
         email: user.email,
-        name: user.user_metadata?.name || "User",
-        userType: user.user_metadata?.user_type || "admin",
+        name: user.user_metadata?.name,
+        userType: user.user_metadata?.user_type,
         createdAt: new Date(user.created_at).toLocaleDateString(),
         lastSignIn: user.last_sign_in_at
           ? new Date(user.last_sign_in_at).toLocaleString()
