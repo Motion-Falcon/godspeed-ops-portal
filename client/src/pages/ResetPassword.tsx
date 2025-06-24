@@ -141,6 +141,8 @@ console.log(isAuthenticated, 'isAuthenticated');
 
     try {
       await updatePasswordWithResetToken(data.password);
+      // Sign out the user to ensure they are not logged in after reset
+      await supabase.auth.signOut();
       setIsSuccess(true);
       // Redirect after 3 seconds
       setTimeout(() => {
