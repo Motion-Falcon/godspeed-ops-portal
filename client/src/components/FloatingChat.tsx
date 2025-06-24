@@ -388,7 +388,6 @@ Watch as I process your queries through multiple AI agents:
   };
 
   const exampleQueries = [
-    { text: 'Show me all clients', icon: '👥' },
     { text: 'Find jobseekers with driver licenses', icon: '🚗' },
     { text: 'What are the recent timesheets?', icon: '⏰' },
     { text: 'Count of active positions', icon: '💼' },
