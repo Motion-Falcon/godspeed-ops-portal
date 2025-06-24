@@ -804,7 +804,7 @@ export function AdminDashboard() {
   }
 
   const getRoleIcon = () => <UserCheck className="role-icon admin" />;
-  const getRoleName = () => "Administrator";
+  const getRoleName = () => userData.email ==='accounts@godspeed.com' ? "Accounts" : "Administrator";
 
   return (
     <div className="dashboard-container">
