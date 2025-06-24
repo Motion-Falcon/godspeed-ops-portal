@@ -428,13 +428,19 @@ export function PositionMatching() {
   // Modal confirmation handler
   const handleModalConfirm = useCallback(async () => {
     if (!confirmationModal.candidate || !selectedPosition) return;
-    if (confirmationModal.action === "assign") {
-      await handleAssignCandidate(confirmationModal.candidate as PositionCandidate);
-    } else if (confirmationModal.action === "remove") {
-      const id = (confirmationModal.candidate as PositionCandidate).candidateId || (confirmationModal.candidate as AssignedJobseeker).userId;
-      await handleRemoveCandidate(id);
-    }
+
+    // Save action/candidate locally before closing modal
+    const { action, candidate } = confirmationModal;
     closeConfirmationModal();
+
+    setTimeout(async () => {
+      if (action === "assign") {
+        await handleAssignCandidate(candidate as PositionCandidate);
+      } else if (action === "remove") {
+        const id = (candidate as PositionCandidate).candidateId || (candidate as AssignedJobseeker).userId;
+        await handleRemoveCandidate(id);
+      }
+    }, 0);
   }, [confirmationModal, selectedPosition, handleAssignCandidate, handleRemoveCandidate, closeConfirmationModal]);
 
   // Modal message builder
