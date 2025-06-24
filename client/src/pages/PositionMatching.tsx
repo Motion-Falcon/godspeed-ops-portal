@@ -36,6 +36,7 @@ import "../styles/pages/PositionMatching.css";
 import "../styles/components/CommonTable.css";
 import "../styles/components/form.css";
 import aiLoadingAnimation from "../assets/animations/aipoisitionmatching.json";
+import { ConfirmationModal } from "../components/ConfirmationModal";
 
 interface PaginationInfo {
   page: number;
@@ -396,6 +397,61 @@ export function PositionMatching() {
     handlePositionSelect(option.value as string);
   }, [handlePositionSelect]);
 
+  // Confirmation modal state
+  const [confirmationModal, setConfirmationModal] = useState<{
+    isOpen: boolean;
+    action: "assign" | "remove" | null;
+    candidate: PositionCandidate | AssignedJobseeker | null;
+  }>({
+    isOpen: false,
+    action: null,
+    candidate: null,
+  });
+
+  // Helper to open/close modal
+  const openConfirmationModal = useCallback((action: "assign" | "remove", candidate: PositionCandidate | AssignedJobseeker) => {
+    setConfirmationModal({
+      isOpen: true,
+      action,
+      candidate,
+    });
+  }, []);
+
+  const closeConfirmationModal = useCallback(() => {
+    setConfirmationModal({
+      isOpen: false,
+      action: null,
+      candidate: null,
+    });
+  }, []);
+
+  // Modal confirmation handler
+  const handleModalConfirm = useCallback(async () => {
+    if (!confirmationModal.candidate || !selectedPosition) return;
+    if (confirmationModal.action === "assign") {
+      await handleAssignCandidate(confirmationModal.candidate as PositionCandidate);
+    } else if (confirmationModal.action === "remove") {
+      const id = (confirmationModal.candidate as PositionCandidate).candidateId || (confirmationModal.candidate as AssignedJobseeker).userId;
+      await handleRemoveCandidate(id);
+    }
+    closeConfirmationModal();
+  }, [confirmationModal, selectedPosition, handleAssignCandidate, handleRemoveCandidate, closeConfirmationModal]);
+
+  // Modal message builder
+  const getConfirmationMessage = useCallback(() => {
+    if (!confirmationModal.candidate || !selectedPosition) return "";
+    const candidateName = (confirmationModal.candidate as PositionCandidate).name || (confirmationModal.candidate as AssignedJobseeker).name;
+    const candidateEmail = (confirmationModal.candidate as PositionCandidate).email || (confirmationModal.candidate as AssignedJobseeker).email;
+    const positionTitle = selectedPosition.title;
+    const clientName = selectedPosition.clientName || "Unknown Client";
+    if (confirmationModal.action === "assign") {
+      return `Are you sure you want to assign "${candidateName}" to the position "${positionTitle}" for client "${clientName}"? Upon confirmation, an email will be sent to ${candidateEmail}.`;
+    } else if (confirmationModal.action === "remove") {
+      return `Are you sure you want to remove "${candidateName}" from the position "${positionTitle}" for client "${clientName}"? Upon confirmation, an email will be sent to ${candidateEmail}.`;
+    }
+    return "";
+  }, [confirmationModal, selectedPosition]);
+
   return (
     <div className="position-matching">
       <AppHeader
@@ -588,12 +644,8 @@ export function PositionMatching() {
                             ) ? (
                               <button
                                 className="remove-btn"
-                                onClick={() =>
-                                  handleRemoveCandidate(candidate.candidateId)
-                                }
-                                disabled={
-                                  assignmentLoading === candidate.candidateId
-                                }
+                                onClick={() => openConfirmationModal("remove", candidate)}
+                                disabled={assignmentLoading === candidate.candidateId}
                               >
                                 {assignmentLoading === candidate.candidateId ? (
                                   <>
@@ -610,7 +662,7 @@ export function PositionMatching() {
                             ) : (
                               <button
                                 className="assign-btn"
-                                onClick={() => handleAssignCandidate(candidate)}
+                                onClick={() => openConfirmationModal("assign", candidate)}
                                 disabled={
                                   assignedJobseekers.length >=
                                     (selectedPosition?.numberOfPositions ||
@@ -962,15 +1014,8 @@ export function PositionMatching() {
                               <div className="slot-actions">
                                 <button
                                   className="remove-slot-btn"
-                                  onClick={() =>
-                                    handleRemoveCandidate(jobseeker.userId)
-                                  }
+                                  onClick={() => openConfirmationModal("remove", jobseeker)}
                                   disabled={assignmentLoading === jobseeker.id}
-                                  title={
-                                    assignmentLoading === jobseeker.id
-                                      ? "Removing..."
-                                      : "Remove candidate"
-                                  }
                                 >
                                   {assignmentLoading === jobseeker.id ? (
                                     <div className="loading-spinner small"></div>
@@ -1011,6 +1056,20 @@ export function PositionMatching() {
           </div>
         </div>
       </div>
+
+      <ConfirmationModal
+        isOpen={confirmationModal.isOpen}
+        title={
+          confirmationModal.action === "assign"
+            ? "Confirm Assignment"
+            : "Confirm Removal"
+        }
+        message={getConfirmationMessage()}
+        confirmText={confirmationModal.action === "assign" ? "Assign" : "Remove"}
+        confirmButtonClass={confirmationModal.action === "assign" ? "success" : "danger"}
+        onConfirm={handleModalConfirm}
+        onCancel={closeConfirmationModal}
+      />
     </div>
   );
 }

@@ -13,7 +13,6 @@ import { AppHeader } from "../../components/AppHeader";
 import {
   submitProfile,
   saveDraft as saveDraftAPI,
-  getDraft,
   checkEmailAvailability,
   updateProfile,
 } from "../../services/api/profile";
@@ -242,7 +241,7 @@ export function ProfileCreate({
   const { id: profileId } = useParams<{ id: string }>();
   const location = useLocation();
   const navigate = useNavigate();
-  const { isJobSeeker, user, hasProfile } = useAuth();
+  const { isJobSeeker, user } = useAuth();
 
   // Check if isNewForm is passed via location state
   const locationIsNewForm = location.state?.isNewForm === true;
@@ -273,7 +272,7 @@ export function ProfileCreate({
   const [userInteracted, setUserInteracted] = useState(false);
   const previousUserInteraction = useRef(false); // Add this to track previous interaction state
 
-  // Track created draft ID in the current session
+  // Track created draft ID in the current session (for jobseeker drafts only)
   const [createdDraftId, setCreatedDraftId] = useState<string | null>(null);
 
   // New loading states object to track different operations
@@ -376,11 +375,7 @@ export function ProfileCreate({
             return;
           }
 
-          // Set initial email to compare later for availability check
-          // setInitialEmail(profileData.email);
-
           // Map detailed profile data to form format
-          // Need to match the exact structure returned from the API
           const formData = {
             firstName: profileData.firstName || "",
             lastName: profileData.lastName || "",
@@ -495,40 +490,6 @@ export function ProfileCreate({
       };
 
       fetchDraftById();
-    } else if (!shouldStartWithNewForm) {
-      // Only fetch draft if not explicitly creating a new form
-      const fetchDraft = async () => {
-        try {
-          setLoading("formLoading", true);
-          const { draft, currentStep: savedStep } = await getDraft();
-          console.log(user, 'user');
-          if (draft) {
-            // If user is a jobseeker, preserve their email
-            if (isJobSeeker && user?.email && user?.user_metadata?.phoneNumber) {
-              draft.email = user.email;
-              draft.mobile = user.user_metadata.phoneNumber;
-            }
-
-            if (draft.id) {
-              setCreatedDraftId(draft.id as string);
-            }
-
-            // Set form values from draft
-            methods.reset(draft);
-            // Set current step
-            if (savedStep) {
-              setCurrentStep(savedStep);
-            }
-          }
-        } catch (error) {
-          console.error("Error fetching draft:", error);
-          // Non-critical error, don't show to user
-        } finally {
-          setLoading("formLoading", false);
-        }
-      };
-
-      fetchDraft();
     } else {
       // When creating a new form, ensure loading state is turned off
       setLoading("formLoading", false);
@@ -1544,12 +1505,6 @@ export function ProfileCreate({
         }
         actions={
           <>
-            {isJobSeeker && hasProfile && (
-              <button className="button" onClick={() => navigate("/dashboard")}>
-                <ArrowLeft size={16} />
-                <span>Back to Dashboard</span>
-              </button>
-            )}
             {!isEditMode && (
               <button
                 type="button"

@@ -10,8 +10,8 @@ interface CacheRecord {
   promise?: Promise<unknown>;
 }
 
-// Cache duration in milliseconds (5 seconds)
-const CACHE_DURATION = 5000;
+// Cache duration in milliseconds (1 minute)
+const CACHE_DURATION = 60 * 1000;
 
 // Request cache for GET requests
 const requestCache: Record<string, CacheRecord> = {};
@@ -77,7 +77,7 @@ const getAuthToken = async () => {
 
   if (data.session?.access_token) {
     cachedToken = data.session.access_token;
-    // Set expiry time to 5 minutes before actual expiry to be safe
+    // Set expiry time to 1 minute before actual expiry to be safe
     // If expiry is not available, cache for 55 minutes (default Supabase token lasts 1 hour)
     const expiresIn = data.session.expires_in || 3600;
     tokenExpiryTime = currentTime + (expiresIn - 300) * 1000;
@@ -200,6 +200,15 @@ api.interceptors.response.use(
     return response;
   },
   async (error) => {
+    if (
+      error.response &&
+      (error.response.status === 401 || error.response.status === 403)
+    ) {
+      // Global handler: sign out user, clear token, redirect to login
+      await import('../../lib/supabaseClient').then(({ supabase }) => supabase.auth.signOut());
+      localStorage.removeItem('supabase.auth.token');
+      window.location.href = '/login';
+    }
     return Promise.reject(error);
   }
 );

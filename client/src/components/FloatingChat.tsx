@@ -300,8 +300,13 @@ Watch as I process your queries through multiple AI agents:
                 setStatus(statusMessage);
                 setCurrentStage(event.stage);
               }
+              // Accumulate streaming chunks
+              if (event.stage === 'streaming' && event.message) {
+                assistantMsg += event.message;
+              }
+              // Handle final event
               if (event.stage === 'final') {
-                assistantMsg = event.message;
+                if (event.message) assistantMsg += event.message;
                 finalMeta = event.metadata;
                 setStatus('Response ready!');
                 setCurrentStage('final');
@@ -312,7 +317,7 @@ Watch as I process your queries through multiple AI agents:
           }
         }
       }
-
+      // Show the message if we accumulated anything, even if no 'final' event
       if (assistantMsg) {
         setMessages((msgs) => [...msgs, { 
           role: 'assistant', 
@@ -463,14 +468,14 @@ Watch as I process your queries through multiple AI agents:
                     }
                   }}
                 />
-                {msg.role === 'assistant' && msg.metadata && (
+                {/* {msg.role === 'assistant' && msg.metadata && (
                   <div className="metadata-info">
                     <strong>⚡ Processing Info:</strong><br />
                     ⏱️ Time: {msg.metadata.processing_time}s | 
                     🔧 Tokens: {msg.metadata.tokens_used} | 
                     🗃️ SQL: {msg.metadata.sql_query ? msg.metadata.sql_query.substring(0, 50) + '...' : 'N/A'}
                   </div>
-                )}
+                )} */}
               </div>
             ))}
             
