@@ -212,14 +212,14 @@ export const activityLogger = (options: ActivityLoggerOptions = {}) => {
     try {
       // Log before operation if configured
       if (options.beforeOperation) {
-        console.log('🔄 ActivityLogger: Logging before operation...');
+        // console.log('🔄 ActivityLogger: Logging before operation...');
         const activityData = await options.beforeOperation(req, res);
         await logActivity(req, activityData);
       }
 
       // If direct activity data is provided, log it immediately
       if (options.activityData) {
-        console.log('📝 ActivityLogger: Logging direct activity data...');
+        // console.log('📝 ActivityLogger: Logging direct activity data...');
         const activityData = typeof options.activityData === 'function' 
           ? await options.activityData(req, res)
           : options.activityData;
@@ -246,7 +246,7 @@ export const activityLogger = (options: ActivityLoggerOptions = {}) => {
       // Log error activity if configured
       if (options.onError) {
         try {
-          console.log('❌ ActivityLogger: Logging error activity...');
+          // console.log('❌ ActivityLogger: Logging error activity...');
           const activityData = await options.onError(req, res, error);
           await logActivity(req, activityData);
         } catch (logError) {
@@ -269,7 +269,7 @@ export const activityLogger = (options: ActivityLoggerOptions = {}) => {
         // Only log success if the response was successful
         if (res.statusCode >= 200 && res.statusCode < 300) {
           if (options.onSuccess) {
-            console.log(`✅ ActivityLogger: Logging success activity (status: ${res.statusCode})...`);
+            // console.log(`✅ ActivityLogger: Logging success activity (status: ${res.statusCode})...`);
             const activityData = await options.onSuccess(req, res);
             await logActivity(req, activityData);
           }
@@ -277,7 +277,7 @@ export const activityLogger = (options: ActivityLoggerOptions = {}) => {
 
         // Log after operation regardless of success/failure
         if (options.afterOperation) {
-          console.log('🏁 ActivityLogger: Logging after operation...');
+          // console.log('🏁 ActivityLogger: Logging after operation...');
           const activityData = await options.afterOperation(req, res, operationResult);
           await logActivity(req, activityData);
         }
@@ -328,13 +328,13 @@ export const logActivityDirect = async (req: Request, activityData: ActivityData
  */
 async function logActivity(req: Request, activityData: ActivityData): Promise<void> {
   try {
-    console.log('📋 ActivityLogger: Processing activity data:', {
-      actionType: activityData.actionType,
-      actionVerb: activityData.actionVerb,
-      primaryEntity: `${activityData.primaryEntityType}:${activityData.primaryEntityId}`,
-      displayMessage: activityData.displayMessage,
-      category: activityData.category
-    });
+    // console.log('📋 ActivityLogger: Processing activity data:', {
+    //   actionType: activityData.actionType,
+    //   actionVerb: activityData.actionVerb,
+    //   primaryEntity: `${activityData.primaryEntityType}:${activityData.primaryEntityId}`,
+    //   displayMessage: activityData.displayMessage,
+    //   category: activityData.category
+    // });
 
     // Extract actor information from request
     const user = req.user;
@@ -352,11 +352,11 @@ async function logActivity(req: Request, activityData: ActivityData): Promise<vo
     // Get actor type from user metadata
     const actorType = user.user_metadata?.user_type || 'user';
 
-    console.log('👤 ActivityLogger: Actor info:', {
-      actorId: user.id,
-      actorName,
-      actorType
-    });
+    // console.log('👤 ActivityLogger: Actor info:', {
+    //   actorId: user.id,
+    //   actorName,
+    //   actorType
+    // });
 
     // Prepare activity record
     const activityRecord = {
@@ -381,10 +381,10 @@ async function logActivity(req: Request, activityData: ActivityData): Promise<vo
       priority: activityData.priority || 'normal'
     };
 
-    console.log('💾 ActivityLogger: Inserting activity record into database...');
+    // console.log('💾 ActivityLogger: Inserting activity record into database...');
 
     // Log the complete activity record for debugging
-    console.log('📋 ActivityLogger: Complete activity record object:', JSON.stringify(activityRecord, null, 2));
+    // console.log('📋 ActivityLogger: Complete activity record object:', JSON.stringify(activityRecord, null, 2));
 
     // Insert activity into database
     const { error } = await supabaseAdmin
@@ -396,7 +396,7 @@ async function logActivity(req: Request, activityData: ActivityData): Promise<vo
       throw error;
     }
 
-    console.log(`✅ ActivityLogger: Activity logged successfully: ${activityData.displayMessage}`);
+    // console.log(`✅ ActivityLogger: Activity logged successfully: ${activityData.displayMessage}`);
   } catch (error) {
     console.error('💥 ActivityLogger: Error in logActivity function:', error);
     throw error;

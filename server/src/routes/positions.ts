@@ -6,6 +6,13 @@ import { activityLogger } from '../middleware/activityLogger.js';
 import dotenv from 'dotenv';
 import { PositionData } from '../types.js';
 import { v4 as uuidv4 } from 'uuid';
+import { emailNotifier, renderTemplate, renderHtmlTemplate } from '../middleware/emailNotifier.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { jobseekerAssignmentTextTemplate } from '../email-templates/jobseeker-assignment-txt.js';
+import { jobseekerAssignmentHtmlTemplate } from '../email-templates/jobseeker-assignment-html.js';
+import { jobseekerRemovalHtmlTemplate } from '../email-templates/jobseeker-removal-html.js';
+import { jobseekerRemovalTextTemplate } from '../email-templates/jobseeker-removal-txt.js';
 
 dotenv.config();
 
@@ -21,6 +28,9 @@ if (!supabaseUrl || !supabaseKey) {
 }
 
 const supabase = createClient(supabaseUrl, supabaseKey);
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /**
  * Convert camelCase to snake_case properly handling consecutive capital letters
@@ -1954,6 +1964,53 @@ router.post(
       }
     })
   }),
+  emailNotifier({
+    onSuccessEmail: async (req: Request, res: Response) => {
+      const assignment = res.locals.newAssignment;
+      const candidateName = res.locals.candidateName;
+      const candidateId = req.body.candidateId;
+      let candidateEmail = res.locals.candidateEmail;
+      // Fetch candidate email if not present
+      if (!candidateEmail && candidateId) {
+        const { data: candidateProfile } = await supabase
+          .from("jobseeker_profiles")
+          .select("email, first_name, last_name")
+          .eq("user_id", candidateId)
+          .maybeSingle();
+        if (candidateProfile) {
+          candidateEmail = candidateProfile.email;
+        }
+      }
+      if (!candidateEmail) return null;
+      // Prepare variables for template
+      const templateVars = {
+        jobseeker_first_name: candidateName?.split(' ')[0] || 'Candidate',
+        title: res.locals.position?.title || '',
+        city: res.locals.position?.city || '',
+        province: res.locals.position?.province || '',
+        employment_type: res.locals.position?.employment_type || '',
+        employment_term: res.locals.position?.employment_term || '',
+        start_date: res.locals.position?.start_date || '',
+        end_date: res.locals.position?.end_date || '',
+        position_category: res.locals.position?.position_category || '',
+        experience: res.locals.position?.experience || '',
+      };
+      console.log('[EmailNotifier] templateVars:', templateVars);
+      // Use template functions
+      const html = jobseekerAssignmentHtmlTemplate(templateVars);
+      console.log('[EmailNotifier] Generated HTML:', html);
+      const text = jobseekerAssignmentTextTemplate(templateVars);
+      // Extract subject (first line from text template)
+      const [subjectLine, ...bodyLines] = text.split('\n');
+      const subject = subjectLine.replace('Subject:', '').trim();
+      return {
+        to: candidateEmail,
+        subject,
+        text: bodyLines.join('\n').trim(),
+        html,
+      };
+    }
+  }),
   async (req: Request, res: Response) => {
     try {
       const { id: positionId } = req.params;
@@ -1971,7 +2028,22 @@ router.post(
       // Get current position data
       const { data: position, error: positionError } = await supabase
         .from("positions")
-        .select("assigned_jobseekers, number_of_positions, title, position_code, client, client_name")
+        .select(`
+          id,
+          client,
+          title,
+          position_code,
+          start_date,
+          end_date,
+          city,
+          province,
+          employment_term,
+          employment_type,
+          position_category,
+          experience,
+          assigned_jobseekers,
+          number_of_positions
+        `)
         .eq("id", positionId)
         .single();
 
@@ -1979,11 +2051,15 @@ router.post(
         return res.status(404).json({ error: "Position not found" });
       }
 
+      // Set full position object for email templates
+      res.locals.position = position;
+
       // Store position data for activity logging
       res.locals.positionTitle = position.title;
       res.locals.positionCode = position.position_code;
       res.locals.clientId = position.client;
-      res.locals.clientName = position.client_name;
+      // No assignment to res.locals.clientName here
+      // No usage of position.client_name or position.number_of_positions in this route
 
       // Get candidate name for activity logging
       const { data: candidateDetails, error: candidateNameError } = await supabase
@@ -2168,16 +2244,62 @@ router.delete(
       tertiaryEntityType: 'client',
       tertiaryEntityId: res.locals.clientId,
       tertiaryEntityName: res.locals.clientName,
-      displayMessage: `Removed candidate "${res.locals.candidateName}" from position "${res.locals.positionTitle}"`,
+      displayMessage: `Removed candidate \"${res.locals.candidateName}\" from position \"${res.locals.positionTitle}\"`,
       category: 'position_management',
       priority: 'normal',
       status: 'removed',
       metadata: {
         removedAssignmentId: res.locals.removedAssignmentId,
         positionCode: res.locals.positionCode,
-        remainingAssignedCandidates: res.locals.remainingAssigned
+        remainingAssigned: res.locals.remainingAssigned
       }
     })
+  }),
+  emailNotifier({
+    onSuccessEmail: async (req: Request, res: Response) => {
+      const candidateName = res.locals.candidateName;
+      const candidateId = req.params.candidateId;
+      let candidateEmail = res.locals.candidateEmail;
+      // Fetch candidate email if not present
+      if (!candidateEmail && candidateId) {
+        const { data: candidateProfile } = await supabase
+          .from("jobseeker_profiles")
+          .select("email, first_name, last_name")
+          .eq("user_id", candidateId)
+          .maybeSingle();
+        if (candidateProfile) {
+          candidateEmail = candidateProfile.email;
+        }
+      }
+      if (!candidateEmail) return null;
+      // Prepare variables for template
+      const templateVars = {
+        jobseeker_first_name: candidateName?.split(' ')[0] || 'Candidate',
+        title: res.locals.position?.title || '',
+        city: res.locals.position?.city || '',
+        province: res.locals.position?.province || '',
+        employment_type: res.locals.position?.employment_type || '',
+        employment_term: res.locals.position?.employment_term || '',
+        start_date: res.locals.position?.start_date || '',
+        end_date: res.locals.position?.end_date || '',
+        position_category: res.locals.position?.position_category || '',
+        experience: res.locals.position?.experience || '',
+        number_of_positions: res.locals.position?.number_of_positions || '',
+      };
+      console.log('[EmailNotifier] templateVars (removal):', templateVars);
+      const html = jobseekerRemovalHtmlTemplate(templateVars);
+      console.log('[EmailNotifier] Generated HTML (removal):', html);
+      const text = jobseekerRemovalTextTemplate(templateVars);
+      // Extract subject (first line from text template)
+      const [subjectLine, ...bodyLines] = text.split('\n');
+      const subject = subjectLine.replace('Subject:', '').trim();
+      return {
+        to: candidateEmail,
+        subject,
+        text: bodyLines.join('\n').trim(),
+        html,
+      };
+    }
   }),
   async (req: Request, res: Response) => {
     try {
@@ -2192,10 +2314,19 @@ router.delete(
       const { data: position, error: positionError } = await supabase
         .from("positions")
         .select(`
-          assigned_jobseekers,
+          id,
+          client,
           title,
           position_code,
-          client
+          start_date,
+          end_date,
+          city,
+          province,
+          employment_term,
+          employment_type,
+          position_category,
+          experience,
+          assigned_jobseekers
         `)
         .eq("id", positionId)
         .single();
@@ -2203,6 +2334,16 @@ router.delete(
       if (positionError || !position) {
         return res.status(404).json({ error: "Position not found" });
       }
+
+      // Set full position object for email templates
+      res.locals.position = position;
+
+      // Store position data for activity logging
+      res.locals.positionTitle = position.title;
+      res.locals.positionCode = position.position_code;
+      res.locals.clientId = position.client;
+      // No assignment to res.locals.clientName here
+      // No usage of position.client_name or position.number_of_positions in this route
 
       // Get candidate info
       const { data: candidate, error: candidateError } = await supabase
@@ -2228,7 +2369,8 @@ router.delete(
       res.locals.positionTitle = position.title;
       res.locals.positionCode = position.position_code;
       res.locals.clientId = client?.id || null;
-      res.locals.clientName = client?.company_name || null;
+      // No assignment to res.locals.clientName here
+      // No usage of position.client_name or position.number_of_positions in this route
 
       // Check if there's an active assignment for this position-candidate pair
       const { data: activeAssignment, error: assignmentCheckError } = await supabase
