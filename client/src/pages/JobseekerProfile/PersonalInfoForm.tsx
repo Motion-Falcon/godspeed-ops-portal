@@ -47,6 +47,8 @@ export function PersonalInfoForm({
   // Add debounce timeout ref for validation
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  const watchedSin = watch("sinNumber");
+
   // Function to check if we should show an error for a specific field
   const shouldShowError = (fieldName: string) => {
     return (
@@ -485,7 +487,7 @@ export function PersonalInfoForm({
           </div>
 
           <div className="form-group">
-            <label htmlFor="sinExpiry" className="form-label">
+            <label htmlFor="sinExpiry" className="form-label" data-required={watchedSin ? "*" : undefined}>
               SIN Expiry Date
             </label>
             <div className="date-picker-container">
@@ -497,6 +499,9 @@ export function PersonalInfoForm({
                 onClick={(e) => e.currentTarget.showPicker()}
               />
             </div>
+            {shouldShowError("sinExpiry") && (
+              <p className="error-message">{allErrors.sinExpiry?.message}</p>
+            )}
           </div>
         </div>
 

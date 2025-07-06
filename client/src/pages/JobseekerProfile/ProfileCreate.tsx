@@ -47,7 +47,21 @@ export const personalInfoSchema = z
   .refine((data) => data.licenseNumber || data.passportNumber, {
     message: "Either a license number or passport number is required",
     path: ["licenseNumber"],
-  });
+  })
+  .refine(
+    (data) => {
+      // If SIN is filled, SIN Expiry must be filled
+      if (data.sinNumber && data.sinNumber.trim() !== "") {
+        return data.sinExpiry && data.sinExpiry.trim() !== "";
+      }
+      // If SIN is empty, sinExpiry can be empty
+      return true;
+    },
+    {
+      message: "SIN Expiry is required if SIN is provided",
+      path: ["sinExpiry"],
+    }
+  );
 
 // Define schema for address and qualifications
 export const addressQualificationsSchema = z.object({
@@ -221,7 +235,21 @@ const formSchema = z
   .refine((data) => data.licenseNumber || data.passportNumber, {
     message: "Either a license number or passport number is required",
     path: ["licenseNumber"],
-  });
+  })
+  .refine(
+    (data) => {
+      // If SIN is filled, SIN Expiry must be filled
+      if (data.sinNumber && data.sinNumber.trim() !== "") {
+        return data.sinExpiry && data.sinExpiry.trim() !== "";
+      }
+      // If SIN is empty, sinExpiry can be empty
+      return true;
+    },
+    {
+      message: "SIN Expiry is required if SIN is provided",
+      path: ["sinExpiry"],
+    }
+  );
 
 // Type inference for form data
 type JobseekerProfileFormData = z.infer<typeof formSchema>;
@@ -658,6 +686,16 @@ export function ProfileCreate({
           });
           personalInfoValid = false;
           logValidation("validateCurrentStep: SIN validation failed: " + sinResult.errorMessage);
+        }
+        
+        // Check if SIN Expiry is required and missing
+        if (values.sinNumber.trim() !== "" && (!values.sinExpiry || values.sinExpiry.trim() === "")) {
+          methods.setError("sinExpiry", {
+            type: "custom",
+            message: "SIN Expiry is required if SIN is provided",
+          });
+          personalInfoValid = false;
+          logValidation("validateCurrentStep: SIN Expiry validation failed - required when SIN is provided");
         }
       }
 
