@@ -441,7 +441,8 @@ export function PositionCreate({
   }));
 
   // Handle client selection for CustomDropdown
-  const handleClientSelect = async (option: DropdownOption) => {
+  const handleClientSelect = async (option: DropdownOption | DropdownOption[]) => {
+    if (Array.isArray(option)) return;
     const clientId = option.value as string;
     
     // Set the client value
@@ -472,7 +473,8 @@ export function PositionCreate({
   };
 
   // Handle title selection for CustomDropdown
-  const handleTitleSelect = (option: DropdownOption) => {
+  const handleTitleSelect = (option: DropdownOption | DropdownOption[]) => {
+    if (Array.isArray(option)) return;
     methods.setValue("title", option.value as string);
   };
 
@@ -695,7 +697,7 @@ export function PositionCreate({
                         }
                         return null;
                       })()}
-                      onSelect={handleClientSelect}
+                      onSelect={(option) => { if (Array.isArray(option)) return; handleClientSelect(option); }}
                       placeholder="Search clients..."
                       searchable={true}
                       clearable={true}
@@ -726,7 +728,7 @@ export function PositionCreate({
                         label: methods.getValues("title"),
                         value: methods.getValues("title")
                       } : null}
-                      onSelect={handleTitleSelect}
+                      onSelect={(option) => { if (Array.isArray(option)) return; handleTitleSelect(option); }}
                       placeholder="Search job titles..."
                       searchable={true}
                       clearable={true}

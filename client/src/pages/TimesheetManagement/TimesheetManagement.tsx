@@ -29,6 +29,7 @@ import {
 } from "../../services/api/timesheet";
 import "../../styles/pages/TimesheetManagement.css";
 import { BackendClientData } from "../ClientManagement/ClientManagement";
+import { generateWeekOptions, formatDate } from "../../utils/weekUtils";
 
 // Types for timesheet
 interface TimesheetEntry {
@@ -156,7 +157,7 @@ export function TimesheetManagement() {
     fetchJobseekers();
 
     // Generate week options (past 52 weeks)
-    generateWeekOptions();
+    setWeekOptions(generateWeekOptions());
   }, []);
 
   // Fetch clients when jobseeker is selected
@@ -295,74 +296,21 @@ export function TimesheetManagement() {
     }
   };
 
-  const generateWeekOptions = () => {
-    const options = [];
-
-    // Get current date (local time)
-    const today = new Date();
-
-    // Generate options for past 52 weeks (1 year)
-    for (let i = 0; i < 52; i++) {
-      // Start with today minus i weeks
-      const currentDate = new Date(today);
-      currentDate.setDate(today.getDate() - i * 7);
-
-      // Find the Sunday of this week (start of week)
-      const dayOfWeek = currentDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
-      const weekStart = new Date(currentDate);
-      weekStart.setDate(currentDate.getDate() - dayOfWeek);
-
-      // Calculate Saturday (end of week)
-      const weekEnd = new Date(weekStart);
-      weekEnd.setDate(weekStart.getDate() + 6);
-
-      // Format dates as YYYY-MM-DD
-      const startStr =
-        weekStart.getFullYear() +
-        "-" +
-        String(weekStart.getMonth() + 1).padStart(2, "0") +
-        "-" +
-        String(weekStart.getDate()).padStart(2, "0");
-
-      const endStr =
-        weekEnd.getFullYear() +
-        "-" +
-        String(weekEnd.getMonth() + 1).padStart(2, "0") +
-        "-" +
-        String(weekEnd.getDate()).padStart(2, "0");
-
-      options.push({
-        value: startStr,
-        label: `${formatDate(startStr)} - ${formatDate(endStr)}`,
-      });
-    }
-
-    setWeekOptions(options);
-    // Set default to current week (first option)
-    if (options.length > 0) {
-      setSelectedWeekStart(options[0].value);
-    }
-  };
-
-  const formatDate = (dateString: string) => {
-    // Parse the date string and format it for display
-    const [year, month, day] = dateString.split("-").map(Number);
-    const date = new Date(year, month - 1, day);
-
-    return date.toLocaleDateString("en-CA", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
-
   // Convert data to dropdown options
-  const jobseekerOptions: DropdownOption[] = jobseekers.map((jobseeker) => ({
-    id: jobseeker.id,
-    label: jobseeker.name || jobseeker.email || "Unknown",
-    sublabel: jobseeker.email,
-    value: jobseeker,
-  }));
+  const jobseekerOptions: DropdownOption[] = jobseekers.map((jobseeker) => {
+    const phoneNumber = (jobseeker as JobSeekerProfile & { phoneNumber?: string }).phoneNumber;
+    const employeeId = (jobseeker as JobSeekerProfile & { employeeId?: string }).employeeId;
+    return {
+      id: jobseeker.id,
+      label: jobseeker.name || jobseeker.email || "Unknown",
+      sublabel: [
+        jobseeker.email,
+        phoneNumber,
+        employeeId
+      ].filter(Boolean).join(" - "),
+      value: jobseeker,
+    };
+  });
 
   const clientOptions: DropdownOption[] = clients.map((client) => ({
     id: client.id!,
@@ -400,34 +348,35 @@ export function TimesheetManagement() {
     ? weekDropdownOptions.find((opt) => opt.value === selectedWeekStart)
     : null;
 
-  const handleJobseekerSelect = (option: DropdownOption) => {
+  const handleJobseekerSelect = (option: DropdownOption | DropdownOption[]) => {
+    if (Array.isArray(option)) return; // Ignore multi-select
     const jobseeker = option.value as JobSeekerProfile;
     setSelectedJobseeker(jobseeker);
-
     // Reset other selections
     setSelectedClient(null);
     setSelectedPosition(null);
     setTimesheets([]);
   };
 
-  const handleClientSelect = (option: DropdownOption) => {
+  const handleClientSelect = (option: DropdownOption | DropdownOption[]) => {
+    if (Array.isArray(option)) return;
     const client = option.value as ClientData;
     setSelectedClient(client);
-
     // Reset position selection and timesheets
     setSelectedPosition(null);
     setTimesheets([]);
   };
 
-  const handlePositionSelect = (option: DropdownOption) => {
+  const handlePositionSelect = (option: DropdownOption | DropdownOption[]) => {
+    if (Array.isArray(option)) return;
     const position = option.value as ClientPosition;
     setSelectedPosition(position);
-
     // Reset timesheets
     setTimesheets([]);
   };
 
-  const handleWeekSelect = (option: DropdownOption) => {
+  const handleWeekSelect = (option: DropdownOption | DropdownOption[]) => {
+    if (Array.isArray(option)) return;
     const weekValue = option.value as string;
     setSelectedWeekStart(weekValue);
   };
@@ -521,7 +470,9 @@ export function TimesheetManagement() {
     };
 
     // Calculate totals for the timesheet
-    calculateTimesheetTotals(entries);
+    const bonusAmount = existingTimesheet?.bonusAmount || 0;
+    const deductionAmount = existingTimesheet?.deductionAmount || 0;
+    calculateTimesheetTotals(entries, bonusAmount, deductionAmount);
 
     setTimesheets([timesheet]);
   };
@@ -589,9 +540,14 @@ export function TimesheetManagement() {
   const updateTimesheetBonus = (bonusAmount: number) => {
     setTimesheets((prev) => {
       return prev.map((timesheet) => {
-        return {
+        const updated = {
           ...timesheet,
           bonusAmount: bonusAmount || 0,
+        };
+        const totals = calculateTimesheetTotals(updated.entries, updated.bonusAmount, updated.deductionAmount);
+        return {
+          ...updated,
+          ...totals,
         };
       });
     });
@@ -600,15 +556,20 @@ export function TimesheetManagement() {
   const updateTimesheetDeduction = (deductionAmount: number) => {
     setTimesheets((prev) => {
       return prev.map((timesheet) => {
-        return {
+        const updated = {
           ...timesheet,
           deductionAmount: deductionAmount || 0,
+        };
+        const totals = calculateTimesheetTotals(updated.entries, updated.bonusAmount, updated.deductionAmount);
+        return {
+          ...updated,
+          ...totals,
         };
       });
     });
   };
 
-  const calculateTimesheetTotals = (entries: TimesheetEntry[]) => {
+  const calculateTimesheetTotals = (entries: TimesheetEntry[], bonusAmount = 0, deductionAmount = 0) => {
     const assignment = positions.find((p) => p.id === selectedPosition?.id);
     if (!assignment) {
       return {
@@ -662,10 +623,14 @@ export function TimesheetManagement() {
       overtimeBillRate = parseFloat(position.overtimeBillRate);
     }
 
-    // Calculate totals
-    const jobseekerPay =
+    // Calculate base pay
+    const baseJobseekerPay =
       weeklyRegularHours * regularPayRate +
       weeklyOvertimeHours * overtimePayRate;
+
+    const totalJobseekerPay = baseJobseekerPay + bonusAmount - deductionAmount;
+
+    // Calculate totals
     const clientBill =
       weeklyRegularHours * regularBillRate +
       weeklyOvertimeHours * overtimeBillRate;
@@ -673,7 +638,7 @@ export function TimesheetManagement() {
     return {
       totalRegularHours: weeklyRegularHours,
       totalOvertimeHours: weeklyOvertimeHours,
-      jobseekerPay,
+      jobseekerPay: totalJobseekerPay,
       clientBill,
     };
   };
@@ -879,6 +844,17 @@ export function TimesheetManagement() {
     return dates;
   };
 
+  // Helper to calculate base pay (regular + overtime, no bonus/deduction)
+  const getBaseJobseekerPay = (timesheet: WeeklyTimesheet, position: PositionWithOvertime) => {
+    const regularPay = timesheet.totalRegularHours * parseFloat(position.regularPayRate || "0");
+    let overtimePayRate = parseFloat(position.regularPayRate || "0");
+    if (position.overtimeEnabled && position.overtimePayRate) {
+      overtimePayRate = parseFloat(position.overtimePayRate);
+    }
+    const overtimePay = timesheet.totalOvertimeHours * overtimePayRate;
+    return regularPay + overtimePay;
+  };
+
   console.log("Debug - Current state:", {
     selectedJobseeker,
     selectedWeekStart,
@@ -1015,6 +991,7 @@ export function TimesheetManagement() {
               loading={false}
               icon={<Calendar size={16} />}
               emptyMessage="No week options found"
+              searchable={false}
             />
           </div>
         </div>
@@ -1401,47 +1378,50 @@ export function TimesheetManagement() {
                                 ).toFixed(1)}
                               </div>
                             </div>
-                            <div className="timesheet-total-line timesheet-subtotal">
-                              <div className="timesheet-total-label">
-                                Subtotal:
-                              </div>
-                              <div className="timesheet-total-value">
-                                ${timesheet.jobseekerPay.toFixed(2)}
-                              </div>
-                            </div>
-                            {timesheet.bonusAmount > 0 && (
-                              <div className="timesheet-total-line">
-                                <div className="timesheet-total-label">
-                                  Bonus:
+                            {(() => {
+                              const position = positions.find((p) => p.id === selectedPosition?.id) as PositionWithOvertime;
+                              const basePay = getBaseJobseekerPay(timesheet, position);
+                              const subtotal = basePay;
+                              const employeePay = subtotal + (timesheet.bonusAmount || 0) - (timesheet.deductionAmount || 0);
+                              return <>
+                                <div className="timesheet-total-line timesheet-subtotal">
+                                  <div className="timesheet-total-label">
+                                    Subtotal:
+                                  </div>
+                                  <div className="timesheet-total-value">
+                                    ${subtotal.toFixed(2)}
+                                  </div>
                                 </div>
-                                <div className="timesheet-total-value">
-                                  +${timesheet.bonusAmount.toFixed(2)}
+                                {timesheet.bonusAmount > 0 && (
+                                  <div className="timesheet-total-line">
+                                    <div className="timesheet-total-label">
+                                      Bonus:
+                                    </div>
+                                    <div className="timesheet-total-value">
+                                      +${timesheet.bonusAmount.toFixed(2)}
+                                    </div>
+                                  </div>
+                                )}
+                                {timesheet.deductionAmount > 0 && (
+                                  <div className="timesheet-total-line">
+                                    <div className="timesheet-total-label">
+                                      Deduction:
+                                    </div>
+                                    <div className="timesheet-total-value">
+                                      -${timesheet.deductionAmount.toFixed(2)}
+                                    </div>
+                                  </div>
+                                )}
+                                <div className="timesheet-total-line timesheet-grand-total">
+                                  <div className="timesheet-total-label">
+                                    Employee Pay:
+                                  </div>
+                                  <div className="timesheet-total-value">
+                                    ${employeePay.toFixed(2)}
+                                  </div>
                                 </div>
-                              </div>
-                            )}
-                            {timesheet.deductionAmount > 0 && (
-                              <div className="timesheet-total-line">
-                                <div className="timesheet-total-label">
-                                  Deduction:
-                                </div>
-                                <div className="timesheet-total-value">
-                                  -${timesheet.deductionAmount.toFixed(2)}
-                                </div>
-                              </div>
-                            )}
-                            <div className="timesheet-total-line timesheet-grand-total">
-                              <div className="timesheet-total-label">
-                                Employee Pay:
-                              </div>
-                              <div className="timesheet-total-value">
-                                $
-                                {(
-                                  timesheet.jobseekerPay +
-                                  timesheet.bonusAmount -
-                                  timesheet.deductionAmount
-                                ).toFixed(2)}
-                              </div>
-                            </div>
+                              </>;
+                            })()}
                           </div>
                         </div>
                         {/* Generate/Update Button for this timesheet */}

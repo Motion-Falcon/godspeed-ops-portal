@@ -249,4 +249,16 @@ export type PayrateType = typeof PAYRATE_TYPES[number];
 export type PaymentMethod = typeof PAYMENT_METHODS[number];
 export type PaymentTerm = typeof PAYMENT_TERMS[number];
 export type PayCycle = typeof PAY_CYCLES[number];
-export type CreditLimit = typeof CREDIT_LIMITS[number]; 
+export type CreditLimit = typeof CREDIT_LIMITS[number];
+
+export const LIST_NAMES = [
+  "AA",
+  "AB",
+  "CANHIRE BRAMPTON",
+  "CANHIRE LONDON",
+  "KITCHENER",
+  "PRONTO PRO",
+  "SA",
+  "SB",
+  "SCARBOROUGH"
+] as const; 

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown, Search, X } from 'lucide-react';
+import { ChevronDown, Search, X, CheckCircle } from 'lucide-react';
 import '../styles/components/CustomDropdown.css';
 
 export interface DropdownOption {
@@ -12,7 +12,7 @@ export interface DropdownOption {
 interface CustomDropdownProps {
   options: DropdownOption[];
   selectedOption?: DropdownOption | null;
-  onSelect: (option: DropdownOption) => void;
+  onSelect: (option: DropdownOption | DropdownOption[]) => void;
   placeholder?: string;
   searchable?: boolean;
   disabled?: boolean;
@@ -22,6 +22,10 @@ interface CustomDropdownProps {
   icon?: React.ReactNode;
   clearable?: boolean;
   onClear?: () => void;
+  multiSelect?: boolean;
+  selectedOptions?: DropdownOption[];
+  showSelectAll?: boolean;
+  maxVisibleTagsOverride?: number;
 }
 
 export const CustomDropdown: React.FC<CustomDropdownProps> = ({
@@ -37,12 +41,21 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
   icon,
   clearable = false,
   onClear,
+  multiSelect = false,
+  selectedOptions = [],
+  showSelectAll = false,
+  maxVisibleTagsOverride,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredOptions, setFilteredOptions] = useState<DropdownOption[]>(options);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const triggerRef = useRef<HTMLDivElement>(null);
+  // Estimate average tag width (px)
+  const AVG_TAG_WIDTH = 100;
+  // How many tags can fit in the trigger?
+  const [maxVisibleTags, setMaxVisibleTags] = useState<number>(2);
 
   // Filter options based on search term
   useEffect(() => {
@@ -73,6 +86,20 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    if (multiSelect && triggerRef.current) {
+      if (typeof maxVisibleTagsOverride === 'number') {
+        setMaxVisibleTags(maxVisibleTagsOverride);
+      } else {
+        const triggerWidth = triggerRef.current.offsetWidth;
+        // Subtract some space for the +more tag and padding
+        const available = triggerWidth - 60;
+        const count = Math.max(1, Math.floor(available / AVG_TAG_WIDTH));
+        setMaxVisibleTags(count);
+      }
+    }
+  }, [multiSelect, options.length, selectedOptions.length, maxVisibleTagsOverride]);
+
   const handleToggle = () => {
     if (disabled) return;
     setIsOpen(!isOpen);
@@ -85,9 +112,23 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
   };
 
   const handleSelect = (option: DropdownOption) => {
-    onSelect(option);
-    setIsOpen(false);
-    setSearchTerm("");
+    if (multiSelect) {
+      // Toggle selection
+      const alreadySelected = selectedOptions.some((o) => o.id === option.id);
+      let newSelected: DropdownOption[];
+      if (alreadySelected) {
+        newSelected = selectedOptions.filter((o) => o.id !== option.id);
+      } else {
+        newSelected = [...selectedOptions, option];
+      }
+      onSelect(newSelected);
+      // Keep dropdown open for multi-select
+      setSearchTerm("");
+    } else {
+      onSelect(option);
+      setIsOpen(false);
+      setSearchTerm("");
+    }
   };
 
   const handleClear = (e: React.MouseEvent) => {
@@ -98,36 +139,59 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
     setSearchTerm("");
   };
 
-  const displayValue = selectedOption ? selectedOption.label : "";
+  const displayValue = multiSelect
+    ? selectedOptions.map((opt) => opt.label).join(", ")
+    : selectedOption
+    ? selectedOption.label
+    : "";
+
+  // Select All logic
+  const allSelected =
+    multiSelect && options.length > 0 && selectedOptions.length === options.length;
+  const handleSelectAll = () => {
+    if (allSelected) {
+      onSelect([]);
+    } else {
+      onSelect(options);
+    }
+  };
 
   return (
     <div className={`custom-dropdown ${className}`} ref={dropdownRef}>
       <div
         className={`custom-dropdown-trigger ${isOpen ? 'open' : ''} ${disabled ? 'disabled' : ''}`}
         onClick={handleToggle}
+        ref={multiSelect ? triggerRef : undefined}
       >
         {icon && <span className="custom-dropdown-icon">{icon}</span>}
-        
         <div className="custom-dropdown-content">
-          {searchable && isOpen ? (
-            <input
-              ref={inputRef}
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder={selectedOption ? selectedOption.label : placeholder}
-              className="custom-dropdown-search-input"
-              onClick={(e) => e.stopPropagation()}
-            />
+          {multiSelect ? (
+            <div className="custom-dropdown-tags-container">
+              {selectedOptions.length > 0 ? (
+                <>
+                  {selectedOptions.slice(0, maxVisibleTags).map((option) => (
+                    <span key={option.id} className="custom-dropdown-tag">
+                      {option.label}
+                    </span>
+                  ))}
+                  {selectedOptions.length > maxVisibleTags && (
+                    <span className="custom-dropdown-tag custom-dropdown-tag-more">
+                      +{selectedOptions.length - maxVisibleTags} more
+                    </span>
+                  )}
+                </>
+              ) : (
+                <span className="custom-dropdown-text placeholder">{placeholder}</span>
+              )}
+            </div>
           ) : (
             <span className={`custom-dropdown-text ${!displayValue ? 'placeholder' : ''}`}>
               {displayValue || placeholder}
             </span>
           )}
         </div>
-
         <div className="custom-dropdown-actions">
-          {clearable && selectedOption && (
+          {clearable && ((multiSelect && selectedOptions.length > 0) || (!multiSelect && selectedOption)) && (
             <button
               type="button"
               className="custom-dropdown-clear"
@@ -143,7 +207,6 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
           />
         </div>
       </div>
-
       {isOpen && (
         <div className="custom-dropdown-menu">
           {loading ? (
@@ -168,26 +231,47 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
                 </div>
               )}
               <div className="custom-dropdown-options">
-                {filteredOptions.map((option) => (
+                {/* Select All Option */}
+                {multiSelect && showSelectAll && (
                   <div
-                    key={option.id}
-                    className={`custom-dropdown-option ${
-                      selectedOption?.id === option.id ? 'selected' : ''
-                    }`}
-                    onClick={() => handleSelect(option)}
+                    className={`custom-dropdown-option${allSelected ? ' selected' : ''}`}
+                    onClick={handleSelectAll}
+                    style={{ fontWeight: 600 }}
                   >
                     <div className="custom-dropdown-option-content">
                       <div className="custom-dropdown-option-label">
-                        {option.label}
+                        {allSelected ? 'Deselect All' : 'Select All'}
                       </div>
-                      {option.sublabel && (
-                        <div className="custom-dropdown-option-sublabel">
-                          {option.sublabel}
-                        </div>
-                      )}
                     </div>
+                    {allSelected && <span className="custom-dropdown-option-check">✔</span>}
                   </div>
-                ))}
+                )}
+                {filteredOptions.map((option) => {
+                  const isSelected = multiSelect
+                    ? selectedOptions.some((o) => o.id === option.id)
+                    : selectedOption?.id === option.id;
+                  return (
+                    <div
+                      key={option.id}
+                      className={`custom-dropdown-option ${isSelected ? 'selected' : ''}`}
+                      onClick={() => handleSelect(option)}
+                    >
+                      {multiSelect && (
+                        <CheckCircle size={18} className={`custom-dropdown-check-circle${isSelected ? ' checked' : ''}`} />
+                      )}
+                      <div className="custom-dropdown-option-content">
+                        <div className="custom-dropdown-option-label">
+                          {option.label}
+                        </div>
+                        {option.sublabel && (
+                          <div className="custom-dropdown-option-sublabel">
+                            {option.sublabel}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </>
           ) : (

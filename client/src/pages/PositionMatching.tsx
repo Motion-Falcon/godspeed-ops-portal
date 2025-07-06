@@ -833,7 +833,7 @@ export function PositionMatching() {
                       sublabel: `${selectedPosition.clientName || 'Unknown Client'} - ${selectedPosition.city || 'Unknown City'}, ${selectedPosition.province || 'Unknown Province'}`,
                       value: selectedPosition
                     } : null}
-                    onSelect={handlePositionSelectDropdown}
+                    onSelect={(option) => { if (Array.isArray(option)) return; handlePositionSelectDropdown(option); }}
                     placeholder="Select a position..."
                     searchable={true}
                     loading={positionsLoading}

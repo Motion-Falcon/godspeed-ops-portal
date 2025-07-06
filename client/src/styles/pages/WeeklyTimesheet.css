@@ -1,0 +1,49 @@
+.weekly-timesheet-container .timesheet-selection-bar {
+  gap: 1rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.weekly-timesheet-container .timesheet-selection-bar .selection-row {
+  display: flex;
+  width: 100%;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.weekly-timesheet-container .timesheet-selection-bar .jobseeker-section {
+  width: 260px;
+  min-width: 260px;
+  flex: 0 0 260px;
+}
+
+.weekly-timesheet-container .timesheet-selection-bar .client-section {
+  flex: 0 1 45%;
+  min-width: 0;
+}
+
+.weekly-timesheet-container .timesheet-selection-bar .week-section {
+  flex: 1 1 55%;
+  min-width: 0;
+}
+
+.weekly-timesheet-container .timesheet-selection-bar .paycycle-section,
+.weekly-timesheet-container .timesheet-selection-bar .listname-section {
+  width: 260px;
+  min-width: 180px;
+  flex: 0 0 260px;
+}
+
+.weekly-timesheet-container .report-table-container {
+  overflow-x: auto;
+}
+
+.csv-download-section {
+  display: flex;
+  justify-content: flex-start;
+  margin: 24px 0;
+} 
+
+.csv-download-section button {
+  width: fit-content;
+}

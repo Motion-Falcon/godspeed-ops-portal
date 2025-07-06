@@ -43,6 +43,8 @@ import { InvoiceManagement } from './pages/InvoiceManagement/InvoiceManagement';
 import { InvoiceList } from './pages/InvoiceManagement/InvoiceList';
 import { AllUsersManagement } from './pages/AllUsersManagement';
 import FloatingChat from './components/FloatingChat';
+import { Reports } from './pages/Reports/Reports';
+import { WeeklyTimesheet } from './pages/Reports/WeeklyTimesheet';
 
 function App() {
   return (
@@ -73,6 +75,7 @@ function App() {
               <Route path="/jobseekers/:id" element={<JobSeekerProfile />} />
               <Route path="/training-modules" element={<TrainingModules />} />
               <Route path="/metric-examples" element={<MetricExamplePage />} />
+              <Route path="/reports" element={<Reports />} />
 
               <Route element={<RecruiterRoute />}>
                 <Route path="/jobseekers/profile/account-created" element={<ProfileAccountCreated />} />
@@ -98,6 +101,7 @@ function App() {
                 <Route path="/invoice-management" element={<InvoiceManagement />} />
                 <Route path="/invoice-management/create" element={<InvoiceManagement />} />
                 <Route path="/invoice-management/list" element={<InvoiceList />} />
+                <Route path="/reports/weekly-timesheet" element={<WeeklyTimesheet />} />
                 {/* Add more recruiter-specific routes here */}
               </Route>
               

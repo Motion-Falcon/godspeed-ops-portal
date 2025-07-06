@@ -1,0 +1,95 @@
+.reports-container {
+  padding: var(--spacing-8);
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.reports-header {
+  margin-bottom: var(--spacing-6);
+  text-align: left;
+}
+
+.reports-header h2 {
+  font-size: 1.4rem;
+  font-weight: var(--font-weight-bold);
+  color: var(--primary);
+  margin-bottom: var(--spacing-2);
+}
+
+.reports-subtitle {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  margin-bottom: var(--spacing-4);
+}
+
+.reports-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-3);
+}
+
+.report-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius);
+  box-shadow: var(--card-shadow);
+  padding: 1rem 0.75rem 0.75rem 0.75rem;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  transition: box-shadow var(--transition-fast), border-color var(--transition-fast), transform 0.15s;
+  min-height: 80px;
+  position: relative;
+}
+
+.report-card:hover, .report-card:focus {
+  border-color: #2196F3;
+  box-shadow: 0 4px 24px rgba(33, 150, 243, 0.10);
+  transform: translateY(-2px) scale(1.02);
+  outline: none;
+}
+
+.report-icon {
+  margin-bottom: 0;
+  margin-right: var(--spacing-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #F5F7FA;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  box-shadow: 0 2px 8px rgba(33, 150, 243, 0.08);
+  flex-shrink: 0;
+}
+
+.report-card-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.report-title {
+  font-size: 0.95rem;
+  font-weight: var(--font-weight-semibold);
+  color: var(--primary);
+  margin-bottom: 2px;
+}
+
+.report-description {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.report-category-section {
+  padding: var(--spacing-2)
+}
+
+.report-category-title {
+  font-size: 1.05rem;
+  font-weight: var(--font-weight-bold);
+  color: var(--primary);
+  margin-bottom: var(--spacing-3);
+  margin-top: var(--spacing-2);
+}

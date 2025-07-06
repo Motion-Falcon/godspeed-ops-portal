@@ -557,7 +557,8 @@ export function InvoiceManagement() {
     }
   };
 
-  const handleClientSelect = async (option: DropdownOption) => {
+  const handleClientSelect = async (option: DropdownOption | DropdownOption[]) => {
+    if (Array.isArray(option)) return;
     const basicClient = option.value as ClientData;
     setSelectedClient(basicClient as InvoiceBackendClientData);
     setClientLoading(true);
@@ -654,7 +655,8 @@ export function InvoiceManagement() {
     }
   };
 
-  const handleTermsSelect = (option: DropdownOption) => {
+  const handleTermsSelect = (option: DropdownOption | DropdownOption[]) => {
+    if (Array.isArray(option)) return;
     const terms = option.value as string;
     setSelectedTerms(terms);
     calculateDueDate(invoiceDate, terms);
@@ -684,7 +686,8 @@ export function InvoiceManagement() {
     }
   };
 
-  const handlePositionSelect = (lineItemId: string, option: DropdownOption) => {
+  const handlePositionSelect = (lineItemId: string, option: DropdownOption | DropdownOption[]) => {
+    if (Array.isArray(option)) return;
     const position = option.value as ClientPosition;
     updateLineItem(lineItemId, {
       position,
@@ -700,13 +703,15 @@ export function InvoiceManagement() {
 
   const handleJobseekerSelect = (
     lineItemId: string,
-    option: DropdownOption
+    option: DropdownOption | DropdownOption[]
   ) => {
+    if (Array.isArray(option)) return;
     const jobseeker = option.value as AssignedJobseeker;
     updateLineItem(lineItemId, { jobseeker });
   };
 
-  const handleSalesTaxSelect = (lineItemId: string, option: DropdownOption) => {
+  const handleSalesTaxSelect = (lineItemId: string, option: DropdownOption | DropdownOption[]) => {
+    if (Array.isArray(option)) return;
     const salesTax = option.value as string;
     updateLineItem(lineItemId, { salesTax });
   };
@@ -723,8 +728,9 @@ export function InvoiceManagement() {
   // Combined option handler
   const handleCombinedOptionSelect = (
     supplierPOId: string,
-    option: DropdownOption
+    option: DropdownOption | DropdownOption[]
   ) => {
+    if (Array.isArray(option)) return;
     const selectedValue = option.value as string;
     updateSupplierPOItem(supplierPOId, { selectedOption: selectedValue });
   };

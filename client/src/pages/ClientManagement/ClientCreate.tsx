@@ -15,7 +15,7 @@ import {
 import { ConfirmationModal } from '../../components/ConfirmationModal';
 import { AppHeader } from '../../components/AppHeader';
 import { ArrowLeft, Save } from 'lucide-react';
-import { PAYMENT_METHODS, PAYMENT_TERMS, PAY_CYCLES, CREDIT_LIMITS } from '../../constants/formOptions';
+import { PAYMENT_METHODS, PAYMENT_TERMS, PAY_CYCLES, CREDIT_LIMITS, LIST_NAMES } from '../../constants/formOptions';
 import '../../styles/pages/ClientManagement.css';
 import '../../styles/components/form.css';
 import '../../styles/components/header.css';
@@ -462,15 +462,9 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
                       {...methods.register('listName')}
                     >
                       <option value="">Select a list name</option>
-                      <option value="AA">AA</option>
-                      <option value="AB">AB</option>
-                      <option value="CANHIRE BRAMPTON">CANHIRE BRAMPTON</option>
-                      <option value="CANHIRE LONDON">CANHIRE LONDON</option>
-                      <option value="KITCHENER">KITCHENER</option>
-                      <option value="PRONTO PRO">PRONTO PRO</option>
-                      <option value="SA">SA</option>
-                      <option value="SB">SB</option>
-                      <option value="SCARBOROUGH">SCARBOROUGH</option>
+                      {LIST_NAMES.map((name) => (
+                        <option key={name} value={name}>{name}</option>
+                      ))}
                     </select>
                     {methods.formState.errors.listName && (
                       <p className="form-error">{methods.formState.errors.listName.message}</p>
