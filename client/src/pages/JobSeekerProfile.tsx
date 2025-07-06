@@ -143,6 +143,73 @@ const profileNeedsAttention = (profile: FullJobseekerProfile | null): boolean =>
   });
 };
 
+// Helper function to calculate days until SIN expiry
+const calculateDaysUntilExpiry = (expiryDate: string | null): number | null => {
+  if (!expiryDate) return null;
+  
+  try {
+    const expiry = new Date(expiryDate);
+    const today = new Date();
+    
+    // Reset time to start of day for accurate day calculation
+    expiry.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+    
+    const timeDiff = expiry.getTime() - today.getTime();
+    const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+    
+    return daysDiff;
+  } catch (error) {
+    console.error('Error calculating days until SIN expiry:', error);
+    return null;
+  }
+};
+
+// Helper function to get SIN expiry alert info
+const getSinExpiryAlert = (profile: FullJobseekerProfile | null): {
+  type: 'expired' | 'warning-30' | 'warning-60' | 'warning-90' | null;
+  daysUntilExpiry: number | null;
+  message: string;
+  icon: React.ReactNode;
+} | null => {
+  if (!profile?.sinExpiry) return null;
+  
+  const daysUntilExpiry = calculateDaysUntilExpiry(profile.sinExpiry);
+  if (daysUntilExpiry === null) return null;
+  
+  if (daysUntilExpiry < 0) {
+    return {
+      type: 'expired',
+      daysUntilExpiry,
+      message: `SIN has expired ${Math.abs(daysUntilExpiry)} day${Math.abs(daysUntilExpiry) !== 1 ? 's' : ''} ago`,
+      icon: <AlertTriangle size={20} />
+    };
+  } else if (daysUntilExpiry <= 30) {
+    return {
+      type: 'warning-30',
+      daysUntilExpiry,
+      message: `SIN expires in ${daysUntilExpiry} day${daysUntilExpiry !== 1 ? 's' : ''}`,
+      icon: <AlertTriangle size={20} />
+    };
+  } else if (daysUntilExpiry <= 60) {
+    return {
+      type: 'warning-60',
+      daysUntilExpiry,
+      message: `SIN expires in ${daysUntilExpiry} day${daysUntilExpiry !== 1 ? 's' : ''}`,
+      icon: <AlertCircle size={20} />
+    };
+  } else if (daysUntilExpiry <= 90) {
+    return {
+      type: 'warning-90',
+      daysUntilExpiry,
+      message: `SIN expires in ${daysUntilExpiry} day${daysUntilExpiry !== 1 ? 's' : ''}`,
+      icon: <CircleAlert size={20} />
+    };
+  }
+  
+  return null;
+};
+
 // Helper function to decode HTML entities for slashes
 const decodePath = (path: string | undefined): string | undefined => {
   return path ? path.replace(/&#x2F;/g, "/") : undefined;
@@ -1093,6 +1160,29 @@ export function JobSeekerProfile() {
 
           <div className="profile-details">
             {renderRejectionReason()}
+            
+            {/* SIN Expiry Alert */}
+            {(() => {
+              const sinAlert = getSinExpiryAlert(profile);
+              if (!sinAlert) return null;
+              
+              return (
+                <div className={`sin-expiry-alert ${sinAlert.type}`}>
+                  <div className="sin-alert-icon">
+                    {sinAlert.icon}
+                  </div>
+                  <div className="sin-alert-content">
+                    <div className="sin-alert-message">
+                      {sinAlert.message}
+                    </div>
+                    <div className="sin-alert-details">
+                      SIN Expiry: {formatDate(profile.sinExpiry, false)}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+            
             <div className="profile-avatar-container">
               <div className="profile-avatar">
                 <User size={40} />

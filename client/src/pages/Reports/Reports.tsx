@@ -69,13 +69,6 @@ const REPORT_CATEGORIES = [
         to: '/reports/envelope-printing-position',
       },
       {
-        id: 'envelope-printing',
-        icon: <FileText size={20} color="#00BCD4" />,
-        title: 'Envelope Printing Report',
-        description: 'Print envelopes for selected users or clients.',
-        to: '/reports/envelope-printing',
-      },
-      {
         id: 'clients',
         icon: <Users size={20} color="#607D8B" />,
         title: 'Clients',

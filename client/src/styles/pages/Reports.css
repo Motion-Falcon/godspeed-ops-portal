@@ -82,10 +82,6 @@
   line-height: 1.4;
 }
 
-.report-category-section {
-  padding: var(--spacing-2)
-}
-
 .report-category-title {
   font-size: 1.05rem;
   font-weight: var(--font-weight-bold);
