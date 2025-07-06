@@ -24,7 +24,6 @@ import {
   Clock,
   Receipt,
   BarChart3,
-  FileMinus,
 } from "lucide-react";
 import { ThemeToggle } from "./theme-toggle";
 import { logoutUser } from "../lib/auth";
@@ -50,13 +49,40 @@ interface HamburgerMenuProps {
   onOpen: () => void;
 }
 
+// Custom Tooltip Component
+function CustomTooltip({ text, isVisible, position }: { 
+  text: string; 
+  isVisible: boolean; 
+  position: { x: number; y: number } 
+}) {
+  if (!isVisible) return null;
+
+  return (
+    <div 
+      className="custom-tooltip"
+      style={{
+        position: 'fixed',
+        left: position.x,
+        top: position.y,
+        zIndex: 9999,
+      }}
+    >
+      {text}
+    </div>
+  );
+}
+
 // Separate component for menu items to properly use React hooks
 function MenuItemComponent({
   item,
   isOpen,
+  onTooltipShow,
+  onTooltipHide,
 }: {
   item: MenuItem;
   isOpen: boolean;
+  onTooltipShow: (text: string, element: HTMLElement) => void;
+  onTooltipHide: () => void;
 }) {
   const location = useLocation();
   const hasSubmenu = item.submenu && item.submenu.length > 0;
@@ -107,6 +133,18 @@ function MenuItemComponent({
     }
   };
 
+  const handleMouseEnter = (e: React.MouseEvent<HTMLElement>) => {
+    if (!isOpen) {
+      onTooltipShow(item.label, e.currentTarget);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    if (!isOpen) {
+      onTooltipHide();
+    }
+  };
+
   return (
     <>
       {/* Render standard menu item if it has a path or onClick */}
@@ -119,7 +157,8 @@ function MenuItemComponent({
                 // Use our custom active detection for main menu items
                 isPathActive(item.path, item.exact) ? "active" : ""
               }
-              title={!isOpen ? item.label : undefined}
+              onMouseEnter={handleMouseEnter}
+              onMouseLeave={handleMouseLeave}
             >
               {item.icon && <span className="menu-item-icon">{item.icon}</span>}
               <span className="menu-item-text">{item.label}</span>
@@ -132,7 +171,8 @@ function MenuItemComponent({
                   : ""
               }`}
               onClick={handleItemClick}
-              title={!isOpen ? item.label : undefined}
+              onMouseEnter={handleMouseEnter}
+              onMouseLeave={handleMouseLeave}
             >
               {item.icon && <span className="menu-item-icon">{item.icon}</span>}
               <span className="menu-item-text">{item.label}</span>
@@ -145,7 +185,11 @@ function MenuItemComponent({
       {hasSubmenu && (
         <li className="menu-category" data-category={item.label}>
           {/* Category heading */}
-          <div className="menu-category-header">
+          <div 
+            className="menu-category-header"
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+          >
             {/* Remove icon from category header */}
             <span className="menu-item-text">{item.label}</span>
           </div>
@@ -160,6 +204,16 @@ function MenuItemComponent({
                     // Use our custom active detection for submenu items
                     isPathActive(subItem.path, subItem.exact) ? "active" : ""
                   }
+                  onMouseEnter={(e) => {
+                    if (!isOpen) {
+                      onTooltipShow(subItem.label, e.currentTarget);
+                    }
+                  }}
+                  onMouseLeave={() => {
+                    if (!isOpen) {
+                      onTooltipHide();
+                    }
+                  }}
                 >
                   {subItem.icon && (
                     <span className="menu-item-icon">{subItem.icon}</span>
@@ -192,6 +246,36 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
   const [jobseekerProfileId, setJobseekerProfileId] = useState<string | null>(
     null
   );
+
+  // Tooltip state
+  const [tooltip, setTooltip] = useState<{
+    text: string;
+    isVisible: boolean;
+    position: { x: number; y: number };
+  }>({
+    text: '',
+    isVisible: false,
+    position: { x: 0, y: 0 }
+  });
+
+  // Tooltip handlers
+  const handleTooltipShow = (text: string, element: HTMLElement) => {
+    if (!isOpen) {
+      const rect = element.getBoundingClientRect();
+      setTooltip({
+        text,
+        isVisible: true,
+        position: {
+          x: rect.right + 10, // Position to the right of the element
+          y: rect.top + (rect.height / 2) - 12, // Center vertically
+        }
+      });
+    }
+  };
+
+  const handleTooltipHide = () => {
+    setTooltip(prev => ({ ...prev, isVisible: false }));
+  };
 
   // Function to scroll to active menu item
   const scrollToActiveItem = () => {
@@ -427,57 +511,7 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
           path: "/reports",
           icon: <BarChart3 size={16} />,
           exact: true,
-        },
-        {
-          label: "Weekly Timesheet",
-          path: "/reports/weekly-timesheet",
-          icon: <Clock size={16} />,
-          exact: true,
-        },
-        {
-          label: "Margin Report",
-          path: "/reports/margin",
-          icon: <BarChart3 size={16} />,
-          exact: true,
-        },
-        {
-          label: "Deduction Report",
-          path: "/reports/deduction",
-          icon: <FileMinus size={16} />,
-          exact: true,
-        },
-
-        {
-          label: "Invoice Report",
-          path: "/reports/invoice",
-          icon: <Receipt size={16} />,
-          exact: true,
-        },
-        {
-          label: "Sales Report",
-          path: "/reports/sales",
-          icon: <BarChart3 size={16} />,
-          exact: true,
-        },
-
-        {
-          label: "Envelope Printing (Position Details)",
-          path: "/reports/envelope-printing-position",
-          icon: <FileText size={16} />,
-          exact: true,
-        },
-        {
-          label: "Envelope Printing Report",
-          path: "/reports/envelope-printing",
-          icon: <FileText size={16} />,
-          exact: true,
-        },
-        {
-          label: "Customers",
-          path: "/reports/customers",
-          icon: <Users size={16} />,
-          exact: true,
-        },
+        }
       ],
     },
 
@@ -544,6 +578,13 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
     profileVerificationStatus,
     jobseekerProfileId,
   ]);
+
+  // Hide tooltip when menu opens
+  useEffect(() => {
+    if (isOpen) {
+      handleTooltipHide();
+    }
+  }, [isOpen]);
 
   // Scroll to active item when menu opens
   useEffect(() => {
@@ -673,7 +714,13 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
 
         <ul className="menu-items">
           {menuItems.map((item, index) => (
-            <MenuItemComponent key={index} item={item} isOpen={isOpen} />
+            <MenuItemComponent 
+              key={index} 
+              item={item} 
+              isOpen={isOpen} 
+              onTooltipShow={handleTooltipShow}
+              onTooltipHide={handleTooltipHide}
+            />
           ))}
         </ul>
 
@@ -719,6 +766,13 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
           )}
         </div>
       </nav>
+
+      {/* Custom Tooltip */}
+      <CustomTooltip
+        text={tooltip.text}
+        isVisible={tooltip.isVisible}
+        position={tooltip.position}
+      />
     </>
   );
 }

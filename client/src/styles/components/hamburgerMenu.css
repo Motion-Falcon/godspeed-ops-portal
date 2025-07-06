@@ -741,3 +741,47 @@
   }
 }
 
+/* Custom Tooltip Styles */
+.custom-tooltip {
+  background-color: var(--text);
+  color: var(--background);
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  box-shadow: var(--card-shadow);
+  pointer-events: none;
+  opacity: 0;
+  animation: tooltipFadeIn 0.15s ease-out forwards;
+  transform: translateY(-2px);
+  border: 1px solid var(--text);
+}
+
+
+/* Tooltip fade-in animation */
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-2px) translateX(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) translateX(0);
+  }
+}
+
+/* Add a small arrow to the tooltip */
+.custom-tooltip::before {
+  content: '';
+  position: absolute;
+  left: -4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  border-right: 4px solid var(--text);
+}
+
