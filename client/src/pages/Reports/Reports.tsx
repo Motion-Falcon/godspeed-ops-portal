@@ -42,6 +42,20 @@ const REPORT_CATEGORIES = [
         description: 'Analyze sales data and trends across your organization.',
         to: '/reports/sales',
       },
+      {
+        id: 'rate-list',
+        icon: <FileText size={20} color="#4CAF50" />,
+        title: 'Rate List',
+        description: 'View and export the current rate list for all services and positions.',
+        to: '/reports/rate-list',
+      },
+      {
+        id: 'margin-report',
+        icon: <BarChart3 size={20} color="#FF5722" />,
+        title: 'Margin Report',
+        description: 'Review margin analysis and profitability across clients and services.',
+        to: '/reports/margin',
+      },
     ],
   },
   {

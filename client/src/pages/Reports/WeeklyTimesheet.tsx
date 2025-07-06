@@ -9,7 +9,7 @@ import { JobSeekerProfile } from "../../types/jobseeker";
 import { generateWeekOptions, formatDate as formatWeekDate } from "../../utils/weekUtils";
 import { PAY_CYCLES, LIST_NAMES } from "../../constants/formOptions";
 import { BackendClientData } from "../ClientManagement/ClientManagement";
-import "../../styles/pages/WeeklyTimesheet.css";
+import "../../styles/pages/CommonReportsStyles.css";
 import { exportToCSV } from '../../utils/csvExport';
 
 // Format date utility function (similar to ClientDrafts)
@@ -188,9 +188,9 @@ export function WeeklyTimesheet() {
   ];
 
   return (
-    <div className="page-container weekly-timesheet-container">
+    <div className="page-container common-report-container">
       <AppHeader title="Weekly Timesheet Report" />
-      <div className="card">
+      <div className="common-report-card">
         <div className="timesheet-selection-bar">
           <div className="selection-row">
             <div className="selection-section jobseeker-section">

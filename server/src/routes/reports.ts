@@ -222,4 +222,75 @@ router.post(
   }
 );
 
+// POST /api/reports/margin
+router.post(
+  '/margin',
+  authenticateToken,
+  authorizeRoles(['admin', 'recruiter']),
+  async (req: Request, res: Response) => {
+    try {
+      const { startDate, endDate } = req.body || {};
+      
+      if (!startDate || !endDate) {
+        return res.status(400).json({ error: 'Start date and end date are required.' });
+      }
+
+      // Query invoices between the date range
+      const { data: invoices, error } = await supabase
+        .from('invoices')
+        .select(`
+          id,
+          invoice_number,
+          invoice_date,
+          client_id,
+          subtotal,
+          grand_total,
+          invoice_data
+        `)
+        .gte('invoice_date', startDate)
+        .lte('invoice_date', endDate)
+        .order('invoice_date', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching margin report:', error);
+        return res.status(500).json({ error: 'Failed to fetch margin report.' });
+      }
+
+      // Transform the data for the frontend
+      const marginData = (invoices || []).map((invoice: any) => {
+        const invoiceData = invoice.invoice_data || {};
+        const client = invoiceData.client || {};
+        const timesheets = invoiceData.timesheets || [];
+        
+        // Calculate total jobseeker pay from timesheets
+        const totalJobseekerPay = timesheets.reduce((sum: number, ts: any) => {
+          return sum + (Number(ts.totalJobseekerPay) || 0);
+        }, 0);
+
+        // Calculate margin
+        const totalBilledAmount = Number(invoice.subtotal) || 0;
+        const paidAmount = totalJobseekerPay;
+        const marginAmount = totalBilledAmount - paidAmount;
+        const marginPercentage = totalBilledAmount > 0 ? ((marginAmount / totalBilledAmount) * 100).toFixed(2) : '0.00';
+
+        return {
+          invoice_number: invoice.invoice_number,
+          client_name: client.companyName || 'N/A',
+          accounting_person: client.accountingPerson || 'N/A',
+          total_billed_amount: totalBilledAmount.toFixed(2),
+          paid_amount: paidAmount.toFixed(2),
+          margin_amount: marginAmount.toFixed(2),
+          margin_percentage: marginPercentage + '%',
+          invoice_date: invoice.invoice_date
+        };
+      });
+
+      res.json(marginData);
+    } catch (error) {
+      console.error('Unexpected error in margin report:', error);
+      return res.status(500).json({ error: 'An unexpected error occurred.' });
+    }
+  }
+);
+
 export default router; 

@@ -45,6 +45,7 @@ import { AllUsersManagement } from './pages/AllUsersManagement';
 import FloatingChat from './components/FloatingChat';
 import { Reports } from './pages/Reports/Reports';
 import { WeeklyTimesheet } from './pages/Reports/WeeklyTimesheet';
+import { MarginReport } from './pages/Reports/MarginReport';
 
 function App() {
   return (
@@ -102,6 +103,7 @@ function App() {
                 <Route path="/invoice-management/create" element={<InvoiceManagement />} />
                 <Route path="/invoice-management/list" element={<InvoiceList />} />
                 <Route path="/reports/weekly-timesheet" element={<WeeklyTimesheet />} />
+                <Route path="/reports/margin" element={<MarginReport />} />
                 {/* Add more recruiter-specific routes here */}
               </Route>
               

@@ -435,6 +435,12 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
           exact: true,
         },
         {
+          label: "Margin Report",
+          path: "/reports/margin",
+          icon: <BarChart3 size={16} />,
+          exact: true,
+        },
+        {
           label: "Deduction Report",
           path: "/reports/deduction",
           icon: <FileMinus size={16} />,

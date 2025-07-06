@@ -64,6 +64,9 @@ interface InvoiceBackendClientData extends ClientData {
   province_1?: string;
   postal_code1?: string;
   preferred_payment_method?: string;
+  accounting_person?: string;
+  sales_person?: string;
+  client_manager?: string;
   pay_cycle?: string;
   terms?: string;
   currency?: string;
@@ -102,7 +105,8 @@ interface InvoiceLineItem {
   jobseeker: AssignedJobseeker | null;
   description: string;
   hours: string;
-  rate: string;
+  regularBillRate: string;
+  regularPayRate: string;
   salesTax: string;
 }
 
@@ -140,6 +144,7 @@ interface TimesheetData {
   id: string;
   totalRegularHours: number;
   regularBillRate: number;
+  regularPayRate: number;
   jobseekerProfile?: {
     firstName: string;
     lastName: string;
@@ -168,6 +173,9 @@ interface ClientApiResponse extends ClientData {
   postal_code1?: string;
   preferred_payment_method?: string;
   pay_cycle?: string;
+  client_manager?: string;
+  accounting_person?: string;
+  sales_person?: string;
 }
 
 export function InvoiceManagement() {
@@ -454,7 +462,8 @@ export function InvoiceManagement() {
       jobseeker: null,
       description: "",
       hours: "",
-      rate: "",
+      regularBillRate: "",
+      regularPayRate: "",
       salesTax: "13.00% [ON]", // Default to Ontario
     };
     setLineItems((prev) => [...prev, newLineItem]);
@@ -604,6 +613,9 @@ export function InvoiceManagement() {
         payCycle: detailedClient.pay_cycle || basicClient.payCycle,
         terms: detailedClient.terms || "Net 30",
         currency: detailedClient.currency || "CAD",
+        clientManager: detailedClient.client_manager || basicClient.clientManager,
+        accountingPerson: detailedClient.accounting_person || basicClient.accountingPerson,
+        salesPerson: detailedClient.sales_person || basicClient.salesPerson,
       };
 
       setSelectedClient(processedClient as InvoiceBackendClientData);
@@ -638,6 +650,9 @@ export function InvoiceManagement() {
         payCycle: basicClient.payCycle,
         terms: basicClient.terms || "Net 30",
         currency: basicClient.currency || "CAD",
+        clientManager: basicClient.clientManager,
+        accountingPerson: basicClient.accountingPerson,
+        salesPerson: basicClient.salesPerson,
       };
       
       setSelectedClient(fallbackClient);
@@ -692,7 +707,8 @@ export function InvoiceManagement() {
     updateLineItem(lineItemId, {
       position,
       jobseeker: null, // Reset jobseeker when position changes
-      rate: position.billRate, // Auto-fill rate from position
+      regularBillRate: position.billRate, // Auto-fill rate from position
+      regularPayRate: position.regularPayRate, // Auto-fill rate from position
     });
 
     // Fetch jobseekers for this position if not already fetched
@@ -793,8 +809,8 @@ export function InvoiceManagement() {
 
     const lineItemTotals = lineItems.map((item) => {
       const hours = parseFloat(item.hours) || 0;
-      const rate = parseFloat(item.rate) || 0;
-      const lineSubtotal = hours * rate;
+      const regularBillRate = parseFloat(item.regularBillRate) || 0;
+      const lineSubtotal = hours * regularBillRate;
 
       const taxInfo = getTaxInfo(item.salesTax);
       const lineTax = (lineSubtotal * taxInfo.totalTaxPercentage) / 100;
@@ -850,15 +866,17 @@ export function InvoiceManagement() {
 
     // Check if at least one line item has hours > 0
     const hasValidLineItems = lineItems.some(
-      (item) => parseFloat(item.hours) > 0 && parseFloat(item.rate) > 0
+      (item) => parseFloat(item.hours) > 0 && parseFloat(item.regularBillRate) > 0
     );
     lineItems.forEach((item, index) => {
       console.log(`Item ${index}:`, {
         hours: item.hours,
-        rate: item.rate,
+        regularBillRate: item.regularBillRate,
+        regularPayRate: item.regularPayRate,
         hoursFloat: parseFloat(item.hours),
-        rateFloat: parseFloat(item.rate),
-        valid: parseFloat(item.hours) > 0 && parseFloat(item.rate) > 0,
+        regularBillRateFloat: parseFloat(item.regularBillRate),
+        regularPayRateFloat: parseFloat(item.regularPayRate),
+        valid: parseFloat(item.hours) > 0 && parseFloat(item.regularBillRate),
       });
     });
 
@@ -949,6 +967,9 @@ export function InvoiceManagement() {
               city1: selectedClient.city1,
               province1: selectedClient.province1,
               postalCode1: selectedClient.postalCode1,
+              clientManager: selectedClient.clientManager,
+              accountingPerson: selectedClient.accountingPerson,
+              salesPerson: selectedClient.salesPerson,
             },
             timesheets: lineItems.map(item => ({
               id: item.id,
@@ -963,8 +984,10 @@ export function InvoiceManagement() {
               weekEndDate: dueDate,
               invoiceNumber: invoiceNumber,
               weekStartDate: invoiceDate,
-              regularBillRate: parseFloat(item.rate) || 0,
-              totalClientBill: (parseFloat(item.hours) || 0) * (parseFloat(item.rate) || 0),
+              regularBillRate: parseFloat(item.regularBillRate) || 0,
+              regularPayRate: parseFloat(item.regularPayRate) || 0,
+              totalClientBill: (parseFloat(item.hours) || 0) * (parseFloat(item.regularBillRate) || 0),
+              totalJobseekerPay: (parseFloat(item.hours) || 0) * (parseFloat(item.regularPayRate) || 0),
               jobseekerProfile: item.jobseeker ? {
                 email: item.jobseeker.email,
                 lastName: item.jobseeker.lastName,
@@ -997,6 +1020,9 @@ export function InvoiceManagement() {
             city1: selectedClient.city1,
             province1: selectedClient.province1,
             postalCode1: selectedClient.postalCode1,
+            clientManager: selectedClient.clientManager,
+            accountingPerson: selectedClient.accountingPerson,
+            salesPerson: selectedClient.salesPerson,
           },
           invoiceNumber: invoiceNumber,
           invoiceDate: invoiceDate,
@@ -1010,8 +1036,10 @@ export function InvoiceManagement() {
             weekStartDate: invoiceDate, // Using invoice date as reference
             weekEndDate: dueDate, // Using due date as reference
             totalRegularHours: parseFloat(item.hours) || 0,
-            regularBillRate: parseFloat(item.rate) || 0,
-            totalClientBill: item.lineTotal,
+            regularBillRate: parseFloat(item.regularBillRate) || 0,
+            regularPayRate: parseFloat(item.regularPayRate) || 0,
+            totalClientBill: (parseFloat(item.hours) || 0) * (parseFloat(item.regularBillRate) || 0),
+            totalJobseekerPay: (parseFloat(item.hours) || 0) * (parseFloat(item.regularPayRate) || 0),
             description: item.description, // Add description field
             salesTax: item.salesTax, // Add salesTax field
             jobseekerProfile: item.jobseeker
@@ -1091,9 +1119,9 @@ export function InvoiceManagement() {
             ? `${item.jobseeker.firstName} ${item.jobseeker.lastName}`
             : undefined,
           hours: parseFloat(item.hours) || 0,
-          rate: parseFloat(item.rate) || 0,
+          rate: parseFloat(item.regularBillRate) || 0,
           taxType: item.salesTax,
-          amount: (parseFloat(item.hours) || 0) * (parseFloat(item.rate) || 0),
+          amount: (parseFloat(item.hours) || 0) * (parseFloat(item.regularBillRate) || 0),
         })),
         summary: {
           subtotal: subtotal,
@@ -1403,6 +1431,9 @@ export function InvoiceManagement() {
           payCycle: clientData.pay_cycle || clientData.payCycle || "",
           currency: clientData.currency || "CAD",
           terms: clientData.terms || "Net 30",
+          clientManager: clientData.client_manager || clientData.clientManager || "",
+          accountingPerson: clientData.accounting_person || clientData.accountingPerson || "",
+          salesPerson: clientData.sales_person || clientData.salesPerson || "",
         };
         setSelectedClient(backendClient);
         
@@ -1425,7 +1456,7 @@ export function InvoiceManagement() {
             id: timesheet.position.positionId,
             positionCode: timesheet.position.positionCode,
             title: timesheet.position.title,
-            regularPayRate: "0", // Not available in timesheet data
+            regularPayRate: timesheet.regularPayRate.toString(),
             billRate: timesheet.regularBillRate.toString(),
             markup: "0"
           } : null;
@@ -1450,7 +1481,8 @@ export function InvoiceManagement() {
             jobseeker: jobseeker,
             description: timesheet.description || "",
             hours: timesheet.totalRegularHours.toString(),
-            rate: timesheet.regularBillRate.toString(),
+            regularBillRate: timesheet.regularBillRate.toString(),
+            regularPayRate: timesheet.regularPayRate.toString(),
             salesTax: timesheet.salesTax || "13.00% [ON]"
           };
         });
@@ -1885,10 +1917,10 @@ export function InvoiceManagement() {
                           </label>
                           <input
                             type="number"
-                            value={lineItem.rate}
+                            value={lineItem.regularBillRate}
                             onChange={(e) =>
                               updateLineItem(lineItem.id, {
-                                rate: e.target.value,
+                                regularBillRate: e.target.value,
                               })
                             }
                             placeholder="0.00"
@@ -2111,7 +2143,7 @@ export function InvoiceManagement() {
                           {item.hours || "0"}
                         </div>
                         <div className="timesheet-col-rate">
-                          ${item.rate || "0.00"}
+                          ${item.regularBillRate || "0.00"}
                         </div>
                         <div className="timesheet-col-tax">
                           {item.taxInfo.taxType === "HST" && (
@@ -2357,7 +2389,7 @@ export function InvoiceManagement() {
                   lineItems.length === 0 ||
                   !lineItems.some(
                     (item) =>
-                      parseFloat(item.hours) > 0 && parseFloat(item.rate) > 0
+                      parseFloat(item.hours) > 0 && parseFloat(item.regularBillRate) > 0
                   )
                     ? "disabled"
                     : ""
@@ -2372,7 +2404,7 @@ export function InvoiceManagement() {
                   lineItems.length === 0 ||
                   !lineItems.some(
                     (item) =>
-                      parseFloat(item.hours) > 0 && parseFloat(item.rate) > 0
+                      parseFloat(item.hours) > 0 && parseFloat(item.regularBillRate) > 0
                   )
                 }
               >

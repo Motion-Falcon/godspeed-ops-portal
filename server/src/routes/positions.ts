@@ -373,7 +373,7 @@ router.get(
       // Verify that the client exists
       const { data: client, error: clientError } = await supabase
         .from("clients")
-        .select("id, company_name")
+        .select("id, company_name, client_manager, accounting_person, sales_person")
         .eq("id", clientId)
         .single();
 
@@ -478,12 +478,16 @@ router.get(
         return res.status(500).json({ error: "Failed to fetch client positions" });
       }
 
+      console.log(client);
       if (!positions || positions.length === 0) {
         return res.json({
           positions: [],
           client: {
             id: client.id,
-            companyName: client.company_name
+            companyName: client.company_name,
+            clientManager: client.client_manager,
+            accountingPerson: client.accounting_person,
+            salesPerson: client.sales_person
           },
           pagination: {
             page: pageNum,
@@ -540,7 +544,10 @@ router.get(
         positions: formattedPositions,
         client: {
           id: client.id,
-          companyName: client.company_name
+          companyName: client.company_name,
+          clientManager: client.client_manager,
+          accountingPerson: client.accounting_person,
+          salesPerson: client.sales_person
         },
         pagination: {
           page: pageNum,

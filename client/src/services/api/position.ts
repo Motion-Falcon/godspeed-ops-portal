@@ -810,6 +810,9 @@ export interface ClientPositionsResponse {
   client: {
     id: string;
     companyName: string;
+    clientManager: string;
+    accountingPerson: string;
+    salesPerson: string;
   };
   pagination: {
     page: number;
