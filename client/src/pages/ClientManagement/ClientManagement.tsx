@@ -34,6 +34,7 @@ export interface BackendClientData {
   landline2?: string;
   preferred_payment_method?: string;
   pay_cycle?: string;
+  wsib_code?: string;
   created_at?: string;
   updated_at?: string;
   [key: string]: unknown;
@@ -176,6 +177,7 @@ export function ClientManagement() {
         landline2: client.landline2,
         preferredPaymentMethod: client.preferred_payment_method,
         payCycle: client.pay_cycle,
+        wsibCode: client.wsib_code,
         createdAt: client.created_at,
         updatedAt: client.updated_at
       }));

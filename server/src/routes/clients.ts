@@ -31,6 +31,7 @@ function camelToSnakeCase(str: string): string {
   if (str === 'invoiceCC3') return 'invoice_cc3';
   if (str === 'invoiceCCDispatch') return 'invoice_cc_dispatch';
   if (str === 'invoiceCCAccounts') return 'invoice_cc_accounts';
+  if (str === 'wsibCode') return 'wsib_code';
   
   // For other fields, general algorithm
   let result = '';
@@ -624,6 +625,7 @@ router.post('/',
         merge_invoice: clientData.mergeInvoice,
         currency: clientData.currency,
         work_province: clientData.workProvince,
+        wsib_code: clientData.wsibCode,
         
         // Contact Details
         contact_person_name1: clientData.contactPersonName1,
@@ -793,6 +795,7 @@ router.put('/:id',
         merge_invoice: clientData.mergeInvoice,
         currency: clientData.currency,
         work_province: clientData.workProvince,
+        wsib_code: clientData.wsibCode,
         
         // Contact Details
         contact_person_name1: clientData.contactPersonName1,

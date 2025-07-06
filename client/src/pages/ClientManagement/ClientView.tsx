@@ -248,6 +248,7 @@ export function ClientView() {
               {renderDetailItem('Merge Invoice', getFieldValue(client, 'mergeInvoice'))}
               {renderDetailItem('Currency', getFieldValue(client, 'currency'))}
               {renderDetailItem('Work Province', getFieldValue(client, 'workProvince'))}
+              {renderDetailItem('WSIB Code', getFieldValue(client, 'wsibCode'))}
             </div>
           </div>
           

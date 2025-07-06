@@ -145,6 +145,7 @@ export interface ClientData {
   mergeInvoice: boolean;
   currency: 'CAD' | 'USD';
   workProvince: string;
+  wsibCode?: string;
   
   // Contact Details
   contactPersonName1: string;
@@ -208,6 +209,7 @@ export interface DbClientData {
   merge_invoice: boolean;
   currency: string;
   work_province: string;
+  wsib_code?: string;
   
   // Contact Details
   contact_person_name1: string;

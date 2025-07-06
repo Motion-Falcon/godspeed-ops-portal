@@ -34,6 +34,7 @@ const clientFormSchema = z.object({
   mergeInvoice: z.boolean().default(false),
   currency: z.enum(['CAD', 'USD']),
   workProvince: z.string().min(1, { message: 'Work province is required' }),
+  wsibCode: z.string().regex(/^[A-Z][0-9]$/, { message: 'WSIB code must be 1 letter followed by 1 number (e.g., A1)' }).optional().or(z.literal('')),
   
   // Contact Details
   contactPersonName1: z.string().min(1, { message: 'Contact person name is required' }),
@@ -606,6 +607,25 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
                     {methods.formState.errors.workProvince && (
                       <p className="form-error">{methods.formState.errors.workProvince.message}</p>
                     )}
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="wsibCode" className="form-label">
+                      WSIB Code
+                    </label>
+                    <input
+                      type="text"
+                      id="wsibCode"
+                      className="form-input"
+                      placeholder="A1"
+                      maxLength={2}
+                      style={{ textTransform: 'uppercase' }}
+                      {...methods.register('wsibCode')}
+                    />
+                    {methods.formState.errors.wsibCode && (
+                      <p className="form-error">{methods.formState.errors.wsibCode.message}</p>
+                    )}
+                    <p className="form-hint">Format: 1 letter followed by 1 number (e.g., A1, B2)</p>
                   </div>
                 </div>
               </div>
