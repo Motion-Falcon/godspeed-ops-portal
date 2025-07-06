@@ -19,6 +19,12 @@ import {
   CircleAlert,
   AlertTriangle,
   RefreshCw,
+  Briefcase,
+  Building,
+  MapPin,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import {
   getJobseekerProfile,
@@ -33,6 +39,8 @@ import { ConfirmationModal } from "../components/ConfirmationModal";
 import { AppHeader } from "../components/AppHeader";
 import "../styles/components/header.css";
 import "../styles/pages/JobseekerProfileStyles.css";
+import { getCandidateAssignments, CandidateAssignment } from "../services/api/position";
+import '../styles/pages/JobSeekerPositions.css';
 
 // Define a local comprehensive type reflecting the backend response
 // TODO: Move this to shared types (e.g., client/src/types/jobseeker.ts) and update JobSeekerDetailedProfile
@@ -145,6 +153,44 @@ interface PDFCache {
   [key: string]: string | null;
 }
 
+const SkeletonCard = () => (
+  <div className="jsp-skeleton-card">
+    <div className="jsp-skeleton-card-header">
+      <div className="jsp-skeleton-card-title-section">
+        <div className="jsp-skeleton-card-title skeleton-text"></div>
+        <div className="jsp-skeleton-card-code skeleton-text"></div>
+      </div>
+      <div className="jsp-skeleton-card-status skeleton-badge"></div>
+    </div>
+    <div className="jsp-skeleton-card-details">
+      <div className="jsp-skeleton-detail-row">
+        <div className="jsp-skeleton-detail-icon skeleton-icon"></div>
+        <div className="jsp-skeleton-detail-text medium skeleton-text"></div>
+      </div>
+      <div className="jsp-skeleton-detail-row">
+        <div className="jsp-skeleton-detail-icon skeleton-icon"></div>
+        <div className="jsp-skeleton-detail-text short skeleton-text"></div>
+      </div>
+      <div className="jsp-skeleton-detail-row">
+        <div className="jsp-skeleton-detail-icon skeleton-icon"></div>
+        <div className="jsp-skeleton-detail-text long skeleton-text"></div>
+      </div>
+      <div className="jsp-skeleton-detail-row">
+        <div className="jsp-skeleton-detail-icon skeleton-icon"></div>
+        <div className="jsp-skeleton-detail-text medium skeleton-text"></div>
+      </div>
+    </div>
+    <div className="jsp-skeleton-card-meta">
+      <div className="jsp-skeleton-meta-tags">
+        <div className="jsp-skeleton-tag medium skeleton-badge"></div>
+        <div className="jsp-skeleton-tag small skeleton-badge"></div>
+        <div className="jsp-skeleton-tag large skeleton-badge"></div>
+        <div className="jsp-skeleton-tag medium skeleton-badge"></div>
+      </div>
+    </div>
+  </div>
+);
+
 export function JobSeekerProfile() {
   const [profile, setProfile] = useState<FullJobseekerProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -175,6 +221,17 @@ export function JobSeekerProfile() {
   const { id } = useParams<{ id: string }>();
   const { isAdmin, isRecruiter, isJobSeeker } = useAuth();
   const navigate = useNavigate();
+
+  // Add state for positions
+  const [assignments, setAssignments] = useState<CandidateAssignment[]>([]);
+  const [positionsLoading, setPositionsLoading] = useState<boolean>(true);
+  const [positionsError, setPositionsError] = useState<string | null>(null);
+  const [positionsPagination, setPositionsPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalItems: 0,
+    itemsPerPage: 20,
+  });
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -247,6 +304,74 @@ export function JobSeekerProfile() {
       loadAllPdfs();
     }
   }, [profile?.documents]);
+
+  // Fetch jobseeker positions when profile is loaded
+  useEffect(() => {
+    const fetchAssignments = async (page = 1) => {
+      if (!profile?.userId) return;
+      setPositionsLoading(true);
+      setPositionsError(null);
+      try {
+        const response = await getCandidateAssignments(profile.userId, {
+          page,
+          limit: positionsPagination.itemsPerPage,
+        });
+        setAssignments(response.assignments);
+        setPositionsPagination((prev) => ({
+          ...prev,
+          currentPage: response.pagination.page,
+          totalPages: response.pagination.totalPages,
+          totalItems: response.pagination.total,
+          itemsPerPage: response.pagination.limit,
+        }));
+      } catch (err) {
+        setPositionsError(err instanceof Error ? err.message : 'Failed to fetch positions');
+        setAssignments([]);
+        setPositionsPagination((prev) => ({ ...prev, currentPage: 1, totalPages: 1, totalItems: 0 }));
+      } finally {
+        setPositionsLoading(false);
+      }
+    };
+    if (profile?.userId) {
+      fetchAssignments(1);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.userId]);
+
+  // Pagination handlers for positions
+  const handlePositionsPageChange = (page: number) => {
+    setPositionsPagination((prev) => ({ ...prev, currentPage: page }));
+  };
+  useEffect(() => {
+    if (profile?.userId) {
+      const fetchAssignments = async () => {
+        setPositionsLoading(true);
+        setPositionsError(null);
+        try {
+          const response = await getCandidateAssignments(profile.userId, {
+            page: positionsPagination.currentPage,
+            limit: positionsPagination.itemsPerPage,
+          });
+          setAssignments(response.assignments);
+          setPositionsPagination((prev) => ({
+            ...prev,
+            currentPage: response.pagination.page,
+            totalPages: response.pagination.totalPages,
+            totalItems: response.pagination.total,
+            itemsPerPage: response.pagination.limit,
+          }));
+        } catch (err) {
+          setPositionsError(err instanceof Error ? err.message : 'Failed to fetch positions');
+          setAssignments([]);
+          setPositionsPagination((prev) => ({ ...prev, currentPage: 1, totalPages: 1, totalItems: 0 }));
+        } finally {
+          setPositionsLoading(false);
+        }
+      };
+      fetchAssignments();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [positionsPagination.currentPage, profile?.userId]);
 
   const handleStatusUpdate = async (
     newStatus: "verified" | "rejected" | "pending"
@@ -854,6 +979,36 @@ export function JobSeekerProfile() {
   const displayName = getDisplayName(profile);
   const displayLocation = getDisplayLocation(profile);
 
+  // Helper functions for rendering positions (copied from JobSeekerPositions)
+  const formatDuration = (startDate: string, endDate?: string) => {
+    const start = new Date(startDate);
+    const end = endDate ? new Date(endDate) : new Date();
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    if (diffDays < 30) {
+      return `${diffDays} days`;
+    } else if (diffDays < 365) {
+      const months = Math.floor(diffDays / 30);
+      return `${months} month${months > 1 ? 's' : ''}`;
+    } else {
+      const years = Math.floor(diffDays / 365);
+      return `${years} year${years > 1 ? 's' : ''}`;
+    }
+  };
+  const getStatusBadgeClass = (assignment: CandidateAssignment) => {
+    const statusMap = { active: 'current', completed: 'past', upcoming: 'future' };
+    const cssStatus = statusMap[assignment.status as keyof typeof statusMap] || assignment.status;
+    return `jsp-status-badge ${cssStatus}`;
+  };
+  const getStatusText = (assignment: CandidateAssignment) => {
+    switch (assignment.status) {
+      case 'active': return 'Active';
+      case 'completed': return 'Completed';
+      case 'upcoming': return 'Upcoming';
+      default: return assignment.status || 'Unknown';
+    }
+  };
+
   return (
     <div className="profile-container">
       <AppHeader
@@ -1357,6 +1512,143 @@ export function JobSeekerProfile() {
             </div>
           </div>
         </div>
+
+        {/* Jobseeker Positions Section */}
+        <section className="" style={{ marginTop: 40 }}>
+          <h2 className="section-title">{displayName}'s Positions</h2>
+          <div className="jsp-positions-content">
+            {positionsLoading ? (
+              <div className="jsp-positions-list">
+                {Array.from({ length: positionsPagination.itemsPerPage }, (_, index) => (
+                  <SkeletonCard key={index} />
+                ))}
+              </div>
+            ) : positionsError ? (
+              <div className="error-container">
+                <p className="error-message">{positionsError}</p>
+                <button className="button primary" onClick={() => handlePositionsPageChange(1)}>
+                  Try Again
+                </button>
+              </div>
+            ) : (
+              <div className="jsp-positions-list">
+                {assignments.length === 0 ? (
+                  <div className="jsp-empty-state">
+                    <Briefcase size={48} className="jsp-empty-icon" />
+                    <h3>No positions found</h3>
+                    <p>You don't have any position assignments yet.</p>
+                  </div>
+                ) : (
+                  assignments.map((assignment) => (
+                    <div key={assignment.id} className="jsp-position-card" data-status={(() => {
+                      const statusMap = { active: 'current', completed: 'past', upcoming: 'future' };
+                      return statusMap[assignment.status as keyof typeof statusMap] || assignment.status;
+                    })()}>
+                      <div className="jsp-position-header">
+                        <div className="jsp-position-title-section">
+                          <h3 className="jsp-position-title">{assignment.position?.title}</h3>
+                          <div className="jsp-position-code">{assignment.position?.positionCode}</div>
+                        </div>
+                        <div className={getStatusBadgeClass(assignment)}>
+                          {getStatusText(assignment)}
+                        </div>
+                      </div>
+                      <div className="jsp-position-details">
+                        <div className="jsp-detail-row">
+                          <Building size={16} />
+                          <span>{assignment.position?.clientName}</span>
+                        </div>
+                        <div className="jsp-detail-row">
+                          <MapPin size={16} />
+                          <span>{assignment.position?.city}, {assignment.position?.province}</span>
+                        </div>
+                        {assignment.position?.startDate && (
+                          <div className="jsp-detail-row">
+                            <Calendar size={16} />
+                            <span>
+                              Position Period: {formatDate(assignment.position.startDate, false)}
+                              {assignment.position.endDate && ` - ${formatDate(assignment.position.endDate, false)}`}
+                            </span>
+                          </div>
+                        )}
+                        <div className="jsp-detail-row">
+                          <Clock size={16} />
+                          <span>Duration: {formatDuration(assignment.startDate, assignment.endDate)}</span>
+                        </div>
+                      </div>
+                      <div className="jsp-position-meta">
+                        <div className="jsp-meta-tags">
+                          <span className="jsp-tag employment-type">{assignment.position?.employmentType}</span>
+                          {assignment.position?.employmentTerm && (
+                            <span className="jsp-tag employment-term">{assignment.position.employmentTerm}</span>
+                          )}
+                          <span className="jsp-tag position-category">{assignment.position?.positionCategory}</span>
+                          <span className="jsp-tag experience">{assignment.position?.experience}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+            {/* Pagination Controls */}
+            {!positionsLoading && positionsPagination.totalPages > 1 && (
+              <div className="jsp-pagination-controls bottom">
+                <div className="jsp-pagination-info">
+                  <span className="jsp-pagination-text">
+                    Page {positionsPagination.currentPage} of {positionsPagination.totalPages}
+                  </span>
+                </div>
+                <div className="jsp-pagination-buttons">
+                  <button
+                    className="jsp-pagination-btn prev"
+                    onClick={() => handlePositionsPageChange(positionsPagination.currentPage - 1)}
+                    disabled={positionsPagination.currentPage === 1}
+                    title="Previous page"
+                    aria-label="Previous page"
+                  >
+                    <ChevronLeft size={16} />
+                    <span>Previous</span>
+                  </button>
+                  <div className="jsp-page-numbers">
+                    {Array.from({ length: Math.min(5, positionsPagination.totalPages) }, (_, i) => {
+                      let pageNum;
+                      if (positionsPagination.totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (positionsPagination.currentPage <= 3) {
+                        pageNum = i + 1;
+                      } else if (positionsPagination.currentPage >= positionsPagination.totalPages - 2) {
+                        pageNum = positionsPagination.totalPages - 4 + i;
+                      } else {
+                        pageNum = positionsPagination.currentPage - 2 + i;
+                      }
+                      return (
+                        <button
+                          key={pageNum}
+                          className={`jsp-page-number-btn ${pageNum === positionsPagination.currentPage ? 'active' : ''}`}
+                          onClick={() => handlePositionsPageChange(pageNum)}
+                          aria-label={`Go to page ${pageNum}`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <button
+                    className="jsp-pagination-btn next"
+                    onClick={() => handlePositionsPageChange(positionsPagination.currentPage + 1)}
+                    disabled={positionsPagination.currentPage === positionsPagination.totalPages}
+                    title="Next page"
+                    aria-label="Next page"
+                  >
+                    <span>Next</span>
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
       </main>
 
       {/* PDF Viewer Modal */}
