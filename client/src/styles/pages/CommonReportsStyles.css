@@ -58,3 +58,14 @@
 .csv-download-section button {
   width: fit-content;
 }
+
+/* Truncated column styles */
+.common-table .address-column,
+.common-table .notes-column {
+  width: 200px;
+  min-width: 200px;
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
