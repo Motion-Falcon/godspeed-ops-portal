@@ -45,6 +45,10 @@
   gap: 1rem;
 }
 
+.common-report-container .selection-section.date-input-container {
+  width: 500px;
+}
+
 .csv-download-section {
   display: flex;
   justify-content: flex-start;

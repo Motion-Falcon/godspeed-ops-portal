@@ -48,6 +48,7 @@ import { WeeklyTimesheet } from './pages/Reports/WeeklyTimesheet';
 import { MarginReport } from './pages/Reports/MarginReport';
 import { RateList } from './pages/Reports/RateList';
 import { DeductionReport } from './pages/Reports/DeductionReport';
+import { InvoiceReport } from './pages/Reports/InvoiceReport';
 
 function App() {
   return (
@@ -108,6 +109,7 @@ function App() {
                 <Route path="/reports/deduction" element={<DeductionReport />} />
                 <Route path="/reports/margin" element={<MarginReport />} />
                 <Route path="/reports/rate-list" element={<RateList />} />
+                <Route path="/reports/invoice" element={<InvoiceReport />} />
                 {/* Add more recruiter-specific routes here */}
               </Route>
               
