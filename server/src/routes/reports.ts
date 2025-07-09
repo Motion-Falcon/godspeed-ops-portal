@@ -596,13 +596,6 @@ router.post(
   async (req: Request, res: Response) => {
     try {
       const { clientIds, startDate, endDate, jobseekerIds, salesPersons } = req.body || {};
-      console.log('[SALES REPORT] Incoming filters:', { clientIds, startDate, endDate, jobseekerIds, salesPersons });
-      
-      if (!clientIds || !Array.isArray(clientIds) || clientIds.length === 0) {
-        console.log('[SALES REPORT] No clientIds provided.');
-        return res.status(400).json({ error: 'At least one client ID is required.' });
-      }
-      // Remove the 400 error for missing dates
 
       // Query invoices for selected clients and optional date range
       let query = supabase
@@ -628,7 +621,6 @@ router.post(
       query = query.order('invoice_date', { ascending: false });
 
       const { data: invoices, error } = await query;
-      console.log(`[SALES REPORT] Fetched ${invoices ? invoices.length : 0} invoices for clients`, clientIds);
 
       if (error) {
         console.error('Error fetching sales report:', error);
@@ -662,8 +654,6 @@ router.post(
           }
         });
       });
-      console.log(`[SALES REPORT] Unique positionIds to fetch:`, Array.from(positionIds));
-
       // Fetch position details for start/end dates
       const { data: positionsData, error: positionsError } = await supabase
         .from('positions')
@@ -765,12 +755,6 @@ router.post(
           });
         });
       });
-      console.log(`[SALES REPORT] Total timesheets: ${totalTimesheets}`);
-      console.log(`[SALES REPORT] After week filter: ${afterWeekFilter}`);
-      console.log(`[SALES REPORT] After jobseeker filter: ${afterJobseekerFilter}`);
-      console.log(`[SALES REPORT] After sales person filter: ${afterSalesPersonFilter}`);
-      console.log(`[SALES REPORT] Final salesData rows: ${salesData.length}`);
-
       res.json(salesData);
     } catch (error) {
       console.error('Unexpected error in sales report:', error);
