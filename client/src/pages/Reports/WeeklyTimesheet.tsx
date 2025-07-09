@@ -193,7 +193,7 @@ export function WeeklyTimesheet() {
       <div className="common-report-card">
         <div className="timesheet-selection-bar">
           <div className="selection-row">
-            <div className="selection-section jobseeker-section">
+            <div className="selection-section">
               <label className="selection-label">Job Seeker</label>
               {jobseekerLoading ? (
                 <div className="invoice-dropdown-skeleton">
@@ -216,7 +216,7 @@ export function WeeklyTimesheet() {
                 />
               )}
             </div>
-            <div className="selection-section client-section">
+            <div className="selection-section">
               <label className="selection-label">Clients</label>
               {clientLoading ? (
                 <div className="invoice-dropdown-skeleton">
@@ -240,11 +240,13 @@ export function WeeklyTimesheet() {
                   showSelectAll={true}
                   icon={<Building size={16} />}
                   emptyMessage="No clients found"
-                  maxVisibleTagsOverride={3}
+                  maxVisibleTagsOverride={5}
                 />
               )}
             </div>
-            <div className="selection-section week-section">
+          </div>
+          <div className="selection-row">
+            <div className="selection-section">
               <label className="selection-label">Week Periods</label>
               <CustomDropdown
                 options={weekDropdownOptions}
@@ -262,9 +264,7 @@ export function WeeklyTimesheet() {
                 maxVisibleTagsOverride={2}
               />
             </div>
-          </div>
-          <div className="selection-row">
-            <div className="selection-section paycycle-section">
+            <div className="selection-section">
               <label className="selection-label">Pay Cycle</label>
               <CustomDropdown
                 options={payCycleOptions}
@@ -278,7 +278,7 @@ export function WeeklyTimesheet() {
                 placeholder="Select pay cycle..."
               />
             </div>
-            <div className="selection-section listname-section">
+            <div className="selection-section">
               <label className="selection-label">List Name</label>
               <CustomDropdown
                 options={listNameOptions}

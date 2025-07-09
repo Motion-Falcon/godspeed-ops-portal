@@ -77,7 +77,8 @@ interface InvoiceBackendClientData extends ClientData {
 // Interface for position data
 interface ClientPosition {
   id: string;
-  positionCode: string;
+  positionCode: string; 
+  positionNumber: string;
   title: string;
   regularPayRate: string;
   billRate: string;
@@ -89,6 +90,7 @@ interface AssignedJobseeker {
   id?: string;
   positionCandidateAssignmentsId?: string;
   candidateId: string;
+  employeeId: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -151,11 +153,13 @@ interface TimesheetData {
     email: string;
     jobseekerUserId?: string;
     jobseekerProfileId?: string;
+    employeeId: string;
   };
   position?: {
     title: string;
     positionCode: string;
     positionId: string;
+    positionNumber: string;
     positionCandidateAssignmentsId?: string;
   };
   description?: string;
@@ -371,6 +375,7 @@ export function InvoiceManagement() {
           id: pos.id!,
           positionCode: pos.positionCode!,
           title: pos.title!,
+          positionNumber: pos.positionNumber!,
           regularPayRate: pos.regularPayRate!,
           billRate: pos.billRate!,
           markup: pos.markup,
@@ -408,6 +413,7 @@ export function InvoiceManagement() {
             status: assignment.status,
             startDate: assignment.start_date,
             endDate: assignment.end_date,
+            employeeId: assignment.jobseekerProfile?.employee_id || "",
           }));
 
         setAssignedJobseekersByPosition((prev) => ({
@@ -517,7 +523,7 @@ export function InvoiceManagement() {
   const positionOptions: DropdownOption[] = positions.map((position) => ({
     id: position.id,
     label: position.title || "Unknown Position",
-    sublabel: position.positionCode || "",
+    sublabel: `${position.positionCode} [${position.positionNumber}]`,
     value: position,
   }));
 
@@ -978,6 +984,7 @@ export function InvoiceManagement() {
                 positionId: item.position.id,
                 positionCode: item.position.positionCode,
                 positionCandidateAssignmentsId: item.jobseeker?.positionCandidateAssignmentsId,
+                positionNumber: item.position.positionNumber,
               } : undefined,
               salesTax: item.salesTax,
               description: item.description,
@@ -992,8 +999,9 @@ export function InvoiceManagement() {
                 email: item.jobseeker.email,
                 lastName: item.jobseeker.lastName,
                 firstName: item.jobseeker.firstName,
-                jobseekerUserId: item.jobseeker.id,
-                jobseekerProfileId: item.jobseeker.candidateId,
+                jobseekerUserId: item.jobseeker.candidateId,
+                jobseekerProfileId: item.jobseeker.id,
+                employeeId: item.jobseeker.employeeId,
               } : undefined,
               totalRegularHours: parseFloat(item.hours) || 0,
             })),
@@ -1047,8 +1055,9 @@ export function InvoiceManagement() {
                   firstName: item.jobseeker.firstName,
                   lastName: item.jobseeker.lastName,
                   email: item.jobseeker.email,
-                  jobseekerUserId: item.jobseeker.id,
-                  jobseekerProfileId: item.jobseeker.candidateId,
+                  jobseekerUserId: item.jobseeker.candidateId,
+                  jobseekerProfileId: item.jobseeker.id,
+                  employeeId: item.jobseeker.employeeId,
                 }
               : {
                   firstName: "N/A",
@@ -1062,6 +1071,7 @@ export function InvoiceManagement() {
                   positionId: item.position.id,
                   positionCandidateAssignmentsId:
                     item.jobseeker?.positionCandidateAssignmentsId,
+                  positionNumber: item.position.positionNumber,
                 }
               : {
                   title: item.description || "Custom Line Item",
@@ -1458,21 +1468,23 @@ export function InvoiceManagement() {
             title: timesheet.position.title,
             regularPayRate: timesheet.regularPayRate.toString(),
             billRate: timesheet.regularBillRate.toString(),
-            markup: "0"
+            markup: "0",
+            positionNumber: timesheet.position.positionNumber,
           } : null;
 
           // Map jobseeker data
           const jobseeker: AssignedJobseeker | null = timesheet.jobseekerProfile ? {
-            id: timesheet.jobseekerProfile.jobseekerUserId,
+            id: timesheet.jobseekerProfile.jobseekerProfileId,
             positionCandidateAssignmentsId: timesheet.position?.positionCandidateAssignmentsId,
-            candidateId: timesheet.jobseekerProfile.jobseekerProfileId || timesheet.jobseekerProfile.jobseekerUserId || "",
+            candidateId: timesheet.jobseekerProfile.jobseekerUserId || "",
             firstName: timesheet.jobseekerProfile.firstName,
             lastName: timesheet.jobseekerProfile.lastName,
             email: timesheet.jobseekerProfile.email,
             mobile: "",
             status: "active",
             startDate: "",
-            endDate: ""
+            endDate: "",
+            employeeId: timesheet.jobseekerProfile.employeeId,
           } : null;
 
           return {

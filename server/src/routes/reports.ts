@@ -62,45 +62,6 @@ router.post(
         paramIdx++;
       }
 
-      const sql = `
-        SELECT
-          jp.employee_id,
-          jp.license_number,
-          jp.passport_number,
-          (jp.first_name || ' ' || jp.last_name) AS name,
-          jp.mobile,
-          jp.email,
-          c.company_name,
-          c.list_name,
-          p.title,
-          p.position_code,
-          p.position_category,
-          p.client_manager,
-          t.week_start_date,
-          t.week_end_date,
-          t.total_regular_hours,
-          t.total_overtime_hours,
-          t.regular_pay_rate,
-          t.overtime_pay_rate,
-          t.total_jobseeker_pay,
-          t.bonus_amount,
-          t.deduction_amount,
-          jp.hst_gst,
-          c.currency,
-          jp.payment_method,
-          c.pay_cycle,
-          p.notes,
-          t.created_at AS timesheet_created_at,
-          t.invoice_number
-        FROM timesheets t
-        JOIN jobseeker_profiles jp ON t.jobseeker_profile_id = jp.id
-        JOIN positions p ON t.position_id = p.id
-        JOIN clients c ON p.client = c.id
-        WHERE jp.id = $1
-          AND (${weekClauses.join(' OR ')})
-          ${filterSql}
-        ORDER BY t.week_start_date, jp.employee_id
-      `;
 
       // Use Supabase RPC to run raw SQL (if enabled), otherwise use supabase-js query builder (less flexible for OR logic)
       // For now, use supabase-js query builder for compatibility
@@ -622,6 +583,197 @@ router.post(
       res.json(result);
     } catch (error) {
       console.error('Unexpected error in clients report:', error);
+      return res.status(500).json({ error: 'An unexpected error occurred.' });
+    }
+  }
+);
+
+// POST /api/reports/sales
+router.post(
+  '/sales',
+  authenticateToken,
+  authorizeRoles(['admin', 'recruiter']),
+  async (req: Request, res: Response) => {
+    try {
+      const { clientIds, startDate, endDate, jobseekerIds, salesPersons } = req.body || {};
+      console.log('[SALES REPORT] Incoming filters:', { clientIds, startDate, endDate, jobseekerIds, salesPersons });
+      
+      if (!clientIds || !Array.isArray(clientIds) || clientIds.length === 0) {
+        console.log('[SALES REPORT] No clientIds provided.');
+        return res.status(400).json({ error: 'At least one client ID is required.' });
+      }
+      // Remove the 400 error for missing dates
+
+      // Query invoices for selected clients and optional date range
+      let query = supabase
+        .from('invoices')
+        .select(`
+          id,
+          invoice_number,
+          invoice_date,
+          due_date,
+          client_id,
+          subtotal,
+          grand_total,
+          currency,
+          invoice_data
+        `)
+        .in('client_id', clientIds);
+      if (startDate) {
+        query = query.gte('invoice_date', startDate);
+      }
+      if (endDate) {
+        query = query.lte('invoice_date', endDate);
+      }
+      query = query.order('invoice_date', { ascending: false });
+
+      const { data: invoices, error } = await query;
+      console.log(`[SALES REPORT] Fetched ${invoices ? invoices.length : 0} invoices for clients`, clientIds);
+
+      if (error) {
+        console.error('Error fetching sales report:', error);
+        return res.status(500).json({ error: 'Failed to fetch sales report.' });
+      }
+
+      // Get client information and position details
+      const { data: clientsData, error: clientsError } = await supabase
+        .from('clients')
+        .select('id, company_name, contact_person_name1, sales_person, terms')
+        .in('id', clientIds);
+
+      if (clientsError) {
+        console.error('Error fetching clients:', clientsError);
+        return res.status(500).json({ error: 'Failed to fetch clients.' });
+      }
+
+      const clientInfoMap: Record<string, any> = {};
+      (clientsData || []).forEach((client: any) => {
+        clientInfoMap[client.id] = client;
+      });
+
+      // Get all unique position IDs from timesheets to fetch position details
+      const positionIds = new Set<string>();
+      (invoices || []).forEach((invoice: any) => {
+        const invoiceData = invoice.invoice_data || {};
+        const timesheets = invoiceData.timesheets || [];
+        timesheets.forEach((ts: any) => {
+          if (ts.position && ts.position.positionId) {
+            positionIds.add(ts.position.positionId);
+          }
+        });
+      });
+      console.log(`[SALES REPORT] Unique positionIds to fetch:`, Array.from(positionIds));
+
+      // Fetch position details for start/end dates
+      const { data: positionsData, error: positionsError } = await supabase
+        .from('positions')
+        .select('id, title, position_code, position_number, position_category, start_date, end_date, notes')
+        .in('id', Array.from(positionIds));
+
+      if (positionsError) {
+        console.error('Error fetching positions:', positionsError);
+        return res.status(500).json({ error: 'Failed to fetch positions.' });
+      }
+
+      const positionInfoMap: Record<string, any> = {};
+      (positionsData || []).forEach((position: any) => {
+        positionInfoMap[position.id] = position;
+      });
+
+      // Process invoices and extract timesheets
+      const salesData: any[] = [];
+      let totalTimesheets = 0;
+      let afterWeekFilter = 0;
+      let afterJobseekerFilter = 0;
+      let afterSalesPersonFilter = 0;
+      
+      (invoices || []).forEach((invoice: any) => {
+        const invoiceData = invoice.invoice_data || {};
+        const timesheets = invoiceData.timesheets || [];
+        const client = clientInfoMap[invoice.client_id] || {};
+        totalTimesheets += timesheets.length;
+        
+        timesheets.forEach((ts: any) => {
+          // Get positionId from nested position object
+          const positionId = ts.position && ts.position.positionId;
+          const position = positionId ? positionInfoMap[positionId] : {};
+
+          // Apply jobseeker filter
+          if (jobseekerIds && Array.isArray(jobseekerIds) && jobseekerIds.length > 0) {
+            if (!jobseekerIds.includes(ts.jobseekerProfileId)) return;
+          }
+          afterJobseekerFilter++;
+
+          // Apply sales person filter
+          if (salesPersons && Array.isArray(salesPersons) && salesPersons.length > 0) {
+            if (!salesPersons.includes(client.sales_person)) return;
+          }
+          afterSalesPersonFilter++;
+
+          // Parse tax rate from salesTax string
+          let taxRate = 0;
+          if (typeof ts.salesTax === 'string') {
+            const match = ts.salesTax.match(/^([\d.]+)%/);
+            if (match) {
+              taxRate = parseFloat(match[1]);
+            }
+          }
+          const amount = Number(ts.totalClientBill) || 0;
+          const gstHst = (amount * taxRate) / 100;
+
+          // Calculate values
+          const hours = (Number(ts.totalRegularHours || ts.regularHours) || 0);
+          const billRate = Number(ts.regularBillRate) || 0;
+          const discount = Number(ts.discount) || 0;
+          const total = amount + gstHst - discount;
+
+          // Use position fields from timesheet.position if available, else fallback to positions table
+          const itemPosition = ts.position && ts.position.title
+            ? `${ts.position.title} [${ts.position.positionNumber || ts.position.position_number || ''}]` : 'N/A';
+          const positionCategory = ts.position && (ts.position.positionCategory || ts.position.position_category)
+            ? (ts.position.positionCategory || ts.position.position_category)
+            : (position.position_category || 'N/A');
+
+          // Always use employeeId from invoice data
+          const employeeId = ts.jobseekerProfile && ts.jobseekerProfile.employeeId
+            ? ts.jobseekerProfile.employeeId
+            : 'N/A';
+
+          salesData.push({
+            client_name: client.company_name || 'N/A',
+            contact_person_name: client.contact_person_name1 || 'N/A',
+            sales_person: client.sales_person || 'N/A',
+            invoice_number: invoice.invoice_number || 'N/A',
+            from_date: position.start_date || 'N/A',
+            to_date: position.end_date || 'N/A',
+            invoice_date: invoice.invoice_date || 'N/A',
+            due_date: invoice.due_date || 'N/A',
+            terms: client.terms || 'N/A',
+            item_position: itemPosition,
+            position_category: positionCategory,
+            jobseeker_number: employeeId || 'N/A',
+            jobseeker_name: ts.jobseekerProfile ? `${ts.jobseekerProfile.firstName || ''} ${ts.jobseekerProfile.lastName || ''}`.trim() || 'N/A' : 'N/A',
+            description: ts.description || position.notes || 'N/A',
+            hours: hours.toString(),
+            bill_rate: billRate.toFixed(2),
+            amount: amount.toFixed(2),
+            discount: discount.toFixed(2),
+            tax_rate: taxRate.toFixed(2),
+            gst_hst: gstHst.toFixed(2),
+            total: total.toFixed(2),
+            currency: invoice.currency || 'N/A'
+          });
+        });
+      });
+      console.log(`[SALES REPORT] Total timesheets: ${totalTimesheets}`);
+      console.log(`[SALES REPORT] After week filter: ${afterWeekFilter}`);
+      console.log(`[SALES REPORT] After jobseeker filter: ${afterJobseekerFilter}`);
+      console.log(`[SALES REPORT] After sales person filter: ${afterSalesPersonFilter}`);
+      console.log(`[SALES REPORT] Final salesData rows: ${salesData.length}`);
+
+      res.json(salesData);
+    } catch (error) {
+      console.error('Unexpected error in sales report:', error);
       return res.status(500).json({ error: 'An unexpected error occurred.' });
     }
   }

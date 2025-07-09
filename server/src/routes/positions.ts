@@ -2534,7 +2534,7 @@ router.get(
       // Fetch jobseeker profiles for all candidates
       const { data: jobseekerProfiles, error: profilesError } = await supabase
         .from("jobseeker_profiles")
-        .select("id, user_id, first_name, last_name, email, mobile")
+        .select("id, user_id, first_name, last_name, email, mobile, employee_id")
         .in("user_id", candidateIds);
 
       if (profilesError) {
@@ -2557,7 +2557,8 @@ router.get(
           ...assignment,
           jobseekerProfile: profile ? {
             ...profile,
-            jobseeker_profile_id: profile.id
+            jobseeker_profile_id: profile.id,
+            employee_id: profile.employee_id
           } : null
         };
       });

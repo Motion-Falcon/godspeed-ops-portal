@@ -11,29 +11,6 @@
   margin-bottom: 0.5rem;
 }
 
-.common-report-container .timesheet-selection-bar .jobseeker-section {
-  width: 260px;
-  min-width: 260px;
-  flex: 0 0 260px;
-}
-
-.common-report-container .timesheet-selection-bar .client-section {
-  flex: 0 1 45%;
-  min-width: 0;
-}
-
-.common-report-container .timesheet-selection-bar .week-section {
-  flex: 1 1 55%;
-  min-width: 0;
-}
-
-.common-report-container .timesheet-selection-bar .paycycle-section,
-.common-report-container .timesheet-selection-bar .listname-section {
-  width: 260px;
-  min-width: 180px;
-  flex: 0 0 260px;
-}
-
 .common-report-container .report-table-container {
   overflow-x: auto;
 }
@@ -48,6 +25,34 @@
 .common-report-container .selection-section.date-input-container {
   width: 500px;
 }
+
+.common-report-container .selection-section.date-input-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.common-report-container .selection-section.date-input-wrapper .start-end-date-section {
+  display: flex;
+  width: 100%;
+  gap: 0.5rem;
+}
+
+.common-report-container .selection-section.date-input-wrapper .start-end-date-section .start-date-section,
+.common-report-container .selection-section.date-input-wrapper .start-end-date-section .end-date-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 50%;
+}
+
+.common-report-container .selection-section.date-input-wrapper .start-end-date-section input {
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  min-height: 43px;
+  padding: 0.5rem;
+}
+
 
 .csv-download-section {
   display: flex;

@@ -659,6 +659,7 @@ export interface AssignmentRecord {
   updated_at: string;
   created_at: string;
   jobseekerProfile?: {
+    employee_id: string;
     id: string;
     user_id: string;
     first_name: string;

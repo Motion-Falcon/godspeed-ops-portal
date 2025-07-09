@@ -16,7 +16,7 @@ const TABLE_COLUMNS: { key: string; label: string; format?: (val: unknown) => st
   { key: 'accounting_person', label: 'Accounting Person', format: (val) => String(val ?? '') },
   { key: 'sales_person', label: 'Sales Person', format: (val) => String(val ?? '') },
   { key: 'client_manager', label: 'Client Manager', format: (val) => String(val ?? '') },
-  { key: 'contact_person_name1', label: 'Contact Person Name 1', format: (val) => String(val ?? '') },
+  { key: 'contact_person_name1', label: 'Contact Person', format: (val) => String(val ?? '') },
   { key: 'email_address1', label: 'Email Address', format: (val) => String(val ?? '') },
   { key: 'mobile1', label: 'Mobile', format: (val) => String(val ?? '') },
   { 

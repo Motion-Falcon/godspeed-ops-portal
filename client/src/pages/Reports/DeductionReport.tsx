@@ -73,39 +73,43 @@ export function DeductionReport() {
       <div className="common-report-card">
         <div className="timesheet-selection-bar">
           <div className="selection-row">
-            <div className="selection-section">
-              <label 
-                className="selection-label"
-                htmlFor="start-date-input"
-                onClick={() => document.getElementById('start-date-input')?.focus()}
-              >
-                <Calendar size={16} />
-                Start Date
-              </label>
-              <input
-                id="start-date-input"
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="invoice-date-input"
-              />
-            </div>
-            <div className="selection-section">
-              <label 
-                className="selection-label"
-                htmlFor="end-date-input"
-                onClick={() => document.getElementById('end-date-input')?.focus()}
-              >
-                <Calendar size={16} />
-                End Date
-              </label>
-              <input
-                id="end-date-input"
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="invoice-date-input"
-              />
+            <div className="selection-section date-input-wrapper" style={{ width: '50%' }}>
+              <div className="start-end-date-section">
+                <div className="start-date-section">
+                  <label 
+                    className="selection-label"
+                    htmlFor="start-date-input"
+                    onClick={() => document.getElementById('start-date-input')?.focus()}
+                    >
+                      <Calendar size={16} />
+                      Start Date
+                  </label>
+                  <input
+                    id="start-date-input"
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="invoice-date-input"
+                  />
+                </div>
+                <div className="end-date-section">
+                  <label 
+                    className="selection-label"
+                    htmlFor="end-date-input"
+                    onClick={() => document.getElementById('end-date-input')?.focus()}
+                    >
+                      <Calendar size={16} />
+                      End Date
+                  </label>
+                  <input
+                    id="end-date-input"
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="invoice-date-input"
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>

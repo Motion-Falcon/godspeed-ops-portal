@@ -135,7 +135,7 @@ export function RateList() {
                   showSelectAll={true}
                   icon={<Building size={16} />}
                   emptyMessage="No clients found"
-                  maxVisibleTagsOverride={3}
+                  maxVisibleTagsOverride={13}
                 />
               )}
             </div>
