@@ -29,7 +29,6 @@ import "../styles/components/CommonTable.css";
 
 // Extend the JobSeekerProfile type to include documents
 interface ExtendedJobSeekerProfile extends JobSeekerProfile {
-  phoneNumber?: string | null;
   employeeId?: string;
   documents?: Array<{
     id?: string;
