@@ -763,4 +763,171 @@ router.post(
   }
 );
 
+// POST /api/reports/envelope-printing-position
+router.post(
+  '/envelope-printing-position',
+  authenticateToken,
+  authorizeRoles(['admin', 'recruiter']),
+  async (req: Request, res: Response) => {
+    try {
+      const { clientIds, startDate, endDate, listName, payCycle } = req.body || {};
+      let query = supabase
+        .from('invoices')
+        .select(`
+          id,
+          invoice_number,
+          invoice_date,
+          due_date,
+          client_id,
+          subtotal,
+          grand_total,
+          currency,
+          invoice_data
+        `)
+        .in('client_id', clientIds);
+      if (startDate) {
+        query = query.gte('invoice_date', startDate);
+      }
+      if (endDate) {
+        query = query.lte('invoice_date', endDate);
+      }
+      query = query.order('invoice_date', { ascending: false });
+      const { data: invoices, error } = await query;
+      if (error) {
+        console.error('Error fetching envelope printing report:', error);
+        return res.status(500).json({ error: 'Failed to fetch envelope printing report.' });
+      }
+      
+      // Get client info
+      const { data: clientsData, error: clientsError } = await supabase
+        .from('clients')
+        .select('id, company_name, short_code, list_name, city1, province1, pay_cycle, sales_person')
+        .in('id', clientIds);
+     
+      if (clientsError) {
+        console.error('Error fetching clients:', clientsError);
+        return res.status(500).json({ error: 'Failed to fetch clients.' });
+      }
+      const clientInfoMap: Record<string, any> = {};
+      (clientsData || []).forEach((client: any) => {
+        clientInfoMap[client.id] = client;
+      });
+      // Get all unique position IDs from timesheets
+      const positionIds = new Set<string>();
+      (invoices || []).forEach((invoice: any) => {
+        const invoiceData = invoice.invoice_data || {};
+        const timesheets = invoiceData.timesheets || [];
+        timesheets.forEach((ts: any) => {
+          if (ts.position && ts.position.positionId) {
+            positionIds.add(ts.position.positionId);
+          }
+        });
+      });
+      const { data: positionsData, error: positionsError } = await supabase
+        .from('positions')
+        .select('id, title, position_code, position_number, position_category, preferred_payment_method')
+        .in('id', Array.from(positionIds));
+      
+      if (positionsError) {
+        console.error('Error fetching positions:', positionsError);
+        return res.status(500).json({ error: 'Failed to fetch positions.' });
+      }
+      const positionInfoMap: Record<string, any> = {};
+      (positionsData || []).forEach((position: any) => {
+        positionInfoMap[position.id] = position;
+      });
+      // Collect all unique jobseeker_ids (ids) from timesheets
+      const jobseekerIdsSet = new Set<string>();
+      (invoices || []).forEach((invoice: any) => {
+        const invoiceData = invoice.invoice_data || {};
+        const timesheets = invoiceData.timesheets || [];
+        timesheets.forEach((ts: any) => {
+          const jobseekerProfileId = ts.jobseekerProfile && ts.jobseekerProfile.jobseekerProfileId;
+          if (jobseekerProfileId) jobseekerIdsSet.add(jobseekerProfileId);
+        });
+      });
+      // Query jobseeker_profiles for license_number, passport_number, phone_number by id (UUID)
+      let jobseekerInfoMap: Record<string, any> = {};
+    
+      if (jobseekerIdsSet.size > 0) {
+        const { data: jobseekersData, error: jobseekersError } = await supabase
+          .from('jobseeker_profiles')
+          .select('id, employee_id, license_number, passport_number, mobile')
+          .in('id', Array.from(jobseekerIdsSet));
+       
+        if (!jobseekersError && jobseekersData) {
+          jobseekersData.forEach((js: any) => {
+            jobseekerInfoMap[js.id] = js;
+          });
+        }
+      }
+     
+      // Process invoices and extract timesheets
+      const envelopeData: any[] = [];
+      (invoices || []).forEach((invoice: any) => {
+        const invoiceData = invoice.invoice_data || {};
+        const timesheets = invoiceData.timesheets || [];
+        const client = clientInfoMap[invoice.client_id] || {};
+        timesheets.forEach((ts: any) => {
+          // Filters
+          if (listName && client.list_name !== listName) return;
+          if (payCycle && client.pay_cycle !== payCycle) return;
+          // Get positionId from nested position object
+          const positionId = ts.position && ts.position.positionId;
+          const position = positionId ? positionInfoMap[positionId] : {};
+          // Get jobseeker_id (employeeId)
+          const jobseeker_employee_id = ts.jobseekerProfile && ts.jobseekerProfile.employeeId ? ts.jobseekerProfile.employeeId : '';
+          // Get jobseeker info from jobseekerInfoMap
+          const jobseekerInfo = jobseekerInfoMap[ts.jobseekerProfile.jobseekerProfileId];
+          // Compose row
+          envelopeData.push({
+            city: client.city1 || '',
+            list_name: client.list_name || '',
+            week_ending: invoice.due_date || '',
+            client_name: client.company_name || '',
+            sales_person: client.sales_person || '',
+            short_code: client.short_code || '',
+            work_province: client.province1 || '',
+            pay_cycle: client.pay_cycle || '',
+            jobseeker_id: jobseeker_employee_id,
+            license_number: (jobseekerInfo && jobseekerInfo.license_number) || '',
+            passport_number: (jobseekerInfo && jobseekerInfo.passport_number) || '',
+            jobseeker_name: ts.jobseekerProfile ? `${ts.jobseekerProfile.firstName || ''} ${ts.jobseekerProfile.lastName || ''}`.trim() : '',
+            phone_number: (jobseekerInfo && jobseekerInfo.mobile) || '',
+            email_id: ts.jobseekerProfile && ts.jobseekerProfile.email ? ts.jobseekerProfile.email : '',
+            pay_method: position.preferred_payment_method || '',
+            position_category: position.position_category || '',
+            position_name: position.title ? `${position.title} [${position.position_number || ''}]` : '',
+            hours: (Number(ts.totalRegularHours || ts.regularHours) || 0).toString(),
+            total_amount: (Number(ts.totalClientBill) || 0).toFixed(2),
+            tax_rate: (() => {
+              if (typeof ts.salesTax === 'string') {
+                const match = ts.salesTax.match(/^([\d.]+)%/);
+                if (match) return match[1];
+              }
+              return '';
+            })(),
+            hst_gst: (() => {
+              const amount = Number(ts.totalClientBill) || 0;
+              let taxRate = 0;
+              if (typeof ts.salesTax === 'string') {
+                const match = ts.salesTax.match(/^([\d.]+)%/);
+                if (match) taxRate = parseFloat(match[1]);
+              }
+              return ((amount * taxRate) / 100).toFixed(2);
+            })(),
+            invoice_number: invoice.invoice_number || '',
+            invoice_date: invoice.invoice_date || '',
+            currency: invoice.currency || '',
+          });
+        });
+      });
+      res.json(envelopeData);
+    } catch (error) {
+      console.error('Unexpected error in envelope printing report:', error);
+      return res.status(500).json({ error: 'An unexpected error occurred.' });
+    }
+  }
+);
+
 export default router; 

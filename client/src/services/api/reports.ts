@@ -293,4 +293,53 @@ export const getSalesReport = async (
     }
     throw error;
   }
+};
+
+export interface EnvelopePrintingReportFilter {
+  clientIds: string[];
+  startDate: string;
+  endDate: string;
+  listName?: string;
+  payCycle?: string;
+}
+
+export interface EnvelopePrintingReportRow {
+  city: string;
+  list_name: string;
+  week_ending: string;
+  client_name: string;
+  sales_person: string;
+  short_code: string;
+  work_province: string;
+  pay_cycle: string;
+  jobseeker_id: string;
+  license_number: string;
+  passport_number: string;
+  jobseeker_name: string;
+  phone_number: string;
+  email_id: string;
+  pay_method: string;
+  position_category: string;
+  position_name: string;
+  hours: string;
+  total_amount: string;
+  tax_rate: string;
+  hst_gst: string;
+  invoice_number: string;
+  invoice_date: string;
+  currency: string;
+}
+
+export const getEnvelopePrintingReport = async (
+  filters: EnvelopePrintingReportFilter
+): Promise<EnvelopePrintingReportRow[]> => {
+  try {
+    const response = await api.post("/api/reports/envelope-printing-position", filters);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(error.response.data.error || "Failed to fetch envelope printing report");
+    }
+    throw error;
+  }
 }; 

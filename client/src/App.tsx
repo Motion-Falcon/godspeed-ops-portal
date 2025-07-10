@@ -51,6 +51,7 @@ import { DeductionReport } from './pages/Reports/DeductionReport';
 import { InvoiceReport } from './pages/Reports/InvoiceReport';
 import { ClientsReport } from './pages/Reports/ClientsReport';
 import { SalesReport } from './pages/Reports/SalesReport';
+import { EnvelopePrintingReport } from './pages/Reports/EnvelopePrintingReport';
 
 function App() {
   return (
@@ -114,6 +115,7 @@ function App() {
                 <Route path="/reports/invoice" element={<InvoiceReport />} />
                 <Route path="/reports/clients" element={<ClientsReport />} />
                 <Route path="/reports/sales" element={<SalesReport />} />
+                <Route path="/reports/envelope-printing-position" element={<EnvelopePrintingReport />} />
                 {/* Add more recruiter-specific routes here */}
               </Route>
               

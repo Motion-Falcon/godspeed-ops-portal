@@ -271,9 +271,11 @@ export function WeeklyTimesheet() {
                 searchable={false}
                 selectedOption={payCycleOptions.find((o) => o.value === payCycle) || null}
                 onSelect={(opt) => {
-                  if (!Array.isArray(opt) && opt && typeof opt === 'object') setPayCycle(opt.value as string);
-                  // If 'Select (None)' is chosen, clear the filter
-                  if (!Array.isArray(opt) && opt && typeof opt === 'object' && opt.value === '') setPayCycle('');
+                  if (!Array.isArray(opt) && opt && typeof opt === 'object') {
+                    setPayCycle(opt.value as string);
+                  } else {
+                    setPayCycle('');
+                  }
                 }}
                 placeholder="Select pay cycle..."
               />
@@ -282,11 +284,14 @@ export function WeeklyTimesheet() {
               <label className="selection-label">List Name</label>
               <CustomDropdown
                 options={listNameOptions}
+                searchable={false}
                 selectedOption={listNameOptions.find((o) => o.value === listName) || null}
                 onSelect={(opt) => {
-                  if (!Array.isArray(opt) && opt && typeof opt === 'object') setListName(opt.value as string);
-                  // If 'Select (None)' is chosen, clear the filter
-                  if (!Array.isArray(opt) && opt && typeof opt === 'object' && opt.value === '') setListName('');
+                  if (!Array.isArray(opt) && opt && typeof opt === 'object') {
+                    setListName(opt.value as string);
+                  } else {
+                    setListName('');
+                  }
                 }}
                 placeholder="Select list name..."
               />
