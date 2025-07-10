@@ -27,7 +27,6 @@ export interface JobSeekerProfile {
   userId: string;
   name: string;
   email: string;
-  phoneNumber: string;
   status: 'pending' | 'verified' | 'rejected';
   experience: string;
   createdAt: string;
