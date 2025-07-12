@@ -1,14 +1,16 @@
 import { useState, useEffect, useCallback } from "react";
 import { useLocation, Navigate, useNavigate } from "react-router-dom";
 import { Shield, CheckCircle } from "lucide-react";
-import { sendOtpAPI, verifyOtpAPI } from "../services/api/auth";
-import { complete2FA } from "../lib/auth";
-import "../styles/variables.css";
-import "../styles/pages/TwoFactorAuth.css";
-import "../styles/components/button.css";
-import { AppHeader } from "../components/AppHeader";
+import { sendOtpAPI, verifyOtpAPI } from "../../services/api/auth";
+import { complete2FA } from "../../lib/auth";
+import "../../styles/variables.css";
+import "../../styles/pages/TwoFactorAuth.css";
+import "../../styles/components/button.css";
+import { AppHeader } from "../../components/AppHeader";
+import { useLanguage } from "../../contexts/language/language-provider";
 
 export function TwoFactorAuth() {
+  const { t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   
@@ -54,16 +56,16 @@ export function TwoFactorAuth() {
       setError(
         error instanceof Error
           ? error.message
-          : "Failed to send verification code"
+          : t('twoFactor.error.failedToSendCode')
       );
     } finally {
       setIsResending(false);
     }
-  }, [phoneNumber, hasRequiredState]);
+  }, [phoneNumber, hasRequiredState, t]);
 
   const verifyOtp = useCallback(async () => {
     if (!phoneNumber || !otpCode || otpCode.length < 4 || !email || !password) {
-      setError("Please enter a valid verification code");
+      setError(t('twoFactor.validation.otpValid'));
       return;
     }
 
@@ -82,12 +84,12 @@ export function TwoFactorAuth() {
       navigate("/dashboard");
     } catch (error) {
       setError(
-        error instanceof Error ? error.message : "Failed to verify code"
+        error instanceof Error ? error.message : t('twoFactor.error.failedToVerifyCode')
       );
     } finally {
       setIsVerifying(false);
     }
-  }, [phoneNumber, otpCode, email, password, rememberMe, navigate]);
+  }, [phoneNumber, otpCode, email, password, rememberMe, navigate, t]);
 
   // Auto-send OTP on component mount - only if we have complete required state
   useEffect(() => {
@@ -115,7 +117,7 @@ export function TwoFactorAuth() {
   return (
     <>
       <AppHeader
-        title="Two-Factor Authentication"
+        title={t('auth.twoFactorAuth')}
         hideHamburgerMenu={true}
       />
       <div className="centered-container">
@@ -124,11 +126,10 @@ export function TwoFactorAuth() {
             <Shield />
           </div>
 
-          <h1 className="auth-card-title">Two-Factor Authentication</h1>
+          <h1 className="auth-card-title">{t('auth.twoFactorAuth')}</h1>
 
           <p>
-            For security, we've sent a verification code to{" "}
-            <span className="bold-text">{maskedPhone}</span>. Please enter the code to complete your login.
+            {t('twoFactor.instructions', { phone: maskedPhone })}
           </p>
 
           <div className="card-actions">
@@ -138,7 +139,7 @@ export function TwoFactorAuth() {
               <input
                 type="text"
                 className="form-input otp-input"
-                placeholder="Enter verification code"
+                placeholder={t('twoFactor.verificationCodePlaceholder')}
                 value={otpCode}
                 onChange={(e) => setOtpCode(e.target.value)}
                 maxLength={6}
@@ -154,18 +155,18 @@ export function TwoFactorAuth() {
                   {isVerifying ? (
                     <span className="loading-spinner-small"></span>
                   ) : (
-                    "Verify Code"
+                    t('twoFactor.verifyCode')
                   )}
                 </button>
                 
                 {resendSuccess ? (
                   <div className="success-message">
                     <CheckCircle size={16} style={{ marginRight: "8px" }} />
-                    Verification code sent successfully
+                    {t('twoFactor.verificationCodeSent')}
                   </div>
                 ) : (
                   <p className="text-muted">
-                    Didn't receive the code? Check your messages or request a new one.
+                    {t('twoFactor.notReceived')}
                   </p>
                 )}
 
@@ -177,9 +178,9 @@ export function TwoFactorAuth() {
                   {isResending ? (
                     <span className="loading-spinner-small"></span>
                   ) : resendTimer > 0 ? (
-                    `Resend Code (${resendTimer}s)`
+                    t('twoFactor.resendCodeWithTimer', { seconds: resendTimer })
                   ) : (
-                    "Resend Code"
+                    t('twoFactor.resendCode')
                   )}
                 </button>
               </div>

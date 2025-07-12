@@ -34,6 +34,7 @@ import { useRecentActivities } from "../../hooks/useRecentActivities";
 import "../../styles/components/header.css";
 import "../../styles/pages/Dashboard.css";
 import { RecentActivities } from '../../components/dashboard/RecentActivities';
+import { useLanguage } from '../../contexts/language/language-provider';
 
 // Constants
 const CACHE_DURATION = 30000; // 30 seconds
@@ -421,6 +422,8 @@ interface AISummaryProps {
 }
 
 function AISummary({ basicAiInsights, loading, error, onRetry }: AISummaryProps) {
+  const { t } = useLanguage();
+  
   if (loading) {
     return (
       <div className="ai-summary-loading">
@@ -447,7 +450,7 @@ function AISummary({ basicAiInsights, loading, error, onRetry }: AISummaryProps)
       <div className="ai-summary-error">
         <p className="error-text">{error}</p>
         <button className="retry-button" onClick={onRetry}>
-          Try Again
+          {t('buttons.tryAgain')}
         </button>
       </div>
     );
@@ -465,7 +468,7 @@ function AISummary({ basicAiInsights, loading, error, onRetry }: AISummaryProps)
         </div>
         <div className="ai-stat-details">
           <p className="ai-stat-value">
-            {basicAiInsights.totalDocumentsScanned.toLocaleString()} Documents Scanned
+            {basicAiInsights.totalDocumentsScanned.toLocaleString()} {t('dashboard.documentsScanned')}
           </p>
           <p className="ai-stat-description">
             {basicAiInsights.summary.documentsScanned.description}
@@ -479,7 +482,7 @@ function AISummary({ basicAiInsights, loading, error, onRetry }: AISummaryProps)
         </div>
         <div className="ai-stat-details">
           <p className="ai-stat-value">
-            {basicAiInsights.totalJobseekersMatched.toLocaleString()} Position Slots
+            {basicAiInsights.totalJobseekersMatched.toLocaleString()} {t('dashboard.positionSlots')}
           </p>
           <p className="ai-stat-description">
             {basicAiInsights.summary.jobseekersMatched.description}
@@ -493,6 +496,7 @@ function AISummary({ basicAiInsights, loading, error, onRetry }: AISummaryProps)
 // Main component
 export function RecruiterDashboard() {
   const { user, isRecruiter } = useAuth();
+  const { t } = useLanguage();
   const [userData, setUserData] = useState<UserData | null>(null);
   const [expandedGraphs, setExpandedGraphs] = useState<Set<string>>(new Set());
   
@@ -526,15 +530,15 @@ export function RecruiterDashboard() {
   // Memoized toggle descriptions
   const toggleDescriptions = useMemo(() => ({
     recruiter: showAllRecruiters
-      ? "Viewing aggregated data from all recruiters"
-      : "Viewing your personal recruiting metrics",
+      ? t('dashboard.viewingAggregatedData')
+      : t('dashboard.viewingPersonalMetrics'),
     client: showAllRecruitersClients
-      ? "Viewing client data from all recruiters"
-      : "Viewing your personal client metrics",
+      ? t('dashboard.viewingClientData')
+      : t('dashboard.viewingPersonalClientMetrics'),
     position: showAllRecruitersPositions
-      ? "Viewing position data from all recruiters"
-      : "Viewing your personal position metrics",
-  }), [showAllRecruiters, showAllRecruitersClients, showAllRecruitersPositions]);
+      ? t('dashboard.viewingPositionData')
+      : t('dashboard.viewingPersonalPositionMetrics'),
+  }), [showAllRecruiters, showAllRecruitersClients, showAllRecruitersPositions, t]);
 
   // Event handlers
   const handleMetricClick = useCallback((metric: MetricData) => {
@@ -624,15 +628,15 @@ export function RecruiterDashboard() {
       setUserData({
         id: user.id,
         email: user.email,
-        name: user.user_metadata?.name || "User",
+        name: user.user_metadata?.name || t('common.user'),
         userType: user.user_metadata?.user_type || "recruiter",
         createdAt: new Date(user.created_at).toLocaleDateString(),
         lastSignIn: user.last_sign_in_at
           ? new Date(user.last_sign_in_at).toLocaleString()
-          : "First login",
+          : t('dashboard.firstLogin'),
       });
     }
-  }, [user, isRecruiter]);
+  }, [user, isRecruiter, t]);
 
   // Fetch initial data when userData is available
   useEffect(() => {
@@ -666,22 +670,22 @@ export function RecruiterDashboard() {
   }
 
   const getRoleIcon = () => <UserCheck className="role-icon recruiter" />;
-  const getRoleName = () => "Recruiter";
+  const getRoleName = () => t('roles.recruiter');
 
   return (
     <div className="dashboard-container">
-      <AppHeader title="Recruiter Portal" />
+      <AppHeader title={t('dashboard.welcome')} />
 
       <main className="dashboard-main">
         <div className="dashboard-heading">
-          <h1 className="dashboard-title">Welcome, {userData.name}!</h1>
+          <h1 className="dashboard-title">{t('welcome')}, {userData.name}!</h1>
           <div className="user-role-badge">
             {getRoleIcon()}
             <span>{getRoleName()}</span>
           </div>
         </div>
         <p className="dashboard-subtitle">
-          Manage talent acquisition with Godspeed's lightning-fast recruiting tools
+          {t('recruiter_subtitle')}
         </p>
 
         <div className="dashboard-grid">
@@ -692,7 +696,7 @@ export function RecruiterDashboard() {
                 checked={showAllRecruiters}
                 onChange={handleToggleView}
                 label={toggleDescriptions.recruiter}
-                description="Toggle to view data for all recruiters or your own"
+                description={t('dashboard.toggleDataView')}
               />
               <MetricGrid
                 metricsState={recruiterMetrics.state}
@@ -729,7 +733,7 @@ export function RecruiterDashboard() {
             checked={showAllRecruitersPositions}
             onChange={handleTogglePositionView}
             label={toggleDescriptions.position}
-            description="Toggle to view position data for all recruiters or your own"
+            description={t('dashboard.togglePositionDataView')}
           />
 
           <div className="position-metrics-grid">
@@ -751,9 +755,9 @@ export function RecruiterDashboard() {
         <div className="dashboard-grid ai-insights">
           <div className="ai-insights-container">
             <div className="ai-insights-header">
-              <h3 className="ai-insights-title">AI Activity Insights</h3>
+              <h3 className="ai-insights-title">{t('dashboard.aiActivityInsights')}</h3>
               <p className="ai-insights-description">
-                Track AI-powered document processing and position matching activities
+                {t('dashboard.aiActivityDescription')}
               </p>
             </div>
 
@@ -788,14 +792,14 @@ export function RecruiterDashboard() {
             checked={showAllRecruitersClients}
             onChange={handleToggleClientView}
             label={toggleDescriptions.client}
-            description="Toggle to view client data for all recruiters or your own"
+            description={t('dashboard.toggleClientDataView')}
           />
           
           <MetricCard
             data={
               clientMetrics.state.data[0] || {
                 id: "total_clients",
-                label: "Total Clients Created",
+                label: t('dashboard.totalClientsCreated'),
                 currentValue: 0,
                 previousValue: 0,
                 historicalData: [],

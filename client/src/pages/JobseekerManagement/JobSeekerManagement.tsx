@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "../../contexts/AuthContext";
 import {
   Plus,
   Trash2,
@@ -18,14 +18,14 @@ import {
 import {
   getJobseekerProfiles,
   deleteJobseeker,
-} from "../services/api/jobseeker";
-import { JobSeekerProfile } from "../types/jobseeker";
-import { ConfirmationModal } from "../components/ConfirmationModal";
-import { AppHeader } from "../components/AppHeader";
-import { EXPERIENCE_LEVELS } from "../constants/formOptions";
-import "../styles/pages/JobSeekerManagement.css";
-import "../styles/components/header.css";
-import "../styles/components/CommonTable.css";
+} from "../../services/api/jobseeker";
+import { JobSeekerProfile } from "../../types/jobseeker";
+import { ConfirmationModal } from "../../components/ConfirmationModal";
+import { AppHeader } from "../../components/AppHeader";
+import { EXPERIENCE_LEVELS } from "../../constants/formOptions";
+import "../../styles/pages/JobSeekerManagement.css";
+import "../../styles/components/header.css";
+import "../../styles/components/CommonTable.css";
 
 // Extend the JobSeekerProfile type to include documents
 interface ExtendedJobSeekerProfile extends JobSeekerProfile {

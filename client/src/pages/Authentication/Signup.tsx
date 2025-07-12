@@ -3,17 +3,17 @@ import { Link, useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { registerUser } from "../lib/auth";
+import { registerUser } from "../../lib/auth";
 import { Eye, EyeOff, Check } from "lucide-react";
-import { ThemeToggle } from "../components/theme-toggle";
-import { isValidPhoneNumber } from "../utils/validation";
-import "../styles/variables.css";
-import "../styles/pages/Signup.css";
-import "../styles/pages/Login.css";
-import "../styles/components/form.css";
-import "../styles/components/button.css";
-import "../styles/components/phone-input.css";
-import godspeedLogo from "../assets/logos/godspped-logo.png";
+import { ThemeToggle } from "../../components/theme-toggle";
+import { isValidPhoneNumber } from "../../utils/validation";
+import "../../styles/variables.css";
+import "../../styles/pages/Signup.css";
+import "../../styles/pages/Login.css";
+import "../../styles/components/form.css";
+import "../../styles/components/button.css";
+import "../../styles/components/phone-input.css";
+import godspeedLogo from "../../assets/logos/godspped-logo.png";
 import PhoneInput from "react-phone-number-input";
 import "react-phone-number-input/style.css";
 import {
@@ -21,46 +21,13 @@ import {
   checkPhoneAvailability,
   sendOtpAPI,
   verifyOtpAPI,
-} from "../services/api/auth";
-
-const signupSchema = z
-  .object({
-    name: z.string().min(2, { message: "Name must be at least 2 characters" }),
-    email: z.string().email({ message: "Please enter a valid email address" }),
-    phoneNumber: z.string().min(1, { message: "Phone number is required" }),
-    password: z
-      .string()
-      .min(8, { message: "Password must be at least 8 characters" })
-      .regex(/[A-Z]/, {
-        message: "Password must contain at least one uppercase letter",
-      })
-      .regex(/[a-z]/, {
-        message: "Password must contain at least one lowercase letter",
-      })
-      .regex(/[0-9]/, { message: "Password must contain at least one number" }),
-    confirmPassword: z.string(),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords do not match",
-    path: ["confirmPassword"],
-  });
-
-type SignupFormData = z.infer<typeof signupSchema>;
-
-// Simplified debounced availability check
-const useDebounce = (value: string, delay: number) => {
-  const [debouncedValue, setDebouncedValue] = useState(value);
-
-  useEffect(() => {
-    const handler = setTimeout(() => setDebouncedValue(value), delay);
-    return () => clearTimeout(handler);
-  }, [value, delay]);
-
-  return debouncedValue;
-};
+} from "../../services/api/auth";
+import { LanguageToggle } from "../../components/LanguageToggle";
+import { useLanguage } from "../../contexts/language/language-provider";
 
 export function Signup() {
   // Basic state
+  const { t } = useLanguage();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -87,6 +54,44 @@ export function Signup() {
   const [checkingPhone, setCheckingPhone] = useState(false);
 
   const navigate = useNavigate();
+
+  // Move signupSchema here so t is available
+  const signupSchema = z
+    .object({
+      name: z.string().min(2, { message: t('signup.validation.nameLength') }),
+      email: z.string().email({ message: t('signup.validation.email') }),
+      phoneNumber: z.string().min(1, { message: t('signup.validation.phoneRequired') }),
+      password: z
+        .string()
+        .min(8, { message: t('signup.validation.passwordLength') })
+        .regex(/[A-Z]/, {
+          message: t('signup.validation.passwordUppercase'),
+        })
+        .regex(/[a-z]/, {
+          message: t('signup.validation.passwordLowercase'),
+        })
+        .regex(/[0-9]/, { message: t('signup.validation.passwordNumber') }),
+      confirmPassword: z.string(),
+    })
+    .refine((data) => data.password === data.confirmPassword, {
+      message: t('validation.passwordMismatch'),
+      path: ["confirmPassword"],
+    });
+
+  // Move type definition after schema
+  type SignupFormData = z.infer<typeof signupSchema>;
+
+  // Simplified debounced availability check
+  const useDebounce = (value: string, delay: number) => {
+    const [debouncedValue, setDebouncedValue] = useState(value);
+
+    useEffect(() => {
+      const handler = setTimeout(() => setDebouncedValue(value), delay);
+      return () => clearTimeout(handler);
+    }, [value, delay]);
+
+    return debouncedValue;
+  };
 
   const {
     register,
@@ -171,13 +176,13 @@ export function Signup() {
     if (phoneValue) {
       const isValid = isValidPhoneForCountry(phoneValue);
       if (!isValid) {
-        const countryName = selectedCountry === "CA" ? "Canadian" : "Indian";
+        const countryName = selectedCountry === "CA" ? t('signup.validation.canadian') : t('signup.validation.indian');
         setPhoneValidationError(
-          `Please enter a valid ${countryName} phone number`
+          t('signup.validation.phoneValid', { country: countryName })
         );
         setFormError("phoneNumber", {
           type: "manual",
-          message: `Please enter a valid ${countryName} phone number`,
+          message: t('signup.validation.phoneValid', { country: countryName }),
         });
       } else {
         setPhoneValidationError(null);
@@ -185,7 +190,7 @@ export function Signup() {
     } else {
       setPhoneValidationError(null);
     }
-  }, [phoneValue, selectedCountry, setFormError]);
+  }, [phoneValue, selectedCountry, setFormError, t]);
 
   // Resend timer
   useEffect(() => {
@@ -198,7 +203,7 @@ export function Signup() {
   // OTP functions
   const sendOtp = useCallback(async () => {
     if (!phoneValue || !isValidPhoneForCountry(phoneValue) || !phoneAvailable) {
-      setError("Please enter a valid, available phone number");
+      setError(t('signup.validation.phoneAvailable'));
       return;
     }
 
@@ -214,16 +219,16 @@ export function Signup() {
       setError(
         error instanceof Error
           ? error.message
-          : "Failed to send verification code"
+          : t('signup.error.failedToSendCode')
       );
     } finally {
       setIsVerifyingPhone(false);
     }
-  }, [phoneValue, phoneAvailable]);
+  }, [phoneValue, phoneAvailable, t]);
 
   const verifyOtp = useCallback(async () => {
     if (!phoneValue || !otpCode || otpCode.length < 4) {
-      setError("Please enter a valid verification code");
+      setError(t('signup.validation.otpValid'));
       return;
     }
 
@@ -236,31 +241,31 @@ export function Signup() {
       setShowOtpInput(false);
     } catch (error) {
       setError(
-        error instanceof Error ? error.message : "Failed to verify code"
+        error instanceof Error ? error.message : t('signup.error.failedToVerifyCode')
       );
     } finally {
       setIsVerifyingPhone(false);
     }
-  }, [phoneValue, otpCode]);
+  }, [phoneValue, otpCode, t]);
 
   const onSubmit = async (data: SignupFormData) => {
     // Validation checks
     if (emailAvailable === false) {
       setError(
-        "This email is already registered. Please use a different email."
+        t('signup.validation.emailRegistered')
       );
       return;
     }
 
     if (phoneAvailable === false) {
       setError(
-        "This phone number is already registered. Please use a different number."
+        t('signup.validation.phoneRegistered')
       );
       return;
     }
 
     if (phoneValue && !isPhoneVerified) {
-      setError("Please verify your phone number first");
+      setError(t('signup.validation.verifyPhoneFirst'));
       return;
     }
 
@@ -277,7 +282,7 @@ export function Signup() {
       navigate("/verification-pending", { state: { email: data.email } });
     } catch (error) {
       setError(
-        error instanceof Error ? error.message : "An unexpected error occurred"
+        error instanceof Error ? error.message : t('signup.error.unexpected')
       );
     } finally {
       setIsLoading(false);
@@ -295,11 +300,8 @@ export function Signup() {
     <div className="auth-container">
       {/* Signup Form Column */}
       <div className="auth-column">
-        <div className="toggle-container mobile-toggle">
-          <ThemeToggle />
-        </div>
         <div className="form-container">
-          <h1 className="auth-title">Sign Up</h1>
+          <h1 className="auth-title">{t('auth.signup')}</h1>
 
           {error && <div className="error-container">{error}</div>}
 
@@ -309,11 +311,11 @@ export function Signup() {
           >
             <div className="form-group">
               <label htmlFor="name" className="form-label">
-                Name
+                {t('forms.name')}
               </label>
               <input
                 id="name"
-                placeholder="Your name"
+                placeholder={t('forms.namePlaceholder')}
                 className="form-input"
                 {...register("name")}
               />
@@ -324,13 +326,13 @@ export function Signup() {
 
             <div className="form-group">
               <label htmlFor="email" className="form-label">
-                Email
+                {t('forms.email')}
               </label>
               <div className="input-container">
                 <input
                   id="email"
                   type="email"
-                  placeholder="name@example.com"
+                  placeholder={t('forms.emailPlaceholder')}
                   className="form-input"
                   {...register("email")}
                 />
@@ -341,7 +343,7 @@ export function Signup() {
                 )}
               </div>
               {checkingEmail && (
-                <p className="availability-message">Checking email...</p>
+                <p className="availability-message">{t('signup.checkingEmail')}</p>
               )}
               {errors.email && !checkingEmail && (
                 <p className="error-message">{errors.email.message}</p>
@@ -350,7 +352,7 @@ export function Signup() {
 
             <div className="form-group">
               <label htmlFor="phoneNumber" className="form-label">
-                Phone Number
+                {t('forms.phone')}
               </label>
               <div className="input-container">
                 <PhoneInput
@@ -373,17 +375,11 @@ export function Signup() {
                 )}
               </div>
               {checkingPhone && (
-                <p className="availability-message">Checking phone number...</p>
+                <p className="availability-message">{t('signup.checkingPhone')}</p>
               )}
               {phoneValidationError && (
                 <p className="error-message">{phoneValidationError}</p>
               )}
-              {/* {phoneAvailable === false && !phoneValidationError && (
-                <p className="error-message">
-                  This phone number is already registered. Please use a
-                  different number.
-                </p>
-              )} */}
               {errors.phoneNumber && !checkingPhone && (
                 <p className="error-message">{errors.phoneNumber.message}</p>
               )}
@@ -398,24 +394,24 @@ export function Signup() {
                   {isVerifyingPhone ? (
                     <span className="loading-spinner-small"></span>
                   ) : (
-                    "Verify Phone Number"
+                    t('signup.verifyPhone')
                   )}
                 </button>
               )}
 
               {isPhoneVerified && (
-                <p className="success-message">Phone number verified ✓</p>
+                <p className="success-message">{t('signup.phoneVerified')}</p>
               )}
 
               {showOtpInput && (
                 <div className="otp-container">
                   <div className="otp-header">
-                    <p>Enter the verification code sent to your phone</p>
+                    <p>{t('signup.enterVerificationCode')}</p>
                   </div>
                   <input
                     type="text"
                     className="form-input otp-input"
-                    placeholder="Enter verification code"
+                    placeholder={t('signup.verificationCodePlaceholder')}
                     value={otpCode}
                     onChange={(e) => setOtpCode(e.target.value)}
                     maxLength={6}
@@ -430,7 +426,7 @@ export function Signup() {
                       {isVerifyingPhone ? (
                         <span className="loading-spinner-small"></span>
                       ) : (
-                        "Verify Code"
+                        t('signup.verifyCode')
                       )}
                     </button>
                     <button
@@ -440,8 +436,8 @@ export function Signup() {
                       disabled={isVerifyingPhone || resendTimer > 0}
                     >
                       {resendTimer > 0
-                        ? `Resend Code (${resendTimer}s)`
-                        : "Resend Code"}
+                        ? t('signup.resendCodeWithTimer', { seconds: resendTimer })
+                        : t('signup.resendCode')}
                     </button>
                   </div>
                 </div>
@@ -450,7 +446,7 @@ export function Signup() {
 
             <div className="form-group">
               <label htmlFor="password" className="form-label">
-                Password
+                {t('forms.password')}
               </label>
               <div className="input-container">
                 <input
@@ -463,7 +459,7 @@ export function Signup() {
                   type="button"
                   className="password-toggle"
                   onClick={() => setShowPassword(!showPassword)}
-                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-label={showPassword ? t('signup.hidePassword') : t('signup.showPassword')}
                 >
                   {showPassword ? (
                     <EyeOff className="icon" size={16} />
@@ -479,7 +475,7 @@ export function Signup() {
 
             <div className="form-group">
               <label htmlFor="confirmPassword" className="form-label">
-                Confirm Password
+                {t('forms.confirmPassword')}
               </label>
               <div className="input-container">
                 <input
@@ -493,7 +489,7 @@ export function Signup() {
                   className="password-toggle"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   aria-label={
-                    showConfirmPassword ? "Hide password" : "Show password"
+                    showConfirmPassword ? t('signup.hidePassword') : t('signup.showPassword')
                   }
                 >
                   {showConfirmPassword ? (
@@ -518,15 +514,15 @@ export function Signup() {
               {isLoading ? (
                 <span className="loading-spinner"></span>
               ) : (
-                "Sign Up"
+                t('auth.signup')
               )}
             </button>
           </form>
 
           <div className="auth-footer">
-            <span>Already have an account?</span>
+            <span>{t('signup.alreadyHaveAccount')}</span>
             <Link to="/login" className="auth-link">
-              Log in
+              {t('auth.login')}
             </Link>
           </div>
         </div>
@@ -535,13 +531,13 @@ export function Signup() {
       {/* Company Branding Column */}
       <div className="auth-column brand">
         <div className="toggle-container">
-          <ThemeToggle />
+        <LanguageToggle /> <ThemeToggle />
         </div>
         <div className="brand-content">
           <div className="brand-logo">
             <img
               src={godspeedLogo}
-              alt="Godspeed Logo"
+              alt={t('common.godspeedLogo')}
               className="godspeed-logo"
             />
           </div>
@@ -549,9 +545,7 @@ export function Signup() {
             Godspeed <span className="gradient-text">Operations</span>
           </h2>
           <p className="brand-description">
-            Elevate your talent management with Godspeed's intelligent workflows
-            and lightning-fast systems designed to connect the right people with
-            the right opportunities.
+            {t('signup.brandDescription')}
           </p>
         </div>
       </div>

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { RotateCcw } from 'lucide-react';
 import godspeedLogo from '../assets/logos/godspped-logo-fulllength.png';
 import { HamburgerMenu } from './HamburgerMenu';
+import { useLanguage } from '../contexts/language/language-provider';
 import '../styles/components/header.css';
 
 interface AppHeaderProps {
@@ -21,6 +22,7 @@ export function AppHeader({
   hideHamburgerMenu = false
 }: AppHeaderProps) {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [menuOpen, setMenuOpen] = useState(false);
   const [showStatusMessage, setShowStatusMessage] = useState(false);
   const menuOpenRef = useRef(true); // Keep track of menu state with a ref as well
@@ -104,7 +106,7 @@ export function AppHeader({
         <div className="header-main">
           <div className="header-left">
             <div className="logo-container" onClick={() => navigate('/')}>
-              <img src={godspeedLogo} alt="Godspeed Logo" className="header-logo" />
+              <img src={godspeedLogo} alt={t('common.godspeedLogo')} className="header-logo" />
             </div>
           </div>
           <div className="header-actions">
@@ -119,10 +121,10 @@ export function AppHeader({
               <button 
                 className="refresh-page-btn"
                 onClick={handleRefreshPage}
-                title="Refresh page"
+                title={t('common.refreshPage')}
               >
                 <RotateCcw size={16} />
-                Refresh
+                {t('common.refresh')}
               </button>
             )}
           </div>

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "../../contexts/AuthContext";
 import Lottie from "lottie-react";
 import {
   Users,
@@ -29,14 +29,14 @@ import {
   removeCandidateFromPosition,
   PositionData,
   getPositionAssignments,
-} from "../services/api/position";
-import { AppHeader } from "../components/AppHeader";
-import { CustomDropdown, DropdownOption } from "../components/CustomDropdown";
-import "../styles/pages/PositionMatching.css";
-import "../styles/components/CommonTable.css";
-import "../styles/components/form.css";
-import aiLoadingAnimation from "../assets/animations/aipoisitionmatching.json";
-import { ConfirmationModal } from "../components/ConfirmationModal";
+} from "../../services/api/position";
+import { AppHeader } from "../../components/AppHeader";
+import { CustomDropdown, DropdownOption } from "../../components/CustomDropdown";
+import "../../styles/pages/PositionMatching.css";
+import "../../styles/components/CommonTable.css";
+import "../../styles/components/form.css";
+import aiLoadingAnimation from "../../assets/animations/aipoisitionmatching.json";
+import { ConfirmationModal } from "../../components/ConfirmationModal";
 
 interface PaginationInfo {
   page: number;

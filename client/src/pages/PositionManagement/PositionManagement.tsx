@@ -15,18 +15,18 @@ import {
   deletePosition,
   PositionData,
   PositionPaginationParams,
-} from "../services/api/position";
-import { ConfirmationModal } from "../components/ConfirmationModal";
-import { AppHeader } from "../components/AppHeader";
-import "../styles/pages/PositionManagement.css";
-import "../styles/components/header.css";
-import "../styles/components/CommonTable.css";
+} from "../../services/api/position";
+import { ConfirmationModal } from "../../components/ConfirmationModal";
+import { AppHeader } from "../../components/AppHeader";
+import "../../styles/pages/PositionManagement.css";
+import "../../styles/components/header.css";
+import "../../styles/components/CommonTable.css";
 import {
   EMPLOYMENT_TERMS,
   EMPLOYMENT_TYPES,
   POSITION_CATEGORIES,
   EXPERIENCE_LEVELS,
-} from "../constants/formOptions";
+} from "../../constants/formOptions";
 
 interface ExtendedPositionData extends PositionData {
   [key: string]: unknown;

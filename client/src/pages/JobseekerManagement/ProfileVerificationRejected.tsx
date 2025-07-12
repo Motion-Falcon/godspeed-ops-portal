@@ -1,13 +1,15 @@
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "../../contexts/AuthContext";
 import { useState, useEffect } from "react";
-import { AppHeader } from "../components/AppHeader";
+import { AppHeader } from "../../components/AppHeader";
 import { AlertCircle, Edit, RefreshCw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "../lib/supabaseClient";
-import "../styles/pages/VerificationPages.css";
+import { supabase } from "../../lib/supabaseClient";
+import { useLanguage } from "../../contexts/language/language-provider";
+import "../../styles/pages/VerificationPages.css";
 
 export function ProfileVerificationRejected() {
   const { refetchProfileStatus, user } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -32,21 +34,21 @@ export function ProfileVerificationRejected() {
         
         if (error) {
           console.error("Error fetching profile:", error);
-          setError("Failed to fetch profile details");
+          setError(t('profileVerification.rejected.errorFetchingProfile'));
         } else if (data) {
-          setRejectionReason(data.rejection_reason || "No reason provided");
+          setRejectionReason(data.rejection_reason || t('profileVerification.rejected.noReason'));
           setProfileId(data.id);
         }
       } catch (err) {
         console.error("Error fetching profile:", err);
-        setError(err instanceof Error ? err.message : "Failed to fetch profile details");
+        setError(err instanceof Error ? err.message : t('profileVerification.rejected.errorFetchingProfile'));
       } finally {
         setLoading(false);
       }
     };
 
     fetchProfile();
-  }, [user]);
+  }, [user, t]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -67,23 +69,23 @@ export function ProfileVerificationRejected() {
   return (
     <div className="page-container">
       <AppHeader
-        title="Profile Verification"
+        title={t('profileVerification.title')}
       />
       <div className="profile-verification-rejected centered-container">
         <div className="centered-card">
           <div className="verification-status rejected">
             <AlertCircle size={24} className="verification-icon" />
-            <h1 className="auth-card-title">Profile Verification Rejected</h1>
+            <h1 className="auth-card-title">{t('profileVerification.rejected.heading')}</h1>
           </div>
 
           <p className="text-muted">
-            We're sorry, but your profile verification has been rejected. Please review the rejection reason below and update your profile accordingly.
+            {t('profileVerification.rejected.sorry')}
           </p>
 
           {loading ? (
             <div className="loading-container">
               <span className="loading-spinner"></span>
-              <p>Loading profile details...</p>
+              <p>{t('profileVerification.rejected.loading')}</p>
             </div>
           ) : error ? (
             <div className="error-message">
@@ -93,7 +95,7 @@ export function ProfileVerificationRejected() {
             <div className="profile-rejection-reason">
               <div className="rejection-reason-header">
                 <AlertCircle size={16} className="rejection-reason-icon" />
-                <span className="rejection-reason-title">Rejection Reason</span>
+                <span className="rejection-reason-title">{t('profileVerification.rejected.rejectionReason')}</span>
               </div>
               <div className={`rejection-reason-content ${showFullRejectionReason ? 'expanded' : ''}`}>
                 {rejectionReason}
@@ -103,14 +105,14 @@ export function ProfileVerificationRejected() {
                   className="toggle-rejection-btn"
                   onClick={() => setShowFullRejectionReason(!showFullRejectionReason)}
                 >
-                  {showFullRejectionReason ? 'Show less' : 'Show full reason'}
+                  {showFullRejectionReason ? t('profileVerification.rejected.showLess') : t('profileVerification.rejected.showFullReason')}
                 </button>
               )}
             </div>
           )}
 
           <p className="text-muted">
-            After updating your profile, our team will review your information again. You'll receive an email once your profile has been verified.
+            {t('profileVerification.rejected.afterUpdate')}
           </p>
 
           <div className="verification-actions">
@@ -120,7 +122,7 @@ export function ProfileVerificationRejected() {
               disabled={loading}
             >
               <Edit size={16} className="icon" />
-              Update Profile
+              {t('profileVerification.buttons.updateProfile')}
             </button>
             
             <button
@@ -133,7 +135,7 @@ export function ProfileVerificationRejected() {
               ) : (
                 <>
                   <RefreshCw size={16} className="icon" />
-                  Refresh Status
+                  {t('profileVerification.buttons.refreshStatus')}
                 </>
               )}
             </button>

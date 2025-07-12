@@ -3,6 +3,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { getAllAuthUsersAPI } from "../services/api/auth";
 import { AllAuthUserListItem, AllAuthUserListResponse } from "../types/auth";
 import { AppHeader } from "../components/AppHeader";
+import { useLanguage } from "../contexts/language/language-provider";
 import {
   Search,
   CheckCircle,
@@ -31,6 +32,7 @@ const getUserTypeBadgeClass = (userType: string | undefined): string => {
 };
 
 export function AllUsersManagement() {
+  const { t } = useLanguage();
   const [users, setUsers] = useState<AllAuthUserListItem[]>([]);
   const [pagination, setPagination] = useState<PaginationInfo>({
     page: 1,
@@ -69,12 +71,12 @@ export function AllUsersManagement() {
       setPagination(data.pagination);
     } catch (err) {
       const errorMessage =
-        err instanceof Error ? err.message : "An error occurred while fetching users";
+        err instanceof Error ? err.message : t('userManagement.errorFetchingUsers');
       setError(errorMessage);
     } finally {
       setLoading(false);
     }
-  }, [pagination.page, pagination.limit, searchTerm, nameFilter, emailFilter, mobileFilter, userTypeFilter, emailVerifiedFilter]);
+  }, [pagination.page, pagination.limit, searchTerm, nameFilter, emailFilter, mobileFilter, userTypeFilter, emailVerifiedFilter, t]);
 
   useEffect(() => {
     if (!isAdmin && !isRecruiter) return;
@@ -117,18 +119,18 @@ export function AllUsersManagement() {
 
   return (
     <div className="page-container all-users-management">
-      <AppHeader title="All Users Management" />
+      <AppHeader title={t('userManagement.title')} />
       <div className="content-container">
         {error && <div className="error-message">{error}</div>}
         <div className="card">
           <div className="card-header">
-            <h2>All Signed Up Users</h2>
+            <h2>{t('userManagement.allSignedUpUsers')}</h2>
             <div className="filter-container">
               <div className="search-box">
                 <Search size={14} className="search-icon" />
                 <input
                   type="text"
-                  placeholder="Global search..."
+                  placeholder={t('userManagement.globalSearch')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="search-input"
@@ -137,7 +139,7 @@ export function AllUsersManagement() {
                   className="button secondary button-icon reset-filters-btn"
                   onClick={resetFilters}
                 >
-                  <span>Reset Filters</span>
+                  <span>{t('userManagement.resetFilters')}</span>
                 </button>
               </div>
             </div>
@@ -147,14 +149,14 @@ export function AllUsersManagement() {
           <div className="pagination-controls top">
             <div className="pagination-info">
               <span className="pagination-text">
-                Showing {Math.min((pagination.page - 1) * pagination.limit + 1, pagination.totalFiltered)} to {Math.min(pagination.page * pagination.limit, pagination.totalFiltered)} of {pagination.totalFiltered} entries
+                {t('userManagement.pagination.showing')} {Math.min((pagination.page - 1) * pagination.limit + 1, pagination.totalFiltered)} {t('userManagement.pagination.to')} {Math.min(pagination.page * pagination.limit, pagination.totalFiltered)} {t('userManagement.pagination.of')} {pagination.totalFiltered} {t('userManagement.pagination.entries')}
                 {pagination.totalFiltered !== pagination.total && (
-                  <span className="filtered-info"> (filtered from {pagination.total} total entries)</span>
+                  <span className="filtered-info"> ({t('userManagement.pagination.filteredFrom')} {pagination.total} {t('userManagement.pagination.totalEntries')})</span>
                 )}
               </span>
             </div>
             <div className="pagination-size-selector">
-              <label htmlFor="pageSize" className="page-size-label">Show:</label>
+              <label htmlFor="pageSize" className="page-size-label">{t('userManagement.pagination.show')}</label>
               <select
                 id="pageSize"
                 value={pagination.limit}
@@ -166,7 +168,7 @@ export function AllUsersManagement() {
                 <option value={50}>50</option>
                 <option value={100}>100</option>
               </select>
-              <span className="page-size-label">per page</span>
+              <span className="page-size-label">{t('userManagement.pagination.perPage')}</span>
             </div>
           </div>
 
@@ -176,11 +178,11 @@ export function AllUsersManagement() {
                 <tr>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">Name</div>
+                      <div className="column-title">{t('userManagement.columns.name')}</div>
                       <div className="column-search">
                         <input
                           type="text"
-                          placeholder="Search name..."
+                          placeholder={t('userManagement.placeholders.searchName')}
                           value={nameFilter}
                           onChange={(e) => setNameFilter(e.target.value)}
                           className="column-search-input"
@@ -190,11 +192,11 @@ export function AllUsersManagement() {
                   </th>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">Email</div>
+                      <div className="column-title">{t('userManagement.columns.email')}</div>
                       <div className="column-search">
                         <input
                           type="text"
-                          placeholder="Search email..."
+                          placeholder={t('userManagement.placeholders.searchEmail')}
                           value={emailFilter}
                           onChange={(e) => setEmailFilter(e.target.value)}
                           className="column-search-input"
@@ -204,11 +206,11 @@ export function AllUsersManagement() {
                   </th>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">Phone</div>
+                      <div className="column-title">{t('userManagement.columns.phone')}</div>
                       <div className="column-search">
                         <input
                           type="text"
-                          placeholder="Search phone..."
+                          placeholder={t('userManagement.placeholders.searchPhone')}
                           value={mobileFilter}
                           onChange={(e) => setMobileFilter(e.target.value)}
                           className="column-search-input"
@@ -218,45 +220,45 @@ export function AllUsersManagement() {
                   </th>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">User Type</div>
+                      <div className="column-title">{t('userManagement.columns.userType')}</div>
                       <div className="column-search">
                         <select
                           value={userTypeFilter}
                           onChange={(e) => setUserTypeFilter(e.target.value)}
                           className="column-filter-select"
                         >
-                          <option value="">All User Types</option>
-                          <option value="admin">Admin</option>
-                          <option value="recruiter">Recruiter</option>
-                          <option value="jobseeker">Jobseeker</option>
+                          <option value="">{t('userManagement.filters.allUserTypes')}</option>
+                          <option value="admin">{t('roles.admin')}</option>
+                          <option value="recruiter">{t('roles.recruiter')}</option>
+                          <option value="jobseeker">{t('roles.jobseeker')}</option>
                         </select>
                       </div>
                     </div>
                   </th>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">Email Verified</div>
+                      <div className="column-title">{t('userManagement.columns.emailVerified')}</div>
                       <div className="column-search">
                         <select
                           value={emailVerifiedFilter}
                           onChange={(e) => setEmailVerifiedFilter(e.target.value)}
                           className="column-filter-select"
                         >
-                          <option value="">All Email Status</option>
-                          <option value="true">Verified</option>
-                          <option value="false">Not Verified</option>
+                          <option value="">{t('userManagement.filters.allEmailStatus')}</option>
+                          <option value="true">{t('userManagement.status.verified')}</option>
+                          <option value="false">{t('userManagement.status.notVerified')}</option>
                         </select>
                       </div>
                     </div>
                   </th>
                   <th>
                     <div className="column-filter no-filter">
-                      <div className="column-title">Created At</div>
+                      <div className="column-title">{t('userManagement.columns.createdAt')}</div>
                     </div>
                   </th>
                   <th>
                     <div className="column-filter no-filter">
-                      <div className="column-title">Last Sign In</div>
+                      <div className="column-title">{t('userManagement.columns.lastSignIn')}</div>
                     </div>
                   </th>
                 </tr>
@@ -295,23 +297,23 @@ export function AllUsersManagement() {
                   <tr>
                     <td colSpan={7} className="empty-state-cell">
                       <div className="empty-state">
-                        <p>No users match your search criteria.</p>
+                        <p>{t('userManagement.noUsersMessage')}</p>
                       </div>
                     </td>
                   </tr>
                 ) : (
                   users.map((user) => (
                     <tr key={user.id} className={`user-row ${getUserTypeBadgeClass(user.userType)}`}>
-                      <td className="name-cell">{user.name || "N/A"}</td>
+                      <td className="name-cell">{user.name || t('userManagement.status.na')}</td>
                       <td className="email-cell">{user.email}</td>
-                      <td className="phone-cell">{user.phoneNumber || "N/A"}</td>
+                      <td className="phone-cell">{user.phoneNumber || t('userManagement.status.na')}</td>
                       <td className="user-type-cell">
                         {user.userType ? (
                           <span className={`user-type-badge ${getUserTypeBadgeClass(user.userType)}`}>
-                            {user.userType}
+                            {t(`roles.${user.userType}`)}
                           </span>
                         ) : (
-                          <span className="user-type-badge default">N/A</span>
+                          <span className="user-type-badge default">{t('userManagement.status.na')}</span>
                         )}
                       </td>
                       <td className="email-verified-cell">
@@ -319,12 +321,12 @@ export function AllUsersManagement() {
                           {user.emailVerified ? (
                             <>
                               <CheckCircle className="status-icon verified" size={14} />
-                              <span className="status-text verified">Verified</span>
+                              <span className="status-text verified">{t('userManagement.status.verified')}</span>
                             </>
                           ) : (
                             <>
                               <XCircle className="status-icon rejected" size={14} />
-                              <span className="status-text rejected">Not Verified</span>
+                              <span className="status-text rejected">{t('userManagement.status.notVerified')}</span>
                             </>
                           )}
                         </span>
@@ -343,7 +345,7 @@ export function AllUsersManagement() {
             <div className="pagination-controls bottom">
               <div className="pagination-info">
                 <span className="pagination-text">
-                  Page {pagination.page} of {pagination.totalPages}
+                  {t('userManagement.pagination.page')} {pagination.page} {t('userManagement.pagination.of')} {pagination.totalPages}
                 </span>
               </div>
               <div className="pagination-buttons">
@@ -351,11 +353,11 @@ export function AllUsersManagement() {
                   className="pagination-btn prev"
                   onClick={handlePreviousPage}
                   disabled={!pagination.hasPrevPage}
-                  title="Previous page"
-                  aria-label="Previous page"
+                  title={t('userManagement.pagination.previousPage')}
+                  aria-label={t('userManagement.pagination.previousPage')}
                 >
                   <ChevronLeft size={16} />
-                  <span>Previous</span>
+                  <span>{t('buttons.previous')}</span>
                 </button>
                 <div className="page-numbers">
                   {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
@@ -374,7 +376,7 @@ export function AllUsersManagement() {
                         key={pageNum}
                         className={`page-number-btn ${pageNum === pagination.page ? "active" : ""}`}
                         onClick={() => handlePageChange(pageNum)}
-                        aria-label={`Go to page ${pageNum}`}
+                        aria-label={`${t('userManagement.pagination.goToPage')} ${pageNum}`}
                       >
                         {pageNum}
                       </button>
@@ -385,10 +387,10 @@ export function AllUsersManagement() {
                   className="pagination-btn next"
                   onClick={handleNextPage}
                   disabled={!pagination.hasNextPage}
-                  title="Next page"
-                  aria-label="Next page"
+                  title={t('userManagement.pagination.nextPage')}
+                  aria-label={t('userManagement.pagination.nextPage')}
                 >
-                  <span>Next</span>
+                  <span>{t('buttons.next')}</span>
                   <ChevronRight size={16} />
                 </button>
               </div>

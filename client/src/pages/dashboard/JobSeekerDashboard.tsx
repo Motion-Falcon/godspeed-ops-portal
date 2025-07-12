@@ -16,6 +16,7 @@ import { MetricCard } from "../../components/dashboard/MetricCard";
 import { getJobseekerMetrics } from "../../services/api/jobseekerMetrics";
 import { MetricData } from "../../components/dashboard/types";
 import { useNavigate } from "react-router-dom";
+import { useLanguage } from '../../contexts/language/language-provider';
 
 interface UserData {
   id: string;
@@ -103,23 +104,24 @@ export function JobSeekerDashboard() {
   const [metricsError, setMetricsError] = useState<string | null>(null);
   // Track which cards have expanded graphs for grid layout
   const [expandedGraphs, setExpandedGraphs] = useState<Set<string>>(new Set());
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (user) {
       setUserData({
         id: user.id,
         email: user.email,
-        name: user.user_metadata?.name || "User",
+        name: user.user_metadata?.name || t('common.user'),
         userType: user.user_metadata?.user_type || "jobseeker",
         createdAt: new Date(user.created_at).toLocaleDateString(),
         lastSignIn: user.last_sign_in_at
           ? new Date(user.last_sign_in_at).toLocaleString()
-          : "First login",
+          : t('dashboard.firstLogin'),
       });
 
       fetchUserProfileId(user.id);
     }
-  }, [user]);
+  }, [user, t]);
 
   const fetchUserProfileId = async (userId: string) => {
     try {
@@ -214,7 +216,7 @@ export function JobSeekerDashboard() {
     } catch (error) {
       console.error("Error fetching jobseeker metrics:", error);
       setMetricsError(
-        error instanceof Error ? error.message : "Failed to fetch metrics"
+        error instanceof Error ? error.message : t('messages.failedToFetchMetrics')
       );
     } finally {
       setMetricsLoading(false);
@@ -255,20 +257,19 @@ export function JobSeekerDashboard() {
   return (
     <div className="dashboard-container">
       {/* Header */}
-      <AppHeader title="Dashboard" />
+      <AppHeader title={t('dashboard.welcome')} />
 
       {/* Main content */}
       <main className="dashboard-main">
         <div className="dashboard-heading">
-          <h1 className="dashboard-title">Welcome, {userData.name}!</h1>
+          <h1 className="dashboard-title">{t('welcome')}, {userData.name}!</h1>
           <div className="user-role-badge">
             <UserIcon className="role-icon jobseeker" />
-            <span>Job Seeker</span>
+            <span>{t('roles.jobseeker')}</span>
           </div>
         </div>
         <p className="dashboard-subtitle">
-          Discover opportunities at Godspeed pace with our intelligent job
-          matching system
+          {t('jobseeker_subtitle')}
         </p>
 
         <div className="dashboard-grid">

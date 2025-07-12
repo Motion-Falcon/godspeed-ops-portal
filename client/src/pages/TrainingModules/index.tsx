@@ -4,13 +4,14 @@ import { AppHeader } from "../../components/AppHeader";
 import { BookOpen, FileText, Video, Award, ChevronRight, ArrowLeft, Search, Play, Clock } from "lucide-react";
 import { VideoModal } from "./VideoModal";
 import { ComingSoonModal } from "./ComingSoonModal";
+import { useLanguage } from "../../contexts/language/language-provider";
 import "../../styles/pages/TrainingModules.css";
 import "../../styles/pages/JobSeekerManagement.css";
 
 interface Module {
   id: string;
-  title: string;
-  description: string;
+  titleKey: string;
+  descriptionKey: string;
   type: "document" | "video" | "interactive";
   duration: string;
   completed?: boolean;
@@ -21,6 +22,7 @@ interface Module {
 
 export function TrainingModules() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [isVideoModalOpen, setIsVideoModalOpen] = useState<boolean>(false);
@@ -34,8 +36,8 @@ export function TrainingModules() {
   const trainingModules: Module[] = [
     {
       id: "tm-007",
-      title: "WHMIS Training",
-      description: "Workplace Hazardous Materials Information System training for safe handling of hazardous materials",
+      titleKey: "training.modules.whmisTraining.title",
+      descriptionKey: "training.modules.whmisTraining.description",
       type: "video",
       duration: "5 min",
       completed: false,
@@ -44,8 +46,8 @@ export function TrainingModules() {
     },
     {
       id: "tm-008",
-      title: "Health & Safety Training",
-      description: "Comprehensive workplace health and safety protocols to ensure a safe working environment",
+      titleKey: "training.modules.healthSafetyTraining.title",
+      descriptionKey: "training.modules.healthSafetyTraining.description",
       type: "video",
       duration: "6 min",
       completed: false,
@@ -54,8 +56,8 @@ export function TrainingModules() {
     },
     {
       id: "tm-002",
-      title: "Effective Resume Screening",
-      description: "Best practices for efficiently screening resumes and identifying top candidates",
+      titleKey: "training.modules.effectiveResumeScreening.title",
+      descriptionKey: "training.modules.effectiveResumeScreening.description",
       type: "document",
       duration: "15 min",
       completed: false,
@@ -64,8 +66,8 @@ export function TrainingModules() {
     },
     {
       id: "tm-003",
-      title: "Interview Techniques",
-      description: "Advanced interviewing techniques for accurate candidate assessment",
+      titleKey: "training.modules.interviewTechniques.title",
+      descriptionKey: "training.modules.interviewTechniques.description",
       type: "interactive",
       duration: "45 min",
       completed: false,
@@ -74,8 +76,8 @@ export function TrainingModules() {
     },
     {
       id: "tm-004",
-      title: "Client Management Essentials",
-      description: "Essential strategies for managing client relationships effectively",
+      titleKey: "training.modules.clientManagementEssentials.title",
+      descriptionKey: "training.modules.clientManagementEssentials.description",
       type: "document",
       duration: "20 min",
       completed: false,
@@ -84,8 +86,8 @@ export function TrainingModules() {
     },
     {
       id: "tm-006",
-      title: "Job Seeker Resume Building",
-      description: "Tips and techniques for creating an effective resume that stands out",
+      titleKey: "training.modules.jobSeekerResumeBuilding.title",
+      descriptionKey: "training.modules.jobSeekerResumeBuilding.description",
       type: "interactive",
       duration: "30 min",
       completed: false,
@@ -100,9 +102,11 @@ export function TrainingModules() {
       selectedCategory === "all" || 
       selectedCategory === module.type;
     
+    const title = t(module.titleKey);
+    const description = t(module.descriptionKey);
     const matchesSearch = 
-      module.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      module.description.toLowerCase().includes(searchQuery.toLowerCase());
+      title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      description.toLowerCase().includes(searchQuery.toLowerCase());
     
     return matchesCategory && matchesSearch;
   });
@@ -115,7 +119,7 @@ export function TrainingModules() {
     } else if (module.youtubeId) {
       // Open YouTube video in modal
       setCurrentVideoId(module.youtubeId);
-      setCurrentVideoTitle(module.title);
+      setCurrentVideoTitle(t(module.titleKey));
       setIsVideoModalOpen(true);
     } else {
       // Handle other module types
@@ -139,14 +143,14 @@ export function TrainingModules() {
     <div className="dashboard-container">
       {/* Header */}
       <AppHeader 
-        title="Training Modules" 
+        title={t('training.title')}
         actions={
           <>
             <button
               className="button button-icon"
               onClick={() => navigate(-1)}
             >
-              <ArrowLeft size={16} className="icon" /> Back
+              <ArrowLeft size={16} className="icon" /> {t('buttons.back')}
             </button>
           </>
         }
@@ -155,14 +159,14 @@ export function TrainingModules() {
       {/* Main content */}
       <main className="training-modules-main">
         <div className="dashboard-heading">
-          <h1 className="dashboard-title">Training & Development</h1>
+          <h1 className="dashboard-title">{t('training.subtitle')}</h1>
           <div className="user-role-badge">
             <Award className="role-icon" />
-            <span>Learning Portal</span>
+            <span>{t('training.learningPortal')}</span>
           </div>
         </div>
         <p className="dashboard-subtitle">
-          Enhance your skills with our curated training resources
+          {t('training.description')}
         </p>
 
         {/* Filters and search */}
@@ -172,25 +176,25 @@ export function TrainingModules() {
               className={`filter-button ${selectedCategory === 'all' ? 'active' : ''}`}
               onClick={() => setSelectedCategory('all')}
             >
-              All
+              {t('training.categories.all')}
             </button>
             <button 
               className={`filter-button ${selectedCategory === 'video' ? 'active' : ''}`}
               onClick={() => setSelectedCategory('video')}
             >
-              Videos
+              {t('training.categories.videos')}
             </button>
             <button 
               className={`filter-button ${selectedCategory === 'document' ? 'active' : ''}`}
               onClick={() => setSelectedCategory('document')}
             >
-              Documents
+              {t('training.categories.documents')}
             </button>
             <button 
               className={`filter-button ${selectedCategory === 'interactive' ? 'active' : ''}`}
               onClick={() => setSelectedCategory('interactive')}
             >
-              Interactive
+              {t('training.categories.interactive')}
             </button>
           </div>
           
@@ -198,7 +202,7 @@ export function TrainingModules() {
           <Search size={18} className="search-icon" />
             <input 
               type="text" 
-              placeholder="Search modules..." 
+              placeholder={t('training.searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="search-input"
@@ -217,22 +221,22 @@ export function TrainingModules() {
               >
                 <div className="module-card-header">
                   {module.icon}
-                  <span className="module-type">{module.type}</span>
+                  <span className="module-type">{t(`training.types.${module.type}`)}</span>
                   {module.completed && (
                     <span className="completion-badge">
                       <Award size={14} />
-                      Completed
+                      {t('training.completed')}
                     </span>
                   )}
                   {module.comingSoon && (
                     <span className="coming-soon-badge">
                       <Clock size={14} />
-                      Coming Soon
+                      {t('training.comingSoon')}
                     </span>
                   )}
                 </div>
-                <h3 className="module-title">{module.title}</h3>
-                <p className="module-description">{module.description}</p>
+                <h3 className="module-title">{t(module.titleKey)}</h3>
+                <p className="module-description">{t(module.descriptionKey)}</p>
                 <div className="module-footer">
                   <span className="module-duration">{module.duration}</span>
                   {module.youtubeId ? (
@@ -251,7 +255,7 @@ export function TrainingModules() {
             ))
           ) : (
             <div className="no-modules-message">
-              <p>No training modules match your search criteria.</p>
+              <p>{t('training.noModulesMessage')}</p>
               <button 
                 className="button outline"
                 onClick={() => {
@@ -259,7 +263,7 @@ export function TrainingModules() {
                   setSearchQuery('');
                 }}
               >
-                Reset Filters
+                {t('training.resetFilters')}
               </button>
             </div>
           )}

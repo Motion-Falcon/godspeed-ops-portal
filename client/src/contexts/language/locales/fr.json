@@ -1,0 +1,518 @@
+{
+  "greeting": "Bonjour",
+  "welcome": "Bienvenue",
+  "logout": "Se déconnecter",
+  "administrator": "Administrateur",
+  "accounts": "Comptes",
+  "recruiter": "Recruteur",
+  "jobseeker": "Chercheur d'emploi",
+  "admin_subtitle": "Supervisez les opérations de la plateforme et gérez les analyses du recrutement à l'échelle du système",
+  "recruiter_subtitle": "Gérez l'acquisition de talents avec les outils de recrutement ultra-rapides de Godspeed",
+  "jobseeker_subtitle": "Découvrez des opportunités à la vitesse Godspeed grâce à notre système intelligent de correspondance d'emploi",
+
+  "navigation": {
+    "home": "Accueil",
+    "about": "À propos",
+    "services": "Services",
+    "contact": "Contact",
+    "menu": "Menu",
+    "dashboard": "Tableau de bord",
+    "profile": "Profil",
+    "training": "Formation",
+    "reports": "Rapports",
+    "logout": "Se déconnecter",
+    "myAccount": "Mon compte",
+    "allUsers": "Tous les utilisateurs",
+    "jobseekerManagement": "Gestion des demandeurs d'emploi",
+    "allJobseekers": "Tous les demandeurs d'emploi",
+    "createJobseeker": "Créer un demandeur d'emploi",
+    "jobseekerDrafts": "Brouillons des demandeurs d'emploi",
+    "clientManagement": "Gestion des clients",
+    "allClients": "Tous les clients",
+    "createClient": "Créer un client",
+    "draftClients": "Brouillons des clients",
+    "positionManagement": "Gestion des postes",
+    "allPositions": "Tous les postes",
+    "createPosition": "Créer un poste",
+    "draftPositions": "Brouillons des postes",
+    "positionMatching": "Correspondance des postes",
+    "financial": "Financier",
+    "timesheetManagement": "Gestion des feuilles de temps",
+    "invoiceManagement": "Gestion des factures",
+    "invoiceList": "Liste des factures",
+    "reportsAnalytics": "Rapports et analyses",
+    "myProfile": "Mon profil",
+    "myPositions": "Mes postes"
+  },
+
+  "buttons": {
+    "submit": "Soumettre",
+    "cancel": "Annuler",
+    "save": "Sauvegarder",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "close": "Fermer",
+    "sendMessage": "Envoyer le message",
+    "create": "Créer",
+    "update": "Mettre à jour",
+    "view": "Voir",
+    "back": "Retour",
+    "next": "Suivant",
+    "previous": "Précédent",
+    "login": "Se connecter",
+    "signup": "S'inscrire",
+    "confirm": "Confirmer",
+    "reset": "Réinitialiser",
+    "tryAgain": "Réessayer"
+  },
+
+  "forms": {
+    "name": "Nom",
+    "email": "Email",
+    "password": "Mot de passe",
+    "confirmPassword": "Confirmer le mot de passe",
+    "message": "Message",
+    "required": "Ce champ est obligatoire",
+    "namePlaceholder": "Entrez votre nom",
+    "emailPlaceholder": "Entrez votre email",
+    "passwordPlaceholder": "Entrez votre mot de passe",
+    "messagePlaceholder": "Entrez votre message",
+    "firstName": "Prénom",
+    "lastName": "Nom de famille",
+    "phone": "Téléphone",
+    "address": "Adresse",
+    "city": "Ville",
+    "state": "État",
+    "zipCode": "Code postal",
+    "country": "Pays"
+  },
+
+  "messages": {
+    "success": "Succès !",
+    "error": "Une erreur s'est produite",
+    "loading": "Chargement...",
+    "noData": "Aucune donnée disponible",
+    "confirmDelete": "Êtes-vous sûr de vouloir supprimer ceci ?",
+    "saved": "Sauvegardé avec succès",
+    "deleted": "Supprimé avec succès",
+    "updated": "Mis à jour avec succès",
+    "created": "Créé avec succès",
+    "failedToFetchMetrics": "Échec de récupération des métriques"
+  },
+
+  "validation": {
+    "emailInvalid": "Veuillez entrer un email valide",
+    "passwordLength": "Le mot de passe doit contenir au moins 8 caractères",
+    "required": "Ce champ est obligatoire",
+    "passwordMismatch": "Les mots de passe ne correspondent pas",
+    "invalidInput": "Entrée invalide"
+  },
+
+  "status": {
+    "active": "Actif",
+    "inactive": "Inactif",
+    "pending": "En attente",
+    "completed": "Terminé",
+    "draft": "Brouillon",
+    "published": "Publié",
+    "approved": "Approuvé",
+    "rejected": "Rejeté"
+  },
+
+  "dashboard": {
+    "welcome": "Bienvenue sur le tableau de bord",
+    "overview": "Aperçu",
+    "statistics": "Statistiques",
+    "recentActivity": "Activité récente",
+    "quickActions": "Actions rapides",
+    "aiActivityInsights": "Aperçus d'activité IA",
+    "aiActivityDescription": "Suivez les activités de traitement de documents et de correspondance de postes alimentées par l'IA",
+    "documentsScanned": "Documents scannés",
+    "positionSlots": "Créneaux de postes",
+    "totalClientsCreated": "Total des clients créés",
+    "viewingAggregatedData": "Affichage des données agrégées de tous les recruteurs",
+    "viewingPersonalMetrics": "Affichage de vos métriques de recrutement personnelles",
+    "viewingClientData": "Affichage des données clients de tous les recruteurs",
+    "viewingPersonalClientMetrics": "Affichage de vos métriques clients personnelles",
+    "viewingPositionData": "Affichage des données de postes de tous les recruteurs",
+    "viewingPersonalPositionMetrics": "Affichage de vos métriques de postes personnelles",
+    "viewingTotalJobseekerMetrics": "Affichage des métriques totales des profils de demandeurs d'emploi de tous les recruteurs",
+    "viewingTotalClientMetrics": "Affichage des métriques totales des clients de tous les recruteurs",
+    "viewingTotalPositionMetrics": "Affichage des métriques totales des postes de tous les recruteurs",
+    "viewingTotalTimesheetMetrics": "Affichage des métriques totales des feuilles de temps de tous les recruteurs",
+    "viewingTotalInvoiceMetrics": "Affichage des métriques totales des factures de tous les recruteurs",
+    "toggleDataView": "Basculer pour afficher les données de tous les recruteurs ou les vôtres",
+    "toggleClientDataView": "Basculer pour afficher les données clients de tous les recruteurs ou les vôtres",
+    "togglePositionDataView": "Basculer pour afficher les données de postes de tous les recruteurs ou les vôtres",
+    "toggleAllRecruitersData": "Basculer pour afficher les données de tous les recruteurs",
+    "toggleAllRecruitersClientData": "Basculer pour afficher les données clients de tous les recruteurs",
+    "toggleAllRecruitersPositionData": "Basculer pour afficher les données de postes de tous les recruteurs",
+    "toggleAllRecruitersTimesheetData": "Basculer pour afficher les données de feuilles de temps de tous les recruteurs",
+    "toggleAllRecruitersInvoiceData": "Basculer pour afficher les données de factures de tous les recruteurs",
+    "firstLogin": "Première connexion"
+  },
+
+  "profile": {
+    "title": "Profil",
+    "edit": "Modifier le profil",
+    "personalInfo": "Informations personnelles",
+    "contactInfo": "Informations de contact",
+    "settings": "Paramètres",
+    "changePassword": "Changer le mot de passe",
+    "preferences": "Préférences"
+  },
+
+  "auth": {
+    "login": "Se connecter",
+    "signup": "S'inscrire",
+    "forgotPassword": "Mot de passe oublié ?",
+    "resetPassword": "Réinitialiser le mot de passe",
+    "verificationPending": "Vérification en attente",
+    "twoFactorAuth": "Authentification à deux facteurs",
+    "loginTitle": "Connectez-vous à votre compte",
+    "signupTitle": "Créer un compte",
+    "resetPasswordTitle": "Réinitialisez votre mot de passe",
+    "verificationMessage": "Veuillez vérifier votre email pour les instructions de vérification",
+    "loginSuccess": "Connexion réussie",
+    "signupSuccess": "Compte créé avec succès",
+    "logoutSuccess": "Déconnexion réussie",
+    "welcomeBack": "Bon retour",
+    "loginDescription": "Connectez-vous pour accéder à votre tableau de bord et continuer où vous vous êtes arrêté.",
+    "rememberMe": "Se souvenir de moi",
+    "noAccount": "Vous n'avez pas de compte ?",
+    "twoFactorPhoneRequired": "L'authentification à deux facteurs est requise mais aucun numéro de téléphone n'est enregistré. Veuillez contacter le support.",
+    "invalidCredentials": "Email ou mot de passe invalide"
+  },
+
+  "roles": {
+    "admin": "Administrateur",
+    "recruiter": "Recruteur",
+    "jobseeker": "Chercheur d'emploi",
+    "client": "Client"
+  },
+
+  "common": {
+    "search": "Rechercher",
+    "filter": "Filtrer",
+    "sort": "Trier",
+    "export": "Exporter",
+    "import": "Importer",
+    "print": "Imprimer",
+    "download": "Télécharger",
+    "upload": "Téléverser",
+    "refresh": "Actualiser",
+    "refreshPage": "Actualiser la page",
+    "clear": "Effacer",
+    "apply": "Appliquer",
+    "reset": "Réinitialiser",
+    "yes": "Oui",
+    "no": "Non",
+    "ok": "OK",
+    "cancel": "Annuler",
+    "close": "Fermer",
+    "open": "Ouvrir",
+    "all": "Tous",
+    "none": "Aucun",
+    "other": "Autre",
+    "more": "Plus",
+    "less": "Moins",
+    "show": "Afficher",
+    "hide": "Masquer",
+    "expand": "Développer",
+    "collapse": "Réduire",
+    "select": "Sélectionner",
+    "deselect": "Désélectionner",
+    "language": "Langue",
+    "godspeedLogo": "Logo Godspeed",
+    "user": "Utilisateur"
+  },
+
+  "training": {
+    "title": "Modules de formation",
+    "subtitle": "Formation et développement",
+    "description": "Améliorez vos compétences avec nos ressources de formation sélectionnées",
+    "learningPortal": "Portail d'apprentissage",
+    "searchPlaceholder": "Rechercher des modules...",
+    "resetFilters": "Réinitialiser les filtres",
+    "noModulesMessage": "Aucun module de formation ne correspond à vos critères de recherche.",
+    "completed": "Terminé",
+    "comingSoon": "Bientôt disponible",
+    "duration": "Durée",
+    "whatToExpect": "À quoi s'attendre",
+    "notifyMessage": "Nous vous préviendrons lorsque ce module sera disponible !",
+    "closeVideo": "Fermer la vidéo",
+    "closeModal": "Fermer la modale",
+    "categories": {
+      "all": "Tous",
+      "videos": "Vidéos",
+      "documents": "Documents",
+      "interactive": "Interactif"
+    },
+    "types": {
+      "document": "document",
+      "video": "vidéo",
+      "interactive": "interactif"
+    },
+    "modules": {
+      "whmisTraining": {
+        "title": "Formation SIMDUT",
+        "description": "Formation du Système d'information sur les matières dangereuses utilisées au travail pour la manipulation sécuritaire des matières dangereuses"
+      },
+      "healthSafetyTraining": {
+        "title": "Formation santé et sécurité",
+        "description": "Protocoles complets de santé et sécurité au travail pour assurer un environnement de travail sûr"
+      },
+      "effectiveResumeScreening": {
+        "title": "Sélection efficace de CV",
+        "description": "Meilleures pratiques pour sélectionner efficacement les CV et identifier les meilleurs candidats"
+      },
+      "interviewTechniques": {
+        "title": "Techniques d'entrevue",
+        "description": "Techniques d'entrevue avancées pour une évaluation précise des candidats"
+      },
+      "clientManagementEssentials": {
+        "title": "Bases de la gestion client",
+        "description": "Stratégies essentielles pour gérer efficacement les relations clients"
+      },
+      "jobSeekerResumeBuilding": {
+        "title": "Création de CV pour chercheurs d'emploi",
+        "description": "Conseils et techniques pour créer un CV efficace qui se démarque"
+      }
+    },
+    "features": {
+      "document": {
+        "interactivePdf": "PDF interactif avec annotations",
+        "progressTracking": "Suivi des progrès",
+        "downloadableResources": "Ressources téléchargeables",
+        "quickReference": "Guide de référence rapide"
+      },
+      "interactive": {
+        "handsOnExercises": "Exercices pratiques",
+        "realTimeFeedback": "Rétroaction en temps réel",
+        "practiceScenarios": "Scénarios de pratique",
+        "certificateCompletion": "Certificat à la fin"
+      }
+    }
+  },
+
+  "userManagement": {
+    "title": "Gestion de tous les utilisateurs",
+    "allSignedUpUsers": "Tous les utilisateurs inscrits",
+    "globalSearch": "Recherche globale...",
+    "resetFilters": "Réinitialiser les filtres",
+    "noUsersMessage": "Aucun utilisateur ne correspond à vos critères de recherche.",
+    "errorFetchingUsers": "Une erreur s'est produite lors de la récupération des utilisateurs",
+    "columns": {
+      "name": "Nom",
+      "email": "Email",
+      "phone": "Téléphone",
+      "userType": "Type d'utilisateur",
+      "emailVerified": "Email vérifié",
+      "createdAt": "Créé le",
+      "lastSignIn": "Dernière connexion"
+    },
+    "placeholders": {
+      "searchName": "Rechercher un nom...",
+      "searchEmail": "Rechercher un email...",
+      "searchPhone": "Rechercher un téléphone..."
+    },
+    "filters": {
+      "allUserTypes": "Tous les types d'utilisateurs",
+      "allEmailStatus": "Tous les statuts d'email"
+    },
+    "status": {
+      "verified": "Vérifié",
+      "notVerified": "Non vérifié",
+      "na": "N/A"
+    },
+    "pagination": {
+      "showing": "Affichage",
+      "to": "à",
+      "of": "de",
+      "entries": "entrées",
+      "filteredFrom": "filtré à partir de",
+      "totalEntries": "entrées totales",
+      "show": "Afficher :",
+      "perPage": "par page",
+      "page": "Page",
+      "previousPage": "Page précédente",
+      "nextPage": "Page suivante",
+      "goToPage": "Aller à la page"
+    }
+  },
+
+  "profileVerification": {
+    "title": "Vérification du profil",
+    "pending": {
+      "heading": "Vérification du profil en attente",
+      "thankYou": "Merci d'avoir soumis votre profil ! Vos informations sont actuellement en cours d'examen.",
+      "processTime": "Ce processus prend généralement 1-2 jours ouvrables. Nous vous avertirons par email une fois votre profil vérifié.",
+      "meantime": "En attendant, vous pouvez vérifier le statut plus tard ou retourner à la page d'accueil."
+    },
+    "rejected": {
+      "heading": "Vérification du profil rejetée",
+      "sorry": "Nous sommes désolés, mais la vérification de votre profil a été rejetée. Veuillez examiner la raison du rejet ci-dessous et mettre à jour votre profil en conséquence.",
+      "loading": "Chargement des détails du profil...",
+      "rejectionReason": "Raison du rejet",
+      "noReason": "Aucune raison fournie",
+      "showLess": "Afficher moins",
+      "showFullReason": "Afficher la raison complète",
+      "afterUpdate": "Après la mise à jour de votre profil, notre équipe examinera à nouveau vos informations. Vous recevrez un email une fois votre profil vérifié.",
+      "errorFetchingProfile": "Échec de la récupération des détails du profil"
+    },
+    "buttons": {
+      "refreshStatus": "Actualiser le statut",
+      "updateProfile": "Mettre à jour le profil"
+    }
+  },
+
+  "jobSeekerPositions": {
+    "title": "Mes postes",
+    "backToDashboard": "Retour au tableau de bord",
+    "errorLoadingProfile": "Échec du chargement des informations de profil",
+    "errorFetchingAssignments": "Échec de la récupération des affectations",
+    "tryAgain": "Réessayer",
+    "filters": {
+      "search": "Rechercher",
+      "searchPlaceholder": "Rechercher des postes, clients, emplacements...",
+      "employmentType": "Type d'emploi",
+      "allTypes": "Tous les types",
+      "category": "Catégorie",
+      "allCategories": "Toutes les catégories",
+      "clearAll": "Tout effacer"
+    },
+    "tabs": {
+      "allPositions": "Tous les postes",
+      "current": "Actuel",
+      "upcoming": "À venir",
+      "completed": "Terminé"
+    },
+    "status": {
+      "active": "Actif",
+      "completed": "Terminé",
+      "upcoming": "À venir",
+      "unknown": "Inconnu"
+    },
+    "emptyState": {
+      "noPositionsFound": "Aucun poste trouvé",
+      "noAssignments": "Vous n'avez encore aucune affectation de poste.",
+      "noTabPositions": "Aucun poste {{status}} trouvé."
+    },
+    "positionDetails": {
+      "positionPeriod": "Période du poste",
+      "duration": "Durée"
+    },
+    "duration": {
+      "days": "{{count}} jour",
+      "days_plural": "{{count}} jours",
+      "months": "{{count}} mois",
+      "months_plural": "{{count}} mois",
+      "years": "{{count}} année",
+      "years_plural": "{{count}} années"
+    },
+    "pagination": {
+      "showing": "Affichage de {{start}} à {{end}} sur {{total}} entrées",
+      "page": "Page {{current}} sur {{total}}",
+      "previous": "Précédent",
+      "next": "Suivant",
+      "previousPage": "Page précédente",
+      "nextPage": "Page suivante",
+      "goToPage": "Aller à la page {{page}}"
+    }
+  },
+  "signup": {
+    "validation": {
+      "nameLength": "Le nom doit comporter au moins 2 caractères",
+      "email": "Veuillez entrer une adresse email valide",
+      "phoneRequired": "Le numéro de téléphone est requis",
+      "passwordLength": "Le mot de passe doit contenir au moins 8 caractères",
+      "passwordUppercase": "Le mot de passe doit contenir au moins une lettre majuscule",
+      "passwordLowercase": "Le mot de passe doit contenir au moins une lettre minuscule",
+      "passwordNumber": "Le mot de passe doit contenir au moins un chiffre",
+      "canadian": "canadien",
+      "indian": "indien",
+      "phoneValid": "Veuillez entrer un numéro de téléphone {{country}} valide",
+      "phoneAvailable": "Veuillez entrer un numéro de téléphone valide et disponible",
+      "otpValid": "Veuillez entrer un code de vérification valide",
+      "emailRegistered": "Cet email est déjà enregistré. Veuillez utiliser un autre email.",
+      "phoneRegistered": "Ce numéro de téléphone est déjà enregistré. Veuillez utiliser un autre numéro.",
+      "verifyPhoneFirst": "Veuillez d'abord vérifier votre numéro de téléphone"
+    },
+    "error": {
+      "failedToSendCode": "Échec de l'envoi du code de vérification",
+      "failedToVerifyCode": "Échec de la vérification du code",
+      "unexpected": "Une erreur inattendue s'est produite"
+    },
+    "checkingEmail": "Vérification de l'email...",
+    "checkingPhone": "Vérification du numéro de téléphone...",
+    "verifyPhone": "Vérifier le numéro de téléphone",
+    "phoneVerified": "Numéro de téléphone vérifié ✓",
+    "enterVerificationCode": "Entrez le code de vérification envoyé sur votre téléphone",
+    "verificationCodePlaceholder": "Entrez le code de vérification",
+    "verifyCode": "Vérifier le code",
+    "resendCode": "Renvoyer le code",
+    "resendCodeWithTimer": "Renvoyer le code ({{seconds}}s)",
+    "hidePassword": "Masquer le mot de passe",
+    "showPassword": "Afficher le mot de passe",
+    "alreadyHaveAccount": "Vous avez déjà un compte ?",
+    "brandDescription": "Élevez votre gestion des talents avec les workflows intelligents de Godspeed et des systèmes ultra-rapides conçus pour connecter les bonnes personnes aux bonnes opportunités."
+  },
+  "twoFactor": {
+    "error": {
+      "failedToSendCode": "Échec de l'envoi du code de vérification",
+      "failedToVerifyCode": "Échec de la vérification du code"
+    },
+    "validation": {
+      "otpValid": "Veuillez entrer un code de vérification valide"
+    },
+    "instructions": "Pour des raisons de sécurité, nous avons envoyé un code de vérification au {{phone}}. Veuillez entrer le code pour terminer votre connexion.",
+    "verificationCodePlaceholder": "Entrez le code de vérification",
+    "verifyCode": "Vérifier le code",
+    "verificationCodeSent": "Code de vérification envoyé avec succès",
+    "notReceived": "Vous n'avez pas reçu le code ? Vérifiez vos messages ou demandez-en un nouveau.",
+    "resendCode": "Renvoyer le code",
+    "resendCodeWithTimer": "Renvoyer le code ({{seconds}}s)"
+  },
+  "forgot": {
+    "validation": {
+      "email": "Veuillez entrer une adresse email valide"
+    },
+    "title": "Réinitialisation du mot de passe",
+    "backToLogin": "Retour à la connexion",
+    "resetTitle": "Réinitialisez votre mot de passe",
+    "instructions": "Entrez votre adresse email et nous vous enverrons un lien pour réinitialiser votre mot de passe.",
+    "sendResetLink": "Envoyer le lien de réinitialisation"
+  },
+  "reset": {
+    "validation": {
+      "passwordLength": "Le mot de passe doit contenir au moins 8 caractères",
+      "passwordUppercase": "Le mot de passe doit contenir au moins une lettre majuscule",
+      "passwordLowercase": "Le mot de passe doit contenir au moins une lettre minuscule",
+      "passwordNumber": "Le mot de passe doit contenir au moins un chiffre"
+    },
+    "title": "Réinitialiser le mot de passe",
+    "backToDashboard": "Retour au tableau de bord",
+    "verifyingTitle": "Vérification du lien de réinitialisation",
+    "verifyingMessage": "Veuillez patienter pendant que nous vérifions votre lien de réinitialisation de mot de passe...",
+    "successTitle": "Mot de passe réinitialisé avec succès",
+    "successMessage": "Votre mot de passe a été réinitialisé avec succès. Vous serez redirigé vers la page de connexion sous peu.",
+    "goToLogin": "Aller à la connexion",
+    "invalidLinkTitle": "Lien de réinitialisation invalide",
+    "requestNewLink": "Demander un nouveau lien de réinitialisation",
+    "resetTitle": "Réinitialisez votre mot de passe",
+    "instructions": "Entrez votre nouveau mot de passe ci-dessous.",
+    "newPassword": "Nouveau mot de passe",
+    "resetButton": "Réinitialiser le mot de passe"
+  },
+  "verificationPending": {
+    "title": "Vérification de l'email",
+    "checkEmailTitle": "Vérifiez votre email",
+    "instructions": "Nous avons envoyé un email de vérification à <span class='bold-text'>{{email}}</span>. Cliquez sur le lien dans l'email pour vérifier votre compte.",
+    "resendError": "Une erreur s'est produite lors de la réexpédition de l'email de vérification.",
+    "emailSent": "Un nouvel email de vérification a été envoyé.",
+    "notReceived": "Vous n'avez pas reçu d'email ? Vérifiez votre dossier spam ou demandez un nouveau lien de vérification.",
+    "resendButton": "Renvoyer l'email de vérification",
+    "emailSentButton": "Email envoyé",
+    "backToLogin": "Retour à la connexion"
+  }
+} 

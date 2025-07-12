@@ -1,13 +1,15 @@
 import { useState } from "react";
 import { useLocation, Navigate, Link } from "react-router-dom";
 import { MailCheck, CheckCircle } from "lucide-react";
-import { logoutUser, resendVerificationEmail } from "../lib/auth";
-import "../styles/variables.css";
-import "../styles/pages/VerificationPending.css";
-import "../styles/components/button.css";
-import { AppHeader } from "../components/AppHeader";
+import { logoutUser, resendVerificationEmail } from "../../lib/auth";
+import "../../styles/variables.css";
+import "../../styles/pages/VerificationPending.css";
+import "../../styles/components/button.css";
+import { AppHeader } from "../../components/AppHeader";
+import { useLanguage } from "../../contexts/language/language-provider";
 
 export function VerificationPending() {
+  const { t } = useLanguage();
   const location = useLocation();
   const email = location.state?.email;
   const [isResending, setIsResending] = useState(false);
@@ -30,7 +32,7 @@ export function VerificationPending() {
       if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError("An error occurred while resending the verification email.");
+        setError(t('verificationPending.resendError'));
       }
     } finally {
       setIsResending(false);
@@ -50,19 +52,17 @@ export function VerificationPending() {
 
   return (
     <div className="page-container">
-      <AppHeader title="Email Verification" />
+      <AppHeader title={t('verificationPending.title')} />
       <div className="centered-container">
         <div className="centered-card">
           <div className="icon-circle">
             <MailCheck />
           </div>
 
-          <h1 className="auth-card-title">Check your email</h1>
+          <h1 className="auth-card-title">{t('verificationPending.checkEmailTitle')}</h1>
 
           <p>
-            We've sent a verification email to{" "}
-            <span className="bold-text">{email}</span>. Click the link in the
-            email to verify your account.
+            {t('verificationPending.instructions', { email })}
           </p>
 
           <div className="card-actions">
@@ -70,13 +70,11 @@ export function VerificationPending() {
 
             {resendSuccess ? (
               <div className="success-message">
-                <CheckCircle size={16} style={{ marginRight: "8px" }} />A new
-                verification email has been sent.
+                <CheckCircle size={16} style={{ marginRight: "8px" }} />{t('verificationPending.emailSent')}
               </div>
             ) : (
               <p className="text-muted">
-                Didn't receive an email? Check your spam folder or request a new
-                verification link.
+                {t('verificationPending.notReceived')}
               </p>
             )}
 
@@ -88,9 +86,9 @@ export function VerificationPending() {
               {isResending ? (
                 <span className="loading-spinner"></span>
               ) : resendSuccess ? (
-                "Email Sent"
+                t('verificationPending.emailSentButton')
               ) : (
-                "Resend verification email"
+                t('verificationPending.resendButton')
               )}
             </button>
 
@@ -100,7 +98,7 @@ export function VerificationPending() {
                 className="auth-link"
                 onClick={handleBackToLogin}
               >
-                Back to login
+                {t('verificationPending.backToLogin')}
               </Link>
             </div>
           </div>

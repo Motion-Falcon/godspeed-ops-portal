@@ -47,7 +47,7 @@
 
 /* Expanded state */
 .hamburger-menu.open {
-  width: 250px; /* Expanded width */
+  width: 292px; /* Expanded width */
   padding: var(--spacing-2) var(--spacing-2);
 }
 
@@ -448,7 +448,7 @@
 
 .hamburger-menu.open .menu-footer {
   display: block;
-  width: 254px;
+  width: 290px;
   position: relative;
   left: -9px;
   bottom: -6px;
@@ -737,7 +737,7 @@
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .hamburger-menu.open {
-    width: 240px;
+    width: 292px;
   }
 }
 

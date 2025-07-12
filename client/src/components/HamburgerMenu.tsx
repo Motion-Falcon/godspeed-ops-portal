@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import { useLanguage } from "../contexts/language/language-provider";
 import {
   Home,
   Users,
@@ -26,6 +27,7 @@ import {
   BarChart3,
 } from "lucide-react";
 import { ThemeToggle } from "./theme-toggle";
+import { LanguageToggle } from "./LanguageToggle";
 import { logoutUser } from "../lib/auth";
 import "../styles/components/hamburgerMenu.css";
 import { supabase } from "../lib/supabaseClient";
@@ -50,18 +52,22 @@ interface HamburgerMenuProps {
 }
 
 // Custom Tooltip Component
-function CustomTooltip({ text, isVisible, position }: { 
-  text: string; 
-  isVisible: boolean; 
-  position: { x: number; y: number } 
+function CustomTooltip({
+  text,
+  isVisible,
+  position,
+}: {
+  text: string;
+  isVisible: boolean;
+  position: { x: number; y: number };
 }) {
   if (!isVisible) return null;
 
   return (
-    <div 
+    <div
       className="custom-tooltip"
       style={{
-        position: 'fixed',
+        position: "fixed",
         left: position.x,
         top: position.y,
         zIndex: 9999,
@@ -185,7 +191,7 @@ function MenuItemComponent({
       {hasSubmenu && (
         <li className="menu-category" data-category={item.label}>
           {/* Category heading */}
-          <div 
+          <div
             className="menu-category-header"
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
@@ -230,8 +236,6 @@ function MenuItemComponent({
 }
 
 export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
-  const location = useLocation();
-  const navigate = useNavigate();
   const {
     user,
     isAuthenticated,
@@ -240,25 +244,18 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
     isJobSeeker,
     profileVerificationStatus,
   } = useAuth();
-  const initialRenderRef = useRef(true);
+  const { t } = useLanguage();
+  const navigate = useNavigate();
   const menuRef = useRef<HTMLElement>(null);
-  const prevRouteRef = useRef(location.pathname);
-  const [jobseekerProfileId, setJobseekerProfileId] = useState<string | null>(
-    null
-  );
-
-  // Tooltip state
   const [tooltip, setTooltip] = useState<{
     text: string;
     isVisible: boolean;
     position: { x: number; y: number };
-  }>({
-    text: '',
-    isVisible: false,
-    position: { x: 0, y: 0 }
-  });
+  }>({ text: "", isVisible: false, position: { x: 0, y: 0 } });
+  const [jobseekerProfileId, setJobseekerProfileId] = useState<string | null>(
+    null
+  );
 
-  // Tooltip handlers
   const handleTooltipShow = (text: string, element: HTMLElement) => {
     if (!isOpen) {
       const rect = element.getBoundingClientRect();
@@ -266,96 +263,80 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
         text,
         isVisible: true,
         position: {
-          x: rect.right + 10, // Position to the right of the element
-          y: rect.top + (rect.height / 2) - 12, // Center vertically
-        }
+          x: rect.right + 10,
+          y: rect.top + rect.height / 2 - 12,
+        },
       });
     }
   };
 
   const handleTooltipHide = () => {
-    setTooltip(prev => ({ ...prev, isVisible: false }));
+    setTooltip((prev) => ({ ...prev, isVisible: false }));
   };
 
-  // Function to scroll to active menu item
   const scrollToActiveItem = () => {
-    if (!menuRef.current) return;
-
-    // Find the active menu item
-    const activeItem = menuRef.current.querySelector(
-      ".menu-item .active, .menu-action-button.active"
-    );
-
-    if (activeItem) {
-      // Scroll the active item into view with smooth behavior
-      activeItem.scrollIntoView({
-        behavior: "smooth",
-        block: "center",
-        inline: "nearest",
-      });
+    if (menuRef.current) {
+      const activeItem = menuRef.current.querySelector(".active");
+      if (activeItem) {
+        const menuContainer = menuRef.current.querySelector(".menu-items");
+        if (menuContainer) {
+          const activeRect = activeItem.getBoundingClientRect();
+          const containerRect = menuContainer.getBoundingClientRect();
+          const scrollTop =
+            activeRect.top - containerRect.top + menuContainer.scrollTop - 50;
+          menuContainer.scrollTo({ top: scrollTop, behavior: "smooth" });
+        }
+      }
     }
   };
 
-  // Handle expanding the menu
   const handleExpandMenu = (e: React.MouseEvent) => {
-    // Completely stop event propagation
     e.stopPropagation();
     e.preventDefault();
-
-    // Prevent any subsequent handlers for this event
-    if (e.nativeEvent) {
-      e.nativeEvent.stopImmediatePropagation();
-    }
-
-    // Call the click handler
     onOpen();
   };
 
-  // Handle logout
   const handleLogout = async () => {
     try {
       await logoutUser();
-      onClose(); // Close the menu after logout
-      window.location.href = "/login"; // Redirect to login page
+      navigate("/login");
     } catch (error) {
       console.error("Logout failed:", error);
     }
   };
 
-  // Fetch jobseeker profile ID when user is authenticated
   useEffect(() => {
     const fetchJobseekerProfileId = async () => {
-      if (user && isJobSeeker) {
+      if (user?.id && isJobSeeker) {
         try {
           const { data, error } = await supabase
-            .from("jobseeker_profiles")
+            .from("jobseekers")
             .select("id")
             .eq("user_id", user.id)
             .single();
 
           if (error) {
-            console.error("Error fetching profile ID:", error);
-          } else if (data) {
-            setJobseekerProfileId(data.id);
+            console.error("Error fetching jobseeker profile:", error);
+            return;
           }
-        } catch (err) {
-          console.error("Error fetching profile ID:", err);
+
+          setJobseekerProfileId(data.id);
+        } catch (error) {
+          console.error("Error fetching jobseeker profile:", error);
         }
       }
     };
 
     fetchJobseekerProfileId();
-  }, [user, isJobSeeker]);
+  }, [user?.id, isJobSeeker]);
 
-  // Handle profile navigation
   const handleProfileNavigation = () => {
     if (jobseekerProfileId) {
       navigate(`/jobseekers/${jobseekerProfileId}`);
-      onClose(); // Close the menu after navigation
     }
+    onClose();
   };
 
-  // Handle profile navigation for all users
   const handleUserProfileNavigation = () => {
     navigate("/profile");
     onClose(); // Close the menu after navigation
@@ -365,7 +346,7 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
   const allMenuItems: MenuItem[] = [
     // Authenticated menu items
     {
-      label: "Dashboard",
+      label: t("navigation.dashboard"),
       path: "/dashboard",
       icon: <Home size={16} />,
       requiresAuth: true,
@@ -373,7 +354,7 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
       exact: true,
     },
     {
-      label: "Training Modules",
+      label: t("navigation.training"),
       path: "/training-modules",
       icon: <BookOpen size={16} />,
       requiresAuth: true,
@@ -383,7 +364,7 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
 
     // Recruiter-specific items
     {
-      label: "All Users",
+      label: t("navigation.allUsers"),
       path: "/all-users-management",
       icon: <Users size={16} />,
       requiresAuth: true,
@@ -391,25 +372,25 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
       exact: true,
     },
     {
-      label: "Jobseeker Management",
+      label: t("navigation.jobseekerManagement"),
       icon: <Users size={16} />,
       requiresAuth: true,
       roles: ["admin", "recruiter"],
       submenu: [
         {
-          label: "All Jobseekers",
+          label: t("navigation.allJobseekers"),
           path: "/jobseeker-management",
           icon: <ListChecks size={16} />,
           exact: true,
         },
         {
-          label: "Create Jobseeker",
+          label: t("navigation.createJobseeker"),
           path: "/profile/create",
           icon: <UserPlus size={16} />,
           exact: true,
         },
         {
-          label: "Jobseeker Drafts",
+          label: t("navigation.jobseekerDrafts"),
           path: "/jobseekers/drafts",
           icon: <FileEdit size={16} />,
           exact: true,
@@ -417,25 +398,25 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
       ],
     },
     {
-      label: "Client Management",
+      label: t("navigation.clientManagement"),
       icon: <Building2 size={16} />,
       requiresAuth: true,
       roles: ["admin", "recruiter"],
       submenu: [
         {
-          label: "All Clients",
+          label: t("navigation.allClients"),
           path: "/client-management",
           icon: <Database size={16} />,
           exact: true,
         },
         {
-          label: "Create Client",
+          label: t("navigation.createClient"),
           path: "/client-management/create",
           icon: <PlusCircle size={16} />,
           exact: true,
         },
         {
-          label: "Draft Clients",
+          label: t("navigation.draftClients"),
           path: "/client-management/drafts",
           icon: <FileText size={16} />,
           exact: true,
@@ -443,31 +424,31 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
       ],
     },
     {
-      label: "Position Management",
+      label: t("navigation.positionManagement"),
       icon: <Briefcase size={16} />,
       requiresAuth: true,
       roles: ["admin", "recruiter"],
       submenu: [
         {
-          label: "All Positions",
+          label: t("navigation.allPositions"),
           path: "/position-management",
           icon: <ClipboardList size={16} />,
           exact: true,
         },
         {
-          label: "Create Position",
+          label: t("navigation.createPosition"),
           path: "/position-management/create",
           icon: <FilePlus size={16} />,
           exact: true,
         },
         {
-          label: "Draft Positions",
+          label: t("navigation.draftPositions"),
           path: "/position-management/drafts",
           icon: <FileEdit size={16} />,
           exact: true,
         },
         {
-          label: "Position Matching",
+          label: t("navigation.positionMatching"),
           path: "/position-matching",
           icon: <Users size={16} />,
           exact: true,
@@ -475,25 +456,25 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
       ],
     },
     {
-      label: "Financial",
+      label: t("navigation.financial"),
       icon: <Clock size={16} />,
       requiresAuth: true,
       roles: ["admin", "recruiter"],
       submenu: [
         {
-          label: "Timesheet Management",
+          label: t("navigation.timesheetManagement"),
           path: "/timesheet-management",
           icon: <Clock size={16} />,
           exact: true,
         },
         {
-          label: "Invoice Management",
+          label: t("navigation.invoiceManagement"),
           path: "/invoice-management",
           icon: <Receipt size={16} />,
           exact: true,
         },
         {
-          label: "Invoice List",
+          label: t("navigation.invoiceList"),
           path: "/invoice-management/list",
           icon: <ListChecks size={16} />, // Use a list-style icon
           exact: true,
@@ -501,23 +482,23 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
       ],
     },
     {
-      label: "Reports & Analytics",
+      label: t("navigation.reportsAnalytics"),
       icon: <BarChart3 size={16} />,
       requiresAuth: true,
       roles: ["admin", "recruiter", "jobseeker"],
       submenu: [
         {
-          label: "Reports",
+          label: t("navigation.reports"),
           path: "/reports",
           icon: <BarChart3 size={16} />,
           exact: true,
-        }
+        },
       ],
     },
 
     // Jobseeker-specific items
     {
-      label: "My Profile",
+      label: t("navigation.myProfile"),
       icon: <User size={16} />,
       requiresAuth: true,
       roles: ["jobseeker"],
@@ -526,7 +507,7 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
       exact: true,
     },
     {
-      label: "My Positions",
+      label: t("navigation.myPositions"),
       path: "/my-positions",
       icon: <Briefcase size={16} />,
       requiresAuth: true,
@@ -556,117 +537,61 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
           return profileVerificationStatus === "verified";
         }
 
-        return false; // No matching role
+        return false;
       }
 
-      return true; // No role restrictions
+      return true;
     });
   };
 
-  const [menuItems, setMenuItems] = useState<MenuItem[]>(
-    getFilteredMenuItems()
-  );
+  const menuItems = getFilteredMenuItems();
 
-  // Update menu items when auth state changes
+  // Handle clicks outside the menu to close it
   useEffect(() => {
-    setMenuItems(getFilteredMenuItems());
-  }, [
-    isAuthenticated,
-    isAdmin,
-    isRecruiter,
-    isJobSeeker,
-    profileVerificationStatus,
-    jobseekerProfileId,
-  ]);
-
-  // Hide tooltip when menu opens
-  useEffect(() => {
-    if (isOpen) {
-      handleTooltipHide();
-    }
-  }, [isOpen]);
-
-  // Scroll to active item when menu opens
-  useEffect(() => {
-    if (isOpen) {
-      // Add a small delay to ensure the menu is fully rendered
-      const timeoutId = setTimeout(() => {
-        scrollToActiveItem();
-      }, 100);
-
-      return () => clearTimeout(timeoutId);
-    }
-  }, [isOpen]);
-
-  // Click outside to close
-  useEffect(() => {
-    // Skip the first render
-    if (initialRenderRef.current) {
-      initialRenderRef.current = false;
-      return;
-    }
-
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      // Make sure we're not clicking on the menu or its button
-      if (
-        isOpen &&
-        !target.closest(".hamburger-menu") &&
-        !target.closest(".menu-expand-button")
-      ) {
+
+      // Check if click is on the menu toggle button by checking for menu-related classes
+      const isMenuToggle =
+        target.closest(".menu-toggle") || target.closest(".menu-expand-button");
+
+      if (isMenuToggle) {
+        console.log("Click detected on menu toggle button, ignoring close");
+        return;
+      }
+
+      // Check if click is inside the menu
+      if (menuRef.current && !menuRef.current.contains(target)) {
+        console.log("Click detected outside menu, closing menu");
         onClose();
       }
     };
 
-    // Only add the listener if the menu is open
+    // Only add event listener if menu is open
     if (isOpen) {
-      // Add event listener after a short delay to avoid closing immediately
-      const timeoutId = window.setTimeout(() => {
-        document.addEventListener("mousedown", handleClickOutside);
-      }, 300); // Increased delay to ensure state is stable
-
-      return () => {
-        window.clearTimeout(timeoutId);
-        document.removeEventListener("mousedown", handleClickOutside);
-      };
+      console.log("Adding click outside listener for menu");
+      document.addEventListener("mousedown", handleClickOutside);
     }
 
-    return undefined;
+    return () => {
+      console.log("Removing click outside listener for menu");
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
   }, [isOpen, onClose]);
 
-  // Handle route changes manually to prevent auto-closing on initial load
+  // Scroll to active item when menu opens
   useEffect(() => {
-    // Skip if it's the initial render
-    if (initialRenderRef.current) {
-      return;
+    if (isOpen) {
+      // Small delay to ensure DOM is updated
+      setTimeout(scrollToActiveItem, 100);
     }
+  }, [isOpen]);
 
-    // Check if the route has actually changed
-    if (location.pathname !== prevRouteRef.current) {
-      prevRouteRef.current = location.pathname;
-
-      // Only close the menu if a navigation has occurred AND the menu is open
-      if (isOpen) {
-        // Add a delay to avoid immediate closing
-        const timeoutId = window.setTimeout(() => {
-          onClose();
-        }, 300);
-
-        return () => {
-          window.clearTimeout(timeoutId);
-        };
-      }
-    }
-
-    return undefined;
-  }, [location.pathname, isOpen, onClose]);
-
-  // Get user type display text
   const getUserTypeDisplay = () => {
-    if (isAdmin) return "Administrator";
-    if (isRecruiter) return "Recruiter";
-    if (isJobSeeker) return "Job Seeker";
-    return "User";
+    if (isAdmin) return t("roles.admin");
+    if (isRecruiter) return t("roles.recruiter");
+    if (isJobSeeker) return t("roles.jobseeker");
+    return t("common.user");
   };
 
   // Get user display name
@@ -678,7 +603,7 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
       const emailName = user.email.split("@")[0];
       return emailName.charAt(0).toUpperCase() + emailName.slice(1);
     }
-    return "User";
+    return t("common.user");
   };
 
   // Get user initials for avatar
@@ -709,15 +634,16 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
           <button className="close-button" onClick={onClose}>
             <X size={24} />
           </button>
+          {isOpen && <LanguageToggle />}
           <ThemeToggle />
         </div>
 
         <ul className="menu-items">
           {menuItems.map((item, index) => (
-            <MenuItemComponent 
-              key={index} 
-              item={item} 
-              isOpen={isOpen} 
+            <MenuItemComponent
+              key={index}
+              item={item}
+              isOpen={isOpen}
               onTooltipShow={handleTooltipShow}
               onTooltipHide={handleTooltipHide}
             />
@@ -750,7 +676,7 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
                     onClick={handleUserProfileNavigation}
                   >
                     <UserCircle size={16} />
-                    <span>My Account</span>
+                    <span>{t("navigation.myAccount")}</span>
                   </button>
                   <div className="dropdown-divider"></div>
                   <button
@@ -758,7 +684,7 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
                     onClick={handleLogout}
                   >
                     <LogOut size={16} />
-                    <span>Logout</span>
+                    <span>{t("navigation.logout")}</span>
                   </button>
                 </div>
               </div>

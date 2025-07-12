@@ -1,13 +1,17 @@
 import { X, Clock, BookOpen } from "lucide-react";
+import { useLanguage } from "../../contexts/language/language-provider";
 import "../../styles/components/training/ComingSoonModal.css";
 
 interface Module {
   id: string;
-  title: string;
-  description: string;
+  titleKey: string;
+  descriptionKey: string;
   type: "document" | "video" | "interactive";
   duration: string;
   icon: JSX.Element;
+  completed?: boolean;
+  youtubeId?: string;
+  comingSoon?: boolean;
 }
 
 interface ComingSoonModalProps {
@@ -17,22 +21,24 @@ interface ComingSoonModalProps {
 }
 
 export function ComingSoonModal({ isOpen, module, onClose }: ComingSoonModalProps) {
+  const { t } = useLanguage();
+  
   if (!isOpen || !module) return null;
 
   const getModuleFeatures = () => {
     // Mock features based on module type
     const features = {
       document: [
-        "Interactive PDF with annotations",
-        "Progress tracking",
-        "Downloadable resources",
-        "Quick reference guide"
+        t('training.features.document.interactivePdf'),
+        t('training.features.document.progressTracking'),
+        t('training.features.document.downloadableResources'),
+        t('training.features.document.quickReference')
       ],
       interactive: [
-        "Hands-on exercises",
-        "Real-time feedback",
-        "Practice scenarios", 
-        "Certificate upon completion"
+        t('training.features.interactive.handsOnExercises'),
+        t('training.features.interactive.realTimeFeedback'),
+        t('training.features.interactive.practiceScenarios'),
+        t('training.features.interactive.certificateCompletion')
       ]
     };
     return features[module.type as keyof typeof features] || [];
@@ -47,14 +53,14 @@ export function ComingSoonModal({ isOpen, module, onClose }: ComingSoonModalProp
               <Clock size={32} />
             </div>
             <div>
-              <h2 className="coming-soon-modal-title">{module.title}</h2>
-              <p className="coming-soon-modal-subtitle">Coming Soon</p>
+              <h2 className="coming-soon-modal-title">{t(module.titleKey)}</h2>
+              <p className="coming-soon-modal-subtitle">{t('training.comingSoon')}</p>
             </div>
           </div>
           <button 
             className="coming-soon-modal-close"
             onClick={onClose}
-            aria-label="Close modal"
+            aria-label={t('training.closeModal')}
           >
             <X size={24} />
           </button>
@@ -62,7 +68,7 @@ export function ComingSoonModal({ isOpen, module, onClose }: ComingSoonModalProp
         
         <div className="coming-soon-modal-content">
           <div className="coming-soon-description">
-            <p>{module.description}</p>
+            <p>{t(module.descriptionKey)}</p>
           </div>
 
           <div className="coming-soon-details">
@@ -70,14 +76,14 @@ export function ComingSoonModal({ isOpen, module, onClose }: ComingSoonModalProp
             <div className="coming-soon-detail-item">
               <BookOpen size={20} />
               <div>
-                <h4>Duration</h4>
+                <h4>{t('training.duration')}</h4>
                 <p>{module.duration}</p>
               </div>
             </div>
           </div>
 
           <div className="coming-soon-features">
-            <h4>What to Expect</h4>
+            <h4>{t('training.whatToExpect')}</h4>
             <ul>
               {getModuleFeatures().map((feature, index) => (
                 <li key={index}>{feature}</li>
@@ -87,7 +93,7 @@ export function ComingSoonModal({ isOpen, module, onClose }: ComingSoonModalProp
         </div>
 
         <div className="coming-soon-modal-footer">
-          <p>We'll notify you when this module becomes available!</p>
+          <p>{t('training.notifyMessage')}</p>
         </div>
       </div>
     </div>

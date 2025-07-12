@@ -1,0 +1,518 @@
+{
+  "greeting": "Hello",
+  "welcome": "Welcome",
+  "logout": "Logout",
+  "administrator": "Administrator",
+  "accounts": "Accounts",
+  "recruiter": "Recruiter",
+  "jobseeker": "Job Seeker",
+  "admin_subtitle": "Oversee platform operations and manage system-wide recruiting analytics",
+  "recruiter_subtitle": "Manage talent acquisition with Godspeed's lightning-fast recruiting tools",
+  "jobseeker_subtitle": "Discover opportunities at Godspeed pace with our intelligent job matching system",
+
+  "navigation": {
+    "home": "Home",
+    "about": "About",
+    "services": "Services",
+    "contact": "Contact",
+    "menu": "Menu",
+    "dashboard": "Dashboard",
+    "profile": "Profile",
+    "training": "Training",
+    "reports": "Reports",
+    "logout": "Logout",
+    "myAccount": "My Account",
+    "allUsers": "All Users",
+    "jobseekerManagement": "Jobseeker Management",
+    "allJobseekers": "All Jobseekers",
+    "createJobseeker": "Create Jobseeker",
+    "jobseekerDrafts": "Jobseeker Drafts",
+    "clientManagement": "Client Management",
+    "allClients": "All Clients",
+    "createClient": "Create Client",
+    "draftClients": "Draft Clients",
+    "positionManagement": "Position Management",
+    "allPositions": "All Positions",
+    "createPosition": "Create Position",
+    "draftPositions": "Draft Positions",
+    "positionMatching": "Position Matching",
+    "financial": "Financial",
+    "timesheetManagement": "Timesheet Management",
+    "invoiceManagement": "Invoice Management",
+    "invoiceList": "Invoice List",
+    "reportsAnalytics": "Reports & Analytics",
+    "myProfile": "My Profile",
+    "myPositions": "My Positions"
+  },
+
+  "buttons": {
+    "submit": "Submit",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "sendMessage": "Send Message",
+    "create": "Create",
+    "update": "Update",
+    "view": "View",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "login": "Login",
+    "signup": "Sign Up",
+    "confirm": "Confirm",
+    "reset": "Reset",
+    "tryAgain": "Try Again"
+  },
+
+  "forms": {
+    "name": "Name",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "message": "Message",
+    "required": "This field is required",
+    "namePlaceholder": "Enter your name",
+    "emailPlaceholder": "Enter your email",
+    "passwordPlaceholder": "Enter your password",
+    "messagePlaceholder": "Enter your message",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "phone": "Phone",
+    "address": "Address",
+    "city": "City",
+    "state": "State",
+    "zipCode": "ZIP Code",
+    "country": "Country"
+  },
+
+  "messages": {
+    "success": "Success!",
+    "error": "An error occurred",
+    "loading": "Loading...",
+    "noData": "No data available",
+    "confirmDelete": "Are you sure you want to delete this?",
+    "saved": "Saved successfully",
+    "deleted": "Deleted successfully",
+    "updated": "Updated successfully",
+    "created": "Created successfully",
+    "failedToFetchMetrics": "Failed to fetch metrics"
+  },
+
+  "validation": {
+    "emailInvalid": "Please enter a valid email",
+    "passwordLength": "Password must be at least 8 characters",
+    "required": "This field is required",
+    "passwordMismatch": "Passwords do not match",
+    "invalidInput": "Invalid input"
+  },
+
+  "status": {
+    "active": "Active",
+    "inactive": "Inactive",
+    "pending": "Pending",
+    "completed": "Completed",
+    "draft": "Draft",
+    "published": "Published",
+    "approved": "Approved",
+    "rejected": "Rejected"
+  },
+
+  "dashboard": {
+    "welcome": "Welcome to Dashboard",
+    "overview": "Overview",
+    "statistics": "Statistics",
+    "recentActivity": "Recent Activity",
+    "quickActions": "Quick Actions",
+    "aiActivityInsights": "AI Activity Insights",
+    "aiActivityDescription": "Track AI-powered document processing and position matching activities",
+    "documentsScanned": "Documents Scanned",
+    "positionSlots": "Position Slots",
+    "totalClientsCreated": "Total Clients Created",
+    "viewingAggregatedData": "Viewing aggregated data from all recruiters",
+    "viewingPersonalMetrics": "Viewing your personal recruiting metrics",
+    "viewingClientData": "Viewing client data from all recruiters",
+    "viewingPersonalClientMetrics": "Viewing your personal client metrics",
+    "viewingPositionData": "Viewing position data from all recruiters",
+    "viewingPersonalPositionMetrics": "Viewing your personal position metrics",
+    "viewingTotalJobseekerMetrics": "Viewing total jobseeker profile metrics from all recruiters",
+    "viewingTotalClientMetrics": "Viewing total client metrics from all recruiters",
+    "viewingTotalPositionMetrics": "Viewing total position metrics from all recruiters",
+    "viewingTotalTimesheetMetrics": "Viewing total timesheet metrics from all recruiters",
+    "viewingTotalInvoiceMetrics": "Viewing total invoice metrics from all recruiters",
+    "toggleDataView": "Toggle to view data for all recruiters or your own",
+    "toggleClientDataView": "Toggle to view client data for all recruiters or your own",
+    "togglePositionDataView": "Toggle to view position data for all recruiters or your own",
+    "toggleAllRecruitersData": "Toggle to view data for all recruiters",
+    "toggleAllRecruitersClientData": "Toggle to view client data for all recruiters",
+    "toggleAllRecruitersPositionData": "Toggle to view position data for all recruiters",
+    "toggleAllRecruitersTimesheetData": "Toggle to view timesheet data for all recruiters",
+    "toggleAllRecruitersInvoiceData": "Toggle to view invoice data for all recruiters",
+    "firstLogin": "First login"
+  },
+
+  "profile": {
+    "title": "Profile",
+    "edit": "Edit Profile",
+    "personalInfo": "Personal Information",
+    "contactInfo": "Contact Information",
+    "settings": "Settings",
+    "changePassword": "Change Password",
+    "preferences": "Preferences"
+  },
+
+  "auth": {
+    "login": "Login",
+    "signup": "Sign Up",
+    "forgotPassword": "Forgot Password?",
+    "resetPassword": "Reset Password",
+    "verificationPending": "Verification Pending",
+    "twoFactorAuth": "Two-Factor Authentication",
+    "loginTitle": "Login to your account",
+    "signupTitle": "Create an account",
+    "resetPasswordTitle": "Reset your password",
+    "verificationMessage": "Please check your email for verification instructions",
+    "loginSuccess": "Login successful",
+    "signupSuccess": "Account created successfully",
+    "logoutSuccess": "Logout successful",
+    "welcomeBack": "Welcome back",
+    "loginDescription": "Log in to access your dashboard and continue where you left off.",
+    "rememberMe": "Remember me",
+    "noAccount": "Don't have an account?",
+    "twoFactorPhoneRequired": "Two-factor authentication is required but no phone number is registered. Please contact support.",
+    "invalidCredentials": "Invalid email or password"
+  },
+
+  "roles": {
+    "admin": "Administrator",
+    "recruiter": "Recruiter",
+    "jobseeker": "Job Seeker",
+    "client": "Client"
+  },
+
+  "common": {
+    "search": "Search",
+    "filter": "Filter",
+    "sort": "Sort",
+    "export": "Export",
+    "import": "Import",
+    "print": "Print",
+    "download": "Download",
+    "upload": "Upload",
+    "refresh": "Refresh",
+    "refreshPage": "Refresh page",
+    "clear": "Clear",
+    "apply": "Apply",
+    "reset": "Reset",
+    "yes": "Yes",
+    "no": "No",
+    "ok": "OK",
+    "cancel": "Cancel",
+    "close": "Close",
+    "open": "Open",
+    "all": "All",
+    "none": "None",
+    "other": "Other",
+    "more": "More",
+    "less": "Less",
+    "show": "Show",
+    "hide": "Hide",
+    "expand": "Expand",
+    "collapse": "Collapse",
+    "select": "Select",
+    "deselect": "Deselect",
+    "language": "Language",
+    "godspeedLogo": "Godspeed Logo",
+    "user": "User"
+  },
+
+  "training": {
+    "title": "Training Modules",
+    "subtitle": "Training & Development",
+    "description": "Enhance your skills with our curated training resources",
+    "learningPortal": "Learning Portal",
+    "searchPlaceholder": "Search modules...",
+    "resetFilters": "Reset Filters",
+    "noModulesMessage": "No training modules match your search criteria.",
+    "completed": "Completed",
+    "comingSoon": "Coming Soon",
+    "duration": "Duration",
+    "whatToExpect": "What to Expect",
+    "notifyMessage": "We'll notify you when this module becomes available!",
+    "closeVideo": "Close video",
+    "closeModal": "Close modal",
+    "categories": {
+      "all": "All",
+      "videos": "Videos",
+      "documents": "Documents",
+      "interactive": "Interactive"
+    },
+    "types": {
+      "document": "document",
+      "video": "video",
+      "interactive": "interactive"
+    },
+    "modules": {
+      "whmisTraining": {
+        "title": "WHMIS Training",
+        "description": "Workplace Hazardous Materials Information System training for safe handling of hazardous materials"
+      },
+      "healthSafetyTraining": {
+        "title": "Health & Safety Training",
+        "description": "Comprehensive workplace health and safety protocols to ensure a safe working environment"
+      },
+      "effectiveResumeScreening": {
+        "title": "Effective Resume Screening",
+        "description": "Best practices for efficiently screening resumes and identifying top candidates"
+      },
+      "interviewTechniques": {
+        "title": "Interview Techniques",
+        "description": "Advanced interviewing techniques for accurate candidate assessment"
+      },
+      "clientManagementEssentials": {
+        "title": "Client Management Essentials",
+        "description": "Essential strategies for managing client relationships effectively"
+      },
+      "jobSeekerResumeBuilding": {
+        "title": "Job Seeker Resume Building",
+        "description": "Tips and techniques for creating an effective resume that stands out"
+      }
+    },
+    "features": {
+      "document": {
+        "interactivePdf": "Interactive PDF with annotations",
+        "progressTracking": "Progress tracking",
+        "downloadableResources": "Downloadable resources",
+        "quickReference": "Quick reference guide"
+      },
+      "interactive": {
+        "handsOnExercises": "Hands-on exercises",
+        "realTimeFeedback": "Real-time feedback",
+        "practiceScenarios": "Practice scenarios",
+        "certificateCompletion": "Certificate upon completion"
+      }
+    }
+  },
+
+  "userManagement": {
+    "title": "All Users Management",
+    "allSignedUpUsers": "All Signed Up Users",
+    "globalSearch": "Global search...",
+    "resetFilters": "Reset Filters",
+    "noUsersMessage": "No users match your search criteria.",
+    "errorFetchingUsers": "An error occurred while fetching users",
+    "columns": {
+      "name": "Name",
+      "email": "Email",
+      "phone": "Phone",
+      "userType": "User Type",
+      "emailVerified": "Email Verified",
+      "createdAt": "Created At",
+      "lastSignIn": "Last Sign In"
+    },
+    "placeholders": {
+      "searchName": "Search name...",
+      "searchEmail": "Search email...",
+      "searchPhone": "Search phone..."
+    },
+    "filters": {
+      "allUserTypes": "All User Types",
+      "allEmailStatus": "All Email Status"
+    },
+    "status": {
+      "verified": "Verified",
+      "notVerified": "Not Verified",
+      "na": "N/A"
+    },
+    "pagination": {
+      "showing": "Showing",
+      "to": "to",
+      "of": "of",
+      "entries": "entries",
+      "filteredFrom": "filtered from",
+      "totalEntries": "total entries",
+      "show": "Show:",
+      "perPage": "per page",
+      "page": "Page",
+      "previousPage": "Previous page",
+      "nextPage": "Next page",
+      "goToPage": "Go to page"
+    }
+  },
+
+  "profileVerification": {
+    "title": "Profile Verification",
+    "pending": {
+      "heading": "Profile Verification Pending",
+      "thankYou": "Thank you for submitting your profile! Your information is currently under review.",
+      "processTime": "This process usually takes 1-2 business days. We will notify you via email once your profile has been verified.",
+      "meantime": "In the meantime, you can check the status later or return to the homepage."
+    },
+    "rejected": {
+      "heading": "Profile Verification Rejected",
+      "sorry": "We're sorry, but your profile verification has been rejected. Please review the rejection reason below and update your profile accordingly.",
+      "loading": "Loading profile details...",
+      "rejectionReason": "Rejection Reason",
+      "noReason": "No reason provided",
+      "showLess": "Show less",
+      "showFullReason": "Show full reason",
+      "afterUpdate": "After updating your profile, our team will review your information again. You'll receive an email once your profile has been verified.",
+      "errorFetchingProfile": "Failed to fetch profile details"
+    },
+    "buttons": {
+      "refreshStatus": "Refresh Status",
+      "updateProfile": "Update Profile"
+    }
+  },
+
+  "jobSeekerPositions": {
+    "title": "My Positions",
+    "backToDashboard": "Back to Dashboard",
+    "errorLoadingProfile": "Failed to load profile information",
+    "errorFetchingAssignments": "Failed to fetch assignments",
+    "tryAgain": "Try Again",
+    "filters": {
+      "search": "Search",
+      "searchPlaceholder": "Search positions, clients, locations...",
+      "employmentType": "Employment Type",
+      "allTypes": "All Types",
+      "category": "Category",
+      "allCategories": "All Categories",
+      "clearAll": "Clear All"
+    },
+    "tabs": {
+      "allPositions": "All Positions",
+      "current": "Current",
+      "upcoming": "Upcoming",
+      "completed": "Completed"
+    },
+    "status": {
+      "active": "Active",
+      "completed": "Completed",
+      "upcoming": "Upcoming",
+      "unknown": "Unknown"
+    },
+    "emptyState": {
+      "noPositionsFound": "No positions found",
+      "noAssignments": "You don't have any position assignments yet.",
+      "noTabPositions": "No {{status}} positions found."
+    },
+    "positionDetails": {
+      "positionPeriod": "Position Period",
+      "duration": "Duration"
+    },
+    "duration": {
+      "days": "{{count}} day",
+      "days_plural": "{{count}} days",
+      "months": "{{count}} month",
+      "months_plural": "{{count}} months",
+      "years": "{{count}} year",
+      "years_plural": "{{count}} years"
+    },
+    "pagination": {
+      "showing": "Showing {{start}} to {{end}} of {{total}} entries",
+      "page": "Page {{current}} of {{total}}",
+      "previous": "Previous",
+      "next": "Next",
+      "previousPage": "Previous page",
+      "nextPage": "Next page",
+      "goToPage": "Go to page {{page}}"
+    }
+  },
+  "signup": {
+    "validation": {
+      "nameLength": "Name must be at least 2 characters",
+      "email": "Please enter a valid email address",
+      "phoneRequired": "Phone number is required",
+      "passwordLength": "Password must be at least 8 characters",
+      "passwordUppercase": "Password must contain at least one uppercase letter",
+      "passwordLowercase": "Password must contain at least one lowercase letter",
+      "passwordNumber": "Password must contain at least one number",
+      "canadian": "Canadian",
+      "indian": "Indian",
+      "phoneValid": "Please enter a valid {{country}} phone number",
+      "phoneAvailable": "Please enter a valid, available phone number",
+      "otpValid": "Please enter a valid verification code",
+      "emailRegistered": "This email is already registered. Please use a different email.",
+      "phoneRegistered": "This phone number is already registered. Please use a different number.",
+      "verifyPhoneFirst": "Please verify your phone number first"
+    },
+    "error": {
+      "failedToSendCode": "Failed to send verification code",
+      "failedToVerifyCode": "Failed to verify code",
+      "unexpected": "An unexpected error occurred"
+    },
+    "checkingEmail": "Checking email...",
+    "checkingPhone": "Checking phone number...",
+    "verifyPhone": "Verify Phone Number",
+    "phoneVerified": "Phone number verified ✓",
+    "enterVerificationCode": "Enter the verification code sent to your phone",
+    "verificationCodePlaceholder": "Enter verification code",
+    "verifyCode": "Verify Code",
+    "resendCode": "Resend Code",
+    "resendCodeWithTimer": "Resend Code ({{seconds}}s)",
+    "hidePassword": "Hide password",
+    "showPassword": "Show password",
+    "alreadyHaveAccount": "Already have an account?",
+    "brandDescription": "Elevate your talent management with Godspeed's intelligent workflows and lightning-fast systems designed to connect the right people with the right opportunities."
+  },
+  "twoFactor": {
+    "error": {
+      "failedToSendCode": "Failed to send verification code",
+      "failedToVerifyCode": "Failed to verify code"
+    },
+    "validation": {
+      "otpValid": "Please enter a valid verification code"
+    },
+    "instructions": "For security, we've sent a verification code to {{phone}}. Please enter the code to complete your login.",
+    "verificationCodePlaceholder": "Enter verification code",
+    "verifyCode": "Verify Code",
+    "verificationCodeSent": "Verification code sent successfully",
+    "notReceived": "Didn't receive the code? Check your messages or request a new one.",
+    "resendCode": "Resend Code",
+    "resendCodeWithTimer": "Resend Code ({{seconds}}s)"
+  },
+  "forgot": {
+    "validation": {
+      "email": "Please enter a valid email address"
+    },
+    "title": "Password Reset",
+    "backToLogin": "Back to login",
+    "resetTitle": "Reset your password",
+    "instructions": "Enter your email address and we'll send you a link to reset your password.",
+    "sendResetLink": "Send reset link"
+  },
+  "reset": {
+    "validation": {
+      "passwordLength": "Password must be at least 8 characters",
+      "passwordUppercase": "Password must contain at least one uppercase letter",
+      "passwordLowercase": "Password must contain at least one lowercase letter",
+      "passwordNumber": "Password must contain at least one number"
+    },
+    "title": "Reset Password",
+    "backToDashboard": "Back to Dashboard",
+    "verifyingTitle": "Verifying Reset Link",
+    "verifyingMessage": "Please wait while we verify your password reset link...",
+    "successTitle": "Password Reset Successful",
+    "successMessage": "Your password has been reset successfully. You will be redirected to the login page shortly.",
+    "goToLogin": "Go to Login",
+    "invalidLinkTitle": "Invalid Reset Link",
+    "requestNewLink": "Request New Reset Link",
+    "resetTitle": "Reset Your Password",
+    "instructions": "Enter your new password below.",
+    "newPassword": "New Password",
+    "resetButton": "Reset Password"
+  },
+  "verificationPending": {
+    "title": "Email Verification",
+    "checkEmailTitle": "Check your email",
+    "instructions": "We've sent a verification email to <span class='bold-text'>{{email}}</span>. Click the link in the email to verify your account.",
+    "resendError": "An error occurred while resending the verification email.",
+    "emailSent": "A new verification email has been sent.",
+    "notReceived": "Didn't receive an email? Check your spam folder or request a new verification link.",
+    "resendButton": "Resend verification email",
+    "emailSentButton": "Email Sent",
+    "backToLogin": "Back to login"
+  }
+} 

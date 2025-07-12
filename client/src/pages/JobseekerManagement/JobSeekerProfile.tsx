@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "../../contexts/AuthContext";
 import {
   ArrowLeft,
   User,
@@ -30,17 +30,17 @@ import {
   getJobseekerProfile,
   updateJobseekerStatus,
   deleteJobseeker,
-} from "../services/api/jobseeker";
-import { DocumentRecord } from "../types/jobseeker";
-import { supabase } from "../lib/supabaseClient";
-import PDFThumbnail from "../components/PDFThumbnail";
-import PDFViewerModal from "../components/PDFViewerModal";
-import { ConfirmationModal } from "../components/ConfirmationModal";
-import { AppHeader } from "../components/AppHeader";
-import "../styles/components/header.css";
-import "../styles/pages/JobseekerProfileStyles.css";
-import { getCandidateAssignments, CandidateAssignment } from "../services/api/position";
-import '../styles/pages/JobSeekerPositions.css';
+} from "../../services/api/jobseeker";
+import { DocumentRecord } from "../../types/jobseeker";
+import { supabase } from "../../lib/supabaseClient";
+import PDFThumbnail from "../../components/PDFThumbnail";
+import PDFViewerModal from "../../components/PDFViewerModal";
+import { ConfirmationModal } from "../../components/ConfirmationModal";
+import { AppHeader } from "../../components/AppHeader";
+import "../../styles/components/header.css";
+import "../../styles/pages/JobseekerProfileStyles.css";
+import { getCandidateAssignments, CandidateAssignment } from "../../services/api/position";
+import "../../styles/pages/JobSeekerPositions.css";
 
 // Define a local comprehensive type reflecting the backend response
 // TODO: Move this to shared types (e.g., client/src/types/jobseeker.ts) and update JobSeekerDetailedProfile

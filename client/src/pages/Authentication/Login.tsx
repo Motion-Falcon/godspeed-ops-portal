@@ -3,28 +3,31 @@ import { Link, useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { validateCredentials } from '../lib/auth';
+import { validateCredentials } from '../../lib/auth';
 import { Eye, EyeOff } from 'lucide-react';
-import { ThemeToggle } from '../components/theme-toggle';
-import '../styles/variables.css';
-import '../styles/pages/Login.css';
-import '../styles/components/form.css';
-import '../styles/components/button.css';
-import godspeedLogo from '../assets/logos/godspped-logo.png';
-
-const loginSchema = z.object({
-  email: z.string().email({ message: 'Please enter a valid email address' }),
-  password: z.string().min(1, { message: 'Password is required' }),
-  rememberMe: z.boolean().optional()
-});
-
-type LoginFormData = z.infer<typeof loginSchema>;
+import { ThemeToggle } from '../../components/theme-toggle';
+import { useLanguage } from '../../contexts/language/language-provider';
+import '../../styles/variables.css';
+import '../../styles/pages/Login.css';
+import '../../styles/components/form.css';
+import '../../styles/components/button.css';
+import godspeedLogo from '../../assets/logos/godspped-logo.png';
+import { LanguageToggle } from '../../components/LanguageToggle';
 
 export function Login() {
+  const { t } = useLanguage();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+
+  const loginSchema = z.object({
+    email: z.string().email({ message: t('validation.emailInvalid') }),
+    password: z.string().min(1, { message: t('validation.required') }),
+    rememberMe: z.boolean().optional()
+  });
+
+  type LoginFormData = z.infer<typeof loginSchema>;
 
   const {
     register,
@@ -76,7 +79,7 @@ export function Login() {
           return;
         } else {
           // No phone number available for 2FA
-          setError('Two-factor authentication is required but no phone number is registered. Please contact support.');
+          setError(t('auth.twoFactorPhoneRequired'));
           setIsLoading(false);
           return;
         }
@@ -88,7 +91,7 @@ export function Login() {
       if (error instanceof Error) {
         setError(error.message);
       } else {
-        setError('Invalid email or password');
+        setError(t('auth.invalidCredentials'));
       }
       setIsLoading(false);
     }
@@ -98,16 +101,13 @@ export function Login() {
     <div className="auth-container">
       {/* Company Branding Column (left in Login) */}
       <div className="auth-column brand">
-        <div className="toggle-container mobile-toggle">
-          <ThemeToggle />
-        </div>
         <div className="brand-content">
           <div className="brand-logo">
-            <img src={godspeedLogo} alt="Godspeed Logo" className="godspeed-logo" />
+            <img src={godspeedLogo} alt={t('common.godspeedLogo')} className="godspeed-logo" />
           </div>
-          <h2 className="brand-title">Welcome back</h2>
+          <h2 className="brand-title">{t('auth.welcomeBack')}</h2>
           <p className="brand-description">
-            Log in to access your dashboard and continue where you left off.
+            {t('auth.loginDescription')}
           </p>
         </div>
       </div>
@@ -115,10 +115,10 @@ export function Login() {
       {/* Login Form Column (right in Login) */}
       <div className="auth-column">
         <div className="toggle-container">
-          <ThemeToggle />
+        <LanguageToggle /> <ThemeToggle />
         </div>
         <div className="form-container">
-          <h1 className="auth-title">Login</h1>
+          <h1 className="auth-title">{t('auth.login')}</h1>
 
           {error && (
             <div className="error-container">
@@ -128,11 +128,11 @@ export function Login() {
 
           <form onSubmit={handleSubmit(onSubmit)}>
             <div className="form-group">
-              <label htmlFor="email" className="form-label">Email</label>
+              <label htmlFor="email" className="form-label">{t('forms.email')}</label>
               <input
                 id="email"
                 type="email"
-                placeholder="name@example.com"
+                placeholder={t('forms.emailPlaceholder')}
                 className="form-input"
                 {...register('email')}
               />
@@ -143,12 +143,12 @@ export function Login() {
 
             <div className="form-group">
               <div className="form-header">
-                <label htmlFor="password" className="form-label">Password</label>
+                <label htmlFor="password" className="form-label">{t('forms.password')}</label>
                 <Link
                   to="/forgot-password"
                   className="forgot-link auth-link"
                 >
-                  Forgot password?
+                  {t('auth.forgotPassword')}
                 </Link>
               </div>
               <div className="input-container">
@@ -186,7 +186,7 @@ export function Login() {
                 htmlFor="remember"
                 className="checkbox-label"
               >
-                Remember me
+                {t('auth.rememberMe')}
               </label>
             </div>
 
@@ -198,18 +198,18 @@ export function Login() {
               {isLoading ? (
                 <span className="loading-spinner"></span>
               ) : (
-                'Log in'
+                t('auth.login')
               )}
             </button>
           </form>
 
           <div className="auth-footer">
-            Don't have an account?{' '}
+            {t('auth.noAccount')}{' '}
             <Link
               to="/signup"
               className="auth-link"
             >
-              Sign up
+              {t('auth.signup')}
             </Link>
           </div>
         </div>

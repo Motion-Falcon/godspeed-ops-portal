@@ -1,4 +1,5 @@
 import { X } from "lucide-react";
+import { useLanguage } from "../../contexts/language/language-provider";
 import "../../styles/components/training/VideoModal.css";
 
 interface VideoModalProps {
@@ -9,6 +10,8 @@ interface VideoModalProps {
 }
 
 export function VideoModal({ isOpen, videoId, title, onClose }: VideoModalProps) {
+  const { t } = useLanguage();
+  
   if (!isOpen) return null;
 
   return (
@@ -19,7 +22,7 @@ export function VideoModal({ isOpen, videoId, title, onClose }: VideoModalProps)
           <button 
             className="video-modal-close"
             onClick={onClose}
-            aria-label="Close video"
+            aria-label={t('training.closeVideo')}
           >
             <X size={24} />
           </button>

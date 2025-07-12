@@ -1,12 +1,13 @@
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "../../contexts/AuthContext";
 import { useState } from "react";
-import { AppHeader } from "../components/AppHeader";
+import { AppHeader } from "../../components/AppHeader";
 import { RefreshCw } from "lucide-react";
+import { useLanguage } from "../../contexts/language/language-provider";
 
 export function ProfileVerificationPending() {
   const { refetchProfileStatus } = useAuth();
+  const { t } = useLanguage();
   const [refreshing, setRefreshing] = useState(false);
-
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -17,22 +18,19 @@ export function ProfileVerificationPending() {
   return (
     <div className="page-container">
       <AppHeader
-        title="Profile Verification"
+        title={t('profileVerification.title')}
       />
       <div className="centered-container">
         <div className="centered-card">
-          <h1 className="auth-card-title">Profile Verification Pending</h1>
+          <h1 className="auth-card-title">{t('profileVerification.pending.heading')}</h1>
           <p className="text-muted">
-            Thank you for submitting your profile! Your information is currently
-            under review.
+            {t('profileVerification.pending.thankYou')}
           </p>
           <p className="text-muted">
-            This process usually takes 1-2 business days. We will notify you via
-            email once your profile has been verified.
+            {t('profileVerification.pending.processTime')}
           </p>
           <p className="text-muted">
-            In the meantime, you can check the status later or return to the
-            homepage.
+            {t('profileVerification.pending.meantime')}
           </p>
 
           <div className="status-actions">
@@ -46,7 +44,7 @@ export function ProfileVerificationPending() {
               ) : (
                 <>
                   <RefreshCw size={16} className="icon" />
-                  Refresh Status
+                  {t('profileVerification.buttons.refreshStatus')}
                 </>
               )}
             </button>

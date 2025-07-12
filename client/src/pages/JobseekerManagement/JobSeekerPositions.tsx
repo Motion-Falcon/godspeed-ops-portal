@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useLocation } from 'react-router-dom';
 import { 
@@ -14,11 +14,12 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
-import { getCandidateAssignments, CandidateAssignment, CandidateAssignmentFilters } from '../services/api/position';
-import { AppHeader } from '../components/AppHeader';
-import '../styles/pages/JobSeekerPositions.css';
-import '../styles/components/header.css';
-import { EMPLOYMENT_TYPES, POSITION_CATEGORIES } from '../constants/formOptions';
+import { getCandidateAssignments, CandidateAssignment, CandidateAssignmentFilters } from '../../services/api/position';
+import { AppHeader } from '../../components/AppHeader';
+import '../../styles/pages/JobSeekerPositions.css';
+import '../../styles/components/header.css';
+import { EMPLOYMENT_TYPES, POSITION_CATEGORIES } from '../../constants/formOptions';
+import { useLanguage } from '../../contexts/language/language-provider';
 
 /**
  * FILTER IMPLEMENTATION NOTES:
@@ -55,6 +56,7 @@ export function JobSeekerPositions() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useLanguage();
   const [assignments, setAssignments] = useState<CandidateAssignment[]>([]);
   const [statusCounts, setStatusCounts] = useState({
     active: 0,
@@ -129,7 +131,7 @@ export function JobSeekerPositions() {
   // Reset to first page when filters change
   useEffect(() => {
     fetchAssignments(1); // Reset to first page when filters change
-  }, [profileId, activeTab, filters.search, filters.employmentType, filters.positionCategory]);
+  }, [profileId, activeTab, filters.search, filters.employmentType, filters.positionCategory, t]);
 
   // Note: The API only supports basic pagination and status filtering
   // Search, employment type, and position category filters are handled client-side
@@ -141,7 +143,7 @@ export function JobSeekerPositions() {
       setProfileId(user?.id || null);
     } catch (error) {
       console.error('Error fetching profile ID:', error);
-      setError('Failed to load profile information');
+      setError(t('jobSeekerPositions.errorLoadingProfile'));
     }
   };
 
@@ -192,7 +194,7 @@ export function JobSeekerPositions() {
         itemsPerPage: response.pagination.limit,
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch assignments");
+      setError(err instanceof Error ? err.message : t('jobSeekerPositions.errorFetchingAssignments'));
       setAssignments([]);
       setPagination({
         currentPage: 1,
@@ -226,13 +228,19 @@ export function JobSeekerPositions() {
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
     if (diffDays < 30) {
-      return `${diffDays} days`;
+      return diffDays === 1 
+        ? t('jobSeekerPositions.duration.days', { count: diffDays })
+        : t('jobSeekerPositions.duration.days_plural', { count: diffDays });
     } else if (diffDays < 365) {
       const months = Math.floor(diffDays / 30);
-      return `${months} month${months > 1 ? 's' : ''}`;
+      return months === 1
+        ? t('jobSeekerPositions.duration.months', { count: months })
+        : t('jobSeekerPositions.duration.months_plural', { count: months });
     } else {
       const years = Math.floor(diffDays / 365);
-      return `${years} year${years > 1 ? 's' : ''}`;
+      return years === 1
+        ? t('jobSeekerPositions.duration.years', { count: years })
+        : t('jobSeekerPositions.duration.years_plural', { count: years });
     }
   };
 
@@ -250,10 +258,10 @@ export function JobSeekerPositions() {
   const getStatusText = (assignment: CandidateAssignment) => {
     // Use the assignment status directly from the backend
     switch (assignment.status) {
-      case 'active': return 'Active';
-      case 'completed': return 'Completed';
-      case 'upcoming': return 'Upcoming';
-      default: return assignment.status || 'Unknown';
+      case 'active': return t('jobSeekerPositions.status.active');
+      case 'completed': return t('jobSeekerPositions.status.completed');
+      case 'upcoming': return t('jobSeekerPositions.status.upcoming');
+      default: return assignment.status || t('jobSeekerPositions.status.unknown');
     }
   };
 
@@ -372,11 +380,11 @@ export function JobSeekerPositions() {
   if (error) {
     return (
       <div className="jsp-positions-container">
-        <AppHeader title="My Positions" />
+        <AppHeader title={t('jobSeekerPositions.title')} />
         <div className="error-container">
           <p className="error-message">{error}</p>
           <button className="button primary" onClick={() => fetchAssignments(1)}>
-            Try Again
+            {t('jobSeekerPositions.tryAgain')}
           </button>
         </div>
       </div>
@@ -386,14 +394,14 @@ export function JobSeekerPositions() {
   return (
     <div className="jsp-positions-container">
       <AppHeader
-        title="My Positions"
+        title={t('jobSeekerPositions.title')}
         actions={
           <button
             className="button secondary"
             onClick={() => navigate('/dashboard')}
           >
             <ArrowLeft size={16} />
-            Back to Dashboard
+            {t('jobSeekerPositions.backToDashboard')}
           </button>
         }
       />
@@ -406,12 +414,12 @@ export function JobSeekerPositions() {
           <div className="jsp-filter-panel">
             <div className="jsp-filter-row">
               <div className="jsp-filter-group">
-                <label>Search</label>
+                <label>{t('jobSeekerPositions.filters.search')}</label>
                 <div className="jsp-search-input">
                   <Search size={16} />
                   <input
                     type="text"
-                    placeholder="Search positions, clients, locations..."
+                    placeholder={t('jobSeekerPositions.filters.searchPlaceholder')}
                     value={filters.search}
                     onChange={(e) => handleFilterChange('search', e.target.value)}
                   />
@@ -430,12 +438,12 @@ export function JobSeekerPositions() {
               </div>
 
               <div className="jsp-filter-group">
-                <label>Employment Type</label>
+                <label>{t('jobSeekerPositions.filters.employmentType')}</label>
                 <select
                   value={filters.employmentType}
                   onChange={(e) => handleFilterChange('employmentType', e.target.value)}
                 >
-                  <option value="all">All Types</option>
+                  <option value="all">{t('jobSeekerPositions.filters.allTypes')}</option>
                   {EMPLOYMENT_TYPES.map((type) => (
                     <option key={type} value={type}>
                       {type}
@@ -445,12 +453,12 @@ export function JobSeekerPositions() {
               </div>
 
               <div className="jsp-filter-group">
-                <label>Category</label>
+                <label>{t('jobSeekerPositions.filters.category')}</label>
                 <select
                   value={filters.positionCategory}
                   onChange={(e) => handleFilterChange('positionCategory', e.target.value)}
                 >
-                  <option value="all">All Categories</option>
+                  <option value="all">{t('jobSeekerPositions.filters.allCategories')}</option>
                   {POSITION_CATEGORIES.map((category) => (
                     <option key={category} value={category}>
                       {category}
@@ -461,7 +469,7 @@ export function JobSeekerPositions() {
 
               <div className="jsp-filter-actions">
                 <button className="button secondary small" onClick={clearFilters}>
-                  Clear All
+                  {t('jobSeekerPositions.filters.clearAll')}
                 </button>
               </div>
             </div>
@@ -477,28 +485,28 @@ export function JobSeekerPositions() {
               className={`jsp-tab all ${activeTab === 'all' ? 'active' : ''}`}
               onClick={() => handleTabChange('all')}
             >
-              All Positions
+              {t('jobSeekerPositions.tabs.allPositions')}
               <span className="jsp-count">{counts.all}</span>
             </button>
             <button
               className={`jsp-tab current ${activeTab === 'current' ? 'active' : ''}`}
               onClick={() => handleTabChange('current')}
             >
-              Current
+              {t('jobSeekerPositions.tabs.current')}
               <span className="jsp-count">{counts.current}</span>
             </button>
             <button
               className={`jsp-tab future ${activeTab === 'future' ? 'active' : ''}`}
               onClick={() => handleTabChange('future')}
             >
-              Upcoming
+              {t('jobSeekerPositions.tabs.upcoming')}
               <span className="jsp-count">{counts.future}</span>
             </button>
             <button
               className={`jsp-tab past ${activeTab === 'past' ? 'active' : ''}`}
               onClick={() => handleTabChange('past')}
             >
-              Completed
+              {t('jobSeekerPositions.tabs.completed')}
               <span className="jsp-count">{counts.past}</span>
             </button>
           </div>
@@ -509,8 +517,11 @@ export function JobSeekerPositions() {
           <div className="jsp-pagination-controls top">
             <div className="jsp-pagination-info">
               <span className="jsp-pagination-text">
-                Showing {Math.min((pagination.currentPage - 1) * pagination.itemsPerPage + 1, pagination.totalItems)} to{' '}
-                {Math.min(pagination.currentPage * pagination.itemsPerPage, pagination.totalItems)} of {pagination.totalItems} entries
+                {t('jobSeekerPositions.pagination.showing', {
+                  start: Math.min((pagination.currentPage - 1) * pagination.itemsPerPage + 1, pagination.totalItems),
+                  end: Math.min(pagination.currentPage * pagination.itemsPerPage, pagination.totalItems),
+                  total: pagination.totalItems
+                })}
               </span>
             </div>
           </div>
@@ -528,11 +539,11 @@ export function JobSeekerPositions() {
             {assignments.length === 0 ? (
               <div className="jsp-empty-state">
                 <Briefcase size={48} className="jsp-empty-icon" />
-                <h3>No positions found</h3>
+                <h3>{t('jobSeekerPositions.emptyState.noPositionsFound')}</h3>
                 <p>
                   {activeTab === 'all' 
-                    ? "You don't have any position assignments yet."
-                    : `No ${activeTab} positions found.`
+                    ? t('jobSeekerPositions.emptyState.noAssignments')
+                    : t('jobSeekerPositions.emptyState.noTabPositions', { status: activeTab })
                   }
                 </p>
               </div>
@@ -575,7 +586,7 @@ export function JobSeekerPositions() {
                       <div className="jsp-detail-row">
                         <Calendar size={16} />
                         <span>
-                          Position Period: {formatDate(assignment.position.startDate)}
+                          {t('jobSeekerPositions.positionDetails.positionPeriod')}: {formatDate(assignment.position.startDate)}
                           {assignment.position.endDate && ` - ${formatDate(assignment.position.endDate)}`}
                         </span>
                       </div>
@@ -583,7 +594,7 @@ export function JobSeekerPositions() {
 
                     <div className="jsp-detail-row">
                       <Clock size={16} />
-                      <span>Duration: {formatDuration(assignment.startDate, assignment.endDate)}</span>
+                      <span>{t('jobSeekerPositions.positionDetails.duration')}: {formatDuration(assignment.startDate, assignment.endDate)}</span>
                     </div>
                   </div>
 
@@ -616,7 +627,10 @@ export function JobSeekerPositions() {
           <div className="jsp-pagination-controls bottom">
             <div className="jsp-pagination-info">
               <span className="jsp-pagination-text">
-                Page {pagination.currentPage} of {pagination.totalPages}
+                {t('jobSeekerPositions.pagination.page', {
+                  current: pagination.currentPage,
+                  total: pagination.totalPages
+                })}
               </span>
             </div>
             <div className="jsp-pagination-buttons">
@@ -624,11 +638,11 @@ export function JobSeekerPositions() {
                 className="jsp-pagination-btn prev"
                 onClick={handlePreviousPage}
                 disabled={pagination.currentPage === 1}
-                title="Previous page"
-                aria-label="Previous page"
+                title={t('jobSeekerPositions.pagination.previousPage')}
+                aria-label={t('jobSeekerPositions.pagination.previousPage')}
               >
                 <ChevronLeft size={16} />
-                <span>Previous</span>
+                <span>{t('jobSeekerPositions.pagination.previous')}</span>
               </button>
               
               {/* Page numbers */}
@@ -650,7 +664,7 @@ export function JobSeekerPositions() {
                       key={pageNum}
                       className={`jsp-page-number-btn ${pageNum === pagination.currentPage ? 'active' : ''}`}
                       onClick={() => handlePageChange(pageNum)}
-                      aria-label={`Go to page ${pageNum}`}
+                      aria-label={t('jobSeekerPositions.pagination.goToPage', { page: pageNum })}
                     >
                       {pageNum}
                     </button>
@@ -662,10 +676,10 @@ export function JobSeekerPositions() {
                 className="jsp-pagination-btn next"
                 onClick={handleNextPage}
                 disabled={pagination.currentPage === pagination.totalPages}
-                title="Next page"
-                aria-label="Next page"
+                title={t('jobSeekerPositions.pagination.nextPage')}
+                aria-label={t('jobSeekerPositions.pagination.nextPage')}
               >
-                <span>Next</span>
+                <span>{t('jobSeekerPositions.pagination.next')}</span>
                 <ChevronRight size={16} />
               </button>
             </div>

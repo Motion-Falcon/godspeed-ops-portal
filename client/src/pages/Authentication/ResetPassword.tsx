@@ -3,38 +3,19 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { updatePasswordWithResetToken } from "../lib/auth";
+import { updatePasswordWithResetToken } from "../../lib/auth";
 import { Eye, EyeOff, Check, AlertCircle, ArrowLeft } from "lucide-react";
-import { supabase } from "../lib/supabaseClient";
-import "../styles/variables.css";
-import "../styles/pages/ForgotPassword.css";
-import "../styles/components/form.css";
-import "../styles/components/button.css";
-import { AppHeader } from "../components/AppHeader";
-import { useAuth } from "../contexts/AuthContext";
-
-const resetPasswordSchema = z
-  .object({
-    password: z
-      .string()
-      .min(8, { message: "Password must be at least 8 characters" })
-      .regex(/[A-Z]/, {
-        message: "Password must contain at least one uppercase letter",
-      })
-      .regex(/[a-z]/, {
-        message: "Password must contain at least one lowercase letter",
-      })
-      .regex(/[0-9]/, { message: "Password must contain at least one number" }),
-    confirmPassword: z.string(),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords do not match",
-    path: ["confirmPassword"],
-  });
-
-type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
+import { supabase } from "../../lib/supabaseClient";
+import "../../styles/variables.css";
+import "../../styles/pages/ForgotPassword.css";
+import "../../styles/components/form.css";
+import "../../styles/components/button.css";
+import { AppHeader } from "../../components/AppHeader";
+import { useAuth } from "../../contexts/AuthContext";
+import { useLanguage } from "../../contexts/language/language-provider";
 
 export function ResetPassword() {
+  const { t } = useLanguage();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -127,6 +108,27 @@ console.log(isAuthenticated, 'isAuthenticated');
     return () => clearTimeout(timer);
   }, [location]);
 
+  const resetPasswordSchema = z
+    .object({
+      password: z
+        .string()
+        .min(8, { message: t('reset.validation.passwordLength') })
+        .regex(/[A-Z]/, {
+          message: t('reset.validation.passwordUppercase'),
+        })
+        .regex(/[a-z]/, {
+          message: t('reset.validation.passwordLowercase'),
+        })
+        .regex(/[0-9]/, { message: t('reset.validation.passwordNumber') }),
+      confirmPassword: z.string(),
+    })
+    .refine((data) => data.password === data.confirmPassword, {
+      message: t('validation.passwordMismatch'),
+      path: ["confirmPassword"],
+    });
+
+type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
+
   const {
     register,
     handleSubmit,
@@ -162,14 +164,14 @@ console.log(isAuthenticated, 'isAuthenticated');
     return (
       <div className="page-container">
         <AppHeader
-          title="Reset Password"
+          title={t('reset.title')}
           actions={
             <button
               className="button button-icon"
               onClick={() => navigate("/")}
             >
               <ArrowLeft className="icon" size={16} />
-              <span>Back to Dashboard</span>
+              <span>{t('reset.backToDashboard')}</span>
             </button>
           }
           hideHamburgerMenu={!isAuthenticated}
@@ -180,10 +182,10 @@ console.log(isAuthenticated, 'isAuthenticated');
               <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
             </div>
 
-            <h1 className="auth-card-title">Verifying Reset Link</h1>
+            <h1 className="auth-card-title">{t('reset.verifyingTitle')}</h1>
 
             <p className="text-center">
-              Please wait while we verify your password reset link...
+              {t('reset.verifyingMessage')}
             </p>
           </div>
         </div>
@@ -195,14 +197,14 @@ console.log(isAuthenticated, 'isAuthenticated');
     return (
       <div className="page-container">
         <AppHeader
-          title="Reset Password"
+          title={t('reset.title')}
           actions={
             <button
               className="button button-icon"
               onClick={() => navigate("/")}
             >
               <ArrowLeft className="icon" size={16} />
-              <span>Back to Dashboard</span>
+              <span>{t('reset.backToDashboard')}</span>
             </button>
           }
           hideHamburgerMenu={!isAuthenticated}
@@ -219,15 +221,12 @@ console.log(isAuthenticated, 'isAuthenticated');
               <Check />
             </div>
 
-            <h1 className="auth-card-title">Password Reset Successful</h1>
+            <h1 className="auth-card-title">{t('reset.successTitle')}</h1>
 
-            <p>
-              Your password has been reset successfully. You will be redirected
-              to the login page shortly.
-            </p>
+            <p>{t('reset.successMessage')}</p>
 
             <button className="button" onClick={() => navigate("/login")}>
-              Go to Login
+              {t('reset.goToLogin')}
             </button>
           </div>
         </div>
@@ -239,14 +238,14 @@ console.log(isAuthenticated, 'isAuthenticated');
     return (
       <div className="page-container">
         <AppHeader
-          title="Reset Password"
+          title={t('reset.title')}
           actions={
             <button
               className="button button-icon"
               onClick={() => navigate("/")}
             >
               <ArrowLeft className="icon" size={16} />
-              <span>Back to Dashboard</span>
+              <span>{t('reset.backToDashboard')}</span>
             </button>
           }
           hideHamburgerMenu={!isAuthenticated}
@@ -263,7 +262,7 @@ console.log(isAuthenticated, 'isAuthenticated');
               <AlertCircle />
             </div>
 
-            <h1 className="auth-card-title">Invalid Reset Link</h1>
+            <h1 className="auth-card-title">{t('reset.invalidLinkTitle')}</h1>
 
             <p className="error-message">{error}</p>
 
@@ -271,7 +270,7 @@ console.log(isAuthenticated, 'isAuthenticated');
               className="button"
               onClick={() => navigate("/forgot-password")}
             >
-              Request New Reset Link
+              {t('reset.requestNewLink')}
             </button>
           </div>
         </div>
@@ -282,27 +281,27 @@ console.log(isAuthenticated, 'isAuthenticated');
   return (
     <div className="page-container">
       <AppHeader
-        title="Reset Password"
+        title={t('reset.title')}
         actions={
           <button className="button button-icon" onClick={() => navigate("/")}>
             <ArrowLeft className="icon" size={16} />
-            <span>Back to Dashboard</span>
+            <span>{t('reset.backToDashboard')}</span>
           </button>
         }
         hideHamburgerMenu={!isAuthenticated}
       />
       <div className="centered-container">
         <div className="centered-card">
-          <h1 className="auth-card-title">Reset Your Password</h1>
+          <h1 className="auth-card-title">{t('reset.resetTitle')}</h1>
 
-          <p className="text-muted">Enter your new password below.</p>
+          <p className="text-muted">{t('reset.instructions')}</p>
 
           {error && <div className="error-container">{error}</div>}
 
           <form onSubmit={handleSubmit(onSubmit)} className="mt-4">
             <div className="form-group">
               <label htmlFor="password" className="form-label">
-                New Password
+                {t('reset.newPassword')}
               </label>
               <div className="input-container">
                 <input
@@ -330,7 +329,7 @@ console.log(isAuthenticated, 'isAuthenticated');
 
             <div className="form-group">
               <label htmlFor="confirmPassword" className="form-label">
-                Confirm Password
+                {t('forms.confirmPassword')}
               </label>
               <div className="input-container">
                 <input
@@ -362,7 +361,7 @@ console.log(isAuthenticated, 'isAuthenticated');
               {isLoading ? (
                 <span className="loading-spinner"></span>
               ) : (
-                "Reset Password"
+                t('reset.resetButton')
               )}
             </button>
           </form>

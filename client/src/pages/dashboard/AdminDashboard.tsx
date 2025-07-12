@@ -42,6 +42,7 @@ import {
   getInvoiceMetrics,
   InvoiceMetric,
 } from "../../services/api/invoiceMetrics";
+import { useLanguage } from '../../contexts/language/language-provider';
 
 // Constants
 const CACHE_DURATION = 30000; // 30 seconds
@@ -456,6 +457,8 @@ function AISummary({
   error,
   onRetry,
 }: AISummaryProps) {
+  const { t } = useLanguage();
+  
   if (loading) {
     return (
       <div className="ai-summary-loading">
@@ -492,7 +495,7 @@ function AISummary({
       <div className="ai-summary-error">
         <p className="error-text">{error}</p>
         <button className="retry-button" onClick={onRetry}>
-          Try Again
+          {t('buttons.tryAgain')}
         </button>
       </div>
     );
@@ -510,8 +513,7 @@ function AISummary({
         </div>
         <div className="ai-stat-details">
           <p className="ai-stat-value">
-            {basicAiInsights.totalDocumentsScanned.toLocaleString()} Documents
-            Scanned
+            {basicAiInsights.totalDocumentsScanned.toLocaleString()} {t('dashboard.documentsScanned')}
           </p>
           <p className="ai-stat-description">
             {basicAiInsights.summary.documentsScanned.description}
@@ -525,8 +527,7 @@ function AISummary({
         </div>
         <div className="ai-stat-details">
           <p className="ai-stat-value">
-            {basicAiInsights.totalJobseekersMatched.toLocaleString()} Position
-            Slots
+            {basicAiInsights.totalJobseekersMatched.toLocaleString()} {t('dashboard.positionSlots')}
           </p>
           <p className="ai-stat-description">
             {basicAiInsights.summary.jobseekersMatched.description}
@@ -540,6 +541,7 @@ function AISummary({
 // Main component
 export function AdminDashboard() {
   const { user, isAdmin } = useAuth();
+  const { t } = useLanguage();
   const [userData, setUserData] = useState<UserData | null>(null);
   const [expandedGraphs, setExpandedGraphs] = useState<Set<string>>(new Set());
 
@@ -568,13 +570,13 @@ export function AdminDashboard() {
   // Memoized toggle descriptions
   const toggleDescriptions = useMemo(
     () => ({
-      recruiter: "Viewing total jobseeker profile metrics from all recruiters",
-      client: "Viewing total client metrics from all recruiters",
-      position: "Viewing total position metrics from all recruiters",
-      timesheet: "Viewing total timesheet metrics from all recruiters",
-      invoice: "Viewing total invoice metrics from all recruiters",
+      recruiter: t('dashboard.viewingTotalJobseekerMetrics'),
+      client: t('dashboard.viewingTotalClientMetrics'),
+      position: t('dashboard.viewingTotalPositionMetrics'),
+      timesheet: t('dashboard.viewingTotalTimesheetMetrics'),
+      invoice: t('dashboard.viewingTotalInvoiceMetrics'),
     }),
-    []
+    [t]
   );
 
   // Event handlers
@@ -604,15 +606,15 @@ export function AdminDashboard() {
       setUserData({
         id: user.id,
         email: user.email,
-        name: user.user_metadata?.name,
-        userType: user.user_metadata?.user_type,
+        name: user.user_metadata?.name || t('common.user'),
+        userType: user.user_metadata?.user_type || "admin",
         createdAt: new Date(user.created_at).toLocaleDateString(),
         lastSignIn: user.last_sign_in_at
           ? new Date(user.last_sign_in_at).toLocaleString()
-          : "First login",
+          : t('dashboard.firstLogin'),
       });
     }
-  }, [user, isAdmin]);
+  }, [user, isAdmin, t]);
 
   // Fetch initial data when userData is available
   useEffect(() => {
@@ -812,23 +814,22 @@ export function AdminDashboard() {
   }
 
   const getRoleIcon = () => <UserCheck className="role-icon admin" />;
-  const getRoleName = () => userData.email ==='accounts@godspeed.com' ? "Accounts" : "Administrator";
+  const getRoleName = () => userData?.email === 'accounts@godspeed.com' ? t('accounts') : t('roles.admin');
 
   return (
     <div className="dashboard-container">
-      <AppHeader title="Admin Portal" />
+      <AppHeader title={t('dashboard.welcome')} />
 
       <main className="dashboard-main">
         <div className="dashboard-heading">
-          <h1 className="dashboard-title">Welcome, {userData.name}!</h1>
+          <h1 className="dashboard-title">{t('welcome')}, {userData?.name}!</h1>
           <div className="user-role-badge">
             {getRoleIcon()}
             <span>{getRoleName()}</span>
           </div>
         </div>
         <p className="dashboard-subtitle">
-          Oversee platform operations and manage system-wide recruiting
-          analytics
+          {t('admin_subtitle')}
         </p>
 
         <div className="dashboard-grid">
@@ -838,7 +839,7 @@ export function AdminDashboard() {
               <DataViewToggle
                 id="recruiterDataToggle"
                 label={toggleDescriptions.recruiter}
-                description="Toggle to view data for all recruiters"
+                description={t('dashboard.toggleAllRecruitersData')}
               />
               <MetricGrid
                 metricsState={recruiterMetrics.state}
@@ -873,7 +874,7 @@ export function AdminDashboard() {
           <DataViewToggle
             id="positionDataToggle"
             label={toggleDescriptions.position}
-            description="Toggle to view position data for all recruiters"
+            description={t('dashboard.toggleAllRecruitersPositionData')}
           />
 
           <div className="position-metrics-grid">
@@ -896,7 +897,7 @@ export function AdminDashboard() {
           <DataViewToggle
             id="invoiceDataToggle"
             label={toggleDescriptions.invoice}
-            description="Toggle to view invoice data for all recruiters"
+            description={t('dashboard.toggleAllRecruitersInvoiceData')}
           />
           <MetricGrid
             metricsState={{
@@ -921,7 +922,7 @@ export function AdminDashboard() {
           <DataViewToggle
             id="timesheetDataToggle"
             label={toggleDescriptions.timesheet}
-            description="Toggle to view timesheet data for all recruiters"
+            description={t('dashboard.toggleAllRecruitersTimesheetData')}
           />
           <div className="position-metrics-grid">
             <MetricGrid
@@ -946,10 +947,9 @@ export function AdminDashboard() {
         <div className="dashboard-grid ai-insights">
           <div className="ai-insights-container">
             <div className="ai-insights-header">
-              <h3 className="ai-insights-title">AI Activity Insights</h3>
+              <h3 className="ai-insights-title">{t('dashboard.aiActivityInsights')}</h3>
               <p className="ai-insights-description">
-                Track AI-powered document processing and position matching
-                activities
+                {t('dashboard.aiActivityDescription')}
               </p>
             </div>
 
@@ -982,14 +982,14 @@ export function AdminDashboard() {
           <DataViewToggle
             id="clientDataToggle"
             label={toggleDescriptions.client}
-            description="Toggle to view client data for all recruiters"
+            description={t('dashboard.toggleAllRecruitersClientData')}
           />
 
           <MetricCard
             data={
               clientMetrics.state.data[0] || {
                 id: "total_clients",
-                label: "Total Clients Created",
+                label: t('dashboard.totalClientsCreated'),
                 currentValue: 0,
                 previousValue: 0,
                 historicalData: [],
