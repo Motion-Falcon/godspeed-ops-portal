@@ -23,6 +23,7 @@ import { JobSeekerProfile } from "../../types/jobseeker";
 import { ConfirmationModal } from "../../components/ConfirmationModal";
 import { AppHeader } from "../../components/AppHeader";
 import { EXPERIENCE_LEVELS } from "../../constants/formOptions";
+import { useLanguage } from "../../contexts/language/language-provider";
 import "../../styles/pages/JobSeekerManagement.css";
 import "../../styles/components/header.css";
 import "../../styles/components/CommonTable.css";
@@ -60,6 +61,7 @@ interface PaginationInfo {
 }
 
 export function JobSeekerManagement() {
+  const { t } = useLanguage();
   const [profiles, setProfiles] = useState<ExtendedJobSeekerProfile[]>([]);
   const [pagination, setPagination] = useState<PaginationInfo>({
     page: 1,
@@ -262,8 +264,8 @@ export function JobSeekerManagement() {
   };
 
   const formatStatusLabel = (status: string): string => {
-    if (status === "need-attention") return "Needs Attention";
-    return status.charAt(0).toUpperCase() + status.slice(1);
+    if (status === "need-attention") return t('jobseekerManagement.status.needsAttention');
+    return t(`jobseekerManagement.status.${status}`) || status.charAt(0).toUpperCase() + status.slice(1);
   };
 
   const handleCreateProfile = () => {
@@ -374,7 +376,7 @@ export function JobSeekerManagement() {
   return (
     <div className="page-container">
       <AppHeader
-        title="Job Seeker Management"
+        title={t('jobseekerManagement.title')}
         actions={
           <>
             <button
@@ -382,14 +384,14 @@ export function JobSeekerManagement() {
               onClick={handleViewDrafts}
             >
               <FileText size={16} />
-              <span>View Drafts</span>
+              <span>{t('jobseekerManagement.viewDrafts')}</span>
             </button>
             <button
               className="button primary button-icon"
               onClick={handleCreateProfile}
             >
               <Plus size={16} />
-              <span>New Job Seeker</span>
+              <span>{t('jobseekerManagement.newJobSeeker')}</span>
             </button>
           </>
         }
@@ -403,13 +405,13 @@ export function JobSeekerManagement() {
 
         <div className="card">
           <div className="card-header">
-            <h2>Job Seeker Profiles</h2>
+            <h2>{t('jobseekerManagement.profilesTitle')}</h2>
             <div className="filter-container">
               <div className="search-box">
                 <Search size={14} className="search-icon" />
                 <input
                   type="text"
-                  placeholder="Global search..."
+                  placeholder={t('jobseekerManagement.globalSearch')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="search-input"
@@ -418,7 +420,7 @@ export function JobSeekerManagement() {
                   className="button secondary button-icon reset-filters-btn"
                   onClick={resetFilters}
                 >
-                  <span>Reset Filters</span>
+                  <span>{t('jobseekerManagement.resetFilters')}</span>
                 </button>
               </div>
             </div>
@@ -428,25 +430,21 @@ export function JobSeekerManagement() {
           <div className="pagination-controls top">
             <div className="pagination-info">
               <span className="pagination-text">
-                Showing{" "}
-                {Math.min(
-                  (pagination.page - 1) * pagination.limit + 1,
-                  pagination.total
-                )}{" "}
-                to{" "}
-                {Math.min(pagination.page * pagination.limit, pagination.total)}{" "}
-                of {pagination.total} entries
+                {t('jobseekerManagement.pagination.showing', {
+                  start: Math.min((pagination.page - 1) * pagination.limit + 1, pagination.total),
+                  end: Math.min(pagination.page * pagination.limit, pagination.total),
+                  total: pagination.total
+                })}
                 {pagination.totalFiltered !== pagination.total && (
                   <span className="filtered-info">
-                    {" "}
-                    (filtered from {pagination.total} total entries)
+                    {t('jobseekerManagement.pagination.filteredFrom', { total: pagination.total })}
                   </span>
                 )}
               </span>
             </div>
             <div className="pagination-size-selector">
               <label htmlFor="pageSize" className="page-size-label">
-                Show:
+                {t('jobseekerManagement.pagination.show')}
               </label>
               <select
                 id="pageSize"
@@ -459,7 +457,7 @@ export function JobSeekerManagement() {
                 <option value={50}>50</option>
                 <option value={100}>100</option>
               </select>
-              <span className="page-size-label">per page</span>
+              <span className="page-size-label">{t('jobseekerManagement.pagination.perPage')}</span>
             </div>
           </div>
 
@@ -473,11 +471,11 @@ export function JobSeekerManagement() {
                 <tr>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">Name</div>
+                      <div className="column-title">{t('jobseekerManagement.columns.name')}</div>
                       <div className="column-search">
                         <input
                           type="text"
-                          placeholder="Search name..."
+                          placeholder={t('jobseekerManagement.placeholders.searchName')}
                           value={nameFilter}
                           onChange={(e) => setNameFilter(e.target.value)}
                           className="column-search-input"
@@ -487,11 +485,11 @@ export function JobSeekerManagement() {
                   </th>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">Email</div>
+                      <div className="column-title">{t('jobseekerManagement.columns.email')}</div>
                       <div className="column-search">
                         <input
                           type="text"
-                          placeholder="Search email..."
+                          placeholder={t('jobseekerManagement.placeholders.searchEmail')}
                           value={emailFilter}
                           onChange={(e) => setEmailFilter(e.target.value)}
                           className="column-search-input"
@@ -501,11 +499,11 @@ export function JobSeekerManagement() {
                   </th>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">Phone Number</div>
+                      <div className="column-title">{t('jobseekerManagement.columns.phone')}</div>
                       <div className="column-search">
                         <input
                           type="text"
-                          placeholder="Search phone..."
+                          placeholder={t('jobseekerManagement.placeholders.searchPhone')}
                           value={phoneFilter}
                           onChange={(e) => setPhoneFilter(e.target.value)}
                           className="column-search-input"
@@ -515,11 +513,11 @@ export function JobSeekerManagement() {
                   </th>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">Location</div>
+                      <div className="column-title">{t('jobseekerManagement.columns.location')}</div>
                       <div className="column-search">
                         <input
                           type="text"
-                          placeholder="Search location..."
+                          placeholder={t('jobseekerManagement.placeholders.searchLocation')}
                           value={locationFilter}
                           onChange={(e) => setLocationFilter(e.target.value)}
                           className="column-search-input"
@@ -529,11 +527,11 @@ export function JobSeekerManagement() {
                   </th>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">Employee ID</div>
+                      <div className="column-title">{t('jobseekerManagement.columns.employeeId')}</div>
                       <div className="column-search">
                         <input
                           type="text"
-                          placeholder="Search employee ID..."
+                          placeholder={t('jobseekerManagement.placeholders.searchEmployeeId')}
                           value={employeeIdFilter}
                           onChange={(e) => setEmployeeIdFilter(e.target.value)}
                           className="column-search-input"
@@ -543,14 +541,14 @@ export function JobSeekerManagement() {
                   </th>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">Experience</div>
+                      <div className="column-title">{t('jobseekerManagement.columns.experience')}</div>
                       <div className="column-search">
                         <select
                           value={experienceFilter}
                           onChange={(e) => setExperienceFilter(e.target.value)}
                           className="column-filter-select"
                         >
-                          <option value="all">All Experience</option>
+                          <option value="all">{t('jobseekerManagement.filters.allExperience')}</option>
                           {EXPERIENCE_LEVELS.map((level) => (
                             <option key={level} value={level}>
                               {level}
@@ -562,27 +560,25 @@ export function JobSeekerManagement() {
                   </th>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">Status</div>
+                      <div className="column-title">{t('jobseekerManagement.columns.status')}</div>
                       <div className="column-search">
                         <select
                           value={statusFilter}
                           onChange={(e) => setStatusFilter(e.target.value)}
                           className="column-filter-select"
                         >
-                          <option value="all">All Statuses</option>
-                          <option value="pending">Pending</option>
-                          <option value="verified">Verified</option>
-                          <option value="rejected">Rejected</option>
-                          <option value="need-attention">
-                            Needs Attention
-                          </option>
+                          <option value="all">{t('jobseekerManagement.filters.allStatuses')}</option>
+                          <option value="pending">{t('jobseekerManagement.status.pending')}</option>
+                          <option value="verified">{t('jobseekerManagement.status.verified')}</option>
+                          <option value="rejected">{t('jobseekerManagement.status.rejected')}</option>
+                          <option value="need-attention">{t('jobseekerManagement.status.needsAttention')}</option>
                         </select>
                       </div>
                     </div>
                   </th>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">Joined Date</div>
+                      <div className="column-title">{t('jobseekerManagement.columns.joinedDate')}</div>
                       <div className="column-search">
                         <div className="date-picker-wrapper">
                           <input
@@ -598,11 +594,11 @@ export function JobSeekerManagement() {
                   </th>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">Actions</div>
+                      <div className="column-title">{t('jobseekerManagement.columns.actions')}</div>
                       <div className="column-search">
                         <div className="actions-info">
                           <span className="actions-help-text">
-                            View • Edit • Delete
+                            {t('jobseekerManagement.actions.helpText')}
                           </span>
                         </div>
                       </div>
@@ -664,7 +660,7 @@ export function JobSeekerManagement() {
                   <tr>
                     <td colSpan={9} className="empty-state-cell">
                       <div className="empty-state">
-                        <p>No profiles match your search criteria.</p>
+                        <p>{t('jobseekerManagement.emptyState.noProfiles')}</p>
                       </div>
                     </td>
                   </tr>
@@ -676,13 +672,13 @@ export function JobSeekerManagement() {
                         <td className="name-cell">{profile.name}</td>
                         <td className="email-cell">{profile.email}</td>
                         <td className="phone-cell">
-                          {profile.phoneNumber || "N/A"}
+                          {profile.phoneNumber || t('jobseekerManagement.na')}
                         </td>
                         <td className="location-cell">
-                          {profile.location || "N/A"}
+                          {profile.location || t('jobseekerManagement.na')}
                         </td>
                         <td className="employee-id-cell">
-                          {profile.employeeId || "N/A"}
+                          {profile.employeeId || t('jobseekerManagement.na')}
                         </td>
                         <td className="experience-cell">
                           {profile.experience}
@@ -703,24 +699,24 @@ export function JobSeekerManagement() {
                             <button
                               className="action-icon-btn view-btn"
                               onClick={() => handleViewProfile(profile.id)}
-                              title="View profile details"
-                              aria-label="View profile"
+                              title={t('jobseekerManagement.actions.viewProfile')}
+                              aria-label={t('jobseekerManagement.actions.viewProfile')}
                             >
                               <Eye size={16} />
                             </button>
                             <button
                               className="action-icon-btn edit-btn"
                               onClick={() => handleEditClick(profile)}
-                              title="Edit this profile"
-                              aria-label="Edit profile"
+                              title={t('jobseekerManagement.actions.editProfile')}
+                              aria-label={t('jobseekerManagement.actions.editProfile')}
                             >
                               <Pencil size={16} />
                             </button>
                             <button
                               className="action-icon-btn delete-btn"
                               onClick={() => handleDeleteClick(profile)}
-                              title="Delete this profile"
-                              aria-label="Delete profile"
+                              title={t('jobseekerManagement.actions.deleteProfile')}
+                              aria-label={t('jobseekerManagement.actions.deleteProfile')}
                             >
                               <Trash2 size={16} />
                             </button>
@@ -739,7 +735,7 @@ export function JobSeekerManagement() {
             <div className="pagination-controls bottom">
               <div className="pagination-info">
                 <span className="pagination-text">
-                  Page {pagination.page} of {pagination.totalPages}
+                  {t('jobseekerManagement.pagination.pageOf', { current: pagination.page, total: pagination.totalPages })}
                 </span>
               </div>
               <div className="pagination-buttons">
@@ -747,11 +743,11 @@ export function JobSeekerManagement() {
                   className="pagination-btn prev"
                   onClick={handlePreviousPage}
                   disabled={!pagination.hasPrevPage}
-                  title="Previous page"
-                  aria-label="Previous page"
+                  title={t('jobseekerManagement.pagination.previousPage')}
+                  aria-label={t('jobseekerManagement.pagination.previousPage')}
                 >
                   <ChevronLeft size={16} />
-                  <span>Previous</span>
+                  <span>{t('jobseekerManagement.pagination.previous')}</span>
                 </button>
 
                 {/* Page numbers */}
@@ -777,7 +773,7 @@ export function JobSeekerManagement() {
                             pageNum === pagination.page ? "active" : ""
                           }`}
                           onClick={() => handlePageChange(pageNum)}
-                          aria-label={`Go to page ${pageNum}`}
+                          aria-label={t('jobseekerManagement.pagination.goToPage', { page: pageNum })}
                         >
                           {pageNum}
                         </button>
@@ -790,10 +786,10 @@ export function JobSeekerManagement() {
                   className="pagination-btn next"
                   onClick={handleNextPage}
                   disabled={!pagination.hasNextPage}
-                  title="Next page"
-                  aria-label="Next page"
+                  title={t('jobseekerManagement.pagination.nextPage')}
+                  aria-label={t('jobseekerManagement.pagination.nextPage')}
                 >
-                  <span>Next</span>
+                  <span>{t('jobseekerManagement.pagination.next')}</span>
                   <ChevronRight size={16} />
                 </button>
               </div>
@@ -805,26 +801,21 @@ export function JobSeekerManagement() {
       {/* Delete Confirmation Modal */}
       <ConfirmationModal
         isOpen={isDeleteModalOpen}
-        title="Delete Profile"
-        message={`Are you sure you want to delete the profile for ${
-          profileToDelete?.name
-        }? This action cannot be undone.${
-          deleteError ? `\n\nError: ${deleteError}` : ""
-        }`}
-        confirmText={isDeleting ? "Deleting..." : "Delete Profile"}
-        cancelText="Cancel"
+        title={t('jobseekerManagement.deleteModal.title')}
+        message={t('jobseekerManagement.deleteModal.message', { name: profileToDelete?.name || '', error: deleteError ? `\n\n${t('jobseekerManagement.deleteModal.error', { error: deleteError })}` : '' })}
+        confirmText={isDeleting ? t('jobseekerManagement.deleteModal.deleting') : t('jobseekerManagement.deleteModal.confirm')}
+        cancelText={t('jobseekerManagement.deleteModal.cancel')}
         confirmButtonClass="danger"
         onConfirm={handleConfirmDelete}
         onCancel={handleCancelDelete}
       />
-
       {/* Edit Confirmation Modal */}
       <ConfirmationModal
         isOpen={isEditModalOpen}
-        title="Edit Profile"
-        message={`Are you sure you want to edit the profile for ${profileToEdit?.name}? You will be redirected to the profile editor.`}
-        confirmText="Edit Profile"
-        cancelText="Cancel"
+        title={t('jobseekerManagement.editModal.title')}
+        message={t('jobseekerManagement.editModal.message', { name: profileToEdit?.name || '' })}
+        confirmText={t('jobseekerManagement.editModal.confirm')}
+        cancelText={t('jobseekerManagement.editModal.cancel')}
         confirmButtonClass="primary"
         onConfirm={handleConfirmEdit}
         onCancel={handleCancelEdit}
