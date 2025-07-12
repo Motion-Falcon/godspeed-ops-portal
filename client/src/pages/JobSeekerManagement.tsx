@@ -94,6 +94,28 @@ export function JobSeekerManagement() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // --- New: Initialize filters from query params on mount ---
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    setNameFilter(params.get("name") || "");
+    setEmailFilter(params.get("email") || "");
+    setPhoneFilter(params.get("phone") || "");
+    setLocationFilter(params.get("location") || "");
+    setEmployeeIdFilter(params.get("employeeId") || "");
+    setExperienceFilter(params.get("experience") || "all");
+    setStatusFilter(params.get("status") || "all");
+    setDateFilter(params.get("date") || "");
+    setSearchTerm(params.get("search") || "");
+    // Optionally: setPagination if you want to support page/limit in URL
+
+    // Example: How to use filter params in the URL
+    //
+    //   /jobseeker-management?name=John&email=john@example.com&phone=1234567890&location=New%20York&employeeId=EMP001&experience=Senior&status=verified&date=2024-06-01&search=developer
+    //
+    // Any combination of these params can be used to pre-populate filters on page load.
+  }, [location.search]);
+  // --- End new code ---
+
   // Check for success message in navigation state (e.g., from edit page)
   useEffect(() => {
     if (location.state?.message) {

@@ -102,6 +102,7 @@ interface MetricResponse {
     value: number;
     date: string | Date;
   }>;
+  redirectTo?: string; // Added redirectTo to the interface
 }
 
 interface APIResponse {
@@ -150,6 +151,7 @@ const transformMetricsResponse = (
         value: point.value,
         date: typeof point.date === "string" ? new Date(point.date) : point.date,
       })),
+      redirectTo: metric.redirectTo,
     };
   });
 };
@@ -402,7 +404,7 @@ function MetricGrid({
               error={metricsState.error}
               onRetry={onRetry}
               className={`metric-transition-${index}`}
-              redirectTo={redirectToValue}
+              redirectTo={metric?.redirectTo || redirectToValue}
             />
           </div>
         );

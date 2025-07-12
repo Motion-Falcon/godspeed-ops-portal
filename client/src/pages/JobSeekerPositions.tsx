@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { 
   Calendar,
   MapPin,
@@ -53,6 +54,7 @@ interface PaginationInfo {
 export function JobSeekerPositions() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [assignments, setAssignments] = useState<CandidateAssignment[]>([]);
   const [statusCounts, setStatusCounts] = useState({
     active: 0,
@@ -64,7 +66,7 @@ export function JobSeekerPositions() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<PositionStatus>('all');
   
-  const ITEMS_PER_PAGE = 5;
+  const ITEMS_PER_PAGE = 10;
   
   const [pagination, setPagination] = useState<PaginationInfo>({
     currentPage: 1,
@@ -79,6 +81,30 @@ export function JobSeekerPositions() {
     employmentType: 'all',
     positionCategory: 'all'
   });
+
+  // --- New: Initialize filters and active tab from query params on mount ---
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const statusParam = params.get('status') || 'all';
+    const validTabs: PositionStatus[] = ['all', 'current', 'past', 'future'];
+    setFilters({
+      status: statusParam,
+      search: params.get('search') || '',
+      employmentType: params.get('employmentType') || 'all',
+      positionCategory: params.get('positionCategory') || 'all',
+    });
+    if (validTabs.includes(statusParam as PositionStatus)) {
+      setActiveTab(statusParam as PositionStatus);
+    } else {
+      setActiveTab('all');
+    }
+    // Example: How to use filter params in the URL
+    //
+    //   /jobseeker-positions?status=current&search=driver&employmentType=Full-Time&positionCategory=AZ
+    //
+    // Any combination of these params can be used to pre-populate filters and tab on page load.
+  }, [location.search]);
+  // --- End new code ---
 
   // Get user's profile ID for fetching assignments
   const [profileId, setProfileId] = useState<string | null>(null);

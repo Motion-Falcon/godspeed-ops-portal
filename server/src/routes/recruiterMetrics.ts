@@ -1063,6 +1063,7 @@ router.get(
             ? "Overall total number of jobseeker profiles created by you"
             : "Overall total number of jobseeker profiles created by all recruiters",
           historicalData: formatHistoricalData(monthlyArray, "total"),
+          redirectTo: `/jobseeker-management`
         },
         {
           id: "pending_profiles",
@@ -1075,6 +1076,7 @@ router.get(
             ? "Total jobseeker profiles created by you awaiting verification"
             : "Total jobseeker profiles which are awaiting verification",
           historicalData: formatHistoricalData(monthlyArray, "pending"),
+          redirectTo: `/jobseeker-management?status=pending`
         },
         {
           id: "verified_profiles",
@@ -1087,6 +1089,7 @@ router.get(
             ? "Total jobseeker profiles created by you that have been verified"
             : "Total jobseeker profiles that have been verified",
           historicalData: formatHistoricalData(monthlyArray, "verified"),
+          redirectTo: `/jobseeker-management?status=verified`
         },
         {
           id: "rejected_profiles",
@@ -1099,6 +1102,7 @@ router.get(
             ? "Total jobseeker profiles created by you that have been rejected"
             : "Total jobseeker profiles that have been rejected",
           historicalData: formatHistoricalData(monthlyArray, "rejected"),
+          redirectTo: `/jobseeker-management?status=rejected`
         },
       ];
 

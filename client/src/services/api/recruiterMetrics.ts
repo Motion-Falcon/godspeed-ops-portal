@@ -33,6 +33,7 @@ export interface Metric {
   formatType: string;
   description: string;
   historicalData: HistoricalDataPoint[];
+  redirectTo: string;
 }
 
 export interface RecruiterInfo {

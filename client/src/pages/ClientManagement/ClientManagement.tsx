@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { Eye, Pencil, Trash2, Plus, FileText, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { 
   getClients, 
@@ -57,6 +58,7 @@ export function ClientManagement() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Filter states
   const [searchTerm, setSearchTerm] = useState('');
@@ -229,6 +231,26 @@ export function ClientManagement() {
     paymentMethodFilter,
     paymentCycleFilter
   ]);
+
+  // --- New: Initialize filters from query params on mount ---
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    setSearchTerm(params.get('searchTerm') || '');
+    setCompanyNameFilter(params.get('companyName') || '');
+    setShortCodeFilter(params.get('shortCode') || '');
+    setListNameFilter(params.get('listName') || '');
+    setContactFilter(params.get('contact') || '');
+    setEmailFilter(params.get('email') || '');
+    setMobileFilter(params.get('mobile') || '');
+    setPaymentMethodFilter(params.get('paymentMethod') || '');
+    setPaymentCycleFilter(params.get('paymentCycle') || '');
+    // Example: How to use filter params in the URL
+    //
+    //   /client-management/list?searchTerm=Acme&companyName=Acme%20Corp&shortCode=ACM&listName=Preferred&contact=John%20Doe&email=acme%40email.com&mobile=1234567890&paymentMethod=Wire&paymentCycle=Monthly
+    //
+    // Any combination of these params can be used to pre-populate filters on page load.
+  }, [location.search]);
+  // --- End new code ---
 
   // Event handlers
   const handleCreateClient = () => {

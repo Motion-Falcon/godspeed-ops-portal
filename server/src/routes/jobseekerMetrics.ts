@@ -231,6 +231,7 @@ router.get(
           formatType: "number",
           description: "Total number of completed job assignments",
           historicalData: formatHistoricalData(monthlyArray, "completed"),
+          redirectTo: "/my-positions?status=past"
         },
         {
           id: "active_jobs",
@@ -241,6 +242,7 @@ router.get(
           formatType: "number",
           description: "Currently active job assignments",
           historicalData: [],
+          redirectTo: "/my-positions?status=current"
         },
         {
           id: "upcoming_jobs",
@@ -251,6 +253,7 @@ router.get(
           formatType: "number",
           description: "Scheduled upcoming job assignments",
           historicalData: [],
+          redirectTo: "/my-positions?status=future"
         },
         {
           id: "total_assignments",
@@ -261,6 +264,7 @@ router.get(
           formatType: "number",
           description: "Total number of job assignments",
           historicalData: [],
+          redirectTo: "/my-positions"
         },
       ];
 

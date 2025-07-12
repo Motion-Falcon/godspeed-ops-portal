@@ -13,11 +13,9 @@ import "../../styles/pages/Dashboard.css";
 import { AppHeader } from "../../components/AppHeader";
 import { ProfileCompletion } from "../../components/dashboard/ProfileCompletion";
 import { MetricCard } from "../../components/dashboard/MetricCard";
-import {
-  getJobseekerMetrics,
-  type JobseekerMetricsResponse,
-} from "../../services/api/jobseekerMetrics";
+import { getJobseekerMetrics } from "../../services/api/jobseekerMetrics";
 import { MetricData } from "../../components/dashboard/types";
+import { useNavigate } from "react-router-dom";
 
 interface UserData {
   id: string;
@@ -29,8 +27,76 @@ interface UserData {
   profileId?: string;
 }
 
+// Add MetricGrid for jobseeker dashboard
+interface MetricGridProps {
+  metricsData: MetricData[];
+  expandedGraphs: Set<string>;
+  onMetricClick: (metric: MetricData) => void;
+  onToggleGraph: (show: boolean, metricId?: string) => void;
+  onRetry: () => void;
+  gridSize: number;
+  size?: "sm" | "md" | "lg";
+  className?: string;
+  redirectToValue?: string;
+  loading: boolean;
+  error: string | null;
+}
+
+function MetricGrid({
+  metricsData,
+  expandedGraphs,
+  onMetricClick,
+  onToggleGraph,
+  onRetry,
+  gridSize,
+  size = "sm",
+  className = "",
+  redirectToValue,
+  loading,
+  error,
+}: MetricGridProps) {
+  return (
+    <div className={`metrics-grid compact ${className}`}>
+      {Array.from({ length: gridSize }, (_, index) => {
+        const metric = metricsData[index];
+        const isExpanded = metric ? expandedGraphs.has(metric.id) : false;
+        return (
+          <div
+            key={metric?.id || `loading-${index}`}
+            className={`metric-card-container ${isExpanded ? "expanded-grid-item" : ""}`}
+          >
+            <MetricCard
+              data={
+                metric || {
+                  id: `loading-${index}`,
+                  label: "",
+                  currentValue: 0,
+                  previousValue: 0,
+                  historicalData: [],
+                }
+              }
+              size={size}
+              showGraph={false}
+              onClick={metric ? () => onMetricClick(metric) : undefined}
+              onToggleGraph={
+                metric ? (show) => onToggleGraph(show, metric.id) : undefined
+              }
+              loading={loading || !metric}
+              error={error}
+              onRetry={onRetry}
+              className={`metric-transition-${index}`}
+              redirectTo={metric?.redirectTo || redirectToValue}
+            />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function JobSeekerDashboard() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [userData, setUserData] = useState<UserData | null>(null);
   const [metricsData, setMetricsData] = useState<MetricData[]>([]);
   const [metricsLoading, setMetricsLoading] = useState(false);
@@ -80,12 +146,29 @@ export function JobSeekerDashboard() {
     setMetricsError(null);
 
     try {
-      const response: JobseekerMetricsResponse = await getJobseekerMetrics(
+      // Extend Metric type to include redirectTo
+      type MetricWithRedirect = {
+        id: string;
+        label: string;
+        currentValue: number;
+        previousValue: number;
+        unit: string;
+        formatType: string;
+        description: string;
+        historicalData: Array<{
+          period: string;
+          value: number;
+          date: string | Date;
+        }>;
+        redirectTo?: string;
+      };
+
+      const response = await getJobseekerMetrics(
         candidateId,
         {
           timeRange: "12", // 12 months of data
         }
-      );
+      ) as { metrics: MetricWithRedirect[] };
 
       // Define client-side colors and icons for each metric type
       const metricConfig = {
@@ -123,6 +206,7 @@ export function JobSeekerDashboard() {
                 ? new Date(point.date)
                 : point.date,
           })),
+          redirectTo: metric.redirectTo, // Pass through from backend
         })
       );
 
@@ -137,15 +221,16 @@ export function JobSeekerDashboard() {
     }
   };
 
+  // Updated: handleMetricClick to support redirectTo navigation
   const handleMetricClick = (metric: MetricData) => {
-    console.log("Metric clicked:", metric.label);
-    // You can implement navigation to detailed metric view here
+    if (metric.redirectTo) {
+      navigate(metric.redirectTo);
+    } else {
+      console.log("Metric clicked:", metric.label);
+    }
   };
 
   const handleToggleGraph = (show: boolean, metricId?: string) => {
-    console.log("Graph toggled:", show, "for metric:", metricId);
-
-    // Track which cards have their graphs expanded for grid layout
     if (metricId) {
       setExpandedGraphs((prev) => {
         const newSet = new Set(prev);
@@ -188,46 +273,17 @@ export function JobSeekerDashboard() {
 
         <div className="dashboard-grid">
           {/* Metrics Cards - 2x2 Grid with Individual Expansion */}
-          <div className="metrics-grid compact">
-            {/* Always render 4 cards, with loading state or actual data */}
-            {Array.from({ length: 4 }, (_, index) => {
-              const metric = metricsData[index];
-              const isExpanded = metric ? expandedGraphs.has(metric.id) : false;
-
-              return (
-                <div
-                  key={metric?.id || `loading-${index}`}
-                  className={`metric-card-container ${
-                    isExpanded ? "expanded-grid-item" : ""
-                  }`}
-                >
-                  <MetricCard
-                    data={
-                      metric || {
-                        id: `loading-${index}`,
-                        label: "",
-                        currentValue: 0,
-                        previousValue: 0,
-                        historicalData: [],
-                      }
-                    }
-                    size="sm"
-                    showGraph={false}
-                    onClick={metric ? handleMetricClick : undefined}
-                    onToggleGraph={
-                      metric
-                        ? (show) => handleToggleGraph(show, metric.id)
-                        : undefined
-                    }
-                    loading={metricsLoading || !metric}
-                    error={metricsError}
-                    onRetry={() => userData?.id && fetchJobseekerMetrics(userData.id)}
-                    className={`metric-transition-${index}`}
-                  />
-                </div>
-              );
-            })}
-          </div>
+          <MetricGrid
+            metricsData={metricsData}
+            expandedGraphs={expandedGraphs}
+            onMetricClick={handleMetricClick}
+            onToggleGraph={handleToggleGraph}
+            onRetry={() => userData?.id && fetchJobseekerMetrics(userData.id)}
+            gridSize={4}
+            size="sm"
+            loading={metricsLoading}
+            error={metricsError}
+          />
 
           {/* Profile Completion Status Card on the right */}
           <ProfileCompletion userId={userData.id} />

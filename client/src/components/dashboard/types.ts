@@ -14,7 +14,7 @@ export interface MetricData {
   formatType?: "number" | "currency" | "percentage" | "duration";
 
   historicalData: HistoricalDataPoint[];
-
+  redirectTo?: string;
   // Visual customization
   color?: string;
   icon?: string | React.ReactNode;

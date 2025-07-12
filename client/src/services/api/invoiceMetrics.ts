@@ -15,6 +15,7 @@ export interface InvoiceMetric {
     value: number;
     date: Date | string;
   }>;
+  redirectTo: string;
 }
 
 export interface InvoiceMetricsResponse {

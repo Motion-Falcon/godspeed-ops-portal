@@ -194,6 +194,28 @@ export function PositionManagement() {
     dateFilter,
   ]);
 
+  // --- New: Initialize filters from query params on mount ---
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    setSearchTerm(params.get("search") || "");
+    setPositionIdFilter(params.get("positionId") || "");
+    setTitleFilter(params.get("title") || "");
+    setClientFilter(params.get("client") || "");
+    setLocationFilter(params.get("location") || "");
+    setEmploymentTermFilter(params.get("employmentTerm") || "all");
+    setEmploymentTypeFilter(params.get("employmentType") || "all");
+    setPositionCategoryFilter(params.get("positionCategory") || "all");
+    setExperienceFilter(params.get("experience") || "all");
+    setShowOnPortalFilter(params.get("showOnPortal") || "all");
+    setDateFilter(params.get("date") || "");
+    // Example: How to use filter params in the URL
+    //
+    //   /position-management?search=Developer&positionId=POS123&title=Frontend&client=Acme%20Corp&location=Toronto&employmentTerm=Full-Time&employmentType=Permanent&positionCategory=IT&experience=Senior&showOnPortal=true&date=2024-07-01
+    //
+    // Any combination of these params can be used to pre-populate filters on page load.
+  }, [location.search]);
+  // --- End new code ---
+
   const handleCreatePosition = () => {
     navigate("/position-management/create");
   };

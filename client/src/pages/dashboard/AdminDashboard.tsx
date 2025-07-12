@@ -33,8 +33,6 @@ import {
 } from "../../services/api/aiInsights";
 import { MetricData } from "../../components/dashboard/types";
 import { useRecentActivities } from "../../hooks/useRecentActivities";
-import "../../styles/components/header.css";
-import "../../styles/pages/Dashboard.css";
 import { RecentActivities } from "../../components/dashboard/RecentActivities";
 import {
   getTimesheetMetrics,
@@ -115,10 +113,17 @@ interface MetricResponse {
     value: number;
     date: string | Date;
   }>;
+  redirectTo: string;
 }
 
 interface APIResponse {
   metrics: MetricResponse[];
+  timeRange: {
+    months: number;
+    startDate: string;
+    endDate: string;
+  };
+  scope: string;
 }
 
 // Utility functions
@@ -171,6 +176,7 @@ const transformMetricsResponse = (
         date:
           typeof point.date === "string" ? new Date(point.date) : point.date,
       })),
+      redirectTo: metric.redirectTo,
     };
   });
 };
@@ -400,6 +406,7 @@ function MetricGrid({
       {Array.from({ length: gridSize }, (_, index) => {
         const metric = metricsState.data[index];
         const isExpanded = metric ? expandedGraphs.has(metric.id) : false;
+        console.log(metric?.redirectTo);
         return (
           <div
             key={metric?.id || `loading-${index}`}
@@ -427,7 +434,7 @@ function MetricGrid({
               error={metricsState.error}
               onRetry={onRetry}
               className={`metric-transition-${index}`}
-              redirectTo={redirectToValue}
+              redirectTo={metric?.redirectTo || redirectToValue}
             />
           </div>
         );
@@ -762,6 +769,7 @@ export function AdminDashboard() {
         date:
           typeof point.date === "string" ? new Date(point.date) : point.date,
       })),
+      redirectTo: metric.redirectTo,
     };
   };
 
@@ -900,9 +908,10 @@ export function AdminDashboard() {
             onMetricClick={handleMetricClick}
             onToggleGraph={handleToggleGraph}
             onRetry={fetchInvoiceMetrics}
-            gridSize={4}
+            gridSize={5}
             size="sm"
-            className="invoice-metrics"
+            // className="invoice-metrics"
+            className="position-metrics"
             redirectToValue="/invoice-management/list"
           />
         </div>

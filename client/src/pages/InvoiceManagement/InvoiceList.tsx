@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { Eye, Trash2, Plus, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import {
   getInvoices,
@@ -44,6 +45,7 @@ export function InvoiceList() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Filter states
   const [searchTerm, setSearchTerm] = useState('');
@@ -184,6 +186,28 @@ export function InvoiceList() {
     invoiceSentFilter,
     documentGeneratedFilter,
   ]);
+
+  // --- New: Initialize filters from query params on mount ---
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    setSearchTerm(params.get('searchTerm') || '');
+    setInvoiceNumberFilter(params.get('invoiceNumber') || '');
+    setClientFilter(params.get('client') || '');
+    setClientEmailFilter(params.get('clientEmail') || '');
+    setDateRangeStart(params.get('dateRangeStart') || '');
+    setDateRangeEnd(params.get('dateRangeEnd') || '');
+    setDueDateStart(params.get('dueDateStart') || '');
+    setDueDateEnd(params.get('dueDateEnd') || '');
+    setEmailSentFilter(params.get('emailSent') || '');
+    setInvoiceSentFilter(params.get('invoiceSent') || '');
+    setDocumentGeneratedFilter(params.get('documentGenerated') || '');
+    // Example: How to use filter params in the URL
+    //
+    //   /invoice-management/list?searchTerm=Acme&invoiceNumber=INV-123&client=Acme%20Corp&clientEmail=acme%40email.com&dateRangeStart=2024-07-01&dateRangeEnd=2024-07-31&dueDateStart=2024-08-01&dueDateEnd=2024-08-31&emailSent=true&invoiceSent=true&documentGenerated=true
+    //
+    // Any combination of these params can be used to pre-populate filters on page load.
+  }, [location.search]);
+  // --- End new code ---
 
   // Event handlers
   const handleCreateInvoice = () => {

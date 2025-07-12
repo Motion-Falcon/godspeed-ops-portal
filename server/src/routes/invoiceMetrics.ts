@@ -31,6 +31,7 @@ interface Metric {
     value: number;
     date: Date | string;
   }>;
+  redirectTo?: string;
 }
 
 /**
@@ -61,6 +62,7 @@ router.get(
       let totalBilled = 0;
       let totalHoursBilled = 0;
       let invoicesWithEmail = 0;
+      let invoicesWithoutEmail = 0;
 
       // For historical data (by month)
       const monthlyStats: { [key: string]: any } = {};
@@ -75,6 +77,7 @@ router.get(
           totalBilled: 0,
           totalHoursBilled: 0,
           invoicesWithEmail: 0,
+          invoicesWithoutEmail: 0,
           month: monthKey,
         };
       }
@@ -91,6 +94,7 @@ router.get(
           totalBilled: 0,
           totalHoursBilled: 0,
           invoicesWithEmail: 0,
+          invoicesWithoutEmail: 0,
           month: currentMonthKey,
         };
       }
@@ -101,6 +105,7 @@ router.get(
         totalBilled += Number(inv.grand_total) || 0;
         totalHoursBilled += Number(inv.total_hours) || 0;
         if (inv.email_sent) invoicesWithEmail++;
+        if (!inv.email_sent) invoicesWithoutEmail++;
 
         // Historical by month
         const monthKey = inv.created_at ? new Date(inv.created_at).toISOString().slice(0, 7) : "unknown";
@@ -109,6 +114,10 @@ router.get(
           monthlyStats[monthKey].totalBilled += Number(inv.grand_total) || 0;
           monthlyStats[monthKey].totalHoursBilled += Number(inv.total_hours) || 0;
           if (inv.email_sent) monthlyStats[monthKey].invoicesWithEmail++;
+          if (!inv.email_sent) {
+            if (!monthlyStats[monthKey].invoicesWithoutEmail) monthlyStats[monthKey].invoicesWithoutEmail = 0;
+            monthlyStats[monthKey].invoicesWithoutEmail++;
+          }
         }
       });
 
@@ -139,6 +148,7 @@ router.get(
           formatType: "number",
           description: "Total number of invoices created",
           historicalData: formatHistoricalData("totalInvoices"),
+          redirectTo: "/invoice-management/list",
         },
         {
           id: "total_billed",
@@ -149,6 +159,7 @@ router.get(
           formatType: "currency",
           description: "Sum of all grand totals from invoices",
           historicalData: formatHistoricalData("totalBilled"),
+          redirectTo: "/invoice-management/list",
         },
         {
           id: "total_hours_billed",
@@ -159,6 +170,7 @@ router.get(
           formatType: "number",
           description: "Sum of all hours billed from invoices",
           historicalData: formatHistoricalData("totalHoursBilled"),
+          redirectTo: "/invoice-management/list",
         },
         {
           id: "invoices_with_email",
@@ -169,6 +181,18 @@ router.get(
           formatType: "number",
           description: "Total invoices sent to client via email",
           historicalData: formatHistoricalData("invoicesWithEmail"),
+          redirectTo: "/invoice-management/list?emailSent=true",
+        },
+        {
+          id: "invoices_without_email",
+          label: "Invoices with No Email Sent",
+          currentValue: invoicesWithoutEmail,
+          previousValue: monthlyArray.length > 1 ? (monthlyArray[monthlyArray.length - 2].invoicesWithoutEmail || 0) : 0,
+          unit: "invoices",
+          formatType: "number",
+          description: "Total Invoices not sent to client via email",
+          historicalData: formatHistoricalData("invoicesWithoutEmail"),
+          redirectTo: "/invoice-management/list?emailSent=false",
         },
       ];
 
