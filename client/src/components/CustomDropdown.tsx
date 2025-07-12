@@ -209,71 +209,69 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
       </div>
       {isOpen && (
         <div className="custom-dropdown-menu">
+          {searchable && (
+            <div className="custom-dropdown-search-container">
+              <Search size={14} className="custom-dropdown-search-icon" />
+              <input
+                ref={inputRef}
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search options..."
+                className="custom-dropdown-search"
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>
+          )}
           {loading ? (
             <div className="custom-dropdown-loading">
               <div className="custom-dropdown-spinner"></div>
               Loading...
             </div>
           ) : filteredOptions.length > 0 ? (
-            <>
-              {searchable && (
-                <div className="custom-dropdown-search-container">
-                  <Search size={14} className="custom-dropdown-search-icon" />
-                  <input
-                    ref={inputRef}
-                    type="text"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    placeholder="Search options..."
-                    className="custom-dropdown-search"
-                    onClick={(e) => e.stopPropagation()}
-                  />
+            <div className="custom-dropdown-options">
+              {/* Select All Option */}
+              {multiSelect && showSelectAll && (
+                <div
+                  className={`custom-dropdown-option${allSelected ? ' selected' : ''}`}
+                  onClick={handleSelectAll}
+                  style={{ fontWeight: 600 }}
+                >
+                  <div className="custom-dropdown-option-content">
+                    <div className="custom-dropdown-option-label">
+                      {allSelected ? 'Deselect All' : 'Select All'}
+                    </div>
+                  </div>
+                  {allSelected && <span className="custom-dropdown-option-check">✔</span>}
                 </div>
               )}
-              <div className="custom-dropdown-options">
-                {/* Select All Option */}
-                {multiSelect && showSelectAll && (
+              {filteredOptions.map((option) => {
+                const isSelected = multiSelect
+                  ? selectedOptions.some((o) => o.id === option.id)
+                  : selectedOption?.id === option.id;
+                return (
                   <div
-                    className={`custom-dropdown-option${allSelected ? ' selected' : ''}`}
-                    onClick={handleSelectAll}
-                    style={{ fontWeight: 600 }}
+                    key={option.id}
+                    className={`custom-dropdown-option ${isSelected ? 'selected' : ''}`}
+                    onClick={() => handleSelect(option)}
                   >
+                    {multiSelect && (
+                      <CheckCircle size={18} className={`custom-dropdown-check-circle${isSelected ? ' checked' : ''}`} />
+                    )}
                     <div className="custom-dropdown-option-content">
                       <div className="custom-dropdown-option-label">
-                        {allSelected ? 'Deselect All' : 'Select All'}
+                        {option.label}
                       </div>
-                    </div>
-                    {allSelected && <span className="custom-dropdown-option-check">✔</span>}
-                  </div>
-                )}
-                {filteredOptions.map((option) => {
-                  const isSelected = multiSelect
-                    ? selectedOptions.some((o) => o.id === option.id)
-                    : selectedOption?.id === option.id;
-                  return (
-                    <div
-                      key={option.id}
-                      className={`custom-dropdown-option ${isSelected ? 'selected' : ''}`}
-                      onClick={() => handleSelect(option)}
-                    >
-                      {multiSelect && (
-                        <CheckCircle size={18} className={`custom-dropdown-check-circle${isSelected ? ' checked' : ''}`} />
-                      )}
-                      <div className="custom-dropdown-option-content">
-                        <div className="custom-dropdown-option-label">
-                          {option.label}
+                      {option.sublabel && (
+                        <div className="custom-dropdown-option-sublabel">
+                          {option.sublabel}
                         </div>
-                        {option.sublabel && (
-                          <div className="custom-dropdown-option-sublabel">
-                            {option.sublabel}
-                          </div>
-                        )}
-                      </div>
+                      )}
                     </div>
-                  );
-                })}
-              </div>
-            </>
+                  </div>
+                );
+              })}
+            </div>
           ) : (
             <div className="custom-dropdown-empty">
               {emptyMessage}

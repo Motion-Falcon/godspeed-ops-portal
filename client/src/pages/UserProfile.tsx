@@ -201,13 +201,6 @@ export function UserProfile() {
                 <Key size={18} />
                 Account Information
               </h3>
-              
-              <div className="detail-row">
-                <label>User ID</label>
-                <div className="detail-value">
-                  <code className="user-id">{userDetails.id}</code>
-                </div>
-              </div>
 
               <div className="detail-row">
                 <label>Account Created</label>
