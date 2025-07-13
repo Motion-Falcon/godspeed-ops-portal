@@ -321,7 +321,7 @@ export function JobSeekerManagement() {
       // Close the modal
       setIsDeleteModalOpen(false);
       setProfileToDelete(null);
-      setMessage("Profile deleted successfully");
+      setMessage(t('jobSeekerProfile.profileDeleted'));
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "Failed to delete profile";
@@ -400,9 +400,6 @@ export function JobSeekerManagement() {
       />
 
       <div className="content-container">
-        {error && <div className="error-message">{error}</div>}
-        {message && <div className="success-message">{message}</div>}
-
         <div className="card">
           <div className="card-header">
             <h2>{t('jobseekerManagement.profilesTitle')}</h2>

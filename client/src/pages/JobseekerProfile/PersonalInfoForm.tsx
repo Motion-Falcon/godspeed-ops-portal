@@ -1,13 +1,11 @@
 import { useFormContext } from "react-hook-form";
-import { personalInfoSchema } from "./ProfileCreate";
-import { z } from "zod";
+import { PersonalInfoFormData } from "./ProfileCreate";
 import { useState, useEffect, useRef } from "react";
 import { checkEmailAvailability } from "../../services/api/profile";
 import { useNavigate } from "react-router-dom";
 import { Eye, Pencil } from "lucide-react";
 import { validateSIN, validateDOB, getMaxDobDate, logValidation } from "../../utils/validation";
-
-type PersonalInfoFormData = z.infer<typeof personalInfoSchema>;
+import { useLanguage } from "../../contexts/language/language-provider";
 
 interface PersonalInfoFormProps {
   currentStep: number;
@@ -23,6 +21,7 @@ export function PersonalInfoForm({
   disableEmail = false,
   disableMobile = false,
 }: PersonalInfoFormProps) {
+  const { t } = useLanguage();
   const { register, formState, watch, setError, clearErrors } =
     useFormContext<PersonalInfoFormData>();
   const { errors: allErrors } = formState;
@@ -250,22 +249,21 @@ export function PersonalInfoForm({
 
   return (
     <div className="form-containerform-step-container">
-      <h2>Personal Information</h2>
+      <h2>{t('profileCreate.personalInfo.sectionTitle')}</h2>
       <p className="form-description">
-        Please provide your basic personal information. Fields marked with * are
-        required.
+        {t('profileCreate.personalInfo.sectionDescription')}
       </p>
 
       <div className="form-row name-dob-row">
         <div className="form-group">
           <label htmlFor="firstName" className="form-label" data-required="*">
-            First Name
+            {t('profileCreate.personalInfo.firstName')}
           </label>
           <input
             id="firstName"
             type="text"
             className="form-input"
-            placeholder="Your first name"
+            placeholder={t('profileCreate.personalInfo.firstNamePlaceholder')}
             {...register("firstName")}
           />
           {shouldShowError("firstName") && (
@@ -275,13 +273,13 @@ export function PersonalInfoForm({
 
         <div className="form-group">
           <label htmlFor="lastName" className="form-label" data-required="*">
-            Last Name
+            {t('profileCreate.personalInfo.lastName')}
           </label>
           <input
             id="lastName"
             type="text"
             className="form-input"
-            placeholder="Your last name"
+            placeholder={t('profileCreate.personalInfo.lastNamePlaceholder')}
             {...register("lastName")}
           />
           {shouldShowError("lastName") && (
@@ -291,7 +289,7 @@ export function PersonalInfoForm({
 
         <div className="form-group dob-group">
           <label htmlFor="dob" className="form-label" data-required="*">
-            Date of Birth
+            {t('profileCreate.personalInfo.dob')}
           </label>
           <div className="date-picker-container">
             <input
@@ -314,28 +312,27 @@ export function PersonalInfoForm({
           {shouldShowError("dob") && (
             <p className="error-message">{allErrors.dob?.message}</p>
           )}
-          <p className="field-note">Must be at least 18 years old and cannot be in the future</p>
+          <p className="field-note">{t('profileCreate.personalInfo.dobNote')}</p>
         </div>
       </div>
 
       <div className="form-row">
         <div className="form-group">
           <label htmlFor="email" className="form-label" data-required="*">
-            Email
+            {t('profileCreate.personalInfo.email')}
           </label>
           <input
             id="email"
             type="email"
             className="form-input"
-            placeholder="your.email@example.com"
+            placeholder={t('profileCreate.personalInfo.emailPlaceholder')}
             {...register("email")}
             disabled={disableEmail}
             readOnly={disableEmail}
           />
           {disableEmail && (
             <p className="field-note">
-              Email cannot be changed as it's used as a unique identifier for
-              this profile.
+              {t('profileCreate.personalInfo.emailNote')}
             </p>
           )}
           {!disableEmail && emailAvailabilityMessage && (
@@ -378,21 +375,20 @@ export function PersonalInfoForm({
 
         <div className="form-group">
           <label htmlFor="mobile" className="form-label" data-required="*">
-            Mobile Number
+            {t('profileCreate.personalInfo.mobile')}
           </label>
           <input
             id="mobile"
             type="tel"
             className="form-input"
-            placeholder="(XXX) XXX-XXXX"
+            placeholder={t('profileCreate.personalInfo.mobilePlaceholder')}
             {...register("mobile")}
             disabled={disableMobile}
             readOnly={disableMobile}
           />
           {disableMobile && (
             <p className="field-note">
-              Mobile number cannot be changed as it's used as a unique identifier for
-              this profile.
+              {t('profileCreate.personalInfo.mobileNote')}
             </p>
           )}
           {shouldShowError("mobile") && (
@@ -403,18 +399,18 @@ export function PersonalInfoForm({
 
       <div className="form-row license-row">
         <div className="form-info" data-required="*">
-          <small>At least one ID required"</small>
+          <small>{t('profileCreate.personalInfo.atLeastOneId')}</small>
         </div>
         <div className="form-row">
           <div className="form-group">
             <label htmlFor="licenseNumber" className="form-label">
-              License Number
+              {t('profileCreate.personalInfo.licenseNumber')}
             </label>
             <input
               id="licenseNumber"
               type="text"
               className="form-input"
-              placeholder="Enter your license number"
+              placeholder={t('profileCreate.personalInfo.licenseNumberPlaceholder')}
               {...register("licenseNumber")}
             />
             {shouldShowError("licenseNumber") && (
@@ -426,13 +422,13 @@ export function PersonalInfoForm({
 
           <div className="form-group">
             <label htmlFor="passportNumber" className="form-label">
-              Passport Number
+              {t('profileCreate.personalInfo.passportNumber')}
             </label>
             <input
               id="passportNumber"
               type="text"
               className="form-input"
-              placeholder="Enter your passport number"
+              placeholder={t('profileCreate.personalInfo.passportNumberPlaceholder')}
               {...register("passportNumber")}
             />
             {shouldShowError("passportNumber") && (
@@ -445,22 +441,21 @@ export function PersonalInfoForm({
       </div>
 
       <div className="form-section">
-        <h3>Additional Information</h3>
+        <h3>{t('profileCreate.personalInfo.additionalInfoTitle')}</h3>
         <p className="section-description">
-          The following fields are optional but may be required for certain
-          positions.
+          {t('profileCreate.personalInfo.additionalInfoDescription')}
         </p>
 
         <div className="form-row">
           <div className="form-group">
             <label htmlFor="sinNumber" className="form-label">
-              SIN (Social Insurance Number)
+              {t('profileCreate.personalInfo.sinNumber')}
             </label>
             <input
               id="sinNumber"
               type="text"
               className="form-input"
-              placeholder="XXXXXXXXX"
+              placeholder={t('profileCreate.personalInfo.sinNumberPlaceholder')}
               maxLength={9}
               pattern="\d*"
               inputMode="numeric"
@@ -482,13 +477,13 @@ export function PersonalInfoForm({
               <p className="error-message">{allErrors.sinNumber?.message}</p>
             )}
             <p className="field-note">
-              Enter a valid 9-digit Canadian SIN using numbers only (no spaces or dashes). This information is encrypted and securely stored.
+              {t('profileCreate.personalInfo.sinNumberNote')}
             </p>
           </div>
 
           <div className="form-group">
             <label htmlFor="sinExpiry" className="form-label" data-required={watchedSin ? "*" : undefined}>
-              SIN Expiry Date
+              {t('profileCreate.personalInfo.sinExpiry')}
             </label>
             <div className="date-picker-container">
               <input
@@ -508,26 +503,26 @@ export function PersonalInfoForm({
         <div className="form-row">
           <div className="form-group">
             <label htmlFor="businessNumber" className="form-label">
-              Business/HST/GST Number
+              {t('profileCreate.personalInfo.businessNumber')}
             </label>
             <input
               id="businessNumber"
               type="text"
               className="form-input"
-              placeholder="Enter your business number"
+              placeholder={t('profileCreate.personalInfo.businessNumberPlaceholder')}
               {...register("businessNumber")}
             />
           </div>
 
           <div className="form-group">
             <label htmlFor="corporationName" className="form-label">
-              Corporation Name/Number
+              {t('profileCreate.personalInfo.corporationName')}
             </label>
             <input
               id="corporationName"
               type="text"
               className="form-input"
-              placeholder="Enter corporation name or number"
+              placeholder={t('profileCreate.personalInfo.corporationNamePlaceholder')}
               {...register("corporationName")}
             />
           </div>

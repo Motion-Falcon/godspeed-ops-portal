@@ -23,6 +23,7 @@ import {
   saveJobseekerDraft,
 } from "../../services/api/jobseeker";
 import { useAuth } from "../../contexts/AuthContext";
+import { useLanguage } from "../../contexts/language/language-provider";
 import "../../styles/components/form.css";
 import "../../styles/pages/JobseekerProfileStyles.css";
 import "../../styles/components/header.css";
@@ -30,130 +31,96 @@ import { ArrowLeft, Check, Save } from "lucide-react";
 import { validateSIN, validateDOB, logValidation } from "../../utils/validation";
 
 // Define the form schema types for each step
-export const personalInfoSchema = z
-  .object({
-    firstName: z.string().min(1, { message: "First name is required" }),
-    lastName: z.string().min(1, { message: "Last name is required" }),
-    dob: z.string().min(1, { message: "Date of birth is required" }),
-    email: z.string().email({ message: "Valid email is required" }),
-    mobile: z.string().min(1, { message: "Mobile number is required" }),
-    licenseNumber: z.string().optional(),
-    passportNumber: z.string().optional(),
-    sinNumber: z.string().optional(),
-    sinExpiry: z.string().optional(),
-    businessNumber: z.string().optional(),
-    corporationName: z.string().optional(),
-  })
-  .refine((data) => data.licenseNumber || data.passportNumber, {
-    message: "Either a license number or passport number is required",
-    path: ["licenseNumber"],
-  })
-  .refine(
-    (data) => {
-      // If SIN is filled, SIN Expiry must be filled
-      if (data.sinNumber && data.sinNumber.trim() !== "") {
-        return data.sinExpiry && data.sinExpiry.trim() !== "";
-      }
-      // If SIN is empty, sinExpiry can be empty
-      return true;
-    },
-    {
-      message: "SIN Expiry is required if SIN is provided",
-      path: ["sinExpiry"],
-    }
-  );
-
-// Define schema for address and qualifications
-export const addressQualificationsSchema = z.object({
-  // Address fields
-  street: z.string().min(1, { message: "Street address is required" }),
-  city: z.string().min(1, { message: "City is required" }),
-  province: z.string().min(1, { message: "Province is required" }),
-  postalCode: z.string().min(1, { message: "Postal code is required" }),
-
-  // Qualifications fields
-  workPreference: z.string().min(10, {
-    message: "Work preference is required and must be at least 10 characters",
-  }),
-  bio: z
-    .string()
-    .min(100, {
-      message: "Bio is required and must be at least 100 characters",
+export const getPersonalInfoSchema = (messages: Record<string, string>) =>
+  z
+    .object({
+      firstName: z.string().min(1, { message: messages.firstNameRequired }),
+      lastName: z.string().min(1, { message: messages.lastNameRequired }),
+      dob: z.string().min(1, { message: messages.dobRequired }),
+      email: z.string().email({ message: messages.emailInvalid }),
+      mobile: z.string().min(1, { message: messages.mobileRequired }),
+      licenseNumber: z.string().optional(),
+      passportNumber: z.string().optional(),
+      sinNumber: z.string().optional(),
+      sinExpiry: z.string().optional(),
+      businessNumber: z.string().optional(),
+      corporationName: z.string().optional(),
     })
-    .max(500, { message: "Bio must be 500 characters or less" }),
-  licenseType: z.string().min(1, { message: "License type is required" }),
-  experience: z.string().min(1, { message: "Experience level is required" }),
-  manualDriving: z.enum(["NA", "Yes", "No"]),
-  availability: z.enum(["Full-Time", "Part-Time"]),
-  weekendAvailability: z.boolean().default(false),
-});
+    .refine((data) => data.licenseNumber || data.passportNumber, {
+      message: messages.licenseOrPassportRequired,
+      path: ["licenseNumber"],
+    })
+    .refine(
+      (data) => {
+        // If SIN is filled, SIN Expiry must be filled
+        if (data.sinNumber && data.sinNumber.trim() !== "") {
+          return data.sinExpiry && data.sinExpiry.trim() !== "";
+        }
+        // If SIN is empty, sinExpiry can be empty
+        return true;
+      },
+      {
+        message: messages.sinExpiryRequired,
+        path: ["sinExpiry"],
+      }
+    );
+
+// Define schema for address and qualifications with translated messages
+export const getAddressQualificationsSchema = (messages: Record<string, string>) =>
+  z.object({
+    // Address fields
+    street: z.string().min(1, { message: messages.streetRequired }),
+    city: z.string().min(1, { message: messages.cityRequired }),
+    province: z.string().min(1, { message: messages.provinceRequired }),
+    postalCode: z.string().min(1, { message: messages.postalCodeRequired }),
+
+    // Qualifications fields
+    workPreference: z.string().min(10, {
+      message: messages.workPreferenceRequired,
+    }),
+    bio: z
+      .string()
+      .min(100, {
+        message: messages.bioRequired,
+      })
+      .max(500, { message: messages.bioMaxLength }),
+    licenseType: z.string().min(1, { message: messages.licenseTypeRequired }),
+    experience: z.string().min(1, { message: messages.experienceRequired }),
+    manualDriving: z.enum(["NA", "Yes", "No"]),
+    availability: z.enum(["Full-Time", "Part-Time"]),
+    weekendAvailability: z.boolean().default(false),
+  });
 
 // Define schema for compensation
-export const compensationSchema = z.object({
-  payrateType: z.enum(["Hourly", "Daily", "Monthly"]).optional(),
-  billRate: z.string().optional(),
-  payRate: z.string().optional(),
-  paymentMethod: z.string().min(1, { message: "Payment method is required" }),
-  hstGst: z.string().optional(),
-  cashDeduction: z.string().optional(),
-  overtimeEnabled: z.boolean().default(false),
-  overtimeHours: z
-    .string()
-    .optional()
-    .superRefine((val, ctx) => {
-      // Get the form values to check if overtime is enabled
-      const formData = ctx.path[0] as unknown as JobseekerProfileFormData;
-      if (formData?.overtimeEnabled && !val) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Overtime hours is required when overtime is enabled",
-          path: [],
-        });
-      }
-    }),
-  overtimeBillRate: z
-    .string()
-    .optional()
-    .superRefine((val, ctx) => {
-      const formData = ctx.path[0] as unknown as JobseekerProfileFormData;
-      if (formData?.overtimeEnabled && !val) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Overtime bill rate is required when overtime is enabled",
-          path: [],
-        });
-      }
-    }),
-  overtimePayRate: z
-    .string()
-    .optional()
-    .superRefine((val, ctx) => {
-      const formData = ctx.path[0] as unknown as JobseekerProfileFormData;
-      if (formData?.overtimeEnabled && !val) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Overtime pay rate is required when overtime is enabled",
-          path: [],
-        });
-      }
-    }),
-});
+export const getCompensationSchema = () =>
+  z.object({
+    payrateType: z.enum(["Hourly", "Daily", "Monthly"]).optional(),
+    billRate: z.string().optional(),
+    payRate: z.string().optional(),
+    paymentMethod: z.string().optional(),
+    hstGst: z.string().optional(),
+    cashDeduction: z.string().optional(),
+    overtimeEnabled: z.boolean().default(false),
+    overtimeHours: z.string().optional(),
+    overtimeBillRate: z.string().optional(),
+    overtimePayRate: z.string().optional(),
+  });
 
 // Document Upload Schema
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 const ALLOWED_FILE_TYPES = ["application/pdf"];
 
 // Single document schema
-const singleDocumentSchema = z
+const getSingleDocumentSchema = (messages: Record<string, string>) => z
   .object({
-    documentType: z.string().min(1, { message: "Document type is required" }),
+    documentType: z.string().min(1, { message: messages.documentTypeRequired }),
     documentTitle: z.string().optional(),
     documentFile: z
-      .instanceof(File, { message: "Document file is required" })
-      .refine((file) => file?.size <= MAX_FILE_SIZE, `Max file size is 2MB.`)
+      .instanceof(File, { message: messages.documentFileRequired })
+      .refine((file) => file?.size <= MAX_FILE_SIZE, messages.maxFileSize)
       .refine(
         (file) => ALLOWED_FILE_TYPES.includes(file?.type),
-        "Only .pdf files are accepted."
+        messages.onlyPdfFiles
       )
       .optional(), // Keep optional initially to allow adding rows without immediate file selection
     documentNotes: z.string().optional(),
@@ -167,92 +134,98 @@ const singleDocumentSchema = z
       return !!data.documentPath || !!data.documentFile;
     },
     {
-      message: "Document file is required for new entries",
+      message: messages.documentFileRequired,
       path: ["documentFile"], // Associate error with the file input
     }
   );
 
 // Array of documents schema
-export const documentUploadSchema = z.object({
+export const getDocumentUploadSchema = (messages: Record<string, string>) => z.object({
   documents: z
-    .array(singleDocumentSchema)
-    .min(1, { message: "At least one document is required" }),
+    .array(getSingleDocumentSchema(messages))
+    .min(1, { message: messages.atLeastOneDocumentRequired }),
 });
 
-// Combined schema for the entire form - avoid using .extend() after refine()
-const formSchema = z
-  .object({
-    // Personal info fields
-    firstName: z.string().min(1, { message: "First name is required" }),
-    lastName: z.string().min(1, { message: "Last name is required" }),
-    dob: z.string().min(1, { message: "Date of birth is required" }),
-    email: z.string().email({ message: "Valid email is required" }),
-    mobile: z.string().min(1, { message: "Mobile number is required" }),
-    licenseNumber: z.string().optional(),
-    passportNumber: z.string().optional(),
-    sinNumber: z.string().optional(),
-    sinExpiry: z.string().optional(),
-    businessNumber: z.string().optional(),
-    corporationName: z.string().optional(),
+// Function to create form schema with translated messages
+const createFormSchema = (messages: Record<string, string>) => {
+  return z
+    .object({
+      // Personal info fields
+      firstName: z.string().min(1, { message: messages.firstNameRequired }),
+      lastName: z.string().min(1, { message: messages.lastNameRequired }),
+      dob: z.string().min(1, { message: messages.dobRequired }),
+      email: z.string().email({ message: messages.emailInvalid }),
+      mobile: z.string().min(1, { message: messages.mobileRequired }),
+      licenseNumber: z.string().optional(),
+      passportNumber: z.string().optional(),
+      sinNumber: z.string().optional(),
+      sinExpiry: z.string().optional(),
+      businessNumber: z.string().optional(),
+      corporationName: z.string().optional(),
 
-    // Address & Qualifications fields
-    street: z.string().min(1, { message: "Street address is required" }),
-    city: z.string().min(1, { message: "City is required" }),
-    province: z.string().min(1, { message: "Province is required" }),
-    postalCode: z.string().min(1, { message: "Postal code is required" }),
-    workPreference: z.string().min(10, {
-      message: "Work preference is required and must be at least 10 characters",
-    }),
-    bio: z
-      .string()
-      .min(100, {
-        message: "Bio is required and must be at least 100 characters",
-      })
-      .max(500, { message: "Bio must be 500 characters or less" }),
-    licenseType: z.string().min(1, { message: "License type is required" }),
-    experience: z.string().min(1, { message: "Experience level is required" }),
-    manualDriving: z.enum(["NA", "Yes", "No"]),
-    availability: z.enum(["Full-Time", "Part-Time"]),
-    weekendAvailability: z.boolean().default(false),
+      // Address & Qualifications fields
+      street: z.string().min(1, { message: messages.streetRequired }),
+      city: z.string().min(1, { message: messages.cityRequired }),
+      province: z.string().min(1, { message: messages.provinceRequired }),
+      postalCode: z.string().min(1, { message: messages.postalCodeRequired }),
+      workPreference: z.string().min(10, {
+        message: messages.workPreferenceRequired,
+      }),
+      bio: z
+        .string()
+        .min(100, {
+          message: messages.bioRequired,
+        })
+        .max(500, { message: messages.bioMaxLength }),
+      licenseType: z.string().min(1, { message: messages.licenseTypeRequired }),
+      experience: z.string().min(1, { message: messages.experienceRequired }),
+      manualDriving: z.enum(["NA", "Yes", "No"]),
+      availability: z.enum(["Full-Time", "Part-Time"]),
+      weekendAvailability: z.boolean().default(false),
 
-    // Compensation fields - modified to be conditional based on user type
-    payrateType: z.enum(["Hourly", "Daily", "Monthly"]).optional(),
-    billRate: z.string().optional(),
-    payRate: z.string().optional(),
-    paymentMethod: z.string().optional(),
-    hstGst: z.string().optional(),
-    cashDeduction: z.string().optional(),
-    overtimeEnabled: z.boolean().default(false),
-    overtimeHours: z.string().optional(),
-    overtimeBillRate: z.string().optional(),
-    overtimePayRate: z.string().optional(),
+      // Compensation fields - modified to be conditional based on user type
+      payrateType: z.enum(["Hourly", "Daily", "Monthly"]).optional(),
+      billRate: z.string().optional(),
+      payRate: z.string().optional(),
+      paymentMethod: z.string().optional(),
+      hstGst: z.string().optional(),
+      cashDeduction: z.string().optional(),
+      overtimeEnabled: z.boolean().default(false),
+      overtimeHours: z.string().optional(),
+      overtimeBillRate: z.string().optional(),
+      overtimePayRate: z.string().optional(),
 
-    // Document upload fields - updated to handle multiple documents
-    documents: z
-      .array(singleDocumentSchema)
-      .min(1, { message: "At least one document is required" }),
-  })
-  .refine((data) => data.licenseNumber || data.passportNumber, {
-    message: "Either a license number or passport number is required",
-    path: ["licenseNumber"],
-  })
-  .refine(
-    (data) => {
-      // If SIN is filled, SIN Expiry must be filled
-      if (data.sinNumber && data.sinNumber.trim() !== "") {
-        return data.sinExpiry && data.sinExpiry.trim() !== "";
+      // Document upload fields - updated to handle multiple documents
+      documents: z
+        .array(getSingleDocumentSchema(messages))
+        .min(1, { message: messages.atLeastOneDocumentRequired }),
+    })
+    .refine((data) => data.licenseNumber || data.passportNumber, {
+      message: messages.licenseOrPassportRequired,
+      path: ["licenseNumber"],
+    })
+    .refine(
+      (data) => {
+        // If SIN is filled, SIN Expiry must be filled
+        if (data.sinNumber && data.sinNumber.trim() !== "") {
+          return data.sinExpiry && data.sinExpiry.trim() !== "";
+        }
+        // If SIN is empty, sinExpiry can be empty
+        return true;
+      },
+      {
+        message: messages.sinExpiryRequired,
+        path: ["sinExpiry"],
       }
-      // If SIN is empty, sinExpiry can be empty
-      return true;
-    },
-    {
-      message: "SIN Expiry is required if SIN is provided",
-      path: ["sinExpiry"],
-    }
-  );
+    );
+};
 
 // Type inference for form data
-type JobseekerProfileFormData = z.infer<typeof formSchema>;
+type JobseekerProfileFormData = z.infer<ReturnType<typeof createFormSchema>>;
+
+export type PersonalInfoFormData = z.infer<ReturnType<typeof getPersonalInfoSchema>>;
+export type AddressQualificationsFormData = z.infer<ReturnType<typeof getAddressQualificationsSchema>>;
+export type CompensationFormData = z.infer<ReturnType<typeof getCompensationSchema>>;
 
 // Interface for ProfileCreate props
 interface ProfileCreateProps {
@@ -270,6 +243,46 @@ export function ProfileCreate({
   const location = useLocation();
   const navigate = useNavigate();
   const { isJobSeeker, user } = useAuth();
+  const { t } = useLanguage();
+
+  // Create translated validation messages
+  const validationMessages = {
+    firstNameRequired: t('profileCreate.personalInfo.firstNameRequired'),
+    lastNameRequired: t('profileCreate.personalInfo.lastNameRequired'),
+    dobRequired: t('profileCreate.personalInfo.dobRequired'),
+    emailInvalid: t('profileCreate.personalInfo.emailInvalid'),
+    mobileRequired: t('profileCreate.personalInfo.mobileRequired'),
+    licenseOrPassportRequired: t('profileCreate.personalInfo.licenseOrPassportRequired'),
+    sinExpiryRequired: t('profileCreate.personalInfo.sinExpiryRequired'),
+    // Address validation messages
+    streetRequired: t('profileCreate.address.streetRequired'),
+    cityRequired: t('profileCreate.address.cityRequired'),
+    provinceRequired: t('profileCreate.address.provinceRequired'),
+    postalCodeRequired: t('profileCreate.address.postalCodeRequired'),
+    // Qualifications validation messages
+    workPreferenceRequired: t('profileCreate.qualifications.workPreferenceRequired'),
+    bioRequired: t('profileCreate.qualifications.bioRequired'),
+    bioMaxLength: t('profileCreate.qualifications.bioMaxLength'),
+    licenseTypeRequired: t('profileCreate.qualifications.licenseTypeRequired'),
+    experienceRequired: t('profileCreate.qualifications.experienceRequired'),
+    // Compensation validation messages
+    payrateTypeRequired: t('profileCreate.compensation.payrateTypeRequired'),
+    billRateRequired: t('profileCreate.compensation.billRateRequired'),
+    payRateRequired: t('profileCreate.compensation.payRateRequired'),
+    paymentMethodRequired: t('profileCreate.compensation.paymentMethodRequired'),
+    overtimeHoursRequired: t('profileCreate.compensation.overtimeHoursRequired'),
+    overtimeBillRateRequired: t('profileCreate.compensation.overtimeBillRateRequired'),
+    overtimePayRateRequired: t('profileCreate.compensation.overtimePayRateRequired'),
+    // Document validation messages
+    documentTypeRequired: t('profileCreate.documents.documentTypeRequired'),
+    documentFileRequired: t('profileCreate.documents.documentFileRequired'),
+    atLeastOneDocumentRequired: t('profileCreate.documents.atLeastOneDocumentRequired'),
+    maxFileSize: t('profileCreate.documents.maxFileSize'),
+    onlyPdfFiles: t('profileCreate.documents.onlyPdfFiles'),
+  };
+
+  // Create form schema with translated messages
+  const formSchema = createFormSchema(validationMessages);
 
   // Check if isNewForm is passed via location state
   const locationIsNewForm = location.state?.isNewForm === true;
@@ -712,7 +725,7 @@ export function ProfileCreate({
       if (!values.payrateType) {
         methods.setError("payrateType", {
           type: "custom",
-          message: "Payrate type is required",
+          message: validationMessages.payrateTypeRequired,
         });
         compensationValid = false;
       }
@@ -720,7 +733,7 @@ export function ProfileCreate({
       if (!values.billRate) {
         methods.setError("billRate", {
           type: "custom",
-          message: "Bill rate is required",
+          message: validationMessages.billRateRequired,
         });
         compensationValid = false;
       }
@@ -728,7 +741,7 @@ export function ProfileCreate({
       if (!values.payRate) {
         methods.setError("payRate", {
           type: "custom",
-          message: "Pay rate is required",
+          message: validationMessages.payRateRequired,
         });
         compensationValid = false;
       }
@@ -736,7 +749,7 @@ export function ProfileCreate({
       if (!values.paymentMethod) {
         methods.setError("paymentMethod", {
           type: "custom",
-          message: "Payment method is required",
+          message: validationMessages.paymentMethodRequired,
         });
         compensationValid = false;
       }
@@ -1259,7 +1272,7 @@ export function ProfileCreate({
             // Navigate to success page
             navigate("/jobseekers/profile/success", {
               state: {
-                message: "Profile created successfully",
+                message: t('profileSuccess.title'),
                 profileId: result.profile?.id,
                 profile: result.profile,
               },
@@ -1300,7 +1313,7 @@ export function ProfileCreate({
             // Navigate to success page
             navigate("/jobseekers/profile/success", {
               state: {
-                message: "Profile created successfully",
+                message: t('profileSuccess.title'),
                 profileId: result.profile?.id,
                 profile: result.profile,
               },
@@ -1459,12 +1472,6 @@ export function ProfileCreate({
           {Array.from({ length: totalSteps }, (_, i) => {
             const stepNum = i + 1;
 
-            // For jobseekers, if this is the 4th step, use the Documents label (step 5)
-            const stepLabel =
-              isJobSeeker && stepNum === 4
-                ? getStepLabel(5) // Documents label
-                : getStepLabel(stepNum);
-
             // Check if this step should be active
             const isActive = stepNum === adjustedCurrentStep;
 
@@ -1482,7 +1489,7 @@ export function ProfileCreate({
                 <div className="step-bubble">
                   {isCompleted ? <Check size={20} /> : stepNum}
                 </div>
-                <div className="step-label">{stepLabel}</div>
+                <div className="step-label">{t(getStepLabelKey(stepNum))}</div>
               </div>
             );
           })}
@@ -1491,41 +1498,40 @@ export function ProfileCreate({
     );
   };
 
-  // Helper function to get step labels
-  const getStepLabel = (step: number): string => {
+  // Helper function to get step labels (returns translation keys)
+  const getStepLabelKey = (step: number): string => {
     switch (step) {
       case 1:
-        return "Personal Info";
+        return "profileCreate.stepPersonalInfo";
       case 2:
-        return "Address";
+        return "profileCreate.stepAddress";
       case 3:
-        return "Qualifications";
+        return "profileCreate.stepQualifications";
       case 4:
-        return "Compensation";
+        return "profileCreate.stepCompensation";
       case 5:
-        return "Documents";
+        return "profileCreate.stepDocuments";
       default:
-        return `Step ${step}`;
+        return "profileCreate.stepGeneric";
     }
   };
-
   // Render loading indicator based on specific loading states
   const renderLoadingIndicator = () => {
     if (loadingStates.formLoading) {
-      return <div className="loading-indicator">Loading saved draft...</div>;
+      return <div className="loading-indicator">{t('profileCreate.loadingDraft')}</div>;
     }
     if (loadingStates.fileUploading) {
-      return <div className="loading-indicator">Uploading files...</div>;
+      return <div className="loading-indicator">{t('profileCreate.uploadingFiles')}</div>;
     }
     if (loadingStates.draftSaving) {
-      return <div className="loading-indicator">Saving draft...</div>;
+      return <div className="loading-indicator">{t('profileCreate.savingDraft')}</div>;
     }
     if (loadingStates.submitting) {
-      return <div className="loading-indicator">Submitting profile...</div>;
+      return <div className="loading-indicator">{t('profileCreate.submittingProfile')}</div>;
     }
     if (loadingStates.emailChecking) {
       return (
-        <div className="loading-indicator">Checking email availability...</div>
+        <div className="loading-indicator">{t('profileCreate.checkingEmail')}</div>
       );
     }
     return null;
@@ -1536,10 +1542,10 @@ export function ProfileCreate({
       <AppHeader
         title={
           isEditMode
-            ? "Edit Jobseeker Profile"
+            ? t('profileCreate.editProfileTitle')
             : isDraftEditMode
-            ? "Edit Jobseeker Draft"
-            : "Create Jobseeker Profile"
+            ? t('profileCreate.editDraftTitle')
+            : t('profileCreate.createProfileTitle')
         }
         actions={
           <>
@@ -1559,13 +1565,13 @@ export function ProfileCreate({
                 }
                 title={
                   currentStep === 1 && isEmailAvailable === false
-                    ? "Email is already in use. Please choose a different email."
+                    ? t('profileCreate.emailInUseTooltip')
                     : ""
                 }
               >
                 <Save size={16} />
                 <span>
-                  {loadingStates.draftSaving ? "Saving..." : "Save Draft"}
+                  {loadingStates.draftSaving ? t('profileCreate.saving') : t('profileCreate.saveDraft')}
                 </span>
               </button>
             )}
@@ -1575,7 +1581,7 @@ export function ProfileCreate({
                 onClick={() => navigate("/jobseeker-management")}
               >
                 <ArrowLeft size={16} />
-                <span>Back to Jobseeker Management</span>
+                <span>{t('jobseekerManagement.backToManagement')}</span>
               </button>
             )}
           </>
@@ -1584,7 +1590,7 @@ export function ProfileCreate({
           error
             ? error
             : currentStep === 1 && isEmailAvailable === false
-            ? "The email address is already in use. Please use a different email to continue."
+            ? t('profileCreate.emailInUseMessage')
             : undefined
         }
         statusType={
@@ -1664,7 +1670,7 @@ export function ProfileCreate({
                   onClick={() => handleBack(true)}
                   disabled={isLoading}
                 >
-                  Back
+                  {t('buttons.back')}
                 </button>
               )}
 
@@ -1682,7 +1688,7 @@ export function ProfileCreate({
                     {isLoading ? (
                       <span className="loading-spinner"></span>
                     ) : (
-                      "Continue"
+                      t('buttons.next')
                     )}
                   </button>
                   {isEditMode && (
@@ -1690,7 +1696,6 @@ export function ProfileCreate({
                       type="submit"
                       className="button primary"
                       onClick={() => {
-                        console.log("Submit button clicked");
                         setUserInteracted(true);
                       }}
                       disabled={isLoading && justMounted.current}
@@ -1698,9 +1703,9 @@ export function ProfileCreate({
                       {loadingStates.submitting ? (
                         <span className="loading-spinner"></span>
                       ) : isEditMode ? (
-                        "Update Profile"
+                        t('profileCreate.updateProfile')
                       ) : (
-                        "Create Profile"
+                        t('profileCreate.createProfile')
                       )}
                     </button>
                   )}
@@ -1710,7 +1715,6 @@ export function ProfileCreate({
                   type="submit"
                   className="button primary"
                   onClick={() => {
-                    console.log("Submit button clicked");
                     setUserInteracted(true);
                   }}
                   disabled={isLoading && justMounted.current}
@@ -1718,9 +1722,9 @@ export function ProfileCreate({
                   {loadingStates.submitting ? (
                     <span className="loading-spinner"></span>
                   ) : isEditMode ? (
-                    "Update Profile"
+                    t('profileCreate.updateProfile')
                   ) : (
-                    "Create Profile"
+                    t('profileCreate.createProfile')
                   )}
                 </button>
               )}
@@ -1732,10 +1736,10 @@ export function ProfileCreate({
       {/* Submit Confirmation Modal for Jobseekers */}
       <ConfirmationModal
         isOpen={isSubmitConfirmationOpen}
-        title="Profile Status Change Notice"
-        message="Your profile has been modified and will require re-verification. After submitting these changes, your profile status will change to 'pending' and your profile will not be visible to employers until our team reviews and approves the changes. Do you want to continue?"
-        confirmText="Yes, Submit Changes"
-        cancelText="Cancel"
+        title={t('profileCreate.profileStatusChangeNoticeTitle')}
+        message={t('profileCreate.profileStatusChangeNoticeMessage')}
+        confirmText={t('profileCreate.submitChanges')}
+        cancelText={t('buttons.cancel')}
         confirmButtonClass="primary"
         onConfirm={() => {
           setIsSubmitConfirmationOpen(false);

@@ -741,7 +741,7 @@ export function JobSeekerProfile() {
       await deleteJobseeker(id);
       setIsDeleteConfirmationOpen(false);
       navigate("/jobseekers", {
-        state: { message: "Profile deleted successfully" },
+        state: { message: t('jobSeekerProfile.profileDeleted') },
       });
     } catch (err) {
       console.error("Error deleting profile:", err);

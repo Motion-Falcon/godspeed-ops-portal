@@ -12,6 +12,7 @@ import { supabase } from '../../lib/supabaseClient';
 import PDFThumbnail from '../../components/PDFThumbnail';
 import PDFViewerModal from '../../components/PDFViewerModal';
 import { FileText, Eye, FileWarning, AlertCircle, CheckCircle, Upload, Trash, Plus } from 'lucide-react';
+import { useLanguage } from '../../contexts/language/language-provider';
 import '../../styles/components/form.css';
 import '../../styles/pages/JobseekerProfileStyles.css';
 
@@ -93,24 +94,29 @@ const decodePath = (path: string | undefined): string | undefined => {
 };
 
 // Helper function to format file size
-const formatFileSize = (bytes: number): string => {
-  if (bytes === 0) return '0 Bytes';
+const formatFileSize = (bytes: number, t: (key: string) => string): string => {
+  if (bytes === 0) return `0 ${t('profileCreate.documents.fileSizeBytes')}`;
   const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const sizes = [
+    t('profileCreate.documents.fileSizeBytes'),
+    t('profileCreate.documents.fileSizeKB'),
+    t('profileCreate.documents.fileSizeMB'),
+    t('profileCreate.documents.fileSizeGB')
+  ];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
 
 // Add this function to render file status indicators
-const renderFileStatus = (doc: DocumentItemData) => {
+const renderFileStatus = (doc: DocumentItemData, t: (key: string) => string) => {
   if (doc.documentPath && doc.documentFileName) {
     return (
       <div className="file-status file-status-success">
         <CheckCircle size={16} />
         <div className="file-status-content">
-          <span className="file-status-name">Uploaded: {doc.documentFileName}</span>
+          <span className="file-status-name">{t('profileCreate.documents.uploadedStatus').replace('{{fileName}}', doc.documentFileName)}</span>
           {/* Note: For uploaded files, we don't have size info stored, but we could enhance this in the future */}
-          <span className="file-status-note"> • Previously uploaded document</span>
+          <span className="file-status-note"> • {t('profileCreate.documents.previouslyUploadedNote')}</span>
         </div>
       </div>
     );
@@ -121,7 +127,7 @@ const renderFileStatus = (doc: DocumentItemData) => {
         <div className="file-status-content">
           <span className="file-status-name">{doc.documentFile.name}</span>
           <span className="file-status-details">
-            Size: {formatFileSize(doc.documentFile.size)} • Will be uploaded when you save
+            {t('profileCreate.documents.fileSize')}: {formatFileSize(doc.documentFile.size, t)} • {t('profileCreate.documents.willBeUploadedNote')}
           </span>
         </div>
       </div>
@@ -143,6 +149,8 @@ function DocumentItem({
   onFileChange,
   disableSubmit = false
 }: DocumentItemProps) {
+  const { t } = useLanguage();
+  
   // Watch for changes within this specific item
   const documentType = useWatch({ control, name: `documents.${index}.documentType` });
   const documentTitle = useWatch({ control, name: `documents.${index}.documentTitle` });
@@ -172,7 +180,7 @@ function DocumentItem({
   const hasFileError = !!getDocumentFieldError(index, 'documentFile');
 
   // Add conditional text/behavior based on edit mode
-  const documentLabel = `Document ${index + 1}`;
+  const documentLabel = `${t('profileCreate.documents.documentLabel').replace('{{number}}', (index + 1).toString())}`;
 
   // Update local PDF URL when a new file is selected or from cache when document path changes
   useEffect(() => {
@@ -201,12 +209,12 @@ function DocumentItem({
   const validateFile = (file: File): string | null => {
     // Check file type
     if (!ALLOWED_FILE_TYPES.includes(file.type)) {
-      return 'Invalid file type. Only PDF files are allowed.';
+      return t('profileCreate.documents.invalidFileType');
     }
 
     // Check file size
     if (file.size > MAX_FILE_SIZE) {
-      return `File size exceeds the 2MB limit. Current size: ${formatFileSize(file.size)}`;
+      return t('profileCreate.documents.fileSizeExceeded').replace('{{size}}', formatFileSize(file.size, t));
     }
 
     return null;
@@ -261,7 +269,7 @@ function DocumentItem({
   const handlePreviewFile = async () => {
     if (localPdfUrl) {
       // Use the local URL or cached URL directly
-      onPreviewPdf(localPdfUrl, documentFileName || 'Document');
+      onPreviewPdf(localPdfUrl, documentFileName || t('common.user'));
       return;
     }
     
@@ -275,7 +283,7 @@ function DocumentItem({
 
       if (!decodedPath) {
         console.error("Preview attempted with no valid documentPath.");
-        setPreviewError("Cannot preview: document path is missing or invalid.");
+        setPreviewError(t('profileCreate.documents.cannotPreview'));
         return;
       }
 
@@ -294,13 +302,13 @@ function DocumentItem({
 
         if (data?.signedUrl) {
           console.log("Signed URL generated:", data.signedUrl);
-          onPreviewPdf(data.signedUrl, documentFileName || 'Document');
+          onPreviewPdf(data.signedUrl, documentFileName || t('common.user'));
         } else {
-          throw new Error('Could not retrieve signed URL.');
+          throw new Error(t('profileCreate.documents.couldNotRetrieveSignedUrl'));
         }
       } catch (err) {
         console.error("Error in handlePreviewFile:", err);
-        setPreviewError(err instanceof Error ? err.message : 'Could not generate preview link.');
+        setPreviewError(err instanceof Error ? err.message : t('profileCreate.documents.couldNotGeneratePreview'));
       } finally {
         setIsPreviewLoading(false);
       }
@@ -321,46 +329,46 @@ function DocumentItem({
           </div>
 
           {/* Display preview error if any */}
-          {previewError && <p className="error-message preview-error">Preview Error: {previewError}</p>}
+          {previewError && <p className="error-message preview-error">{t('profileCreate.documents.previewError').replace('{{error}}', previewError)}</p>}
 
           <div className="form-group document-type">
-            <label htmlFor={`documentType-${index}`} className="form-label" data-required="*">Type</label>
+            <label htmlFor={`documentType-${index}`} className="form-label" data-required="*">{t('profileCreate.documents.type')}</label>
             <select
               id={`documentType-${index}`}
               className={`form-input${hasTypeError ? ' error-input' : ''}`}
               {...register(`documents.${index}.documentType`)}
             >
-              <option value="">Select type</option>
-              <option value="resume">Resume</option>
-              <option value="drivers_license">Driver's License</option>
-              <option value="passport">Passport</option>
-              <option value="sin">SIN Document</option>
-              <option value="work_permit">Work Permit</option>
-              <option value="void_cheque">Void Cheque</option>
-              <option value="hst_registration">HST Registration</option>
-              <option value="business_registration">Business Registration</option>
-              <option value="forklift_license">Forklift License</option>
-              <option value="other">Other</option>
+              <option value="">{t('profileCreate.documents.selectType')}</option>
+              <option value="resume">{t('profileCreate.documents.documentTypes.resume')}</option>
+              <option value="drivers_license">{t('profileCreate.documents.documentTypes.drivers_license')}</option>
+              <option value="passport">{t('profileCreate.documents.documentTypes.passport')}</option>
+              <option value="sin">{t('profileCreate.documents.documentTypes.sin')}</option>
+              <option value="work_permit">{t('profileCreate.documents.documentTypes.work_permit')}</option>
+              <option value="void_cheque">{t('profileCreate.documents.documentTypes.void_cheque')}</option>
+              <option value="hst_registration">{t('profileCreate.documents.documentTypes.hst_registration')}</option>
+              <option value="business_registration">{t('profileCreate.documents.documentTypes.business_registration')}</option>
+              <option value="forklift_license">{t('profileCreate.documents.documentTypes.forklift_license')}</option>
+              <option value="other">{t('profileCreate.documents.documentTypes.other')}</option>
             </select>
           </div>
 
           <div className="form-group document-title">
-            <label htmlFor={`documentTitle-${index}`} className="form-label">Title</label>
+            <label htmlFor={`documentTitle-${index}`} className="form-label">{t('profileCreate.documents.title')}</label>
             <input
               id={`documentTitle-${index}`}
               type="text"
               className="form-input"
-              placeholder="Document title (optional)"
+              placeholder={t('profileCreate.documents.titlePlaceholder')}
               {...register(`documents.${index}.documentTitle`)}
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor={`documentNotes-${index}`} className="form-label">Notes</label>
+            <label htmlFor={`documentNotes-${index}`} className="form-label">{t('profileCreate.documents.notes')}</label>
             <textarea
               id={`documentNotes-${index}`}
               className="form-input"
-              placeholder="Add notes about this document (optional)"
+              placeholder={t('profileCreate.documents.notesPlaceholder')}
               rows={2}
               {...register(`documents.${index}.documentNotes`)}
             />
@@ -396,10 +404,10 @@ function DocumentItem({
                 className={`attachment-upload-button ${(isLoading || disableSubmit) ? 'disabled' : ''}`}
               >
                 <Plus size={16} />
-                {documentFile || documentPath ? 'Replace Document' : 'Upload Document'}
+                {documentFile || documentPath ? t('profileCreate.documents.replaceDocument') : t('profileCreate.documents.uploadDocument')}
               </label>
               
-              {renderFileStatus(currentDoc)}
+              {renderFileStatus(currentDoc, t)}
               
               {getDocumentFieldError(index, 'documentFile') && (
                 <p className="error-message">{getDocumentFieldError(index, 'documentFile')}</p>
@@ -414,7 +422,7 @@ function DocumentItem({
                     onClick={handlePreviewFile} 
                     className="attachment-action-btn preview"
                     disabled={isLoading || isPreviewLoading || disableSubmit}
-                    title="Preview"
+                    title={t('profileCreate.documents.preview')}
                   >
                     <Eye size={16} />
                   </button>
@@ -423,7 +431,7 @@ function DocumentItem({
                     onClick={handleReplaceFile} 
                     className="attachment-action-btn delete"
                     disabled={isLoading}
-                    title="Remove File"
+                    title={t('profileCreate.documents.removeFile')}
                   >
                     <Trash size={16} />
                   </button>
@@ -438,7 +446,7 @@ function DocumentItem({
         {isPreviewLoading ? (
           <div className="document-preview-loading">
             <span className="loading-spinner"></span>
-            <span>Loading preview...</span>
+            <span>{t('profileCreate.documents.loadingPreview')}</span>
           </div>
         ) : localPdfUrl ? (
           <PDFThumbnail 
@@ -452,8 +460,8 @@ function DocumentItem({
             if (fileInput) fileInput.click();
           }}>
             <FileWarning size={40} className="document-preview-placeholder-icon" />
-            <span>{hasFileError ? 'Document required' : 'No file selected'}</span>
-            <span className="upload-note">Click to upload a PDF</span>
+            <span>{hasFileError ? t('profileCreate.documents.documentRequired') : t('profileCreate.documents.noFileSelected')}</span>
+            <span className="upload-note">{t('profileCreate.documents.clickToUpload')}</span>
           </div>
         )}
         
@@ -465,7 +473,7 @@ function DocumentItem({
                 
                 onClick={() => remove(index)}
               >
-                <Trash size={16} />  Remove {documentLabel}
+                <Trash size={16} />  {t('profileCreate.documents.remove').replace('{{documentLabel}}', documentLabel)}
               </button>
             )}
         </div>
@@ -481,12 +489,13 @@ const shouldShowError = (fieldName: string, errors: FieldErrors<JobseekerProfile
 
 // Main DocumentUploadForm Component
 export function DocumentUploadForm({ allFields = [], disableSubmit = false, isEditMode = false }: DocumentUploadFormProps) {
+  const { t } = useLanguage();
   const { register, setValue, control, formState, trigger, getValues } = useFormContext<JobseekerProfileFormData>();
   const { errors: allErrors, isSubmitted, submitCount } = formState;
   const [pdfCache, setPdfCache] = useState<PDFCache>({});
   const [loadingPdfs, setLoadingPdfs] = useState<boolean>(false);
   const [selectedPdfUrl, setSelectedPdfUrl] = useState<string | null>(null);
-  const [selectedPdfName, setSelectedPdfName] = useState<string>('Document');
+  const [selectedPdfName, setSelectedPdfName] = useState<string>(t('common.user'));
   const [isPdfModalOpen, setIsPdfModalOpen] = useState<boolean>(false);
   const [userInteracted, setUserInteracted] = useState(false);
   const [forceShowErrors, setForceShowErrors] = useState(false);
@@ -748,9 +757,9 @@ export function DocumentUploadForm({ allFields = [], disableSubmit = false, isEd
 
   return (
     <div className="form-step-container">
-      <h2>Document Upload</h2>
+      <h2>{t('profileCreate.documents.sectionTitle')}</h2>
       <p className="form-description">
-        Upload required documents (PDF format, max 2MB). At least one document is required.
+        {t('profileCreate.documents.sectionDescription')}
       </p>
 
       {shouldDisplayErrors && hasDocumentsError && (
@@ -759,7 +768,7 @@ export function DocumentUploadForm({ allFields = [], disableSubmit = false, isEd
           <p className="error-message">
             {typeof allErrors.documents?.message === 'string' 
               ? allErrors.documents.message 
-              : 'At least one document with a valid file and type is required'}
+              : t('profileCreate.documents.errorBanner')}
           </p>
         </div>
       )}
@@ -767,7 +776,7 @@ export function DocumentUploadForm({ allFields = [], disableSubmit = false, isEd
       {loadingPdfs && (
         <div className="loading-pdfs">
           <div className="pdf-loading-spinner"></div>
-          <p>Loading document previews...</p>
+          <p>{t('profileCreate.documents.loadingDocumentPreviews')}</p>
         </div>
       )}
 
@@ -799,7 +808,7 @@ export function DocumentUploadForm({ allFields = [], disableSubmit = false, isEd
           onClick={handleAddDocument}
           disabled={disableSubmit}
         >
-         <Plus size={16} /> Add Another Document
+         <Plus size={16} /> {t('profileCreate.documents.addAnotherDocument')}
         </button>
       </div>
 

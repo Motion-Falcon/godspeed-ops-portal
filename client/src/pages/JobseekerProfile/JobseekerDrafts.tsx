@@ -6,6 +6,7 @@ import {
 } from "../../services/api/jobseeker";
 import { ConfirmationModal } from "../../components/ConfirmationModal";
 import { AppHeader } from "../../components/AppHeader";
+import { useLanguage } from "../../contexts/language/language-provider";
 import {
   Pencil,
   Trash2,
@@ -60,6 +61,7 @@ interface PaginationInfo {
 
 export function JobseekerDrafts() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [drafts, setDrafts] = useState<JobseekerDraft[]>([]);
   const [pagination, setPagination] = useState<PaginationInfo>({
     page: 1,
@@ -107,7 +109,7 @@ export function JobseekerDrafts() {
     } catch (err) {
       console.error("Error fetching drafts:", err);
       const errorMessage =
-        err instanceof Error ? err.message : "Failed to fetch drafts";
+        err instanceof Error ? err.message : t('jobseekerDrafts.failedToDeleteDraft');
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -121,6 +123,7 @@ export function JobseekerDrafts() {
     updaterFilter,
     dateFilter,
     createdDateFilter,
+    t,
   ]);
 
   useEffect(() => {
@@ -165,7 +168,7 @@ export function JobseekerDrafts() {
         prevDrafts.filter((draft) => draft.id !== draftToDelete)
       );
 
-      setSuccess("Draft deleted successfully");
+      setSuccess(t('jobseekerDrafts.draftDeletedSuccess'));
 
       // Auto-hide message after 3 seconds
       setTimeout(() => {
@@ -174,7 +177,7 @@ export function JobseekerDrafts() {
     } catch (err) {
       console.error("Error deleting draft:", err);
       const errorMessage =
-        err instanceof Error ? err.message : "Failed to delete draft";
+        err instanceof Error ? err.message : t('jobseekerDrafts.failedToDeleteDraft');
       setError(errorMessage);
 
       // Auto-hide error after 3 seconds
@@ -200,14 +203,14 @@ export function JobseekerDrafts() {
       return draft.email;
     }
 
-    return "No email";
+    return t('jobseekerDrafts.noEmail');
   };
 
   // Helper to format user information
   const formatUserInfo = (
     details: { name: string; email?: string } | null | undefined
   ): string => {
-    if (!details) return "Unknown";
+    if (!details) return t('jobseekerDrafts.unknown');
 
     if (details.name && details.email) {
       return `${details.name} (${details.email})`;
@@ -216,7 +219,7 @@ export function JobseekerDrafts() {
     } else if (details.email) {
       return details.email;
     }
-    return "Unknown";
+    return t('jobseekerDrafts.unknown');
   };
 
   const resetFilters = () => {
@@ -252,11 +255,11 @@ export function JobseekerDrafts() {
   return (
     <div className="page-container">
       <AppHeader
-        title="Job Seeker Profile Drafts"
+        title={t('jobseekerDrafts.title')}
         actions={
           <button className="button" onClick={handleNavigateBack}>
             <ArrowLeft size={16} />
-            <span>Back to Job Seekers Management</span>
+            <span>{t('jobseekerDrafts.backToManagement')}</span>
           </button>
         }
         statusMessage={success || error}
@@ -268,13 +271,13 @@ export function JobseekerDrafts() {
 
         <div className="card">
           <div className="card-header">
-            <h2>Your Saved Drafts</h2>
+            <h2>{t('jobseekerDrafts.yourSavedDrafts')}</h2>
             <div className="filter-container">
               <div className="search-box">
                 <Search size={14} className="search-icon" />
                 <input
                   type="text"
-                  placeholder="Global search..."
+                  placeholder={t('jobseekerDrafts.globalSearch')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="search-input"
@@ -283,7 +286,7 @@ export function JobseekerDrafts() {
                   className="button secondary button-icon reset-filters-btn"
                   onClick={resetFilters}
                 >
-                  <span>Reset Filters</span>
+                  <span>{t('jobseekerDrafts.resetFilters')}</span>
                 </button>
               </div>
             </div>
@@ -293,25 +296,25 @@ export function JobseekerDrafts() {
           <div className="pagination-controls top">
             <div className="pagination-info">
               <span className="pagination-text">
-                Showing{" "}
+                {t('jobseekerDrafts.pagination.showing')}{" "}
                 {Math.min(
                   (pagination.page - 1) * pagination.limit + 1,
                   pagination.total
                 )}{" "}
-                to{" "}
+                {t('jobseekerDrafts.pagination.to')}{" "}
                 {Math.min(pagination.page * pagination.limit, pagination.total)}{" "}
-                of {pagination.total} entries
+                {t('jobseekerDrafts.pagination.of')} {pagination.total} {t('jobseekerDrafts.pagination.entries')}
                 {pagination.totalFiltered !== pagination.total && (
                   <span className="filtered-info">
                     {" "}
-                    (filtered from {pagination.total} total entries)
+                    ({t('jobseekerDrafts.pagination.filteredFrom')} {pagination.total} {t('jobseekerDrafts.pagination.totalEntries')})
                   </span>
                 )}
               </span>
             </div>
             <div className="pagination-size-selector">
               <label htmlFor="pageSize" className="page-size-label">
-                Show:
+                {t('jobseekerDrafts.pagination.show')}
               </label>
               <select
                 id="pageSize"
@@ -324,7 +327,7 @@ export function JobseekerDrafts() {
                 <option value={50}>50</option>
                 <option value={100}>100</option>
               </select>
-              <span className="page-size-label">per page</span>
+              <span className="page-size-label">{t('jobseekerDrafts.pagination.perPage')}</span>
             </div>
           </div>
 
@@ -334,11 +337,11 @@ export function JobseekerDrafts() {
                 <tr>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">Title/Email</div>
+                      <div className="column-title">{t('jobseekerDrafts.columns.titleEmail')}</div>
                       <div className="column-search">
                         <input
                           type="text"
-                          placeholder="Search email..."
+                          placeholder={t('jobseekerDrafts.placeholders.searchEmail')}
                           value={emailFilter}
                           onChange={(e) => setEmailFilter(e.target.value)}
                           className="column-search-input"
@@ -348,7 +351,7 @@ export function JobseekerDrafts() {
                   </th>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">Last Updated</div>
+                      <div className="column-title">{t('jobseekerDrafts.columns.lastUpdated')}</div>
                       <div className="column-search">
                         <div className="date-picker-wrapper">
                           <input
@@ -364,7 +367,7 @@ export function JobseekerDrafts() {
                   </th>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">Created At</div>
+                      <div className="column-title">{t('jobseekerDrafts.columns.createdAt')}</div>
                       <div className="column-search">
                         <div className="date-picker-wrapper">
                           <input
@@ -382,11 +385,11 @@ export function JobseekerDrafts() {
                   </th>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">Created By</div>
+                      <div className="column-title">{t('jobseekerDrafts.columns.createdBy')}</div>
                       <div className="column-search">
                         <input
                           type="text"
-                          placeholder="Search creator..."
+                          placeholder={t('jobseekerDrafts.placeholders.searchCreator')}
                           value={creatorFilter}
                           onChange={(e) => setCreatorFilter(e.target.value)}
                           className="column-search-input"
@@ -396,11 +399,11 @@ export function JobseekerDrafts() {
                   </th>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">Last Updated By</div>
+                      <div className="column-title">{t('jobseekerDrafts.columns.lastUpdatedBy')}</div>
                       <div className="column-search">
                         <input
                           type="text"
-                          placeholder="Search updater..."
+                          placeholder={t('jobseekerDrafts.placeholders.searchUpdater')}
                           value={updaterFilter}
                           onChange={(e) => setUpdaterFilter(e.target.value)}
                           className="column-search-input"
@@ -411,11 +414,11 @@ export function JobseekerDrafts() {
                   <th>
                     {" "}
                     <div className="column-filter">
-                      <div className="column-title">Actions</div>
+                      <div className="column-title">{t('jobseekerDrafts.columns.actions')}</div>
                       <div className="column-search">
                         <div className="actions-info">
                           <span className="actions-help-text">
-                            Edit • Delete
+                            {t('jobseekerDrafts.actions.editDelete')}
                           </span>
                         </div>
                       </div>
@@ -460,8 +463,7 @@ export function JobseekerDrafts() {
                     <td colSpan={6} className="empty-state-cell">
                       <div className="empty-state">
                         <p>
-                          No drafts found. Create a new jobseeker profile to
-                          save a draft.
+                          {t('jobseekerDrafts.emptyState.noDraftsFound')}
                         </p>
                         <button
                           className="button primary"
@@ -471,7 +473,7 @@ export function JobseekerDrafts() {
                             })
                           }
                         >
-                          Create New Profile
+                          {t('jobseekerDrafts.emptyState.createNewProfile')}
                         </button>
                       </div>
                     </td>
@@ -513,16 +515,16 @@ export function JobseekerDrafts() {
                           <button
                             className="action-icon-btn edit-btn"
                             onClick={() => handleEditDraft(draft.id)}
-                            title="Edit this draft"
-                            aria-label="Edit draft"
+                            title={t('jobseekerDrafts.actions.editDraft')}
+                            aria-label={t('jobseekerDrafts.actions.editDraft')}
                           >
                             <Pencil size={16} />
                           </button>
                           <button
                             className="action-icon-btn delete-btn"
                             onClick={() => confirmDeleteDraft(draft.id)}
-                            title="Delete this draft"
-                            aria-label="Delete draft"
+                            title={t('jobseekerDrafts.actions.deleteDraft')}
+                            aria-label={t('jobseekerDrafts.actions.deleteDraft')}
                           >
                             <Trash2 size={16} />
                           </button>
@@ -540,7 +542,7 @@ export function JobseekerDrafts() {
             <div className="pagination-controls bottom">
               <div className="pagination-info">
                 <span className="pagination-text">
-                  Page {pagination.page} of {pagination.totalPages}
+                  {t('jobseekerDrafts.pagination.page')} {pagination.page} {t('jobseekerDrafts.pagination.of')} {pagination.totalPages}
                 </span>
               </div>
               <div className="pagination-buttons">
@@ -548,11 +550,11 @@ export function JobseekerDrafts() {
                   className="pagination-btn prev"
                   onClick={handlePreviousPage}
                   disabled={!pagination.hasPrevPage}
-                  title="Previous page"
-                  aria-label="Previous page"
+                  title={t('jobseekerDrafts.pagination.previousPage')}
+                  aria-label={t('jobseekerDrafts.pagination.previousPage')}
                 >
                   <ChevronLeft size={16} />
-                  <span>Previous</span>
+                  <span>{t('jobseekerDrafts.pagination.previous')}</span>
                 </button>
 
                 {/* Page numbers */}
@@ -578,7 +580,7 @@ export function JobseekerDrafts() {
                             pageNum === pagination.page ? "active" : ""
                           }`}
                           onClick={() => handlePageChange(pageNum)}
-                          aria-label={`Go to page ${pageNum}`}
+                          aria-label={`${t('jobseekerDrafts.pagination.goToPage')} ${pageNum}`}
                         >
                           {pageNum}
                         </button>
@@ -591,10 +593,10 @@ export function JobseekerDrafts() {
                   className="pagination-btn next"
                   onClick={handleNextPage}
                   disabled={!pagination.hasNextPage}
-                  title="Next page"
-                  aria-label="Next page"
+                  title={t('jobseekerDrafts.pagination.nextPage')}
+                  aria-label={t('jobseekerDrafts.pagination.nextPage')}
                 >
-                  <span>Next</span>
+                  <span>{t('jobseekerDrafts.pagination.next')}</span>
                   <ChevronRight size={16} />
                 </button>
               </div>
@@ -606,10 +608,10 @@ export function JobseekerDrafts() {
       {showDeleteConfirmation && (
         <ConfirmationModal
           isOpen={showDeleteConfirmation}
-          title="Delete Draft"
-          message="Are you sure you want to delete this draft? This action cannot be undone."
-          confirmText="Delete Draft"
-          cancelText="Cancel"
+          title={t('jobseekerDrafts.deleteModal.title')}
+          message={t('jobseekerDrafts.deleteModal.message')}
+          confirmText={t('jobseekerDrafts.deleteModal.confirmText')}
+          cancelText={t('jobseekerDrafts.deleteModal.cancelText')}
           confirmButtonClass="danger"
           onConfirm={handleDeleteDraft}
           onCancel={() => setShowDeleteConfirmation(false)}

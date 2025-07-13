@@ -1,6 +1,7 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { User, CheckCircle, Clock, Eye, EyeOff, Copy, ArrowLeft } from 'lucide-react';
+import { useLanguage } from '../../contexts/language/language-provider';
 import '../../styles/pages/JobseekerProfileStyles.css';
 
 // Define a profile type based on the Supabase DB fields
@@ -63,6 +64,7 @@ interface AccountCreatedState {
 export function ProfileAccountCreated() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [activeTab, setActiveTab] = useState<'credentials' | 'profile'>('credentials');
   const [copySuccess, setCopySuccess] = useState<boolean>(false);
@@ -101,7 +103,7 @@ export function ProfileAccountCreated() {
   };
   
   const handleCopyCredentials = () => {
-    const credentials = `Email: ${state.email}${state.password ? `\nPassword: ${state.password}` : ''}`;
+    const credentials = `${t('profileAccountCreated.email')}: ${state.email}${state.password ? `\n${t('profileAccountCreated.password')}: ${state.password}` : ''}`;
     navigator.clipboard.writeText(credentials)
       .then(() => {
         setCopySuccess(true);
@@ -115,7 +117,7 @@ export function ProfileAccountCreated() {
 
   // Helper function to format date
   const formatDate = (dateString?: string | null) => {
-    if (!dateString) return 'N/A';
+    if (!dateString) return t('profileAccountCreated.na');
     try {
       let date = new Date(dateString);
       if (!isNaN(date.getTime())) {
@@ -134,12 +136,12 @@ export function ProfileAccountCreated() {
 
   // Helper function to render detail items
   const renderDetailItem = (label: string, value?: string | number | boolean | null) => {
-    const displayValue = value === null || value === undefined || value === '' ? 'N/A' : 
-                         typeof value === 'boolean' ? (value ? 'Yes' : 'No') : 
+    const displayValue = value === null || value === undefined || value === '' ? t('profileAccountCreated.na') : 
+                         typeof value === 'boolean' ? (value ? t('profileAccountCreated.yes') : t('profileAccountCreated.no')) : 
                          value;
     
     let finalDisplayValue: string | number = displayValue;
-    if (typeof displayValue === 'string' && displayValue !== 'N/A') {
+    if (typeof displayValue === 'string' && displayValue !== t('profileAccountCreated.na')) {
         if (['license_number', 'passport_number', 'sin_number', 'business_number'].includes(label.toLowerCase().replace(/ /g, ''))) {
              finalDisplayValue = displayValue.length > 20 ? '********' : displayValue; 
         }
@@ -168,7 +170,7 @@ export function ProfileAccountCreated() {
           onClick={() => navigate('/dashboard')}
         >
           <ArrowLeft size={16} />
-          <span>Back to Dashboard</span>
+          <span>{t('profileAccountCreated.backToDashboard')}</span>
         </button>
         
         <div className="success-header">
@@ -176,12 +178,12 @@ export function ProfileAccountCreated() {
             <CheckCircle size={48} color="#4CAF50" />
           </div>
           
-          <h1>Profile Created Successfully!</h1>
+          <h1>{t('profileAccountCreated.title')}</h1>
           
           <p className="success-message">
             {state.accountCreated 
-              ? 'A new account has been created for this jobseeker profile.' 
-              : 'The jobseeker profile has been created successfully.'}
+              ? t('profileAccountCreated.accountCreatedMessage') 
+              : t('profileAccountCreated.profileCreatedMessage')}
           </p>
         </div>
         
@@ -190,35 +192,35 @@ export function ProfileAccountCreated() {
             className={`tab-button ${activeTab === 'credentials' ? 'active' : ''}`}
             onClick={() => setActiveTab('credentials')}
           >
-            Credentials
+            {t('profileAccountCreated.credentialsTab')}
           </button>
           <button 
             className={`tab-button ${activeTab === 'profile' ? 'active' : ''}`}
             onClick={() => setActiveTab('profile')}
           >
-            Profile Details
+            {t('profileAccountCreated.profileDetailsTab')}
           </button>
         </div>
 
         <div className="tab-content">
           {activeTab === 'credentials' && (
             <div className="account-details">
-              <h2>Account Information</h2>
+              <h2>{t('profileAccountCreated.accountInformation')}</h2>
               <div className="important-note">
                 <strong>Important:</strong> {state.accountCreated 
-                  ? 'Please provide these credentials to the jobseeker. They will need them to log in to their account.' 
-                  : 'The profile is associated with this email address.'}
+                  ? t('profileAccountCreated.importantAccountNote') 
+                  : t('profileAccountCreated.importantProfileNote')}
               </div>
               
               <div className="credentials-box">
                 <div className="credential-row">
-                  <span className="credential-label">Email:</span>
+                  <span className="credential-label">{t('profileAccountCreated.email')}:</span>
                   <span className="credential-value">{state.email}</span>
                 </div>
                 
                 {state.accountCreated && state.password && (
                   <div className="credential-row">
-                    <span className="credential-label">Password:</span>
+                    <span className="credential-label">{t('profileAccountCreated.password')}:</span>
                     <div className="password-container">
                       <span className="credential-value">
                         {passwordVisible ? state.password : '••••••••'}
@@ -226,7 +228,7 @@ export function ProfileAccountCreated() {
                       <button 
                         className="toggle-password-btn"
                         onClick={togglePasswordVisibility}
-                        aria-label={passwordVisible ? "Hide password" : "Show password"}
+                        aria-label={passwordVisible ? t('profileAccountCreated.hidePassword') : t('profileAccountCreated.showPassword')}
                       >
                         {passwordVisible ? <EyeOff size={18} /> : <Eye size={18} />}
                       </button>
@@ -241,12 +243,12 @@ export function ProfileAccountCreated() {
                   {copySuccess ? (
                     <>
                       <CheckCircle size={16} />
-                      Copied!
+                      {t('profileAccountCreated.copied')}
                     </>
                   ) : (
                     <>
                       <Copy size={16} />
-                      Copy Credentials
+                      {t('profileAccountCreated.copyCredentials')}
                     </>
                   )}
                 </button>
@@ -260,7 +262,7 @@ export function ProfileAccountCreated() {
                 <div className="profile-banner">
                   <div className="profile-status pending">
                     <Clock className="status-icon pending" />
-                    <span className="status-text pending">Status: Pending</span>
+                    <span className="status-text pending">{t('profileAccountCreated.statusPending')}</span>
                   </div>
                 </div>
                 
@@ -273,8 +275,8 @@ export function ProfileAccountCreated() {
                   </div>
                   <div className="profile-info-header">
                     <div className="profile-info-details">
-                      {renderDetailItem('Email', state.profile.email)}
-                      {renderDetailItem('Phone', state.profile.mobile)}
+                      {renderDetailItem(t('profileAccountCreated.email'), state.profile.email)}
+                      {renderDetailItem(t('profileAccountCreated.mobile'), state.profile.mobile)}
                     </div>
                   </div>
                 </div>
@@ -282,66 +284,66 @@ export function ProfileAccountCreated() {
               
               <div className="profile-content grid-container">
                 <div className="personal-details-section section-card">
-                  <h2 className="section-title">Personal Information</h2>
+                  <h2 className="section-title">{t('profileAccountCreated.personalInformation')}</h2>
                   <div className="detail-group">
-                    {renderDetailItem('First Name', state.profile.first_name)}
-                    {renderDetailItem('Last Name', state.profile.last_name)}
-                    {renderDetailItem('Email', state.profile.email)}
-                    {renderDetailItem('Mobile', state.profile.mobile)}
-                    {renderDetailItem('Date of Birth', formatDate(state.profile.dob))}
+                    {renderDetailItem(t('profileAccountCreated.firstName'), state.profile.first_name)}
+                    {renderDetailItem(t('profileAccountCreated.lastName'), state.profile.last_name)}
+                    {renderDetailItem(t('profileAccountCreated.email'), state.profile.email)}
+                    {renderDetailItem(t('profileAccountCreated.mobile'), state.profile.mobile)}
+                    {renderDetailItem(t('profileAccountCreated.dateOfBirth'), formatDate(state.profile.dob))}
                   </div>
                 </div>
 
                 <div className="identification-section section-card">
-                  <h2 className="section-title">Identification</h2>
+                  <h2 className="section-title">{t('profileAccountCreated.identification')}</h2>
                   <div className="detail-group">
-                    {renderDetailItem('License Number', state.profile.license_number)}
-                    {renderDetailItem('Passport Number', state.profile.passport_number)}
-                    {renderDetailItem('SIN Number', state.profile.sin_number)}
-                    {renderDetailItem('SIN Expiry', formatDate(state.profile.sin_expiry))}
-                    {renderDetailItem('Business Number', state.profile.business_number)}
-                    {renderDetailItem('Corporation Name', state.profile.corporation_name)}
+                    {renderDetailItem(t('profileAccountCreated.licenseNumber'), state.profile.license_number)}
+                    {renderDetailItem(t('profileAccountCreated.passportNumber'), state.profile.passport_number)}
+                    {renderDetailItem(t('profileAccountCreated.sinNumber'), state.profile.sin_number)}
+                    {renderDetailItem(t('profileAccountCreated.sinExpiry'), formatDate(state.profile.sin_expiry))}
+                    {renderDetailItem(t('profileAccountCreated.businessNumber'), state.profile.business_number)}
+                    {renderDetailItem(t('profileAccountCreated.corporationName'), state.profile.corporation_name)}
                   </div>
                 </div>
 
                 <div className="address-section section-card">
-                  <h2 className="section-title">Address</h2>
+                  <h2 className="section-title">{t('profileAccountCreated.address')}</h2>
                   <div className="detail-group">
-                    {renderDetailItem('Street', state.profile.street)}
-                    {renderDetailItem('City', state.profile.city)}
-                    {renderDetailItem('Province', state.profile.province)}
-                    {renderDetailItem('Postal Code', state.profile.postal_code)}
+                    {renderDetailItem(t('profileAccountCreated.street'), state.profile.street)}
+                    {renderDetailItem(t('profileAccountCreated.city'), state.profile.city)}
+                    {renderDetailItem(t('profileAccountCreated.province'), state.profile.province)}
+                    {renderDetailItem(t('profileAccountCreated.postalCode'), state.profile.postal_code)}
                   </div>
                 </div>
 
                 <div className="qualifications-section section-card">
-                  <h2 className="section-title">Qualifications</h2>
+                  <h2 className="section-title">{t('profileAccountCreated.qualifications')}</h2>
                   <div className="detail-group">
-                    {renderDetailItem('Work Preference', state.profile.work_preference)}
-                    {renderDetailItem('Bio', state.profile.bio)}
-                    {renderDetailItem('License Type', state.profile.license_type)}
-                    {renderDetailItem('Experience', state.profile.experience)}
-                    {renderDetailItem('Manual Driving', state.profile.manual_driving)}
-                    {renderDetailItem('Availability', state.profile.availability)}
-                    {renderDetailItem('Weekend Availability', state.profile.weekend_availability)}
+                    {renderDetailItem(t('profileAccountCreated.workPreference'), state.profile.work_preference)}
+                    {renderDetailItem(t('profileAccountCreated.bio'), state.profile.bio)}
+                    {renderDetailItem(t('profileAccountCreated.licenseType'), state.profile.license_type)}
+                    {renderDetailItem(t('profileAccountCreated.experience'), state.profile.experience)}
+                    {renderDetailItem(t('profileAccountCreated.manualDriving'), state.profile.manual_driving)}
+                    {renderDetailItem(t('profileAccountCreated.availability'), state.profile.availability)}
+                    {renderDetailItem(t('profileAccountCreated.weekendAvailability'), state.profile.weekend_availability)}
                   </div>
                 </div>
 
                 <div className="compensation-section section-card">
-                  <h2 className="section-title">Compensation</h2>
+                  <h2 className="section-title">{t('profileAccountCreated.compensation')}</h2>
                   <div className="detail-group">
-                    {renderDetailItem('Payrate Type', state.profile.payrate_type)}
-                    {renderDetailItem('Bill Rate', state.profile.bill_rate)}
-                    {renderDetailItem('Pay Rate', state.profile.pay_rate)}
-                    {renderDetailItem('Payment Method', state.profile.payment_method)}
-                    {renderDetailItem('HST/GST', state.profile.hst_gst)}
-                    {renderDetailItem('Cash Deduction', state.profile.cash_deduction)}
-                    {renderDetailItem('Overtime Enabled', state.profile.overtime_enabled)}
+                    {renderDetailItem(t('profileAccountCreated.payrateType'), state.profile.payrate_type)}
+                    {renderDetailItem(t('profileAccountCreated.billRate'), state.profile.bill_rate)}
+                    {renderDetailItem(t('profileAccountCreated.payRate'), state.profile.pay_rate)}
+                    {renderDetailItem(t('profileAccountCreated.paymentMethod'), state.profile.payment_method)}
+                    {renderDetailItem(t('profileAccountCreated.hstGst'), state.profile.hst_gst)}
+                    {renderDetailItem(t('profileAccountCreated.cashDeduction'), state.profile.cash_deduction)}
+                    {renderDetailItem(t('profileAccountCreated.overtimeEnabled'), state.profile.overtime_enabled)}
                     {state.profile.overtime_enabled && (
                       <>
-                        {renderDetailItem('Overtime Hours After', state.profile.overtime_hours)}
-                        {renderDetailItem('Overtime Bill Rate', state.profile.overtime_bill_rate)}
-                        {renderDetailItem('Overtime Pay Rate', state.profile.overtime_pay_rate)}
+                        {renderDetailItem(t('profileAccountCreated.overtimeHoursAfter'), state.profile.overtime_hours)}
+                        {renderDetailItem(t('profileAccountCreated.overtimeBillRate'), state.profile.overtime_bill_rate)}
+                        {renderDetailItem(t('profileAccountCreated.overtimePayRate'), state.profile.overtime_pay_rate)}
                       </>
                     )}
                   </div>
@@ -352,8 +354,9 @@ export function ProfileAccountCreated() {
         </div>
         
         <div className="verification-note">
-          The profile is currently pending verification. Once verified, the jobseeker
-          will be able to access all platform features{state.accountCreated ? ' using these credentials' : ''}.
+          {state.accountCreated 
+            ? t('profileAccountCreated.verificationNoteWithCredentials')
+            : t('profileAccountCreated.verificationNote')}
         </div>
         
         <div className="actions">
@@ -361,14 +364,14 @@ export function ProfileAccountCreated() {
             className="button primary"
             onClick={() => navigate('/dashboard')}
           >
-            Return to Dashboard
+            {t('profileAccountCreated.returnToDashboard')}
           </button>
           
           <button 
             className="button secondary"
             onClick={() => navigate('/jobseekers')}
           >
-            View All Jobseekers
+            {t('profileAccountCreated.viewAllJobseekers')}
           </button>
         </div>
       </div>
