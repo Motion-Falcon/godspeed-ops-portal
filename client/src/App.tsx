@@ -35,8 +35,6 @@ import { UserProfile } from './pages/UserProfile';
 import { JobSeekerPositions } from './pages/JobseekerManagement/JobSeekerPositions';
 import { TimesheetManagement } from './pages/TimesheetManagement/TimesheetManagement';
 import { TwoFactorAuth } from './pages/Authentication/TwoFactorAuth';
-import { Dashboard } from './pages/Dashboard/Dashboard';
-import { MetricExamplePage } from './pages/Dashboard/MetricExamplePage';
 import { ClientManagement } from './pages/ClientManagement/ClientManagement';
 import { InvoiceManagement } from './pages/InvoiceManagement/InvoiceManagement';
 import { InvoiceList } from './pages/InvoiceManagement/InvoiceList';
@@ -53,6 +51,8 @@ import { SalesReport } from './pages/Reports/SalesReport';
 import { EnvelopePrintingReport } from './pages/Reports/EnvelopePrintingReport';
 import { LanguageProvider } from "./contexts/language/language-provider";
 import './styles/main.css';
+import { Dashboard } from './pages/Dashboard/Dashboard';
+import { MetricExamplePage } from './pages/Dashboard/MetricExamplePage';
 
 function App() {
   return (
