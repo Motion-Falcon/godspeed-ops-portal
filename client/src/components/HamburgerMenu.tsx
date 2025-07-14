@@ -634,8 +634,10 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
           <button className="close-button" onClick={onClose}>
             <X size={24} />
           </button>
+          <div className="menu-toggle-container">
           {isOpen && <LanguageToggle />}
           <ThemeToggle />
+          </div>
         </div>
 
         <ul className="menu-items">

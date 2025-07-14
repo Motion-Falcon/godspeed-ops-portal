@@ -68,6 +68,10 @@
   transition: all 0.3s ease;
 }
 
+.hamburger-menu.open .menu-toggle-container {
+  display: flex;
+}
+
 .hamburger-menu.open .menu-header {
   justify-content: space-between;
 }

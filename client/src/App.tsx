@@ -61,7 +61,7 @@ function App() {
         <AuthProvider>
           <Router>
             <GeometricShapes />
-            <FloatingChat />
+            {/* <FloatingChat /> */}
             <Routes>
               {/* Public routes */}
               <Route element={<PublicRoute />}>
