@@ -41,7 +41,7 @@ import { ClientManagement } from './pages/ClientManagement/ClientManagement';
 import { InvoiceManagement } from './pages/InvoiceManagement/InvoiceManagement';
 import { InvoiceList } from './pages/InvoiceManagement/InvoiceList';
 import { AllUsersManagement } from './pages/AllUsersManagement';
-import FloatingChat from './components/FloatingChat';
+// import FloatingChat from './components/FloatingChat';
 import { Reports } from './pages/Reports/Reports';
 import { WeeklyTimesheet } from './pages/Reports/WeeklyTimesheet';
 import { MarginReport } from './pages/Reports/MarginReport';

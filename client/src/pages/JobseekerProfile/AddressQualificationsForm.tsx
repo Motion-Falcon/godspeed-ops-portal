@@ -1,7 +1,7 @@
 import { useFormContext } from "react-hook-form";
-import { AddressQualificationsFormData } from "./ProfileCreate";
 import { LICENSE_TYPES, EXPERIENCE_LEVELS } from "../../constants/formOptions";
 import { useLanguage } from "../../contexts/language/language-provider";
+import { AddressQualificationsFormData } from "./profileSchemas";
 
 interface AddressQualificationsFormProps {
   currentStep: number;

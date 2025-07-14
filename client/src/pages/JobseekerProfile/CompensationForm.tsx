@@ -1,9 +1,9 @@
 import { useFormContext } from "react-hook-form";
 import { useState, useEffect } from "react";
-import { CompensationFormData } from "./ProfileCreate";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/language/language-provider";
 import { PAYRATE_TYPES, PAYMENT_METHODS } from "../../constants/formOptions";
+import { CompensationFormData } from "./profileSchemas";
 
 interface CompensationFormProps {
   currentStep: number;

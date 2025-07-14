@@ -1,11 +1,11 @@
 import { useFormContext } from "react-hook-form";
-import { PersonalInfoFormData } from "./ProfileCreate";
 import { useState, useEffect, useRef } from "react";
 import { checkEmailAvailability } from "../../services/api/profile";
 import { useNavigate } from "react-router-dom";
 import { Eye, Pencil } from "lucide-react";
 import { validateSIN, validateDOB, getMaxDobDate, logValidation } from "../../utils/validation";
 import { useLanguage } from "../../contexts/language/language-provider";
+import { PersonalInfoFormData } from "./profileSchemas";
 
 interface PersonalInfoFormProps {
   currentStep: number;
