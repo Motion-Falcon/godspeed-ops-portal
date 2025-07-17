@@ -162,6 +162,7 @@ export function PositionCreate({
     Array<{ id: string; companyName: string }>
   >([]);
   const [minEndDate, setMinEndDate] = useState<string>(getTodayFormatted());
+  const [clientLoading, setClientLoading] = useState(false);
 
   // Job title options
   const titleOptions: DropdownOption[] = JOB_TITLES.map((title) => ({
@@ -228,6 +229,7 @@ export function PositionCreate({
   useEffect(() => {
     const fetchClients = async () => {
       try {
+        setClientLoading(true);
         // Get all clients by setting a high limit
         const response = await getClients({ limit: 1000 });
 
@@ -251,6 +253,8 @@ export function PositionCreate({
           err instanceof Error ? err.message : "Failed to fetch clients";
         setError(errorMessage);
         setTimeout(() => setError(null), 3000);
+      } finally {
+        setClientLoading(false);
       }
     };
 
@@ -683,27 +687,37 @@ export function PositionCreate({
                     </label>
                     {/* Hidden input for form registration */}
                     <input type="hidden" {...methods.register("client")} />
-                    <CustomDropdown
-                      options={clientOptions}
-                      selectedOption={(() => {
-                        const selectedClientId = methods.getValues("client");
-                        if (selectedClientId) {
-                          const selectedClient = clients.find(c => c.id === selectedClientId);
-                          return selectedClient ? {
-                            id: selectedClient.id,
-                            label: selectedClient.companyName,
-                            value: selectedClient.id
-                          } : null;
-                        }
-                        return null;
-                      })()}
-                      onSelect={(option) => { if (Array.isArray(option)) return; handleClientSelect(option); }}
-                      placeholder="Search clients..."
-                      searchable={true}
-                      clearable={true}
-                      onClear={() => methods.setValue("client", "")}
-                      emptyMessage="No clients found"
-                    />
+                    {clientLoading ? (
+                      <div className="invoice-dropdown-skeleton">
+                        <div className="skeleton-dropdown-trigger">
+                          <div className="skeleton-icon"></div>
+                          <div className="skeleton-text skeleton-dropdown-text"></div>
+                          <div className="skeleton-icon skeleton-chevron"></div>
+                        </div>
+                      </div>
+                    ) : (
+                      <CustomDropdown
+                        options={clientOptions}
+                        selectedOption={(() => {
+                          const selectedClientId = methods.getValues("client");
+                          if (selectedClientId) {
+                            const selectedClient = clients.find(c => c.id === selectedClientId);
+                            return selectedClient ? {
+                              id: selectedClient.id,
+                              label: selectedClient.companyName,
+                              value: selectedClient.id
+                            } : null;
+                          }
+                          return null;
+                        })()}
+                        onSelect={(option) => { if (Array.isArray(option)) return; handleClientSelect(option); }}
+                        placeholder="Search clients..."
+                        searchable={true}
+                        clearable={true}
+                        onClear={() => methods.setValue("client", "")}
+                        emptyMessage="No clients found"
+                      />
+                    )}
                     {methods.formState.errors.client && (
                       <p className="form-error">
                         {methods.formState.errors.client.message}
