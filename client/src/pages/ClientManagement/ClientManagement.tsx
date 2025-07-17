@@ -36,6 +36,8 @@ export interface BackendClientData {
   preferred_payment_method?: string;
   pay_cycle?: string;
   wsib_code?: string;
+  accounting_manager?: string;
+  client_rep?: string;
   created_at?: string;
   updated_at?: string;
   [key: string]: unknown;
@@ -180,6 +182,8 @@ export function ClientManagement() {
         preferredPaymentMethod: client.preferred_payment_method,
         payCycle: client.pay_cycle,
         wsibCode: client.wsib_code,
+        accountingManager: client.accounting_manager,
+        clientRep: client.client_rep,
         createdAt: client.created_at,
         updatedAt: client.updated_at
       }));
@@ -592,7 +596,7 @@ export function ClientManagement() {
                       <td className="name-cell">{getFieldValue(client, 'companyName')}</td>
                       <td className="shortcode-cell">{getFieldValue(client, 'shortCode')}</td>
                       <td className="listname-cell">{getFieldValue(client, 'listName')}</td>
-                      <td className="contact-cell">{getFieldValue(client, 'primaryContactPersonName1')}</td>
+                      <td className="contact-cell">{getFieldValue(client, 'contactPersonName1')}</td>
                       <td className="email-cell">{getFieldValue(client, 'emailAddress1')}</td>
                       <td className="mobile-cell">{getFieldValue(client, 'mobile1')}</td>
                       <td className="payment-method-cell">{getFieldValue(client, 'preferredPaymentMethod')}</td>

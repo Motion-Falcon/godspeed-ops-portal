@@ -31,6 +31,8 @@ const clientFormSchema = z.object({
   clientManager: z.string().optional(),
   salesPerson: z.string().optional(),
   accountingPerson: z.string().optional(),
+  accountingManager: z.string().optional(),
+  clientRep: z.string().optional(),
   mergeInvoice: z.boolean().default(false),
   currency: z.enum(['CAD', 'USD']),
   workProvince: z.string().min(1, { message: 'Work province is required' }),
@@ -125,11 +127,24 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
   const convertToCamelCase = (data: ClientData | Record<string, unknown>): ClientFormData => {
     const result: Record<string, unknown> = {};
     
+    // Function to decode HTML entities
+    const decodeHtmlEntities = (text: string): string => {
+      const textArea = document.createElement('textarea');
+      textArea.innerHTML = text;
+      return textArea.value;
+    };
+    
     // Process each key-value pair
     Object.entries(data).forEach(([key, value]) => {
       // Convert snake_case to camelCase
       const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
-      result[camelKey] = value;
+      
+      // Decode HTML entities for website field
+      if (camelKey === 'website' && typeof value === 'string' && value) {
+        result[camelKey] = decodeHtmlEntities(value);
+      } else {
+        result[camelKey] = value;
+      }
     });
     
     return result as ClientFormData;
@@ -508,6 +523,25 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
                       <p className="form-error">{methods.formState.errors.clientManager.message}</p>
                     )}
                   </div>
+
+                  <div className="form-group">
+                    <label htmlFor="clientRep" className="form-label">
+                      Client Representative
+                    </label>
+                    <select
+                      id="clientRep"
+                      className="form-input"
+                      {...methods.register('clientRep')}
+                    >
+                      <option value="">Select a client representative</option>
+                      <option value="Client Rep 1">Client Rep 1</option>
+                      <option value="Client Rep 2">Client Rep 2</option>
+                      <option value="Client Rep 3">Client Rep 3</option>
+                    </select>
+                    {methods.formState.errors.clientRep && (
+                      <p className="form-error">{methods.formState.errors.clientRep.message}</p>
+                    )}
+                  </div>
                   
                   <div className="form-group">
                     <label htmlFor="salesPerson" className="form-label">
@@ -546,6 +580,26 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
                       <p className="form-error">{methods.formState.errors.accountingPerson.message}</p>
                     )}
                   </div>
+
+                  <div className="form-group">
+                    <label htmlFor="accountingManager" className="form-label">
+                      Accounting Manager
+                    </label>
+                    <select
+                      id="accountingManager"
+                      className="form-input"
+                      {...methods.register('accountingManager')}
+                    >
+                      <option value="">Select an accounting manager</option>
+                      <option value="Accounting Manager 1">Accounting Manager 1</option>
+                      <option value="Accounting Manager 2">Accounting Manager 2</option>
+                      <option value="Accounting Manager 3">Accounting Manager 3</option>
+                    </select>
+                    {methods.formState.errors.accountingManager && (
+                      <p className="form-error">{methods.formState.errors.accountingManager.message}</p>
+                    )}
+                  </div>
+                  
                 </div>
 
                 <div className="form-row">

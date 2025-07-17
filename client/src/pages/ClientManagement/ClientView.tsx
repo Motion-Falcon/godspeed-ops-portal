@@ -88,6 +88,13 @@ export function ClientView() {
     }
   };
 
+  // Function to decode HTML entities
+  const decodeHtmlEntities = (text: string): string => {
+    const textArea = document.createElement('textarea');
+    textArea.innerHTML = text;
+    return textArea.value;
+  };
+
   const renderDetailItem = (label: string, value?: string | number | boolean | null) => {
     const displayValue = value === null || value === undefined || value === '' 
       ? 'N/A' 
@@ -99,6 +106,42 @@ export function ClientView() {
       <div className="detail-item">
         <p className="detail-label">{label}:</p>
         <p className="detail-value">{displayValue}</p>
+      </div>
+    );
+  };
+
+  // Special renderer for website URLs
+  const renderWebsiteItem = (label: string, value?: string | number | boolean | null) => {
+    if (!value || value === '') {
+      return (
+        <div className="detail-item">
+          <p className="detail-label">{label}:</p>
+          <p className="detail-value">N/A</p>
+        </div>
+      );
+    }
+
+    const decodedUrl = typeof value === 'string' ? decodeHtmlEntities(value) : String(value);
+    
+    // Check if URL has protocol, if not add https://
+    let linkUrl = decodedUrl;
+    if (decodedUrl && !decodedUrl.match(/^https?:\/\//)) {
+      linkUrl = `https://${decodedUrl}`;
+    }
+    
+    return (
+      <div className="detail-item">
+        <p className="detail-label">{label}:</p>
+        <p className="detail-value">
+          <a 
+            href={linkUrl} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            style={{ color: '#0066cc', textDecoration: 'underline' }}
+          >
+            {decodedUrl}
+          </a>
+        </p>
       </div>
     );
   };
@@ -241,10 +284,12 @@ export function ClientView() {
               {renderDetailItem('Billing Name', getFieldValue(client, 'billingName'))}
               {renderDetailItem('Short Code', getFieldValue(client, 'shortCode'))}
               {renderDetailItem('List Name', getFieldValue(client, 'listName'))}
-              {renderDetailItem('Website', getFieldValue(client, 'website'))}
+              {renderWebsiteItem('Website', getFieldValue(client, 'website'))}
               {renderDetailItem('Client Manager', getFieldValue(client, 'clientManager'))}
               {renderDetailItem('Sales Person', getFieldValue(client, 'salesPerson'))}
               {renderDetailItem('Accounting Person', getFieldValue(client, 'accountingPerson'))}
+              {renderDetailItem('Accounting Manager', getFieldValue(client, 'accountingManager'))}
+              {renderDetailItem('Client Representative', getFieldValue(client, 'clientRep'))}
               {renderDetailItem('Merge Invoice', getFieldValue(client, 'mergeInvoice'))}
               {renderDetailItem('Currency', getFieldValue(client, 'currency'))}
               {renderDetailItem('Work Province', getFieldValue(client, 'workProvince'))}

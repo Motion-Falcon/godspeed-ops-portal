@@ -15,7 +15,7 @@
   z-index: 1000;
   font-family: var(--font-family);
   border-bottom: 0.1px solid #1b2024;
-  height: 80px;
+  height: 60px;
 }
 
 .common-header.hide-hamburger-menu {

@@ -142,6 +142,8 @@ export interface ClientData {
   clientManager?: string;
   salesPerson?: string;
   accountingPerson?: string;
+  accountingManager?: string;
+  clientRep?: string;
   mergeInvoice: boolean;
   currency: 'CAD' | 'USD';
   workProvince: string;
@@ -206,6 +208,8 @@ export interface DbClientData {
   client_manager?: string;
   sales_person?: string;
   accounting_person?: string;
+  accounting_manager?: string;
+  client_rep?: string;
   merge_invoice: boolean;
   currency: string;
   work_province: string;

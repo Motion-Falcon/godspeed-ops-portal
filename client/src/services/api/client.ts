@@ -12,6 +12,8 @@ export interface ClientData {
   clientManager?: string;
   salesPerson?: string;
   accountingPerson?: string;
+  accountingManager?: string;
+  clientRep?: string;
   mergeInvoice?: boolean;
   currency?: string;
   workProvince?: string;
