@@ -43,7 +43,10 @@ interface RecentActivity {
     | "create_invoice"
     | "update_position"
     | "create_jobseeker"
-    | "user_registration";
+    | "user_registration"
+    | "create_client_draft"
+    | "update_client_draft"
+    | "delete_client_draft";
   action_verb: string;
   actor_name: string;
   actor_type: string;
@@ -110,15 +113,18 @@ const getStatusIcon = (actionType: string) => {
     case "create_jobseeker":
     case "assign_jobseeker":
     case "create_client":
+    case "create_client_draft":
       return <PlusCircleIcon size={12} className="status-success" />;
     case "update_position":
     case "update_jobseeker":
     case "update_client":
+    case "update_client_draft":
       return <Pencil size={12} className="status-success" />;
     case "remove_jobseeker":
     case "delete_position":
     case "delete_jobseeker":
     case "delete_client":
+    case "delete_client_draft":
       return <Trash size={12} className="status-error" />;
     case "create_invoice":
       return <PlusCircleIcon size={12} className="status-success" />;
@@ -340,9 +346,38 @@ const formatActivityMessage = (activity: RecentActivity): React.ReactNode => {
       );
 
     case "user_registration":
-      return (
+      return cleanSecondaryName ? (
         <>
           A new user <SecondaryEntity>{cleanSecondaryName}</SecondaryEntity> has been registered with{" "}
+          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity>
+        </>
+      ) : (
+        <>
+          <ActorName>{actor_name}</ActorName> registered new user{" "}
+          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity>
+        </>
+      );
+
+    case "create_client_draft":
+      return (
+        <>
+          <ActorName>{actor_name}</ActorName> created client draft for{" "}
+          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity>
+        </>
+      );
+
+    case "update_client_draft":
+      return (
+        <>
+          <ActorName>{actor_name}</ActorName> updated client draft for{" "}
+          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity>
+        </>
+      );
+
+    case "delete_client_draft":
+      return (
+        <>
+          <ActorName>{actor_name}</ActorName> deleted client draft for{" "}
           <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity>
         </>
       );

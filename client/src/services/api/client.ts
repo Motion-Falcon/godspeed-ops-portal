@@ -17,7 +17,7 @@ export interface ClientData {
   mergeInvoice?: boolean;
   currency?: string;
   workProvince?: string;
-  wsibCode?: string;
+  wsibCode?: string | null;
 
   // Contact Details
   contactPersonName1?: string;

@@ -880,6 +880,24 @@ router.put('/draft/:id?',
   authenticateToken, 
   authorizeRoles(['admin', 'recruiter']),
   sanitizeInputs,
+  activityLogger({
+    onSuccess: (req, res) => ({
+      actionType: 'update_client_draft',
+      actionVerb: 'updated draft',
+      primaryEntityType: 'client_draft',
+      primaryEntityId: req.params.id || res.locals.updatedDraft?.id,
+      primaryEntityName: req.body.companyName || res.locals.updatedDraft?.company_name || 'Unnamed Client Draft',
+      displayMessage: `Updated client draft for "${req.body.companyName || res.locals.updatedDraft?.company_name || 'Unnamed Client'}"`,
+      category: 'client_management',
+      priority: 'low',
+      metadata: {
+        shortCode: req.body.shortCode,
+        clientManager: req.body.clientManager,
+        isDraft: true,
+        isNewDraft: !req.params.id
+      }
+    })
+  }),
   async (req: Request, res: Response) => {
     try {
       if (!req.user || !req.user.id) {
@@ -939,6 +957,9 @@ router.put('/draft/:id?',
           return res.status(500).json({ error: 'Failed to update draft' });
         }
 
+        // Store draft data for activity logging
+        res.locals.updatedDraft = updatedDraft;
+
         return res.status(200).json({
           success: true,
           message: 'Draft updated successfully',
@@ -977,6 +998,9 @@ router.put('/draft/:id?',
           console.error('Error creating draft:', insertError);
           return res.status(500).json({ error: 'Failed to create draft' });
         }
+
+        // Store draft data for activity logging
+        res.locals.updatedDraft = newDraft;
 
         return res.status(201).json({
           success: true,
@@ -1122,6 +1146,23 @@ router.post('/draft',
   authenticateToken, 
   authorizeRoles(['admin', 'recruiter']),
   sanitizeInputs,
+  activityLogger({
+    onSuccess: (req, res) => ({
+      actionType: 'create_client_draft',
+      actionVerb: 'created draft',
+      primaryEntityType: 'client_draft',
+      primaryEntityId: res.locals.newDraft?.id,
+      primaryEntityName: req.body.companyName || 'Unnamed Client Draft',
+      displayMessage: `Created client draft for "${req.body.companyName || 'Unnamed Client'}"`,
+      category: 'client_management',
+      priority: 'low',
+      metadata: {
+        shortCode: req.body.shortCode,
+        clientManager: req.body.clientManager,
+        isDraft: true
+      }
+    })
+  }),
   async (req: Request, res: Response) => {
     try {
       if (!req.user || !req.user.id) {
@@ -1163,6 +1204,9 @@ router.post('/draft',
         return res.status(500).json({ error: 'Failed to create draft' });
       }
 
+      // Store draft data for activity logging
+      res.locals.newDraft = newDraft;
+
       return res.status(201).json({
         success: true,
         message: 'Draft created successfully',
@@ -1176,84 +1220,6 @@ router.post('/draft',
   }
 );
 
-/**
- * Update an existing client draft
- * PUT /api/clients/draft/:id
- * @access Private (Admin, Recruiter)
- */
-router.put('/draft/:id', 
-  authenticateToken, 
-  authorizeRoles(['admin', 'recruiter']),
-  sanitizeInputs,
-  async (req: Request, res: Response) => {
-    try {
-      if (!req.user || !req.user.id) {
-        return res.status(401).json({ error: 'Authentication required' });
-      }
-
-      const userId = req.user.id;
-      const clientData: Partial<ClientData> = req.body;
-      const { id } = req.params;
-      
-      // Check if the draft exists
-      const { data: existingDraft, error: draftCheckError } = await supabase
-        .from('client_drafts')
-        .select('id, created_by_user_id')
-        .eq('id', id)
-        .maybeSingle();
-
-      if (draftCheckError) {
-        console.error('Error checking for existing draft:', draftCheckError);
-        return res.status(500).json({ error: 'Failed to check draft status' });
-      }
-
-      // If draft doesn't exist or doesn't belong to the user
-      if (!existingDraft) {
-        return res.status(404).json({ error: 'Draft not found' });
-      }
-
-      // Prepare update data with timestamps
-      const updateData = {
-        ...clientData,
-        is_draft: true,
-        updated_at: new Date().toISOString(),
-        updated_by_user_id: userId,
-        last_updated: new Date().toISOString(),
-      };
-
-      // Convert camelCase to snake_case for database
-      const dbUpdateData = Object.entries(updateData).reduce((acc, [key, value]) => {
-        // Convert camelCase to snake_case using the helper function
-        const snakeKey = camelToSnakeCase(key);
-        acc[snakeKey] = value;
-        return acc;
-      }, {} as Record<string, any>);
-
-      // Update the draft
-      const { data: updatedDraft, error: updateError } = await supabase
-        .from('client_drafts')
-        .update(dbUpdateData)
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (updateError) {
-        console.error('Error updating draft:', updateError);
-        return res.status(500).json({ error: 'Failed to update draft' });
-      }
-
-      return res.status(200).json({
-        success: true,
-        message: 'Draft updated successfully',
-        draft: updatedDraft,
-        lastUpdated: updatedDraft.last_updated
-      });
-    } catch (error) {
-      console.error('Unexpected error updating draft:', error);
-      return res.status(500).json({ error: 'An unexpected error occurred' });
-    }
-  }
-);
 
 /**
  * Get client draft by ID
@@ -1321,6 +1287,22 @@ router.get('/draft/:id',
 router.delete('/draft/:id', 
   authenticateToken, 
   authorizeRoles(['admin', 'recruiter']),
+  activityLogger({
+    onSuccess: (req, res) => ({
+      actionType: 'delete_client_draft',
+      actionVerb: 'deleted draft',
+      primaryEntityType: 'client_draft',
+      primaryEntityId: req.params.id,
+      primaryEntityName: res.locals.deletedDraft?.company_name || 'Client Draft',
+      displayMessage: `Deleted client draft for "${res.locals.deletedDraft?.company_name || 'Unknown Client'}"`,
+      category: 'client_management',
+      priority: 'low',
+      metadata: {
+        draftId: req.params.id,
+        isDraft: true
+      }
+    })
+  }),
   async (req: Request, res: Response) => {
     try {
       if (!req.user || !req.user.id) {
@@ -1333,7 +1315,7 @@ router.delete('/draft/:id',
       // Make sure the draft exists and belongs to the user
       const { data: draft, error: checkError } = await supabase
         .from('client_drafts')
-        .select('id, created_by_user_id')
+        .select('id, created_by_user_id, company_name')
         .eq('id', id)
         .maybeSingle();
 
@@ -1349,6 +1331,9 @@ router.delete('/draft/:id',
       if (draft.created_by_user_id !== userId) {
         return res.status(403).json({ error: 'You do not have permission to delete this draft' });
       }
+
+      // Store draft data for activity logging
+      res.locals.deletedDraft = draft;
 
       // Delete the draft
       const { error: deleteError } = await supabase

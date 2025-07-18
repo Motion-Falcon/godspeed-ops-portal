@@ -36,7 +36,13 @@ const clientFormSchema = z.object({
   mergeInvoice: z.boolean().default(false),
   currency: z.enum(['CAD', 'USD']),
   workProvince: z.string().min(1, { message: 'Work province is required' }),
-  wsibCode: z.string().regex(/^[A-Z][0-9]$/, { message: 'WSIB code must be 1 letter followed by 1 number (e.g., A1)' }).optional().or(z.literal('')),
+  wsibCode: z.string()
+    .transform(val => val === '' ? null : val)
+    .refine(val => val === null || /^[A-Z][0-9]$/.test(val), { 
+      message: 'WSIB code must be 1 letter followed by 1 number (e.g., A1)' 
+    })
+    .nullable()
+    .optional(),
   
   // Contact Details
   contactPersonName1: z.string().min(1, { message: 'Contact person name is required' }),
@@ -116,6 +122,7 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
       invoiceCCDispatch: false,
       invoiceCCAccounts: false,
       invoiceLanguage: 'English',
+      wsibCode: null,
     },
     mode: 'onBlur',
   });

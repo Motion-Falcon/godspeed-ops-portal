@@ -166,7 +166,10 @@ export interface ActivityData {
   | "create_invoice"
   | "update_position"
   | "create_jobseeker"
-  | "user_registration";
+  | "user_registration"
+  | "create_client_draft"
+  | "update_client_draft"
+  | "delete_client_draft";
   actionVerb: string;
   primaryEntityType: string;
   primaryEntityId?: string;
