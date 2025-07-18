@@ -22,11 +22,37 @@ import "./RecentActivities.css";
 
 interface RecentActivity {
   id: string;
-  action_type: string;
+  action_type:
+    | "delete_jobseeker"
+    | "create_client"
+    | "create_timesheet"
+    | "update_client"
+    | "assign_jobseeker"
+    | "reject_jobseeker"
+    | "create_position"
+    | "delete_position"
+    | "pending_jobseeker"
+    | "update_timesheet"
+    | "delete_invoice"
+    | "delete_timesheet"
+    | "verify_jobseeker"
+    | "update_invoice"
+    | "update_jobseeker"
+    | "delete_client"
+    | "remove_jobseeker"
+    | "create_invoice"
+    | "update_position"
+    | "create_jobseeker"
+    | "user_registration";
   action_verb: string;
   actor_name: string;
   actor_type: string;
-  category: string;
+  category:
+    | "position_management"
+    | "client_management"
+    | "financial"
+    | "system"
+    | "candidate_management";
   display_message: string;
   primary_entity_name?: string;
   primary_entity_type: string;
@@ -313,6 +339,14 @@ const formatActivityMessage = (activity: RecentActivity): React.ReactNode => {
         </>
       );
 
+    case "user_registration":
+      return (
+        <>
+          A new user <SecondaryEntity>{cleanSecondaryName}</SecondaryEntity> has been registered with{" "}
+          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity>
+        </>
+      );
+
     case "create_invoice":
       return cleanSecondaryName ? (
         <>
@@ -355,30 +389,17 @@ const formatActivityMessage = (activity: RecentActivity): React.ReactNode => {
         </>
       );
 
-    case "document_scan":
-      return (
-        <>
-          <ActorName>{actor_name}</ActorName> processed a document for analysis
-        </>
-      );
-
-    case "candidate_match":
-      return cleanSecondaryName ? (
-        <>
-          <ActorName>{actor_name}</ActorName> matched candidates to position
-          <SecondaryEntity>{cleanSecondaryName}</SecondaryEntity>
-        </>
-      ) : (
-        <>
-          <ActorName>{actor_name}</ActorName> matched candidates to a position
-        </>
-      );
-
     case "create_timesheet": {
       const jobseekerName = secondary_entity_name || "";
       const positionTitle = tertiary_entity_name || "";
-      const weekStart = typeof activity.metadata?.weekStartDate === "string" ? activity.metadata.weekStartDate : "";
-      const weekEnd = typeof activity.metadata?.weekEndDate === "string" ? activity.metadata.weekEndDate : "";
+      const weekStart =
+        typeof activity.metadata?.weekStartDate === "string"
+          ? activity.metadata.weekStartDate
+          : "";
+      const weekEnd =
+        typeof activity.metadata?.weekEndDate === "string"
+          ? activity.metadata.weekEndDate
+          : "";
 
       return (
         <>
@@ -386,12 +407,14 @@ const formatActivityMessage = (activity: RecentActivity): React.ReactNode => {
           <PrimaryEntity>{jobseekerName}</PrimaryEntity>
           {positionTitle && (
             <>
-              {" "}(<SecondaryEntity>{positionTitle}</SecondaryEntity>)
+              {" "}
+              (<SecondaryEntity>{positionTitle}</SecondaryEntity>)
             </>
           )}
           {weekStart && weekEnd && (
             <>
-              {" "}for period '{weekStart}' - '{weekEnd}'
+              {" "}
+              for period '{weekStart}' - '{weekEnd}'
             </>
           )}
         </>

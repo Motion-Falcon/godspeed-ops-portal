@@ -652,7 +652,7 @@ router.put('/profile/:id/status',
       const { status, rejectionReason } = req.body;
       
       // Determine the specific action type based on the status
-      let actionType = 'update_jobseeker';
+      let actionType: "verify_jobseeker" | "reject_jobseeker" | "pending_jobseeker" = 'pending_jobseeker';
       let actionVerb = 'updated';
       
       if (status === 'verified') {
@@ -681,8 +681,8 @@ router.put('/profile/:id/status',
         }${
           status === 'verified' && updatedProfile.employee_id ? ` and assigned employee code ${updatedProfile.employee_id}` : ''
         }`,
-        category: 'candidate_management',
-        priority: status === 'rejected' ? 'high' : 'normal',
+        category: 'candidate_management' as const,
+        priority: status === 'rejected' ? 'high' as const : 'normal' as const,
         status: 'completed',
         metadata: {
           profileId: req.params.id,

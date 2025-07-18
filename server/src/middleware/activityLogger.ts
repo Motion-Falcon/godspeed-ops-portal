@@ -145,7 +145,28 @@ const supabaseAdmin = createClient(supabaseUrl!, supabaseServiceKey!);
 
 // Interface for activity data to be logged
 export interface ActivityData {
-  actionType: string;
+  actionType:
+  | "delete_jobseeker"
+  | "create_client"
+  | "create_timesheet"
+  | "update_client"
+  | "assign_jobseeker"
+  | "reject_jobseeker"
+  | "create_position"
+  | "delete_position"
+  | "pending_jobseeker"
+  | "update_timesheet"
+  | "delete_invoice"
+  | "delete_timesheet"
+  | "verify_jobseeker"
+  | "update_invoice"
+  | "update_jobseeker"
+  | "delete_client"
+  | "remove_jobseeker"
+  | "create_invoice"
+  | "update_position"
+  | "create_jobseeker"
+  | "user_registration";
   actionVerb: string;
   primaryEntityType: string;
   primaryEntityId?: string;
@@ -159,7 +180,7 @@ export interface ActivityData {
   status?: string;
   metadata?: Record<string, any>;
   displayMessage: string;
-  category: string;
+  category: "position_management" | "client_management" | "financial" | "system" | "candidate_management";
   priority?: 'low' | 'normal' | 'high' | 'urgent';
 }
 

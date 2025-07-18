@@ -507,7 +507,7 @@
   "verificationPending": {
     "title": "Email Verification",
     "checkEmailTitle": "Check your email",
-    "instructions": "We've sent a verification email to <span class='bold-text'>{{email}}</span>. Click the link in the email to verify your account.",
+    "instructions": "We've sent a verification email to {{email}}. Click the link in the email to verify your account.",
     "resendError": "An error occurred while resending the verification email.",
     "emailSent": "A new verification email has been sent.",
     "notReceived": "Didn't receive an email? Check your spam folder or request a new verification link.",

@@ -61,9 +61,7 @@ export function VerificationPending() {
 
           <h1 className="auth-card-title">{t('verificationPending.checkEmailTitle')}</h1>
 
-          <p>
-            {t('verificationPending.instructions', { email })}
-          </p>
+          <p dangerouslySetInnerHTML={{ __html: t('verificationPending.instructions', { email }) }} />
 
           <div className="card-actions">
             {error && <div className="error-container">{error}</div>}

@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 import { authenticateToken, isAdminOrRecruiter } from '../middleware/auth.js';
 import twilio from 'twilio';
+import { activityLogger } from '../middleware/activityLogger.js';
 
 dotenv.config();
 
@@ -159,7 +160,44 @@ router.post('/verify-otp', async (req, res) => {
 });
 
 // Register a new user
-router.post('/register', async (req, res) => {
+router.post('/register',
+  activityLogger({
+    onSuccess: (req, res) => {
+      // For registration, we need to create a mock system user context
+      if (!req.user) {
+        req.user = {
+          id: '00000000-0000-0000-0000-000000000000', // System UUID
+          email: 'system@godspeedxp.com',
+          user_metadata: {
+            name: 'System',
+            user_type: 'admin'
+          }
+        } as any;
+      }
+      
+      return {
+        actionType: 'user_registration',
+        actionVerb: 'registered',
+        primaryEntityType: 'user',
+        primaryEntityId: res.locals.newUser?.id,
+        primaryEntityName: res.locals.newUser?.email || req.body.email,
+        secondaryEntityType: 'user_profile',
+        secondaryEntityId: res.locals.newUser?.id,
+        secondaryEntityName: res.locals.newUser?.user_metadata?.name || req.body.name || 'Unknown',
+        displayMessage: `New user registered: ${res.locals.newUser?.email || req.body.email}`,
+        category: 'candidate_management',
+        priority: 'normal',
+        metadata: {
+          userType: res.locals.newUser?.user_metadata?.user_type || 'jobseeker',
+          email: res.locals.newUser?.email,
+          name: res.locals.newUser?.user_metadata?.name,
+          hasPhoneNumber: !!req.body.phoneNumber,
+          registrationMethod: 'email_password'
+        }
+      };
+    }
+  }),
+  async (req, res) => {
   try {
     const { email, password, name, phoneNumber } = req.body;
 
@@ -205,6 +243,9 @@ router.post('/register', async (req, res) => {
     if (!data.user) {
       return res.status(400).json({ error: 'An account with this email already exists' });
     }
+
+    // Store user data for activity logging
+    res.locals.newUser = data.user;
 
     return res.status(201).json({
       message: 'Registration successful. Please check your email for verification.',
