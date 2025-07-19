@@ -9,7 +9,34 @@ export interface RecentActivity {
   actor_id: string;
   actor_name: string;
   actor_type: string;
-  action_type: string;
+  action_type:
+    | "delete_jobseeker"
+    | "create_client"
+    | "create_timesheet"
+    | "update_client"
+    | "assign_jobseeker"
+    | "reject_jobseeker"
+    | "create_position"
+    | "delete_position"
+    | "pending_jobseeker"
+    | "update_timesheet"
+    | "delete_invoice"
+    | "delete_timesheet"
+    | "verify_jobseeker"
+    | "update_invoice"
+    | "update_jobseeker"
+    | "delete_client"
+    | "remove_jobseeker"
+    | "create_invoice"
+    | "update_position"
+    | "create_jobseeker"
+    | "user_registration"
+    | "create_client_draft"
+    | "update_client_draft"
+    | "delete_client_draft"
+    | "create_position_draft"
+    | "update_position_draft"
+    | "delete_position_draft";
   action_verb: string;
   primary_entity_type: string;
   primary_entity_id?: string;
@@ -23,7 +50,7 @@ export interface RecentActivity {
   status?: string;
   metadata: Record<string, unknown>;
   display_message: string;
-  category: string;
+  category: "position_management" | "client_management" | "financial" | "system" | "candidate_management";
   priority: 'low' | 'normal' | 'high' | 'urgent';
   is_deleted: boolean;
 }

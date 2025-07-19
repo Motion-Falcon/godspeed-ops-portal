@@ -367,20 +367,6 @@ export const savePositionDraft = async (
   }
 };
 
-export const getPositionDraft = async (): Promise<PositionDraftResponse> => {
-  try {
-    const response = await api.get("/api/positions/draft");
-    return response.data;
-  } catch (error) {
-    if (axios.isAxiosError(error) && error.response) {
-      throw new Error(
-        error.response.data.error || "Failed to fetch position draft"
-      );
-    }
-    throw error;
-  }
-};
-
 export const getPositionDraftById = async (
   id: string
 ): Promise<PositionDraftResponse> => {
@@ -396,6 +382,7 @@ export const getPositionDraftById = async (
     throw error;
   }
 };
+
 export const getAllPositionDrafts = async (
   filters?: PositionDraftFilters
 ): Promise<PaginatedPositionDraftResponse> => {
@@ -412,8 +399,8 @@ export const getAllPositionDrafts = async (
 
     const queryString = queryParams.toString();
     const url = queryString
-      ? `/api/positions/drafts?${queryString}`
-      : `/api/positions/drafts`;
+      ? `/api/positions/draft?${queryString}`
+      : `/api/positions/draft`;
 
     const response = await api.get(url);
     return response.data;
@@ -434,7 +421,7 @@ export const deletePositionDraft = async (
   try {
     const response = await api.delete(`/api/positions/draft/${id}`);
     // Clear cache for drafts list after deletion
-    clearCacheFor("/api/positions/drafts");
+    clearCacheFor("/api/positions/draft");
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {

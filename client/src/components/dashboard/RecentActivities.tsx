@@ -46,7 +46,10 @@ interface RecentActivity {
     | "user_registration"
     | "create_client_draft"
     | "update_client_draft"
-    | "delete_client_draft";
+    | "delete_client_draft"
+    | "create_position_draft"
+    | "update_position_draft"
+    | "delete_position_draft";
   action_verb: string;
   actor_name: string;
   actor_type: string;
@@ -114,17 +117,20 @@ const getStatusIcon = (actionType: string) => {
     case "assign_jobseeker":
     case "create_client":
     case "create_client_draft":
+    case "create_position_draft":
       return <PlusCircleIcon size={12} className="status-success" />;
     case "update_position":
     case "update_jobseeker":
     case "update_client":
     case "update_client_draft":
+    case "update_position_draft":
       return <Pencil size={12} className="status-success" />;
     case "remove_jobseeker":
     case "delete_position":
     case "delete_jobseeker":
     case "delete_client":
     case "delete_client_draft":
+    case "delete_position_draft":
       return <Trash size={12} className="status-error" />;
     case "create_invoice":
       return <PlusCircleIcon size={12} className="status-success" />;
@@ -379,6 +385,48 @@ const formatActivityMessage = (activity: RecentActivity): React.ReactNode => {
         <>
           <ActorName>{actor_name}</ActorName> deleted client draft for{" "}
           <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity>
+        </>
+      );
+
+    case "create_position_draft":
+      return (
+        <>
+          <ActorName>{actor_name}</ActorName> created position draft for{" "}
+          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity>
+          {cleanSecondaryName && (
+            <>
+              {" "}
+              of <SecondaryEntity>{cleanSecondaryName}</SecondaryEntity>
+            </>
+          )}
+        </>
+      );
+
+    case "update_position_draft":
+      return (
+        <>
+          <ActorName>{actor_name}</ActorName> updated position draft for{" "}
+          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity>
+          {cleanSecondaryName && (
+            <>
+              {" "}
+              of <SecondaryEntity>{cleanSecondaryName}</SecondaryEntity>
+            </>
+          )}
+        </>
+      );
+
+    case "delete_position_draft":
+      return (
+        <>
+          <ActorName>{actor_name}</ActorName> deleted position draft for{" "}
+          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity>
+          {cleanSecondaryName && (
+            <>
+              {" "}
+              of <SecondaryEntity>{cleanSecondaryName}</SecondaryEntity>
+            </>
+          )}
         </>
       );
 

@@ -7,6 +7,7 @@ import profileRoutes from "./routes/profile.js";
 import jobseekersRoutes from "./routes/jobseekers.js";
 import clientsRoutes from "./routes/clients.js";
 import positionsRoutes from "./routes/positions.js";
+import positionsDraftRoutes from "./routes/positionDrafts.js";
 import timesheetsRoutes from "./routes/timesheets.js";
 import invoicesRoutes from "./routes/invoices.js";
 import jobseekerMetricsRoutes from "./routes/jobseekerMetrics.js";
@@ -88,6 +89,9 @@ app.use("/api/jobseekers", jobseekersRoutes);
 
 // Clients routes
 app.use("/api/clients", clientsRoutes);
+
+// Positions Drafts routes (MUST come before general positions routes)
+app.use("/api/positions/draft", positionsDraftRoutes);
 
 // Positions routes
 app.use("/api/positions", positionsRoutes);

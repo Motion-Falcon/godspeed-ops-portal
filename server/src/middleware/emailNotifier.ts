@@ -51,22 +51,3 @@ export const emailNotifier = (options: EmailNotifierOptions = {}) => {
     next();
   };
 };
-
-// Helper to render the template with variables (plain text)
-export function renderTemplate(templatePath: string, variables: Record<string, any>): string {
-  let template = fs.readFileSync(templatePath, 'utf-8');
-  // Simple handlebars-like replacement
-  template = template.replace(/{{\s*(\w+)\s*}}/g, (_, key) => variables[key] ?? '');
-  // Remove any remaining handlebars conditionals (for this simple use-case)
-  template = template.replace(/{{#if [^}]+}}|{{\/if}}/g, '');
-  return template;
-}
-
-// Helper to render HTML template with Handlebars
-export function renderHtmlTemplate(templatePath: string, variables: Record<string, any>): string {
-  const templateSource = fs.readFileSync(templatePath, 'utf-8');
-  const template = Handlebars.compile(templateSource);
-  const html = template(variables);
-  console.log('[EmailNotifier] Rendered HTML template from', templatePath);
-  return html;
-} 

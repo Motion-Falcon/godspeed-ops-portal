@@ -169,7 +169,10 @@ export interface ActivityData {
   | "user_registration"
   | "create_client_draft"
   | "update_client_draft"
-  | "delete_client_draft";
+  | "delete_client_draft"
+  | "create_position_draft"
+  | "update_position_draft"
+  | "delete_position_draft";
   actionVerb: string;
   primaryEntityType: string;
   primaryEntityId?: string;
