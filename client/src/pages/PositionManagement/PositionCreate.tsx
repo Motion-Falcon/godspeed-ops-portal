@@ -100,7 +100,7 @@ const positionFormSchema = z.object({
       (data) => Object.values(data).some((value) => value === true),
       {
         message: "At least one document must be selected",
-        path: ["documentsRequired"],
+        path: ["root"],
       }
     ),
 
@@ -132,6 +132,36 @@ const positionFormSchema = z.object({
   assignedTo: z.string().optional(),
   projCompDate: z.string().optional(),
   taskTime: z.string().optional(),
+}).refine(
+  (data) => {
+    // If overtime is enabled, require overtime fields
+    if (data.overtimeEnabled) {
+      return (
+        data.overtimeHours &&
+        data.overtimeHours.trim() !== "" &&
+        data.overtimeBillRate &&
+        data.overtimeBillRate.trim() !== "" &&
+        data.overtimePayRate &&
+        data.overtimePayRate.trim() !== ""
+      );
+    }
+    return true;
+  },
+  {
+    message: "All overtime fields are required when overtime is enabled",
+    path: ["overtimeEnabled"],
+  }
+).transform((data) => {
+  // Clear overtime fields when overtime is disabled
+  if (!data.overtimeEnabled) {
+    return {
+      ...data,
+      overtimeHours: "",
+      overtimeBillRate: "",
+      overtimePayRate: "",
+    };
+  }
+  return data;
 });
 
 type PositionFormData = z.infer<typeof positionFormSchema>;
@@ -436,6 +466,18 @@ export function PositionCreate({
       setMinEndDate(getTodayFormatted());
     }
   }, [methods.watch("startDate")]);
+
+  // Clear overtime fields when overtime is disabled
+  useEffect(() => {
+    const overtimeEnabled = methods.watch("overtimeEnabled");
+    if (!overtimeEnabled) {
+      methods.setValue("overtimeHours", "");
+      methods.setValue("overtimeBillRate", "");
+      methods.setValue("overtimePayRate", "");
+      // Clear any validation errors for overtime fields
+      methods.clearErrors(["overtimeHours", "overtimeBillRate", "overtimePayRate"]);
+    }
+  }, [methods.watch("overtimeEnabled"), methods]);
 
   // Create client options for CustomDropdown
   const clientOptions: DropdownOption[] = clients.map((client) => ({
@@ -1264,6 +1306,15 @@ export function PositionCreate({
                     </label>
                   </div>
                 </div>
+
+                {(methods.formState.errors.documentsRequired?.root || 
+                  methods.formState.errors.documentsRequired?.message) && (
+                  <p className="form-error">
+                    {methods.formState.errors.documentsRequired?.root?.message || 
+                     methods.formState.errors.documentsRequired?.message ||
+                     "At least one document must be selected"}
+                  </p>
+                )}
               </div>
 
               {/* Position Details Section */}
@@ -1409,6 +1460,11 @@ export function PositionCreate({
                           placeholder="Enter overtime hours"
                           {...methods.register("overtimeHours")}
                         />
+                        {methods.formState.errors.overtimeHours && (
+                          <p className="form-error">
+                            {methods.formState.errors.overtimeHours.message}
+                          </p>
+                        )}
                       </div>
 
                       <div className="form-group">
@@ -1425,6 +1481,11 @@ export function PositionCreate({
                           placeholder="Enter overtime bill rate"
                           {...methods.register("overtimeBillRate")}
                         />
+                        {methods.formState.errors.overtimeBillRate && (
+                          <p className="form-error">
+                            {methods.formState.errors.overtimeBillRate.message}
+                          </p>
+                        )}
                       </div>
 
                       <div className="form-group">
@@ -1438,9 +1499,20 @@ export function PositionCreate({
                           placeholder="Enter overtime pay rate"
                           {...methods.register("overtimePayRate")}
                         />
+                        {methods.formState.errors.overtimePayRate && (
+                          <p className="form-error">
+                            {methods.formState.errors.overtimePayRate.message}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
+                )}
+
+                {methods.formState.errors.overtimeEnabled && (
+                  <p className="form-error">
+                    {methods.formState.errors.overtimeEnabled.message}
+                  </p>
                 )}
               </div>
 
