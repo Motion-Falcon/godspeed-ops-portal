@@ -28,7 +28,6 @@ import {
   generateInvoiceNumber,
 } from "../../services/api/timesheet";
 import "../../styles/pages/TimesheetManagement.css";
-import { BackendClientData } from "../ClientManagement/ClientManagement";
 import { generateWeekOptions, formatDate } from "../../utils/weekUtils";
 
 // Types for timesheet
@@ -54,7 +53,7 @@ interface WeeklyTimesheet {
 }
 
 // Extended position type that includes overtime properties
-interface PositionWithOvertime {
+export interface PositionWithOvertime {
   id: string;
   positionCode: string;
   title: string;
@@ -196,27 +195,8 @@ export function TimesheetManagement() {
     try {
       setClientLoading(true);
       const response = await getClients({ limit: 100000000 }); // Get all clients
-      const convertedClients = (response.clients as BackendClientData[]).map(
-        (client: BackendClientData) => ({
-          ...client,
-          companyName: client.company_name,
-          shortCode: client.short_code,
-          listName: client.list_name,
-          contactPersonName1: client.contact_person_name1,
-          contactPersonName2: client.contact_person_name2,
-          emailAddress1: client.email_address1,
-          emailAddress2: client.email_address2,
-          mobile1: client.mobile1,
-          mobile2: client.mobile2,
-          landline1: client.landline1,
-          landline2: client.landline2,
-          preferredPaymentMethod: client.preferred_payment_method,
-          payCycle: client.pay_cycle,
-          createdAt: client.created_at,
-          updatedAt: client.updated_at,
-        })
-      );
-      setClients(convertedClients);
+      // Backend now returns camelCase, so no conversion needed
+      setClients(response.clients);
     } catch (error) {
       console.error("Error fetching clients:", error);
     } finally {

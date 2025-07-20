@@ -7,7 +7,6 @@ import { CustomDropdown, DropdownOption } from "../../components/CustomDropdown"
 import { Loader2, Calendar, User, Building, Users } from "lucide-react";
 import { JobSeekerProfile } from "../../types/jobseeker";
 import { formatDate as formatWeekDate } from "../../utils/weekUtils";
-import { BackendClientData } from "../ClientManagement/ClientManagement";
 import "../../styles/pages/CommonReportsStyles.css";
 import { exportToCSV } from '../../utils/csvExport';
 
@@ -69,30 +68,10 @@ export function SalesReport() {
     setClientLoading(true);
     getClients({ limit: 10000 })
       .then((res) => {
-        // Map backend fields to frontend fields (camelCase) using BackendClientData
-        const backendClients = res.clients as BackendClientData[];
-        const convertedClients = backendClients.map((client: BackendClientData) => ({
-          ...client,
-          companyName: client.company_name,
-          shortCode: client.short_code,
-          listName: client.list_name,
-          contactPersonName1: client.contact_person_name1,
-          contactPersonName2: client.contact_person_name2,
-          emailAddress1: client.email_address1,
-          emailAddress2: client.email_address2,
-          mobile1: client.mobile1,
-          mobile2: client.mobile2,
-          landline1: client.landline1,
-          landline2: client.landline2,
-          preferredPaymentMethod: client.preferred_payment_method,
-          payCycle: client.pay_cycle,
-          createdAt: client.created_at,
-          updatedAt: client.updated_at,
-        }));
-        setClients(convertedClients);
+        setClients(res.clients);
         
         // Extract unique sales persons from backend data
-        const uniqueSalesPersons = [...new Set(backendClients.map(c => c.sales_person).filter(Boolean) as string[])];
+        const uniqueSalesPersons = [...new Set(res.clients.map(c => c.salesPerson).filter(Boolean) as string[])];
         setSalesPersonOptions(uniqueSalesPersons);
       })
       .catch(() => setClients([]))

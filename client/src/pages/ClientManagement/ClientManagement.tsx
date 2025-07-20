@@ -12,37 +12,6 @@ import { ConfirmationModal } from '../../components/ConfirmationModal';
 import '../../styles/components/CommonTable.css';
 import '../../styles/pages/ClientManagement.css';
 
-interface ExtendedClientData extends ClientData {
-  company_name?: string;
-  contact_person_name1?: string;
-  work_province?: string;
-  [key: string]: unknown;
-}
-
-// Backend response interface with snake_case properties
-export interface BackendClientData {
-  id?: string;
-  company_name?: string;
-  short_code?: string;
-  list_name?: string;
-  contact_person_name1?: string;
-  contact_person_name2?: string;
-  email_address1?: string;
-  email_address2?: string;
-  mobile1?: string;
-  mobile2?: string;
-  landline1?: string;
-  landline2?: string;
-  preferred_payment_method?: string;
-  pay_cycle?: string;
-  wsib_code?: string;
-  accounting_manager?: string;
-  client_rep?: string;
-  created_at?: string;
-  updated_at?: string;
-  [key: string]: unknown;
-}
-
 interface PaginationInfo {
   page: number;
   limit: number;
@@ -55,7 +24,7 @@ interface PaginationInfo {
 
 export function ClientManagement() {
   // State management
-  const [clients, setClients] = useState<ExtendedClientData[]>([]);
+  const [clients, setClients] = useState<ClientData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -85,17 +54,17 @@ export function ClientManagement() {
   });
 
   // Delete confirmation state
-  const [clientToDelete, setClientToDelete] = useState<ExtendedClientData | null>(null);
+  const [clientToDelete, setClientToDelete] = useState<ClientData | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // Edit confirmation state
-  const [clientToEdit, setClientToEdit] = useState<ExtendedClientData | null>(null);
+  const [clientToEdit, setClientToEdit] = useState<ClientData | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-  const getFieldValue = (client: ExtendedClientData, field: string): string => {
-    const value = client[field] || client[field.toLowerCase()] || client[field.replace(/([A-Z])/g, '_$1').toLowerCase()];
+  const getFieldValue = (client: ClientData, field: keyof ClientData): string => {
+    const value = client[field];
     
     if (value === null || value === undefined) {
       return 'N/A';
@@ -164,31 +133,7 @@ export function ClientManagement() {
 
       const response = await getClients(params);
       
-      // Convert snake_case to camelCase for frontend use
-      // Backend returns snake_case, frontend expects camelCase
-      const convertedClients = (response.clients as BackendClientData[]).map((client: BackendClientData) => ({
-        ...client,
-        companyName: client.company_name,
-        shortCode: client.short_code,
-        listName: client.list_name,
-        contactPersonName1: client.contact_person_name1,
-        contactPersonName2: client.contact_person_name2,
-        emailAddress1: client.email_address1,
-        emailAddress2: client.email_address2,
-        mobile1: client.mobile1,
-        mobile2: client.mobile2,
-        landline1: client.landline1,
-        landline2: client.landline2,
-        preferredPaymentMethod: client.preferred_payment_method,
-        payCycle: client.pay_cycle,
-        wsibCode: client.wsib_code,
-        accountingManager: client.accounting_manager,
-        clientRep: client.client_rep,
-        createdAt: client.created_at,
-        updatedAt: client.updated_at
-      }));
-
-      setClients(convertedClients);
+      setClients(response.clients);
       setPagination(response.pagination);
     } catch (err) {
       console.error('Error fetching clients:', err);
@@ -269,7 +214,7 @@ export function ClientManagement() {
     navigate(`/client-management/view/${id}`);
   };
 
-  const handleEditClick = (client: ExtendedClientData) => {
+  const handleEditClick = (client: ClientData) => {
     setClientToEdit(client);
     setIsEditModalOpen(true);
   };
@@ -287,7 +232,7 @@ export function ClientManagement() {
     setClientToEdit(null);
   };
 
-  const handleDeleteClick = (client: ExtendedClientData) => {
+  const handleDeleteClick = (client: ClientData) => {
     setClientToDelete(client);
     setIsDeleteModalOpen(true);
     setDeleteError(null);

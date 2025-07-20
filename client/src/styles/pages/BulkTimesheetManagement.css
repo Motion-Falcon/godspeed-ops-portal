@@ -1,0 +1,19 @@
+.bulk-timesheet-page-container {
+  /* Parent container for bulk timesheet management */
+}
+
+/* Example: override or extend styles as needed */
+.bulk-timesheet-page-container .timesheet-assignment-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--card-shadow);
+  padding: 1rem;
+  margin: 0 0 1rem 0;
+}
+
+.bulk-timesheet-page-container .timesheet-hours-adjustments-container {
+  border: none;
+  box-shadow: none;
+  padding: 2px;
+}

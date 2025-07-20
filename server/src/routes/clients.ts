@@ -63,6 +63,37 @@ function camelToSnakeCase(str: string): string {
 }
 
 /**
+ * Convert snake_case to camelCase
+ */
+function snakeToCamelCase(str: string): string {
+  return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+}
+
+/**
+ * Convert an object's keys from snake_case to camelCase
+ */
+function convertObjectToCamelCase(obj: any): any {
+  if (obj === null || obj === undefined) {
+    return obj;
+  }
+  
+  if (Array.isArray(obj)) {
+    return obj.map(item => convertObjectToCamelCase(item));
+  }
+  
+  if (typeof obj === 'object') {
+    const converted: any = {};
+    Object.entries(obj).forEach(([key, value]) => {
+      const camelKey = snakeToCamelCase(key);
+      converted[camelKey] = convertObjectToCamelCase(value);
+    });
+    return converted;
+  }
+  
+  return obj;
+}
+
+/**
  * Get all clients with pagination and filtering
  * GET /api/clients
  * @access Private (Admin, Recruiter)
@@ -187,8 +218,11 @@ router.get('/',
       const hasNextPage = pageNum < totalPages;
       const hasPrevPage = pageNum > 1;
 
+      // Convert snake_case to camelCase for frontend
+      const formattedClients = clients.map(client => convertObjectToCamelCase(client));
+
       return res.status(200).json({
-        clients,
+        clients: formattedClients,
         pagination: {
           page: pageNum,
           limit: limitNum,
@@ -447,11 +481,7 @@ router.get('/drafts',
       // Transform drafts format to match client expectations and convert snake_case to camelCase
       let formattedDrafts = drafts.map(draft => {
         // Convert snake_case to camelCase for frontend
-        const camelCaseDraft = Object.entries(draft).reduce((acc, [key, value]) => {
-          const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
-          acc[camelKey] = value;
-          return acc;
-        }, {} as Record<string, any>);
+        const camelCaseDraft = convertObjectToCamelCase(draft);
 
         // Add creator and updater details
         const formattedDraft = {
@@ -535,7 +565,7 @@ router.get('/:id',
         return res.status(404).json({ error: 'Client not found' });
       }
 
-      return res.status(200).json(client);
+      return res.status(200).json(convertObjectToCamelCase(client));
     } catch (error) {
       console.error('Unexpected error fetching client:', error);
       return res.status(500).json({ error: 'An unexpected error occurred' });
@@ -692,7 +722,7 @@ router.post('/',
       return res.status(201).json({
         success: true,
         message: 'Client created successfully',
-        client: newClient
+        client: convertObjectToCamelCase(newClient)
       });
     } catch (error) {
       console.error('Unexpected error creating client:', error);
@@ -862,7 +892,7 @@ router.put('/:id',
       return res.status(200).json({
         success: true,
         message: 'Client updated successfully',
-        client: updatedClient
+        client: convertObjectToCamelCase(updatedClient)
       });
     } catch (error) {
       console.error('Unexpected error updating client:', error);
@@ -963,7 +993,7 @@ router.put('/draft/:id?',
         return res.status(200).json({
           success: true,
           message: 'Draft updated successfully',
-          draft: updatedDraft
+          draft: convertObjectToCamelCase(updatedDraft)
         });
       } else {
         // Creating a new draft
@@ -1005,7 +1035,7 @@ router.put('/draft/:id?',
         return res.status(201).json({
           success: true,
           message: 'Draft created successfully',
-          draft: newDraft
+          draft: convertObjectToCamelCase(newDraft)
         });
       }
     } catch (error) {
@@ -1050,12 +1080,7 @@ router.get('/draft',
       let clientDraft = null;
       
       if (draft) {
-        clientDraft = Object.entries(draft).reduce((acc, [key, value]) => {
-          // Convert snake_case to camelCase
-          const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
-          acc[camelKey] = value;
-          return acc;
-        }, {} as Record<string, any>);
+        clientDraft = convertObjectToCamelCase(draft);
       }
 
       return res.status(200).json({
@@ -1210,7 +1235,7 @@ router.post('/draft',
       return res.status(201).json({
         success: true,
         message: 'Draft created successfully',
-        draft: newDraft,
+        draft: convertObjectToCamelCase(newDraft),
         lastUpdated: newDraft.last_updated
       });
     } catch (error) {
@@ -1261,12 +1286,7 @@ router.get('/draft/:id',
       }
 
       // Convert snake_case to camelCase for frontend
-      const clientDraft = Object.entries(draft).reduce((acc, [key, value]) => {
-        // Convert snake_case to camelCase
-        const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
-        acc[camelKey] = value;
-        return acc;
-      }, {} as Record<string, any>);
+      const clientDraft = convertObjectToCamelCase(draft);
 
       return res.status(200).json({
         draft: clientDraft,

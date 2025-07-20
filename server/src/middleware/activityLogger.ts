@@ -172,7 +172,10 @@ export interface ActivityData {
   | "delete_client_draft"
   | "create_position_draft"
   | "update_position_draft"
-  | "delete_position_draft";
+  | "delete_position_draft"
+  | "create_bulk_timesheet"
+  | "update_bulk_timesheet"
+  | "delete_bulk_timesheet";
   actionVerb: string;
   primaryEntityType: string;
   primaryEntityId?: string;

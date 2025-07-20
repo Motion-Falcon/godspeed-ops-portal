@@ -5,7 +5,6 @@ import { AppHeader } from "../../components/AppHeader";
 import { CustomDropdown, DropdownOption } from "../../components/CustomDropdown";
 import { Loader2, Calendar, Building, List, Repeat } from "lucide-react";
 import { formatDate as formatWeekDate } from "../../utils/weekUtils";
-import { BackendClientData } from "../ClientManagement/ClientManagement";
 import { LIST_NAMES, PAY_CYCLES } from "../../constants/formOptions";
 import "../../styles/pages/CommonReportsStyles.css";
 import { exportToCSV } from '../../utils/csvExport';
@@ -55,14 +54,8 @@ export function EnvelopePrintingReport() {
     setClientLoading(true);
     getClients({ limit: 10000 })
       .then((res) => {
-        const backendClients = res.clients as BackendClientData[];
-        const convertedClients = backendClients.map((client: BackendClientData) => ({
-          ...client,
-          companyName: client.company_name,
-          shortCode: client.short_code,
-          listName: client.list_name,
-        }));
-        setClients(convertedClients);
+        const backendClients = res.clients;
+        setClients(backendClients);
       })
       .catch(() => setClients([]))
       .finally(() => setClientLoading(false));

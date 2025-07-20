@@ -53,6 +53,7 @@ import { LanguageProvider } from "./contexts/language/language-provider";
 import './styles/main.css';
 import { Dashboard } from './pages/Dashboard/Dashboard';
 import { MetricExamplePage } from './pages/Dashboard/MetricExamplePage';
+import { BulkTimesheetManagement } from './pages/BulkTimesheetManagement/BulkTimesheetManagement';
 
 function App() {
   return (
@@ -118,6 +119,7 @@ function App() {
                   <Route path="/reports/clients" element={<ClientsReport />} />
                   <Route path="/reports/sales" element={<SalesReport />} />
                   <Route path="/reports/envelope-printing-position" element={<EnvelopePrintingReport />} />
+                  <Route path="/bulk-timesheet-management" element={<BulkTimesheetManagement />} />
                   {/* Add more recruiter-specific routes here */}
                 </Route>
                 

@@ -25,6 +25,7 @@ import {
   Clock,
   Receipt,
   BarChart3,
+  FileSpreadsheet,
 } from "lucide-react";
 import { ThemeToggle } from "./theme-toggle";
 import { LanguageToggle } from "./LanguageToggle";
@@ -465,6 +466,12 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
           label: t("navigation.timesheetManagement"),
           path: "/timesheet-management",
           icon: <Clock size={16} />,
+          exact: true,
+        },
+        {
+          label: "Create Bulk Timesheet",
+          path: "/bulk-timesheet-management",
+          icon: <FileSpreadsheet size={16} />,
           exact: true,
         },
         {

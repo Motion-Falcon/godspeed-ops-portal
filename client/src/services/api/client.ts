@@ -1,7 +1,7 @@
 import axios from "axios";
 import { api, API_URL, clearCacheFor } from "./index";
 
-// Client management API functions
+// Main client interface - using camelCase since backend now returns camelCase
 export interface ClientData {
   id?: string;
   companyName?: string;
@@ -63,6 +63,22 @@ export interface ClientData {
   createdAt?: string;
   updatedAt?: string;
   lastUpdated?: string;
+  createdByUserId?: string;
+  updatedByUserId?: string;
+  creatorDetails?: {
+    id: string;
+    email?: string;
+    name: string;
+    userType: string;
+    createdAt: string;
+  } | null;
+  updaterDetails?: {
+    id: string;
+    email?: string;
+    name: string;
+    userType: string;
+    updatedAt: string;
+  } | null;
 }
 
 export interface ClientResponse {
@@ -76,7 +92,6 @@ export interface ClientDraftResponse {
   lastUpdated: string | null;
 }
 
-// Add client pagination parameters interface after the PositionDraftResponse interface
 export interface ClientPaginationParams {
   page?: number;
   limit?: number;
@@ -108,7 +123,10 @@ export interface ClientDraftPaginationParams {
   page?: number;
   limit?: number;
   search?: string;
-  clientNameFilter?: string;
+  companyNameFilter?: string;
+  shortCodeFilter?: string;
+  listNameFilter?: string;
+  contactPersonFilter?: string;
   creatorFilter?: string;
   updaterFilter?: string;
   dateFilter?: string;
@@ -116,7 +134,7 @@ export interface ClientDraftPaginationParams {
 }
 
 export interface PaginatedClientDraftResponse {
-  drafts: ClientDraft[];
+  drafts: ClientData[];
   pagination: {
     page: number;
     limit: number;
@@ -227,61 +245,6 @@ export const deleteClient = async (
   }
 };
 
-// Client drafts management
-export interface ClientDraft {
-  id: string;
-  userId: string;
-  companyName?: string;
-  shortCode?: string;
-  listName?: string;
-  contactPersonName1?: string;
-  createdAt: string;
-  updatedAt: string;
-  lastUpdated: string;
-  createdByUserId: string;
-  updatedByUserId: string;
-  creatorDetails?: {
-    id: string;
-    email?: string;
-    name: string;
-    userType: string;
-    createdAt: string;
-  } | null;
-  updaterDetails?: {
-    id: string;
-    email?: string;
-    name: string;
-    userType: string;
-    updatedAt: string;
-  } | null;
-}
-
-export interface ClientDraftPaginationParams {
-  page?: number;
-  limit?: number;
-  search?: string;
-  companyNameFilter?: string;
-  shortCodeFilter?: string;
-  listNameFilter?: string;
-  contactPersonFilter?: string;
-  creatorFilter?: string;
-  updaterFilter?: string;
-  dateFilter?: string;
-  createdDateFilter?: string;
-}
-
-export interface PaginatedClientDraftResponse {
-  drafts: ClientDraft[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalFiltered: number;
-    totalPages: number;
-    hasNextPage: boolean;
-    hasPrevPage: boolean;
-  };
-}
 export const saveClientDraft = async (
   draftData: Partial<ClientData>
 ): Promise<ClientDraftResponse> => {

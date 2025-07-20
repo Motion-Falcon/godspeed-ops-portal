@@ -12,10 +12,9 @@ import {
 import {
   getAllClientDrafts,
   deleteClientDraft,
-  ClientDraft,
+  ClientData,
   ClientDraftPaginationParams,
   PaginatedClientDraftResponse,
-  ClientData,
 } from "../../services/api/client";
 import { ConfirmationModal } from "../../components/ConfirmationModal";
 import { AppHeader } from "../../components/AppHeader";
@@ -41,7 +40,7 @@ const formatDate = (dateString: string | undefined) => {
 };
 
 export function ClientDrafts() {
-  const [drafts, setDrafts] = useState<ClientDraft[]>([]);
+  const [drafts, setDrafts] = useState<ClientData[]>([]);
   const [pagination, setPagination] = useState<PaginationInfo>({
     page: 1,
     limit: 10,
@@ -55,7 +54,7 @@ export function ClientDrafts() {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [draftToDelete, setDraftToDelete] = useState<ClientDraft | null>(null);
+  const [draftToDelete, setDraftToDelete] = useState<ClientData | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const navigate = useNavigate();
 
@@ -137,7 +136,7 @@ export function ClientDrafts() {
     }
   };
 
-  const handleDeleteDraft = async (draft: ClientDraft) => {
+  const handleDeleteDraft = async (draft: ClientData) => {
     setDraftToDelete(draft);
     setIsDeleteModalOpen(true);
   };

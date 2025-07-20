@@ -6,50 +6,24 @@ import { AppHeader } from '../../components/AppHeader';
 import '../../styles/pages/ClientView.css';
 import '../../styles/components/header.css';
 
-// Interface that can handle both camelCase and snake_case properties
-interface ExtendedClientData extends ClientData {
-  company_name?: string;
-  contact_person_name1?: string;
-  work_province?: string;
-  [key: string]: unknown; // Allow string indexing for dynamic access
-}
-
 export function ClientView() {
-  const [client, setClient] = useState<ExtendedClientData | null>(null);
+  const [client, setClient] = useState<ClientData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  // Helper function to convert snake_case keys to camelCase
-  const convertToCamelCase = (data: ClientData): ExtendedClientData => {
-    if (!data) return {} as ExtendedClientData;
-    
-    const result: ExtendedClientData = { ...data as unknown as ExtendedClientData };
-    
-    // Keep both versions of keys to ensure we can access data regardless of format
-    Object.entries(data).forEach(([key, value]) => {
-      if (key.includes('_')) {
-        const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
-        result[camelKey] = value;
-      }
-    });
-    
-    return result;
-  };
-
-  // Helper function to get a value regardless of key format
-  const getFieldValue = (obj: ExtendedClientData | null, camelCaseKey: string): string | number | boolean | null | undefined => {
+  // Helper function to get a value with proper type handling
+  const getFieldValue = (obj: ClientData | null, key: keyof ClientData): string | number | boolean | null | undefined => {
     if (!obj) return null;
+    const value = obj[key];
     
-    // Try camelCase first
-    if (obj[camelCaseKey] !== undefined) {
-      return obj[camelCaseKey] as string | number | boolean | null | undefined;
+    // Handle complex object types by returning null
+    if (typeof value === 'object' && value !== null) {
+      return null;
     }
     
-    // Try snake_case
-    const snakeCaseKey = camelCaseKey.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
-    return obj[snakeCaseKey] !== undefined ? obj[snakeCaseKey] as string | number | boolean | null | undefined : null;
+    return value as string | number | boolean | null | undefined;
   };
 
   useEffect(() => {
@@ -58,7 +32,7 @@ export function ClientView() {
         setLoading(true);
         if (!id) throw new Error("Client ID is missing");
         const data = await getClient(id);
-        setClient(convertToCamelCase(data));
+        setClient(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred while fetching the client');
         console.error('Error fetching client:', err);

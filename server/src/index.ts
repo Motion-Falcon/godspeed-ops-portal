@@ -16,6 +16,7 @@ import aiInsightsRoutes from "./routes/aiInsights.js";
 import timesheetMetricsRoutes from "./routes/timesheetMetrics.js";
 import invoiceMetricsRoutes from "./routes/invoiceMetrics.js";
 import reportsRoutes from "./routes/reports.js";
+import bulkTimesheetsRoutes from "./routes/bulkTimesheets.js";
 import {
   configureSecurityHeaders,
   forceTLS,
@@ -98,6 +99,9 @@ app.use("/api/positions", positionsRoutes);
 
 // Timesheets routes
 app.use("/api/timesheets", timesheetsRoutes);
+
+// Bulk Timesheets routes
+app.use("/api/bulk-timesheets", bulkTimesheetsRoutes);
 
 // Invoices routes
 app.use("/api/invoices", invoicesRoutes);

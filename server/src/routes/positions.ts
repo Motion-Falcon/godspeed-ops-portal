@@ -473,7 +473,6 @@ router.get(
         return res.status(500).json({ error: "Failed to fetch client positions" });
       }
 
-      console.log(client);
       if (!positions || positions.length === 0) {
         return res.json({
           positions: [],

@@ -130,31 +130,23 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
   const { handleSubmit, reset, formState, watch } = methods;
   const { isDirty } = formState;
 
-  // Function to convert snake_case keys to camelCase
-  const convertToCamelCase = (data: ClientData | Record<string, unknown>): ClientFormData => {
-    const result: Record<string, unknown> = {};
+  // Function to decode HTML entities for website field
+  const decodeHtmlEntities = (text: string): string => {
+    const textArea = document.createElement('textarea');
+    textArea.innerHTML = text;
+    return textArea.value;
+  };
+
+  // Function to prepare client data for form (handle website decoding)
+  const prepareClientDataForForm = (data: ClientData): ClientFormData => {
+    const result = { ...data } as ClientFormData;
     
-    // Function to decode HTML entities
-    const decodeHtmlEntities = (text: string): string => {
-      const textArea = document.createElement('textarea');
-      textArea.innerHTML = text;
-      return textArea.value;
-    };
+    // Decode HTML entities for website field
+    if (result.website && typeof result.website === 'string') {
+      result.website = decodeHtmlEntities(result.website);
+    }
     
-    // Process each key-value pair
-    Object.entries(data).forEach(([key, value]) => {
-      // Convert snake_case to camelCase
-      const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
-      
-      // Decode HTML entities for website field
-      if (camelKey === 'website' && typeof value === 'string' && value) {
-        result[camelKey] = decodeHtmlEntities(value);
-      } else {
-        result[camelKey] = value;
-      }
-    });
-    
-    return result as ClientFormData;
+    return result;
   };
 
   // Watch for form changes
@@ -186,8 +178,8 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
           console.log("Client data loaded:", client);
           
           if (client) {
-            // Convert snake_case keys to camelCase for the form
-            const formattedClient = convertToCamelCase(client);
+            // Prepare client data for form (decode HTML entities, etc.)
+            const formattedClient = prepareClientDataForForm(client);
             console.log("Formatted client data:", formattedClient);
             
             setClientId(id);
@@ -223,8 +215,8 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
           console.log("Draft data loaded:", draft);
           
           if (draft) {
-            // Ensure data is in camelCase format
-            const formattedDraft = convertToCamelCase(draft);
+            // Prepare draft data for form (decode HTML entities, etc.)
+            const formattedDraft = prepareClientDataForForm(draft);
             console.log("Formatted draft data:", formattedDraft);
             
             setDraftId(draft.id as string);

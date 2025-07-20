@@ -49,7 +49,10 @@ interface RecentActivity {
     | "delete_client_draft"
     | "create_position_draft"
     | "update_position_draft"
-    | "delete_position_draft";
+    | "delete_position_draft"
+    | "create_bulk_timesheet"
+    | "update_bulk_timesheet"
+    | "delete_bulk_timesheet";
   action_verb: string;
   actor_name: string;
   actor_type: string;
@@ -137,6 +140,15 @@ const getStatusIcon = (actionType: string) => {
     case "update_invoice":
       return <Pencil size={12} className="status-success" />;
     case "delete_invoice":
+      return <Trash size={12} className="status-error" />;
+    case "create_timesheet":
+    case "create_bulk_timesheet":
+      return <PlusCircleIcon size={12} className="status-success" />;
+    case "update_timesheet":
+    case "update_bulk_timesheet":
+      return <Pencil size={12} className="status-success" />;
+    case "delete_timesheet":
+    case "delete_bulk_timesheet":
       return <Trash size={12} className="status-error" />;
     case "verify_jobseeker":
       return <CheckCircle size={12} className="status-success" />;
@@ -498,6 +510,162 @@ const formatActivityMessage = (activity: RecentActivity): React.ReactNode => {
             <>
               {" "}
               for period '{weekStart}' - '{weekEnd}'
+            </>
+          )}
+        </>
+      );
+    }
+
+    case "update_timesheet": {
+      const jobseekerName = secondary_entity_name || "";
+      const positionTitle = tertiary_entity_name || "";
+      const weekStart =
+        typeof activity.metadata?.weekStartDate === "string"
+          ? activity.metadata.weekStartDate
+          : "";
+      const weekEnd =
+        typeof activity.metadata?.weekEndDate === "string"
+          ? activity.metadata.weekEndDate
+          : "";
+
+      return (
+        <>
+          <ActorName>{actor_name}</ActorName> updated Timesheet for{" "}
+          <PrimaryEntity>{jobseekerName}</PrimaryEntity>
+          {positionTitle && (
+            <>
+              {" "}
+              (<SecondaryEntity>{positionTitle}</SecondaryEntity>)
+            </>
+          )}
+          {weekStart && weekEnd && (
+            <>
+              {" "}
+              for period '{weekStart}' - '{weekEnd}'
+            </>
+          )}
+        </>
+      );
+    }
+
+    case "delete_timesheet": {
+      const jobseekerName = secondary_entity_name || "";
+      const positionTitle = tertiary_entity_name || "";
+      const weekStart =
+        typeof activity.metadata?.weekStartDate === "string"
+          ? activity.metadata.weekStartDate
+          : "";
+      const weekEnd =
+        typeof activity.metadata?.weekEndDate === "string"
+          ? activity.metadata.weekEndDate
+          : "";
+
+      return (
+        <>
+          <ActorName>{actor_name}</ActorName> deleted Timesheet for{" "}
+          <PrimaryEntity>{jobseekerName}</PrimaryEntity>
+          {positionTitle && (
+            <>
+              {" "}
+              (<SecondaryEntity>{positionTitle}</SecondaryEntity>)
+            </>
+          )}
+          {weekStart && weekEnd && (
+            <>
+              {" "}
+              for period '{weekStart}' - '{weekEnd}'
+            </>
+          )}
+        </>
+      );
+    }
+
+    case "create_bulk_timesheet": {
+      const clientName = secondary_entity_name || "";
+      const positionTitle = (activity.metadata?.positionTitle as string) || "";
+      const weekPeriod = (activity.metadata?.weekPeriod as string) || "";
+      const numberOfJobseekers = Number(activity.metadata?.numberOfJobseekers) || 0;
+
+      return (
+        <>
+          <ActorName>{actor_name}</ActorName> created{" "}
+          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity> for{" "}
+          <SecondaryEntity>{clientName}</SecondaryEntity>
+          {positionTitle && (
+            <>
+              {" "}
+              (<TertiaryEntity>{positionTitle}</TertiaryEntity>)
+            </>
+          )}
+          {weekPeriod && (
+            <>
+              {" "}
+              for {weekPeriod}
+            </>
+          )}
+          {numberOfJobseekers > 0 && (
+            <>
+              {" "}
+              ({numberOfJobseekers} jobseeker{numberOfJobseekers !== 1 ? "s" : ""})
+            </>
+          )}
+        </>
+      );
+    }
+
+    case "update_bulk_timesheet": {
+      const clientName = secondary_entity_name || "";
+      const positionTitle = (activity.metadata?.positionTitle as string) || "";
+      const weekPeriod = (activity.metadata?.weekPeriod as string) || "";
+      const numberOfJobseekers = Number(activity.metadata?.numberOfJobseekers) || 0;
+
+      return (
+        <>
+          <ActorName>{actor_name}</ActorName> updated{" "}
+          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity> for{" "}
+          <SecondaryEntity>{clientName}</SecondaryEntity>
+          {positionTitle && (
+            <>
+              {" "}
+              (<TertiaryEntity>{positionTitle}</TertiaryEntity>)
+            </>
+          )}
+          {weekPeriod && (
+            <>
+              {" "}
+              for {weekPeriod}
+            </>
+          )}
+          {numberOfJobseekers > 0 && (
+            <>
+              {" "}
+              ({numberOfJobseekers} jobseeker{numberOfJobseekers !== 1 ? "s" : ""})
+            </>
+          )}
+        </>
+      );
+    }
+
+    case "delete_bulk_timesheet": {
+      const clientName = secondary_entity_name || "";
+      const positionTitle = (activity.metadata?.positionTitle as string) || "";
+      const weekPeriod = (activity.metadata?.weekPeriod as string) || "";
+
+      return (
+        <>
+          <ActorName>{actor_name}</ActorName> deleted{" "}
+          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity> for{" "}
+          <SecondaryEntity>{clientName}</SecondaryEntity>
+          {positionTitle && (
+            <>
+              {" "}
+              (<TertiaryEntity>{positionTitle}</TertiaryEntity>)
+            </>
+          )}
+          {weekPeriod && (
+            <>
+              {" "}
+              for {weekPeriod}
             </>
           )}
         </>

@@ -8,7 +8,6 @@ import { Loader2, Calendar, User, Building } from "lucide-react";
 import { JobSeekerProfile } from "../../types/jobseeker";
 import { generateWeekOptions, formatDate as formatWeekDate } from "../../utils/weekUtils";
 import { PAY_CYCLES, LIST_NAMES } from "../../constants/formOptions";
-import { BackendClientData } from "../ClientManagement/ClientManagement";
 import "../../styles/pages/CommonReportsStyles.css";
 import { exportToCSV } from '../../utils/csvExport';
 
@@ -93,26 +92,7 @@ export function WeeklyTimesheet() {
     setClientLoading(true);
     getClients({ limit: 10000 })
       .then((res) => {
-        // Map backend fields to frontend fields (camelCase) using BackendClientData
-        const convertedClients = (res.clients as BackendClientData[]).map((client: BackendClientData) => ({
-          ...client,
-          companyName: client.company_name,
-          shortCode: client.short_code,
-          listName: client.list_name,
-          contactPersonName1: client.contact_person_name1,
-          contactPersonName2: client.contact_person_name2,
-          emailAddress1: client.email_address1,
-          emailAddress2: client.email_address2,
-          mobile1: client.mobile1,
-          mobile2: client.mobile2,
-          landline1: client.landline1,
-          landline2: client.landline2,
-          preferredPaymentMethod: client.preferred_payment_method,
-          payCycle: client.pay_cycle,
-          createdAt: client.created_at,
-          updatedAt: client.updated_at,
-        }));
-        setClients(convertedClients);
+        setClients(res.clients);
       })
       .catch(() => setClients([]))
       .finally(() => setClientLoading(false));

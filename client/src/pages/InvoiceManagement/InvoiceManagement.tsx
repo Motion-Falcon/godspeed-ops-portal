@@ -25,7 +25,6 @@ import {
   AssignmentRecord,
 } from "../../services/api/position";
 import { PAYMENT_TERMS } from "../../constants/formOptions";
-import { BackendClientData } from "../ClientManagement/ClientManagement";
 import {
   InvoiceAttachments,
   AttachmentFile,
@@ -47,32 +46,6 @@ import {
   InvoiceData as PDFInvoiceData,
 } from "../../utils/pdfGenerator.tsx";
 import { Document, Page, pdfjs } from "react-pdf";
-// Backend response interface with snake_case properties for invoice management
-interface InvoiceBackendClientData extends ClientData {
-  company_name?: string;
-  short_code?: string;
-  list_name?: string;
-  contact_person_name1?: string;
-  contact_person_name2?: string;
-  email_address1?: string;
-  email_address2?: string;
-  mobile1?: string;
-  mobile2?: string;
-  city1?: string;
-  city_1?: string;
-  province1?: string;
-  province_1?: string;
-  postal_code1?: string;
-  preferred_payment_method?: string;
-  accounting_person?: string;
-  sales_person?: string;
-  client_manager?: string;
-  pay_cycle?: string;
-  terms?: string;
-  currency?: string;
-  created_at?: string;
-  updated_at?: string;
-}
 
 // Interface for position data
 interface ClientPosition {
@@ -166,21 +139,6 @@ interface TimesheetData {
   salesTax?: string;
 }
 
-// Interface for client API response that handles both camelCase and snake_case
-interface ClientApiResponse extends ClientData {
-  company_name?: string;
-  short_code?: string;
-  email_address1?: string;
-  email_address2?: string;
-  contact_person_name1?: string;
-  contact_person_name2?: string;
-  postal_code1?: string;
-  preferred_payment_method?: string;
-  pay_cycle?: string;
-  client_manager?: string;
-  accounting_person?: string;
-  sales_person?: string;
-}
 
 export function InvoiceManagement() {
   const { user } = useAuth();
@@ -191,8 +149,8 @@ export function InvoiceManagement() {
   const [editingInvoiceId, setEditingInvoiceId] = useState<string | null>(null);
 
   // State for client selection
-  const [clients, setClients] = useState<InvoiceBackendClientData[]>([]);
-  const [selectedClient, setSelectedClient] = useState<InvoiceBackendClientData | null>(null);
+  const [clients, setClients] = useState<ClientData[]>([]);
+  const [selectedClient, setSelectedClient] = useState<ClientData | null>(null);
   const [clientLoading, setClientLoading] = useState(false);
 
   // State for invoice number
@@ -334,30 +292,7 @@ export function InvoiceManagement() {
     try {
       setClientLoading(true);
       const response = await getClients({ limit: 100000000 }); // Get all clients
-      const convertedClients: InvoiceBackendClientData[] = (
-        response.clients as BackendClientData[]
-      ).map(
-        (client: BackendClientData): InvoiceBackendClientData => ({
-          ...client,
-          // Convert backend snake_case to frontend camelCase if needed
-          companyName: (client.company_name || client.companyName) as string,
-          shortCode: (client.short_code || client.shortCode) as string,
-          emailAddress1: (client.email_address1 ||
-            client.emailAddress1) as string,
-          city1: (client.city1 || client.city1) as string | undefined,
-          province1: (client.province1 || client.province1) as
-            | string
-            | undefined,
-          postalCode1: (client.postal_code1 || client.postalCode1) as
-            | string
-            | undefined,
-          preferredPaymentMethod: (client.preferred_payment_method ||
-            client.preferredPaymentMethod) as string | undefined,
-          terms: (client.terms || "Net 30") as string,
-          currency: (client.currency || "CAD") as string,
-        })
-      );
-      setClients(convertedClients);
+      setClients(response.clients);
     } catch (error) {
       console.error("Error fetching clients:", error);
     } finally {
@@ -575,60 +510,20 @@ export function InvoiceManagement() {
   const handleClientSelect = async (option: DropdownOption | DropdownOption[]) => {
     if (Array.isArray(option)) return;
     const basicClient = option.value as ClientData;
-    setSelectedClient(basicClient as InvoiceBackendClientData);
+    setSelectedClient(basicClient);
     setClientLoading(true);
     setGenerationError("");
 
     try {
       // Fetch detailed client data using the proper API function
-      const detailedClient = await getClient(basicClient.id!) as ClientApiResponse;
+      const detailedClient = await getClient(basicClient.id!);
 
-      // Process the client data to match our frontend interface
-      const processedClient: ClientData = {
-        id: detailedClient.id || basicClient.id,
-        companyName:
-          detailedClient.company_name ||
-          detailedClient.companyName ||
-          basicClient.companyName,
-        shortCode:
-          detailedClient.short_code ||
-          detailedClient.shortCode ||
-          basicClient.shortCode,
-        contactPersonName1:
-          detailedClient.contact_person_name1 || basicClient.contactPersonName1,
-        contactPersonName2:
-          detailedClient.contact_person_name2 || basicClient.contactPersonName2,
-        emailAddress1:
-          detailedClient.email_address1 ||
-          detailedClient.emailAddress1 ||
-          basicClient.emailAddress1,
-        emailAddress2:
-          detailedClient.email_address2 || basicClient.emailAddress2,
-        mobile1: detailedClient.mobile1 || basicClient.mobile1,
-        mobile2: detailedClient.mobile2 || basicClient.mobile2,
-        city1: detailedClient.city1 || basicClient.city1,
-        province1: detailedClient.province1 || basicClient.province1,
-        postalCode1:
-          detailedClient.postal_code1 ||
-          detailedClient.postalCode1 ||
-          basicClient.postalCode1,
-        preferredPaymentMethod:
-          detailedClient.preferred_payment_method ||
-          detailedClient.preferredPaymentMethod ||
-          basicClient.preferredPaymentMethod,
-        payCycle: detailedClient.pay_cycle || basicClient.payCycle,
-        terms: detailedClient.terms || "Net 30",
-        currency: detailedClient.currency || "CAD",
-        clientManager: detailedClient.client_manager || basicClient.clientManager,
-        accountingPerson: detailedClient.accounting_person || basicClient.accountingPerson,
-        salesPerson: detailedClient.sales_person || basicClient.salesPerson,
-      };
 
-      setSelectedClient(processedClient as InvoiceBackendClientData);
+      setSelectedClient(detailedClient);
 
       // Auto-select terms from client data if available
-      if (processedClient.terms) {
-        setSelectedTerms(processedClient.terms);
+      if (detailedClient.terms) {
+        setSelectedTerms(detailedClient.terms);
       }
 
       // Only generate invoice number when not in edit mode
@@ -639,7 +534,7 @@ export function InvoiceManagement() {
       console.error("Error fetching detailed client data:", error);
       
       // Fallback to basic client data but ensure all required fields are present
-      const fallbackClient: InvoiceBackendClientData = {
+      const fallbackClient = {
         id: basicClient.id,
         companyName: basicClient.companyName || "",
         shortCode: basicClient.shortCode || "",
@@ -1420,32 +1315,9 @@ export function InvoiceManagement() {
       
       // Set client data
       if (invoiceData.clientId) {
-        const clientData = await getClient(invoiceData.clientId) as ClientApiResponse;
+        const clientData = await getClient(invoiceData.clientId);
         
-        // Handle both camelCase and snake_case field names from API
-        const backendClient: InvoiceBackendClientData = {
-          id: clientData.id || "",
-          companyName: clientData.company_name || clientData.companyName || "",
-          shortCode: clientData.short_code || clientData.shortCode || "",
-          emailAddress1: clientData.email_address1 || clientData.emailAddress1 || "",
-          emailAddress2: clientData.email_address2 || clientData.emailAddress2,
-          contactPersonName1: clientData.contact_person_name1 || clientData.contactPersonName1,
-          contactPersonName2: clientData.contact_person_name2 || clientData.contactPersonName2,
-          mobile1: clientData.mobile1,
-          mobile2: clientData.mobile2,
-          streetAddress1: clientData.streetAddress1 || "",
-          city1: clientData.city1 || "",
-          province1: clientData.province1 || "",
-          postalCode1: clientData.postal_code1 || clientData.postalCode1 || "",
-          preferredPaymentMethod: clientData.preferred_payment_method || clientData.preferredPaymentMethod || "",
-          payCycle: clientData.pay_cycle || clientData.payCycle || "",
-          currency: clientData.currency || "CAD",
-          terms: clientData.terms || "Net 30",
-          clientManager: clientData.client_manager || clientData.clientManager || "",
-          accountingPerson: clientData.accounting_person || clientData.accountingPerson || "",
-          salesPerson: clientData.sales_person || clientData.salesPerson || "",
-        };
-        setSelectedClient(backendClient);
+        setSelectedClient(clientData);
         
         // Prefer paymentTerms from invoiceData.invoiceData if present
         if (invoiceData.invoiceData?.paymentTerms) {
