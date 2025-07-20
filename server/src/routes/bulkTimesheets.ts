@@ -186,58 +186,6 @@ router.get(
 );
 
 /**
- * Helper function to apply filters to a Supabase query
- */
-function applyBulkTimesheetFilters(query: any, filters: {
-  searchTerm?: string;
-  clientFilter?: string;
-  positionFilter?: string;
-  invoiceNumberFilter?: string;
-  dateRangeStart?: string;
-  dateRangeEnd?: string;
-  emailSentFilter?: string;
-}) {
-  const {
-    searchTerm,
-    clientFilter,
-    positionFilter,
-    invoiceNumberFilter,
-    dateRangeStart,
-    dateRangeEnd,
-    emailSentFilter
-  } = filters;
-
-  // Global search across multiple fields
-  if (searchTerm && searchTerm.trim().length > 0) {
-    const searchTermTrimmed = searchTerm.trim();
-    query = query.or(`invoice_number.ilike.%${searchTermTrimmed}%,clients.company_name.ilike.%${searchTermTrimmed}%,positions.title.ilike.%${searchTermTrimmed}%`);
-  }
-
-  // Individual column filters
-  if (clientFilter && clientFilter.trim().length > 0) {
-    query = query.or(`clients.company_name.ilike.%${clientFilter.trim()}%,clients.short_code.ilike.%${clientFilter.trim()}%`);
-  }
-  if (positionFilter && positionFilter.trim().length > 0) {
-    query = query.ilike('positions.title', `%${positionFilter.trim()}%`);
-  }
-  if (invoiceNumberFilter && invoiceNumberFilter.trim().length > 0) {
-    query = query.ilike('invoice_number', `%${invoiceNumberFilter.trim()}%`);
-  }
-  if (dateRangeStart && dateRangeStart.trim().length > 0) {
-    query = query.gte('week_start_date', dateRangeStart.trim());
-  }
-  if (dateRangeEnd && dateRangeEnd.trim().length > 0) {
-    query = query.lte('week_end_date', dateRangeEnd.trim());
-  }
-  if (emailSentFilter && emailSentFilter.trim().length > 0) {
-    const emailSentBool = emailSentFilter.toLowerCase() === 'true';
-    query = query.eq('email_sent', emailSentBool);
-  }
-
-  return query;
-}
-
-/**
  * Get all bulk timesheets with pagination and filtering
  * GET /api/bulk-timesheets
  * @access Private (Admin, Recruiter, Jobseeker - own timesheets only)
@@ -283,30 +231,30 @@ router.get(
       const limitNum = parseInt(limit);
       const offset = (pageNum - 1) * limitNum;
 
-      // Build the base query with joins for related data
+      // Build the base query without joins
       let baseQuery = supabase
         .from("bulk_timesheets")
-        .select(`
-          *,
-          clients!inner(id, company_name, short_code, email_address1),
-          positions!inner(id, title, position_code)
-        `);
+        .select("*");
 
       // Apply role-based filtering
       if (userType === "jobseeker") {
         baseQuery = baseQuery.eq("created_by_user_id", userId);
       }
 
-      // Apply all filters at database level
-      baseQuery = applyBulkTimesheetFilters(baseQuery, {
-        searchTerm,
-        clientFilter,
-        positionFilter,
-        invoiceNumberFilter,
-        dateRangeStart,
-        dateRangeEnd,
-        emailSentFilter,
-      });
+      // Apply database-level filters
+      if (invoiceNumberFilter && invoiceNumberFilter.trim().length > 0) {
+        baseQuery = baseQuery.ilike('invoice_number', `%${invoiceNumberFilter.trim()}%`);
+      }
+      if (dateRangeStart && dateRangeStart.trim().length > 0) {
+        baseQuery = baseQuery.gte('week_start_date', dateRangeStart.trim());
+      }
+      if (dateRangeEnd && dateRangeEnd.trim().length > 0) {
+        baseQuery = baseQuery.lte('week_end_date', dateRangeEnd.trim());
+      }
+      if (emailSentFilter && emailSentFilter.trim().length > 0) {
+        const emailSentBool = emailSentFilter.toLowerCase() === 'true';
+        baseQuery = baseQuery.eq('email_sent', emailSentBool);
+      }
 
       // Get total count
       let totalCountQuery = supabase
@@ -324,40 +272,28 @@ router.get(
         return res.status(500).json({ error: "Failed to get total count of bulk timesheets" });
       }
 
-      // Get filtered count
-      let filteredCountQuery = supabase
-        .from("bulk_timesheets")
-        .select(`
-          *,
-          clients!inner(id, company_name, short_code, email_address1),
-          positions!inner(id, title, position_code)
-        `, { count: "exact", head: true });
+      // Determine if we need client-side filtering
+      const needsClientSideFiltering = !!(searchTerm?.trim() || clientFilter?.trim() || positionFilter?.trim());
 
-      if (userType === "jobseeker") {
-        filteredCountQuery = filteredCountQuery.eq("created_by_user_id", userId);
+      let bulkTimesheets;
+      let error;
+
+      if (needsClientSideFiltering) {
+        // Fetch all records for client-side filtering
+        const { data: allBulkTimesheets, error: fetchError } = await baseQuery
+          .order("created_at", { ascending: false });
+        
+        bulkTimesheets = allBulkTimesheets;
+        error = fetchError;
+      } else {
+        // Use pagination for simple database-level filtering
+        const { data: paginatedBulkTimesheets, error: fetchError } = await baseQuery
+          .range(offset, offset + limitNum - 1)
+          .order("created_at", { ascending: false });
+        
+        bulkTimesheets = paginatedBulkTimesheets;
+        error = fetchError;
       }
-
-      filteredCountQuery = applyBulkTimesheetFilters(filteredCountQuery, {
-        searchTerm,
-        clientFilter,
-        positionFilter,
-        invoiceNumberFilter,
-        dateRangeStart,
-        dateRangeEnd,
-        emailSentFilter,
-      });
-
-      const { count: filteredCount, error: filteredCountError } = await filteredCountQuery;
-
-      if (filteredCountError) {
-        console.error("Error getting filtered count:", filteredCountError);
-        return res.status(500).json({ error: "Failed to get filtered count of bulk timesheets" });
-      }
-
-      // Apply pagination and execute main query
-      const { data: bulkTimesheets, error } = await baseQuery
-        .range(offset, offset + limitNum - 1)
-        .order("created_at", { ascending: false });
 
       if (error) {
         console.error("Error fetching bulk timesheets:", error);
@@ -371,34 +307,109 @@ router.get(
             page: pageNum,
             limit: limitNum,
             total: totalCount || 0,
-            totalFiltered: filteredCount || 0,
-            totalPages: Math.ceil((filteredCount || 0) / limitNum),
+            totalFiltered: 0,
+            totalPages: 0,
             hasNextPage: false,
             hasPrevPage: false,
           },
         });
       }
 
-      // Transform bulk timesheets to frontend format
-      const formattedBulkTimesheets = bulkTimesheets.map((bulkTimesheet) => {
+      // Get unique client and position IDs for batch fetching
+      const clientIds = [...new Set(bulkTimesheets.map(bt => bt.client_id).filter(Boolean))];
+      const positionIds = [...new Set(bulkTimesheets.map(bt => bt.position_id).filter(Boolean))];
+
+      // Fetch clients and positions data
+      let clientsData: any[] = [];
+      let positionsData: any[] = [];
+
+      if (clientIds.length > 0) {
+        const { data: clients, error: clientsError } = await supabase
+          .from("clients")
+          .select("id, company_name, short_code, email_address1, city1, province1, postal_code1")
+          .in("id", clientIds);
+        
+        if (clientsError) {
+          console.error("Error fetching clients:", clientsError);
+        } else {
+          clientsData = clients || [];
+        }
+      }
+
+      if (positionIds.length > 0) {
+        const { data: positions, error: positionsError } = await supabase
+          .from("positions")
+          .select("id, title, position_code")
+          .in("id", positionIds);
+        
+        if (positionsError) {
+          console.error("Error fetching positions:", positionsError);
+        } else {
+          positionsData = positions || [];
+        }
+      }
+
+      // Create lookup maps for quick access
+      const clientsMap = new Map(clientsData.map(client => [client.id, client]));
+      const positionsMap = new Map(positionsData.map(position => [position.id, position]));
+
+      // Transform bulk timesheets to frontend format and add related data
+      let formattedBulkTimesheets = bulkTimesheets.map((bulkTimesheet) => {
         const formatted = transformToFrontendFormat(bulkTimesheet);
 
-        // Add related data
-        formatted.client = bulkTimesheet.clients;
-        formatted.position = bulkTimesheet.positions;
-
-        // Clean up the joined data from the main object
-        delete formatted.clients;
-        delete formatted.positions;
+        // Add related data from lookup maps
+        formatted.client = clientsMap.get(bulkTimesheet.client_id) || null;
+        formatted.position = positionsMap.get(bulkTimesheet.position_id) || null;
 
         return formatted;
       });
 
-      // Calculate pagination metadata
-      const totalFiltered = filteredCount || 0;
-      const totalPages = Math.ceil(totalFiltered / limitNum);
-      const hasNextPage = pageNum < totalPages;
-      const hasPrevPage = pageNum > 1;
+      // Apply client-side filtering for join-dependent filters
+      if (searchTerm && searchTerm.trim().length > 0) {
+        const searchTermLower = searchTerm.trim().toLowerCase();
+        formattedBulkTimesheets = formattedBulkTimesheets.filter(bt => {
+          const invoiceNumber = (bt.invoiceNumber || '').toLowerCase();
+          const clientName = (bt.client?.company_name || '').toLowerCase();
+          const positionTitle = (bt.position?.title || '').toLowerCase();
+          
+          return invoiceNumber.includes(searchTermLower) ||
+                 clientName.includes(searchTermLower) ||
+                 positionTitle.includes(searchTermLower);
+        });
+      }
+
+      if (clientFilter && clientFilter.trim().length > 0) {
+        const clientFilterLower = clientFilter.trim().toLowerCase();
+        formattedBulkTimesheets = formattedBulkTimesheets.filter(bt => {
+          const clientName = (bt.client?.company_name || '').toLowerCase();
+          const clientShortCode = (bt.client?.short_code || '').toLowerCase();
+          
+          return clientName.includes(clientFilterLower) ||
+                 clientShortCode.includes(clientFilterLower);
+        });
+      }
+
+      if (positionFilter && positionFilter.trim().length > 0) {
+        const positionFilterLower = positionFilter.trim().toLowerCase();
+        formattedBulkTimesheets = formattedBulkTimesheets.filter(bt => {
+          const positionTitle = (bt.position?.title || '').toLowerCase();
+          
+          return positionTitle.includes(positionFilterLower);
+        });
+      }
+
+      // Recalculate filtered count based on client-side filtering
+      const actualFilteredCount = formattedBulkTimesheets.length;
+      const actualTotalPages = Math.ceil(actualFilteredCount / limitNum);
+      const actualHasNextPage = pageNum < actualTotalPages;
+      const actualHasPrevPage = pageNum > 1;
+
+      // Apply pagination if we did client-side filtering
+      if (needsClientSideFiltering) {
+        const startIndex = (pageNum - 1) * limitNum;
+        const endIndex = startIndex + limitNum;
+        formattedBulkTimesheets = formattedBulkTimesheets.slice(startIndex, endIndex);
+      }
 
       return res.status(200).json({
         bulkTimesheets: formattedBulkTimesheets,
@@ -406,10 +417,10 @@ router.get(
           page: pageNum,
           limit: limitNum,
           total: totalCount || 0,
-          totalFiltered,
-          totalPages,
-          hasNextPage,
-          hasPrevPage,
+          totalFiltered: needsClientSideFiltering ? actualFilteredCount : (totalCount || 0),
+          totalPages: needsClientSideFiltering ? actualTotalPages : Math.ceil((totalCount || 0) / limitNum),
+          hasNextPage: needsClientSideFiltering ? actualHasNextPage : (pageNum * limitNum < (totalCount || 0)),
+          hasPrevPage: needsClientSideFiltering ? actualHasPrevPage : (pageNum > 1),
         },
       });
     } catch (error) {
@@ -439,14 +450,10 @@ router.get(
       const userType = req.user.user_metadata?.user_type;
       const { id } = req.params;
 
-      // Build query with role-based filtering
+      // Build query without joins
       let query = supabase
         .from("bulk_timesheets")
-        .select(`
-          *,
-          clients!inner(id, company_name, short_code, email_address1, city1, province1, postal_code1),
-          positions!inner(id, title, position_code)
-        `)
+        .select("*")
         .eq("id", id);
 
       if (userType === "jobseeker") {
@@ -464,14 +471,38 @@ router.get(
         return res.status(404).json({ error: "Bulk timesheet not found or access denied" });
       }
 
+      // Fetch related client and position data
+      let clientData = null;
+      let positionData = null;
+
+      if (bulkTimesheet.client_id) {
+        const { data: client, error: clientError } = await supabase
+          .from("clients")
+          .select("id, company_name, short_code, email_address1, city1, province1, postal_code1")
+          .eq("id", bulkTimesheet.client_id)
+          .maybeSingle();
+        
+        if (!clientError) {
+          clientData = client;
+        }
+      }
+
+      if (bulkTimesheet.position_id) {
+        const { data: position, error: positionError } = await supabase
+          .from("positions")
+          .select("id, title, position_code")
+          .eq("id", bulkTimesheet.position_id)
+          .maybeSingle();
+        
+        if (!positionError) {
+          positionData = position;
+        }
+      }
+
       // Transform to frontend format
       const formatted = transformToFrontendFormat(bulkTimesheet);
-      formatted.client = bulkTimesheet.clients;
-      formatted.position = bulkTimesheet.positions;
-
-      // Clean up joined data
-      delete formatted.clients;
-      delete formatted.positions;
+      formatted.client = clientData;
+      formatted.position = positionData;
 
       return res.status(200).json(formatted);
     } catch (error) {
@@ -829,12 +860,12 @@ router.put(
 /**
  * Delete a bulk timesheet
  * DELETE /api/bulk-timesheets/:id
- * @access Private (Admin only)
+ * @access Private (Admin, Recruiter - own timesheets only)
  */
 router.delete(
   "/:id",
   authenticateToken,
-  authorizeRoles(["admin"]),
+  authorizeRoles(["admin", "recruiter"]),
   activityLogger({
     onSuccess: async (req: Request, res: Response) => {
       const { id } = req.params;
@@ -904,17 +935,25 @@ router.delete(
         return res.status(401).json({ error: "Authentication required" });
       }
 
+      const userId = req.user.id;
+      const userType = req.user.user_metadata?.user_type;
       const { id } = req.params;
 
-      // Check if bulk timesheet exists
-      const { data: existingBulkTimesheet, error: bulkTimesheetCheckError } = await supabase
+      // Check if bulk timesheet exists and user has permission
+      let existingQuery = supabase
         .from("bulk_timesheets")
         .select("*")
-        .eq("id", id)
-        .maybeSingle();
+        .eq("id", id);
+
+      // Recruiters can only delete their own bulk timesheets
+      if (userType === "recruiter") {
+        existingQuery = existingQuery.eq("created_by_user_id", userId);
+      }
+
+      const { data: existingBulkTimesheet, error: bulkTimesheetCheckError } = await existingQuery.maybeSingle();
 
       if (bulkTimesheetCheckError || !existingBulkTimesheet) {
-        return res.status(404).json({ error: "Bulk timesheet not found" });
+        return res.status(404).json({ error: "Bulk timesheet not found or access denied" });
       }
 
       // Store for activity logging

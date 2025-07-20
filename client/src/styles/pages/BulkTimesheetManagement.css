@@ -17,3 +17,29 @@
   box-shadow: none;
   padding: 2px;
 }
+
+/* BulkTimesheetList Component Styles */
+.bulk-timesheet-list .invoice-number-cell {
+  max-width: 60px;
+  font-size: var(--font-size-small);
+}
+
+.bulk-timesheet-list .jobseekers-cell {
+  max-width: 400px;
+  line-height: 1.3;
+}
+
+.bulk-timesheet-list .date-cell {
+  text-align: center;
+}
+
+.bulk-timesheet-list .total-pay-cell {
+  text-align: center;
+}
+
+.bulk-timesheet-list .send-email-cell {
+  min-width: 110px;
+}
+.bulk-timesheet-list .actions-cell {
+  max-width: 70px;
+}

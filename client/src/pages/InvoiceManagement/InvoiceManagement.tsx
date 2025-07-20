@@ -40,6 +40,7 @@ import {
   getInvoice,
 } from "../../services/api/invoice";
 import { useAuth } from "../../contexts/AuthContext";
+import { useLanguage } from "../../contexts/language/language-provider";
 import { supabase } from "../../lib/supabaseClient";
 import {
   generateInvoicePDF as generatePDF,
@@ -142,6 +143,7 @@ interface TimesheetData {
 
 export function InvoiceManagement() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [searchParams] = useSearchParams();
   
   // Edit mode state
@@ -1430,7 +1432,7 @@ export function InvoiceManagement() {
   return (
     <div className="invoice-page-container">
       <AppHeader
-        title="Invoice Management"
+        title={t("navigation.invoiceManagement")}
         hideHamburgerMenu={false}
         statusMessage={generationMessage || generationError}
       />

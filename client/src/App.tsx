@@ -54,6 +54,7 @@ import './styles/main.css';
 import { Dashboard } from './pages/Dashboard/Dashboard';
 import { MetricExamplePage } from './pages/Dashboard/MetricExamplePage';
 import { BulkTimesheetManagement } from './pages/BulkTimesheetManagement/BulkTimesheetManagement';
+import { BulkTimesheetList } from './pages/BulkTimesheetManagement/BulkTimesheetList';
 
 function App() {
   return (
@@ -120,6 +121,7 @@ function App() {
                   <Route path="/reports/sales" element={<SalesReport />} />
                   <Route path="/reports/envelope-printing-position" element={<EnvelopePrintingReport />} />
                   <Route path="/bulk-timesheet-management" element={<BulkTimesheetManagement />} />
+                  <Route path="/bulk-timesheet-management/list" element={<BulkTimesheetList />} />
                   {/* Add more recruiter-specific routes here */}
                 </Route>
                 

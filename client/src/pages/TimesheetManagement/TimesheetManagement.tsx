@@ -845,7 +845,7 @@ export function TimesheetManagement() {
   return (
     <div className="timesheet-page-container">
       <AppHeader
-        title="Timesheet Management"
+        title="Create Single Timesheet"
         hideHamburgerMenu={false}
         statusMessage={generationMessage || generationError}
         statusType={

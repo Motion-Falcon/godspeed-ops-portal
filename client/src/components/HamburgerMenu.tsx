@@ -469,9 +469,15 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
           exact: true,
         },
         {
-          label: "Create Bulk Timesheet",
+          label: t("navigation.createBulkTimesheet"),
           path: "/bulk-timesheet-management",
           icon: <FileSpreadsheet size={16} />,
+          exact: true,
+        },
+        {
+          label: t("navigation.bulkTimesheetList"),
+          path: "/bulk-timesheet-management/list",
+          icon: <ListChecks size={16} />,
           exact: true,
         },
         {

@@ -3,12 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { useLocation } from 'react-router-dom';
 import { Eye, Trash2, Plus, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import {
-  getInvoices,
-  deleteInvoice,
-  InvoiceData,
-  formatInvoiceForDisplay,
-  updateInvoice,
-} from '../../services/api/invoice';
+  getBulkTimesheets,
+  deleteBulkTimesheet,
+  BulkTimesheetData,
+  updateBulkTimesheet,
+} from '../../services/api/bulkTimesheet';
 import { AppHeader } from '../../components/AppHeader';
 import { ConfirmationModal } from '../../components/ConfirmationModal';
 
@@ -34,13 +33,47 @@ function getClientDisplayName(client: Record<string, unknown> | undefined): stri
   );
 }
 
-function getClientEmail(client: Record<string, unknown> | undefined): string {
-  return String(client?.emailAddress1 || client?.email_address1 || '');
+function getPositionDisplayName(position: Record<string, unknown> | undefined): string {
+  return (
+    String(
+      position?.title ||
+      position?.positionCode ||
+      position?.position_code ||
+      'Unknown Position'
+    )
+  );
 }
 
-export function InvoiceList() {
+// Helper function to format jobseeker names and emails
+function formatJobseekersList(jobseekerTimesheets: Array<{
+  jobseeker?: {
+    jobseekerProfile?: {
+      first_name?: string;
+      last_name?: string;
+      email?: string;
+    };
+  };
+}>): string {
+  if (!jobseekerTimesheets || jobseekerTimesheets.length === 0) {
+    return 'No jobseekers';
+  }
+  
+  return jobseekerTimesheets.map(ts => {
+    const profile = ts.jobseeker?.jobseekerProfile;
+    if (!profile) return 'Unknown Jobseeker';
+    
+    const firstName = profile.first_name || '';
+    const lastName = profile.last_name || '';
+    const email = profile.email || '';
+    
+    const fullName = `${firstName} ${lastName}`.trim();
+    return email ? `${fullName} (${email})` : fullName;
+  }).join(', ');
+}
+
+export function BulkTimesheetList() {
   // State management
-  const [invoices, setInvoices] = useState<InvoiceData[]>([]);
+  const [bulkTimesheets, setBulkTimesheets] = useState<BulkTimesheetData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -51,14 +84,10 @@ export function InvoiceList() {
   const [searchTerm, setSearchTerm] = useState('');
   const [invoiceNumberFilter, setInvoiceNumberFilter] = useState('');
   const [clientFilter, setClientFilter] = useState('');
-  const [clientEmailFilter, setClientEmailFilter] = useState('');
+  const [positionFilter, setPositionFilter] = useState('');
   const [dateRangeStart, setDateRangeStart] = useState('');
   const [dateRangeEnd, setDateRangeEnd] = useState('');
-  const [dueDateStart, setDueDateStart] = useState('');
-  const [dueDateEnd, setDueDateEnd] = useState('');
   const [emailSentFilter, setEmailSentFilter] = useState('');
-  const [invoiceSentFilter, setInvoiceSentFilter] = useState('');
-  const [documentGeneratedFilter, setDocumentGeneratedFilter] = useState('');
 
   // Pagination state
   const [pagination, setPagination] = useState<PaginationInfo>({
@@ -72,27 +101,23 @@ export function InvoiceList() {
   });
 
   // Delete confirmation state
-  const [invoiceToDelete, setInvoiceToDelete] = useState<InvoiceData | null>(null);
+  const [bulkTimesheetToDelete, setBulkTimesheetToDelete] = useState<BulkTimesheetData | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // Send email state
-  const [sendingEmailInvoiceId, setSendingEmailInvoiceId] = useState<string | null>(null);
+  const [sendingEmailBulkTimesheetId, setSendingEmailBulkTimesheetId] = useState<string | null>(null);
 
   // Utility functions
   const resetFilters = () => {
     setSearchTerm('');
     setInvoiceNumberFilter('');
     setClientFilter('');
-    setClientEmailFilter('');
+    setPositionFilter('');
     setDateRangeStart('');
     setDateRangeEnd('');
-    setDueDateStart('');
-    setDueDateEnd('');
     setEmailSentFilter('');
-    setInvoiceSentFilter('');
-    setDocumentGeneratedFilter('');
     setPagination(prev => ({ ...prev, page: 1 }));
   };
 
@@ -116,8 +141,8 @@ export function InvoiceList() {
     }
   };
 
-  // Fetch invoices with filters
-  const fetchInvoices = useCallback(async () => {
+  // Fetch bulk timesheets with filters
+  const fetchBulkTimesheets = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -126,21 +151,17 @@ export function InvoiceList() {
         limit: pagination.limit,
         searchTerm: searchTerm,
         clientFilter: clientFilter,
-        clientEmailFilter: clientEmailFilter,
+        positionFilter: positionFilter,
         invoiceNumberFilter: invoiceNumberFilter,
         dateRangeStart: dateRangeStart,
         dateRangeEnd: dateRangeEnd,
-        dueDateStart: dueDateStart,
-        dueDateEnd: dueDateEnd,
         emailSentFilter: emailSentFilter,
-        invoiceSentFilter: invoiceSentFilter,
-        documentGeneratedFilter: documentGeneratedFilter,
       };
-      const response = await getInvoices(params);
-      setInvoices(response.invoices);
+      const response = await getBulkTimesheets(params);
+      setBulkTimesheets(response.bulkTimesheets);
       setPagination(response.pagination);
     } catch (err) {
-      setError('Failed to fetch invoices. Please try again.');
+      setError('Failed to fetch bulk timesheets. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -149,24 +170,20 @@ export function InvoiceList() {
     pagination.limit,
     searchTerm,
     clientFilter,
-    clientEmailFilter,
+    positionFilter,
     invoiceNumberFilter,
     dateRangeStart,
     dateRangeEnd,
-    dueDateStart,
-    dueDateEnd,
     emailSentFilter,
-    invoiceSentFilter,
-    documentGeneratedFilter,
   ]);
 
   // Debounced fetch effect
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      fetchInvoices();
+      fetchBulkTimesheets();
     }, 300);
     return () => clearTimeout(timeoutId);
-  }, [fetchInvoices]);
+  }, [fetchBulkTimesheets]);
 
   // Reset to first page when filters change
   useEffect(() => {
@@ -177,72 +194,58 @@ export function InvoiceList() {
     searchTerm,
     invoiceNumberFilter,
     clientFilter,
-    clientEmailFilter,
+    positionFilter,
     dateRangeStart,
     dateRangeEnd,
-    dueDateStart,
-    dueDateEnd,
     emailSentFilter,
-    invoiceSentFilter,
-    documentGeneratedFilter,
   ]);
 
-  // --- New: Initialize filters from query params on mount ---
+  // Initialize filters from query params on mount
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     setSearchTerm(params.get('searchTerm') || '');
     setInvoiceNumberFilter(params.get('invoiceNumber') || '');
     setClientFilter(params.get('client') || '');
-    setClientEmailFilter(params.get('clientEmail') || '');
+    setPositionFilter(params.get('position') || '');
     setDateRangeStart(params.get('dateRangeStart') || '');
     setDateRangeEnd(params.get('dateRangeEnd') || '');
-    setDueDateStart(params.get('dueDateStart') || '');
-    setDueDateEnd(params.get('dueDateEnd') || '');
     setEmailSentFilter(params.get('emailSent') || '');
-    setInvoiceSentFilter(params.get('invoiceSent') || '');
-    setDocumentGeneratedFilter(params.get('documentGenerated') || '');
-    // Example: How to use filter params in the URL
-    //
-    //   /invoice-management/list?searchTerm=Acme&invoiceNumber=INV-123&client=Acme%20Corp&clientEmail=acme%40email.com&dateRangeStart=2024-07-01&dateRangeEnd=2024-07-31&dueDateStart=2024-08-01&dueDateEnd=2024-08-31&emailSent=true&invoiceSent=true&documentGenerated=true
-    //
-    // Any combination of these params can be used to pre-populate filters on page load.
   }, [location.search]);
-  // --- End new code ---
 
   // Event handlers
-  const handleCreateInvoice = () => {
-    navigate('/invoice-management/create');
+  const handleCreateBulkTimesheet = () => {
+    navigate('/bulk-timesheet-management');
   };
 
-  const handleViewInvoice = (id: string) => {
-    navigate(`/invoice-management/create?id=${id}`);
+  const handleViewBulkTimesheet = (id: string) => {
+    navigate(`/bulk-timesheet-management?id=${id}`);
   };
 
-  const handleDeleteClick = (invoice: InvoiceData) => {
-    setInvoiceToDelete(invoice);
+  const handleDeleteClick = (bulkTimesheet: BulkTimesheetData) => {
+    setBulkTimesheetToDelete(bulkTimesheet);
     setIsDeleteModalOpen(true);
     setDeleteError(null);
   };
 
   const handleConfirmDelete = async () => {
-    if (!invoiceToDelete?.id) return;
+    if (!bulkTimesheetToDelete?.id) return;
     try {
       setIsDeleting(true);
       setDeleteError(null);
-      await deleteInvoice(invoiceToDelete.id as string);
-      setInvoices(invoices.filter(i => i.id !== invoiceToDelete.id));
-      setMessage(`Invoice "${invoiceToDelete.invoiceNumber}" deleted successfully.`);
+      await deleteBulkTimesheet(bulkTimesheetToDelete.id as string);
+      setBulkTimesheets(bulkTimesheets.filter(bt => bt.id !== bulkTimesheetToDelete.id));
+      setMessage(`Bulk timesheet "${bulkTimesheetToDelete.invoiceNumber}" deleted successfully.`);
       
       // Close modal and reset state after successful deletion
       setIsDeleteModalOpen(false);
-      setInvoiceToDelete(null);
+      setBulkTimesheetToDelete(null);
       setDeleteError(null);
       
       setTimeout(() => {
         setMessage(null);
       }, 3000);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to delete invoice';
+      const errorMessage = err instanceof Error ? err.message : 'Failed to delete bulk timesheet';
       setDeleteError(errorMessage);
     } finally {
       setIsDeleting(false);
@@ -251,91 +254,79 @@ export function InvoiceList() {
 
   const handleCancelDelete = () => {
     setIsDeleteModalOpen(false);
-    setInvoiceToDelete(null);
+    setBulkTimesheetToDelete(null);
     setDeleteError(null);
   };
 
-  // Function to send invoice to client (same logic as InvoiceManagement modal)
-  const sendInvoiceToClient = async (invoice: InvoiceData) => {
-    if (!invoice.id) {
-      setError("Missing invoice ID");
+  // Function to send bulk timesheet to jobseekers
+  const sendBulkTimesheetToJobseekers = async (bulkTimesheet: BulkTimesheetData) => {
+    if (!bulkTimesheet.id) {
+      setError("Missing bulk timesheet ID");
       return;
     }
 
-    const emailToSend = invoice.invoice_sent_to || 
-      getClientEmail(invoice.client) || 
-      '';
-
-    if (!emailToSend) {
-      setError("No email address found for this invoice");
-      return;
-    }
-
-    setSendingEmailInvoiceId(invoice.id as string);
+    setSendingEmailBulkTimesheetId(bulkTimesheet.id as string);
     setError(null);
     
     try {
-      console.log("=== SENDING INVOICE TO CLIENT ===");
-      console.log("Invoice ID:", invoice.id);
-      console.log("Email to send:", emailToSend);
+      console.log("=== SENDING BULK TIMESHEET TO JOBSEEKERS ===");
+      console.log("Bulk Timesheet ID:", bulkTimesheet.id);
       
-      // Update the invoice record with email-related fields
+      // Update the bulk timesheet record with email-related fields
       const updateData = {
         emailSent: true,
-        emailSentDate: new Date().toISOString(),
-        invoice_sent_to: emailToSend
       };
       
       console.log("Update data:", updateData);
       
-      // Make API call to update the invoice
-      const response = await updateInvoice(invoice.id as string, updateData);
+      // Make API call to update the bulk timesheet
+      const response = await updateBulkTimesheet(bulkTimesheet.id as string, updateData);
       
       console.log("Update response:", response);
       
       if (response.success) {
-        // Update the local invoice in the list
-        setInvoices(prevInvoices => 
-          prevInvoices.map(inv => 
-            inv.id === invoice.id 
-              ? { ...inv, emailSent: true, emailSentDate: updateData.emailSentDate, invoice_sent_to: emailToSend }
-              : inv
+        // Update the local bulk timesheet in the list
+        setBulkTimesheets(prevBulkTimesheets => 
+          prevBulkTimesheets.map(bt => 
+            bt.id === bulkTimesheet.id 
+              ? { ...bt, emailSent: true }
+              : bt
           )
         );
         
-        setMessage(`Invoice sent successfully to ${emailToSend}`);
+        setMessage(`Bulk timesheet sent successfully to ${bulkTimesheet.numberOfJobseekers} jobseeker(s)`);
         setTimeout(() => {
           setMessage(null);
         }, 5000);
         
-        console.log("Invoice updated successfully with email info");
+        console.log("Bulk timesheet updated successfully with email info");
       } else {
-        throw new Error(response.message || "Failed to update invoice");
+        throw new Error(response.message || "Failed to update bulk timesheet");
       }
     } catch (err) {
-      console.error("Error sending invoice:", err);
-      const errorMessage = err instanceof Error ? err.message : "Failed to send invoice. Please try again.";
+      console.error("Error sending bulk timesheet:", err);
+      const errorMessage = err instanceof Error ? err.message : "Failed to send bulk timesheet. Please try again.";
       setError(errorMessage);
       setTimeout(() => {
         setError(null);
       }, 5000);
     } finally {
-      setSendingEmailInvoiceId(null);
+      setSendingEmailBulkTimesheetId(null);
     }
   };
 
   return (
-    <div className="page-container">
+    <div className="page-container bulk-timesheet-list">
       <AppHeader
-        title=" Client Invoices List"
+        title="Bulk Timesheet Management"
         actions={
           <>
             <button
               className="button primary button-icon"
-              onClick={handleCreateInvoice}
+              onClick={handleCreateBulkTimesheet}
             >
               <Plus size={16} />
-              <span>New Invoice</span>
+              <span>New Bulk Timesheet</span>
             </button>
           </>
         }
@@ -343,11 +334,9 @@ export function InvoiceList() {
         statusType={error ? 'error' : 'success'}
       />
       <div className="content-container">
-        {error && <div className="error-message">{error}</div>}
-        {message && <div className="success-message">{message}</div>}
         <div className="card">
           <div className="card-header">
-            <h2>Invoice List</h2>
+            <h2>Bulk Timesheet List</h2>
             <div className="filter-container">
               <div className="search-box">
                 <Search size={14} className="search-icon" />
@@ -428,13 +417,13 @@ export function InvoiceList() {
                   </th>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">Client Email</div>
+                      <div className="column-title">Position</div>
                       <div className="column-search">
                         <input
                           type="text"
-                          placeholder="Search email..."
-                          value={clientEmailFilter}
-                          onChange={(e) => setClientEmailFilter(e.target.value)}
+                          placeholder="Search position..."
+                          value={positionFilter}
+                          onChange={(e) => setPositionFilter(e.target.value)}
                           className="column-search-input"
                         />
                       </div>
@@ -442,7 +431,7 @@ export function InvoiceList() {
                   </th>
                   <th>
                     <div className="column-filter" style={{alignItems: 'center' }}>
-                      <div className="column-title">Invoice Date</div>
+                      <div className="column-title">Week Period</div>
                       <div className="column-search" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '4px' }}>
                         <div className="date-picker-wrapper">
                           <input
@@ -467,28 +456,32 @@ export function InvoiceList() {
                     </div>
                   </th>
                   <th>
-                    <div className="column-filter" >
-                      <div className="column-title">Invoice Emailed</div>
+                    <div className="column-filter" style={{alignItems: 'center' }}>
+                      <div className="column-title">Jobseekers</div>
                       <div className="column-search">
-                        <select
-                          value={invoiceSentFilter}
-                          onChange={(e) => setInvoiceSentFilter(e.target.value)}
-                          className="column-search-input"
-                        >
-                          <option value="">All</option>
-                          <option value="true">Yes</option>
-                          <option value="false">No</option>
-                        </select>
+                        <div className="actions-info">
+                          <span className="actions-help-text">Names & Emails</span>
+                        </div>
+                      </div>
+                    </div>
+                  </th>
+                  <th>
+                    <div className="column-filter" style={{alignItems: 'center' }}>
+                      <div className="column-title">Total Pay</div>
+                      <div className="column-search">
+                        <div className="actions-info">
+                          <span className="actions-help-text">Amount</span>
+                        </div>
                       </div>
                     </div>
                   </th>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">Invoice PDF Generated</div>
+                      <div className="column-title">Email Sent</div>
                       <div className="column-search">
                         <select
-                          value={documentGeneratedFilter}
-                          onChange={(e) => setDocumentGeneratedFilter(e.target.value)}
+                          value={emailSentFilter}
+                          onChange={(e) => setEmailSentFilter(e.target.value)}
                           className="column-search-input"
                         >
                           <option value="">All</option>
@@ -548,6 +541,9 @@ export function InvoiceList() {
                         <td className="skeleton-cell">
                           <div className="skeleton-text"></div>
                         </td>
+                        <td className="skeleton-cell">
+                          <div className="skeleton-text"></div>
+                        </td>
                         
                         {/* Actions skeleton - needs special styling */}
                         <td className="skeleton-cell">
@@ -559,47 +555,47 @@ export function InvoiceList() {
                       </tr>
                     ))}
                   </>
-                ) : invoices.length === 0 ? (
+                ) : bulkTimesheets.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="empty-state-cell">
+                    <td colSpan={9} className="empty-state-cell">
                       <div className="empty-state">
-                        <p>No invoices match your search criteria.</p>
+                        <p>No bulk timesheets match your search criteria.</p>
                       </div>
                     </td>
                   </tr>
                 ) : (
-                  invoices.map(invoice => {
-                    const formatted = formatInvoiceForDisplay(invoice);
-                    const clientEmail = invoice.invoice_sent_to || getClientEmail(invoice.client);
-                    const isCurrentlySending = sendingEmailInvoiceId === invoice.id;
-                    const hasEmail = !!clientEmail;
+                  bulkTimesheets.map(bulkTimesheet => {
+                    const isCurrentlySending = sendingEmailBulkTimesheetId === bulkTimesheet.id;
                     
                     return (
-                      <tr key={String(invoice.id)}>
-                        <td className="invoice-number-cell">{invoice.invoiceNumber}</td>
-                        <td className="client-cell">{getClientDisplayName(invoice.client)}</td>
-                        <td className="client-email-cell">{getClientEmail(invoice.client)}</td>
-                        <td className="date-cell" style={{textAlign: 'center'}}>{formatted.formattedInvoiceDate}</td>
-                        <td className="email-sent-cell">{invoice.emailSent ? 'Yes' : 'No'}</td>
-                        <td className="pdf-generated-cell">{invoice.documentGenerated ? 'Yes' : 'No'}</td>
+                      <tr key={String(bulkTimesheet.id)}>
+                        <td className="invoice-number-cell">{bulkTimesheet.invoiceNumber}</td>
+                        <td className="client-cell">{getClientDisplayName(bulkTimesheet.client)}</td>
+                        <td className="position-cell">{getPositionDisplayName(bulkTimesheet.position)}</td>
+                        <td className="date-cell">{bulkTimesheet.weekPeriod}</td>
+                        <td className="jobseekers-cell">
+                          
+                            {formatJobseekersList(bulkTimesheet.jobseekerTimesheets)}
+                        
+                        </td>
+                        <td className="total-pay-cell">
+                          ${bulkTimesheet.totalJobseekerPay.toFixed(2)}
+                        </td>
+                        <td className="email-sent-cell">{bulkTimesheet.emailSent ? 'Yes' : 'No'}</td>
                         <td className="send-email-cell">
                           <button
-                            className={`button ${invoice.emailSent ? 'secondary' : 'primary'} button-sm`}
-                            onClick={() => sendInvoiceToClient(invoice)}
-                            disabled={isCurrentlySending || !hasEmail || !invoice.documentGenerated}
+                            className={`button ${bulkTimesheet.emailSent ? 'secondary' : 'primary'} button-sm`}
+                            onClick={() => sendBulkTimesheetToJobseekers(bulkTimesheet)}
+                            disabled={isCurrentlySending}
                             title={
-                              !hasEmail 
-                                ? "No email address available" 
-                                : !invoice.documentGenerated 
-                                  ? "PDF must be generated first"
-                                  : invoice.emailSent 
-                                    ? `Send again to ${clientEmail}` 
-                                    : `Send to ${clientEmail}`
+                              bulkTimesheet.emailSent 
+                                ? `Send again to ${bulkTimesheet.numberOfJobseekers} jobseeker(s)` 
+                                : `Send to ${bulkTimesheet.numberOfJobseekers} jobseeker(s)`
                             }
                           >
                             {isCurrentlySending ? (
                               'Sending...'
-                            ) : invoice.emailSent ? (
+                            ) : bulkTimesheet.emailSent ? (
                               'Send Again'
                             ) : (
                               'Send Email'
@@ -610,17 +606,17 @@ export function InvoiceList() {
                           <div className="action-buttons">
                             <button
                               className="action-icon-btn view-btn"
-                              onClick={() => handleViewInvoice(String(invoice.id))}
-                              title="View invoice details"
-                              aria-label="View invoice"
+                              onClick={() => handleViewBulkTimesheet(String(bulkTimesheet.id))}
+                              title="View bulk timesheet details"
+                              aria-label="View bulk timesheet"
                             >
                               <Eye size={16} />
                             </button>
                             <button
                               className="action-icon-btn delete-btn"
-                              onClick={() => handleDeleteClick(invoice)}
-                              title="Delete invoice"
-                              aria-label="Delete invoice"
+                              onClick={() => handleDeleteClick(bulkTimesheet)}
+                              title="Delete bulk timesheet"
+                              aria-label="Delete bulk timesheet"
                             >
                               <Trash2 size={16} />
                             </button>
@@ -695,9 +691,9 @@ export function InvoiceList() {
       {/* Delete Confirmation Modal */}
       <ConfirmationModal
         isOpen={isDeleteModalOpen}
-        title="Delete Invoice"
-        message={`Are you sure you want to delete the invoice "${invoiceToDelete ? invoiceToDelete.invoiceNumber : 'Unknown'}"? This action cannot be undone.${deleteError ? `\n\nError: ${deleteError}` : ''}`}
-        confirmText={isDeleting ? 'Deleting...' : 'Delete Invoice'}
+        title="Delete Bulk Timesheet"
+        message={`Are you sure you want to delete the bulk timesheet "${bulkTimesheetToDelete ? bulkTimesheetToDelete.invoiceNumber : 'Unknown'}"? This action cannot be undone.${deleteError ? `\n\nError: ${deleteError}` : ''}`}
+        confirmText={isDeleting ? 'Deleting...' : 'Delete Bulk Timesheet'}
         cancelText="Cancel"
         confirmButtonClass="danger"
         onConfirm={handleConfirmDelete}

@@ -487,14 +487,6 @@ const formatActivityMessage = (activity: RecentActivity): React.ReactNode => {
     case "create_timesheet": {
       const jobseekerName = secondary_entity_name || "";
       const positionTitle = tertiary_entity_name || "";
-      const weekStart =
-        typeof activity.metadata?.weekStartDate === "string"
-          ? activity.metadata.weekStartDate
-          : "";
-      const weekEnd =
-        typeof activity.metadata?.weekEndDate === "string"
-          ? activity.metadata.weekEndDate
-          : "";
 
       return (
         <>
@@ -502,14 +494,8 @@ const formatActivityMessage = (activity: RecentActivity): React.ReactNode => {
           <PrimaryEntity>{jobseekerName}</PrimaryEntity>
           {positionTitle && (
             <>
-              {" "}
-              (<SecondaryEntity>{positionTitle}</SecondaryEntity>)
-            </>
-          )}
-          {weekStart && weekEnd && (
-            <>
-              {" "}
-              for period '{weekStart}' - '{weekEnd}'
+              {" "}for position{" "}
+              <SecondaryEntity>{positionTitle}</SecondaryEntity>
             </>
           )}
         </>
@@ -519,29 +505,15 @@ const formatActivityMessage = (activity: RecentActivity): React.ReactNode => {
     case "update_timesheet": {
       const jobseekerName = secondary_entity_name || "";
       const positionTitle = tertiary_entity_name || "";
-      const weekStart =
-        typeof activity.metadata?.weekStartDate === "string"
-          ? activity.metadata.weekStartDate
-          : "";
-      const weekEnd =
-        typeof activity.metadata?.weekEndDate === "string"
-          ? activity.metadata.weekEndDate
-          : "";
-
+  
       return (
         <>
           <ActorName>{actor_name}</ActorName> updated Timesheet for{" "}
           <PrimaryEntity>{jobseekerName}</PrimaryEntity>
           {positionTitle && (
             <>
-              {" "}
-              (<SecondaryEntity>{positionTitle}</SecondaryEntity>)
-            </>
-          )}
-          {weekStart && weekEnd && (
-            <>
-              {" "}
-              for period '{weekStart}' - '{weekEnd}'
+              {" "}for position{" "}
+              <SecondaryEntity>{positionTitle}</SecondaryEntity>
             </>
           )}
         </>
@@ -551,14 +523,6 @@ const formatActivityMessage = (activity: RecentActivity): React.ReactNode => {
     case "delete_timesheet": {
       const jobseekerName = secondary_entity_name || "";
       const positionTitle = tertiary_entity_name || "";
-      const weekStart =
-        typeof activity.metadata?.weekStartDate === "string"
-          ? activity.metadata.weekStartDate
-          : "";
-      const weekEnd =
-        typeof activity.metadata?.weekEndDate === "string"
-          ? activity.metadata.weekEndDate
-          : "";
 
       return (
         <>
@@ -566,14 +530,8 @@ const formatActivityMessage = (activity: RecentActivity): React.ReactNode => {
           <PrimaryEntity>{jobseekerName}</PrimaryEntity>
           {positionTitle && (
             <>
-              {" "}
-              (<SecondaryEntity>{positionTitle}</SecondaryEntity>)
-            </>
-          )}
-          {weekStart && weekEnd && (
-            <>
-              {" "}
-              for period '{weekStart}' - '{weekEnd}'
+              {" "}for position{" "}
+              <SecondaryEntity>{positionTitle}</SecondaryEntity>
             </>
           )}
         </>
@@ -583,7 +541,6 @@ const formatActivityMessage = (activity: RecentActivity): React.ReactNode => {
     case "create_bulk_timesheet": {
       const clientName = secondary_entity_name || "";
       const positionTitle = (activity.metadata?.positionTitle as string) || "";
-      const weekPeriod = (activity.metadata?.weekPeriod as string) || "";
       const numberOfJobseekers = Number(activity.metadata?.numberOfJobseekers) || 0;
 
       return (
@@ -597,16 +554,10 @@ const formatActivityMessage = (activity: RecentActivity): React.ReactNode => {
               (<TertiaryEntity>{positionTitle}</TertiaryEntity>)
             </>
           )}
-          {weekPeriod && (
-            <>
-              {" "}
-              for {weekPeriod}
-            </>
-          )}
           {numberOfJobseekers > 0 && (
             <>
-              {" "}
-              ({numberOfJobseekers} jobseeker{numberOfJobseekers !== 1 ? "s" : ""})
+              {" of "}
+              {numberOfJobseekers} jobseeker{numberOfJobseekers !== 1 ? "s" : ""}
             </>
           )}
         </>
@@ -616,7 +567,6 @@ const formatActivityMessage = (activity: RecentActivity): React.ReactNode => {
     case "update_bulk_timesheet": {
       const clientName = secondary_entity_name || "";
       const positionTitle = (activity.metadata?.positionTitle as string) || "";
-      const weekPeriod = (activity.metadata?.weekPeriod as string) || "";
       const numberOfJobseekers = Number(activity.metadata?.numberOfJobseekers) || 0;
 
       return (
@@ -630,16 +580,10 @@ const formatActivityMessage = (activity: RecentActivity): React.ReactNode => {
               (<TertiaryEntity>{positionTitle}</TertiaryEntity>)
             </>
           )}
-          {weekPeriod && (
-            <>
-              {" "}
-              for {weekPeriod}
-            </>
-          )}
           {numberOfJobseekers > 0 && (
             <>
-              {" "}
-              ({numberOfJobseekers} jobseeker{numberOfJobseekers !== 1 ? "s" : ""})
+              {" of "}
+              {numberOfJobseekers} jobseeker{numberOfJobseekers !== 1 ? "s" : ""}
             </>
           )}
         </>
@@ -649,7 +593,6 @@ const formatActivityMessage = (activity: RecentActivity): React.ReactNode => {
     case "delete_bulk_timesheet": {
       const clientName = secondary_entity_name || "";
       const positionTitle = (activity.metadata?.positionTitle as string) || "";
-      const weekPeriod = (activity.metadata?.weekPeriod as string) || "";
 
       return (
         <>
@@ -660,12 +603,6 @@ const formatActivityMessage = (activity: RecentActivity): React.ReactNode => {
             <>
               {" "}
               (<TertiaryEntity>{positionTitle}</TertiaryEntity>)
-            </>
-          )}
-          {weekPeriod && (
-            <>
-              {" "}
-              for {weekPeriod}
             </>
           )}
         </>
