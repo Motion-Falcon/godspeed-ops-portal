@@ -3,8 +3,10 @@ import { authenticateToken, authorizeRoles } from '../middleware/auth.js';
 import { createClient } from '@supabase/supabase-js';
 import { apiRateLimiter, sanitizeInputs } from '../middleware/security.js';
 import { activityLogger } from '../middleware/activityLogger.js';
+import { emailNotifier } from '../middleware/emailNotifier.js';
+import { timesheetHtmlTemplate } from '../email-templates/timesheet-html.js';
+import { timesheetTextTemplate } from '../email-templates/timesheet-txt.js';
 import dotenv from 'dotenv';
-import { v4 as uuidv4 } from 'uuid';
 
 dotenv.config();
 
@@ -46,6 +48,13 @@ interface TimesheetData {
   invoiceNumber?: string; // Auto-generated invoice number
 }
 
+interface VersionHistoryEntry {
+  version: number;
+  created_by: string;
+  created_at: string;
+  action: 'created' | 'updated';
+}
+
 interface DbTimesheetData {
   id?: string;
   jobseeker_profile_id: string;
@@ -53,7 +62,7 @@ interface DbTimesheetData {
   position_id?: string;
   week_start_date: string;
   week_end_date: string;
-  daily_hours: any; // JSONB
+  daily_hours: Array<{ date: string; hours: number }>; // JSONB
   total_regular_hours: number;
   total_overtime_hours: number;
   regular_pay_rate: number;
@@ -73,6 +82,8 @@ interface DbTimesheetData {
   created_by_user_id?: string;
   updated_at?: string;
   updated_by_user_id?: string;
+  version?: number;
+  version_history?: VersionHistoryEntry[];
 }
 
 /**
@@ -114,8 +125,8 @@ function transformToDbFormat(data: TimesheetData): Omit<DbTimesheetData, 'id' | 
 /**
  * Transform timesheet data from snake_case to camelCase for frontend
  */
-function transformToFrontendFormat(data: DbTimesheetData): any {
-  const result: any = {};
+function transformToFrontendFormat(data: DbTimesheetData): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
   
   Object.entries(data).forEach(([key, value]) => {
     const camelKey = snakeToCamelCase(key);
@@ -589,6 +600,71 @@ router.post('/',
       };
     }
   }),
+  emailNotifier({
+    onSuccessEmail: async (req: Request, res: Response) => {
+      // Only send email if emailSent is true
+      if (!req.body.emailSent) return null;
+
+      const timesheetData = req.body;
+      const newTimesheet = res.locals.newTimesheet;
+
+      // Get jobseeker profile information
+      const { data: jobseekerProfile } = await supabase
+        .from('jobseeker_profiles')
+        .select('first_name, last_name, email')
+        .eq('id', timesheetData.jobseekerProfileId)
+        .single();
+
+      if (!jobseekerProfile || !jobseekerProfile.email) {
+        console.log('[EmailNotifier] No jobseeker email found, skipping email send.');
+        return null;
+      }
+
+      // Get position information
+      const { data: position } = await supabase
+        .from('positions')
+        .select('title, client_name, city, province')
+        .eq('id', timesheetData.positionId)
+        .single();
+
+      // Prepare variables for template
+      const templateVars = {
+        invoice_number: timesheetData.invoiceNumber || newTimesheet?.invoice_number,
+        jobseeker_name: `${jobseekerProfile.first_name} ${jobseekerProfile.last_name}`,
+        jobseeker_email: jobseekerProfile.email,
+        position_title: position?.title || 'Unknown Position',
+        week_start_date: timesheetData.weekStartDate,
+        week_end_date: timesheetData.weekEndDate,
+        daily_hours: timesheetData.dailyHours || [],
+        total_regular_hours: timesheetData.totalRegularHours,
+        total_overtime_hours: timesheetData.totalOvertimeHours,
+        regular_pay_rate: timesheetData.regularPayRate,
+        overtime_pay_rate: timesheetData.overtimePayRate,
+        total_jobseeker_pay: timesheetData.totalJobseekerPay,
+        overtime_enabled: timesheetData.overtimeEnabled,
+        bonus_amount: timesheetData.bonusAmount,
+        deduction_amount: timesheetData.deductionAmount,
+        generated_date: new Date().toLocaleDateString()
+      };
+
+      console.log('[EmailNotifier] templateVars:', templateVars);
+
+      // Use template functions
+      const html = timesheetHtmlTemplate(templateVars);
+      const text = timesheetTextTemplate(templateVars);
+
+      // Extract subject (first line from text template)
+      const [subjectLine, ...bodyLines] = text.split('\n');
+      const subject = subjectLine.replace('Subject:', '').trim();
+
+      return {
+        to: jobseekerProfile.email,
+        subject,
+        text: bodyLines.join('\n').trim(),
+        html,
+      };
+    }
+  }),
   async (req: Request, res: Response) => {
     try {
       if (!req.user || !req.user.id) {
@@ -619,31 +695,13 @@ router.post('/',
         return res.status(403).json({ error: 'You can only create timesheets for yourself' });
       }
 
-      // Check if timesheet already exists for this assignment and week
-      // const { data: existingTimesheet, error: existingError } = await supabase
-      //   .from('timesheets')
-      //   .select('id')
-      //   .eq('', timesheetData.id)
-      //   .eq('week_start_date', timesheetData.weekStartDate)
-      //   .maybeSingle();
-
-      // if (existingError) {
-      //   console.error('Error checking for existing timesheet:', existingError);
-      //   return res.status(500).json({ error: 'Failed to validate timesheet uniqueness' });
-      // }
-
-      // if (existingTimesheet) {
-      //   return res.status(409).json({ 
-      //     error: 'A timesheet for this assignment and week already exists',
-      //     field: 'assignmentId'
-      //   });
-      // }
-
       // Prepare timesheet data for database
       const dbTimesheetData: Omit<DbTimesheetData, 'id' | 'created_at' | 'updated_at'> = {
         ...transformToDbFormat(timesheetData),
         created_by_user_id: userId,
         updated_by_user_id: userId,
+        version: 1,
+        version_history: initializeVersionHistory(userId)
       };
 
       // Insert timesheet into database
@@ -752,6 +810,85 @@ router.put('/:id',
       };
     }
   }),
+  emailNotifier({
+    onSuccessEmail: async (req: Request, res: Response) => {
+      // Only send email if emailSent is true
+      if (!req.body.emailSent) return null;
+
+      const timesheetData = req.body;
+      const updatedTimesheet = res.locals.updatedTimesheet;
+
+      // Get jobseeker profile information
+      const { data: jobseekerProfile } = await supabase
+        .from('jobseeker_profiles')
+        .select('first_name, last_name, email')
+        .eq('id', timesheetData.jobseekerProfileId)
+        .single();
+
+      if (!jobseekerProfile || !jobseekerProfile.email) {
+        console.log('[EmailNotifier] No jobseeker email found, skipping email send.');
+        return null;
+      }
+
+      // Get position information
+      const { data: position } = await supabase
+        .from('positions')
+        .select('title, client_name, city, province')
+        .eq('id', timesheetData.positionId)
+        .single();
+
+      // Get client information
+      let clientName = position?.client_name || 'Unknown Client';
+      if (position?.client_name) {
+        const { data: client } = await supabase
+          .from('clients')
+          .select('company_name')
+          .eq('company_name', position.client_name)
+          .single();
+        if (client) {
+          clientName = client.company_name;
+        }
+      }
+
+      // Prepare variables for template
+      const templateVars = {
+        invoice_number: timesheetData.invoiceNumber || updatedTimesheet?.invoice_number,
+        jobseeker_name: `${jobseekerProfile.first_name} ${jobseekerProfile.last_name}`,
+        jobseeker_email: jobseekerProfile.email,
+        position_title: position?.title || 'Unknown Position',
+        week_start_date: timesheetData.weekStartDate,
+        week_end_date: timesheetData.weekEndDate,
+        daily_hours: timesheetData.dailyHours || [],
+        total_regular_hours: timesheetData.totalRegularHours,
+        total_overtime_hours: timesheetData.totalOvertimeHours,
+        regular_pay_rate: timesheetData.regularPayRate,
+        overtime_pay_rate: timesheetData.overtimePayRate,
+        total_jobseeker_pay: timesheetData.totalJobseekerPay,
+        overtime_enabled: timesheetData.overtimeEnabled,
+        bonus_amount: timesheetData.bonusAmount,
+        deduction_amount: timesheetData.deductionAmount,
+        generated_date: new Date().toLocaleDateString(),
+        is_updated: true
+      };
+
+      console.log('[EmailNotifier] templateVars (update):', templateVars);
+
+      // Use template functions
+      const html = timesheetHtmlTemplate(templateVars);
+      const text = timesheetTextTemplate(templateVars);
+
+      // Extract subject (first line from text template)
+      const [subjectLine, ...bodyLines] = text.split('\n');
+      const subject = subjectLine.replace('Subject:', '').trim();
+
+      return {
+        to: jobseekerProfile.email,
+        subject,
+        text: bodyLines.join('\n').trim(),
+        html,
+      };
+    }
+  }),
   async (req: Request, res: Response) => {
     try {
       if (!req.user || !req.user.id) {
@@ -766,7 +903,7 @@ router.put('/:id',
       // Check if timesheet exists and user has permission
       let existingQuery = supabase
         .from('timesheets')
-        .select('id, jobseeker_user_id, week_start_date')
+        .select('id, jobseeker_user_id, week_start_date, position_id, version, version_history')
         .eq('id', id);
 
       if (userType === 'jobseeker') {
@@ -785,12 +922,13 @@ router.put('/:id',
       }
 
       // Check for duplicate if assignment or week is being changed
-      if (timesheetData.weekStartDate !== existingTimesheet.week_start_date) {
+      if (timesheetData.weekStartDate !== existingTimesheet.week_start_date || 
+          timesheetData.positionId !== existingTimesheet.position_id) {
         
         const { data: duplicateTimesheet, error: duplicateCheckError } = await supabase
           .from('timesheets')
           .select('id')
-          .eq('id', id)
+          .eq('position_id', timesheetData.positionId)
           .eq('week_start_date', timesheetData.weekStartDate)
           .neq('id', id)
           .maybeSingle();
@@ -802,17 +940,20 @@ router.put('/:id',
 
         if (duplicateTimesheet) {
           return res.status(409).json({ 
-            error: 'Another timesheet for this assignment and week already exists',
+            error: 'Another timesheet for this position and week already exists',
             field: 'positionId'
           });
         }
       }
 
       // Prepare timesheet data for database update
+      const newVersion = existingTimesheet.version + 1;
       const dbTimesheetData = {
         ...transformToDbFormat(timesheetData),
         updated_by_user_id: userId,
         updated_at: new Date().toISOString(),
+        version: newVersion,
+        version_history: addVersionToHistory(existingTimesheet.version_history || [], userId, newVersion)
       };
 
       // Update timesheet in database
@@ -1165,5 +1306,31 @@ router.patch('/:id/document',
     }
   }
 );
+
+/**
+ * Create version history entry
+ */
+function createVersionEntry(userId: string, version: number, action: 'created' | 'updated'): VersionHistoryEntry {
+  return {
+    version,
+    created_by: userId,
+    created_at: new Date().toISOString(),
+    action
+  };
+}
+
+/**
+ * Initialize version history for new timesheet
+ */
+function initializeVersionHistory(userId: string): VersionHistoryEntry[] {
+  return [createVersionEntry(userId, 1, 'created')];
+}
+
+/**
+ * Add version entry to existing history
+ */
+function addVersionToHistory(existingHistory: VersionHistoryEntry[], userId: string, newVersion: number): VersionHistoryEntry[] {
+  return [...existingHistory, createVersionEntry(userId, newVersion, 'updated')];
+}
 
 export default router; 

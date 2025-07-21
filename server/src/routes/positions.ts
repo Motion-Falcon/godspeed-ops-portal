@@ -1300,7 +1300,6 @@ router.post(
   }),
   emailNotifier({
     onSuccessEmail: async (req: Request, res: Response) => {
-      const assignment = res.locals.newAssignment;
       const candidateName = res.locals.candidateName;
       const candidateId = req.body.candidateId;
       let candidateEmail = res.locals.candidateEmail;

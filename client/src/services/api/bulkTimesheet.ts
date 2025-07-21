@@ -44,6 +44,7 @@ export interface BulkTimesheetData {
     totalOvertimeHours: number;
     jobseekerPay: number;
     clientBill: number;
+    emailSent?: boolean; // Add emailSent field for individual jobseeker email status
   }>;
   createdAt?: string;
   updatedAt?: string;
@@ -271,6 +272,7 @@ export const createBulkTimesheetFromFrontendData = async (
       totalOvertimeHours: number;
       jobseekerPay: number;
       clientBill: number;
+      emailSent?: boolean; // Add emailSent field for individual jobseeker email status
     }>;
   }
 ): Promise<BulkTimesheetResponse> => {
@@ -325,4 +327,22 @@ export const formatBulkTimesheetForDisplay = (bulkTimesheet: BulkTimesheetData) 
     formattedAverageHours: `${bulkTimesheet.averageHoursPerJobseeker.toFixed(1)} hours/jobseeker`,
     formattedAveragePay: `$${bulkTimesheet.averagePayPerJobseeker.toFixed(2)}/jobseeker`,
   };
+}; 
+
+/**
+ * Send emails for a bulk timesheet (without updating version/version_history)
+ */
+export const sendBulkTimesheetEmails = async (
+  id: string,
+  jobseekerIds?: string[]
+): Promise<{ success: boolean; message: string; emailsSent: string[]; emailsSkipped: string[] }> => {
+  try {
+    const response = await api.post(`/api/bulk-timesheets/${id}/send-emails`, jobseekerIds ? { jobseekerIds } : {});
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(error.response.data.error || "Failed to send emails for bulk timesheet");
+    }
+    throw error;
+  }
 }; 

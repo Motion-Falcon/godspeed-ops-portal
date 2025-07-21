@@ -3,7 +3,9 @@ import { createClient } from "@supabase/supabase-js";
 import { authenticateToken, authorizeRoles } from "../middleware/auth.js";
 import { apiRateLimiter, sanitizeInputs } from "../middleware/security.js";
 import { activityLogger } from "../middleware/activityLogger.js";
-import { v4 as uuidv4 } from "uuid";
+import { emailNotifier } from "../middleware/emailNotifier.js";
+import { timesheetHtmlTemplate } from "../email-templates/timesheet-html.js";
+import { timesheetTextTemplate } from "../email-templates/timesheet-txt.js";
 
 const router = Router();
 
@@ -17,6 +19,39 @@ if (!supabaseUrl || !supabaseKey) {
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Types for bulk timesheet data
+interface JobseekerTimesheetEntry {
+  jobseeker: {
+    id: string;
+    jobseekerProfile: {
+      first_name: string;
+      last_name: string;
+      email: string;
+    };
+    assignmentId: string;
+  };
+  entries: Array<{
+    date: string;
+    hours: number;
+    overtimeHours: number;
+  }>;
+  bonusAmount: number;
+  deductionAmount: number;
+  totalRegularHours: number;
+  totalOvertimeHours: number;
+  jobseekerPay: number;
+  clientBill: number;
+  regularPayRate?: number;
+  overtimePayRate?: number;
+  emailSent?: boolean; // Add emailSent field for individual jobseeker email status
+}
+
+interface VersionHistoryEntry {
+  version: number;
+  created_by: string;
+  created_at: string;
+  action: 'created' | 'updated';
+}
+
 interface BulkTimesheetData {
   clientId: string;
   positionId: string;
@@ -37,7 +72,7 @@ interface BulkTimesheetData {
   numberOfJobseekers: number;
   averageHoursPerJobseeker: number;
   averagePayPerJobseeker: number;
-  jobseekerTimesheets: any[]; // JSONB array
+  jobseekerTimesheets: JobseekerTimesheetEntry[];
 }
 
 interface DbBulkTimesheetData {
@@ -61,12 +96,13 @@ interface DbBulkTimesheetData {
   number_of_jobseekers: number;
   average_hours_per_jobseeker: number;
   average_pay_per_jobseeker: number;
-  jobseeker_timesheets: any; // JSONB
+  jobseeker_timesheets: JobseekerTimesheetEntry[];
   created_at?: string;
   created_by_user_id?: string;
   updated_at?: string;
   updated_by_user_id?: string;
   version?: number;
+  version_history?: VersionHistoryEntry[];
 }
 
 /**
@@ -107,8 +143,8 @@ function transformToDbFormat(bulkTimesheetData: BulkTimesheetData): DbBulkTimesh
 /**
  * Transform bulk timesheet data from snake_case to camelCase for frontend
  */
-function transformToFrontendFormat(data: DbBulkTimesheetData): any {
-  const result: any = {};
+function transformToFrontendFormat(data: DbBulkTimesheetData): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
   
   Object.entries(data).forEach(([key, value]) => {
     const camelKey = snakeToCamelCase(key);
@@ -368,9 +404,10 @@ router.get(
       if (searchTerm && searchTerm.trim().length > 0) {
         const searchTermLower = searchTerm.trim().toLowerCase();
         formattedBulkTimesheets = formattedBulkTimesheets.filter(bt => {
-          const invoiceNumber = (bt.invoiceNumber || '').toLowerCase();
-          const clientName = (bt.client?.company_name || '').toLowerCase();
-          const positionTitle = (bt.position?.title || '').toLowerCase();
+          const btData = bt as Record<string, unknown>;
+          const invoiceNumber = (btData.invoiceNumber as string || '').toLowerCase();
+          const clientName = ((btData.client as Record<string, unknown>)?.company_name as string || '').toLowerCase();
+          const positionTitle = ((btData.position as Record<string, unknown>)?.title as string || '').toLowerCase();
           
           return invoiceNumber.includes(searchTermLower) ||
                  clientName.includes(searchTermLower) ||
@@ -381,8 +418,9 @@ router.get(
       if (clientFilter && clientFilter.trim().length > 0) {
         const clientFilterLower = clientFilter.trim().toLowerCase();
         formattedBulkTimesheets = formattedBulkTimesheets.filter(bt => {
-          const clientName = (bt.client?.company_name || '').toLowerCase();
-          const clientShortCode = (bt.client?.short_code || '').toLowerCase();
+          const btData = bt as Record<string, unknown>;
+          const clientName = ((btData.client as Record<string, unknown>)?.company_name as string || '').toLowerCase();
+          const clientShortCode = ((btData.client as Record<string, unknown>)?.short_code as string || '').toLowerCase();
           
           return clientName.includes(clientFilterLower) ||
                  clientShortCode.includes(clientFilterLower);
@@ -392,7 +430,8 @@ router.get(
       if (positionFilter && positionFilter.trim().length > 0) {
         const positionFilterLower = positionFilter.trim().toLowerCase();
         formattedBulkTimesheets = formattedBulkTimesheets.filter(bt => {
-          const positionTitle = (bt.position?.title || '').toLowerCase();
+          const btData = bt as Record<string, unknown>;
+          const positionTitle = ((btData.position as Record<string, unknown>)?.title as string || '').toLowerCase();
           
           return positionTitle.includes(positionFilterLower);
         });
@@ -588,6 +627,93 @@ router.post(
       };
     },
   }),
+  emailNotifier({
+    onSuccessEmail: async (req: Request, res: Response) => {
+      const bulkTimesheetData = req.body;
+      const newBulkTimesheet = res.locals.newBulkTimesheet;
+
+      // Get position information
+      const { data: position } = await supabase
+        .from("positions")
+        .select("title, client_name, city, province")
+        .eq("id", bulkTimesheetData.positionId)
+        .single();
+
+      // Get client information
+      let clientName = position?.client_name || 'Unknown Client';
+      if (position?.client_name) {
+        const { data: client } = await supabase
+          .from("clients")
+          .select("company_name")
+          .eq("company_name", position.client_name)
+          .single();
+        if (client) {
+          clientName = client.company_name;
+        }
+      }
+
+      // Process each jobseeker in the bulk timesheet
+      const jobseekerTimesheets = bulkTimesheetData.jobseekerTimesheets || [];
+      const emails: any[] = [];
+
+      for (const jobseekerTimesheet of jobseekerTimesheets) {
+        // Only send email if this specific jobseeker has emailSent set to true
+        if (!jobseekerTimesheet.emailSent) {
+          console.log(`[EmailNotifier] Email not enabled for jobseeker ${jobseekerTimesheet.jobseeker?.jobseekerProfile?.first_name} ${jobseekerTimesheet.jobseeker?.jobseekerProfile?.last_name}, skipping email send.`);
+          continue;
+        }
+
+        const jobseeker = jobseekerTimesheet.jobseeker;
+        const jobseekerProfile = jobseeker.jobseekerProfile;
+
+        if (!jobseekerProfile || !jobseekerProfile.email) {
+          console.log(`[EmailNotifier] No email found for jobseeker ${jobseekerProfile?.first_name} ${jobseekerProfile?.last_name}, skipping email send.`);
+          continue;
+        }
+
+        // Prepare variables for template for this specific jobseeker
+        const templateVars = {
+          invoice_number: bulkTimesheetData.invoiceNumber || newBulkTimesheet?.invoice_number,
+          jobseeker_name: `${jobseekerProfile.first_name} ${jobseekerProfile.last_name}`,
+          jobseeker_email: jobseekerProfile.email,
+          position_title: position?.title || 'Unknown Position',
+          week_start_date: bulkTimesheetData.weekStartDate,
+          week_end_date: bulkTimesheetData.weekEndDate,
+          daily_hours: jobseekerTimesheet.entries || [],
+          total_regular_hours: jobseekerTimesheet.totalRegularHours,
+          total_overtime_hours: jobseekerTimesheet.totalOvertimeHours,
+          regular_pay_rate: jobseekerTimesheet.regularPayRate || (jobseekerTimesheet.totalRegularHours > 0 ? (jobseekerTimesheet.jobseekerPay - (jobseekerTimesheet.totalOvertimeHours * (jobseekerTimesheet.overtimePayRate || 0))) / jobseekerTimesheet.totalRegularHours : 0),
+          overtime_pay_rate: jobseekerTimesheet.overtimePayRate || 0,
+          total_jobseeker_pay: jobseekerTimesheet.jobseekerPay,
+          overtime_enabled: jobseekerTimesheet.totalOvertimeHours > 0,
+          bonus_amount: jobseekerTimesheet.bonusAmount,
+          deduction_amount: jobseekerTimesheet.deductionAmount,
+          generated_date: new Date().toLocaleDateString()
+        };
+
+        console.log(`[EmailNotifier] templateVars for ${jobseekerProfile.first_name} ${jobseekerProfile.last_name}:`, templateVars);
+
+        // Use template functions
+        const html = timesheetHtmlTemplate(templateVars);
+        const text = timesheetTextTemplate(templateVars);
+
+        // Extract subject (first line from text template)
+        const [subjectLine, ...bodyLines] = text.split('\n');
+        const subject = subjectLine.replace('Subject:', '').trim();
+
+        emails.push({
+          to: jobseekerProfile.email,
+          subject,
+          text: bodyLines.join('\n').trim(),
+          html,
+        });
+      }
+
+      // Return null if no emails to send, otherwise return the first email
+      // The emailNotifier middleware will handle sending multiple emails
+      return emails.length > 0 ? emails : null;
+    }
+  }),
   async (req: Request, res: Response) => {
     try {
       if (!req.user || !req.user.id) {
@@ -632,10 +758,12 @@ router.post(
       }
 
       // Prepare bulk timesheet data for database
-      const dbBulkTimesheetData: Omit<DbBulkTimesheetData, "id" | "created_at" | "updated_at" | "version"> = {
+      const dbBulkTimesheetData: Omit<DbBulkTimesheetData, "id" | "created_at" | "updated_at"> = {
         ...transformToDbFormat(bulkTimesheetData),
         created_by_user_id: userId,
         updated_by_user_id: userId,
+        version: 1,
+        version_history: initializeVersionHistory(userId)
       };
 
       // Insert bulk timesheet into database
@@ -747,6 +875,93 @@ router.put(
       };
     },
   }),
+  emailNotifier({
+    onSuccessEmail: async (req: Request, res: Response) => {
+      const bulkTimesheetData = req.body;
+      const updatedBulkTimesheet = res.locals.updatedBulkTimesheet;
+
+      // Get position information
+      const { data: position } = await supabase
+        .from("positions")
+        .select("title, client_name, city, province")
+        .eq("id", bulkTimesheetData.positionId || updatedBulkTimesheet?.position_id)
+        .single();
+
+      // Get client information
+      let clientName = position?.client_name || 'Unknown Client';
+      if (position?.client_name) {
+        const { data: client } = await supabase
+          .from("clients")
+          .select("company_name")
+          .eq("company_name", position.client_name)
+          .single();
+        if (client) {
+          clientName = client.company_name;
+        }
+      }
+
+      // Process each jobseeker in the bulk timesheet
+      const jobseekerTimesheets = bulkTimesheetData.jobseekerTimesheets || updatedBulkTimesheet?.jobseeker_timesheets || [];
+      const emails: any[] = [];
+
+      for (const jobseekerTimesheet of jobseekerTimesheets) {
+        // Only send email if this specific jobseeker has emailSent set to true
+        if (!jobseekerTimesheet.emailSent) {
+          console.log(`[EmailNotifier] Email not enabled for jobseeker ${jobseekerTimesheet.jobseeker?.jobseekerProfile?.first_name} ${jobseekerTimesheet.jobseeker?.jobseekerProfile?.last_name}, skipping email send.`);
+          continue;
+        }
+
+        const jobseeker = jobseekerTimesheet.jobseeker;
+        const jobseekerProfile = jobseeker.jobseekerProfile;
+
+        if (!jobseekerProfile || !jobseekerProfile.email) {
+          console.log(`[EmailNotifier] No email found for jobseeker ${jobseekerProfile?.first_name} ${jobseekerProfile?.last_name}, skipping email send.`);
+          continue;
+        }
+
+        // Prepare variables for template for this specific jobseeker
+        const templateVars = {
+          invoice_number: bulkTimesheetData.invoiceNumber || updatedBulkTimesheet?.invoice_number,
+          jobseeker_name: `${jobseekerProfile.first_name} ${jobseekerProfile.last_name}`,
+          jobseeker_email: jobseekerProfile.email,
+          position_title: position?.title || 'Unknown Position',
+          week_start_date: bulkTimesheetData.weekStartDate || updatedBulkTimesheet?.week_start_date,
+          week_end_date: bulkTimesheetData.weekEndDate || updatedBulkTimesheet?.week_end_date,
+          daily_hours: jobseekerTimesheet.entries || [],
+          total_regular_hours: jobseekerTimesheet.totalRegularHours,
+          total_overtime_hours: jobseekerTimesheet.totalOvertimeHours,
+          regular_pay_rate: jobseekerTimesheet.regularPayRate || (jobseekerTimesheet.totalRegularHours > 0 ? (jobseekerTimesheet.jobseekerPay - (jobseekerTimesheet.totalOvertimeHours * (jobseekerTimesheet.overtimePayRate || 0))) / jobseekerTimesheet.totalRegularHours : 0),
+          overtime_pay_rate: jobseekerTimesheet.overtimePayRate || 0,
+          total_jobseeker_pay: jobseekerTimesheet.jobseekerPay,
+          overtime_enabled: jobseekerTimesheet.totalOvertimeHours > 0,
+          bonus_amount: jobseekerTimesheet.bonusAmount,
+          deduction_amount: jobseekerTimesheet.deductionAmount,
+          generated_date: new Date().toLocaleDateString(),
+          is_updated: true
+        };
+
+        console.log(`[EmailNotifier] templateVars for ${jobseekerProfile.first_name} ${jobseekerProfile.last_name} (update):`, templateVars);
+
+        // Use template functions
+        const html = timesheetHtmlTemplate(templateVars);
+        const text = timesheetTextTemplate(templateVars);
+
+        // Extract subject (first line from text template)
+        const [subjectLine, ...bodyLines] = text.split('\n');
+        const subject = subjectLine.replace('Subject:', '').trim();
+
+        emails.push({
+          to: jobseekerProfile.email,
+          subject,
+          text: bodyLines.join('\n').trim(),
+          html,
+        });
+      }
+
+      // Return null if no emails to send, otherwise return all emails
+      return emails.length > 0 ? emails : null;
+    }
+  }),
   async (req: Request, res: Response) => {
     try {
       if (!req.user || !req.user.id) {
@@ -761,7 +976,7 @@ router.put(
       // Check if bulk timesheet exists and user has permission
       let existingQuery = supabase
         .from("bulk_timesheets")
-        .select("*")
+        .select("id, created_by_user_id, version, version_history")
         .eq("id", id);
 
       if (userType === "jobseeker") {
@@ -801,6 +1016,7 @@ router.put(
       }
 
       // Prepare bulk timesheet data for database update
+      const newVersion = existingBulkTimesheet.version + 1;
       const updateData: any = {};
 
       if (bulkTimesheetData.clientId) updateData.client_id = bulkTimesheetData.clientId;
@@ -825,6 +1041,8 @@ router.put(
       if (bulkTimesheetData.jobseekerTimesheets) updateData.jobseeker_timesheets = bulkTimesheetData.jobseekerTimesheets;
 
       updateData.updated_by_user_id = userId;
+      updateData.version = newVersion;
+      updateData.version_history = addVersionToHistory(existingBulkTimesheet.version_history || [], userId, newVersion);
 
       // Update bulk timesheet in database
       const { data: updatedBulkTimesheet, error: updateError } = await supabase
@@ -853,6 +1071,183 @@ router.put(
     } catch (error) {
       console.error("Unexpected error updating bulk timesheet:", error);
       return res.status(500).json({ error: "An unexpected error occurred" });
+    }
+  }
+);
+
+/**
+ * Send emails for a bulk timesheet (without updating version/version_history)
+ * POST /api/bulk-timesheets/:id/send-emails
+ * @access Private (Admin, Recruiter, Jobseeker - own timesheets only)
+ */
+router.post(
+  "/:id/send-emails",
+  authenticateToken,
+  authorizeRoles(["admin", "recruiter", "jobseeker"]),
+  apiRateLimiter,
+  activityLogger({
+    onSuccess: (req, res) => {
+      const { id } = req.params;
+      const { jobseekerIds } = req.body as { jobseekerIds?: string[] };
+      const result = res.locals.bulkTimesheetSendResult || res.locals.bulkTimesheet || {};
+      return {
+        actionType: "send_bulk_timesheet_email",
+        actionVerb: "sent email(s)",
+        primaryEntityType: "bulk_timesheet",
+        primaryEntityId: id,
+        primaryEntityName: result.invoiceNumber || result.invoice_number || id,
+        displayMessage: `Sent timesheet email(s) for invoice ${result.invoiceNumber || result.invoice_number || id} to ${result.emailsSent ? result.emailsSent.length : (jobseekerIds ? jobseekerIds.length : 0)} jobseeker(s)`,
+        category: "financial",
+        priority: "normal",
+        metadata: {
+          invoiceNumber: result.invoiceNumber || result.invoice_number,
+          jobseekerIds: jobseekerIds,
+          emailsSent: result.emailsSent,
+        },
+      };
+    },
+  }),
+  emailNotifier({
+    onSuccessEmail: async (req, res) => {
+      try {
+        const { id } = req.params;
+        const { jobseekerIds } = req.body as { jobseekerIds?: string[] };
+        // Fetch bulk timesheet
+        const { data: bulkTimesheet } = await supabase
+          .from("bulk_timesheets").select("*").eq("id", id).maybeSingle();
+        if (!bulkTimesheet) return null;
+        // Fetch position
+        const { data: position } = await supabase
+          .from("positions")
+          .select("title, client_name, city, province")
+          .eq("id", bulkTimesheet.position_id)
+          .single();
+        const jobseekerTimesheets: any[] = bulkTimesheet.jobseeker_timesheets || [];
+        const idSet = jobseekerIds ? new Set(jobseekerIds) : null;
+        // Build emails array
+        const emails = jobseekerTimesheets
+          .filter((ts: any) => {
+            const jobseeker = ts.jobseeker;
+            const jobseekerProfile = jobseeker?.jobseekerProfile;
+            if (!jobseekerProfile?.email) return false;
+            return !idSet || idSet.has(ts.jobseeker?.id);
+          })
+          .map((ts: any) => {
+            const jobseeker = ts.jobseeker;
+            const jobseekerProfile = jobseeker?.jobseekerProfile;
+            const templateVars = {
+              invoice_number: bulkTimesheet.invoice_number,
+              jobseeker_name: `${jobseekerProfile.first_name} ${jobseekerProfile.last_name}`,
+              jobseeker_email: jobseekerProfile.email,
+              position_title: position?.title || 'Unknown Position',
+              week_start_date: bulkTimesheet.week_start_date,
+              week_end_date: bulkTimesheet.week_end_date,
+              daily_hours: ts.entries || [],
+              total_regular_hours: ts.totalRegularHours,
+              total_overtime_hours: ts.totalOvertimeHours,
+              regular_pay_rate: ts.regularPayRate || (ts.totalRegularHours > 0 ? (ts.jobseekerPay - (ts.totalOvertimeHours * (ts.overtimePayRate || 0))) / ts.totalRegularHours : 0),
+              overtime_pay_rate: ts.overtimePayRate || 0,
+              total_jobseeker_pay: ts.jobseekerPay,
+              overtime_enabled: ts.totalOvertimeHours > 0,
+              bonus_amount: ts.bonusAmount,
+              deduction_amount: ts.deductionAmount,
+              generated_date: new Date().toLocaleDateString(),
+            };
+            const html = timesheetHtmlTemplate(templateVars);
+            const text = timesheetTextTemplate(templateVars);
+            const [subjectLine, ...bodyLines] = text.split('\n');
+            const subject = subjectLine.replace('Subject:', '').trim();
+            return {
+              to: jobseekerProfile.email,
+              subject,
+              text: bodyLines.join('\n').trim(),
+              html,
+            };
+          });
+        return emails.length > 0 ? emails : null;
+      } catch (err) {
+        console.error('[BulkTimesheet send-emails] Failed to build email data:', err);
+        return null;
+      }
+    }
+  }),
+  async (req, res) => {
+    try {
+      if (!req.user || !req.user.id) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+      const { id } = req.params;
+      const { jobseekerIds } = req.body as { jobseekerIds?: string[] };
+      // Fetch the bulk timesheet
+      const { data: bulkTimesheet, error } = await supabase
+        .from("bulk_timesheets")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle();
+      if (error || !bulkTimesheet) {
+        return res.status(404).json({ error: "Bulk timesheet not found or access denied" });
+      }
+      let jobseekerTimesheets = bulkTimesheet.jobseeker_timesheets || [];
+      const idSet = jobseekerIds ? new Set(jobseekerIds) : null;
+      // Find which jobseekers are being sent
+      const sentJobseekerIds: string[] = jobseekerTimesheets
+        .filter((ts: any) => !idSet || idSet.has(ts.jobseeker?.id))
+        .map((ts: any) => ts.jobseeker.id);
+      // Update jobseekerTimesheets: set emailSent=true for those just emailed
+      let updatedJobseekerTimesheets = jobseekerTimesheets.map((ts: any) => {
+        if (sentJobseekerIds.includes(ts.jobseeker.id)) {
+          return { ...ts, emailSent: true };
+        }
+        return ts;
+      });
+      // If all jobseekers have emailSent true after update, set global email_sent true
+      const allEmailsSent = updatedJobseekerTimesheets.every((ts: any) => ts.emailSent);
+      const updateData: any = {
+        jobseeker_timesheets: updatedJobseekerTimesheets,
+      };
+      if (allEmailsSent && !bulkTimesheet.email_sent) {
+        updateData.email_sent = true;
+      }
+      await supabase
+        .from("bulk_timesheets")
+        .update(updateData)
+        .eq("id", id);
+      // Build response message
+      const emailsSent = updatedJobseekerTimesheets
+        .filter((ts: any) => sentJobseekerIds.includes(ts.jobseeker.id))
+        .map((ts: any) => ({
+          name: `${ts.jobseeker.jobseekerProfile.first_name} ${ts.jobseeker.jobseekerProfile.last_name}`,
+          email: ts.jobseeker.jobseekerProfile.email,
+        }));
+      const emailsSkipped: string[] = [];
+      let message = '';
+      if (emailsSent.length && emailsSkipped.length) {
+        message = `Emails sent to: ${emailsSent.map((js: any) => js.name).join(', ')}; Skipped: ${emailsSkipped.join(', ')}`;
+      } else if (emailsSent.length) {
+        message = `Emails sent to: ${emailsSent.map((js: any) => js.name).join(', ')}`;
+      } else if (emailsSkipped.length) {
+        message = `Skipped: ${emailsSkipped.join(', ')}`;
+      } else {
+        message = 'No emails sent.';
+      }
+      res.locals.bulkTimesheetSendResult = {
+        invoiceNumber: bulkTimesheet.invoice_number,
+        emailsSent,
+        emailsSkipped,
+        updatedJobseekerTimesheets,
+        email_sent: allEmailsSent || bulkTimesheet.email_sent,
+      };
+      return res.status(200).json({
+        success: true,
+        message,
+        emailsSent,
+        emailsSkipped,
+        updatedJobseekerTimesheets,
+        email_sent: allEmailsSent || bulkTimesheet.email_sent,
+      });
+    } catch (error) {
+      console.error("Error sending emails for bulk timesheet:", error);
+      return res.status(500).json({ error: "Failed to send emails for bulk timesheet" });
     }
   }
 );
@@ -981,5 +1376,31 @@ router.delete(
     }
   }
 );
+
+/**
+ * Create version history entry
+ */
+function createVersionEntry(userId: string, version: number, action: 'created' | 'updated'): VersionHistoryEntry {
+  return {
+    version,
+    created_by: userId,
+    created_at: new Date().toISOString(),
+    action
+  };
+}
+
+/**
+ * Initialize version history for new bulk timesheet
+ */
+function initializeVersionHistory(userId: string): VersionHistoryEntry[] {
+  return [createVersionEntry(userId, 1, 'created')];
+}
+
+/**
+ * Add version entry to existing history
+ */
+function addVersionToHistory(existingHistory: VersionHistoryEntry[], userId: string, newVersion: number): VersionHistoryEntry[] {
+  return [...existingHistory, createVersionEntry(userId, newVersion, 'updated')];
+}
 
 export default router;

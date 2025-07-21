@@ -19,7 +19,7 @@ interface EmailData {
 }
 
 interface EmailNotifierOptions {
-  onSuccessEmail?: (req: Request, res: Response) => EmailData | null | Promise<EmailData | null>;
+  onSuccessEmail?: (req: Request, res: Response) => EmailData | EmailData[] | null | Promise<EmailData | EmailData[] | null>;
 }
 
 export const emailNotifier = (options: EmailNotifierOptions = {}) => {
@@ -31,15 +31,20 @@ export const emailNotifier = (options: EmailNotifierOptions = {}) => {
           console.log('[EmailNotifier] onSuccessEmail callback triggered');
           const emailData = await options.onSuccessEmail(req, res);
           if (emailData) {
-            // Ensure 'text' is always a string (required by SendGrid)
-            const text = emailData.text ?? '';
-            console.log('[EmailNotifier] Sending email:', {
-              to: emailData.to,
-              subject: emailData.subject,
-              from: process.env.DEFAULT_FROM_EMAIL || 'godspeed@aimotion.com',
-            });
-            await sgMail.send({ from: process.env.DEFAULT_FROM_EMAIL || 'godspeed@aimotion.com', ...emailData, text });
-            console.log('[EmailNotifier] Email sent successfully to', emailData.to);
+            // Handle both single email and array of emails
+            const emails = Array.isArray(emailData) ? emailData : [emailData];
+            
+            for (const email of emails) {
+              // Ensure 'text' is always a string (required by SendGrid)
+              const text = email.text ?? '';
+              console.log('[EmailNotifier] Sending email:', {
+                to: email.to,
+                subject: email.subject,
+                from: process.env.DEFAULT_FROM_EMAIL || 'godspeed@aimotion.com',
+              });
+              await sgMail.send({ from: process.env.DEFAULT_FROM_EMAIL || 'godspeed@aimotion.com', ...email, text });
+              console.log('[EmailNotifier] Email sent successfully to', email.to);
+            }
           } else {
             console.log('[EmailNotifier] No emailData returned from onSuccessEmail, skipping email send.');
           }

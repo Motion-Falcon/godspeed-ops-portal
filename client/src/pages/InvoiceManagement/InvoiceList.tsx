@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLocation } from 'react-router-dom';
-import { Eye, Trash2, Plus, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Eye, Trash2, Plus, Search, ChevronLeft, ChevronRight, Mail } from 'lucide-react';
 import {
   getInvoices,
   deleteInvoice,
@@ -11,6 +11,7 @@ import {
 } from '../../services/api/invoice';
 import { AppHeader } from '../../components/AppHeader';
 import { ConfirmationModal } from '../../components/ConfirmationModal';
+import '../../styles/pages/InvoiceManagement.css';
 
 interface PaginationInfo {
   page: number;
@@ -584,7 +585,7 @@ export function InvoiceList() {
                         <td className="pdf-generated-cell">{invoice.documentGenerated ? 'Yes' : 'No'}</td>
                         <td className="send-email-cell">
                           <button
-                            className={`button ${invoice.emailSent ? 'secondary' : 'primary'} button-sm`}
+                            className={`button button-xs send-email-cell ${invoice.emailSent ? 'resend-email' : 'send-email'}`}
                             onClick={() => sendInvoiceToClient(invoice)}
                             disabled={isCurrentlySending || !hasEmail || !invoice.documentGenerated}
                             title={
@@ -598,11 +599,17 @@ export function InvoiceList() {
                             }
                           >
                             {isCurrentlySending ? (
-                              'Sending...'
+                              <>
+                                <Mail size={14} className="mail-icon" /> Sending...
+                              </>
                             ) : invoice.emailSent ? (
-                              'Send Again'
+                              <>
+                                <Mail size={14} className="mail-icon" /> Resend
+                              </>
                             ) : (
-                              'Send Email'
+                              <>
+                                <Mail size={14} className="mail-icon" /> Send Email
+                              </>
                             )}
                           </button>
                         </td>

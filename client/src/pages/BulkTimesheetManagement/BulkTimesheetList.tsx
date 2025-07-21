@@ -1,15 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useLocation } from 'react-router-dom';
-import { Eye, Trash2, Plus, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Eye, Trash2, Plus, Search, ChevronLeft, ChevronRight, Mail } from 'lucide-react';
 import {
   getBulkTimesheets,
   deleteBulkTimesheet,
   BulkTimesheetData,
-  updateBulkTimesheet,
+  sendBulkTimesheetEmails,
 } from '../../services/api/bulkTimesheet';
 import { AppHeader } from '../../components/AppHeader';
 import { ConfirmationModal } from '../../components/ConfirmationModal';
+import '../../styles/pages/InvoiceManagement.css';
 
 interface PaginationInfo {
   page: number;
@@ -44,40 +44,12 @@ function getPositionDisplayName(position: Record<string, unknown> | undefined): 
   );
 }
 
-// Helper function to format jobseeker names and emails
-function formatJobseekersList(jobseekerTimesheets: Array<{
-  jobseeker?: {
-    jobseekerProfile?: {
-      first_name?: string;
-      last_name?: string;
-      email?: string;
-    };
-  };
-}>): string {
-  if (!jobseekerTimesheets || jobseekerTimesheets.length === 0) {
-    return 'No jobseekers';
-  }
-  
-  return jobseekerTimesheets.map(ts => {
-    const profile = ts.jobseeker?.jobseekerProfile;
-    if (!profile) return 'Unknown Jobseeker';
-    
-    const firstName = profile.first_name || '';
-    const lastName = profile.last_name || '';
-    const email = profile.email || '';
-    
-    const fullName = `${firstName} ${lastName}`.trim();
-    return email ? `${fullName} (${email})` : fullName;
-  }).join(', ');
-}
-
 export function BulkTimesheetList() {
   // State management
   const [bulkTimesheets, setBulkTimesheets] = useState<BulkTimesheetData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const navigate = useNavigate();
   const location = useLocation();
 
   // Filter states
@@ -106,8 +78,8 @@ export function BulkTimesheetList() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  // Send email state
-  const [sendingEmailBulkTimesheetId, setSendingEmailBulkTimesheetId] = useState<string | null>(null);
+  // Track which jobseeker is being emailed (by bulkTimesheetId + jobseekerId)
+  const [sendingJobseekerEmail, setSendingJobseekerEmail] = useState<{ [key: string]: boolean }>({});
 
   // Utility functions
   const resetFilters = () => {
@@ -214,11 +186,11 @@ export function BulkTimesheetList() {
 
   // Event handlers
   const handleCreateBulkTimesheet = () => {
-    navigate('/bulk-timesheet-management');
+    window.location.href = '/bulk-timesheet-management';
   };
 
   const handleViewBulkTimesheet = (id: string) => {
-    navigate(`/bulk-timesheet-management?id=${id}`);
+    window.location.href = `/bulk-timesheet-management?id=${id}`;
   };
 
   const handleDeleteClick = (bulkTimesheet: BulkTimesheetData) => {
@@ -259,66 +231,36 @@ export function BulkTimesheetList() {
   };
 
   // Function to send bulk timesheet to jobseekers
-  const sendBulkTimesheetToJobseekers = async (bulkTimesheet: BulkTimesheetData) => {
-    if (!bulkTimesheet.id) {
-      setError("Missing bulk timesheet ID");
-      return;
-    }
-
-    setSendingEmailBulkTimesheetId(bulkTimesheet.id as string);
+  const sendEmailToJobseeker = async (bulkTimesheetId: string, jobseekerId: string, jobseekerName: string) => {
+    const key = `${bulkTimesheetId}_${jobseekerId}`;
+    setSendingJobseekerEmail(prev => ({ ...prev, [key]: true }));
     setError(null);
-    
     try {
-      console.log("=== SENDING BULK TIMESHEET TO JOBSEEKERS ===");
-      console.log("Bulk Timesheet ID:", bulkTimesheet.id);
-      
-      // Update the bulk timesheet record with email-related fields
-      const updateData = {
-        emailSent: true,
-      };
-      
-      console.log("Update data:", updateData);
-      
-      // Make API call to update the bulk timesheet
-      const response = await updateBulkTimesheet(bulkTimesheet.id as string, updateData);
-      
-      console.log("Update response:", response);
-      
-      if (response.success) {
-        // Update the local bulk timesheet in the list
-        setBulkTimesheets(prevBulkTimesheets => 
-          prevBulkTimesheets.map(bt => 
-            bt.id === bulkTimesheet.id 
-              ? { ...bt, emailSent: true }
-              : bt
-          )
-        );
-        
-        setMessage(`Bulk timesheet sent successfully to ${bulkTimesheet.numberOfJobseekers} jobseeker(s)`);
-        setTimeout(() => {
-          setMessage(null);
-        }, 5000);
-        
-        console.log("Bulk timesheet updated successfully with email info");
-      } else {
-        throw new Error(response.message || "Failed to update bulk timesheet");
-      }
+      const response = await sendBulkTimesheetEmails(bulkTimesheetId, [jobseekerId]);
+      setMessage(response.message || `Email sent to ${jobseekerName}`);
+      setTimeout(() => setMessage(null), 4000);
+      // Update local state for instant UI feedback
+      setBulkTimesheets(prevBulkTimesheets => prevBulkTimesheets.map(bt => {
+        if (bt.id !== bulkTimesheetId) return bt;
+        return {
+          ...bt,
+          jobseekerTimesheets: bt.jobseekerTimesheets.map(ts =>
+            ts.jobseeker.id === jobseekerId ? { ...ts, emailSent: true } : ts
+          ),
+        };
+      }));
     } catch (err) {
-      console.error("Error sending bulk timesheet:", err);
-      const errorMessage = err instanceof Error ? err.message : "Failed to send bulk timesheet. Please try again.";
-      setError(errorMessage);
-      setTimeout(() => {
-        setError(null);
-      }, 5000);
+      setError(err instanceof Error ? err.message : `Failed to send email to ${jobseekerName}`);
+      setTimeout(() => setError(null), 4000);
     } finally {
-      setSendingEmailBulkTimesheetId(null);
+      setSendingJobseekerEmail(prev => ({ ...prev, [key]: false }));
     }
   };
 
   return (
     <div className="page-container bulk-timesheet-list">
       <AppHeader
-        title="Bulk Timesheet Management"
+        title="Bulk Timesheet List"
         actions={
           <>
             <button
@@ -456,11 +398,11 @@ export function BulkTimesheetList() {
                     </div>
                   </th>
                   <th>
-                    <div className="column-filter" style={{alignItems: 'center' }}>
+                    <div className="column-filter"  style={{alignItems: 'center' }}>
                       <div className="column-title">Jobseekers</div>
                       <div className="column-search">
                         <div className="actions-info">
-                          <span className="actions-help-text">Names & Emails</span>
+                          <span className="actions-help-text">Names & Emails (click to send email)</span>
                         </div>
                       </div>
                     </div>
@@ -471,32 +413,6 @@ export function BulkTimesheetList() {
                       <div className="column-search">
                         <div className="actions-info">
                           <span className="actions-help-text">Amount</span>
-                        </div>
-                      </div>
-                    </div>
-                  </th>
-                  <th>
-                    <div className="column-filter">
-                      <div className="column-title">Email Sent</div>
-                      <div className="column-search">
-                        <select
-                          value={emailSentFilter}
-                          onChange={(e) => setEmailSentFilter(e.target.value)}
-                          className="column-search-input"
-                        >
-                          <option value="">All</option>
-                          <option value="true">Yes</option>
-                          <option value="false">No</option>
-                        </select>
-                      </div>
-                    </div>
-                  </th>
-                  <th>
-                    <div className="column-filter" style={{alignItems: 'center' }}>
-                      <div className="column-title">Send Email</div>
-                      <div className="column-search">
-                        <div className="actions-info">
-                          <span className="actions-help-text">Send • Resend</span>
                         </div>
                       </div>
                     </div>
@@ -565,42 +481,58 @@ export function BulkTimesheetList() {
                   </tr>
                 ) : (
                   bulkTimesheets.map(bulkTimesheet => {
-                    const isCurrentlySending = sendingEmailBulkTimesheetId === bulkTimesheet.id;
                     
                     return (
                       <tr key={String(bulkTimesheet.id)}>
-                        <td className="invoice-number-cell">{bulkTimesheet.invoiceNumber}</td>
+                        <td className="invoice-number-cell"># {bulkTimesheet.invoiceNumber}</td>
                         <td className="client-cell">{getClientDisplayName(bulkTimesheet.client)}</td>
                         <td className="position-cell">{getPositionDisplayName(bulkTimesheet.position)}</td>
                         <td className="date-cell">{bulkTimesheet.weekPeriod}</td>
                         <td className="jobseekers-cell">
-                          
-                            {formatJobseekersList(bulkTimesheet.jobseekerTimesheets)}
-                        
+                          {bulkTimesheet.jobseekerTimesheets.map((ts) => {
+                            const profile = ts.jobseeker?.jobseekerProfile;
+                            if (!profile) return null;
+                            const fullName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim();
+                            const email = profile.email || '';
+                            const emailSent = ts.emailSent || false;
+                            const statusClass = emailSent ? 'email-status-yes' : 'email-status-no';
+                            const key = `${bulkTimesheet.id}_${ts.jobseeker.id}`;
+                            const isSending = !!sendingJobseekerEmail[key];
+                            return (
+                              <div key={key} className="jobseeker-row">
+                                <div className="jobseeker-info">
+                                  <span className="jobseeker-name">{fullName}</span>
+                                  <span className="jobseeker-email">{email}</span>
+                                </div>
+                                <div className="jobseeker-actions">
+                                  <span className={`email-status-dot ${statusClass}`} title={emailSent ? 'Email sent' : 'Not sent'}></span>
+                                  <button
+                                    className={`button button-xs send-email-cell ${emailSent ? 'resend-email' : 'send-email'}`}
+                                    disabled={isSending}
+                                    onClick={() => sendEmailToJobseeker(bulkTimesheet.id as string, ts.jobseeker.id, fullName)}
+                                    title={emailSent ? `Resend to ${fullName}` : `Send to ${fullName}`}
+                                  >
+                                    {isSending ? (
+                                      <>
+                                        <Mail size={14} className="mail-icon" /> Sending...
+                                      </>
+                                    ) : emailSent ? (
+                                      <>
+                                        <Mail size={14} className="mail-icon" /> Resend
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Mail size={14} className="mail-icon" /> Send Email
+                                      </>
+                                    )}
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
                         </td>
                         <td className="total-pay-cell">
                           ${bulkTimesheet.totalJobseekerPay.toFixed(2)}
-                        </td>
-                        <td className="email-sent-cell">{bulkTimesheet.emailSent ? 'Yes' : 'No'}</td>
-                        <td className="send-email-cell">
-                          <button
-                            className={`button ${bulkTimesheet.emailSent ? 'secondary' : 'primary'} button-sm`}
-                            onClick={() => sendBulkTimesheetToJobseekers(bulkTimesheet)}
-                            disabled={isCurrentlySending}
-                            title={
-                              bulkTimesheet.emailSent 
-                                ? `Send again to ${bulkTimesheet.numberOfJobseekers} jobseeker(s)` 
-                                : `Send to ${bulkTimesheet.numberOfJobseekers} jobseeker(s)`
-                            }
-                          >
-                            {isCurrentlySending ? (
-                              'Sending...'
-                            ) : bulkTimesheet.emailSent ? (
-                              'Send Again'
-                            ) : (
-                              'Send Email'
-                            )}
-                          </button>
                         </td>
                         <td className="actions-cell">
                           <div className="action-buttons">

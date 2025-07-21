@@ -965,33 +965,40 @@
 }
 
 /* Send Email Button Styles */
-.send-email-cell {
-  padding: 8px 12px;
-  text-align: center;
+button.send-email-cell {
+  min-width: 110px;
+  width: 110px;
+  max-width: 110px;
+  font-size: 1em;
+  padding: 0.3rem 0.7rem;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+}
+button.send-email {
+  background: var(--primary);
+  color: #fff;
+  border: 1px solid var(--primary);
+}
+button.send-email:disabled {
+  background: var(--primary-light);
+  color: #fff;
+  opacity: 0.7;
+}
+button.resend-email {
+  background: var(--muted);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+button.resend-email:disabled {
+  background: var(--muted);
+  color: var(--text);
+  opacity: 0.7;
+}
+  .mail-icon {
+  margin-right: 4px;
   vertical-align: middle;
-}
-
-.send-email-cell button {
-  width: 100%;
-  height: 100%;
-  padding: 8px 12px;
-  text-align: center;
-  vertical-align: middle;
-  color: white;
-}
-
-.send-email-cell button.primary {
-  background: linear-gradient(135deg, #1a1a1a 0%, #307e02 100%);
-}
-
-.send-email-cell button.secondary {
-  background: linear-gradient(135deg, #2d2d2d 0%, #8B0000 100%);
-}
-
-.dark .send-email-cell button.primary {
-  background: linear-gradient(135deg, #1a1a1a 0%, #307e02 100%);
-}
-
-.dark .send-email-cell button.secondary {
-  background: linear-gradient(135deg, #2d2d2d 0%, #8B0000 100%);
 }

@@ -47,7 +47,7 @@ export function AppHeader({
       // Set timeout to hide message after 3 seconds
       statusTimeoutRef.current = setTimeout(() => {
         setShowStatusMessage(false);
-      }, 3000);
+      }, 6000);
     } else {
       setShowStatusMessage(false);
       // Clear timeout if statusMessage becomes null/undefined

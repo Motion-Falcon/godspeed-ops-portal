@@ -155,6 +155,18 @@ router.get(
       const startDate = new Date();
       startDate.setMonth(startDate.getMonth() - monthsBack);
 
+      // Get total documents scanned by AI from ai_validation table (for current value)
+      const { count: totalDocumentsScanned, error: documentsError } = await supabase
+        .from("ai_validation")
+        .select("*", { count: "exact", head: true });
+
+      if (documentsError) {
+        console.error("Error fetching AI validation data:", documentsError);
+        return res.status(500).json({ 
+          error: "Failed to fetch documents scanned data" 
+        });
+      }
+
       // TODO: Fix this when created_at field is available in ai_validation table
       // Get documents scanned by AI within time range
       // const { data: aiValidations, error: documentsError } = await supabase
@@ -241,8 +253,6 @@ router.get(
       );
 
       // Calculate current totals
-      // TODO: Use real data when ai_validation.created_at is available
-      const totalDocumentsScanned = 0; // aiValidations?.length || 0;
       const totalJobseekersMatched = positions?.reduce(
         (sum, position) => sum + (position.number_of_positions || 0), 
         0
@@ -268,31 +278,17 @@ router.get(
           });
       };
 
-      // Generate dummy historical data for documents scanned (AI validation)
-      const dummyDocumentsHistoricalData = [];
-      for (let i = monthsBack - 1; i >= 0; i--) {
-        const date = new Date();
-        date.setMonth(date.getMonth() - i);
-        const monthName = date.toLocaleDateString("en-US", { month: "short" });
-        
-        dummyDocumentsHistoricalData.push({
-          period: monthName,
-          value: Math.floor(Math.random() * 100) + 80, // Random documents scanned
-          date: date,
-        });
-      }
-
       // Build metrics response following the metric card structure
       const metrics = [
         {
           id: "documents_scanned",
           label: "Total Documents Scanned",
-          currentValue: 1247, // Dummy value - TODO: use totalDocumentsScanned when available
-          previousValue: monthlyArray[1]?.documentsScanned || 1156, // Dummy fallback
+          currentValue: totalDocumentsScanned || 0,
+          previousValue: monthlyArray[1]?.documentsScanned || 0,
           unit: "documents",
           formatType: "number",
-          description: `Total documents processed by AI in the last ${monthsBack} months (temporary dummy data)`,
-          historicalData: dummyDocumentsHistoricalData, // TODO: use formatHistoricalData(monthlyArray, "documentsScanned") when available
+          description: `Total documents processed by AI in the last ${monthsBack} months`,
+          historicalData: formatHistoricalData(monthlyArray, "documentsScanned"),
         },
         {
           id: "jobseekers_matched",

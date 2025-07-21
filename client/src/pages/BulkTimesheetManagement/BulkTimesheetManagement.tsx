@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { AppHeader } from "../../components/AppHeader";
 import { CustomDropdown, DropdownOption } from "../../components/CustomDropdown";
 import { getClients, ClientData } from "../../services/api/client";
 import { getClientPositions, PositionData } from "../../services/api/position";
 import { getPositionAssignments, AssignmentRecord } from "../../services/api/position";
 import { generateWeekOptions, formatDate } from "../../utils/weekUtils";
-import { generateInvoiceNumber, createBulkTimesheetFromFrontendData } from "../../services/api/bulkTimesheet";
-import { Building } from "lucide-react";
+import { generateInvoiceNumber, createBulkTimesheetFromFrontendData, getBulkTimesheet, updateBulkTimesheet } from "../../services/api/bulkTimesheet";
+import { Building, Minus } from "lucide-react";
 import "../../styles/pages/BulkTimesheetManagement.css";
 import { PositionWithOvertime } from "../TimesheetManagement/TimesheetManagement";
 
@@ -25,6 +26,7 @@ interface JobseekerTimesheet {
   totalOvertimeHours: number;
   jobseekerPay: number;
   clientBill: number;
+  emailSent: boolean;
 }
 
 export function BulkTimesheetManagement() {
@@ -57,10 +59,38 @@ export function BulkTimesheetManagement() {
   const [generationMessage, setGenerationMessage] = useState<string>("");
   const [generationError, setGenerationError] = useState<string>("");
 
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+
   useEffect(() => {
     fetchClients();
     setWeekOptions(generateWeekOptions());
   }, []);
+
+  // On mount, check for ?id=... and fetch if present
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const id = params.get("id");
+    if (id) {
+      // Reset all relevant state before populating for edit mode
+      setIsEditMode(true);
+      setEditingId(id);
+      setSelectedClient(null);
+      setPositions([]);
+      setSelectedPosition(null);
+      setAssignedJobseekers([]);
+      setJobseekerTimesheets([]);
+      setSelectedWeekStart("");
+      setInvoiceNumber("");
+      setSendEmail(false);
+      setIsGeneratingBulkTimesheet(false);
+      setGenerationMessage("");
+      setGenerationError("");
+      fetchAndPopulateBulkTimesheet(id);
+    }
+  }, [location.search]);
 
   useEffect(() => {
     if (selectedClient) {
@@ -72,6 +102,7 @@ export function BulkTimesheetManagement() {
   }, [selectedClient]);
 
   useEffect(() => {
+    if (isEditMode) return; // Prevent overwrite in edit mode
     if (assignedJobseekers.length && selectedWeekStart && selectedPosition) {
       // Initialize timesheet for each jobseeker
       const weekDates = generateWeekDates(selectedWeekStart);
@@ -85,12 +116,13 @@ export function BulkTimesheetManagement() {
           totalOvertimeHours: 0,
           jobseekerPay: 0,
           clientBill: 0,
+          emailSent: false, // Initialize emailSent to false
         }))
       );
     } else {
       setJobseekerTimesheets([]);
     }
-  }, [assignedJobseekers, selectedWeekStart, selectedPosition]);
+  }, [assignedJobseekers, selectedWeekStart, selectedPosition, isEditMode]);
 
   useEffect(() => {
     if (selectedPosition && selectedPosition.id) {
@@ -100,10 +132,21 @@ export function BulkTimesheetManagement() {
 
   // Generate invoice number when client and position are selected
   useEffect(() => {
-    if (selectedClient && selectedPosition) {
+    if (!isEditMode && selectedClient && selectedPosition) {
       generateAndSetInvoiceNumber();
     }
   }, [selectedClient, selectedPosition]);
+
+  // Sync global sendEmail state with individual jobseeker emailSent states
+  useEffect(() => {
+    if (jobseekerTimesheets.length > 0) {
+      const allEmailsEnabled = jobseekerTimesheets.every(ts => ts.emailSent);
+      
+      // Update global state to reflect individual states
+      // Global checkbox is only checked when ALL individual checkboxes are checked
+      setSendEmail(allEmailsEnabled);
+    }
+  }, [jobseekerTimesheets]);
 
   const fetchClients = async () => {
     try {
@@ -328,6 +371,29 @@ export function BulkTimesheetManagement() {
     );
   };
 
+  // Add function to remove jobseeker from timesheet
+  const removeJobseeker = (jobseekerId: string) => {
+    setJobseekerTimesheets((prev) => prev.filter((ts) => ts.jobseeker.id !== jobseekerId));
+  };
+
+  // Add function to update emailSent status for individual jobseeker
+  const updateJobseekerEmailSent = (jobseekerId: string, emailSent: boolean) => {
+    setJobseekerTimesheets((prev) =>
+      prev.map((ts) => 
+        ts.jobseeker.id === jobseekerId 
+          ? { ...ts, emailSent } 
+          : ts
+      )
+    );
+  };
+
+  // Add function to update all jobseekers' emailSent status
+  const updateAllJobseekersEmailSent = (emailSent: boolean) => {
+    setJobseekerTimesheets((prev) =>
+      prev.map((ts) => ({ ...ts, emailSent }))
+    );
+  };
+
   // Dropdown options
   const clientOptions: DropdownOption[] = clients.map((client) => ({
     id: client.id!,
@@ -372,6 +438,17 @@ export function BulkTimesheetManagement() {
       return;
     }
 
+    // Filter out jobseekers with 0 total hours
+    const jobseekersWithHours = jobseekerTimesheets.filter(ts => {
+      const totalHours = ts.totalRegularHours + ts.totalOvertimeHours;
+      return totalHours > 0;
+    });
+
+    if (jobseekersWithHours.length === 0) {
+      setGenerationError("Cannot generate bulk timesheet: No jobseekers have hours entered");
+      return;
+    }
+
     setIsGeneratingBulkTimesheet(true);
     setGenerationMessage("");
     setGenerationError("");
@@ -379,11 +456,11 @@ export function BulkTimesheetManagement() {
     try {
       console.log("Starting bulk timesheet creation...");
 
-      // Calculate additional grand totals
-      const grandTotalBill = jobseekerTimesheets.reduce((sum, ts) => sum + ts.clientBill, 0);
-      const grandTotalBonus = jobseekerTimesheets.reduce((sum, ts) => sum + ts.bonusAmount, 0);
-      const grandTotalDeduction = jobseekerTimesheets.reduce((sum, ts) => sum + ts.deductionAmount, 0);
-      const grandTotalHours = grandTotalRegularHours + grandTotalOvertimeHours;
+      // Calculate additional grand totals using only jobseekers with hours
+      const grandTotalBill = jobseekersWithHours.reduce((sum, ts) => sum + ts.clientBill, 0);
+      const grandTotalBonus = jobseekersWithHours.reduce((sum, ts) => sum + ts.bonusAmount, 0);
+      const grandTotalDeduction = jobseekersWithHours.reduce((sum, ts) => sum + ts.deductionAmount, 0);
+      const grandTotalHours = jobseekersWithHours.reduce((sum, ts) => sum + ts.totalRegularHours + ts.totalOvertimeHours, 0);
       
       // Calculate overtime pay specifically
       const position = selectedPosition as PositionWithOvertime;
@@ -391,7 +468,7 @@ export function BulkTimesheetManagement() {
       if (position.overtimeEnabled && position.overtimePayRate) {
         overtimePayRate = parseFloat(position.overtimePayRate);
       }
-      const grandTotalOvertimePay = grandTotalOvertimeHours * overtimePayRate;
+      const grandTotalOvertimePay = jobseekersWithHours.reduce((sum, ts) => sum + ts.totalOvertimeHours, 0) * overtimePayRate;
 
       // Calculate week end date
       const weekEndDate = new Date(selectedWeekStart);
@@ -407,18 +484,18 @@ export function BulkTimesheetManagement() {
         weekPeriod: `${formatDate(selectedWeekStart)} - ${formatDate(weekEndDate.toISOString().split("T")[0])}`,
         emailSent: sendEmail,
         totalHours: grandTotalHours,
-        totalRegularHours: grandTotalRegularHours,
-        totalOvertimeHours: grandTotalOvertimeHours,
+        totalRegularHours: jobseekersWithHours.reduce((sum, ts) => sum + ts.totalRegularHours, 0),
+        totalOvertimeHours: jobseekersWithHours.reduce((sum, ts) => sum + ts.totalOvertimeHours, 0),
         totalOvertimePay: grandTotalOvertimePay,
-        totalJobseekerPay: grandTotalPay,
+        totalJobseekerPay: jobseekersWithHours.reduce((sum, ts) => sum + ts.jobseekerPay, 0),
         totalClientBill: grandTotalBill,
         totalBonus: grandTotalBonus,
         totalDeductions: grandTotalDeduction,
-        netPay: grandTotalPay, // This already includes bonus and deductions
-        numberOfJobseekers: jobseekerTimesheets.length,
-        averageHoursPerJobseeker: grandTotalHours / jobseekerTimesheets.length,
-        averagePayPerJobseeker: grandTotalPay / jobseekerTimesheets.length,
-        jobseekerTimesheets: jobseekerTimesheets.map(ts => ({
+        netPay: jobseekersWithHours.reduce((sum, ts) => sum + ts.jobseekerPay, 0), // This already includes bonus and deductions
+        numberOfJobseekers: jobseekersWithHours.length,
+        averageHoursPerJobseeker: grandTotalHours / jobseekersWithHours.length,
+        averagePayPerJobseeker: jobseekersWithHours.reduce((sum, ts) => sum + ts.jobseekerPay, 0) / jobseekersWithHours.length,
+        jobseekerTimesheets: jobseekersWithHours.map(ts => ({
           jobseeker: {
             id: ts.jobseeker.id,
             jobseekerProfile: {
@@ -435,6 +512,7 @@ export function BulkTimesheetManagement() {
           totalOvertimeHours: ts.totalOvertimeHours,
           jobseekerPay: ts.jobseekerPay,
           clientBill: ts.clientBill,
+          emailSent: ts.emailSent, // Include emailSent in the bulk timesheet data
         })),
       };
 
@@ -444,14 +522,116 @@ export function BulkTimesheetManagement() {
       console.log("Bulk timesheet created successfully:", result);
       
       // Show success message with details
-      setGenerationMessage(`Bulk timesheet created successfully! Invoice Number: ${result.bulkTimesheet.invoiceNumber} | ${jobseekerTimesheets.length} jobseeker(s) | ${grandTotalHours.toFixed(1)} total hours | $${grandTotalPay.toFixed(2)} total pay | Email ${sendEmail ? 'will be sent' : 'will not be sent'}`);
+      setGenerationMessage(`Bulk timesheet created successfully! Invoice Number: ${result.bulkTimesheet.invoiceNumber} | ${jobseekersWithHours.length} jobseeker(s) with hours | ${grandTotalHours.toFixed(1)} total hours | $${jobseekersWithHours.reduce((sum, ts) => sum + ts.jobseekerPay, 0).toFixed(2)} total pay | Email ${sendEmail ? 'will be sent' : 'will not be sent'}`);
       
+      // Redirect to list page after successful creation
+      if (result && result.success) {
+        setTimeout(() => {
+          navigate('/bulk-timesheet-management/list');
+        }, 1200);
+      }
       return result;
     } catch (error) {
       console.error("Error creating bulk timesheet:", error);
       setGenerationError(`Failed to create bulk timesheet: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsGeneratingBulkTimesheet(false);
+    }
+  };
+
+  // Add update handler for edit mode
+  const updateBulkTimesheetData = async () => {
+    if (!editingId || !selectedClient || !selectedPosition || !selectedWeekStart || jobseekerTimesheets.length === 0) {
+      setGenerationError("Cannot update bulk timesheet: Missing required information");
+      return;
+    }
+    // Build update payload (similar to create)
+    const jobseekersWithHours = jobseekerTimesheets.filter(ts => (ts.totalRegularHours + ts.totalOvertimeHours) > 0);
+    if (jobseekersWithHours.length === 0) {
+      setGenerationError("Cannot update bulk timesheet: No jobseekers have hours entered");
+      return;
+    }
+    setIsGeneratingBulkTimesheet(true);
+    setGenerationMessage("");
+    setGenerationError("");
+    try {
+      const weekEndDate = new Date(selectedWeekStart);
+      weekEndDate.setDate(weekEndDate.getDate() + 6);
+      const bulkTimesheetData = {
+        clientId: selectedClient.id!,
+        positionId: selectedPosition.id!,
+        invoiceNumber: invoiceNumber,
+        weekStartDate: selectedWeekStart,
+        weekEndDate: weekEndDate.toISOString().split("T")[0],
+        weekPeriod: `${formatDate(selectedWeekStart)} - ${formatDate(weekEndDate.toISOString().split("T")[0])}`,
+        totalHours: jobseekersWithHours.reduce((sum, ts) => sum + ts.totalRegularHours + ts.totalOvertimeHours, 0),
+        totalRegularHours: jobseekersWithHours.reduce((sum, ts) => sum + ts.totalRegularHours, 0),
+        totalOvertimeHours: jobseekersWithHours.reduce((sum, ts) => sum + ts.totalOvertimeHours, 0),
+        totalOvertimePay: jobseekersWithHours.reduce((sum, ts) => sum + ts.totalOvertimeHours, 0) * parseFloat((selectedPosition as PositionWithOvertime).overtimePayRate || "0"),
+        totalJobseekerPay: jobseekersWithHours.reduce((sum, ts) => sum + ts.jobseekerPay, 0),
+        totalClientBill: jobseekersWithHours.reduce((sum, ts) => sum + ts.clientBill, 0),
+        totalBonus: jobseekersWithHours.reduce((sum, ts) => sum + ts.bonusAmount, 0),
+        totalDeductions: jobseekersWithHours.reduce((sum, ts) => sum + ts.deductionAmount, 0),
+        netPay: jobseekersWithHours.reduce((sum, ts) => sum + ts.jobseekerPay, 0),
+        numberOfJobseekers: jobseekersWithHours.length,
+        averageHoursPerJobseeker: jobseekersWithHours.reduce((sum, ts) => sum + ts.totalRegularHours + ts.totalOvertimeHours, 0) / jobseekersWithHours.length,
+        averagePayPerJobseeker: jobseekersWithHours.reduce((sum, ts) => sum + ts.jobseekerPay, 0) / jobseekersWithHours.length,
+        jobseekerTimesheets: jobseekersWithHours.map(ts => ({
+          jobseeker: {
+            id: ts.jobseeker.id,
+            jobseekerProfile: {
+              first_name: ts.jobseeker.jobseekerProfile?.first_name || '',
+              last_name: ts.jobseeker.jobseekerProfile?.last_name || '',
+              email: ts.jobseeker.jobseekerProfile?.email || '',
+            },
+            assignmentId: ts.jobseeker.id,
+          },
+          entries: ts.entries,
+          bonusAmount: ts.bonusAmount,
+          deductionAmount: ts.deductionAmount,
+          totalRegularHours: ts.totalRegularHours,
+          totalOvertimeHours: ts.totalOvertimeHours,
+          jobseekerPay: ts.jobseekerPay,
+          clientBill: ts.clientBill,
+          emailSent: ts.emailSent,
+        })),
+      };
+      const result = await updateBulkTimesheet(editingId, bulkTimesheetData);
+      setGenerationMessage("Bulk timesheet updated successfully!");
+      setTimeout(() => {
+        navigate('/bulk-timesheet-management/list');
+      }, 1200);
+      return result;
+    } catch (error) {
+      setGenerationError(`Failed to update bulk timesheet: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsGeneratingBulkTimesheet(false);
+    }
+  };
+
+  // Fetch and populate for edit
+  const fetchAndPopulateBulkTimesheet = async (id: string) => {
+    try {
+      const data = await getBulkTimesheet(id);
+      // Set client first
+      if (data.client) setSelectedClient(data.client);
+      // Fetch positions for the client, then set position
+      if (data.client && data.position && data.position.id) {
+        setPositionLoading(true);
+        const posResp = await getClientPositions(data.client.id, { limit: 1000000 });
+        setPositions(posResp.positions);
+        let selectedPos: PositionData | null = null;
+        selectedPos = posResp.positions.find((p: PositionData) => p.id === data.position?.id) || null;
+        setSelectedPosition(selectedPos);
+        setPositionLoading(false);
+      } else if (data.position && data.position.id) {
+        setSelectedPosition(data.position);
+      }
+      if (data.weekStartDate) setSelectedWeekStart(data.weekStartDate);
+      if (data.invoiceNumber) setInvoiceNumber(data.invoiceNumber);
+      if (data.jobseekerTimesheets) setJobseekerTimesheets((data.jobseekerTimesheets as unknown) as JobseekerTimesheet[]);
+    } catch (err) {
+      setGenerationError("Failed to load bulk timesheet for editing.");
     }
   };
 
@@ -594,7 +774,17 @@ export function BulkTimesheetManagement() {
               <div className="timesheet-assignment-card" key={ts.jobseeker.id}>
                 <div className="timesheet-hours-adjustments-container">
                   <div className="timesheet-hours-section">
-                    <h4 className="timesheet-hours-title">Daily Hours | {ts.jobseeker.jobseekerProfile?.first_name} {ts.jobseeker.jobseekerProfile?.last_name} • {ts.jobseeker.jobseekerProfile?.email}</h4>
+                    <div className="timesheet-hours-header">
+                      <h4 className="timesheet-hours-title">Daily Hours | {ts.jobseeker.jobseekerProfile?.first_name} {ts.jobseeker.jobseekerProfile?.last_name} • {ts.jobseeker.jobseekerProfile?.email}</h4>
+                      <button
+                        className="button danger"
+                        onClick={() => removeJobseeker(ts.jobseeker.id)}
+                        title="Remove jobseeker from timesheet"
+                        disabled={jobseekerTimesheets.length === 1}
+                      >
+                        <Minus size={16} />
+                      </button>
+                    </div>
                     <div className="timesheet-days-grid">
                       {ts.entries.map((entry) => (
                         <div key={entry.date} className="timesheet-day-entry">
@@ -620,7 +810,7 @@ export function BulkTimesheetManagement() {
                     </div>
                   </div>
                   <div className="timesheet-hours-section adjustments-section">
-                    <h4 className="timesheet-hours-title">Pay Adjustments</h4>
+                    <h4 className="timesheet-hours-title timesheet-pay-adjustments-title">Pay Adjustments</h4>
                     <div className="timesheet-days-grid">
                       <div className="timesheet-day-entry">
                         <label className="timesheet-day-label">
@@ -695,7 +885,20 @@ export function BulkTimesheetManagement() {
                     </div>
                   </div>
                 </div>
-                
+                 {/* Individual Email Control */}
+                  <div className="timesheet-email-control">
+                    <label className="timesheet-checkbox-label">
+                      <input
+                        type="checkbox"
+                        checked={ts.emailSent}
+                        onChange={(e) => updateJobseekerEmailSent(ts.jobseeker.id, e.target.checked)}
+                        className="timesheet-checkbox"
+                      />
+                      <span className="timesheet-checkbox-text">
+                        Send timesheet via email to this jobseeker
+                      </span>
+                    </label>
+                  </div>
                 {/* Invoice Style Summary - Exact same as TimesheetManagement */}
                 <div className="timesheet-invoice-container">
                   <div className="timesheet-invoice-table">
@@ -936,7 +1139,10 @@ export function BulkTimesheetManagement() {
                   <input
                     type="checkbox"
                     checked={sendEmail}
-                    onChange={(e) => setSendEmail(e.target.checked)}
+                    onChange={(e) => {
+                      setSendEmail(e.target.checked);
+                      updateAllJobseekersEmailSent(e.target.checked);
+                    }}
                     className="timesheet-checkbox"
                   />
                   <span className="timesheet-checkbox-text">
@@ -946,10 +1152,14 @@ export function BulkTimesheetManagement() {
               </div>
               <button
                 className="button"
-                onClick={generateBulkTimesheetData}
-                disabled={jobseekerTimesheets.length === 0 || isGeneratingBulkTimesheet}
+                onClick={isEditMode ? updateBulkTimesheetData : generateBulkTimesheetData}
+                disabled={
+                  jobseekerTimesheets.length === 0 || 
+                  isGeneratingBulkTimesheet ||
+                  jobseekerTimesheets.every(ts => (ts.totalRegularHours + ts.totalOvertimeHours) === 0)
+                }
               >
-                {isGeneratingBulkTimesheet ? "Generating..." : "Generate Bulk Timesheet"}
+                {isGeneratingBulkTimesheet ? "Generating..." : isEditMode ? "Update Bulk Timesheet" : "Generate Bulk Timesheet"}
               </button>
             </div>
           </div>

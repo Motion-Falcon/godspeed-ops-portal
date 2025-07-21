@@ -17,6 +17,7 @@ import {
   Pencil,
   ChevronDown,
   Loader2,
+  Mail,
 } from "lucide-react";
 import "./RecentActivities.css";
 
@@ -52,7 +53,8 @@ interface RecentActivity {
     | "delete_position_draft"
     | "create_bulk_timesheet"
     | "update_bulk_timesheet"
-    | "delete_bulk_timesheet";
+    | "delete_bulk_timesheet"
+    | "send_bulk_timesheet_email";
   action_verb: string;
   actor_name: string;
   actor_type: string;
@@ -108,6 +110,8 @@ const getActivityIcon = (actionType: string, category: string) => {
       return <Target size={16} />;
     case "financial":
       return <FileText size={16} />;
+    case "send_bulk_timesheet_email":
+      return <Mail size={16} />;
     default:
       return <AlertCircle size={16} />;
   }
@@ -605,6 +609,27 @@ const formatActivityMessage = (activity: RecentActivity): React.ReactNode => {
               (<TertiaryEntity>{positionTitle}</TertiaryEntity>)
             </>
           )}
+        </>
+      );
+    }
+
+    case "send_bulk_timesheet_email": {
+      const invoice = cleanPrimaryName;
+      const emailsSent = (activity.metadata?.emailsSent as { name: string; email: string }[]) || [];
+      if (emailsSent.length === 0) {
+        return (
+          <>
+            <ActorName>{actor_name}</ActorName> sent timesheet <PrimaryEntity>{invoice}</PrimaryEntity> via email
+          </>
+        );
+      }
+      return (
+        <>
+          {emailsSent.map((js, idx) => (
+            <span key={idx}>
+              <ActorName>{actor_name}</ActorName> sent timesheet <PrimaryEntity>{invoice}</PrimaryEntity> via email to <SecondaryEntity>{js.name} ({js.email})</SecondaryEntity>{idx < emailsSent.length - 1 ? <br /> : null}
+            </span>
+          ))}
         </>
       );
     }
