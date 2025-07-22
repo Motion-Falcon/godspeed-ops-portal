@@ -217,8 +217,8 @@ export function InvoiceManagement() {
   // Add state for sending invoice
   const [isSendingInvoice, setIsSendingInvoice] = useState(false);
   const [sendInvoiceMessage, setSendInvoiceMessage] = useState<string>("");
-  // eslint-disable-next-line
-  const [sendInvoiceStatus, setSendInvoiceStatus] = useState<'success' | 'error' | null>(null);
+  
+  let sendInvoiceStatus;
 
   // Add after all useState hooks, before the return statement in InvoiceManagement
   const documentPath = (createdInvoice?.documentPath || loadedInvoice?.documentPath) || "";
