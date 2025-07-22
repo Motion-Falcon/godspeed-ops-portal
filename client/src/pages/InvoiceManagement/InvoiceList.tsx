@@ -7,7 +7,7 @@ import {
   deleteInvoice,
   InvoiceData,
   formatInvoiceForDisplay,
-  updateInvoice,
+  sendInvoiceEmail,
 } from '../../services/api/invoice';
 import { AppHeader } from '../../components/AppHeader';
 import { ConfirmationModal } from '../../components/ConfirmationModal';
@@ -80,6 +80,8 @@ export function InvoiceList() {
 
   // Send email state
   const [sendingEmailInvoiceId, setSendingEmailInvoiceId] = useState<string | null>(null);
+  const [sendEmailStatus, setSendEmailStatus] = useState<'success' | 'error' | null>(null);
+  const [sendEmailMessage, setSendEmailMessage] = useState<string | null>(null);
 
   // Utility functions
   const resetFilters = () => {
@@ -256,72 +258,51 @@ export function InvoiceList() {
     setDeleteError(null);
   };
 
-  // Function to send invoice to client (same logic as InvoiceManagement modal)
+  // Function to send invoice to client (robust, like InvoiceManagement)
   const sendInvoiceToClient = async (invoice: InvoiceData) => {
     if (!invoice.id) {
-      setError("Missing invoice ID");
+      setSendEmailMessage("Missing invoice ID");
+      setSendEmailStatus('error');
       return;
     }
 
-    const emailToSend = invoice.invoice_sent_to || 
-      getClientEmail(invoice.client) || 
-      '';
-
+    const emailToSend = invoice.invoice_sent_to || getClientEmail(invoice.client) || '';
     if (!emailToSend) {
-      setError("No email address found for this invoice");
+      setSendEmailMessage("No email address found for this invoice");
+      setSendEmailStatus('error');
       return;
     }
 
     setSendingEmailInvoiceId(invoice.id as string);
-    setError(null);
-    
+    setSendEmailMessage(null);
+    setSendEmailStatus(null);
     try {
-      console.log("=== SENDING INVOICE TO CLIENT ===");
-      console.log("Invoice ID:", invoice.id);
-      console.log("Email to send:", emailToSend);
-      
-      // Update the invoice record with email-related fields
-      const updateData = {
-        emailSent: true,
-        emailSentDate: new Date().toISOString(),
-        invoice_sent_to: emailToSend
-      };
-      
-      console.log("Update data:", updateData);
-      
-      // Make API call to update the invoice
-      const response = await updateInvoice(invoice.id as string, updateData);
-      
-      console.log("Update response:", response);
-      
+      const response = await sendInvoiceEmail(invoice.id, emailToSend);
       if (response.success) {
-        // Update the local invoice in the list
-        setInvoices(prevInvoices => 
-          prevInvoices.map(inv => 
-            inv.id === invoice.id 
-              ? { ...inv, emailSent: true, emailSentDate: updateData.emailSentDate, invoice_sent_to: emailToSend }
+        setSendEmailMessage(`Invoice sent successfully to ${emailToSend}`);
+        setSendEmailStatus('success');
+        // Optionally update local invoice state
+        setInvoices(prevInvoices =>
+          prevInvoices.map(inv =>
+            inv.id === invoice.id
+              ? { ...inv, emailSent: true, emailSentDate: new Date().toISOString(), invoice_sent_to: emailToSend }
               : inv
           )
         );
-        
-        setMessage(`Invoice sent successfully to ${emailToSend}`);
-        setTimeout(() => {
-          setMessage(null);
-        }, 5000);
-        
-        console.log("Invoice updated successfully with email info");
       } else {
-        throw new Error(response.message || "Failed to update invoice");
+        setSendEmailMessage(response.message || "Failed to send invoice");
+        setSendEmailStatus('error');
       }
     } catch (err) {
-      console.error("Error sending invoice:", err);
       const errorMessage = err instanceof Error ? err.message : "Failed to send invoice. Please try again.";
-      setError(errorMessage);
-      setTimeout(() => {
-        setError(null);
-      }, 5000);
+      setSendEmailMessage(errorMessage);
+      setSendEmailStatus('error');
     } finally {
       setSendingEmailInvoiceId(null);
+      setTimeout(() => {
+        setSendEmailMessage(null);
+        setSendEmailStatus(null);
+      }, 5000);
     }
   };
 
@@ -340,12 +321,10 @@ export function InvoiceList() {
             </button>
           </>
         }
-        statusMessage={message || error}
-        statusType={error ? 'error' : 'success'}
+        statusMessage={sendEmailMessage || message || error}
+        statusType={sendEmailStatus === 'error' ? 'error' : sendEmailStatus === 'success' ? 'success' : error ? 'error' : 'success'}
       />
       <div className="content-container">
-        {error && <div className="error-message">{error}</div>}
-        {message && <div className="success-message">{message}</div>}
         <div className="card">
           <div className="card-header">
             <h2>Invoice List</h2>
@@ -577,7 +556,7 @@ export function InvoiceList() {
                     
                     return (
                       <tr key={String(invoice.id)}>
-                        <td className="invoice-number-cell">{invoice.invoiceNumber}</td>
+                        <td className="invoice-number-cell"># {invoice.invoiceNumber}</td>
                         <td className="client-cell">{getClientDisplayName(invoice.client)}</td>
                         <td className="client-email-cell">{getClientEmail(invoice.client)}</td>
                         <td className="date-cell" style={{textAlign: 'center'}}>{formatted.formattedInvoiceDate}</td>

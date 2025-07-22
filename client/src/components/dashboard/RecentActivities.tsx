@@ -54,7 +54,8 @@ interface RecentActivity {
     | "create_bulk_timesheet"
     | "update_bulk_timesheet"
     | "delete_bulk_timesheet"
-    | "send_bulk_timesheet_email";
+    | "send_bulk_timesheet_email"
+    | "send_invoice_email";
   action_verb: string;
   actor_name: string;
   actor_type: string;
@@ -112,6 +113,8 @@ const getActivityIcon = (actionType: string, category: string) => {
       return <FileText size={16} />;
     case "send_bulk_timesheet_email":
       return <Mail size={16} />;
+    case "send_invoice_email":
+      return <Mail size={16} />;
     default:
       return <AlertCircle size={16} />;
   }
@@ -160,6 +163,8 @@ const getStatusIcon = (actionType: string) => {
       return <XCircle size={12} className="status-error" />;
     case "pending_jobseeker":
       return <Clock size={12} className="status-pending" />;
+    case "send_invoice_email":
+      return <Mail size={12} className="status-success" />;
 
     default:
       return <AlertCircle size={12} className="status-info" />;
@@ -185,12 +190,12 @@ const TertiaryEntity: React.FC<{ children: React.ReactNode }> = ({
 
 const formatActivityMessage = (activity: RecentActivity): React.ReactNode => {
   const {
-    action_verb,
     actor_name,
     primary_entity_name,
     primary_entity_type,
     secondary_entity_name,
     tertiary_entity_name,
+    metadata,
   } = activity;
 
   // Clean up entity names
@@ -634,11 +639,23 @@ const formatActivityMessage = (activity: RecentActivity): React.ReactNode => {
       );
     }
 
+    case "send_invoice_email": {
+      const recipient = typeof metadata?.recipient === "string" ? metadata.recipient : "client";
+      const clientName = typeof metadata?.clientName === "string" ? metadata.clientName : "";
+
+      return (
+        <>
+          <ActorName>{actor_name}</ActorName> sent invoice <PrimaryEntity>{primary_entity_name}</PrimaryEntity> to <SecondaryEntity>{recipient}</SecondaryEntity>
+          {" "}for{" "}
+          {clientName ? <SecondaryEntity>{clientName}</SecondaryEntity> : null}
+        </>
+      );
+    }
+
     default:
       return (
         <>
-          <ActorName>{actor_name}</ActorName> {action_verb}{" "}
-          <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity>
+          <ActorName>{activity.actor_name}</ActorName> {activity.action_verb} <PrimaryEntity>{activity.primary_entity_name}</PrimaryEntity>
         </>
       );
   }

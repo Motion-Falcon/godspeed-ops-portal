@@ -236,6 +236,21 @@ export const generateInvoiceNumber = async (): Promise<string> => {
 };
 
 /**
+ * Send invoice email to a recipient
+ */
+export const sendInvoiceEmail = async (invoiceId: string, email: string): Promise<{ success: boolean; message: string }> => {
+  try {
+    const response = await api.post(`/api/invoices/${invoiceId}/send-email`, { email });
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(error.response.data.error || "Failed to send invoice email");
+    }
+    throw error;
+  }
+};
+
+/**
  * Helper function to create invoice data from frontend format
  * This matches the generateInvoiceData function in InvoiceManagement.tsx
  */

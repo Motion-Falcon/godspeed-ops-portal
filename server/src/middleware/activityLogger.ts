@@ -176,7 +176,8 @@ export interface ActivityData {
   | "create_bulk_timesheet"
   | "update_bulk_timesheet"
   | "delete_bulk_timesheet"
-  | "send_bulk_timesheet_email";
+  | "send_bulk_timesheet_email"
+  | "send_invoice_email";
   actionVerb: string;
   primaryEntityType: string;
   primaryEntityId?: string;

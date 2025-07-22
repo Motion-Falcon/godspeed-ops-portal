@@ -38,6 +38,7 @@ import {
   updateInvoiceDocument,
   updateInvoice,
   getInvoice,
+  sendInvoiceEmail,
 } from "../../services/api/invoice";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/language/language-provider";
@@ -216,6 +217,8 @@ export function InvoiceManagement() {
   // Add state for sending invoice
   const [isSendingInvoice, setIsSendingInvoice] = useState(false);
   const [sendInvoiceMessage, setSendInvoiceMessage] = useState<string>("");
+  // eslint-disable-next-line
+  const [sendInvoiceStatus, setSendInvoiceStatus] = useState<'success' | 'error' | null>(null);
 
   // Add after all useState hooks, before the return statement in InvoiceManagement
   const documentPath = (createdInvoice?.documentPath || loadedInvoice?.documentPath) || "";
@@ -1260,28 +1263,14 @@ export function InvoiceManagement() {
       console.log("Invoice ID:", createdInvoice.id);
       console.log("Email to send:", emailToSend);
       
-      // Update the invoice record with email-related fields
-      const updateData = {
-        emailSent: true,
-        emailSentDate: new Date().toISOString(),
-        invoice_sent_to: emailToSend
-      };
-      
-      console.log("Update data:", updateData);
-      
-      // Make API call to update the invoice
-      const response = await updateInvoice(createdInvoice.id, updateData);
-      
-      console.log("Update response:", response);
+      // Call the new API to send the invoice email
+      const response = await sendInvoiceEmail(createdInvoice.id, emailToSend);
       
       if (response.success) {
-        // Update the local state with the updated invoice
-        setCreatedInvoice(response.invoice);
         setSendInvoiceMessage(`Invoice sent successfully to ${emailToSend}`);
-      
-        console.log("Invoice updated successfully with email info");
+        // Optionally, you could refetch the invoice or update local state
       } else {
-        throw new Error(response.message || "Failed to update invoice");
+        throw new Error(response.message || "Failed to send invoice");
       }
     } catch (err) {
       console.error("Error sending invoice:", err);
@@ -2625,7 +2614,7 @@ export function InvoiceManagement() {
                 {/* Wrap both messages in a fragment to avoid adjacent JSX errors */}
                 <>
                   {sendInvoiceMessage && (
-                    <div className="invoice-success-modal-message">
+                    <div className={`invoice-success-modal-message${sendInvoiceStatus === 'error' ? ' error' : ''}`}>
                       {sendInvoiceMessage}
                     </div>
                   )}

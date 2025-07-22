@@ -32,26 +32,6 @@ const getTodayFormatted = (): string => {
   return formatDateForInput(new Date());
 };
 
-// Add a server response type interface at the top of the file (after the imports)
-interface ServerClientData {
-  id: string;
-  company_name: string;
-  client_manager?: string;
-  sales_person?: string;
-  street_address1?: string;
-  city1?: string;
-  province1?: string;
-  postal_code1?: string;
-  // Add other properties as needed
-}
-
-interface ActualClientResponse {
-  id: string;
-  company_name: string;
-  billing_name?: string;
-  short_code?: string;
-  // Add other snake_case properties as needed
-}
 
 // Define form schema
 const positionFormSchema = z.object({
@@ -266,7 +246,7 @@ export function PositionCreate({
         const formattedClients = response.clients
           .map((client) => ({
             id: client.id || "",
-            companyName: (client as ActualClientResponse).company_name || "",
+            companyName: client.companyName || "",
           }))
           .filter((client) => client.id && client.companyName); // Filter after mapping to see what we get
 
@@ -659,17 +639,17 @@ export function PositionCreate({
   // Function to fetch client details and autofill form fields
   const fetchClientDetails = async (clientId: string) => {
     try {
-      const client = (await getClient(clientId)) as unknown as ServerClientData;
+      const client = (await getClient(clientId));
 
       // Auto-fill client manager and sales manager
-      methods.setValue("clientManager", client.client_manager || "");
-      methods.setValue("salesManager", client.sales_person || "");
+      methods.setValue("clientManager", client.clientManager || "");
+      methods.setValue("salesManager", client.salesPerson || "");
 
       // Auto-fill address fields from client
-      methods.setValue("streetAddress", client.street_address1 || "");
+      methods.setValue("streetAddress", client.streetAddress1 || "");
       methods.setValue("city", client.city1 || "");
       methods.setValue("province", client.province1 || "");
-      methods.setValue("postalCode", client.postal_code1 || "");
+      methods.setValue("postalCode", client.postalCode1 || "");
     } catch (err) {
       console.error("Error fetching client details:", err);
     }

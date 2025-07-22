@@ -4,7 +4,21 @@ import { createClient } from '@supabase/supabase-js';
 import { apiRateLimiter, sanitizeInputs } from '../middleware/security.js';
 import { activityLogger } from '../middleware/activityLogger.js';
 import dotenv from 'dotenv';
-import { v4 as uuidv4 } from 'uuid';
+import sgMail from '@sendgrid/mail';
+import { invoiceHtmlTemplate } from '../email-templates/invoice-html.js';
+import { decode } from 'html-entities';
+
+sgMail.setApiKey(process.env.SENDGRID_API_KEY!);
+
+// Helper to build version history entry
+function createVersionEntry(userId: string, version: number, action: string) {
+  return {
+    version,
+    updated_by: userId,
+    updated_at: new Date().toISOString(),
+    action
+  };
+}
 
 dotenv.config();
 
@@ -79,6 +93,7 @@ interface DbInvoiceData {
   updated_at?: string;
   updated_by_user_id?: string;
   version?: number;
+  version_history?: any[]; // New field for version history
 }
 
 /**
@@ -647,12 +662,14 @@ router.post('/',
       }
 
       // Prepare invoice data for database
-      const dbInvoiceData: Omit<DbInvoiceData, 'id' | 'created_at' | 'updated_at' | 'version'> = {
+      const dbInvoiceData: Omit<DbInvoiceData, 'id' | 'created_at' | 'updated_at'> = {
         ...transformToDbFormat(invoiceData),
         // Use the invoice number from the request if provided, otherwise let DB generate
         invoice_number: invoiceData.invoiceNumber || undefined,
         created_by_user_id: userId,
         updated_by_user_id: userId,
+        version: 1,
+        version_history: [createVersionEntry(userId, 1, 'created')],
       };
 
       // Insert invoice into database
@@ -825,6 +842,19 @@ router.put('/:id',
       if (invoiceData.documentGeneratedAt) updateData.document_generated_at = invoiceData.documentGeneratedAt;
       if (invoiceData.invoiceData) updateData.invoice_data = invoiceData.invoiceData;
 
+      // Versioning logic
+      const versionedFields = [
+        'clientId', 'invoiceDate', 'dueDate', 'status', 'currency', 'subtotal', 'totalTax', 'totalHst', 'totalGst', 'totalQst', 'grandTotal', 'totalHours', 'documentGenerated', 'documentPath', 'documentFileName', 'documentFileSize', 'documentMimeType', 'documentGeneratedAt', 'invoiceData'
+      ];
+      const isVersionedUpdate = Object.keys(invoiceData).some(key => versionedFields.includes(key));
+      if (isVersionedUpdate) {
+        const prevVersion = existingInvoice.version || 1;
+        const newVersion = prevVersion + 1;
+        updateData.version = newVersion;
+        const prevHistory = Array.isArray(existingInvoice.version_history) ? existingInvoice.version_history : [];
+        updateData.version_history = [...prevHistory, createVersionEntry(userId, newVersion, 'updated')];
+      }
+
       updateData.updated_by_user_id = userId;
 
       // Update invoice in database
@@ -865,7 +895,7 @@ router.put('/:id',
  */
 router.delete('/:id', 
   authenticateToken, 
-  authorizeRoles(['admin']),
+  authorizeRoles(['admin', 'recruiter']),
   activityLogger({
     onSuccess: async (req: Request, res: Response) => {
       const { id } = req.params;
@@ -1022,6 +1052,183 @@ router.patch('/:id/document',
     } catch (error) {
       console.error('Unexpected error updating invoice document:', error);
       return res.status(500).json({ error: 'An unexpected error occurred' });
+    }
+  }
+);
+
+/**
+ * Send invoice email
+ * POST /api/invoices/:id/send-email
+ * @access Private (Admin, Recruiter)
+ */
+router.post('/:id/send-email',
+  authenticateToken,
+  authorizeRoles(['admin', 'recruiter']),
+  apiRateLimiter,
+  activityLogger({
+    onSuccess: (req, res) => {
+      const { id } = req.params;
+      const { email } = req.body;
+      const result = res.locals.invoiceSendResult || {};
+      return {
+        actionType: 'send_invoice_email',
+        actionVerb: 'sent invoice email',
+        primaryEntityType: 'invoice',
+        primaryEntityId: id,
+        primaryEntityName: result.invoiceNumber || result.invoice_number || id,
+        secondaryEntityType: 'client',
+        secondaryEntityId: result.clientId,
+        secondaryEntityName: result.clientName,
+        displayMessage: `Sent invoice ${result.invoiceNumber || result.invoice_number || id} to ${email}`,
+        category: 'financial',
+        priority: 'normal',
+        metadata: {
+          invoiceNumber: result.invoiceNumber || result.invoice_number,
+          recipient: email,
+          cc: result.cc,
+          clientName: result.clientName,
+        },
+      };
+    },
+  }),
+  async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { email } = req.body;
+      if (!email) return res.status(400).json({ error: 'Recipient email is required' });
+
+      // Fetch invoice
+      const { data: invoice, error: invoiceError } = await supabase
+        .from('invoices')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle();
+      if (invoiceError || !invoice) return res.status(404).json({ error: 'Invoice not found' });
+
+      // Fetch client for CC logic
+      const { data: client, error: clientError } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('id', invoice.client_id)
+        .maybeSingle();
+      if (clientError || !client) return res.status(404).json({ error: 'Client not found' });
+
+      // Build CC list
+      const cc: string[] = [];
+      if (client.invoice_cc2 && client.email_address2) cc.push(client.email_address2);
+      if (client.invoice_cc3 && client.email_address3) cc.push(client.email_address3);
+      if (client.invoice_cc_dispatch && client.dispatch_dept_email) cc.push(client.dispatch_dept_email);
+      if (client.invoice_cc_accounts && client.accounts_dept_email) cc.push(client.accounts_dept_email);
+
+      // Download PDF from Supabase Storage
+      if (!invoice.document_path || !invoice.document_file_name) {
+        return res.status(400).json({ error: 'Invoice PDF not found for this invoice' });
+      }
+      const { data: pdfData, error: pdfError } = await supabase.storage
+        .from('invoices')
+        .download(invoice.document_path.replace(/&#x2F;/g, '/'));
+      if (pdfError || !pdfData) return res.status(500).json({ error: 'Failed to download invoice PDF' });
+      // Read as buffer
+      const pdfBuffer = Buffer.from(await pdfData.arrayBuffer());
+      const pdfBase64 = pdfBuffer.toString('base64');
+
+      // Prepare email content
+      const html = invoiceHtmlTemplate({
+        invoiceNumber: invoice.invoice_number,
+        invoiceDate: invoice.invoice_date,
+        dueDate: invoice.due_date,
+        clientName: client.company_name,
+        clientEmail: client.email_address1,
+        grandTotal: invoice.grand_total,
+        currency: invoice.currency,
+        messageOnInvoice: invoice.invoice_data?.messageOnInvoice,
+      });
+      const subject = `Invoice #${invoice.invoice_number} for ${client.company_name}`;
+
+      // Prepare the main PDF attachment
+      const attachments = [
+        {
+          content: pdfBase64,
+          filename: decode(invoice.document_file_name),
+          type: decode(invoice.document_mime_type || 'application/pdf'),
+          disposition: 'attachment',
+        }
+      ];
+
+      // Add additional attachments from invoice_data.attachments
+      if (Array.isArray(invoice.invoice_data?.attachments)) {
+        for (const att of invoice.invoice_data.attachments) {
+          if (att.uploadStatus === 'uploaded' && att.filePath && att.fileName && att.bucketName) {
+            try {
+              const { data: fileData, error: fileError } = await supabase.storage
+                .from(att.bucketName)
+                .download(decode(att.filePath));
+              if (fileError || !fileData) {
+                console.error('[SendGrid] Failed to download attachment:', att.fileName, fileError);
+                continue;
+              }
+              const fileBuffer = Buffer.from(await fileData.arrayBuffer());
+              attachments.push({
+                content: fileBuffer.toString('base64'),
+                filename: decode(att.fileName),
+                type: decode(att.fileType || 'application/octet-stream'),
+                disposition: 'attachment',
+              });
+            } catch (err) {
+              console.error('[SendGrid] Error downloading attachment:', att.fileName, err);
+            }
+          }
+        }
+      }
+
+      const sendPayload = {
+        to: email,
+        cc: cc.length > 0 ? cc : undefined,
+        from: process.env.DEFAULT_FROM_EMAIL || 'godspeed@aimotion.com',
+        subject,
+        html,
+        attachments,
+      };
+      console.log('[SendGrid] Sending email with payload:', {
+        to: sendPayload.to,
+        from: sendPayload.from,
+        subject: sendPayload.subject,
+        cc: sendPayload.cc,
+        attachments: sendPayload.attachments.map(a => ({ filename: a.filename, type: a.type, size: a.content.length }))
+      });
+      try {
+        await sgMail.send(sendPayload);
+      } catch (error: any) {
+        console.error('[SendGrid] Error object:', error);
+        if (error && typeof error === 'object' && 'response' in error && error.response && error.response.body && error.response.body.errors) {
+          console.error('[SendGrid] Error details:', error.response.body.errors);
+          return res.status(500).json({ error: 'Failed to send invoice email', details: error.response.body.errors });
+        }
+        return res.status(500).json({ error: 'Failed to send invoice email' });
+      }
+
+      // Update invoice email_sent fields (not version/version_history)
+      await supabase
+        .from('invoices')
+        .update({
+          email_sent: true,
+          email_sent_date: new Date().toISOString(),
+          invoice_sent_to: email,
+        })
+        .eq('id', id);
+
+      // After successful send, set locals for activityLogger
+      res.locals.invoiceSendResult = {
+        invoiceNumber: invoice.invoice_number,
+        clientId: client.id,
+        clientName: client.company_name,
+        cc,
+      };
+
+      return res.status(200).json({ success: true, message: 'Invoice email sent successfully' });
+    } catch (error) {
+      console.error('Error sending invoice email:', error);
+      return res.status(500).json({ error: 'Failed to send invoice email' });
     }
   }
 );
