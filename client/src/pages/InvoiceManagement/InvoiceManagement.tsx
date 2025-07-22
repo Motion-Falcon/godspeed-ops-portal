@@ -1092,24 +1092,9 @@ export function InvoiceManagement() {
         documentFileName: pdfFileName,
         documentFileSize: pdfBlob.size,
         documentGeneratedAt: new Date().toISOString(),
+        documentGenerated: true,
+        documentMimeType: "application/pdf",
       });
-
-      // Also update all document-related fields using the main updateInvoice route
-      try {
-        await updateInvoice(pdfInvoiceId, {
-          documentGenerated: true,
-          documentPath: pdfUploadData.path || "",
-          documentFileName: pdfFileName,
-          documentFileSize: pdfBlob.size,
-          documentMimeType: "application/pdf",
-          documentGeneratedAt: new Date().toISOString(),
-        });
-      } catch (err) {
-        setGenerationError(
-          "Invoice PDF uploaded, but failed to update all document fields."
-        );
-        return;
-      }
 
       // Only use the new message for PDF upload success
       const actionText = isEditMode ? "updated" : "created";

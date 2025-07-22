@@ -1004,7 +1004,7 @@ router.patch('/:id/document',
       }
 
       const { id } = req.params;
-      const { documentPath, documentFileName, documentFileSize, documentGeneratedAt } = req.body;
+      const { documentPath, documentFileName, documentFileSize, documentGeneratedAt, documentMimeType, documentGenerated } = req.body;
 
       if (!documentPath) {
         return res.status(400).json({ error: 'Document path is required' });
@@ -1025,10 +1025,11 @@ router.patch('/:id/document',
       const { data: updatedInvoice, error: updateError } = await supabase
         .from('invoices')
         .update({
-          document_generated: true,
+          document_generated: documentGenerated,
           document_path: documentPath,
           document_file_name: documentFileName,
           document_file_size: documentFileSize,
+          document_mime_type: documentMimeType,
           document_generated_at: documentGeneratedAt || new Date().toISOString(),
           updated_by_user_id: req.user.id
         })

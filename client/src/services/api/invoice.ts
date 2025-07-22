@@ -85,6 +85,8 @@ export interface InvoiceDocumentUpdateData {
   documentFileName?: string;
   documentFileSize?: number;
   documentGeneratedAt?: string;
+  documentGenerated?: boolean;
+  documentMimeType?: string;
 }
 
 /**
