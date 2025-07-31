@@ -15,7 +15,7 @@ import {
 import { ConfirmationModal } from '../../components/ConfirmationModal';
 import { AppHeader } from '../../components/AppHeader';
 import { ArrowLeft, Save } from 'lucide-react';
-import { PAYMENT_METHODS, PAYMENT_TERMS, PAY_CYCLES, CREDIT_LIMITS, LIST_NAMES } from '../../constants/formOptions';
+import { PAYMENT_METHODS, PAYMENT_TERMS, PAY_CYCLES, LIST_NAMES } from '../../constants/formOptions';
 import '../../styles/pages/ClientManagement.css';
 import '../../styles/components/form.css';
 import '../../styles/components/header.css';
@@ -1290,18 +1290,13 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
                     <label htmlFor="creditLimit" className="form-label" data-required="*">
                       Credit Limit
                     </label>
-                    <select
+                    <input
+                      type="text"
                       id="creditLimit"
                       className="form-input"
+                      placeholder="Enter credit limit"
                       {...methods.register('creditLimit')}
-                    >
-                      <option value="">Select credit limit</option>
-                      {CREDIT_LIMITS.map((limit) => (
-                        <option key={limit.value} value={limit.value}>
-                          {limit.label}
-                        </option>
-                      ))}
-                    </select>
+                    />
                     {methods.formState.errors.creditLimit && (
                       <p className="form-error">{methods.formState.errors.creditLimit.message}</p>
                     )}

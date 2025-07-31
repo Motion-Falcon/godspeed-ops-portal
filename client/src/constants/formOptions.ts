@@ -214,12 +214,6 @@ export const PAY_CYCLES = [
   "2 Week Hold - Biweekly Pay",
 ] as const;
 
-export const CREDIT_LIMITS = [
-  { value: "20000", label: "$20,000" },
-  { value: "35000", label: "$35,000" },
-  { value: "50000", label: "$50,000" },
-] as const;
-
 // Additional filter options that are used in various components
 export const FILTER_OPTIONS = {
   employmentTypes: [
@@ -249,7 +243,6 @@ export type PayrateType = typeof PAYRATE_TYPES[number];
 export type PaymentMethod = typeof PAYMENT_METHODS[number];
 export type PaymentTerm = typeof PAYMENT_TERMS[number];
 export type PayCycle = typeof PAY_CYCLES[number];
-export type CreditLimit = typeof CREDIT_LIMITS[number];
 
 export const LIST_NAMES = [
   "AA",
