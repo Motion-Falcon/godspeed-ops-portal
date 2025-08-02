@@ -39,17 +39,6 @@ export const ProtectedRoute = () => {
   if (isJobSeeker) {
     const currentPath = location.pathname;
 
-    // Allow access to general utility/example routes regardless of verification status
-    const generalRoutes = [
-      "/metric-examples",
-      "/training-modules",
-      "/dashboard"
-    ];
-    
-    if (generalRoutes.includes(currentPath)) {
-      return <Outlet />;
-    }
-
     // Show loading state while profile data is being fetched
     if (isProfileLoading) {
       return (
@@ -65,19 +54,39 @@ export const ProtectedRoute = () => {
         return <Navigate to="/profile/create" replace />;
       }
     }
-    // Case 2: Has profile but verification pending - only allow pending page
+    // Case 2: Has profile but verification pending - only allow pending page and utility routes
     else if (profileVerificationStatus === "pending") {
+      // Allow access to utility routes even when pending
+      const utilityRoutes = [
+        "/metric-examples",
+        "/training-modules"
+      ];
+      
+      if (utilityRoutes.includes(currentPath)) {
+        return <Outlet />;
+      }
+      
       if (currentPath !== "/profile-verification-pending") {
         return <Navigate to="/profile-verification-pending" replace />;
       }
     }
-    // Case 3: Has profile but verification rejected - only allow rejected page
+    // Case 3: Has profile but verification rejected - only allow rejected page and utility routes
     else if (profileVerificationStatus === "rejected") {
+      // Allow access to utility routes even when rejected
+      const utilityRoutes = [
+        "/metric-examples",
+        "/training-modules"
+      ];
+      
+      if (utilityRoutes.includes(currentPath)) {
+        return <Outlet />;
+      }
+      
       if (currentPath !== "/profile-verification-rejected") {
         return <Navigate to="/profile-verification-rejected" replace />;
       }
     }
-    // Case 4: Has profile and verified - block access to the first three routes
+    // Case 4: Has profile and verified - allow access to dashboard and other routes, but block profile creation/verification pages
     else if (profileVerificationStatus === "verified") {
       const restrictedPaths = [
         "/profile/create",
