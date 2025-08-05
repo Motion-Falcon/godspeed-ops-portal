@@ -507,14 +507,14 @@ export function ProfileCreate({
           logValidation("validateCurrentStep: SIN validation failed: " + sinResult.errorMessage);
         }
         
-        // Check if SIN Expiry is required and missing
-        if (values.sinNumber.trim() !== "" && (!values.sinExpiry || values.sinExpiry.trim() === "")) {
+        // Check if SIN Expiry is required and missing - only for SINs starting with '9' (temporary residents)
+        if (values.sinNumber.trim() !== "" && values.sinNumber.startsWith('9') && (!values.sinExpiry || values.sinExpiry.trim() === "")) {
           methods.setError("sinExpiry", {
             type: "custom",
-            message: "SIN Expiry is required if SIN is provided",
+            message: "SIN Expiry is required for temporary residents (SIN starting with '9')",
           });
           personalInfoValid = false;
-          logValidation("validateCurrentStep: SIN Expiry validation failed - required when SIN is provided");
+          logValidation("validateCurrentStep: SIN Expiry validation failed - required when SIN starts with '9'");
         }
       }
 

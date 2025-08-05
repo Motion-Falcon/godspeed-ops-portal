@@ -482,7 +482,7 @@ export function PersonalInfoForm({
           </div>
 
           <div className="form-group">
-            <label htmlFor="sinExpiry" className="form-label" data-required={watchedSin ? "*" : undefined}>
+            <label htmlFor="sinExpiry" className="form-label" data-required={watchedSin && watchedSin.startsWith('9') ? "*" : undefined}>
               {t('profileCreate.personalInfo.sinExpiry')}
             </label>
             <div className="date-picker-container">
@@ -490,12 +490,22 @@ export function PersonalInfoForm({
                 id="sinExpiry"
                 type="date"
                 className="form-input"
+                disabled={!watchedSin || !watchedSin.startsWith('9')}
                 {...register("sinExpiry")}
-                onClick={(e) => e.currentTarget.showPicker()}
+                onClick={(e) => {
+                  if (watchedSin && watchedSin.startsWith('9')) {
+                    e.currentTarget.showPicker();
+                  }
+                }}
               />
             </div>
             {shouldShowError("sinExpiry") && (
               <p className="error-message">{allErrors.sinExpiry?.message}</p>
+            )}
+            {watchedSin && !watchedSin.startsWith('9') && (
+              <p className="field-note">
+                SIN expiry is not required for Canadian citizens and permanent residents
+              </p>
             )}
           </div>
         </div>
