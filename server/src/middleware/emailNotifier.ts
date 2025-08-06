@@ -16,6 +16,12 @@ interface EmailData {
   text?: string;
   html?: string;
   from?: string;
+  attachments?: Array<{
+    content: string;
+    filename: string;
+    type: string;
+    disposition?: string;
+  }>;
 }
 
 interface EmailNotifierOptions {
@@ -41,8 +47,13 @@ export const emailNotifier = (options: EmailNotifierOptions = {}) => {
                 to: email.to,
                 subject: email.subject,
                 from: process.env.DEFAULT_FROM_EMAIL || 'godspeed@aimotion.com',
+                attachments: email.attachments?.length || 0,
               });
-              await sgMail.send({ from: process.env.DEFAULT_FROM_EMAIL || 'godspeed@aimotion.com', ...email, text });
+              await sgMail.send({ 
+                from: process.env.DEFAULT_FROM_EMAIL || 'godspeed@aimotion.com', 
+                ...email, 
+                text 
+              });
               console.log('[EmailNotifier] Email sent successfully to', email.to);
             }
           } else {

@@ -13,6 +13,8 @@ export function jobseekerAssignmentHtmlTemplate(vars: Record<string, any>) {
       .details-table td { padding: 8px 0; vertical-align: top; }
       .details-table .label { font-weight: bold; color: #555; width: 160px; }
       .footer { font-size: 12px; color: #888; margin-top: 32px; border-top: 1px solid #eee; padding-top: 16px; }
+      .handbook-notice { background: #e8f5e8; border-left: 4px solid #2e7d32; padding: 16px; margin: 20px 0; border-radius: 4px; }
+      .handbook-notice h4 { margin: 0 0 8px 0; color: #2e7d32; }
     </style>
   </head>
   <body>
@@ -52,6 +54,12 @@ export function jobseekerAssignmentHtmlTemplate(vars: Record<string, any>) {
           <td>${vars.experience}</td>
         </tr>` : ''}
       </table>
+      
+      <div class="handbook-notice">
+        <h4>📋 Employee Handbook</h4>
+        <p>Please review the attached <strong>Godspeed Employee Handbook 2024</strong>, which contains important information about our company policies, procedures, and expectations. This handbook will help you understand your rights and responsibilities as a Godspeed employee.</p>
+      </div>
+      
       <p>Our team will reach out to you soon with further details and next steps. If you have any questions, feel free to reply to this email.</p>
       <p>Congratulations again, and we look forward to supporting you in this new opportunity!</p>
       <p>Best regards,<br><b>The Recruitment Team</b></p>

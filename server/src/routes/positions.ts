@@ -10,6 +10,7 @@ import { jobseekerAssignmentTextTemplate } from '../email-templates/jobseeker-as
 import { jobseekerAssignmentHtmlTemplate } from '../email-templates/jobseeker-assignment-html.js';
 import { jobseekerRemovalHtmlTemplate } from '../email-templates/jobseeker-removal-html.js';
 import { jobseekerRemovalTextTemplate } from '../email-templates/jobseeker-removal-txt.js';
+import { decode } from 'html-entities';
 
 dotenv.config();
 
@@ -1315,6 +1316,46 @@ router.post(
         }
       }
       if (!candidateEmail) return null;
+      
+      // Download employee handbook from Supabase storage
+      let handbookAttachment = null;
+      try {
+        // Try different possible file paths
+        const documentPath = 'employeeHandbook/employeeHandbook2024.pdf';
+        
+        let handbookData = null;
+        let handbookError = null;
+        
+        console.log(`[EmailNotifier] Trying to download handbook from path: ${documentPath}`);
+        const { data, error } = await supabase.storage
+          .from('default-documents')
+          .download(documentPath);
+          
+          if (!error && data) {
+            handbookData = data;
+            console.log(`[EmailNotifier] Successfully downloaded handbook from: ${documentPath}`);
+          } else {
+            console.log(`[EmailNotifier] Failed to download from ${documentPath}:`, error);
+            handbookError = error;
+          }
+        
+        if (handbookData) {
+          // Convert to base64 for email attachment
+          const handbookBuffer = Buffer.from(await handbookData.arrayBuffer());
+          handbookAttachment = {
+            content: handbookBuffer.toString('base64'),
+            filename: 'Godspeed_Employee_Handbook_2024.pdf',
+            type: 'application/pdf',
+            disposition: 'attachment'
+          };
+          console.log('[EmailNotifier] Employee handbook prepared for attachment');
+        } else {
+          console.error('[EmailNotifier] Failed to download employee handbook from any path:', handbookError);
+        }
+      } catch (error) {
+        console.error('[EmailNotifier] Error downloading employee handbook:', error);
+      }
+      
       // Prepare variables for template
       const templateVars = {
         jobseeker_first_name: candidateName?.split(' ')[0] || 'Candidate',
@@ -1336,12 +1377,24 @@ router.post(
       // Extract subject (first line from text template)
       const [subjectLine, ...bodyLines] = text.split('\n');
       const subject = subjectLine.replace('Subject:', '').trim();
-      return {
+      
+      // Prepare email data with attachment if available
+      const emailData: any = {
         to: candidateEmail,
         subject,
         text: bodyLines.join('\n').trim(),
         html,
       };
+      
+      // Add attachment if handbook was downloaded successfully
+      if (handbookAttachment) {
+        emailData.attachments = [handbookAttachment];
+        console.log('[EmailNotifier] Added employee handbook attachment to email');
+      } else {
+        console.log('[EmailNotifier] No handbook attachment available, sending email without attachment');
+      }
+      
+      return emailData;
     }
   }),
   async (req: Request, res: Response) => {
