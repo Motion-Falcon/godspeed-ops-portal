@@ -9,12 +9,17 @@
   background-color: var(--card);
   box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1);
   padding: var(--spacing-4) var(--spacing-6);
-  position: sticky;
+  position: fixed;
+  width: calc(100% - 68px);
   top: 0;
   z-index: 1000;
   font-family: var(--font-family);
   border-bottom: 0.1px solid #1b2024;
-  height: 80px;
+  height: 60px;
+}
+
+.common-header.hide-hamburger-menu {
+  width: calc(100% - 0px);
 }
 
 .light .common-header {
@@ -65,8 +70,8 @@
 
 /* Page Title Styles */
 .page-title-container {
-  position: absolute;
-  top: -10px;
+  position: fixed;
+  top: -7px;
   left: 50%;
   transform: translateX(-50%);
   padding: var(--spacing-6) var(--spacing-6) var(--spacing-4);
@@ -92,6 +97,8 @@
   margin: var(--spacing-2) auto 0;
   display: flex;
   justify-content: center;
+  align-items: center;
+  gap: var(--spacing-3);
 }
 
 .status-update-message {
@@ -101,6 +108,31 @@
   background-color: var(--pending-bg);
   animation: fadeInOut 3s ease-in-out;
   font-family: var(--font-family);
+}
+
+.refresh-page-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-3);
+  background-color: var(--failure);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius);
+  font-size: 0.875rem;
+  font-family: var(--font-family);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  animation: fadeInOut 3s ease-in-out;
+}
+
+.refresh-page-btn:hover {
+  background-color: var(--failure-hover, #dc2626);
+  transform: translateY(-1px);
+}
+
+.refresh-page-btn:active {
+  transform: translateY(0);
 }
 
 /* Status-specific messages */

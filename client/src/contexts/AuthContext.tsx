@@ -1,9 +1,10 @@
-import React, {
+import {
   createContext,
   useContext,
   useState,
   useEffect,
   useRef,
+  useMemo,
 } from "react";
 import { User } from "@supabase/supabase-js";
 import {
@@ -19,7 +20,7 @@ import {
   getJobseekerVerificationStatus,
 } from "../lib/auth";
 import { supabase } from "../lib/supabaseClient";
-import { clearTokenCache } from "../services/api";
+import { clearTokenCache } from "../services/api/index";
 
 // Define possible verification statuses
 export type VerificationStatus =
@@ -38,6 +39,7 @@ type AuthContextType = {
   isJobSeeker: boolean;
   profileVerificationStatus: VerificationStatus;
   hasProfile: boolean;
+  isProfileLoading: boolean;
   refetchProfileStatus: () => Promise<void>;
 };
 
@@ -51,6 +53,7 @@ const AuthContext = createContext<AuthContextType>({
   isJobSeeker: true,
   profileVerificationStatus: "not_created",
   hasProfile: false,
+  isProfileLoading: false,
   refetchProfileStatus: async () => {},
 });
 
@@ -62,23 +65,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [profileVerificationStatus, setProfileVerificationStatus] =
     useState<VerificationStatus>("not_created");
   const [hasProfile, setHasProfile] = useState(false);
+  const [isProfileLoading, setIsProfileLoading] = useState(true);
 
   // Use ref to track validation status and prevent duplicate validations
   const isValidatingRef = useRef(false);
 
-  // Compute user type and role flags
-  const userType = getUserType(user);
-  const isUserAdmin = isAdmin(user);
-  const isUserRecruiter = isRecruiter(user);
-  const isUserJobSeeker = isJobSeeker(user);
+  // Compute user type and role flags with memoization to prevent unnecessary re-renders
+  const userType = useMemo(() => getUserType(user), [user]);
+  const isUserAdmin = useMemo(() => isAdmin(user), [user]);
+  const isUserRecruiter = useMemo(() => isRecruiter(user), [user]);
+  const isUserJobSeeker = useMemo(() => isJobSeeker(user), [user]);
 
   // Function to fetch jobseeker profile status
   const fetchProfileStatus = async (userId: string, user: User | null) => {
     if (!userId || !isUserJobSeeker) {
       setProfileVerificationStatus("not_created");
       setHasProfile(false);
+      setIsProfileLoading(false);
       return;
     }
+
+    setIsProfileLoading(true);
+    
     const hasProfile = hasJobseekerProfile(user);
     setHasProfile(hasProfile);
 
@@ -88,6 +96,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       );
       setProfileVerificationStatus(profileVerificationStatus);
     }
+    
+    setIsProfileLoading(false);
   };
 
   // Public method to refetch profile status
@@ -154,9 +164,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     if (user?.id && isUserJobSeeker) {
       fetchProfileStatus(user.id, user);
-    } else if (!user || !isUserJobSeeker) {
+    } else {
+      // For non-jobseekers or when no user, immediately set loading to false
       setProfileVerificationStatus("not_created");
       setHasProfile(false);
+      setIsProfileLoading(false);
     }
   }, [user?.id, isUserJobSeeker]);
 
@@ -213,6 +225,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         isJobSeeker: isUserJobSeeker,
         profileVerificationStatus,
         hasProfile,
+        isProfileLoading,
         refetchProfileStatus,
       }}
     >

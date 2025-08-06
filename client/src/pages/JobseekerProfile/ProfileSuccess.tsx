@@ -1,6 +1,7 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { User, CheckCircle, Clock, ArrowLeft } from 'lucide-react';
+import { useLanguage } from '../../contexts/language/language-provider';
 import '../../styles/pages/JobseekerProfileStyles.css';
 
 // Define a profile type based on the Supabase DB fields
@@ -62,6 +63,7 @@ interface SuccessState {
 export function ProfileSuccess() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [isValidState, setIsValidState] = useState<boolean>(false);
   
   // Get data from state
@@ -92,7 +94,7 @@ export function ProfileSuccess() {
   
   // Helper function to format date
   const formatDate = (dateString?: string | null) => {
-    if (!dateString) return 'N/A';
+    if (!dateString) return t('jobSeekerProfile.nA');
     try {
       let date = new Date(dateString);
       if (!isNaN(date.getTime())) {
@@ -111,12 +113,12 @@ export function ProfileSuccess() {
 
   // Helper function to render detail items
   const renderDetailItem = (label: string, value?: string | number | boolean | null) => {
-    const displayValue = value === null || value === undefined || value === '' ? 'N/A' : 
-                         typeof value === 'boolean' ? (value ? 'Yes' : 'No') : 
+    const displayValue = value === null || value === undefined || value === '' ? t('jobSeekerProfile.nA') : 
+                         typeof value === 'boolean' ? (value ? t('jobSeekerProfile.yes') : t('jobSeekerProfile.no')) : 
                          value;
     
     let finalDisplayValue: string | number = displayValue;
-    if (typeof displayValue === 'string' && displayValue !== 'N/A') {
+    if (typeof displayValue === 'string' && displayValue !== t('jobSeekerProfile.nA')) {
         if (['license_number', 'passport_number', 'sin_number', 'business_number'].includes(label.toLowerCase().replace(/ /g, ''))) {
              finalDisplayValue = displayValue.length > 20 ? '********' : displayValue; 
         }
@@ -145,7 +147,7 @@ export function ProfileSuccess() {
           onClick={() => navigate('/dashboard')}
         >
           <ArrowLeft size={16} />
-          <span>Back to Dashboard</span>
+          <span>{t('jobSeekerProfile.backToDashboard')}</span>
         </button>
         
         <div className="success-header">
@@ -153,10 +155,10 @@ export function ProfileSuccess() {
             <CheckCircle size={48} color="#4CAF50" />
           </div>
           
-          <h1>Profile Created Successfully!</h1>
+          <h1>{t('profileSuccess.title')}</h1>
           
           <p className="success-message">
-            {state.message || 'The jobseeker profile has been created successfully.'}
+            {t('profileSuccess.title')}
           </p>
         </div>
         
@@ -165,7 +167,7 @@ export function ProfileSuccess() {
             <div className="profile-banner">
               <div className="profile-status pending">
                 <Clock className="status-icon pending" />
-                <span className="status-text pending">Status: Pending</span>
+                <span className="status-text pending">{t('status.pending')}</span>
               </div>
             </div>
             
@@ -178,8 +180,8 @@ export function ProfileSuccess() {
               </div>
               <div className="profile-info-header">
                 <div className="profile-info-details">
-                  {renderDetailItem('Email', profile.email)}
-                  {renderDetailItem('Phone', profile.mobile)}
+                  {renderDetailItem(t('jobSeekerProfile.email'), profile.email)}
+                  {renderDetailItem(t('profileSuccess.phone'), profile.mobile)}
                 </div>
               </div>
             </div>
@@ -187,66 +189,66 @@ export function ProfileSuccess() {
           
           <div className="profile-content grid-container">
             <div className="personal-details-section section-card">
-              <h2 className="section-title">Personal Information</h2>
+              <h2 className="section-title">{t('jobSeekerProfile.personalInformation')}</h2>
               <div className="detail-group">
-                {renderDetailItem('First Name', profile.first_name)}
-                {renderDetailItem('Last Name', profile.last_name)}
-                {renderDetailItem('Email', profile.email)}
-                {renderDetailItem('Mobile', profile.mobile)}
-                {renderDetailItem('Date of Birth', formatDate(profile.dob))}
+                {renderDetailItem(t('jobSeekerProfile.firstName'), profile.first_name)}
+                {renderDetailItem(t('jobSeekerProfile.lastName'), profile.last_name)}
+                {renderDetailItem(t('jobSeekerProfile.email'), profile.email)}
+                {renderDetailItem(t('jobSeekerProfile.mobile'), profile.mobile)}
+                {renderDetailItem(t('jobSeekerProfile.dateOfBirth'), formatDate(profile.dob))}
               </div>
             </div>
 
             <div className="identification-section section-card">
-              <h2 className="section-title">Identification</h2>
+              <h2 className="section-title">{t('jobSeekerProfile.identification')}</h2>
               <div className="detail-group">
-                {renderDetailItem('License Number', profile.license_number)}
-                {renderDetailItem('Passport Number', profile.passport_number)}
-                {renderDetailItem('SIN Number', profile.sin_number)}
-                {renderDetailItem('SIN Expiry', formatDate(profile.sin_expiry))}
-                {renderDetailItem('Business Number', profile.business_number)}
-                {renderDetailItem('Corporation Name', profile.corporation_name)}
+                {renderDetailItem(t('jobSeekerProfile.licenseNumber'), profile.license_number)}
+                {renderDetailItem(t('jobSeekerProfile.passportNumber'), profile.passport_number)}
+                {renderDetailItem(t('jobSeekerProfile.sinNumber'), profile.sin_number)}
+                {renderDetailItem(t('jobSeekerProfile.sinExpiry'), formatDate(profile.sin_expiry))}
+                {renderDetailItem(t('jobSeekerProfile.businessNumber'), profile.business_number)}
+                {renderDetailItem(t('jobSeekerProfile.corporationName'), profile.corporation_name)}
               </div>
             </div>
 
             <div className="address-section section-card">
-              <h2 className="section-title">Address</h2>
+              <h2 className="section-title">{t('jobSeekerProfile.address')}</h2>
               <div className="detail-group">
-                {renderDetailItem('Street', profile.street)}
-                {renderDetailItem('City', profile.city)}
-                {renderDetailItem('Province', profile.province)}
-                {renderDetailItem('Postal Code', profile.postal_code)}
+                {renderDetailItem(t('jobSeekerProfile.street'), profile.street)}
+                {renderDetailItem(t('jobSeekerProfile.city'), profile.city)}
+                {renderDetailItem(t('jobSeekerProfile.province'), profile.province)}
+                {renderDetailItem(t('jobSeekerProfile.postalCode'), profile.postal_code)}
               </div>
             </div>
 
             <div className="qualifications-section section-card">
-              <h2 className="section-title">Qualifications</h2>
+              <h2 className="section-title">{t('jobSeekerProfile.qualifications')}</h2>
               <div className="detail-group">
-                {renderDetailItem('Work Preference', profile.work_preference)}
-                {renderDetailItem('Bio', profile.bio)}
-                {renderDetailItem('License Type', profile.license_type)}
-                {renderDetailItem('Experience', profile.experience)}
-                {renderDetailItem('Manual Driving', profile.manual_driving)}
-                {renderDetailItem('Availability', profile.availability)}
-                {renderDetailItem('Weekend Availability', profile.weekend_availability)}
+                {renderDetailItem(t('jobSeekerProfile.workPreference'), profile.work_preference)}
+                {renderDetailItem(t('jobSeekerProfile.bio'), profile.bio)}
+                {renderDetailItem(t('jobSeekerProfile.licenseType'), profile.license_type)}
+                {renderDetailItem(t('jobSeekerProfile.experience'), profile.experience)}
+                {renderDetailItem(t('jobSeekerProfile.manualDriving'), profile.manual_driving)}
+                {renderDetailItem(t('jobSeekerProfile.availability'), profile.availability)}
+                {renderDetailItem(t('jobSeekerProfile.weekendAvailability'), profile.weekend_availability)}
               </div>
             </div>
 
             <div className="compensation-section section-card">
-              <h2 className="section-title">Compensation</h2>
+              <h2 className="section-title">{t('jobSeekerProfile.compensation')}</h2>
               <div className="detail-group">
-                {renderDetailItem('Payrate Type', profile.payrate_type)}
-                {renderDetailItem('Bill Rate', profile.bill_rate)}
-                {renderDetailItem('Pay Rate', profile.pay_rate)}
-                {renderDetailItem('Payment Method', profile.payment_method)}
-                {renderDetailItem('HST/GST', profile.hst_gst)}
-                {renderDetailItem('Cash Deduction', profile.cash_deduction)}
-                {renderDetailItem('Overtime Enabled', profile.overtime_enabled)}
+                {renderDetailItem(t('jobSeekerProfile.payrateType'), profile.payrate_type)}
+                {renderDetailItem(t('jobSeekerProfile.billRate'), profile.bill_rate)}
+                {renderDetailItem(t('jobSeekerProfile.payRate'), profile.pay_rate)}
+                {renderDetailItem(t('jobSeekerProfile.paymentMethod'), profile.payment_method)}
+                {renderDetailItem(t('jobSeekerProfile.hstGst'), profile.hst_gst)}
+                {renderDetailItem(t('jobSeekerProfile.cashDeduction'), profile.cash_deduction)}
+                {renderDetailItem(t('jobSeekerProfile.overtimeEnabled'), profile.overtime_enabled)}
                 {profile.overtime_enabled && (
                   <>
-                    {renderDetailItem('Overtime Hours After', profile.overtime_hours)}
-                    {renderDetailItem('Overtime Bill Rate', profile.overtime_bill_rate)}
-                    {renderDetailItem('Overtime Pay Rate', profile.overtime_pay_rate)}
+                    {renderDetailItem(t('jobSeekerProfile.overtimeHoursAfter'), profile.overtime_hours)}
+                    {renderDetailItem(t('jobSeekerProfile.overtimeBillRate'), profile.overtime_bill_rate)}
+                    {renderDetailItem(t('jobSeekerProfile.overtimePayRate'), profile.overtime_pay_rate)}
                   </>
                 )}
               </div>
@@ -255,8 +257,7 @@ export function ProfileSuccess() {
         </div>
         
         <div className="verification-note">
-          The profile is currently pending verification. Once verified, the jobseeker
-          will be able to access all platform features.
+          {t('profileSuccess.verificationNote')}
         </div>
         
         <div className="actions">
@@ -264,14 +265,14 @@ export function ProfileSuccess() {
             className="button primary"
             onClick={() => navigate('/dashboard')}
           >
-            Return to Dashboard
+            {t('profileSuccess.returnToDashboard')}
           </button>
           
           <button 
             className="button secondary"
             onClick={() => navigate('/jobseekers')}
           >
-            View All Jobseekers
+            {t('profileSuccess.viewAllJobseekers')}
           </button>
         </div>
       </div>

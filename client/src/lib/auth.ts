@@ -1,7 +1,7 @@
 import { supabase } from './supabaseClient';
 import type { User, AuthError } from '@supabase/supabase-js';
-import { resendVerificationEmailAPI, updatePasswordAPI } from '../services/api';
 import { VerificationStatus } from '../contexts/AuthContext';
+import { complete2FAAPI, registerUserAPI, resendVerificationEmailAPI, updatePasswordAPI, validateCredentialsAPI } from '../services/api/auth';
 
 // User role types
 export type UserRole = 'jobseeker' | 'recruiter' | 'admin';
@@ -65,7 +65,7 @@ export async function getJobseekerVerificationStatus(userId: string | undefined)
   try {
     const { data: profile, error } = await supabase
       .from('jobseeker_profiles')
-      .select('verification_status')
+      .select('verification_status, rejection_reason')
       .eq('user_id', userId)
       .single();
       
@@ -83,10 +83,11 @@ export async function getJobseekerVerificationStatus(userId: string | undefined)
 export const registerUser = async (
   email: string, 
   password: string, 
-  name: string
+  name: string,
+  phoneNumber?: string
 ) => {
   // Use the API endpoint instead of direct Supabase call
-  const response = await import('../services/api').then(api => api.registerUserAPI(email, password, name));
+  const response = await registerUserAPI(email, password, name, phoneNumber);
   return response;
 };
 
@@ -128,6 +129,53 @@ export const loginUser = async (
     ...data,
     emailVerified: true
   };
+};
+
+// New function: Validate credentials for 2FA flow
+export const validateCredentials = async (
+  email: string, 
+  password: string
+) => {
+  const result = await validateCredentialsAPI(email, password);
+  
+  if (!result.requiresTwoFactor) {
+    // For non-recruiters, we get a session back - set it in Supabase
+    if (result.session) {
+      await supabase.auth.setSession({
+        access_token: result.session.access_token,
+        refresh_token: result.session.refresh_token,
+      });
+    }
+  }
+  
+  return result;
+};
+
+// New function: Complete 2FA and create session
+export const complete2FA = async (
+  email: string, 
+  password: string,
+  rememberMe: boolean = false
+) => {
+  const result = await complete2FAAPI(email, password);
+  
+  if (result.session) {
+    // Set the session in Supabase
+    await supabase.auth.setSession({
+      access_token: result.session.access_token,
+      refresh_token: result.session.refresh_token,
+    });
+    
+    if (rememberMe) {
+      // Configure persistent session (30 days)
+      await supabase.auth.setSession({
+        access_token: result.session.access_token,
+        refresh_token: result.session.refresh_token,
+      });
+    }
+  }
+  
+  return result;
 };
 
 // Check if user email is verified
@@ -266,4 +314,9 @@ export const onAuthStateChange = (callback: (user: User | null) => void) => {
   });
   
   return data.subscription.unsubscribe;
-}; 
+};
+
+// Helper function to check if user is a recruiter based on email
+export const isRecruiterEmail = (email: string): boolean => {
+  return email.includes('@godspeedxp') || email.includes('@motionfalcon');
+};

@@ -1,0 +1,87 @@
+/* Styles for verification pages */
+.profile-verification-rejected .auth-card-title {
+  margin-bottom: 0;
+}
+
+.text-muted {
+  color: var(--text-muted);
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+
+.verification-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.verification-status.pending .verification-icon {
+  color: var(--pending);
+}
+
+.verification-status.rejected .verification-icon {
+  color: var(--failure);
+}
+
+.verification-status.verified .verification-icon {
+  color: var(--success);
+}
+
+.verification-actions {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+/* Loading container */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin: 2rem 0;
+}
+
+.loading-spinner {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  border: 2px solid rgba(var(--primary-rgb), 0.1);
+  border-radius: 50%;
+  border-top-color: var(--primary);
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Error message */
+.error-message {
+  background-color: rgba(var(--failure-rgb), 0.1);
+  border-left: 3px solid var(--failure);
+  color: var(--failure);
+  padding: 1rem;
+  margin: 1.5rem 0;
+  text-align: left;
+  border-radius: 0 var(--border-radius) var(--border-radius) 0;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 600px) {
+  .centered-card {
+    padding: 1.5rem;
+  }
+  
+  .verification-actions {
+    flex-direction: column;
+  }
+  
+  .verification-actions button {
+    width: 100%;
+  }
+} 

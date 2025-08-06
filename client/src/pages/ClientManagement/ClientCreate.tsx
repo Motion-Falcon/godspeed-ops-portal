@@ -11,10 +11,11 @@ import {
   deleteClientDraft,
   getClient,
   updateClient
-} from '../../services/api';
+} from '../../services/api/client';
 import { ConfirmationModal } from '../../components/ConfirmationModal';
 import { AppHeader } from '../../components/AppHeader';
 import { ArrowLeft, Save } from 'lucide-react';
+import { PAYMENT_METHODS, PAYMENT_TERMS, PAY_CYCLES, LIST_NAMES } from '../../constants/formOptions';
 import '../../styles/pages/ClientManagement.css';
 import '../../styles/components/form.css';
 import '../../styles/components/header.css';
@@ -24,15 +25,24 @@ const clientFormSchema = z.object({
   // Basic Details
   companyName: z.string().min(1, { message: 'Company name is required' }),
   billingName: z.string().min(1, { message: 'Billing name is required' }),
-  shortCode: z.string().max(3, { message: 'Short code must be 3 characters or less' }).optional(),
+  shortCode: z.string().min(2, { message: 'Short code must be at least 2 characters' }).max(4, { message: 'Short code must be 4 characters or less' }),
   listName: z.string().optional(),
   website: z.string().url({ message: 'Must be a valid URL' }).optional().or(z.literal('')),
   clientManager: z.string().optional(),
   salesPerson: z.string().optional(),
   accountingPerson: z.string().optional(),
+  accountingManager: z.string().optional(),
+  clientRep: z.string().optional(),
   mergeInvoice: z.boolean().default(false),
   currency: z.enum(['CAD', 'USD']),
   workProvince: z.string().min(1, { message: 'Work province is required' }),
+  wsibCode: z.string()
+    .transform(val => val === '' ? null : val)
+    .refine(val => val === null || /^[A-Z][0-9]$/.test(val), { 
+      message: 'WSIB code must be 1 letter followed by 1 number (e.g., A1)' 
+    })
+    .nullable()
+    .optional(),
   
   // Contact Details
   contactPersonName1: z.string().min(1, { message: 'Contact person name is required' }),
@@ -112,6 +122,7 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
       invoiceCCDispatch: false,
       invoiceCCAccounts: false,
       invoiceLanguage: 'English',
+      wsibCode: null,
     },
     mode: 'onBlur',
   });
@@ -119,18 +130,23 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
   const { handleSubmit, reset, formState, watch } = methods;
   const { isDirty } = formState;
 
-  // Function to convert snake_case keys to camelCase
-  const convertToCamelCase = (data: ClientData | Record<string, unknown>): ClientFormData => {
-    const result: Record<string, unknown> = {};
+  // Function to decode HTML entities for website field
+  const decodeHtmlEntities = (text: string): string => {
+    const textArea = document.createElement('textarea');
+    textArea.innerHTML = text;
+    return textArea.value;
+  };
+
+  // Function to prepare client data for form (handle website decoding)
+  const prepareClientDataForForm = (data: ClientData): ClientFormData => {
+    const result = { ...data } as ClientFormData;
     
-    // Process each key-value pair
-    Object.entries(data).forEach(([key, value]) => {
-      // Convert snake_case to camelCase
-      const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
-      result[camelKey] = value;
-    });
+    // Decode HTML entities for website field
+    if (result.website && typeof result.website === 'string') {
+      result.website = decodeHtmlEntities(result.website);
+    }
     
-    return result as ClientFormData;
+    return result;
   };
 
   // Watch for form changes
@@ -162,8 +178,8 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
           console.log("Client data loaded:", client);
           
           if (client) {
-            // Convert snake_case keys to camelCase for the form
-            const formattedClient = convertToCamelCase(client);
+            // Prepare client data for form (decode HTML entities, etc.)
+            const formattedClient = prepareClientDataForForm(client);
             console.log("Formatted client data:", formattedClient);
             
             setClientId(id);
@@ -199,8 +215,8 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
           console.log("Draft data loaded:", draft);
           
           if (draft) {
-            // Ensure data is in camelCase format
-            const formattedDraft = convertToCamelCase(draft);
+            // Prepare draft data for form (decode HTML entities, etc.)
+            const formattedDraft = prepareClientDataForForm(draft);
             console.log("Formatted draft data:", formattedDraft);
             
             setDraftId(draft.id as string);
@@ -436,14 +452,14 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
                 <div className="form-row">
                   <div className="form-group">
                     <label htmlFor="shortCode" className="form-label">
-                      Short Code (3 letters)
+                      Short Code (2-4 letters)
                     </label>
                     <input
                       type="text"
                       id="shortCode"
                       className="form-input"
                       placeholder="ABC"
-                      maxLength={3}
+                      maxLength={4}
                       {...methods.register('shortCode')}
                     />
                     {methods.formState.errors.shortCode && (
@@ -461,15 +477,9 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
                       {...methods.register('listName')}
                     >
                       <option value="">Select a list name</option>
-                      <option value="AA">AA</option>
-                      <option value="AB">AB</option>
-                      <option value="CANHIRE BRAMPTON">CANHIRE BRAMPTON</option>
-                      <option value="CANHIRE LONDON">CANHIRE LONDON</option>
-                      <option value="KITCHENER">KITCHENER</option>
-                      <option value="PRONTO PRO">PRONTO PRO</option>
-                      <option value="SA">SA</option>
-                      <option value="SB">SB</option>
-                      <option value="SCARBOROUGH">SCARBOROUGH</option>
+                      {LIST_NAMES.map((name) => (
+                        <option key={name} value={name}>{name}</option>
+                      ))}
                     </select>
                     {methods.formState.errors.listName && (
                       <p className="form-error">{methods.formState.errors.listName.message}</p>
@@ -512,6 +522,25 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
                       <p className="form-error">{methods.formState.errors.clientManager.message}</p>
                     )}
                   </div>
+
+                  <div className="form-group">
+                    <label htmlFor="clientRep" className="form-label">
+                      Client Representative
+                    </label>
+                    <select
+                      id="clientRep"
+                      className="form-input"
+                      {...methods.register('clientRep')}
+                    >
+                      <option value="">Select a client representative</option>
+                      <option value="Client Rep 1">Client Rep 1</option>
+                      <option value="Client Rep 2">Client Rep 2</option>
+                      <option value="Client Rep 3">Client Rep 3</option>
+                    </select>
+                    {methods.formState.errors.clientRep && (
+                      <p className="form-error">{methods.formState.errors.clientRep.message}</p>
+                    )}
+                  </div>
                   
                   <div className="form-group">
                     <label htmlFor="salesPerson" className="form-label">
@@ -550,6 +579,26 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
                       <p className="form-error">{methods.formState.errors.accountingPerson.message}</p>
                     )}
                   </div>
+
+                  <div className="form-group">
+                    <label htmlFor="accountingManager" className="form-label">
+                      Accounting Manager
+                    </label>
+                    <select
+                      id="accountingManager"
+                      className="form-input"
+                      {...methods.register('accountingManager')}
+                    >
+                      <option value="">Select an accounting manager</option>
+                      <option value="Accounting Manager 1">Accounting Manager 1</option>
+                      <option value="Accounting Manager 2">Accounting Manager 2</option>
+                      <option value="Accounting Manager 3">Accounting Manager 3</option>
+                    </select>
+                    {methods.formState.errors.accountingManager && (
+                      <p className="form-error">{methods.formState.errors.accountingManager.message}</p>
+                    )}
+                  </div>
+                  
                 </div>
 
                 <div className="form-row">
@@ -611,6 +660,25 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
                     {methods.formState.errors.workProvince && (
                       <p className="form-error">{methods.formState.errors.workProvince.message}</p>
                     )}
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="wsibCode" className="form-label">
+                      WSIB Code
+                    </label>
+                    <input
+                      type="text"
+                      id="wsibCode"
+                      className="form-input"
+                      placeholder="A1"
+                      maxLength={2}
+                      style={{ textTransform: 'uppercase' }}
+                      {...methods.register('wsibCode')}
+                    />
+                    {methods.formState.errors.wsibCode && (
+                      <p className="form-error">{methods.formState.errors.wsibCode.message}</p>
+                    )}
+                    <p className="form-hint">Format: 1 letter followed by 1 number (e.g., A1, B2)</p>
                   </div>
                 </div>
               </div>
@@ -1163,11 +1231,11 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
                       {...methods.register('preferredPaymentMethod')}
                     >
                       <option value="">Select payment method</option>
-                      <option value="Cash">Cash</option>
-                      <option value="Cheque">Cheque</option>
-                      <option value="Corporation">Corporation</option>
-                      <option value="Direct Deposit">Direct Deposit</option>
-                      <option value="e-Transfer">e-Transfer</option>
+                      {PAYMENT_METHODS.map((method) => (
+                        <option key={method} value={method}>
+                          {method}
+                        </option>
+                      ))}
                     </select>
                     {methods.formState.errors.preferredPaymentMethod && (
                       <p className="form-error">{methods.formState.errors.preferredPaymentMethod.message}</p>
@@ -1184,14 +1252,11 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
                       {...methods.register('terms')}
                     >
                       <option value="">Select terms</option>
-                      <option value="Due on Receipt">Due on Receipt</option>
-                      <option value="Net 15">Net 15</option>
-                      <option value="Net 22">Net 22</option>
-                      <option value="Net 30">Net 30</option>
-                      <option value="Net 45">Net 45</option>
-                      <option value="Net 60">Net 60</option>
-                      <option value="Net 65">Net 65</option>
-                      <option value="Net 90">Net 90</option>
+                      {PAYMENT_TERMS.map((term) => (
+                        <option key={term} value={term}>
+                          {term}
+                        </option>
+                      ))}
                     </select>
                     {methods.formState.errors.terms && (
                       <p className="form-error">{methods.formState.errors.terms.message}</p>
@@ -1210,10 +1275,11 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
                       {...methods.register('payCycle')}
                     >
                       <option value="">Select pay cycle</option>
-                      <option value="1 Week Hold - Weekly Pay">1 Week Hold - Weekly Pay</option>
-                      <option value="1 Week Hold - Biweekly Pay">1 Week Hold - Biweekly Pay</option>
-                      <option value="2 Week Hold - Weekly Pay">2 Week Hold - Weekly Pay</option>
-                      <option value="2 Week Hold - Biweekly Pay">2 Week Hold - Biweekly Pay</option>
+                      {PAY_CYCLES.map((cycle) => (
+                        <option key={cycle} value={cycle}>
+                          {cycle}
+                        </option>
+                      ))}
                     </select>
                     {methods.formState.errors.payCycle && (
                       <p className="form-error">{methods.formState.errors.payCycle.message}</p>
@@ -1224,16 +1290,13 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
                     <label htmlFor="creditLimit" className="form-label" data-required="*">
                       Credit Limit
                     </label>
-                    <select
+                    <input
+                      type="text"
                       id="creditLimit"
                       className="form-input"
+                      placeholder="Enter credit limit"
                       {...methods.register('creditLimit')}
-                    >
-                      <option value="">Select credit limit</option>
-                      <option value="20000">$20,000</option>
-                      <option value="35000">$35,000</option>
-                      <option value="50000">$50,000</option>
-                    </select>
+                    />
                     {methods.formState.errors.creditLimit && (
                       <p className="form-error">{methods.formState.errors.creditLimit.message}</p>
                     )}
@@ -1260,7 +1323,7 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
               </div>
             </div>
 
-            <div className="form-footer">
+            <div className="form-navigation">
               <button 
                 type="button" 
                 className="button secondary" 

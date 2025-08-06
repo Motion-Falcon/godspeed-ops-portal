@@ -1,0 +1,54 @@
+{
+  "instance_id": "00000000-0000-0000-0000-000000000000",
+  "id": "7822e2e2-48c5-4894-9d2d-c594e1254f3f",
+  "aud": "authenticated",
+  "role": "authenticated",
+  "email": "abhishek@motionfalcon.com",
+  "encrypted_password": "$2a$10$q1TVq2/EfEKDADN2hOnWlea9LuZbIz/w92GUmlihxQbpLyob7J7eO",
+  "email_confirmed_at": "2025-06-01 10:29:20.416648+00",
+  "invited_at": null,
+  "confirmation_token": "",
+  "confirmation_sent_at": "2025-06-01 10:28:50.230593+00",
+  "recovery_token": "",
+  "recovery_sent_at": null,
+  "email_change_token_new": "",
+  "email_change": "",
+  "email_change_sent_at": null,
+  "last_sign_in_at": "2025-06-22 15:37:49.302491+00",
+  "raw_app_meta_data": {
+    "provider": "email",
+    "providers": [
+      "email"
+    ]
+  },
+  "raw_user_meta_data": {
+    "sub": "7822e2e2-48c5-4894-9d2d-c594e1254f3f",
+    "name": "Abhishek Abhishek",
+    "email": "abhishek@motionfalcon.com",
+    "user_type": "admin",
+    "hasProfile": true,
+    "phoneNumber": "+919097998776",
+    "email_verified": true,
+    "phone_verified": false
+  },
+  "is_super_admin": null,
+  "created_at": "2025-06-01 10:28:50.222377+00",
+  "updated_at": "2025-06-22 15:37:49.30421+00",
+  "phone": null,
+  "phone_confirmed_at": null,
+  "phone_change": "",
+  "phone_change_token": "",
+  "phone_change_sent_at": null,
+  "confirmed_at": "2025-06-01 10:29:20.416648+00",
+  "email_change_token_current": "",
+  "email_change_confirm_status": 0,
+  "banned_until": null,
+  "reauthentication_token": "",
+  "reauthentication_sent_at": null,
+  "is_sso_user": false,
+  "deleted_at": null,
+  "is_anonymous": false,
+  "providers": [
+    "email"
+  ]
+}

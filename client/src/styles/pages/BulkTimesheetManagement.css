@@ -1,0 +1,168 @@
+.bulk-timesheet-page-container {
+  /* Parent container for bulk timesheet management */
+}
+
+/* Example: override or extend styles as needed */
+.bulk-timesheet-page-container .timesheet-assignment-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--card-shadow);
+  padding: 1rem;
+  margin: 0 0 1rem 0;
+}
+
+.bulk-timesheet-page-container .timesheet-hours-adjustments-container {
+  border: none;
+  box-shadow: none;
+  padding: 2px;
+}
+
+/* Timesheet hours header styling - similar to InvoiceManagement */
+.bulk-timesheet-page-container .timesheet-hours-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.bulk-timesheet-page-container .timesheet-hours-header .timesheet-hours-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+  border-bottom: none;
+}
+
+.bulk-timesheet-page-container .timesheet-hours-title.timesheet-pay-adjustments-title {
+  padding-bottom: 20px;
+}
+
+.bulk-timesheet-page-container .timesheet-hours-header .button.danger {
+  background: var(--danger);
+  color: var(--background);
+  border: 1px solid var(--border);
+  padding: 0.5rem;
+  width: 60px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Individual email control styling */
+.bulk-timesheet-page-container .timesheet-email-control {
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.bulk-timesheet-page-container .timesheet-email-control .timesheet-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.bulk-timesheet-page-container .timesheet-email-control .timesheet-checkbox {
+  margin: 0;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--primary);
+}
+
+.bulk-timesheet-page-container .timesheet-email-control .timesheet-checkbox-text {
+  font-weight: 500;
+}
+
+/* BulkTimesheetList Component Styles */
+.bulk-timesheet-list .invoice-number-cell {
+  max-width: 60px;
+  font-size: var(--font-size-small);
+}
+
+.bulk-timesheet-list .jobseekers-cell {
+  max-width: 400px;
+  line-height: 1.3;
+}
+
+.bulk-timesheet-list .date-cell {
+  text-align: center;
+}
+
+.bulk-timesheet-list .total-pay-cell {
+  text-align: center;
+}
+
+.bulk-timesheet-list .send-email-cell {
+  min-width: 110px;
+}
+.bulk-timesheet-list .actions-cell {
+  max-width: 70px;
+}
+
+/* Jobseeker Row Styles for BulkTimesheetList (new layout) */
+.bulk-timesheet-list .jobseeker-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  width: 100%;
+}
+
+.bulk-timesheet-list .jobseeker-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 180px;
+  max-width: 220px;
+  width: 200px;
+  text-align: left;
+  justify-content: flex-start;
+  flex-shrink: 0;
+}
+
+.bulk-timesheet-list .jobseeker-name {
+  font-weight: 600;
+  font-size: 1em;
+  color: var(--text);
+  line-height: 1.1;
+}
+
+.bulk-timesheet-list .jobseeker-email {
+  color: var(--text-muted);
+  font-size: 0.92em;
+  margin-top: 2px;
+  line-height: 1.1;
+  word-break: break-all;
+}
+
+.bulk-timesheet-list .jobseeker-actions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 140px;
+  justify-content: flex-end;
+}
+
+.bulk-timesheet-list .email-status-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-left: 4px;
+  margin-right: 4px;
+  border: 1.5px solid var(--background);
+  box-shadow: 0 0 0 1px var(--border);
+}
+.bulk-timesheet-list .email-status-yes {
+  background: var(--success);
+}
+.bulk-timesheet-list .email-status-no {
+  background: var(--danger);
+}

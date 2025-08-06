@@ -1,10 +1,7 @@
 import { useFormContext } from "react-hook-form";
-import { addressQualificationsSchema } from "./ProfileCreate";
-import { z } from "zod";
-
-type AddressQualificationsFormData = z.infer<
-  typeof addressQualificationsSchema
->;
+import { LICENSE_TYPES, EXPERIENCE_LEVELS } from "../../constants/formOptions";
+import { useLanguage } from "../../contexts/language/language-provider";
+import { AddressQualificationsFormData } from "./profileSchemas";
 
 interface AddressQualificationsFormProps {
   currentStep: number;
@@ -18,6 +15,7 @@ export function AddressQualificationsForm({
   const { register, formState } =
     useFormContext<AddressQualificationsFormData>();
   const { errors: allErrors } = formState;
+  const { t } = useLanguage();
 
   // Function to check if we should show an error for a specific field
   const shouldShowError = (fieldName: string) => {
@@ -35,19 +33,19 @@ export function AddressQualificationsForm({
       {isAddressStep ? (
         // STEP 2: ADDRESS FORM
         <>
-          <h2>Address Information</h2>
+          <h2>{t('profileCreate.address.sectionTitle')}</h2>
           <p className="form-description">
-            Please provide your current address. All fields are required.
+            {t('profileCreate.address.sectionDescription')}
           </p>
 
           <div className="form-group">
             <label htmlFor="street" className="form-label" data-required="*">
-              Street Address
+              {t('profileCreate.address.street')}
             </label>
             <textarea
               id="street"
               className="form-input"
-              placeholder="123 Main Street"
+              placeholder={t('profileCreate.address.streetPlaceholder')}
               {...register("street")}
             />
             {shouldShowError("street") && (
@@ -58,13 +56,13 @@ export function AddressQualificationsForm({
           <div className="form-row">
             <div className="form-group">
               <label htmlFor="city" className="form-label" data-required="*">
-                City
+                {t('profileCreate.address.city')}
               </label>
               <input
                 id="city"
                 type="text"
                 className="form-input"
-                placeholder="Toronto"
+                placeholder={t('profileCreate.address.cityPlaceholder')}
                 {...register("city")}
               />
               {shouldShowError("city") && (
@@ -78,13 +76,13 @@ export function AddressQualificationsForm({
                 className="form-label"
                 data-required="*"
               >
-                Province
+                {t('profileCreate.address.province')}
               </label>
               <input
                 id="province"
                 type="text"
                 className="form-input"
-                placeholder="Ontario"
+                placeholder={t('profileCreate.address.provincePlaceholder')}
                 {...register("province")}
               />
               {shouldShowError("province") && (
@@ -99,13 +97,13 @@ export function AddressQualificationsForm({
               className="form-label"
               data-required="*"
             >
-              Postal Code
+              {t('profileCreate.address.postalCode')}
             </label>
             <input
               id="postalCode"
               type="text"
               className="form-input"
-              placeholder="A1A 1A1"
+              placeholder={t('profileCreate.address.postalCodePlaceholder')}
               {...register("postalCode")}
             />
             {shouldShowError("postalCode") && (
@@ -116,10 +114,9 @@ export function AddressQualificationsForm({
       ) : (
         // STEP 3: QUALIFICATIONS FORM
         <>
-          <h2>Qualifications</h2>
+          <h2>{t('profileCreate.qualifications.sectionTitle')}</h2>
           <p className="form-description">
-            Please provide your qualifications and work preferences. Fields
-            marked with * are required.
+            {t('profileCreate.qualifications.sectionDescription')}
           </p>
 
           <div className="form-group">
@@ -128,13 +125,13 @@ export function AddressQualificationsForm({
               className="form-label"
               data-required="*"
             >
-              Work Preference
+              {t('profileCreate.qualifications.workPreference')}
             </label>
             <input
               id="workPreference"
               type="text"
               className="form-input"
-              placeholder="E.g., Warehouse, Driving, Office (minimum 10 characters)"
+              placeholder={t('profileCreate.qualifications.workPreferencePlaceholder')}
               {...register("workPreference")}
             />
             {shouldShowError("workPreference") && (
@@ -146,12 +143,12 @@ export function AddressQualificationsForm({
 
           <div className="form-group">
             <label htmlFor="bio" className="form-label" data-required="*">
-              Brief Bio
+              {t('profileCreate.qualifications.bio')}
             </label>
             <textarea
               id="bio"
               className="form-input"
-              placeholder="Brief professional summary (100 characters minimum)"
+              placeholder={t('profileCreate.qualifications.bioPlaceholder')}
               minLength={100}
               {...register("bio")}
             />
@@ -159,7 +156,7 @@ export function AddressQualificationsForm({
               <p className="error-message">{allErrors.bio?.message}</p>
             )}
             <p className="character-count">
-              <small>Minimum 100 characters, maximum 500 characters</small>
+              <small>{t('profileCreate.qualifications.bioNote')}</small>
             </p>
           </div>
           <div className="form-row">
@@ -169,26 +166,19 @@ export function AddressQualificationsForm({
                 className="form-label"
                 data-required="*"
               >
-                License Type
+                {t('profileCreate.qualifications.licenseType')}
               </label>
               <select
                 id="licenseType"
                 className="form-input"
                 {...register("licenseType")}
               >
-                <option value="">Select License Type</option>
-                <option value="None">None</option>
-                <option value="Forklifter">Forklifter</option>
-                <option value="G">G</option>
-                <option value="GZ">GZ</option>
-                <option value="DZ">DZ</option>
-                <option value="AZ">AZ</option>
-                <option value="Walk-in Operator">Walk-in Operator</option>
-                <option value="Raymond Reach">Raymond Reach</option>
-                <option value="Crown Reach">Crown Reach</option>
-                <option value="Auditor">Auditor</option>
-                <option value="GL">GL</option>
-                <option value="Clerk">Clerk</option>
+                <option value="">{t('profileCreate.qualifications.licenseTypePlaceholder')}</option>
+                {LICENSE_TYPES.map((license) => (
+                  <option key={license} value={license}>
+                    {license}
+                  </option>
+                ))}
               </select>
               {shouldShowError("licenseType") && (
                 <p className="error-message">
@@ -203,21 +193,19 @@ export function AddressQualificationsForm({
                 className="form-label"
                 data-required="*"
               >
-                Experience
+                {t('profileCreate.qualifications.experience')}
               </label>
               <select
                 id="experience"
                 className="form-input"
                 {...register("experience")}
               >
-                <option value="">Select Experience Level</option>
-                <option value="0-6 Months">0-6 Months</option>
-                <option value="6-12 Months">6-12 Months</option>
-                <option value="1-2 Years">1-2 Years</option>
-                <option value="2-3 Years">2-3 Years</option>
-                <option value="3-4 Years">3-4 Years</option>
-                <option value="4-5 Years">4-5 Years</option>
-                <option value="5+ Years">5+ Years</option>
+                <option value="">{t('profileCreate.qualifications.experiencePlaceholder')}</option>
+                {EXPERIENCE_LEVELS.map((level) => (
+                  <option key={level} value={level}>
+                    {level}
+                  </option>
+                ))}
               </select>
               {shouldShowError("experience") && (
                 <p className="error-message">{allErrors.experience?.message}</p>
@@ -228,7 +216,7 @@ export function AddressQualificationsForm({
           <div className="form-row">
             <div className="form-group">
               <label htmlFor="manualDriving" className="form-label">
-                Manual Driving?
+                {t('profileCreate.qualifications.manualDriving')}
               </label>
               <select
                 id="manualDriving"
@@ -236,8 +224,8 @@ export function AddressQualificationsForm({
                 {...register("manualDriving")}
               >
                 <option value="NA">NA</option>
-                <option value="Yes">Yes</option>
-                <option value="No">No</option>
+                <option value="Yes">{t('common.yes')}</option>
+                <option value="No">{t('common.no')}</option>
               </select>
               {shouldShowError("manualDriving") && (
                 <p className="error-message">
@@ -252,7 +240,7 @@ export function AddressQualificationsForm({
                 className="form-label"
                 data-required="*"
               >
-                Availability
+                {t('profileCreate.qualifications.availability')}
               </label>
               <select
                 id="availability"
@@ -278,7 +266,7 @@ export function AddressQualificationsForm({
               {...register("weekendAvailability")}
             />
             <label htmlFor="weekendAvailability" className="checkbox-label">
-              Available for weekend work
+              {t('profileCreate.qualifications.weekendAvailability')}
             </label>
             {shouldShowError("weekendAvailability") && (
               <p className="error-message">

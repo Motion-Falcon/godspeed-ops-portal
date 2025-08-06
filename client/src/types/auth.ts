@@ -19,3 +19,29 @@ export interface AppUser extends User {
     [key: string]: unknown;
   };
 }
+
+// For All Users Management Table
+export interface AllAuthUserListItem {
+  id: string;
+  email: string;
+  name: string;
+  userType: string;
+  phoneNumber: string;
+  emailVerified: boolean;
+  createdAt: string;
+  lastSignInAt?: string;
+  raw: Record<string, unknown>; // full raw user JSON
+}
+
+export interface AllAuthUserListResponse {
+  users: AllAuthUserListItem[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalFiltered: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+  };
+}

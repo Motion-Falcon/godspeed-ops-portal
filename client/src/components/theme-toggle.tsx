@@ -3,16 +3,16 @@ import { useTheme } from "./theme-provider";
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
-  
+
   const toggleTheme = () => {
     setTheme(theme === "light" ? "dark" : "light");
-    
+
     // Add a class to the body for transition animation
-    document.body.classList.add('theme-transition');
-    
+    document.body.classList.add("theme-transition");
+
     // Remove the class after animation completes
     setTimeout(() => {
-      document.body.classList.remove('theme-transition');
+      document.body.classList.remove("theme-transition");
     }, 600);
   };
 
@@ -31,4 +31,4 @@ export function ThemeToggle() {
       </div>
     </button>
   );
-} 
+}

@@ -1,7 +1,9 @@
 import express from 'express';
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
-import { authenticateToken } from '../middleware/auth.js';
+import { authenticateToken, isAdminOrRecruiter } from '../middleware/auth.js';
+import twilio from 'twilio';
+import { activityLogger } from '../middleware/activityLogger.js';
 
 dotenv.config();
 
@@ -13,33 +15,194 @@ if (!supabaseUrl || !supabaseKey) {
   process.exit(1);
 }
 
+// Initialize Twilio client
+const twilioClient = twilio(
+  process.env.TWILIO_ACCOUNT_SID,
+  process.env.TWILIO_AUTH_TOKEN
+);
+const twilioVerifyServiceSid = process.env.TWILIO_VERIFY_SERVICE_SID || '';
+
+// Check if Twilio credentials are available
+const isTwilioConfigured = !!(
+  process.env.TWILIO_ACCOUNT_SID &&
+  process.env.TWILIO_AUTH_TOKEN &&
+  process.env.TWILIO_VERIFY_SERVICE_SID
+);
+
 const supabase = createClient(supabaseUrl, supabaseKey);
 const router = express.Router();
 
-// Register a new user
-router.post('/register', async (req, res) => {
+// Send phone verification code
+router.post('/send-verification', async (req, res) => {
   try {
-    const { email, password, name } = req.body;
+    const { phoneNumber } = req.body;
+
+    if (!phoneNumber) {
+      return res.status(400).json({ error: 'Phone number is required' });
+    }
+
+    // Check if Twilio is configured
+    if (!isTwilioConfigured) {
+      console.error('Twilio is not configured');
+      return res.status(500).json({ error: 'Phone verification service is not available' });
+    }
+
+    // Send verification code using Twilio Verify
+    try {
+      const verification = await twilioClient.verify.v2
+        .services(twilioVerifyServiceSid)
+        .verifications.create({
+          to: phoneNumber,
+          channel: 'sms'
+        });
+
+      return res.status(200).json({
+        message: 'Verification code sent successfully',
+        status: verification.status
+      });
+    } catch (error) {
+      console.error('Twilio verification error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to send verification code';
+      return res.status(400).json({ 
+        error: 'Failed to send verification code',
+        details: errorMessage
+      });
+    }
+  } catch (error) {
+    console.error('Send verification error:', error);
+    return res.status(500).json({ error: 'Failed to send verification code' });
+  }
+});
+
+// Verify phone verification code
+router.post('/verify-otp', async (req, res) => {
+  try {
+    const { phoneNumber, code, userId } = req.body;
+
+    if (!phoneNumber || !code) {
+      return res.status(400).json({ error: 'Phone number and verification code are required' });
+    }
+
+    // Check if Twilio is configured
+    if (!isTwilioConfigured) {
+      console.error('Twilio is not configured');
+      return res.status(500).json({ error: 'Phone verification service is not available' });
+    }
+
+    // Verify the code using Twilio Verify
+    try {
+      const verificationCheck = await twilioClient.verify.v2
+        .services(twilioVerifyServiceSid)
+        .verificationChecks.create({
+          to: phoneNumber,
+          code
+        });
+
+      if (verificationCheck.status === 'approved') {
+        // If userId is provided, update the user's phone data
+        if (userId) {
+          // Update the user's phone in auth.users table
+          const { error: updateError } = await supabase.auth.admin.updateUserById(
+            userId,
+            { phone: phoneNumber }
+          );
+
+          if (updateError) {
+            console.error('Error updating user phone:', updateError);
+          } else {
+            // Also update the user_metadata to set phone_verified flag
+            const { data: userData } = await supabase.auth.admin.getUserById(userId);
+            
+            if (userData?.user) {
+              const currentMetadata = userData.user.user_metadata || {};
+              
+              const { error: metadataError } = await supabase.auth.admin.updateUserById(
+                userId,
+                {
+                  user_metadata: {
+                    ...currentMetadata,
+                    phone_verified: true
+                  }
+                }
+              );
+              
+              if (metadataError) {
+                console.error('Error updating user metadata:', metadataError);
+              }
+            }
+          }
+        }
+
+        return res.status(200).json({
+          message: 'Phone number verified successfully',
+          status: verificationCheck.status,
+          verified: true
+        });
+      } else {
+        return res.status(400).json({
+          error: 'Invalid verification code',
+          status: verificationCheck.status,
+          verified: false
+        });
+      }
+    } catch (error) {
+      console.error('Twilio verification check error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to verify code';
+      return res.status(400).json({ 
+        error: 'Failed to verify code',
+        details: errorMessage
+      });
+    }
+  } catch (error) {
+    console.error('Verify OTP error:', error);
+    return res.status(500).json({ error: 'Failed to verify code' });
+  }
+});
+
+// Register a new user
+router.post('/register',
+  activityLogger({
+    onSuccess: (req, res) => {
+      // For registration, we need to create a mock system user context
+      if (!req.user) {
+        req.user = {
+          id: '00000000-0000-0000-0000-000000000000', // System UUID
+          email: 'system@godspeedxp.com',
+          user_metadata: {
+            name: 'System',
+            user_type: 'admin'
+          }
+        } as any;
+      }
+      
+      return {
+        actionType: 'user_registration',
+        actionVerb: 'registered',
+        primaryEntityType: 'user',
+        primaryEntityId: res.locals.newUser?.id,
+        primaryEntityName: res.locals.newUser?.email || req.body.email,
+        secondaryEntityType: 'user_profile',
+        secondaryEntityId: res.locals.newUser?.id,
+        secondaryEntityName: res.locals.newUser?.user_metadata?.name || req.body.name || 'Unknown',
+        displayMessage: `New user registered: ${res.locals.newUser?.email || req.body.email}`,
+        category: 'candidate_management',
+        priority: 'normal',
+        metadata: {
+          userType: res.locals.newUser?.user_metadata?.user_type || 'jobseeker',
+          email: res.locals.newUser?.email,
+          name: res.locals.newUser?.user_metadata?.name,
+          hasPhoneNumber: !!req.body.phoneNumber,
+          registrationMethod: 'email_password'
+        }
+      };
+    }
+  }),
+  async (req, res) => {
+  try {
+    const { email, password, name, phoneNumber } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
-    }
-
-    // Check if user already exists in the database
-    try {
-      // Use a simple query to check if the email exists in the auth schema
-      const { data: existingUsers, error: queryError } = await supabase
-        .from('users') // Make sure this is the correct table name
-        .select('id')
-        .eq('email', email)
-        .limit(1);
-
-      if (!queryError && existingUsers?.length > 0) {
-        return res.status(400).json({ error: 'An account with this email already exists' });
-      }
-    } catch (searchError) {
-      console.error('Error searching for existing user:', searchError);
-      // Continue with registration attempt if the search fails
     }
 
     // Determine user type based on email
@@ -50,16 +213,26 @@ router.post('/register', async (req, res) => {
       userType = 'recruiter';
     }
     
-    // Admin users are handled separately via direct database assignments
+    // Create user metadata with phoneNumber if provided
+    const userMetadata: Record<string, any> = {
+      name,
+      user_type: userType,
+    };
+
+    // If phone number is provided, store it in metadata for now
+    if (phoneNumber) {
+      userMetadata.phoneNumber = phoneNumber;
+      userMetadata.phone_verified = true;
+    }
+    
+    // Register the user with email and password
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
+      phone: phoneNumber,
       options: {
-        data: {
-          name,
-          user_type: userType,
-        },
-      },
+        data: userMetadata
+      }
     });
 
     if (error) {
@@ -70,6 +243,9 @@ router.post('/register', async (req, res) => {
     if (!data.user) {
       return res.status(400).json({ error: 'An account with this email already exists' });
     }
+
+    // Store user data for activity logging
+    res.locals.newUser = data.user;
 
     return res.status(201).json({
       message: 'Registration successful. Please check your email for verification.',
@@ -107,6 +283,94 @@ router.post('/login', async (req, res) => {
   } catch (error) {
     console.error('Login error:', error);
     return res.status(500).json({ error: 'Login failed' });
+  }
+});
+
+// New endpoint: Validate credentials without creating session (for 2FA flow)
+router.post('/validate-credentials', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+
+    // Determine if user is a recruiter or admin based on email
+    const isRecruiterOrAdmin = email.includes('@godspeedxp') || email.includes('@motionfalcon') || email.includes('@godspeed'); // Add your admin email domain(s) here
+
+    // For recruiters or admins, we validate credentials without creating a session
+    if (isRecruiterOrAdmin) {
+      // First, try to sign in to validate credentials
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        return res.status(401).json({ error: error.message });
+      }
+
+      // Immediately sign out to invalidate the session
+      await supabase.auth.signOut();
+
+      // Return user data without session for 2FA flow
+      return res.status(200).json({
+        message: 'Credentials validated - 2FA required',
+        requiresTwoFactor: true,
+        user: data.user,
+        // Don't return session data
+      });
+    }
+
+    // For non-recruiters, proceed with normal login
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      return res.status(401).json({ error: error.message });
+    }
+
+    return res.status(200).json({
+      message: 'Login successful',
+      requiresTwoFactor: false,
+      user: data.user,
+      session: data.session,
+    });
+  } catch (error) {
+    console.error('Validate credentials error:', error);
+    return res.status(500).json({ error: 'Credential validation failed' });
+  }
+});
+
+// Complete 2FA and create session
+router.post('/complete-2fa', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+
+    // Create the actual session after successful 2FA
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      return res.status(401).json({ error: error.message });
+    }
+
+    return res.status(200).json({
+      message: '2FA completed - Login successful',
+      user: data.user,
+      session: data.session,
+    });
+  } catch (error) {
+    console.error('Complete 2FA error:', error);
+    return res.status(500).json({ error: 'Failed to complete 2FA login' });
   }
 });
 
@@ -272,6 +536,219 @@ router.get('/me', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Get user error:', error);
     return res.status(500).json({ error: 'Failed to get user' });
+  }
+});
+
+// Check if email is available
+router.get('/check-email', async (req, res) => {
+  try {
+    const { email } = req.query;
+    
+    if (!email || typeof email !== 'string') {
+      return res.status(400).json({ error: 'Email parameter is required' });
+    }
+
+    // Use existing SQL function to check if user exists by email
+    const { data: userId, error } = await supabase.rpc(
+      'get_user_id_by_email',
+      { user_email: email }
+    );
+    
+    if (error) {
+      console.error('Error checking email availability:', error);
+      return res.status(500).json({ error: 'Failed to check email availability' });
+    }
+
+    // If userId is not null, email is already taken
+    const emailExists = userId !== null;
+    
+    return res.json({
+      available: !emailExists,
+      email: email,
+      ...(emailExists && { existingUserId: userId })
+    });
+    
+  } catch (error) {
+    console.error('Error checking email availability:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Check if phone number is available
+router.get('/check-phone', async (req, res) => {
+  try {
+    const { phone } = req.query;
+    
+    if (!phone || typeof phone !== 'string') {
+      return res.status(400).json({ error: 'Phone parameter is required' });
+    }
+
+    // Use SQL function to check if user exists by phone number
+    const { data: userId, error } = await supabase.rpc(
+      'get_user_id_by_phone',
+      { user_phone: phone }
+    );
+    
+    if (error) {
+      console.error('Error checking phone availability:', error);
+      return res.status(500).json({ error: 'Failed to check phone availability' });
+    }
+
+    // If userId is not null, phone is already taken
+    const phoneExists = userId !== null;
+    
+    return res.json({
+      available: !phoneExists,
+      phone: phone,
+      ...(phoneExists && { existingUserId: userId })
+    });
+    
+  } catch (error) {
+    console.error('Error checking phone availability:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * @route GET /api/auth/users
+ * @desc Get all auth users with filters and pagination
+ * @access Private (Admin, Recruiter)
+ */
+router.get('/users', authenticateToken, isAdminOrRecruiter, async (req, res) => {
+  try {
+    // Extract pagination and filter parameters from query
+    const {
+      page = '1',
+      limit = '10',
+      search = '',
+      nameFilter = '',
+      emailFilter = '',
+      mobileFilter = '',
+      userTypeFilter = '',
+      emailVerifiedFilter = ''
+    } = req.query as {
+      page?: string;
+      limit?: string;
+      search?: string;
+      nameFilter?: string;
+      emailFilter?: string;
+      mobileFilter?: string;
+      userTypeFilter?: string;
+      emailVerifiedFilter?: string;
+    };
+
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const offset = (pageNum - 1) * limitNum;
+
+    // Fetch all users (no filters, no pagination)
+    const { data: allUsers, error } = await supabase.rpc('list_auth_users', {
+      search: null,
+      name_filter: null,
+      email_filter: null,
+      mobile_filter: null,
+      user_type_filter: null,
+      email_verified_filter: null,
+      limit_count: 10000, // fetch a large number
+      offset_count: 0
+    });
+
+    if (error) {
+      console.error('Error calling list_auth_users function:', error);
+      return res.status(500).json({ error: 'Failed to fetch users' });
+    }
+
+    // Format for frontend (raw user JSON, plus some display fields)
+    type ListAuthUser = {
+      id: string;
+      email: string;
+      user_metadata: {
+        name?: string;
+        user_type?: string;
+        phoneNumber?: string;
+        [key: string]: any;
+      } | null;
+      created_at: string;
+      last_sign_in_at: string | null;
+      email_confirmed_at: string | null;
+      [key: string]: any;
+    };
+    let formattedUsers = (allUsers || []).map((user: ListAuthUser) => {
+      const meta = user.user_metadata || {};
+      return {
+        id: user.id,
+        email: user.email,
+        name: meta.name || '',
+        userType: meta.user_type || '',
+        phoneNumber: meta.phoneNumber || '',
+        emailVerified: !!user.email_confirmed_at,
+        createdAt: user.created_at,
+        lastSignInAt: user.last_sign_in_at,
+        raw: user // full raw user JSON
+      };
+    });
+
+    // Apply filtering in Node.js
+    type FormattedUser = {
+      id: string;
+      email: string;
+      name: string;
+      userType: string;
+      phoneNumber: string;
+      emailVerified: boolean;
+      createdAt: string;
+      lastSignInAt: string | null;
+      raw: ListAuthUser;
+    };
+    if (search && search.trim().length > 0) {
+      const s = search.trim().toLowerCase();
+      formattedUsers = formattedUsers.filter((u: FormattedUser) =>
+        u.email.toLowerCase().includes(s) ||
+        u.name.toLowerCase().includes(s) ||
+        u.phoneNumber.toLowerCase().includes(s) ||
+        u.userType.toLowerCase().includes(s)
+      );
+    }
+    if (nameFilter) {
+      formattedUsers = formattedUsers.filter((u: FormattedUser) => u.name.toLowerCase().includes(nameFilter.toLowerCase()));
+    }
+    if (emailFilter) {
+      formattedUsers = formattedUsers.filter((u: FormattedUser) => u.email.toLowerCase().includes(emailFilter.toLowerCase()));
+    }
+    if (mobileFilter) {
+      formattedUsers = formattedUsers.filter((u: FormattedUser) => u.phoneNumber.toLowerCase().includes(mobileFilter.toLowerCase()));
+    }
+    if (userTypeFilter) {
+      formattedUsers = formattedUsers.filter((u: FormattedUser) => u.userType === userTypeFilter);
+    }
+    if (emailVerifiedFilter) {
+      if (emailVerifiedFilter === 'true') {
+        formattedUsers = formattedUsers.filter((u: FormattedUser) => u.emailVerified);
+      } else if (emailVerifiedFilter === 'false') {
+        formattedUsers = formattedUsers.filter((u: FormattedUser) => !u.emailVerified);
+      }
+    }
+
+    const total = allUsers ? allUsers.length : 0;
+    const totalFiltered = formattedUsers.length;
+    const totalPages = Math.ceil(totalFiltered / limitNum);
+    const paginatedUsers = formattedUsers.slice(offset, offset + limitNum);
+
+    res.json({
+      users: paginatedUsers,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalFiltered,
+        totalPages,
+        hasNextPage: pageNum < totalPages,
+        hasPrevPage: pageNum > 1
+      }
+    });
+  } catch (error) {
+    console.error('Unexpected error fetching auth users:', error);
+    res.status(500).json({ error: 'An unexpected error occurred while fetching auth users' });
   }
 });
 

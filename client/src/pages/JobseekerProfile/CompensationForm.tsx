@@ -1,23 +1,9 @@
 import { useFormContext } from "react-hook-form";
 import { useState, useEffect } from "react";
-import { z } from "zod";
 import { useAuth } from "../../contexts/AuthContext";
-
-// Will define this schema in ProfileCreate.tsx
-const compensationSchema = z.object({
-  payrateType: z.enum(["Hourly", "Daily", "Monthly"]).optional(),
-  billRate: z.string().optional(),
-  payRate: z.string().optional(),
-  paymentMethod: z.string().optional(),
-  hstGst: z.string().optional(),
-  cashDeduction: z.string().optional(),
-  overtimeEnabled: z.boolean().default(false),
-  overtimeHours: z.string().optional(),
-  overtimeBillRate: z.string().optional(),
-  overtimePayRate: z.string().optional(),
-});
-
-type CompensationFormData = z.infer<typeof compensationSchema>;
+import { useLanguage } from "../../contexts/language/language-provider";
+import { PAYRATE_TYPES, PAYMENT_METHODS } from "../../constants/formOptions";
+import { CompensationFormData } from "./profileSchemas";
 
 interface CompensationFormProps {
   currentStep: number;
@@ -29,6 +15,7 @@ export function CompensationForm({ allFields }: CompensationFormProps) {
     useFormContext<CompensationFormData>();
   const { errors: allErrors } = formState;
   const { isJobSeeker } = useAuth();
+  const { t } = useLanguage();
 
   // Function to check if we should show an error for a specific field
   const shouldShowError = (fieldName: string) => {
@@ -60,10 +47,9 @@ export function CompensationForm({ allFields }: CompensationFormProps) {
 
   return (
     <div className="form-step-container">
-      <h2>Compensation Details</h2>
+      <h2>{t('profileCreate.compensation.sectionTitle')}</h2>
       <p className="form-description">
-        Please provide your compensation information. Fields marked with * are
-        required.
+        {t('profileCreate.compensation.sectionDescription')}
         {isJobSeeker && (
           <span className="text-info">
             {" "}
@@ -78,16 +64,18 @@ export function CompensationForm({ allFields }: CompensationFormProps) {
             className="form-label"
             data-required={isJobSeeker ? "" : "*"}
           >
-            Payrate Type
+            {t('profileCreate.compensation.payrateType')}
           </label>
           <select
             id="payrateType"
             className="form-input"
             {...register("payrateType")}
           >
-            <option value="Hourly">Hourly</option>
-            <option value="Daily">Daily</option>
-            <option value="Monthly">Monthly</option>
+            {PAYRATE_TYPES.slice(0, 3).map((type) => (
+              <option key={type} value={type}>
+                {type}
+              </option>
+            ))}
           </select>
           {shouldShowError("payrateType") && (
             <p className="error-message">{allErrors.payrateType?.message}</p>
@@ -100,7 +88,7 @@ export function CompensationForm({ allFields }: CompensationFormProps) {
             className="form-label"
             data-required={isJobSeeker ? "" : "*"}
           >
-            Bill Rate ($)
+            {t('profileCreate.compensation.billRate')}
           </label>
           <input
             id="billRate"
@@ -122,7 +110,7 @@ export function CompensationForm({ allFields }: CompensationFormProps) {
             className="form-label"
             data-required={isJobSeeker ? "" : "*"}
           >
-            Pay Rate ($)
+            {t('profileCreate.compensation.payRate')}
           </label>
           <input
             id="payRate"
@@ -145,7 +133,7 @@ export function CompensationForm({ allFields }: CompensationFormProps) {
             className="form-label"
             data-required={isJobSeeker ? "" : "*"}
           >
-            Payment Method
+            {t('profileCreate.compensation.paymentMethod')}
           </label>
           <select
             id="paymentMethod"
@@ -153,14 +141,11 @@ export function CompensationForm({ allFields }: CompensationFormProps) {
             {...register("paymentMethod")}
           >
             <option value="">Select Payment Method</option>
-            <option value="Cash">Cash</option>
-            <option value="Corporation-Cheque">Corporation - Cheque</option>
-            <option value="Corporation-Direct Deposit">
-              Corporation - Direct Deposit
-            </option>
-            <option value="e-Transfer">e-Transfer</option>
-            <option value="Direct Deposit">Direct Deposit</option>
-            <option value="Cheque">Cheque</option>
+            {PAYMENT_METHODS.map((method) => (
+              <option key={method} value={method}>
+                {method}
+              </option>
+            ))}
           </select>
           {shouldShowError("paymentMethod") && (
             <p className="error-message">{allErrors.paymentMethod?.message}</p>
@@ -169,7 +154,7 @@ export function CompensationForm({ allFields }: CompensationFormProps) {
 
         <div className="form-group">
           <label htmlFor="hstGst" className="form-label">
-            HST/GST (%)
+            {t('profileCreate.compensation.hstGst')}
           </label>
           <select id="hstGst" className="form-input" {...register("hstGst")}>
             <option value="">None</option>
@@ -184,7 +169,7 @@ export function CompensationForm({ allFields }: CompensationFormProps) {
 
         <div className="form-group">
           <label htmlFor="cashDeduction" className="form-label">
-            Cash Deduction (%)
+            {t('profileCreate.compensation.cashDeduction')}
           </label>
           <select
             id="cashDeduction"
@@ -207,15 +192,15 @@ export function CompensationForm({ allFields }: CompensationFormProps) {
       <div className="form-section">
         <h3>Overtime Settings</h3>
 
-        <div className="form-group checkbox-container">
+        <div className="container-form">
           <input
             id="overtimeEnabled"
             type="checkbox"
-            className="form-checkbox"
+            className="toggle-form"
             {...register("overtimeEnabled")}
           />
-          <label htmlFor="overtimeEnabled" className="checkbox-label">
-            Enable overtime rates
+          <label htmlFor="overtimeEnabled" className="label-form">
+            {t('profileCreate.compensation.overtimeEnabled')}
           </label>
           {shouldShowError("overtimeEnabled") && (
             <p className="error-message">
@@ -233,7 +218,7 @@ export function CompensationForm({ allFields }: CompensationFormProps) {
                   className="form-label"
                   data-required="*"
                 >
-                  Overtime Hours
+                  {t('profileCreate.compensation.overtimeHours')}
                 </label>
                 <input
                   id="overtimeHours"
@@ -255,7 +240,7 @@ export function CompensationForm({ allFields }: CompensationFormProps) {
                   className="form-label"
                   data-required="*"
                 >
-                  Overtime Bill Rate ($)
+                  {t('profileCreate.compensation.overtimeBillRate')}
                 </label>
                 <input
                   id="overtimeBillRate"
@@ -279,7 +264,7 @@ export function CompensationForm({ allFields }: CompensationFormProps) {
                   className="form-label"
                   data-required="*"
                 >
-                  Overtime Pay Rate ($)
+                  {t('profileCreate.compensation.overtimePayRate')}
                 </label>
                 <input
                   id="overtimePayRate"

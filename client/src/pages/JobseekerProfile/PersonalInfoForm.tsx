@@ -1,25 +1,27 @@
 import { useFormContext } from "react-hook-form";
-import { personalInfoSchema } from "./ProfileCreate";
-import { z } from "zod";
 import { useState, useEffect, useRef } from "react";
-import { checkEmailAvailability } from "../../services/api";
+import { checkEmailAvailability } from "../../services/api/profile";
 import { useNavigate } from "react-router-dom";
 import { Eye, Pencil } from "lucide-react";
-
-type PersonalInfoFormData = z.infer<typeof personalInfoSchema>;
+import { validateSIN, validateDOB, getMaxDobDate, logValidation } from "../../utils/validation";
+import { useLanguage } from "../../contexts/language/language-provider";
+import { PersonalInfoFormData } from "./profileSchemas";
 
 interface PersonalInfoFormProps {
   currentStep: number;
   allFields: string[];
   onEmailAvailabilityChange?: (isAvailable: boolean | null) => void;
   disableEmail?: boolean;
+  disableMobile?: boolean;
 }
 
 export function PersonalInfoForm({
   allFields,
   onEmailAvailabilityChange,
   disableEmail = false,
+  disableMobile = false,
 }: PersonalInfoFormProps) {
+  const { t } = useLanguage();
   const { register, formState, watch, setError, clearErrors } =
     useFormContext<PersonalInfoFormData>();
   const { errors: allErrors } = formState;
@@ -41,13 +43,10 @@ export function PersonalInfoForm({
   const emailTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   // Add a ref to track the latest request
   const latestRequestRef = useRef<number>(0);
+  // Add debounce timeout ref for validation
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Get the maximum valid DOB date (18 years ago from today)
-  const getMaxDobDate = (): string => {
-    const today = new Date();
-    today.setFullYear(today.getFullYear() - 18);
-    return today.toISOString().split("T")[0];
-  };
+  const watchedSin = watch("sinNumber");
 
   // Function to check if we should show an error for a specific field
   const shouldShowError = (fieldName: string) => {
@@ -70,39 +69,15 @@ export function PersonalInfoForm({
     }
   };
 
-  // DOB validation function
-  const validateDob = (value: string) => {
-    // Check if value is empty
+  // DOB validation wrapper for react-hook-form
+  const validateDobField = (value: string) => {
     if (!value) return true; // Let the required validation handle this
 
-    // Get today's date and reset the time portion
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    // Parse the selected date and reset the time portion
-    const selectedDate = new Date(value);
-    selectedDate.setHours(0, 0, 0, 0);
-
-    // Calculate the minimum DOB date (18 years ago)
-    const minAge = 18;
-    const minDobDate = new Date();
-    minDobDate.setFullYear(today.getFullYear() - minAge);
-    minDobDate.setHours(0, 0, 0, 0);
-
-    // Check if date is in the future
-    if (selectedDate > today) {
+    const result = validateDOB(value);
+    if (!result.isValid && result.errorMessage) {
       setError("dob", {
         type: "manual",
-        message: "Date of birth cannot be in the future",
-      });
-      return false;
-    }
-
-    // Check if person is at least 18 years old
-    if (selectedDate > minDobDate) {
-      setError("dob", {
-        type: "manual",
-        message: "Must be at least 18 years old",
+        message: result.errorMessage,
       });
       return false;
     }
@@ -110,6 +85,38 @@ export function PersonalInfoForm({
     // Clear errors if validation passes
     clearErrors("dob");
     return true;
+  };
+
+  // SIN validation wrapper for react-hook-form with debouncing
+  const validateSinNumber = (value: string | undefined) => {
+    if (!value) {
+      clearErrors("sinNumber");
+      return true; // Field is optional, so empty is allowed
+    }
+    
+    const result = validateSIN(value);
+    if (!result.isValid && result.errorMessage) {
+      setError("sinNumber", {
+        type: "manual",
+        message: result.errorMessage,
+      });
+      return false;
+    }
+    
+    // Clear errors if validation passes
+    clearErrors("sinNumber");
+    return true;
+  };
+
+  // Debounced validation for SIN to prevent excessive validation
+  const debouncedValidateSin = (value: string | undefined) => {
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+    }
+    
+    debounceTimeoutRef.current = setTimeout(() => {
+      validateSinNumber(value);
+    }, 300); // Only validate after 300ms of inactivity
   };
 
   // Effect to check email availability when the email changes
@@ -163,9 +170,9 @@ export function PersonalInfoForm({
     // Set a timeout to delay the API call (similar to debounce)
     emailTimeoutRef.current = setTimeout(async () => {
       try {
-        console.log("Checking email availability for:", currentEmail);
+        logValidation("Checking email availability for: " + currentEmail);
         const result = await checkEmailAvailability(currentEmail);
-        console.log("Email check result:", result);
+        logValidation("Email check result: " + JSON.stringify(result));
 
         // Only update state if this is still the latest request
         if (latestRequestRef.current !== requestId) return;
@@ -232,6 +239,9 @@ export function PersonalInfoForm({
       if (emailTimeoutRef.current) {
         clearTimeout(emailTimeoutRef.current);
       }
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
     };
     // Disable the ESLint exhaustive-deps warning since we're handling dependencies manually
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -239,22 +249,21 @@ export function PersonalInfoForm({
 
   return (
     <div className="form-containerform-step-container">
-      <h2>Personal Information</h2>
+      <h2>{t('profileCreate.personalInfo.sectionTitle')}</h2>
       <p className="form-description">
-        Please provide your basic personal information. Fields marked with * are
-        required.
+        {t('profileCreate.personalInfo.sectionDescription')}
       </p>
 
       <div className="form-row name-dob-row">
         <div className="form-group">
           <label htmlFor="firstName" className="form-label" data-required="*">
-            First Name
+            {t('profileCreate.personalInfo.firstName')}
           </label>
           <input
             id="firstName"
             type="text"
             className="form-input"
-            placeholder="Your first name"
+            placeholder={t('profileCreate.personalInfo.firstNamePlaceholder')}
             {...register("firstName")}
           />
           {shouldShowError("firstName") && (
@@ -264,13 +273,13 @@ export function PersonalInfoForm({
 
         <div className="form-group">
           <label htmlFor="lastName" className="form-label" data-required="*">
-            Last Name
+            {t('profileCreate.personalInfo.lastName')}
           </label>
           <input
             id="lastName"
             type="text"
             className="form-input"
-            placeholder="Your last name"
+            placeholder={t('profileCreate.personalInfo.lastNamePlaceholder')}
             {...register("lastName")}
           />
           {shouldShowError("lastName") && (
@@ -280,7 +289,7 @@ export function PersonalInfoForm({
 
         <div className="form-group dob-group">
           <label htmlFor="dob" className="form-label" data-required="*">
-            Date of Birth
+            {t('profileCreate.personalInfo.dob')}
           </label>
           <div className="date-picker-container">
             <input
@@ -289,7 +298,13 @@ export function PersonalInfoForm({
               className="form-input"
               max={getMaxDobDate()}
               {...register("dob", {
-                validate: validateDob,
+                validate: validateDobField,
+                onChange: (e) => {
+                  // Trigger validation immediately after date change
+                  if (e.target.value) {
+                    setTimeout(() => validateDobField(e.target.value), 0);
+                  }
+                }
               })}
               onClick={(e) => e.currentTarget.showPicker()}
             />
@@ -297,28 +312,27 @@ export function PersonalInfoForm({
           {shouldShowError("dob") && (
             <p className="error-message">{allErrors.dob?.message}</p>
           )}
-          <p className="field-note">Must be at least 18 years old</p>
+          <p className="field-note">{t('profileCreate.personalInfo.dobNote')}</p>
         </div>
       </div>
 
       <div className="form-row">
         <div className="form-group">
           <label htmlFor="email" className="form-label" data-required="*">
-            Email
+            {t('profileCreate.personalInfo.email')}
           </label>
           <input
             id="email"
             type="email"
             className="form-input"
-            placeholder="your.email@example.com"
+            placeholder={t('profileCreate.personalInfo.emailPlaceholder')}
             {...register("email")}
             disabled={disableEmail}
             readOnly={disableEmail}
           />
           {disableEmail && (
             <p className="field-note">
-              Email cannot be changed as it's used as a unique identifier for
-              this profile.
+              {t('profileCreate.personalInfo.emailNote')}
             </p>
           )}
           {!disableEmail && emailAvailabilityMessage && (
@@ -361,15 +375,22 @@ export function PersonalInfoForm({
 
         <div className="form-group">
           <label htmlFor="mobile" className="form-label" data-required="*">
-            Mobile Number
+            {t('profileCreate.personalInfo.mobile')}
           </label>
           <input
             id="mobile"
             type="tel"
             className="form-input"
-            placeholder="(XXX) XXX-XXXX"
+            placeholder={t('profileCreate.personalInfo.mobilePlaceholder')}
             {...register("mobile")}
+            disabled={disableMobile}
+            readOnly={disableMobile}
           />
+          {disableMobile && (
+            <p className="field-note">
+              {t('profileCreate.personalInfo.mobileNote')}
+            </p>
+          )}
           {shouldShowError("mobile") && (
             <p className="error-message">{allErrors.mobile?.message}</p>
           )}
@@ -378,18 +399,18 @@ export function PersonalInfoForm({
 
       <div className="form-row license-row">
         <div className="form-info" data-required="*">
-          <small>At least one ID required"</small>
+          <small>{t('profileCreate.personalInfo.atLeastOneId')}</small>
         </div>
         <div className="form-row">
           <div className="form-group">
             <label htmlFor="licenseNumber" className="form-label">
-              License Number
+              {t('profileCreate.personalInfo.licenseNumber')}
             </label>
             <input
               id="licenseNumber"
               type="text"
               className="form-input"
-              placeholder="Enter your license number"
+              placeholder={t('profileCreate.personalInfo.licenseNumberPlaceholder')}
               {...register("licenseNumber")}
             />
             {shouldShowError("licenseNumber") && (
@@ -401,13 +422,13 @@ export function PersonalInfoForm({
 
           <div className="form-group">
             <label htmlFor="passportNumber" className="form-label">
-              Passport Number
+              {t('profileCreate.personalInfo.passportNumber')}
             </label>
             <input
               id="passportNumber"
               type="text"
               className="form-input"
-              placeholder="Enter your passport number"
+              placeholder={t('profileCreate.personalInfo.passportNumberPlaceholder')}
               {...register("passportNumber")}
             />
             {shouldShowError("passportNumber") && (
@@ -420,68 +441,98 @@ export function PersonalInfoForm({
       </div>
 
       <div className="form-section">
-        <h3>Additional Information</h3>
+        <h3>{t('profileCreate.personalInfo.additionalInfoTitle')}</h3>
         <p className="section-description">
-          The following fields are optional but may be required for certain
-          positions.
+          {t('profileCreate.personalInfo.additionalInfoDescription')}
         </p>
 
         <div className="form-row">
           <div className="form-group">
             <label htmlFor="sinNumber" className="form-label">
-              SIN (Social Insurance Number)
+              {t('profileCreate.personalInfo.sinNumber')}
             </label>
             <input
               id="sinNumber"
               type="text"
               className="form-input"
-              placeholder="XXX-XXX-XXX"
-              {...register("sinNumber")}
+              placeholder={t('profileCreate.personalInfo.sinNumberPlaceholder')}
+              maxLength={9}
+              pattern="\d*"
+              inputMode="numeric"
+              {...register("sinNumber", {
+                validate: validateSinNumber,
+                onChange: (e) => {
+                  // Remove any non-digit characters as the user types
+                  const value = e.target.value;
+                  const digitsOnly = value.replace(/\D/g, '');
+                  if (value !== digitsOnly) {
+                    e.target.value = digitsOnly;
+                  }
+                  // Debounced validation on change for immediate feedback
+                  debouncedValidateSin(digitsOnly);
+                }
+              })}
             />
+            {shouldShowError("sinNumber") && (
+              <p className="error-message">{allErrors.sinNumber?.message}</p>
+            )}
             <p className="field-note">
-              This information is encrypted and securely stored.
+              {t('profileCreate.personalInfo.sinNumberNote')}
             </p>
           </div>
 
           <div className="form-group">
-            <label htmlFor="sinExpiry" className="form-label">
-              SIN Expiry Date
+            <label htmlFor="sinExpiry" className="form-label" data-required={watchedSin && watchedSin.startsWith('9') ? "*" : undefined}>
+              {t('profileCreate.personalInfo.sinExpiry')}
             </label>
             <div className="date-picker-container">
               <input
                 id="sinExpiry"
                 type="date"
                 className="form-input"
+                disabled={!watchedSin || !watchedSin.startsWith('9')}
                 {...register("sinExpiry")}
-                onClick={(e) => e.currentTarget.showPicker()}
+                onClick={(e) => {
+                  if (watchedSin && watchedSin.startsWith('9')) {
+                    e.currentTarget.showPicker();
+                  }
+                }}
               />
             </div>
+            {shouldShowError("sinExpiry") && (
+              <p className="error-message">{allErrors.sinExpiry?.message}</p>
+            )}
+            {watchedSin && !watchedSin.startsWith('9') && (
+              <p className="field-note">
+                SIN expiry is not required for Canadian citizens and permanent residents
+              </p>
+            )}
           </div>
         </div>
 
         <div className="form-row">
           <div className="form-group">
             <label htmlFor="businessNumber" className="form-label">
-              Business/HST/GST Number
+              {t('profileCreate.personalInfo.businessNumber')}
             </label>
             <input
               id="businessNumber"
               type="text"
               className="form-input"
-              placeholder="Enter your business number"
+              placeholder={t('profileCreate.personalInfo.businessNumberPlaceholder')}
               {...register("businessNumber")}
             />
           </div>
 
           <div className="form-group">
             <label htmlFor="corporationName" className="form-label">
-              Corporation Name/Number
+              {t('profileCreate.personalInfo.corporationName')}
             </label>
             <input
               id="corporationName"
               type="text"
               className="form-input"
-              placeholder="Enter corporation name or number"
+              placeholder={t('profileCreate.personalInfo.corporationNamePlaceholder')}
               {...register("corporationName")}
             />
           </div>

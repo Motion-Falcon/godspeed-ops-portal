@@ -1,55 +1,29 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Building, Edit } from 'lucide-react';
-import { getClient, ClientData } from '../../services/api';
+import { getClient, ClientData } from '../../services/api/client';
 import { AppHeader } from '../../components/AppHeader';
 import '../../styles/pages/ClientView.css';
 import '../../styles/components/header.css';
 
-// Interface that can handle both camelCase and snake_case properties
-interface ExtendedClientData extends ClientData {
-  company_name?: string;
-  contact_person_name1?: string;
-  work_province?: string;
-  [key: string]: unknown; // Allow string indexing for dynamic access
-}
-
 export function ClientView() {
-  const [client, setClient] = useState<ExtendedClientData | null>(null);
+  const [client, setClient] = useState<ClientData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  // Helper function to convert snake_case keys to camelCase
-  const convertToCamelCase = (data: ClientData): ExtendedClientData => {
-    if (!data) return {} as ExtendedClientData;
-    
-    const result: ExtendedClientData = { ...data as unknown as ExtendedClientData };
-    
-    // Keep both versions of keys to ensure we can access data regardless of format
-    Object.entries(data).forEach(([key, value]) => {
-      if (key.includes('_')) {
-        const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
-        result[camelKey] = value;
-      }
-    });
-    
-    return result;
-  };
-
-  // Helper function to get a value regardless of key format
-  const getFieldValue = (obj: ExtendedClientData | null, camelCaseKey: string): string | number | boolean | null | undefined => {
+  // Helper function to get a value with proper type handling
+  const getFieldValue = (obj: ClientData | null, key: keyof ClientData): string | number | boolean | null | undefined => {
     if (!obj) return null;
+    const value = obj[key];
     
-    // Try camelCase first
-    if (obj[camelCaseKey] !== undefined) {
-      return obj[camelCaseKey] as string | number | boolean | null | undefined;
+    // Handle complex object types by returning null
+    if (typeof value === 'object' && value !== null) {
+      return null;
     }
     
-    // Try snake_case
-    const snakeCaseKey = camelCaseKey.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
-    return obj[snakeCaseKey] !== undefined ? obj[snakeCaseKey] as string | number | boolean | null | undefined : null;
+    return value as string | number | boolean | null | undefined;
   };
 
   useEffect(() => {
@@ -58,7 +32,7 @@ export function ClientView() {
         setLoading(true);
         if (!id) throw new Error("Client ID is missing");
         const data = await getClient(id);
-        setClient(convertToCamelCase(data));
+        setClient(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred while fetching the client');
         console.error('Error fetching client:', err);
@@ -88,6 +62,13 @@ export function ClientView() {
     }
   };
 
+  // Function to decode HTML entities
+  const decodeHtmlEntities = (text: string): string => {
+    const textArea = document.createElement('textarea');
+    textArea.innerHTML = text;
+    return textArea.value;
+  };
+
   const renderDetailItem = (label: string, value?: string | number | boolean | null) => {
     const displayValue = value === null || value === undefined || value === '' 
       ? 'N/A' 
@@ -103,13 +84,98 @@ export function ClientView() {
     );
   };
 
+  // Special renderer for website URLs
+  const renderWebsiteItem = (label: string, value?: string | number | boolean | null) => {
+    if (!value || value === '') {
+      return (
+        <div className="detail-item">
+          <p className="detail-label">{label}:</p>
+          <p className="detail-value">N/A</p>
+        </div>
+      );
+    }
+
+    const decodedUrl = typeof value === 'string' ? decodeHtmlEntities(value) : String(value);
+    
+    // Check if URL has protocol, if not add https://
+    let linkUrl = decodedUrl;
+    if (decodedUrl && !decodedUrl.match(/^https?:\/\//)) {
+      linkUrl = `https://${decodedUrl}`;
+    }
+    
+    return (
+      <div className="detail-item">
+        <p className="detail-label">{label}:</p>
+        <p className="detail-value">
+          <a 
+            href={linkUrl} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            style={{ color: '#0066cc', textDecoration: 'underline' }}
+          >
+            {decodedUrl}
+          </a>
+        </p>
+      </div>
+    );
+  };
+
   if (loading) {
+    // Skeleton loader modeled after JobSeekerProfile/PositionView
     return (
       <div className="client-view-container">
-        <div className="loading-container">
-          <span className="loading-spinner"></span>
-          <p>Loading client details...</p>
-        </div>
+        <AppHeader
+          title="Client Details"
+          actions={
+            <button className="button" disabled>
+              <ArrowLeft size={16} className="icon" />
+              <span>Back to Clients</span>
+            </button>
+          }
+        />
+        <main className="client-main">
+          {/* Overview Skeleton */}
+          <div className="client-overview section-card">
+            <div className="client-banner"></div>
+            <div className="client-details">
+              <div className="client-avatar skeleton-avatar">
+                <div className="skeleton-icon" style={{ width: '40px', height: '40px' }}></div>
+              </div>
+              <div className="client-info-header">
+                <div className="skeleton-text" style={{ width: '200px', height: '32px', margin: '8px 0' }}></div>
+                {[1,2,3,4].map((i) => (
+                  <div key={i} className="detail-item">
+                    <div className="skeleton-text" style={{ width: '80px', height: '14px' }}></div>
+                    <div className="skeleton-text" style={{ width: '120px', height: '16px', marginLeft: '10px' }}></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          {/* Details Grid Skeleton */}
+          <div className="profile-content grid-container">
+            {[
+              'Company Information',
+              'Primary Contact',
+              'Secondary Contact',
+              'Tertiary Contact',
+              'Department Information',
+              'Payment & Billing',
+            ].map((section) => (
+              <div key={section} className="section-card">
+                <div className="skeleton-text" style={{ width: '180px', height: '20px', marginBottom: '20px' }}></div>
+                <div className="detail-group">
+                  {[1,2,3,4].map((i) => (
+                    <div key={i} className="detail-item">
+                      <div className="skeleton-text" style={{ width: '100px', height: '14px' }}></div>
+                      <div className="skeleton-text" style={{ width: '140px', height: '16px', marginLeft: '10px' }}></div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </main>
       </div>
     );
   }
@@ -192,13 +258,16 @@ export function ClientView() {
               {renderDetailItem('Billing Name', getFieldValue(client, 'billingName'))}
               {renderDetailItem('Short Code', getFieldValue(client, 'shortCode'))}
               {renderDetailItem('List Name', getFieldValue(client, 'listName'))}
-              {renderDetailItem('Website', getFieldValue(client, 'website'))}
+              {renderWebsiteItem('Website', getFieldValue(client, 'website'))}
               {renderDetailItem('Client Manager', getFieldValue(client, 'clientManager'))}
               {renderDetailItem('Sales Person', getFieldValue(client, 'salesPerson'))}
               {renderDetailItem('Accounting Person', getFieldValue(client, 'accountingPerson'))}
+              {renderDetailItem('Accounting Manager', getFieldValue(client, 'accountingManager'))}
+              {renderDetailItem('Client Representative', getFieldValue(client, 'clientRep'))}
               {renderDetailItem('Merge Invoice', getFieldValue(client, 'mergeInvoice'))}
               {renderDetailItem('Currency', getFieldValue(client, 'currency'))}
               {renderDetailItem('Work Province', getFieldValue(client, 'workProvince'))}
+              {renderDetailItem('WSIB Code', getFieldValue(client, 'wsibCode'))}
             </div>
           </div>
           

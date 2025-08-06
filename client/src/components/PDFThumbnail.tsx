@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { Search } from 'lucide-react';
 import '../styles/components/PDFThumbnail.css';

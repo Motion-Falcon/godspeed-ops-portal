@@ -58,11 +58,15 @@ export interface ProfileData {
   overtimeBillRate?: string;
   overtimePayRate?: string;
   
+  // Employee identification
+  employeeId?: string;
+  
   // Document fields - now an array of documents
   documents: Document[];
   
   // Meta fields - used internally
   verificationStatus?: 'pending' | 'verified' | 'rejected';
+  rejectionReason?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -112,11 +116,15 @@ export interface DbJobseekerProfile {
   overtime_bill_rate?: string;
   overtime_pay_rate?: string;
   
+  // Employee identification
+  employee_id?: string;
+  
   // Document fields - JSONB array in database
   documents: Document[];
   
   // Meta fields
   verification_status: string;
+  rejection_reason?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -134,9 +142,12 @@ export interface ClientData {
   clientManager?: string;
   salesPerson?: string;
   accountingPerson?: string;
+  accountingManager?: string;
+  clientRep?: string;
   mergeInvoice: boolean;
   currency: 'CAD' | 'USD';
   workProvince: string;
+  wsibCode?: string;
   
   // Contact Details
   contactPersonName1: string;
@@ -197,9 +208,12 @@ export interface DbClientData {
   client_manager?: string;
   sales_person?: string;
   accounting_person?: string;
+  accounting_manager?: string;
+  client_rep?: string;
   merge_invoice: boolean;
   currency: string;
   work_province: string;
+  wsib_code?: string;
   
   // Contact Details
   contact_person_name1: string;

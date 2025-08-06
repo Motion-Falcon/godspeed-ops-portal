@@ -27,6 +27,7 @@ export interface JobSeekerProfile {
   userId: string;
   name: string;
   email: string;
+  phoneNumber: string;
   status: 'pending' | 'verified' | 'rejected';
   experience: string;
   createdAt: string;
@@ -72,6 +73,9 @@ export interface JobSeekerDetailedProfile extends JobSeekerProfile {
   overtimeHours?: string;
   overtimeBillRate?: string;
   overtimePayRate?: string;
+  
+  // Employee identification
+  employeeId?: string; // Employee identification number
   
   // Actual fields from the API response
   verificationStatus?: 'pending' | 'verified' | 'rejected'; // This is more accurate than 'status'
