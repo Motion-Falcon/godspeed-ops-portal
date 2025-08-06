@@ -7,8 +7,8 @@
   "recruiter": "Recruteur",
   "jobseeker": "Chercheur d'emploi",
   "admin_subtitle": "Supervisez les opérations de la plateforme et gérez les analyses du recrutement à l'échelle du système",
-  "recruiter_subtitle": "Gérez l'acquisition de talents avec les outils de recrutement ultra-rapides de Godspeed",
-  "jobseeker_subtitle": "Découvrez des opportunités à la vitesse Godspeed grâce à notre système intelligent de correspondance d'emploi",
+  "recruiter_subtitle": "Gérez l'acquisition de talents avec les outils de recrutement ultra-rapides de CanHire",
+  "jobseeker_subtitle": "Découvrez des opportunités à la vitesse CanHire grâce à notre système intelligent de correspondance d'emploi",
 
   "navigation": {
     "home": "Accueil",
@@ -225,7 +225,7 @@
     "select": "Sélectionner",
     "deselect": "Désélectionner",
     "language": "Langue",
-    "godspeedLogo": "Logo Godspeed",
+    "godspeedLogo": "Logo CanHire",
     "user": "Utilisateur"
   },
 
@@ -457,7 +457,7 @@
     "hidePassword": "Masquer le mot de passe",
     "showPassword": "Afficher le mot de passe",
     "alreadyHaveAccount": "Vous avez déjà un compte ?",
-    "brandDescription": "Élevez votre gestion des talents avec les workflows intelligents de Godspeed et des systèmes ultra-rapides conçus pour connecter les bonnes personnes aux bonnes opportunités."
+    "brandDescription": "Élevez votre gestion des talents avec les workflows intelligents de CanHire et des systèmes ultra-rapides conçus pour connecter les bonnes personnes aux bonnes opportunités."
   },
   "twoFactor": {
     "error": {

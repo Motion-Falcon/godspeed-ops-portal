@@ -13,7 +13,7 @@ import "../../styles/pages/Login.css";
 import "../../styles/components/form.css";
 import "../../styles/components/button.css";
 import "../../styles/components/phone-input.css";
-import godspeedLogo from "../../assets/logos/godspped-logo.png";
+import canhireLogo from "../../assets/logos/canhire-logo.png";
 import PhoneInput from "react-phone-number-input";
 import "react-phone-number-input/style.css";
 import {
@@ -536,8 +536,8 @@ export function Signup() {
         <div className="brand-content">
           <div className="brand-logo">
             <img
-              src={godspeedLogo}
-              alt={t('common.godspeedLogo')}
+              src={canhireLogo}
+              alt={t('common.canhireLogo')}
               className="godspeed-logo"
             />
           </div>

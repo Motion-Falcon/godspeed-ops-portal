@@ -1,6 +1,6 @@
 import React from 'react';
 import { Document, Page, Text, View, StyleSheet, pdf, Image } from '@react-pdf/renderer';
-import godspeedLogo from '../assets/logos/godspped-logo-fulllength.png';
+import canhireLogo from '../assets/logos/canhire-logo-fulllength.png';
 
 // Color scheme
 const colors = {
@@ -318,7 +318,7 @@ const InvoicePDFDocument: React.FC<{ data: InvoiceData }> = ({ data }) => {
               <View style={styles.header}>
                 <View style={styles.logoSection}>
                   <Image
-                    src={godspeedLogo}
+                    src={canhireLogo}
                     style={styles.logoPlaceholder}
                   />
                 </View>

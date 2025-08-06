@@ -1,7 +1,7 @@
 import { ReactNode, useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RotateCcw } from 'lucide-react';
-import godspeedLogo from '../assets/logos/godspped-logo-fulllength.png';
+import canhireLogo from '../assets/logos/canhire-logo-fulllength.png';
 import { HamburgerMenu } from './HamburgerMenu';
 import { useLanguage } from '../contexts/language/language-provider';
 import '../styles/components/header.css';
@@ -106,7 +106,7 @@ export function AppHeader({
         <div className="header-main">
           <div className="header-left">
             <div className="logo-container" onClick={() => navigate('/')}>
-              <img src={godspeedLogo} alt={t('common.godspeedLogo')} className="header-logo" />
+              <img src={canhireLogo} alt={t('common.canhireLogo')} className="header-logo" />
             </div>
           </div>
           <div className="header-actions">

@@ -7,8 +7,8 @@
   "recruiter": "Recruiter",
   "jobseeker": "Job Seeker",
   "admin_subtitle": "Oversee platform operations and manage system-wide recruiting analytics",
-  "recruiter_subtitle": "Manage talent acquisition with Godspeed's lightning-fast recruiting tools",
-  "jobseeker_subtitle": "Discover opportunities at Godspeed pace with our intelligent job matching system",
+  "recruiter_subtitle": "Manage talent acquisition with CanHire's lightning-fast recruiting tools",
+  "jobseeker_subtitle": "Discover opportunities at CanHire pace with our intelligent job matching system",
 
   "navigation": {
     "home": "Home",
@@ -225,7 +225,7 @@
     "select": "Select",
     "deselect": "Deselect",
     "language": "Language",
-    "godspeedLogo": "Godspeed Logo",
+    "godspeedLogo": "CanHire Logo",
     "user": "User"
   },
 
@@ -457,7 +457,7 @@
     "hidePassword": "Hide password",
     "showPassword": "Show password",
     "alreadyHaveAccount": "Already have an account?",
-    "brandDescription": "Elevate your talent management with Godspeed's intelligent workflows and lightning-fast systems designed to connect the right people with the right opportunities."
+    "brandDescription": "Elevate your talent management with CanHire's intelligent workflows and lightning-fast systems designed to connect the right people with the right opportunities."
   },
   "twoFactor": {
     "error": {

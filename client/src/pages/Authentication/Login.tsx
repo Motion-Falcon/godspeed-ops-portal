@@ -11,7 +11,7 @@ import '../../styles/variables.css';
 import '../../styles/pages/Login.css';
 import '../../styles/components/form.css';
 import '../../styles/components/button.css';
-import godspeedLogo from '../../assets/logos/godspped-logo.png';
+import canhireLogo from '../../assets/logos/canhire-logo.png';
 import { LanguageToggle } from '../../components/LanguageToggle';
 
 export function Login() {
@@ -103,7 +103,7 @@ export function Login() {
       <div className="auth-column brand">
         <div className="brand-content">
           <div className="brand-logo">
-            <img src={godspeedLogo} alt={t('common.godspeedLogo')} className="godspeed-logo" />
+            <img src={canhireLogo} alt={t('common.canhireLogo')} className="godspeed-logo" />
           </div>
           <h2 className="brand-title">{t('auth.welcomeBack')}</h2>
           <p className="brand-description">
