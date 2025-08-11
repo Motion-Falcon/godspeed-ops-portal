@@ -26,6 +26,7 @@ import {
   Receipt,
   BarChart3,
   FileSpreadsheet,
+  MessageSquare,
 } from "lucide-react";
 import { ThemeToggle } from "./theme-toggle";
 import { LanguageToggle } from "./LanguageToggle";
@@ -360,6 +361,14 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
       icon: <BookOpen size={16} />,
       requiresAuth: true,
       roles: ["admin", "recruiter", "jobseeker"],
+      exact: true,
+    },
+    {
+      label: t("navigation.aiChat"),
+      path: "/ai-chat",
+      icon: <MessageSquare size={16} />,
+      requiresAuth: true,
+      roles: ["admin"],
       exact: true,
     },
 
