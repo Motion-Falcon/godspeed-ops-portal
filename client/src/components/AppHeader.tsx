@@ -1,7 +1,7 @@
 import { ReactNode, useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RotateCcw } from 'lucide-react';
-import godspeedLogo from '../assets/logos/godspped-logo-fulllength.png';
+import godspeedLogo from '../assets/logos/motionfalcon-logo-fulllegth.png';
 import { HamburgerMenu } from './HamburgerMenu';
 import { useLanguage } from '../contexts/language/language-provider';
 import '../styles/components/header.css';

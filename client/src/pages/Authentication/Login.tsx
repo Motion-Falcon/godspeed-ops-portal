@@ -11,7 +11,7 @@ import '../../styles/variables.css';
 import '../../styles/pages/Login.css';
 import '../../styles/components/form.css';
 import '../../styles/components/button.css';
-import godspeedLogo from '../../assets/logos/godspped-logo.png';
+import godspeedLogo from '../../assets/logos/motionfalcon-logo.avif';
 import { LanguageToggle } from '../../components/LanguageToggle';
 
 export function Login() {

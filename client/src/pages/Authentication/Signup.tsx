@@ -13,7 +13,7 @@ import "../../styles/pages/Login.css";
 import "../../styles/components/form.css";
 import "../../styles/components/button.css";
 import "../../styles/components/phone-input.css";
-import godspeedLogo from "../../assets/logos/godspped-logo.png";
+import godspeedLogo from "../../assets/logos/motionfalcon-logo.avif";
 import PhoneInput from "react-phone-number-input";
 import "react-phone-number-input/style.css";
 import {
@@ -542,7 +542,7 @@ export function Signup() {
             />
           </div>
           <h2 className="brand-title">
-            Godspeed <span className="gradient-text">Operations</span>
+            Motion Falcon <span className="gradient-text">Operations</span>
           </h2>
           <p className="brand-description">
             {t('signup.brandDescription')}

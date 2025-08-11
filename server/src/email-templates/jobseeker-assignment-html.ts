@@ -52,6 +52,12 @@ export function jobseekerAssignmentHtmlTemplate(vars: Record<string, any>) {
           <td>${vars.experience}</td>
         </tr>` : ''}
       </table>
+      
+      <div class="handbook-notice">
+        <h4>📋 Employee Handbook</h4>
+        <p>Please review the attached <strong>Motion Falcon Employee Handbook 2024</strong>, which contains important information about our company policies, procedures, and expectations. This handbook will help you understand your rights and responsibilities as a Motion Falcon employee.</p>
+      </div>
+      
       <p>Our team will reach out to you soon with further details and next steps. If you have any questions, feel free to reply to this email.</p>
       <p>Congratulations again, and we look forward to supporting you in this new opportunity!</p>
       <p>Best regards,<br><b>The Recruitment Team</b></p>

@@ -1,5 +1,5 @@
 /**
- * Type definitions for the Godspeed Ops Portal
+ * Type definitions for the Motion Falcon Ops Portal
  */
 
 /**

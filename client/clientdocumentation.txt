@@ -134,7 +134,7 @@ Simple entry point that renders the App component and imports the main CSS style
   }
   ```
 - **Key Features**:
-  - Displays Godspeed logo and navigation
+  - Displays Motion Falcon logo and navigation
   - Supports dynamic action buttons in header
   - Status message system with success/error/pending states
   - Refresh button for error states
@@ -432,7 +432,7 @@ Located in `/pages/JobseekerProfile/` directory:
 ## Assets (assets/ directory)
 
 ### Organization
-- **logos/**: Company branding assets (Godspeed logo variants)
+- **logos/**: Company branding assets (Motion Falcon logo variants)
 - **animations/**: Lottie animation files for UI enhancement
 - **react.svg**: Default React logo asset
 
@@ -605,4 +605,4 @@ Located in `/pages/JobseekerProfile/` directory:
 
 ---
 
-This documentation provides a comprehensive overview of the Godspeed Ops Portal client application, covering architecture, components, authentication, API integration, and development practices. The application demonstrates modern React development patterns with a focus on security, user experience, and maintainability.
+This documentation provides a comprehensive overview of the Motion Falcon Ops Portal client application, covering architecture, components, authentication, API integration, and development practices. The application demonstrates modern React development patterns with a focus on security, user experience, and maintainability.

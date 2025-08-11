@@ -157,9 +157,9 @@ const FloatingChat: React.FC = () => {
   useEffect(() => {
     // Add welcome message when first opened
     if (open && messages.length === 0 && markdownReady) {
-      const welcomeContent = `# 🤖 Welcome to Godspeed Ops AI!
+      const welcomeContent = `# 🤖 Welcome to Motion Falcon Ops AI!
 
-I'm your **intelligent database assistant** for querying the Godspeed database. I can help you find information about:
+I'm your **intelligent database assistant** for querying the Motion Falcon database. I can help you find information about:
 
 **👥 Clients** - Company information and contacts  
 **💼 Job Positions** - Available roles and requirements  
@@ -436,7 +436,7 @@ Watch as I process your queries through multiple AI agents:
         <div className="floating-chat-window">
           <div className="floating-chat-header">
             <div className="header-content">
-              <h1><Bot size={20} className="inline-block mr-2" />Godspeed Ops AI</h1>
+              <h1><Bot size={20} className="inline-block mr-2" />Motion Falcon Ops AI</h1>
               <p>Real-time database query assistant</p>
             </div>
             <div className="header-controls">
