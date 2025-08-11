@@ -22,7 +22,8 @@ export const getPersonalInfoSchema = (messages: Record<string, string>) =>
     })
     .refine(
       (data) => {
-        if (data.sinNumber && data.sinNumber.trim() !== "") {
+        // Only require SIN expiry for temporary residents (SIN starting with '9')
+        if (data.sinNumber && data.sinNumber.trim() !== "" && data.sinNumber.startsWith('9')) {
           return data.sinExpiry && data.sinExpiry.trim() !== "";
         }
         return true;
@@ -166,7 +167,8 @@ export const createFormSchema = (messages: Record<string, string>) => {
     })
     .refine(
       (data) => {
-        if (data.sinNumber && data.sinNumber.trim() !== "") {
+        // Only require SIN expiry for temporary residents (SIN starting with '9')
+        if (data.sinNumber && data.sinNumber.trim() !== "" && data.sinNumber.startsWith('9')) {
           return data.sinExpiry && data.sinExpiry.trim() !== "";
         }
         return true;
