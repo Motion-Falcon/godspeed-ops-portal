@@ -55,6 +55,7 @@ import { Dashboard } from './pages/Dashboard/Dashboard';
 import { MetricExamplePage } from './pages/Dashboard/MetricExamplePage';
 import { BulkTimesheetManagement } from './pages/BulkTimesheetManagement/BulkTimesheetManagement';
 import { BulkTimesheetList } from './pages/BulkTimesheetManagement/BulkTimesheetList';
+import { GodspeedAIChat } from './pages/GodspeedAIChat';
 
 function App() {
   return (
@@ -85,6 +86,7 @@ function App() {
                 <Route path="/jobseekers/:id/edit" element={<ProfileEdit />} />
                 <Route path="/jobseekers/:id" element={<JobSeekerProfile />} />
                 <Route path="/training-modules" element={<TrainingModules />} />
+                <Route path="/ai-chat" element={<GodspeedAIChat />} />
                 <Route path="/metric-examples" element={<MetricExamplePage />} />
                 <Route path="/reports" element={<Reports />} />
 
