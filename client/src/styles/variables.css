@@ -156,7 +156,6 @@ body {
   line-height: 1.5;
   font-weight: var(--font-weight-normal);
   transition: background var(--transition-slow), color var(--transition-normal);
-  min-height: 100vh;
 }
 
 /* Ensure all form elements use the custom font */

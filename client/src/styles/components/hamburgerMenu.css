@@ -480,7 +480,7 @@
   position: absolute;
   bottom: 100%;
   left: 5px;
-  width: 240px;
+  width: 290px;
   height: calc(100% + var(--spacing-2)); /* Covers the margin gap */
   background: transparent;
   opacity: 0;
@@ -621,7 +621,7 @@
   transition: all var(--transition-normal);
   z-index: 1000;
   margin-bottom: var(--spacing-2);
-  width: 230px;
+  width: 270px;
 }
 
 .dark .user-dropdown {
