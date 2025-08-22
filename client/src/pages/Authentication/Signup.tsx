@@ -542,7 +542,7 @@ export function Signup() {
             />
           </div>
           <h2 className="brand-title">
-            Godspeed <span className="gradient-text">Operations</span>
+            CanHire <span className="gradient-text">Operations</span>
           </h2>
           <p className="brand-description">
             {t('signup.brandDescription')}
