@@ -118,7 +118,8 @@
 }
 
 /* User Type Badge Styling */
-.all-users-management .user-type-badge {
+.all-users-management .user-type-badge,
+.all-users-management .user-role-badge {
   display: inline-flex;
   align-items: center;
   padding: 4px 8px;
@@ -127,9 +128,22 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  min-width: 70px;
+  width: 130px;
   justify-content: center;
   border: 1px solid transparent;
+}
+.all-users-management .user-role-badge {
+  text-align: start;
+  justify-content: space-between;
+  padding: 4px 24px 4px 8px;
+}
+.all-users-management .user-role-badge .edit-icon {
+  position: absolute;
+  right: 6px;
+  display: none;
+}
+.all-users-management .user-role-badge:hover .edit-icon {
+  display: block;
 }
 
 .all-users-management .user-type-badge.admin {
@@ -156,6 +170,48 @@
   border-color: #d1d5db;
 }
 
+/* Subtle invited badge for onboarding incomplete users */
+.all-users-management .onboarding-badge.invited {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 6px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #92400e;
+  background-color: #fff7ed; /* very light amber */
+  border: 1px solid #f59e0b;
+  border-radius: 9999px;
+  vertical-align: middle;
+}
+
+.dark .all-users-management .onboarding-badge.invited {
+  color: #fbbf24;
+  background-color: #451a03;
+  border-color: #f59e0b;
+}
+
+/* Small button styling for resend invitation */
+.all-users-management .button.small {
+  font-size: 12px;
+  padding: 4px 8px;
+  min-height: 28px;
+  border-radius: 4px;
+}
+
+.all-users-management .loading-spinner-small {
+  width: 14px;
+  height: 14px;
+  border: 2px solid transparent;
+  border-top: 2px solid var(--primary-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 /* Dark mode support for user type badges */
 .dark .all-users-management .user-type-badge.admin {
   background-color: #451a03; /* Darker amber background */
@@ -179,6 +235,23 @@
   background-color: #374151; /* Darker gray background */
   color: #e5e7eb; /* Brighter gray text */
   border-color: #6b7280;
+}
+
+.all-users-management .user-role-badge.default {
+  background-color: #f3f4f6;
+  color: #6b7280;
+  border-color: #d1d5db;
+}
+
+/* Dark mode support for user role badges */
+.dark .all-users-management .user-role-badge.default {
+  background-color: #374151;
+  color: #e5e7eb;
+  border-color: #6b7280;
+}
+.all-users-management .manager-cell .user-role-badge,
+.all-users-management .user-role-cell .user-role-badge {
+  cursor: pointer;
 }
 
 /* Status display styling specific to all users management */
@@ -217,6 +290,11 @@
 
 /* Table cell specific styles */
 .all-users-management .user-type-cell {
+  padding: 12px 8px;
+  vertical-align: middle;
+}
+
+.all-users-management .user-role-cell {
   padding: 12px 8px;
   vertical-align: middle;
 }

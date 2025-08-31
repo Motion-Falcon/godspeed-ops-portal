@@ -4,6 +4,7 @@ import { getJobseekerProfiles } from "../../services/api/jobseeker";
 import { getClients, ClientData } from "../../services/api/client";
 import { AppHeader } from "../../components/AppHeader";
 import { CustomDropdown, DropdownOption } from "../../components/CustomDropdown";
+import { useLanguage } from "../../contexts/language/language-provider";
 import { Loader2, Calendar, User, Building } from "lucide-react";
 import { JobSeekerProfile } from "../../types/jobseeker";
 import { generateWeekOptions, formatDate as formatWeekDate } from "../../utils/weekUtils";
@@ -18,53 +19,56 @@ const formatDate = (dateString: string | undefined) => {
 };
 
 // Define the columns and headers as used in the UI table (excluding HST)
-const TABLE_COLUMNS: { key: string; label: string; format?: (val: unknown, row?: Record<string, unknown>) => string }[] = [
-  { key: 'week_period', label: 'Week Period', format: (_val, row) => {
+const getTableColumns = (t: (key: string) => string): { key: string; label: string; format?: (val: unknown, row?: Record<string, unknown>) => string }[] => [
+  { key: 'week_period', label: t('reports.columns.weekPeriod'), format: (_val, row) => {
     if (row && typeof row === 'object' && 'week_start_date' in row && 'week_end_date' in row) {
       return `${formatWeekDate(String((row as Record<string, unknown>).week_start_date))} - ${formatWeekDate(String((row as Record<string, unknown>).week_end_date))}`;
     }
     return '';
   } },
-  { key: 'employee_id', label: 'Jobseeker #', format: (val) => val ? `#${val}` : '' },
-  { key: 'position_code', label: 'Position #', format: (val) => val ? `#${val}` : '' },
-  { key: 'title', label: 'Position Detail', format: (val) => String(val ?? '') },
-  { key: 'total_regular_hours', label: 'Reg. Hrs', format: (val) => String(val ?? '') },
-  { key: 'total_overtime_hours', label: 'OT. Hrs', format: (val) => String(val ?? '') },
-  { key: 'regular_pay_rate', label: 'Reg. Pay', format: (val) => val !== undefined && val !== 'N/A' ? `$${val}` : String(val ?? '') },
-  { key: 'overtime_pay_rate', label: 'OT Pay', format: (val) => val !== undefined && val !== 'N/A' ? `$${val}` : String(val ?? '') },
-  { key: 'total_jobseeker_pay', label: 'Total Pay', format: (val) => val !== undefined && val !== 'N/A' ? `$${val}` : String(val ?? '') },
-  { key: 'bonus_amount', label: 'Bonus', format: (val) => val !== undefined && val !== 'N/A' ? `+$${val}` : String(val ?? '') },
-  { key: 'deduction_amount', label: 'Deduction', format: (val) => val !== undefined && val !== 'N/A' ? `-$${val}` : String(val ?? '') },
-  { key: 'company_name', label: 'Company Name', format: (val) => String(val ?? '') },
-  { key: 'list_name', label: 'List Name', format: (val) => String(val ?? '') },
-  { key: 'name', label: 'Name', format: (val) => String(val ?? '') },
-  { key: 'mobile', label: 'Mobile', format: (val) => String(val ?? '') },
-  { key: 'email', label: 'Email', format: (val) => String(val ?? '') },
-  { key: 'position_category', label: 'Position Category', format: (val) => String(val ?? '') },
-  { key: 'client_manager', label: 'Client Manager', format: (val) => String(val ?? '') },
-  { key: 'regular_bill_rate', label: 'Reg. Bill Rate', format: (val) => String(val ?? '') },
-  { key: 'overtime_bill_rate', label: 'OT Bill Rate', format: (val) => String(val ?? '') },
-  { key: 'currency', label: 'Currency', format: (val) => String(val ?? '') },
-  { key: 'payment_method', label: 'Payment Method', format: (val) => String(val ?? '') },
-  { key: 'pay_cycle', label: 'Pay Cycle', format: (val) => String(val ?? '') },
-  { key: 'notes', label: 'Notes', format: (val) => String(val ?? '') },
-  { key: 'timesheet_created_at', label: 'Created At', format: (val) => formatDate(String(val ?? '')) },
-  { key: 'invoice_number', label: 'Timesheet #', format: (val) => String(val ?? '') },
+  { key: 'employee_id', label: t('reports.columns.jobseekerNumber'), format: (val) => val ? `#${val}` : '' },
+  { key: 'position_code', label: t('reports.columns.positionNumber'), format: (val) => val ? `#${val}` : '' },
+  { key: 'title', label: t('reports.columns.positionDetail'), format: (val) => String(val ?? '') },
+  { key: 'total_regular_hours', label: t('reports.columns.regularHours'), format: (val) => String(val ?? '') },
+  { key: 'total_overtime_hours', label: t('reports.columns.overtimeHours'), format: (val) => String(val ?? '') },
+  { key: 'regular_pay_rate', label: t('reports.columns.regularPay'), format: (val) => val !== undefined && val !== 'N/A' ? `$${val}` : String(val ?? '') },
+  { key: 'overtime_pay_rate', label: t('reports.columns.overtimePay'), format: (val) => val !== undefined && val !== 'N/A' ? `$${val}` : String(val ?? '') },
+  { key: 'total_jobseeker_pay', label: t('reports.columns.totalPay'), format: (val) => val !== undefined && val !== 'N/A' ? `$${val}` : String(val ?? '') },
+  { key: 'bonus_amount', label: t('reports.columns.bonus'), format: (val) => val !== undefined && val !== 'N/A' ? `+$${val}` : String(val ?? '') },
+  { key: 'deduction_amount', label: t('reports.columns.deduction'), format: (val) => val !== undefined && val !== 'N/A' ? `-$${val}` : String(val ?? '') },
+  { key: 'company_name', label: t('reports.columns.companyName'), format: (val) => String(val ?? '') },
+  { key: 'list_name', label: t('reports.columns.listName'), format: (val) => String(val ?? '') },
+  { key: 'name', label: t('reports.columns.name'), format: (val) => String(val ?? '') },
+  { key: 'mobile', label: t('reports.columns.mobile'), format: (val) => String(val ?? '') },
+  { key: 'email', label: t('reports.columns.email'), format: (val) => String(val ?? '') },
+  { key: 'position_category', label: t('reports.columns.positionCategory'), format: (val) => String(val ?? '') },
+  { key: 'client_manager', label: t('reports.columns.clientManager'), format: (val) => String(val ?? '') },
+  { key: 'regular_bill_rate', label: t('reports.columns.regularBillRate'), format: (val) => String(val ?? '') },
+  { key: 'overtime_bill_rate', label: t('reports.columns.overtimeBillRate'), format: (val) => String(val ?? '') },
+  { key: 'currency', label: t('reports.columns.currency'), format: (val) => String(val ?? '') },
+  { key: 'payment_method', label: t('reports.columns.paymentMethod'), format: (val) => String(val ?? '') },
+  { key: 'pay_cycle', label: t('reports.columns.payCycle'), format: (val) => String(val ?? '') },
+  { key: 'notes', label: t('reports.columns.notes'), format: (val) => String(val ?? '') },
+  { key: 'timesheet_created_at', label: t('reports.columns.createdAt'), format: (val) => formatDate(String(val ?? '')) },
+  { key: 'invoice_number', label: t('reports.columns.timesheetNumber'), format: (val) => String(val ?? '') },
 ];
 
 // For CSV: Match UI table order: Timesheet #, Week Period, then the rest
-const CSV_COLUMNS = [
-  { key: 'invoice_number', label: 'Timesheet #', format: (val: unknown) => String(val ?? '') },
-  { key: 'week_period', label: 'Week Period', format: (_val: unknown, row?: Record<string, unknown>) => {
+const getCsvColumns = (tableColumns: ReturnType<typeof getTableColumns>) => [
+  { key: 'invoice_number', label: tableColumns.find(col => col.key === 'invoice_number')?.label || 'Timesheet #', format: (val: unknown) => String(val ?? '') },
+  { key: 'week_period', label: tableColumns.find(col => col.key === 'week_period')?.label || 'Week Period', format: (_val: unknown, row?: Record<string, unknown>) => {
     if (row && typeof row === 'object' && 'week_start_date' in row && 'week_end_date' in row) {
       return `${formatWeekDate(String((row as Record<string, unknown>).week_start_date))} - ${formatWeekDate(String((row as Record<string, unknown>).week_end_date))}`;
     }
     return '';
   } },
-  ...TABLE_COLUMNS.filter(col => col.key !== 'week_period' && col.key !== 'invoice_number')
+  ...tableColumns.filter(col => col.key !== 'week_period' && col.key !== 'invoice_number')
 ];
 
 export function WeeklyTimesheet() {
+  const { t } = useLanguage();
+  const tableColumns = getTableColumns(t);
+  const csvColumns = getCsvColumns(tableColumns);
   // Filter state
   const [jobseekers, setJobseekers] = useState<JobSeekerProfile[]>([]);
   const [clients, setClients] = useState<ClientData[]>([]);
@@ -159,22 +163,22 @@ export function WeeklyTimesheet() {
   });
   // Add a 'Select (None)' option to both dropdowns
   const payCycleOptions: DropdownOption[] = [
-    { id: '', label: 'Select (None)', value: '' },
+    { id: '', label: t('reports.placeholders.selectNone'), value: '' },
     ...PAY_CYCLES.map((pc) => ({ id: pc, label: pc, value: pc }))
   ];
   const listNameOptions: DropdownOption[] = [
-    { id: '', label: 'Select (None)', value: '' },
+    { id: '', label: t('reports.placeholders.selectNone'), value: '' },
     ...LIST_NAMES.map((ln) => ({ id: ln, label: ln, value: ln }))
   ];
 
   return (
     <div className="page-container common-report-container">
-      <AppHeader title="Weekly Timesheet Report" />
+      <AppHeader title={t('reports.types.weeklyTimesheet.title')} />
       <div className="common-report-card">
         <div className="timesheet-selection-bar">
           <div className="selection-row">
             <div className="selection-section">
-              <label className="selection-label">Job Seeker</label>
+              <label className="selection-label">{t('reports.filters.jobSeeker')}</label>
               {jobseekerLoading ? (
                 <div className="invoice-dropdown-skeleton">
                   <div className="skeleton-dropdown-trigger">
@@ -190,14 +194,14 @@ export function WeeklyTimesheet() {
                   onSelect={(opt) => {
                     if (!Array.isArray(opt) && opt && typeof opt === 'object') setSelectedJobseeker(opt.value as JobSeekerProfile);
                   }}
-                  placeholder="Select job seeker..."
+                  placeholder={t('reports.placeholders.selectJobSeeker')}
                   icon={<User size={16} />}
-                  emptyMessage="No job seekers found"
+                  emptyMessage={t('reports.emptyMessages.noJobSeekers')}
                 />
               )}
             </div>
             <div className="selection-section">
-              <label className="selection-label">Clients</label>
+              <label className="selection-label">{t('reports.filters.clients')}</label>
               {clientLoading ? (
                 <div className="invoice-dropdown-skeleton">
                   <div className="skeleton-dropdown-trigger">
@@ -215,11 +219,11 @@ export function WeeklyTimesheet() {
                     else if (opts && typeof opts === 'object') setSelectedClients([opts.value as ClientData]);
                     else setSelectedClients([]);
                   }}
-                  placeholder="Select clients..."
+                  placeholder={t('reports.placeholders.selectClients')}
                   multiSelect={true}
                   showSelectAll={true}
                   icon={<Building size={16} />}
-                  emptyMessage="No clients found"
+                  emptyMessage={t('reports.emptyMessages.noClients')}
                   maxVisibleTagsOverride={5}
                 />
               )}
@@ -227,7 +231,7 @@ export function WeeklyTimesheet() {
           </div>
           <div className="selection-row">
             <div className="selection-section">
-              <label className="selection-label">Week Periods</label>
+              <label className="selection-label">{t('reports.filters.weekPeriods')}</label>
               <CustomDropdown
                 options={weekDropdownOptions}
                 selectedOptions={selectedWeeks.length > 0 ? (selectedWeeks.map((w) => weekDropdownOptions.find((o) => o.id === w.start + "_" + w.end) as DropdownOption).filter(Boolean)) : []}
@@ -236,7 +240,7 @@ export function WeeklyTimesheet() {
                   else if (opts && typeof opts === 'object') setSelectedWeeks([opts.value as { start: string; end: string }]);
                   else setSelectedWeeks([]);
                 }}
-                placeholder="Select week periods..."
+                placeholder={t('reports.placeholders.selectWeekPeriods')}
                 multiSelect={true}
                 searchable={false}
                 showSelectAll={true}
@@ -245,7 +249,7 @@ export function WeeklyTimesheet() {
               />
             </div>
             <div className="selection-section">
-              <label className="selection-label">Pay Cycle</label>
+              <label className="selection-label">{t('reports.filters.payCycle')}</label>
               <CustomDropdown
                 options={payCycleOptions}
                 searchable={false}
@@ -257,11 +261,11 @@ export function WeeklyTimesheet() {
                     setPayCycle('');
                   }
                 }}
-                placeholder="Select pay cycle..."
+                placeholder={t('reports.placeholders.selectPayCycle')}
               />
             </div>
             <div className="selection-section">
-              <label className="selection-label">List Name</label>
+              <label className="selection-label">{t('reports.filters.listName')}</label>
               <CustomDropdown
                 options={listNameOptions}
                 searchable={false}
@@ -273,7 +277,7 @@ export function WeeklyTimesheet() {
                     setListName('');
                   }
                 }}
-                placeholder="Select list name..."
+                placeholder={t('reports.placeholders.selectListName')}
               />
             </div>
           </div>
@@ -286,7 +290,7 @@ export function WeeklyTimesheet() {
                 // Prepare CSV data to match the table exactly (order: Timesheet #, Week Period, ...)
                 const csvData = reportRows.map(row => {
                   const csvRow: Record<string, unknown> = {};
-                  CSV_COLUMNS.forEach(col => {
+                  csvColumns.forEach(col => {
                     if (col.key === 'week_period') {
                       csvRow[col.label] = col.format ? col.format(undefined, row as unknown as Record<string, unknown>) : '';
                     } else {
@@ -299,29 +303,29 @@ export function WeeklyTimesheet() {
                 exportToCSV(
                   csvData,
                   'Weekly Timesheet Report.csv',
-                  CSV_COLUMNS.map(col => col.label)
+                  csvColumns.map(col => col.label)
                 );
               }}
             >
-              Download CSV
+              {t('reports.states.downloadCSV')}
             </button>
           </div>
         )}
         <div className="report-table-container timesheet-selection-bar">
           {loading ? (
-            <div className="loading-indicator"><Loader2 size={24} className="spin" /> Loading...</div>
+            <div className="loading-indicator"><Loader2 size={24} className="spin" /> {t('reports.states.loading')}</div>
           ) : error ? (
             <div className="error-message">{error}</div>
           ) : reportRows.length === 0 ? (
-            <div className="empty-state">No data found for selected filters.</div>
+            <div className="empty-state">{t('reports.states.noDataFound')}</div>
           ) : (
             <table className="common-table">
               <thead>
                 <tr>
                   {/* UI table: Timesheet #, Week Period, then the rest */}
-                  <th>Timesheet #</th>
-                  <th>Week Period</th>
-                  {TABLE_COLUMNS.filter(col => col.key !== 'week_period' && col.key !== 'invoice_number').map(col => (
+                  <th>{t('reports.columns.timesheetNumber')}</th>
+                  <th>{t('reports.columns.weekPeriod')}</th>
+                  {tableColumns.filter(col => col.key !== 'week_period' && col.key !== 'invoice_number').map(col => (
                     <th key={col.key}>{col.label}</th>
                   ))}
                 </tr>
@@ -330,8 +334,8 @@ export function WeeklyTimesheet() {
                 {reportRows.map((row, idx) => (
                   <tr key={idx}>
                     <td>{row.invoice_number ? String(row.invoice_number) : ''}</td>
-                    <td>{TABLE_COLUMNS[0].format ? TABLE_COLUMNS[0].format(undefined, row as unknown as Record<string, unknown>) : ''}</td>
-                    {TABLE_COLUMNS.filter(col => col.key !== 'week_period' && col.key !== 'invoice_number').map((col, i) => {
+                    <td>{tableColumns[0].format ? tableColumns[0].format(undefined, row as unknown as Record<string, unknown>) : ''}</td>
+                    {tableColumns.filter(col => col.key !== 'week_period' && col.key !== 'invoice_number').map((col, i) => {
                       const val = row[col.key as keyof typeof row];
                       const displayValue = col.format ? col.format(val) : (val !== undefined && val !== null ? String(val) : 'N/A');
                       return <td key={i}>{displayValue}</td>;

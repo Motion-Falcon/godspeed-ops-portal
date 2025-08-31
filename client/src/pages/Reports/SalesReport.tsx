@@ -4,6 +4,7 @@ import { getJobseekerProfiles } from "../../services/api/jobseeker";
 import { getClients, ClientData } from "../../services/api/client";
 import { AppHeader } from "../../components/AppHeader";
 import { CustomDropdown, DropdownOption } from "../../components/CustomDropdown";
+import { useLanguage } from "../../contexts/language/language-provider";
 import { Loader2, Calendar, User, Building, Users } from "lucide-react";
 import { JobSeekerProfile } from "../../types/jobseeker";
 import { formatDate as formatWeekDate } from "../../utils/weekUtils";
@@ -11,41 +12,44 @@ import "../../styles/pages/CommonReportsStyles.css";
 import { exportToCSV } from '../../utils/csvExport';
 
 // Define the columns and headers as used in the UI table
-const TABLE_COLUMNS: { key: string; label: string; format?: (val: unknown, row?: Record<string, unknown>) => string }[] = [
-  { key: 'client_name', label: 'Client Name', format: (val) => String(val ?? '') },
-  { key: 'contact_person_name', label: 'Contact Person', format: (val) => String(val ?? '') },
-  { key: 'sales_person', label: 'Sales Person', format: (val) => String(val ?? '') },
-  { key: 'invoice_number', label: 'Invoice #', format: (val) => String(val ?? '') },
-  { key: 'from_to_date', label: 'From & To (date)', format: (_val, row) => {
+const getTableColumns = (t: (key: string) => string): { key: string; label: string; format?: (val: unknown, row?: Record<string, unknown>) => string }[] => [
+  { key: 'client_name', label: t('reports.columns.clientName'), format: (val) => String(val ?? '') },
+  { key: 'contact_person_name', label: t('reports.columns.contactPerson'), format: (val) => String(val ?? '') },
+  { key: 'sales_person', label: t('reports.columns.salesPersonCol'), format: (val) => String(val ?? '') },
+  { key: 'invoice_number', label: t('reports.columns.invoiceNumber'), format: (val) => String(val ?? '') },
+  { key: 'from_to_date', label: t('reports.columns.fromToDate'), format: (_val, row) => {
     if (row && typeof row === 'object' && 'from_date' in row && 'to_date' in row) {
       return `${formatWeekDate(String((row as Record<string, unknown>).from_date))} - ${formatWeekDate(String((row as Record<string, unknown>).to_date))}`;
     }
     return '';
   } },
-  { key: 'invoice_date', label: 'Invoice Date', format: (val) => formatWeekDate(String(val ?? '')) },
-  { key: 'due_date', label: 'Due Date', format: (val) => formatWeekDate(String(val ?? '')) },
-  { key: 'terms', label: 'Terms', format: (val) => String(val ?? '') },
-  { key: 'item_position', label: 'Item/Position', format: (val) => String(val ?? '') },
-  { key: 'position_category', label: 'Position Category', format: (val) => String(val ?? '') },
-  { key: 'jobseeker_number', label: 'Jobseeker #', format: (val) => val ? `#${val}` : '' },
-  { key: 'jobseeker_name', label: 'Name of jobseeker', format: (val) => String(val ?? '') },
-  { key: 'description', label: 'Description', format: (val) => String(val ?? '') },
-  { key: 'hours', label: 'Hours', format: (val) => String(val ?? '') },
-  { key: 'bill_rate', label: 'Bill Rate', format: (val) => val !== undefined && val !== 'N/A' ? `$${val}` : String(val ?? '') },
-  { key: 'amount', label: 'Amount', format: (val) => val !== undefined && val !== 'N/A' ? `$${val}` : String(val ?? '') },
-  { key: 'discount', label: 'Discount', format: (val) => val !== undefined && val !== 'N/A' ? `$${val}` : String(val ?? '') },
-  { key: 'tax_rate', label: 'Tax Rate (%)', format: (val) => val !== undefined && val !== 'N/A' ? `${val}%` : String(val ?? '') },
-  { key: 'gst_hst', label: 'GST/HST', format: (val) => val !== undefined && val !== 'N/A' ? `$${val}` : String(val ?? '') },
-  { key: 'total', label: 'Total', format: (val) => val !== undefined && val !== 'N/A' ? `$${val}` : String(val ?? '') },
-  { key: 'currency', label: 'Currency', format: (val) => String(val ?? '') },
+  { key: 'invoice_date', label: t('reports.columns.invoiceDate'), format: (val) => formatWeekDate(String(val ?? '')) },
+  { key: 'due_date', label: t('reports.columns.dueDate'), format: (val) => formatWeekDate(String(val ?? '')) },
+  { key: 'terms', label: t('reports.columns.terms'), format: (val) => String(val ?? '') },
+  { key: 'item_position', label: t('reports.columns.itemPosition'), format: (val) => String(val ?? '') },
+  { key: 'position_category', label: t('reports.columns.positionCategory'), format: (val) => String(val ?? '') },
+  { key: 'jobseeker_number', label: t('reports.columns.jobseekerNumberCol'), format: (val) => val ? `#${val}` : '' },
+  { key: 'jobseeker_name', label: t('reports.columns.nameOfJobseeker'), format: (val) => String(val ?? '') },
+  { key: 'description', label: t('reports.columns.description'), format: (val) => String(val ?? '') },
+  { key: 'hours', label: t('reports.columns.hours'), format: (val) => String(val ?? '') },
+  { key: 'bill_rate', label: t('reports.columns.billRate'), format: (val) => val !== undefined && val !== 'N/A' ? `$${val}` : String(val ?? '') },
+  { key: 'amount', label: t('reports.columns.amount'), format: (val) => val !== undefined && val !== 'N/A' ? `$${val}` : String(val ?? '') },
+  { key: 'discount', label: t('reports.columns.discount'), format: (val) => val !== undefined && val !== 'N/A' ? `$${val}` : String(val ?? '') },
+  { key: 'tax_rate', label: t('reports.columns.taxRate'), format: (val) => val !== undefined && val !== 'N/A' ? `${val}%` : String(val ?? '') },
+  { key: 'gst_hst', label: t('reports.columns.gstHst'), format: (val) => val !== undefined && val !== 'N/A' ? `$${val}` : String(val ?? '') },
+  { key: 'total', label: t('reports.columns.total'), format: (val) => val !== undefined && val !== 'N/A' ? `$${val}` : String(val ?? '') },
+  { key: 'currency', label: t('reports.columns.currency'), format: (val) => String(val ?? '') },
 ];
 
 // For CSV: Match UI table order
-const CSV_COLUMNS = [
-  ...TABLE_COLUMNS
+const getCsvColumns = (tableColumns: ReturnType<typeof getTableColumns>) => [
+  ...tableColumns
 ];
 
 export function SalesReport() {
+  const { t } = useLanguage();
+  const tableColumns = getTableColumns(t);
+  const csvColumns = getCsvColumns(tableColumns);
   // Filter state
   const [clients, setClients] = useState<ClientData[]>([]);
   const [jobseekers, setJobseekers] = useState<JobSeekerProfile[]>([]);
@@ -136,12 +140,12 @@ export function SalesReport() {
 
   return (
     <div className="page-container common-report-container">
-      <AppHeader title="Sales Report" />
+      <AppHeader title={t('reports.types.salesReport.title')} />
       <div className="common-report-card">
         <div className="timesheet-selection-bar">
           <div className="selection-row">
             <div className="selection-section">
-              <label className="selection-label">Clients</label>
+              <label className="selection-label">{t('reports.filters.clients')}</label>
               {clientLoading ? (
                 <div className="invoice-dropdown-skeleton">
                   <div className="skeleton-dropdown-trigger">
@@ -159,23 +163,23 @@ export function SalesReport() {
                     else if (opts && typeof opts === 'object') setSelectedClients([opts.value as ClientData]);
                     else setSelectedClients([]);
                   }}
-                  placeholder="Select clients..."
+                  placeholder={t('reports.placeholders.selectClients')}
                   multiSelect={true}
                   showSelectAll={true}
                   icon={<Building size={16} />}
-                  emptyMessage="No clients found"
+                  emptyMessage={t('reports.emptyMessages.noClients')}
                   maxVisibleTagsOverride={4}
                 />
               )}
               <div style={{ marginTop: 8, color: '#555', fontSize: 13 }}>
-                Report will auto-generate as soon as you select a client and date range. Additional filters will further refine the results.
+                {t('reports.notes.autoGenerate')}
               </div>
             </div>
             <div className="selection-section date-input-wrapper">
               <div className="start-end-date-section">
                 <div className="start-date-section">
                     <label className="selection-label" htmlFor="start-date-input" onClick={() => document.getElementById('start-date-input')?.focus()}>
-                      <Calendar size={16} /> Start Date
+                      <Calendar size={16} /> {t('reports.filters.startDate')}
                   </label>
                   <input
                     id="start-date-input"
@@ -187,7 +191,7 @@ export function SalesReport() {
                 </div>
                 <div className="end-date-section">
                   <label className="selection-label" htmlFor="end-date-input" onClick={() => document.getElementById('end-date-input')?.focus()}>
-                    <Calendar size={16} /> End Date
+                    <Calendar size={16} /> {t('reports.filters.endDate')}
                   </label>
                   <input
                     id="end-date-input"
@@ -199,13 +203,13 @@ export function SalesReport() {
                 </div>
               </div>
               <div style={{ marginTop: 4, color: '#888', fontSize: 13 }}>
-                <strong>Note:</strong> The date filter is applied on the <b>invoice date</b>.
+                <strong>Note:</strong> {t('reports.notes.dateFilter')} <b>{t('reports.notes.invoiceDate')}</b>.
               </div>
             </div>
           </div>
           <div className="selection-row">
             <div className="selection-section">
-              <label className="selection-label">Jobseekers</label>
+              <label className="selection-label">{t('reports.filters.jobseekers')}</label>
               {jobseekerLoading ? (
                 <div className="invoice-dropdown-skeleton">
                   <div className="skeleton-dropdown-trigger">
@@ -223,17 +227,17 @@ export function SalesReport() {
                     else if (opts && typeof opts === 'object') setSelectedJobseekers([opts.value as JobSeekerProfile]);
                     else setSelectedJobseekers([]);
                   }}
-                  placeholder="Select jobseekers (default: Select All)..."
+                  placeholder={t('reports.placeholders.selectJobseekers')}
                   multiSelect={true}
                   showSelectAll={true}
                   icon={<User size={16} />}
-                  emptyMessage="No jobseekers found"
+                  emptyMessage={t('reports.emptyMessages.noJobseekers')}
                   maxVisibleTagsOverride={3}
                 />
               )}
             </div>
             <div className="selection-section salespers-section">
-              <label className="selection-label">Sales Person</label>
+              <label className="selection-label">{t('reports.filters.salesPerson')}</label>
               <CustomDropdown
                 options={salesPersonDropdownOptions}
                 selectedOptions={selectedSalesPersons.length > 0 ? (selectedSalesPersons.map((sp) => salesPersonDropdownOptions.find((o) => o.id === sp) as DropdownOption).filter(Boolean)) : []}
@@ -242,11 +246,11 @@ export function SalesReport() {
                   else if (opts && typeof opts === 'object') setSelectedSalesPersons([opts.value as string]);
                   else setSelectedSalesPersons([]);
                 }}
-                placeholder="Select sales persons (default: Select All)..."
+                placeholder={t('reports.placeholders.selectSalesPersons')}
                 multiSelect={true}
                 showSelectAll={true}
                 icon={<Users size={16} />}
-                emptyMessage="No sales persons found"
+                emptyMessage={t('reports.emptyMessages.noSalesPersons')}
                 maxVisibleTagsOverride={3}
               />
             </div>
@@ -260,7 +264,7 @@ export function SalesReport() {
                 // Prepare CSV data to match the table exactly
                 const csvData = reportRows.map(row => {
                   const csvRow: Record<string, unknown> = {};
-                  CSV_COLUMNS.forEach(col => {
+                  csvColumns.forEach(col => {
                     if (col.key === 'from_to_date') {
                       csvRow[col.label] = col.format ? col.format(undefined, row as unknown as Record<string, unknown>) : '';
                     } else {
@@ -273,26 +277,26 @@ export function SalesReport() {
                 exportToCSV(
                   csvData,
                   'Sales Report.csv',
-                  CSV_COLUMNS.map(col => col.label)
+                  csvColumns.map(col => col.label)
                 );
               }}
             >
-              Download CSV
+              {t('reports.states.downloadCSV')}
             </button>
           </div>
         )}
         <div className="report-table-container timesheet-selection-bar">
           {loading ? (
-            <div className="loading-indicator"><Loader2 size={24} className="spin" /> Loading...</div>
+            <div className="loading-indicator"><Loader2 size={24} className="spin" /> {t('reports.states.loading')}</div>
           ) : error ? (
             <div className="error-message">{error}</div>
           ) : reportRows.length === 0 ? (
-            <div className="empty-state">No data found for selected filters.</div>
+            <div className="empty-state">{t('reports.states.noDataFound')}</div>
           ) : (
             <table className="common-table">
               <thead>
                 <tr>
-                  {TABLE_COLUMNS.map(col => (
+                  {tableColumns.map(col => (
                     <th key={col.key}>{col.label}</th>
                   ))}
                 </tr>
@@ -300,7 +304,7 @@ export function SalesReport() {
               <tbody>
                 {reportRows.map((row, idx) => (
                   <tr key={idx}>
-                    {TABLE_COLUMNS.map((col, i) => {
+                    {tableColumns.map((col, i) => {
                       if (col.key === 'from_to_date') {
                         const displayValue = col.format ? col.format(undefined, row as unknown as Record<string, unknown>) : '';
                         return <td key={i}>{displayValue}</td>;

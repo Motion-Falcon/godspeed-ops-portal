@@ -387,6 +387,16 @@
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
+.category-user-management {
+  background-color: #d1fae5;
+  color: #047857;
+}
+
+.dark .category-user-management {   
+  background-color: #047857;
+  color: #d1fae5;
+}
+
 .category-candidate-management {
   background-color: #dbeafe;
   color: #1d4ed8;
@@ -414,6 +424,14 @@
 
 .dark .category-client-management {
   background-color: #b62121;
+  color: #ffe0e0;
+}
+.category-consent-management {
+  background-color: #e0e0ff;
+  color: #6e21b6;
+}
+.dark .category-consent-management {
+  background-color: #6e21b6;
   color: #ffe0e0;
 }
 
@@ -533,13 +551,6 @@
   border-radius: 4px;
 }
 
-.skeleton-icon {
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-  background-size: 200% 100%;
-  animation: skeleton-loading 1.5s infinite;
-  border-radius: 3px;
-}
-
 @keyframes skeleton-loading {
   0% {
     background-position: 200% 0;
@@ -570,10 +581,6 @@
   background-size: 200% 100%;
 }
 
-.dark .skeleton-icon {
-  background: linear-gradient(90deg, #333 25%, #444 50%, #333 75%);
-  background-size: 200% 100%;
-}
 
 /* Connection status for loading state */
 .connection-status.connecting {

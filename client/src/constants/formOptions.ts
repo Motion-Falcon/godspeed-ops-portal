@@ -254,4 +254,13 @@ export const LIST_NAMES = [
   "SA",
   "SB",
   "SCARBOROUGH"
-] as const; 
+] as const;
+
+export const USER_ROLES = [
+  "admin",
+  "recruiter", 
+  "manager",
+  "accountant"
+] as const;
+
+export type UserRole = typeof USER_ROLES[number]; 

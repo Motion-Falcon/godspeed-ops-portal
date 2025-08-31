@@ -96,7 +96,7 @@ export function CompensationForm({ allFields }: CompensationFormProps) {
             min="0"
             step="0.01"
             className="form-input"
-            placeholder="0.00"
+            placeholder={t('profileCreate.compensation.billRatePlaceholder')}
             {...register("billRate")}
           />
           {shouldShowError("billRate") && (
@@ -118,7 +118,7 @@ export function CompensationForm({ allFields }: CompensationFormProps) {
             min="0"
             step="0.01"
             className="form-input"
-            placeholder="0.00"
+            placeholder={t('profileCreate.compensation.payRatePlaceholder')}
             {...register("payRate")}
           />
           {shouldShowError("payRate") && (
@@ -224,7 +224,7 @@ export function CompensationForm({ allFields }: CompensationFormProps) {
                   id="overtimeHours"
                   type="text"
                   className="form-input"
-                  placeholder="e.g., After 40 hours/week"
+                  placeholder={t('profileCreate.compensation.overtimeHoursPlaceholder')}
                   {...register("overtimeHours")}
                 />
                 {shouldShowError("overtimeHours") && (
@@ -248,7 +248,7 @@ export function CompensationForm({ allFields }: CompensationFormProps) {
                   min="0"
                   step="0.01"
                   className="form-input"
-                  placeholder="0.00"
+                  placeholder={t('profileCreate.compensation.overtimeBillRatePlaceholder')}
                   {...register("overtimeBillRate")}
                 />
                 {shouldShowError("overtimeBillRate") && (
@@ -272,7 +272,7 @@ export function CompensationForm({ allFields }: CompensationFormProps) {
                   min="0"
                   step="0.01"
                   className="form-input"
-                  placeholder="0.00"
+                  placeholder={t('profileCreate.compensation.overtimePayRatePlaceholder')}
                   {...register("overtimePayRate")}
                 />
                 {shouldShowError("overtimePayRate") && (

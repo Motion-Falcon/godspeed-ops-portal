@@ -108,6 +108,30 @@
   box-shadow: var(--card-shadow), 0 8px 25px rgba(227, 108, 63, 0.15);
 }
 
+/* Enhanced styling for mandatory modules */
+.module-card.mandatory-module {
+  background: linear-gradient(135deg, var(--card) 0%, var(--card) 90%, rgba(220, 53, 69, 0.08) 100%);
+  border-left: 4px solid #dc3545;
+  position: relative;
+}
+
+.module-card.mandatory-module::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 50px;
+  height: 50px;
+  background: linear-gradient(135deg, transparent 30%, rgba(220, 53, 69, 0.1) 100%);
+  pointer-events: none;
+}
+
+.module-card.mandatory-module:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--card-shadow), 0 8px 25px rgba(220, 53, 69, 0.2);
+  border-color: #c82333;
+}
+
 .module-card-header {
   display: flex;
   align-items: center;
@@ -151,6 +175,19 @@
   padding: var(--spacing-1) var(--spacing-2);
   border-radius: 1rem;
   font-weight: var(--font-weight-medium);
+}
+
+.mandatory-badge {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  background: rgba(220, 53, 69, 0.1);
+  color: #dc3545;
+  font-size: 0.75rem;
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: 1rem;
+  font-weight: var(--font-weight-medium);
+  border: 1px solid rgba(220, 53, 69, 0.2);
 }
 
 .module-title {

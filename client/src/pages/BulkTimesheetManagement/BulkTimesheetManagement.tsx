@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { AppHeader } from "../../components/AppHeader";
 import { CustomDropdown, DropdownOption } from "../../components/CustomDropdown";
+import { useLanguage } from "../../contexts/language/language-provider";
 import { getClients, ClientData } from "../../services/api/client";
 import { getClientPositions, PositionData } from "../../services/api/position";
 import { getPositionAssignments, AssignmentRecord } from "../../services/api/position";
@@ -30,6 +31,8 @@ interface JobseekerTimesheet {
 }
 
 export function BulkTimesheetManagement() {
+  const { t } = useLanguage();
+  
   // State for client selection
   const [clients, setClients] = useState<ClientData[]>([]);
   const [selectedClient, setSelectedClient] = useState<ClientData | null>(null);
@@ -189,7 +192,7 @@ export function BulkTimesheetManagement() {
       setInvoiceNumber(newInvoiceNumber);
     } catch (error) {
       console.error("Failed to generate invoice number:", error);
-      setInvoiceNumber("TBD");
+      setInvoiceNumber(t('bulkTimesheetManagement.constants.tbd'));
     }
   };
 
@@ -397,13 +400,13 @@ export function BulkTimesheetManagement() {
   // Dropdown options
   const clientOptions: DropdownOption[] = clients.map((client) => ({
     id: client.id!,
-    label: client.companyName || "Unknown Client",
+    label: client.companyName || t('bulkTimesheetManagement.constants.unknownClient'),
     sublabel: client.shortCode || "",
     value: client,
   }));
   const positionOptions: DropdownOption[] = positions.map((position) => ({
     id: position.id || "",
-    label: position.title || "Unknown Position",
+    label: position.title || t('bulkTimesheetManagement.constants.unknownPosition'),
     sublabel: position.positionCode || "",
     value: position,
   }));
@@ -434,7 +437,7 @@ export function BulkTimesheetManagement() {
   const generateBulkTimesheetData = async () => {
     if (!selectedClient || !selectedPosition || !selectedWeekStart || jobseekerTimesheets.length === 0) {
       console.warn("Cannot generate bulk timesheet data: Missing required information");
-      setGenerationError("Cannot generate bulk timesheet data: Missing required information");
+      setGenerationError(t('bulkTimesheetManagement.messages.cannotGenerate'));
       return;
     }
 
@@ -445,7 +448,7 @@ export function BulkTimesheetManagement() {
     });
 
     if (jobseekersWithHours.length === 0) {
-      setGenerationError("Cannot generate bulk timesheet: No jobseekers have hours entered");
+      setGenerationError(t('bulkTimesheetManagement.messages.noJobseekersWithHours'));
       return;
     }
 
@@ -522,7 +525,13 @@ export function BulkTimesheetManagement() {
       console.log("Bulk timesheet created successfully:", result);
       
       // Show success message with details
-      setGenerationMessage(`Bulk timesheet created successfully! Invoice Number: ${result.bulkTimesheet.invoiceNumber} | ${jobseekersWithHours.length} jobseeker(s) with hours | ${grandTotalHours.toFixed(1)} total hours | $${jobseekersWithHours.reduce((sum, ts) => sum + ts.jobseekerPay, 0).toFixed(2)} total pay | Email ${sendEmail ? 'will be sent' : 'will not be sent'}`);
+      setGenerationMessage(t('bulkTimesheetManagement.messages.bulkTimesheetCreated', {
+        invoiceNumber: result.bulkTimesheet.invoiceNumber,
+        jobseekerCount: jobseekersWithHours.length,
+        totalHours: grandTotalHours.toFixed(1),
+        totalPay: jobseekersWithHours.reduce((sum, ts) => sum + ts.jobseekerPay, 0).toFixed(2),
+        emailStatus: sendEmail ? t('bulkTimesheetManagement.messages.emailWillBeSent') : t('bulkTimesheetManagement.messages.emailWillNotBeSent')
+      }));
       
       // Redirect to list page after successful creation
       if (result && result.success) {
@@ -533,7 +542,7 @@ export function BulkTimesheetManagement() {
       return result;
     } catch (error) {
       console.error("Error creating bulk timesheet:", error);
-      setGenerationError(`Failed to create bulk timesheet: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setGenerationError(`${t('bulkTimesheetManagement.messages.failedToCreate')} ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsGeneratingBulkTimesheet(false);
     }
@@ -542,13 +551,13 @@ export function BulkTimesheetManagement() {
   // Add update handler for edit mode
   const updateBulkTimesheetData = async () => {
     if (!editingId || !selectedClient || !selectedPosition || !selectedWeekStart || jobseekerTimesheets.length === 0) {
-      setGenerationError("Cannot update bulk timesheet: Missing required information");
+      setGenerationError(t('bulkTimesheetManagement.messages.cannotUpdate'));
       return;
     }
     // Build update payload (similar to create)
     const jobseekersWithHours = jobseekerTimesheets.filter(ts => (ts.totalRegularHours + ts.totalOvertimeHours) > 0);
     if (jobseekersWithHours.length === 0) {
-      setGenerationError("Cannot update bulk timesheet: No jobseekers have hours entered");
+      setGenerationError(t('bulkTimesheetManagement.messages.noJobseekersWithHoursUpdate'));
       return;
     }
     setIsGeneratingBulkTimesheet(true);
@@ -597,13 +606,13 @@ export function BulkTimesheetManagement() {
         })),
       };
       const result = await updateBulkTimesheet(editingId, bulkTimesheetData);
-      setGenerationMessage("Bulk timesheet updated successfully!");
+      setGenerationMessage(t('bulkTimesheetManagement.messages.bulkTimesheetUpdated'));
       setTimeout(() => {
         navigate('/bulk-timesheet-management/list');
       }, 1200);
       return result;
     } catch (error) {
-      setGenerationError(`Failed to update bulk timesheet: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setGenerationError(`${t('bulkTimesheetManagement.messages.failedToUpdate')} ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsGeneratingBulkTimesheet(false);
     }
@@ -631,14 +640,14 @@ export function BulkTimesheetManagement() {
       if (data.invoiceNumber) setInvoiceNumber(data.invoiceNumber);
       if (data.jobseekerTimesheets) setJobseekerTimesheets((data.jobseekerTimesheets as unknown) as JobseekerTimesheet[]);
     } catch (err) {
-      setGenerationError("Failed to load bulk timesheet for editing.");
+      setGenerationError(t('bulkTimesheetManagement.messages.failedToLoad'));
     }
   };
 
   return (
     <div className="bulk-timesheet-page-container timesheet-page-container">
       <AppHeader 
-        title="Create Bulk Timesheet" 
+        title={t('bulkTimesheetManagement.title')} 
         hideHamburgerMenu={false} 
         statusMessage={generationMessage || generationError}
         statusType={
@@ -650,7 +659,7 @@ export function BulkTimesheetManagement() {
           <div className="selection-section">
             <label className="selection-label">
               <Building size={16} />
-              Client
+              {t('bulkTimesheetManagement.columns.client')}
             </label>
             {clientLoading ? (
               <div className="invoice-dropdown-skeleton">
@@ -665,15 +674,15 @@ export function BulkTimesheetManagement() {
                 options={clientOptions}
                 selectedOption={selectedClientOption}
                 onSelect={handleClientSelect}
-                placeholder="Search and select client..."
+                placeholder={t('bulkTimesheetManagement.placeholders.selectClient')}
                 loading={false}
                 icon={<Building size={16} />}
-                emptyMessage="No clients found"
+                emptyMessage={t('bulkTimesheetManagement.constants.noClientsFound')}
               />
             )}
           </div>
           <div className="selection-section">
-            <label className="selection-label">Position</label>
+            <label className="selection-label">{t('bulkTimesheetManagement.columns.position')}</label>
             {positionLoading ? (
               <div className="invoice-dropdown-skeleton">
                 <div className="skeleton-dropdown-trigger">
@@ -691,16 +700,16 @@ export function BulkTimesheetManagement() {
                   const selectedPosition  = positions.filter((position) => position.id === option.id )
                   setSelectedPosition(selectedPosition[0]);
                 }}
-                placeholder={selectedClient ? "Search and select position..." : "Please select a client first"}
+                placeholder={selectedClient ? t('bulkTimesheetManagement.placeholders.selectPosition') : t('bulkTimesheetManagement.placeholders.clientFirst')}
                 disabled={!selectedClient}
                 loading={false}
                 icon={null}
-                emptyMessage={selectedClient ? "No positions found" : "Please select a client first to view positions"}
+                emptyMessage={selectedClient ? t('bulkTimesheetManagement.constants.noPositionsFound') : t('bulkTimesheetManagement.placeholders.positionSelectHelp')}
               />
             )}
           </div>
           <div className="selection-section">
-            <label className="selection-label">Week Period</label>
+            <label className="selection-label">{t('bulkTimesheetManagement.columns.weekPeriod')}</label>
             <CustomDropdown
               options={weekDropdownOptions}
               selectedOption={selectedWeekStart ? weekDropdownOptions.find((opt) => opt.value === selectedWeekStart) : null}
@@ -708,10 +717,10 @@ export function BulkTimesheetManagement() {
                 if (Array.isArray(option)) return;
                 setSelectedWeekStart(option.value as string);
               }}
-              placeholder="Select week range..."
+              placeholder={t('bulkTimesheetManagement.placeholders.selectWeek')}
               loading={false}
               icon={null}
-              emptyMessage="No week options found"
+              emptyMessage={t('common.noData')}
               searchable={false}
             />
           </div>
@@ -721,32 +730,32 @@ export function BulkTimesheetManagement() {
           <div className="timesheet-unified-header">
             <div className="timesheet-header-sections">
               <div className="timesheet-section timesheet-client-section">
-                <h4 className="timesheet-section-title">Client & Position</h4>
+                <h4 className="timesheet-section-title">{t('bulkTimesheetManagement.form.clientAndPosition')}</h4>
                 <div className="timesheet-section-content">
                   <div className="timesheet-detail-item">
-                    <span className="timesheet-detail-label">Client Name:</span>
+                    <span className="timesheet-detail-label">{t('bulkTimesheetManagement.form.clientName')}:</span>
                     <span className="timesheet-detail-value">{selectedClient.companyName}</span>
                   </div>
                   <div className="timesheet-detail-item">
-                    <span className="timesheet-detail-label">Position Title:</span>
-                    <span className="timesheet-detail-value">{selectedPosition?.title || "N/A"}</span>
+                    <span className="timesheet-detail-label">{t('bulkTimesheetManagement.form.positionTitle')}:</span>
+                    <span className="timesheet-detail-value">{selectedPosition?.title || t('bulkTimesheetManagement.constants.na')}</span>
                   </div>
                   <div className="timesheet-detail-item">
-                    <span className="timesheet-detail-label">Position Code:</span>
-                    <span className="timesheet-detail-value">{selectedPosition?.positionCode || "N/A"}</span>
+                    <span className="timesheet-detail-label">{t('bulkTimesheetManagement.form.positionCode')}:</span>
+                    <span className="timesheet-detail-value">{selectedPosition?.positionCode || t('bulkTimesheetManagement.constants.na')}</span>
                   </div>
                 </div>
               </div>
 
               <div className="timesheet-section timesheet-invoice-section">
-                <h4 className="timesheet-section-title">Invoice & Period</h4>
+                <h4 className="timesheet-section-title">{t('bulkTimesheetManagement.form.invoiceAndPeriod')}</h4>
                 <div className="timesheet-section-content">
                   <div className="timesheet-detail-item">
-                    <span className="timesheet-detail-label">Invoice Number:</span>
-                    <span className="timesheet-detail-value">#{invoiceNumber || "TBD"}</span>
+                    <span className="timesheet-detail-label">{t('bulkTimesheetManagement.form.invoiceNumber')}:</span>
+                    <span className="timesheet-detail-value">#{invoiceNumber || t('bulkTimesheetManagement.constants.tbd')}</span>
                   </div>
                   <div className="timesheet-detail-item">
-                    <span className="timesheet-detail-label">Period:</span>
+                    <span className="timesheet-detail-label">{t('bulkTimesheetManagement.form.period')}:</span>
                     <span className="timesheet-detail-value">
                       {selectedWeekStart ? (
                         <>
@@ -757,7 +766,7 @@ export function BulkTimesheetManagement() {
                           )}
                         </>
                       ) : (
-                        "N/A"
+                        t('bulkTimesheetManagement.constants.na')
                       )}
                     </span>
                   </div>
@@ -775,11 +784,11 @@ export function BulkTimesheetManagement() {
                 <div className="timesheet-hours-adjustments-container">
                   <div className="timesheet-hours-section">
                     <div className="timesheet-hours-header">
-                      <h4 className="timesheet-hours-title">Daily Hours | {ts.jobseeker.jobseekerProfile?.first_name} {ts.jobseeker.jobseekerProfile?.last_name} • {ts.jobseeker.jobseekerProfile?.email}</h4>
+                      <h4 className="timesheet-hours-title">{t('bulkTimesheetManagement.form.dailyHours')} | {ts.jobseeker.jobseekerProfile?.first_name} {ts.jobseeker.jobseekerProfile?.last_name} • {ts.jobseeker.jobseekerProfile?.email}</h4>
                       <button
                         className="button danger"
                         onClick={() => removeJobseeker(ts.jobseeker.id)}
-                        title="Remove jobseeker from timesheet"
+                        title={t('bulkTimesheetManagement.buttons.removeJobseeker')}
                         disabled={jobseekerTimesheets.length === 1}
                       >
                         <Minus size={16} />
@@ -810,12 +819,12 @@ export function BulkTimesheetManagement() {
                     </div>
                   </div>
                   <div className="timesheet-hours-section adjustments-section">
-                    <h4 className="timesheet-hours-title timesheet-pay-adjustments-title">Pay Adjustments</h4>
+                    <h4 className="timesheet-hours-title timesheet-pay-adjustments-title">{t('bulkTimesheetManagement.form.payAdjustments')}</h4>
                     <div className="timesheet-days-grid">
                       <div className="timesheet-day-entry">
                         <label className="timesheet-day-label">
-                          <div className="timesheet-day-name">Bonus</div>
-                          <div className="timesheet-day-date">Amount</div>
+                          <div className="timesheet-day-name">{t('bulkTimesheetManagement.form.bonus')}</div>
+                          <div className="timesheet-day-date">{t('bulkTimesheetManagement.form.amount')}</div>
                         </label>
                         <input
                           type="number"
@@ -832,8 +841,8 @@ export function BulkTimesheetManagement() {
                       </div>
                       <div className="timesheet-day-entry">
                         <label className="timesheet-day-label">
-                          <div className="timesheet-day-name">Deduction</div>
-                          <div className="timesheet-day-date">Amount</div>
+                          <div className="timesheet-day-name">{t('bulkTimesheetManagement.form.deduction')}</div>
+                          <div className="timesheet-day-date">{t('bulkTimesheetManagement.form.amount')}</div>
                         </label>
                         <input
                           type="number"
@@ -855,31 +864,31 @@ export function BulkTimesheetManagement() {
                     <div className="timesheet-pay-info-grid">
                       <div className="timesheet-pay-info-item">
                         <span className="timesheet-pay-label">
-                          Regular Pay Rate
+                          {t('bulkTimesheetManagement.form.regularPayRate')}
                         </span>
                         <span className="timesheet-pay-value">
-                          ${selectedPosition?.regularPayRate || "N/A"}/h
+                          ${selectedPosition?.regularPayRate || t('bulkTimesheetManagement.constants.na')}/h
                         </span>
                       </div>
                       {selectedPosition?.overtimeEnabled && (
                         <div className="timesheet-pay-info-item">
                           <span className="timesheet-pay-label">
-                            Overtime Pay Rate
+                            {t('bulkTimesheetManagement.form.overtimePayRate')}
                           </span>
                           <span className="timesheet-pay-value">
-                            ${selectedPosition?.overtimePayRate || "N/A"}
+                            ${selectedPosition?.overtimePayRate || t('bulkTimesheetManagement.constants.na')}
                             /h
                           </span>
                         </div>
                       )}
                       <div className="timesheet-pay-info-item">
                         <span className="timesheet-pay-label">
-                          Overtime Threshold
+                          {t('bulkTimesheetManagement.form.overtimeThreshold')}
                         </span>
                         <span className="timesheet-pay-value">
                           {(selectedPosition as PositionWithOvertime)
                             ?.overtimeHours || "40"}{" "}
-                          hours
+                          {t('bulkTimesheetManagement.form.hours')}
                         </span>
                       </div>
                     </div>
@@ -895,7 +904,7 @@ export function BulkTimesheetManagement() {
                         className="timesheet-checkbox"
                       />
                       <span className="timesheet-checkbox-text">
-                        Send timesheet via email to this jobseeker
+                        {t('bulkTimesheetManagement.email.sendToJobseeker')}
                       </span>
                     </label>
                   </div>
@@ -904,11 +913,11 @@ export function BulkTimesheetManagement() {
                   <div className="timesheet-invoice-table">
                     <div className="timesheet-invoice-table-header">
                       <div className="timesheet-col-description">
-                        Description
+                        {t('bulkTimesheetManagement.form.description')}
                       </div>
-                      <div className="timesheet-col-hours">Hours</div>
-                      <div className="timesheet-col-rate">Rate</div>
-                      <div className="timesheet-col-amount">Amount</div>
+                      <div className="timesheet-col-hours">{t('bulkTimesheetManagement.form.totalHours')}</div>
+                      <div className="timesheet-col-rate">{t('bulkTimesheetManagement.form.rate')}</div>
+                      <div className="timesheet-col-amount">{t('bulkTimesheetManagement.form.amount')}</div>
                     </div>
 
                     <div className="timesheet-invoice-table-body">
@@ -916,10 +925,10 @@ export function BulkTimesheetManagement() {
                       <div className="timesheet-invoice-line-item">
                         <div className="timesheet-col-description">
                           <div className="timesheet-item-title">
-                            Regular Hours
+                            {t('bulkTimesheetManagement.form.totalRegularHours')}
                           </div>
                           <div className="timesheet-item-subtitle">
-                            Standard work hours
+                            {t('bulkTimesheetManagement.form.standardWorkHours')}
                           </div>
                         </div>
                         <div className="timesheet-col-hours">
@@ -944,13 +953,13 @@ export function BulkTimesheetManagement() {
                         <div className="timesheet-invoice-line-item">
                           <div className="timesheet-col-description">
                             <div className="timesheet-item-title">
-                              Overtime Hours
+                              {t('bulkTimesheetManagement.form.overtimeHours')}
                             </div>
                             <div className="timesheet-item-subtitle">
-                              Hours exceeding{" "}
+                              {t('bulkTimesheetManagement.form.exceedingHours')}{" "}
                               {(selectedPosition as PositionWithOvertime)
                                 ?.overtimeHours || "40"}{" "}
-                                hours/week
+                                {t('bulkTimesheetManagement.form.hoursPerWeek')}
                               </div>
                             </div>
                             <div className="timesheet-col-hours">
@@ -983,7 +992,7 @@ export function BulkTimesheetManagement() {
                         <div className="timesheet-invoice-line-item">
                           <div className="timesheet-col-description">
                             <div className="timesheet-item-title">
-                              Bonus
+                              {t('bulkTimesheetManagement.form.bonus')}
                             </div>
                           </div>
                           <div className="timesheet-col-hours">-</div>
@@ -999,7 +1008,7 @@ export function BulkTimesheetManagement() {
                         <div className="timesheet-invoice-line-item">
                           <div className="timesheet-col-description">
                             <div className="timesheet-item-title">
-                              Deduction
+                              {t('bulkTimesheetManagement.form.deduction')}
                             </div>
                           </div>
                           <div className="timesheet-col-hours">-</div>
@@ -1014,7 +1023,7 @@ export function BulkTimesheetManagement() {
                     <div className="timesheet-invoice-totals">
                       <div className="timesheet-total-line">
                         <div className="timesheet-total-label">
-                          Total Hours:
+                          {t('bulkTimesheetManagement.form.totalHours')}:
                         </div>
                         <div className="timesheet-total-value">
                           {(
@@ -1031,7 +1040,7 @@ export function BulkTimesheetManagement() {
                         return <>
                           <div className="timesheet-total-line timesheet-subtotal">
                             <div className="timesheet-total-label">
-                              Subtotal:
+                              {t('bulkTimesheetManagement.form.subtotal')}:
                             </div>
                             <div className="timesheet-total-value">
                               ${subtotal.toFixed(2)}
@@ -1040,7 +1049,7 @@ export function BulkTimesheetManagement() {
                           {ts.bonusAmount > 0 && (
                             <div className="timesheet-total-line">
                               <div className="timesheet-total-label">
-                                Bonus:
+                                {t('bulkTimesheetManagement.form.bonus')}:
                               </div>
                               <div className="timesheet-total-value">
                                 +${ts.bonusAmount.toFixed(2)}
@@ -1050,7 +1059,7 @@ export function BulkTimesheetManagement() {
                           {ts.deductionAmount > 0 && (
                             <div className="timesheet-total-line">
                               <div className="timesheet-total-label">
-                                Deduction:
+                                {t('bulkTimesheetManagement.form.deduction')}:
                               </div>
                               <div className="timesheet-total-value">
                                 -${ts.deductionAmount.toFixed(2)}
@@ -1059,7 +1068,7 @@ export function BulkTimesheetManagement() {
                           )}
                           <div className="timesheet-total-line timesheet-grand-total">
                             <div className="timesheet-total-label">
-                              Employee Pay:
+                              {t('bulkTimesheetManagement.form.employeePay')}:
                             </div>
                             <div className="timesheet-total-value">
                               ${employeePay.toFixed(2)}
@@ -1077,7 +1086,7 @@ export function BulkTimesheetManagement() {
             <div className="timesheet-invoice-container">
               <div className="timesheet-invoice-table">
                 <div className="timesheet-invoice-table-header">
-                  <div className="timesheet-col-description">Final Summary</div>
+                  <div className="timesheet-col-description">{t('bulkTimesheetManagement.form.finalSummary')}</div>
                   <div className="timesheet-col-hours">Hours</div>
                   <div className="timesheet-col-rate">Rate</div>
                   <div className="timesheet-col-amount">Amount</div>
@@ -1085,7 +1094,7 @@ export function BulkTimesheetManagement() {
                 <div className="timesheet-invoice-table-body">
                   <div className="timesheet-invoice-line-item">
                     <div className="timesheet-col-description">
-                      <div className="timesheet-item-title">Total Regular Hours</div>
+                                              <div className="timesheet-item-title">{t('bulkTimesheetManagement.form.totalRegularHours')}</div>
                     </div>
                     <div className="timesheet-col-hours">{grandTotalRegularHours.toFixed(1)}</div>
                     <div className="timesheet-col-rate">${selectedPosition?.regularPayRate || "0.00"}</div>
@@ -1096,7 +1105,7 @@ export function BulkTimesheetManagement() {
                   {grandTotalOvertimeHours > 0 && (
                     <div className="timesheet-invoice-line-item">
                       <div className="timesheet-col-description">
-                        <div className="timesheet-item-title">Total Overtime Hours</div>
+                        <div className="timesheet-item-title">{t('bulkTimesheetManagement.form.totalOvertimeHours')}</div>
                       </div>
                       <div className="timesheet-col-hours">{grandTotalOvertimeHours.toFixed(1)}</div>
                       <div className="timesheet-col-rate">
@@ -1110,23 +1119,23 @@ export function BulkTimesheetManagement() {
                 </div>
                 <div className="timesheet-invoice-totals">
                   <div className="timesheet-total-line">
-                    <div className="timesheet-total-label">Grand Total Hours:</div>
+                    <div className="timesheet-total-label">{t('bulkTimesheetManagement.form.grandTotalHours')}:</div>
                     <div className="timesheet-total-value">{(grandTotalRegularHours + grandTotalOvertimeHours).toFixed(1)}</div>
                   </div>
                   {grandTotalBonus > 0 && (
                     <div className="timesheet-total-line">
-                      <div className="timesheet-total-label">Grand Total Bonus:</div>
+                      <div className="timesheet-total-label">{t('bulkTimesheetManagement.form.grandTotalBonus')}:</div>
                       <div className="timesheet-total-value">+${grandTotalBonus.toFixed(2)}</div>
                     </div>
                   )}
                   {grandTotalDeduction > 0 && (
                     <div className="timesheet-total-line">
-                      <div className="timesheet-total-label">Grand Total Deduction:</div>
+                      <div className="timesheet-total-label">{t('bulkTimesheetManagement.form.grandTotalDeduction')}:</div>
                       <div className="timesheet-total-value">-${grandTotalDeduction.toFixed(2)}</div>
                     </div>
                   )}
                   <div className="timesheet-total-line timesheet-grand-total">
-                    <div className="timesheet-total-label">Grand Total Pay:</div>
+                    <div className="timesheet-total-label">{t('bulkTimesheetManagement.form.grandTotalPay')}:</div>
                     <div className="timesheet-total-value">${grandTotalPay.toFixed(2)}</div>
                   </div>
                 </div>
@@ -1146,7 +1155,7 @@ export function BulkTimesheetManagement() {
                     className="timesheet-checkbox"
                   />
                   <span className="timesheet-checkbox-text">
-                    Send timesheets via email to all jobseekers
+                    {t('bulkTimesheetManagement.email.sendToAll')}
                   </span>
                 </label>
               </div>
@@ -1159,7 +1168,7 @@ export function BulkTimesheetManagement() {
                   jobseekerTimesheets.every(ts => (ts.totalRegularHours + ts.totalOvertimeHours) === 0)
                 }
               >
-                {isGeneratingBulkTimesheet ? "Generating..." : isEditMode ? "Update Bulk Timesheet" : "Generate Bulk Timesheet"}
+                {isGeneratingBulkTimesheet ? t('bulkTimesheetManagement.buttons.generating') : isEditMode ? t('bulkTimesheetManagement.buttons.updateBulkTimesheet') : t('bulkTimesheetManagement.buttons.generateBulkTimesheet')}
               </button>
             </div>
           </div>

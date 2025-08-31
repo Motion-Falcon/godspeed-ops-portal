@@ -27,6 +27,8 @@ import {
   BarChart3,
   FileSpreadsheet,
   MessageSquare,
+  GitBranch,
+  Calendar,
 } from "lucide-react";
 import { ThemeToggle } from "./theme-toggle";
 import { LanguageToggle } from "./LanguageToggle";
@@ -45,6 +47,7 @@ interface MenuItem {
   onClick?: () => void;
   exact?: boolean; // Whether the path should match exactly
   activePattern?: string; // Pattern to match for active state
+  activePaths?: string[]; // Array of paths that should activate this menu item
 }
 
 interface HamburgerMenuProps {
@@ -100,8 +103,21 @@ function MenuItemComponent({
   const isPathActive = (
     path?: string,
     exact: boolean = false,
-    activePattern?: string
+    activePattern?: string,
+    activePaths?: string[]
   ): boolean => {
+    // If there are multiple active paths provided, check if current path matches any of them
+    if (activePaths && activePaths.length > 0) {
+      const currentPathname = location.pathname;
+      const currentSearch = location.search;
+      const currentFullPath = currentPathname + currentSearch;
+      
+      return activePaths.some(activePath => {
+        // For activePaths, we require exact matching to avoid conflicts
+        return currentFullPath === activePath;
+      });
+    }
+
     // If there's an active pattern provided, check if current path matches it
     if (activePattern) {
       return location.pathname.startsWith(activePattern);
@@ -163,7 +179,7 @@ function MenuItemComponent({
               to={item.path}
               className={() =>
                 // Use our custom active detection for main menu items
-                isPathActive(item.path, item.exact) ? "active" : ""
+                isPathActive(item.path, item.exact, item.activePattern, item.activePaths) ? "active" : ""
               }
               onMouseEnter={handleMouseEnter}
               onMouseLeave={handleMouseLeave}
@@ -174,7 +190,7 @@ function MenuItemComponent({
           ) : (
             <button
               className={`menu-action-button ${
-                isPathActive(undefined, false, item.activePattern)
+                isPathActive(undefined, false, item.activePattern, item.activePaths)
                   ? "active"
                   : ""
               }`}
@@ -210,7 +226,7 @@ function MenuItemComponent({
                   to={subItem.path || "#"}
                   className={() =>
                     // Use our custom active detection for submenu items
-                    isPathActive(subItem.path, subItem.exact) ? "active" : ""
+                    isPathActive(subItem.path, subItem.exact, subItem.activePattern, subItem.activePaths) ? "active" : ""
                   }
                   onMouseEnter={(e) => {
                     if (!isOpen) {
@@ -356,6 +372,14 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
       exact: true,
     },
     {
+      label: t("navigation.calendar"),
+      path: "/calendar",
+      icon: <Calendar size={16} />,
+      requiresAuth: true,
+      roles: ["admin", "recruiter"],
+      exact: true,
+    },
+    {
       label: t("navigation.training"),
       path: "/training-modules",
       icon: <BookOpen size={16} />,
@@ -374,12 +398,50 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
 
     // Recruiter-specific items
     {
-      label: t("navigation.allUsers"),
-      path: "/all-users-management",
+      label: t("navigation.userManagement"),
       icon: <Users size={16} />,
       requiresAuth: true,
-      roles: ["admin"],
-      exact: true,
+      roles: ["admin", "recruiter"],
+      submenu: [
+        {
+          label: t("navigation.allUsers"),
+          path: "/all-users-management",
+          icon: <Users size={16} />,
+          exact: true,
+          roles: ["admin"],
+          activePaths: ["/all-users-management"]
+        },
+        {
+          label: t("navigation.recruiterHierarchy"),
+          path: "/recruiter-hierarchy",
+          icon: <GitBranch size={16} />,
+          exact: true,
+          roles: ["recruiter", "admin"],
+        },
+        {
+          label: t("recruiterManagement.inviteRecruiter"),
+          path: "/invite-recruiter",
+          icon: <UserPlus size={16} />,
+          exact: true,
+          roles: ["admin"],
+        },
+        {
+          label: t("navigation.allAdmins"),
+          path: "/all-users-management?userType=admin",
+          icon: <Users size={16} />,
+          exact: true,
+          roles: ["admin"],
+          activePaths: ["/all-users-management?userType=admin"]
+        },
+        {
+          label: t("navigation.allRecruiters"),
+          path: "/all-users-management?userType=recruiter",
+          icon: <Users size={16} />,
+          exact: true,
+          roles: ["admin"],
+          activePaths: ["/all-users-management?userType=recruiter"]
+        },
+      ],
     },
     {
       label: t("navigation.jobseekerManagement"),
@@ -461,6 +523,26 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
           label: t("navigation.positionMatching"),
           path: "/position-matching",
           icon: <Users size={16} />,
+          exact: true,
+        },
+      ],
+    },
+    {
+      label: t("navigation.consentManagement"),
+      icon: <FileText size={16} />,
+      requiresAuth: true,
+      roles: ["admin", "recruiter"],
+      submenu: [
+        {
+          label: t("navigation.allConsentDocuments"),
+          path: "/consent-dashboard",
+          icon: <FileText size={16} />,
+          exact: true,
+        },
+        {
+          label: t("navigation.createConsentDocument"),
+          path: "/consent-dashboard/new",
+          icon: <FilePlus size={16} />,
           exact: true,
         },
       ],
@@ -563,6 +645,30 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
       }
 
       return true;
+    }).map((item) => {
+      // Filter submenu items based on user role
+      if (item.submenu && item.submenu.length > 0) {
+        const filteredSubmenu = item.submenu.filter((subItem) => {
+          // If submenu item has no role restrictions, show it
+          if (!subItem.roles || subItem.roles.length === 0) return true;
+
+          // Check role-based access for submenu items
+          if (isAdmin && subItem.roles.includes("admin")) return true;
+          if (isRecruiter && subItem.roles.includes("recruiter")) return true;
+          if (isJobSeeker && subItem.roles.includes("jobseeker")) {
+            return profileVerificationStatus === "verified";
+          }
+
+          return false;
+        });
+
+        return {
+          ...item,
+          submenu: filteredSubmenu,
+        };
+      }
+
+      return item;
     });
   };
 

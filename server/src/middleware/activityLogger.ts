@@ -177,7 +177,16 @@ export interface ActivityData {
   | "update_bulk_timesheet"
   | "delete_bulk_timesheet"
   | "send_bulk_timesheet_email"
-  | "send_invoice_email";
+  | "send_invoice_email"
+  // User management actions
+  | "update_user_manager"
+  | "update_user_roles"
+  | "complete_onboarding"
+  | "invite_recruiter"
+  | "resend_invitation"
+  | "create_consent_request"
+  | "resend_consent_request"
+  | "user_consent_given";
   actionVerb: string;
   primaryEntityType: string;
   primaryEntityId?: string;
@@ -191,7 +200,7 @@ export interface ActivityData {
   status?: string;
   metadata?: Record<string, any>;
   displayMessage: string;
-  category: "position_management" | "client_management" | "financial" | "system" | "candidate_management";
+  category: "position_management" | "client_management" | "financial" | "system" | "candidate_management" | "user_management" | "consent_management";
   priority?: 'low' | 'normal' | 'high' | 'urgent';
 }
 

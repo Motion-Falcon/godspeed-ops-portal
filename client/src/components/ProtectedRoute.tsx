@@ -11,6 +11,7 @@ export const ProtectedRoute = () => {
     isAuthenticated,
     isLoading,
     isJobSeeker,
+    user,
     profileVerificationStatus,
     hasProfile,
     isProfileLoading,
@@ -25,7 +26,10 @@ export const ProtectedRoute = () => {
     );
   }
 
-  if (!isAuthenticated) {
+  // Treat users who haven't completed onboarding as not authenticated for app routes
+  const onboardingIncomplete = (user?.user_metadata as any)?.onboarding_complete === false;
+
+  if (!isAuthenticated || onboardingIncomplete) {
     return <Navigate to="/login" replace />;
   }
 
@@ -141,7 +145,7 @@ export const JobSeekerRoute = () => {
 };
 
 export const PublicRoute = () => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
 
   if (isLoading) {
     return (
@@ -151,7 +155,9 @@ export const PublicRoute = () => {
     );
   }
 
-  if (isAuthenticated) {
+  const onboardingIncomplete = (user?.user_metadata as any)?.onboarding_complete === false;
+
+  if (isAuthenticated && !onboardingIncomplete) {
     return <Navigate to="/dashboard" replace />;
   }
 

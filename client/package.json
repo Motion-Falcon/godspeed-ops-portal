@@ -15,20 +15,21 @@
     "@react-pdf/renderer": "^4.3.0",
     "@supabase/supabase-js": "2.39.2",
     "@types/d3": "^7.4.3",
+    "@types/moment": "^2.13.0",
+    "@types/react-big-calendar": "^1.16.2",
     "axios": "1.8.2",
     "framer-motion": "^12.18.1",
     "lottie-react": "2.4.1",
     "lucide-react": "0.358.0",
+    "moment": "^2.30.1",
     "react": "^18.2.0",
+    "react-big-calendar": "^1.19.4",
     "react-dom": "^18.2.0",
     "react-hook-form": "7.51.3",
     "react-pdf": "^8.0.2",
     "react-router-dom": "6.22.3",
     "recharts": "^2.15.3",
     "zod": "3.22.4"
-  },
-  "engines": {
-    "node": "18.x"
   },
   "devDependencies": {
     "@types/react": "^18.2.43",

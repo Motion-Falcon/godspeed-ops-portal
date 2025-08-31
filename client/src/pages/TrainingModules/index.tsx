@@ -18,6 +18,7 @@ interface Module {
   icon: JSX.Element;
   youtubeId?: string;
   comingSoon?: boolean;
+  mandatory?: boolean;
 }
 
 export function TrainingModules() {
@@ -31,11 +32,33 @@ export function TrainingModules() {
   const [isComingSoonModalOpen, setIsComingSoonModalOpen] = useState<boolean>(false);
   const [currentComingSoonModule, setCurrentComingSoonModule] = useState<Module | null>(null);
 
-  // Sample training modules data - Videos moved first
+  // Sample training modules data - Mandatory videos first, then other videos, then other types
   // In a real application, this would come from an API
   const trainingModules: Module[] = [
     {
-      id: "tm-007",
+      id: "tm-001",
+      titleKey: "training.modules.aodaTraining.title",
+      descriptionKey: "training.modules.aodaTraining.description",
+      type: "video",
+      duration: "2 min",
+      completed: false,
+      icon: <Video className="module-icon video" />,
+      youtubeId: "rqEDI7hM4is",
+      mandatory: true
+    },
+    {
+      id: "tm-002",
+      titleKey: "training.modules.workplaceViolenceHarassment.title",
+      descriptionKey: "training.modules.workplaceViolenceHarassment.description",
+      type: "video",
+      duration: "2 min",
+      completed: false,
+      icon: <Video className="module-icon video" />,
+      youtubeId: "W9klYbrmkGk",
+      mandatory: true
+    },
+    {
+      id: "tm-003",
       titleKey: "training.modules.whmisTraining.title",
       descriptionKey: "training.modules.whmisTraining.description",
       type: "video",
@@ -45,7 +68,7 @@ export function TrainingModules() {
       youtubeId: "IZY5r7_f6eE"
     },
     {
-      id: "tm-008",
+      id: "tm-004",
       titleKey: "training.modules.healthSafetyTraining.title",
       descriptionKey: "training.modules.healthSafetyTraining.description",
       type: "video",
@@ -55,7 +78,7 @@ export function TrainingModules() {
       youtubeId: "mzKdX6NeRGo"
     },
     {
-      id: "tm-002",
+      id: "tm-005",
       titleKey: "training.modules.effectiveResumeScreening.title",
       descriptionKey: "training.modules.effectiveResumeScreening.description",
       type: "document",
@@ -65,7 +88,7 @@ export function TrainingModules() {
       comingSoon: true
     },
     {
-      id: "tm-003",
+      id: "tm-006",
       titleKey: "training.modules.interviewTechniques.title",
       descriptionKey: "training.modules.interviewTechniques.description",
       type: "interactive",
@@ -75,7 +98,7 @@ export function TrainingModules() {
       comingSoon: true
     },
     {
-      id: "tm-004",
+      id: "tm-007",
       titleKey: "training.modules.clientManagementEssentials.title",
       descriptionKey: "training.modules.clientManagementEssentials.description",
       type: "document",
@@ -85,7 +108,7 @@ export function TrainingModules() {
       comingSoon: true
     },
     {
-      id: "tm-006",
+      id: "tm-008",
       titleKey: "training.modules.jobSeekerResumeBuilding.title",
       descriptionKey: "training.modules.jobSeekerResumeBuilding.description",
       type: "interactive",
@@ -216,7 +239,7 @@ export function TrainingModules() {
             filteredModules.map((module) => (
               <div 
                 key={module.id} 
-                className={`module-card ${module.completed ? 'completed' : ''} ${module.youtubeId ? 'video-module' : ''} ${module.comingSoon ? 'coming-soon-module' : ''}`}
+                className={`module-card ${module.completed ? 'completed' : ''} ${module.youtubeId ? 'video-module' : ''} ${module.comingSoon ? 'coming-soon-module' : ''} ${module.mandatory ? 'mandatory-module' : ''}`}
                 onClick={() => handleModuleClick(module)}
               >
                 <div className="module-card-header">
@@ -232,6 +255,12 @@ export function TrainingModules() {
                     <span className="coming-soon-badge">
                       <Clock size={14} />
                       {t('training.comingSoon')}
+                    </span>
+                  )}
+                  {module.mandatory && (
+                    <span className="mandatory-badge">
+                      <Award size={14} />
+                      {t('training.mandatory')}
                     </span>
                   )}
                 </div>

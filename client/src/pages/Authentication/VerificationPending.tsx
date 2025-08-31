@@ -51,7 +51,7 @@ export function VerificationPending() {
   };
 
   return (
-    <div className="page-container">
+    <div className="page-container hide-hamburger-menu">
       <AppHeader title={t('verificationPending.title')} />
       <div className="centered-container">
         <div className="centered-card">

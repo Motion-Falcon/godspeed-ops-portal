@@ -2,47 +2,51 @@ import { useEffect, useState } from "react";
 import { getClientsReport, ClientsReportFilter, ClientsReportRow } from "../../services/api/reports";
 import { AppHeader } from "../../components/AppHeader";
 import { CustomDropdown, DropdownOption } from "../../components/CustomDropdown";
+import { useLanguage } from "../../contexts/language/language-provider";
 import { Loader2, User, CreditCard, FileText } from "lucide-react";
 import "../../styles/pages/CommonReportsStyles.css";
 import { exportToCSV } from '../../utils/csvExport';
 import { PAYMENT_METHODS, PAYMENT_TERMS } from "../../constants/formOptions";
 
 // Define the columns for the clients report
-const TABLE_COLUMNS: { key: string; label: string; format?: (val: unknown) => string; className?: string }[] = [
-  { key: 'company_name', label: 'Company Name', format: (val) => String(val ?? '') },
-  { key: 'billing_name', label: 'Billing Name', format: (val) => String(val ?? '') },
-  { key: 'short_code', label: 'Short Code', format: (val) => String(val ?? '') },
-  { key: 'list_name', label: 'List Name', format: (val) => String(val ?? '') },
-  { key: 'accounting_person', label: 'Accounting Person', format: (val) => String(val ?? '') },
-  { key: 'sales_person', label: 'Sales Person', format: (val) => String(val ?? '') },
-  { key: 'client_manager', label: 'Client Manager', format: (val) => String(val ?? '') },
-  { key: 'contact_person_name1', label: 'Contact Person', format: (val) => String(val ?? '') },
-  { key: 'email_address1', label: 'Email Address', format: (val) => String(val ?? '') },
-  { key: 'mobile1', label: 'Mobile', format: (val) => String(val ?? '') },
+const getTableColumns = (t: (key: string) => string): { key: string; label: string; format?: (val: unknown) => string; className?: string }[] => [
+  { key: 'company_name', label: t('reports.columns.companyName'), format: (val) => String(val ?? '') },
+  { key: 'billing_name', label: t('reports.columns.billingName'), format: (val) => String(val ?? '') },
+  { key: 'short_code', label: t('reports.columns.shortCode'), format: (val) => String(val ?? '') },
+  { key: 'list_name', label: t('reports.columns.listName'), format: (val) => String(val ?? '') },
+  { key: 'accounting_person', label: t('reports.columns.accountingPerson'), format: (val) => String(val ?? '') },
+  { key: 'sales_person', label: t('reports.columns.salesPersonCol'), format: (val) => String(val ?? '') },
+  { key: 'client_manager', label: t('reports.columns.clientManager'), format: (val) => String(val ?? '') },
+  { key: 'contact_person_name1', label: t('reports.columns.contactPersonName'), format: (val) => String(val ?? '') },
+  { key: 'email_address1', label: t('reports.columns.emailAddress'), format: (val) => String(val ?? '') },
+  { key: 'mobile1', label: t('reports.columns.mobile'), format: (val) => String(val ?? '') },
   { 
     key: 'address', 
-    label: 'Address', 
+    label: t('reports.columns.address'), 
     format: (val) => String(val ?? ''),
     className: 'address-column'
   },
-  { key: 'preferred_payment_method', label: 'Payment Method', format: (val) => String(val ?? '') },
-  { key: 'pay_cycle', label: 'Payment Cycle', format: (val) => String(val ?? '') },
-  { key: 'terms', label: 'Terms', format: (val) => String(val ?? '') },
+  { key: 'preferred_payment_method', label: t('reports.columns.preferredPaymentMethod'), format: (val) => String(val ?? '') },
+  { key: 'pay_cycle', label: t('reports.columns.paymentCycle'), format: (val) => String(val ?? '') },
+  { key: 'terms', label: t('reports.columns.terms'), format: (val) => String(val ?? '') },
   { 
     key: 'notes', 
-    label: 'Notes', 
+    label: t('reports.columns.notes'), 
     format: (val) => String(val ?? ''),
     className: 'notes-column'
   },
 ];
 
 // For CSV export
-const CSV_COLUMNS = TABLE_COLUMNS.map(col => ({
+const getCsvColumns = (tableColumns: ReturnType<typeof getTableColumns>) => tableColumns.map(col => ({
   ...col,
   format: (val: unknown) => String(val ?? ''),
 }));
 
 export function ClientsReport() {
+  const { t } = useLanguage();
+  const tableColumns = getTableColumns(t);
+  const csvColumns = getCsvColumns(tableColumns);
   // Filter state
   const [selectedClientManagers, setSelectedClientManagers] = useState<string[]>([]);
   const [selectedPaymentMethods, setSelectedPaymentMethods] = useState<string[]>([]);
@@ -119,12 +123,12 @@ export function ClientsReport() {
 
   return (
     <div className="page-container common-report-container">
-      <AppHeader title="Clients Report" />
+      <AppHeader title={t('reports.types.clients.title')} />
       <div className="common-report-card">
         <div className="timesheet-selection-bar">
           <div className="selection-row">
             <div className="selection-section">
-              <label className="selection-label">Client Manager</label>
+              <label className="selection-label">{t('reports.filters.clientManager')}</label>
               <CustomDropdown
                 options={clientManagerOptions}
                 selectedOptions={selectedClientManagers.length > 0 ? (selectedClientManagers.map(manager => clientManagerOptions.find(opt => opt.value === manager) as DropdownOption).filter(Boolean)) : []}
@@ -133,16 +137,16 @@ export function ClientsReport() {
                   else if (opts && typeof opts === 'object') setSelectedClientManagers([opts.value as string]);
                   else setSelectedClientManagers([]);
                 }}
-                placeholder="Select client managers..."
+                placeholder={t('reports.placeholders.selectClientManagers')}
                 multiSelect={true}
                 showSelectAll={true}
                 icon={<User size={16} />}
-                emptyMessage="No client managers found"
+                emptyMessage={t('reports.emptyMessages.noClientManagers')}
                 maxVisibleTagsOverride={3}
               />
             </div>
             <div className="selection-section">
-              <label className="selection-label">Payment Method</label>
+              <label className="selection-label">{t('reports.filters.paymentMethod')}</label>
               <CustomDropdown
                 options={paymentMethodOptions}
                 selectedOptions={selectedPaymentMethods.length > 0 ? (selectedPaymentMethods.map(method => paymentMethodOptions.find(opt => opt.value === method) as DropdownOption).filter(Boolean)) : []}
@@ -151,16 +155,16 @@ export function ClientsReport() {
                   else if (opts && typeof opts === 'object') setSelectedPaymentMethods([opts.value as string]);
                   else setSelectedPaymentMethods([]);
                 }}
-                placeholder="Select payment methods..."
+                placeholder={t('reports.placeholders.selectPaymentMethods')}
                 multiSelect={true}
                 showSelectAll={true}
                 icon={<CreditCard size={16} />}
-                emptyMessage="No payment methods found"
+                emptyMessage={t('reports.emptyMessages.noPaymentMethods')}
                 maxVisibleTagsOverride={3}
               />
             </div>
             <div className="selection-section">
-              <label className="selection-label">Terms</label>
+              <label className="selection-label">{t('reports.filters.terms')}</label>
               <CustomDropdown
                 options={termsOptions}
                 selectedOptions={selectedTerms.length > 0 ? (selectedTerms.map(term => termsOptions.find(opt => opt.value === term) as DropdownOption).filter(Boolean)) : []}
@@ -169,11 +173,11 @@ export function ClientsReport() {
                   else if (opts && typeof opts === 'object') setSelectedTerms([opts.value as string]);
                   else setSelectedTerms([]);
                 }}
-                placeholder="Select terms..."
+                placeholder={t('reports.placeholders.selectTerms')}
                 multiSelect={true}
                 showSelectAll={true}
                 icon={<FileText size={16} />}
-                emptyMessage="No terms found"
+                emptyMessage={t('reports.emptyMessages.noTerms')}
                 maxVisibleTagsOverride={3}
               />
             </div>
@@ -187,7 +191,7 @@ export function ClientsReport() {
               onClick={() => {
                 const csvData = reportRows.map(row => {
                   const csvRow: Record<string, unknown> = {};
-                  CSV_COLUMNS.forEach(col => {
+                  csvColumns.forEach(col => {
                     const val = row[col.key as keyof typeof row];
                     csvRow[col.label] = col.format ? col.format(val) : (val !== undefined && val !== null ? String(val) : 'N/A');
                   });
@@ -196,27 +200,27 @@ export function ClientsReport() {
                 exportToCSV(
                   csvData,
                   'Clients Report.csv',
-                  CSV_COLUMNS.map(col => col.label)
+                  csvColumns.map(col => col.label)
                 );
               }}
             >
-              Download CSV
+              {t('reports.states.downloadCSV')}
             </button>
           </div>
         )}
 
         <div className="report-table-container timesheet-selection-bar">
           {loading ? (
-            <div className="loading-indicator"><Loader2 size={24} className="spin" /> Loading...</div>
+            <div className="loading-indicator"><Loader2 size={24} className="spin" /> {t('reports.states.loading')}</div>
           ) : error ? (
             <div className="error-message">{error}</div>
           ) : reportRows.length === 0 ? (
-            <div className="empty-state">No clients data found for selected filters.</div>
+            <div className="empty-state">{t('reports.states.noClientsData')}</div>
           ) : (
             <table className="common-table">
               <thead>
                 <tr>
-                  {TABLE_COLUMNS.map(col => (
+                  {tableColumns.map(col => (
                     <th 
                       key={col.key}
                       className={col.className}
@@ -229,7 +233,7 @@ export function ClientsReport() {
               <tbody>
                 {reportRows.map((row, idx) => (
                   <tr key={idx}>
-                    {TABLE_COLUMNS.map((col, i) => {
+                    {tableColumns.map((col, i) => {
                       const val = row[col.key as keyof typeof row];
                       const displayValue = col.format ? col.format(val) : (val !== undefined && val !== null ? String(val) : 'N/A');
                       return (

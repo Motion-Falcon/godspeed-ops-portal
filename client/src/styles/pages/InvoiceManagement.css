@@ -278,14 +278,6 @@
   cursor: not-allowed;
 }
 
-.skeleton-icon {
-  width: 14px;
-  height: 14px;
-  border-radius: 2px;
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-  background-size: 200% 100%;
-  animation: skeleton-loading 1.5s infinite;
-}
 
 .skeleton-text {
   border-radius: 4px;
@@ -315,7 +307,6 @@
 }
 
 /* Dark mode skeleton styles */
-[data-theme="dark"] .skeleton-icon,
 [data-theme="dark"] .skeleton-text {
   background: linear-gradient(90deg, #2a2a2a 25%, #3a3a3a 50%, #2a2a2a 75%);
   background-size: 200% 100%;

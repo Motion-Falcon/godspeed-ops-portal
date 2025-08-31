@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Building, Edit } from 'lucide-react';
+import { ArrowLeft, Building, Edit, FileCheck, Calendar, CheckCircle, User, Clock, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getClient, ClientData } from '../../services/api/client';
+import { getConsentRecordsByEntity, ConsentRecordWithDocument } from '../../services/api/consent';
 import { AppHeader } from '../../components/AppHeader';
 import '../../styles/pages/ClientView.css';
 import '../../styles/components/header.css';
@@ -12,6 +13,17 @@ export function ClientView() {
   const [error, setError] = useState<string | null>(null);
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+
+  // Add state for consent records
+  const [consentRecords, setConsentRecords] = useState<ConsentRecordWithDocument[]>([]);
+  const [consentLoading, setConsentLoading] = useState<boolean>(true);
+  const [consentError, setConsentError] = useState<string | null>(null);
+  const [consentPagination, setConsentPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalItems: 0,
+    itemsPerPage: 10,
+  });
 
   // Helper function to get a value with proper type handling
   const getFieldValue = (obj: ClientData | null, key: keyof ClientData): string | number | boolean | null | undefined => {
@@ -46,6 +58,76 @@ export function ClientView() {
     }
   }, [id]);
 
+  // Fetch consent records when client is loaded
+  useEffect(() => {
+    const fetchConsentRecords = async (page = 1) => {
+      if (!client?.id) return;
+      setConsentLoading(true);
+      setConsentError(null);
+      try {
+        const response = await getConsentRecordsByEntity(client.id, {
+          page,
+          limit: consentPagination.itemsPerPage,
+          consentableType: 'client',
+        });
+        setConsentRecords(response.records);
+        setConsentPagination((prev) => ({
+          ...prev,
+          currentPage: response.pagination.page,
+          totalPages: response.pagination.totalPages,
+          totalItems: response.pagination.total,
+          itemsPerPage: response.pagination.limit,
+        }));
+      } catch (err) {
+        setConsentError(err instanceof Error ? err.message : 'Failed to fetch consent records');
+        setConsentRecords([]);
+        setConsentPagination((prev) => ({ ...prev, currentPage: 1, totalPages: 1, totalItems: 0 }));
+      } finally {
+        setConsentLoading(false);
+      }
+    };
+    if (client?.id) {
+      fetchConsentRecords(1);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [client?.id]);
+
+  // Pagination handlers for consent records
+  const handleConsentPageChange = (page: number) => {
+    setConsentPagination((prev) => ({ ...prev, currentPage: page }));
+  };
+  useEffect(() => {
+    if (client?.id) {
+      const fetchConsentRecords = async () => {
+        setConsentLoading(true);
+        setConsentError(null);
+        try {
+          const response = await getConsentRecordsByEntity(client.id, {
+            page: consentPagination.currentPage,
+            limit: consentPagination.itemsPerPage,
+            consentableType: 'client',
+          });
+          setConsentRecords(response.records);
+          setConsentPagination((prev) => ({
+            ...prev,
+            currentPage: response.pagination.page,
+            totalPages: response.pagination.totalPages,
+            totalItems: response.pagination.total,
+            itemsPerPage: response.pagination.limit,
+          }));
+        } catch (err) {
+          setConsentError(err instanceof Error ? err.message : 'Failed to fetch consent records');
+          setConsentRecords([]);
+          setConsentPagination((prev) => ({ ...prev, currentPage: 1, totalPages: 1, totalItems: 0 }));
+        } finally {
+          setConsentLoading(false);
+        }
+      };
+      fetchConsentRecords();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [consentPagination.currentPage, client?.id]);
+
   const handleEditClient = () => {
     if (!id) return;
     navigate(`/client-management/edit/${id}`);
@@ -67,6 +149,49 @@ export function ClientView() {
     const textArea = document.createElement('textarea');
     textArea.innerHTML = text;
     return textArea.value;
+  };
+
+  // Skeleton card component for consent records
+  const SkeletonCard = () => (
+    <div className="jsp-consent-card">
+      <div className="jsp-consent-header">
+        <div className="jsp-consent-title-section">
+          <div className="jsp-consent-title skeleton-text" style={{ width: '60%', height: '16px' }}></div>
+          <div className="jsp-consent-code skeleton-text" style={{ width: '80px', height: '12px', marginTop: '4px' }}></div>
+        </div>
+        <div className="jsp-status-badge skeleton-text" style={{ width: '70px', height: '20px' }}></div>
+      </div>
+      <div className="jsp-consent-details">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="jsp-detail-row">
+            <div className="skeleton-icon" style={{ width: '16px', height: '16px' }}></div>
+            <div className="skeleton-text" style={{ width: '150px', height: '14px' }}></div>
+          </div>
+        ))}
+      </div>
+      <div className="jsp-consent-actions">
+        <div className="skeleton-text" style={{ width: '140px', height: '32px', borderRadius: '6px' }}></div>
+      </div>
+    </div>
+  );
+
+  // Format date for consent records
+  const formatConsentDate = (dateString?: string) => {
+    if (!dateString) return 'N/A';
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleString('en-CA', {
+        timeZone: 'America/Toronto',
+        year: 'numeric',
+        month: 'numeric',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+      });
+    } catch (e) {
+      return dateString;
+    }
   };
 
   const renderDetailItem = (label: string, value?: string | number | boolean | null) => {
@@ -334,6 +459,138 @@ export function ClientView() {
             </div>
           </div>
         </div>
+
+        {/* Consent Records Section */}
+        <section className="" style={{ marginTop: 40 }}>
+          <h2 className="section-title">Digital Consent Records for {companyName}</h2>
+          <div className="jsp-consent-content">
+            {consentLoading ? (
+              <div className="jsp-consent-list">
+                {Array.from({ length: consentPagination.itemsPerPage }, (_, index) => (
+                  <SkeletonCard key={index} />
+                ))}
+              </div>
+            ) : consentError ? (
+              <div className="error-container">
+                <p className="error-message">{consentError}</p>
+                <button className="button primary" onClick={() => handleConsentPageChange(1)}>
+                  Try Again
+                </button>
+              </div>
+            ) : (
+              <div className="jsp-consent-list">
+                {consentRecords.length === 0 ? (
+                  <div className="jsp-empty-state">
+                    <FileCheck size={48} className="jsp-empty-icon" />
+                    <h3>No Consent Records Found</h3>
+                    <p>No digital consent documents have been sent to this client yet.</p>
+                  </div>
+                ) : (
+                  consentRecords.map((record) => (
+                    <div key={record.id} className="jsp-consent-card" data-status={record.status}>
+                      <div className="jsp-consent-header">
+                        <div className="jsp-consent-title-section">
+                          <h3 className="jsp-consent-title">{record.consent_documents.file_name}</h3>
+                          <div className="jsp-consent-code">Version {record.consent_documents.version}</div>
+                        </div>
+                        <div className={`jsp-status-badge ${record.status}`}>
+                          {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
+                        </div>
+                      </div>
+                      <div className="jsp-consent-details">
+                        <div className="jsp-detail-row">
+                          <Calendar size={16} />
+                          <span>Sent: {formatConsentDate(record.sent_at)}</span>
+                        </div>
+                        {record.completed_at && (
+                          <div className="jsp-detail-row">
+                            <CheckCircle size={16} />
+                            <span>Completed: {formatConsentDate(record.completed_at)}</span>
+                          </div>
+                        )}
+                        {record.consented_name && (
+                          <div className="jsp-detail-row">
+                            <User size={16} />
+                            <span>Consented Name: {record.consented_name}</span>
+                          </div>
+                        )}
+                        <div className="jsp-detail-row">
+                          <Clock size={16} />
+                          <span>Status: {record.status}</span>
+                        </div>
+                      </div>
+                      <div className="jsp-consent-actions">
+                        <button
+                          className="button primary"
+                          onClick={() => navigate(`/consent-dashboard/${record.document_id}`)}
+                        >
+                          <Eye size={16} />
+                          View Consent Record
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+            {/* Consent Pagination Controls */}
+            {!consentLoading && consentPagination.totalPages > 1 && (
+              <div className="jsp-pagination-controls bottom">
+                <div className="jsp-pagination-info">
+                  <span className="jsp-pagination-text">
+                    Page {consentPagination.currentPage} of {consentPagination.totalPages}
+                  </span>
+                </div>
+                <div className="jsp-pagination-buttons">
+                  <button
+                    className="jsp-pagination-btn prev"
+                    onClick={() => handleConsentPageChange(consentPagination.currentPage - 1)}
+                    disabled={consentPagination.currentPage === 1}
+                    title="Previous Page"
+                    aria-label="Previous Page"
+                  >
+                    <ChevronLeft size={16} />
+                    <span>Previous</span>
+                  </button>
+                  <div className="jsp-page-numbers">
+                    {Array.from({ length: Math.min(5, consentPagination.totalPages) }, (_, i) => {
+                      let pageNum;
+                      if (consentPagination.totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (consentPagination.currentPage <= 3) {
+                        pageNum = i + 1;
+                      } else if (consentPagination.currentPage >= consentPagination.totalPages - 2) {
+                        pageNum = consentPagination.totalPages - 4 + i;
+                      } else {
+                        pageNum = consentPagination.currentPage - 2 + i;
+                      }
+                      return (
+                        <button
+                          key={pageNum}
+                          className={`jsp-page-number-btn ${pageNum === consentPagination.currentPage ? 'active' : ''}`}
+                          onClick={() => handleConsentPageChange(pageNum)}
+                          aria-label={`Go to page ${pageNum}`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <button
+                    className="jsp-pagination-btn next"
+                    onClick={() => handleConsentPageChange(consentPagination.currentPage + 1)}
+                    disabled={consentPagination.currentPage === consentPagination.totalPages}
+                    title="Next Page"
+                    aria-label="Next Page"
+                  >
+                    <span>Next</span>
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
       </main>
     </div>
   );

@@ -9,6 +9,7 @@ import {
 } from '../../services/api/bulkTimesheet';
 import { AppHeader } from '../../components/AppHeader';
 import { ConfirmationModal } from '../../components/ConfirmationModal';
+import { useLanguage } from '../../contexts/language/language-provider';
 import '../../styles/pages/InvoiceManagement.css';
 
 interface PaginationInfo {
@@ -21,30 +22,32 @@ interface PaginationInfo {
   hasPrevPage: boolean;
 }
 
-function getClientDisplayName(client: Record<string, unknown> | undefined): string {
+function getClientDisplayName(client: Record<string, unknown> | undefined, t: (key: string) => string): string {
   return (
     String(
       client?.companyName ||
       client?.company_name ||
       client?.shortCode ||
       client?.short_code ||
-      'Unknown Client'
+      t('bulkTimesheetManagement.constants.unknownClient')
     )
   );
 }
 
-function getPositionDisplayName(position: Record<string, unknown> | undefined): string {
+function getPositionDisplayName(position: Record<string, unknown> | undefined, t: (key: string) => string): string {
   return (
     String(
       position?.title ||
       position?.positionCode ||
       position?.position_code ||
-      'Unknown Position'
+      t('bulkTimesheetManagement.constants.unknownPosition')
     )
   );
 }
 
 export function BulkTimesheetList() {
+  const { t } = useLanguage();
+  
   // State management
   const [bulkTimesheets, setBulkTimesheets] = useState<BulkTimesheetData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -133,7 +136,7 @@ export function BulkTimesheetList() {
       setBulkTimesheets(response.bulkTimesheets);
       setPagination(response.pagination);
     } catch (err) {
-      setError('Failed to fetch bulk timesheets. Please try again.');
+      setError(t('bulkTimesheetManagement.messages.failedToFetch'));
     } finally {
       setLoading(false);
     }
@@ -206,7 +209,7 @@ export function BulkTimesheetList() {
       setDeleteError(null);
       await deleteBulkTimesheet(bulkTimesheetToDelete.id as string);
       setBulkTimesheets(bulkTimesheets.filter(bt => bt.id !== bulkTimesheetToDelete.id));
-      setMessage(`Bulk timesheet "${bulkTimesheetToDelete.invoiceNumber}" deleted successfully.`);
+      setMessage(t('bulkTimesheetManagement.messages.deletedSuccess', { invoiceNumber: bulkTimesheetToDelete.invoiceNumber }));
       
       // Close modal and reset state after successful deletion
       setIsDeleteModalOpen(false);
@@ -217,7 +220,7 @@ export function BulkTimesheetList() {
         setMessage(null);
       }, 3000);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to delete bulk timesheet';
+      const errorMessage = err instanceof Error ? err.message : t('bulkTimesheetManagement.messages.failedToDelete');
       setDeleteError(errorMessage);
     } finally {
       setIsDeleting(false);
@@ -237,7 +240,7 @@ export function BulkTimesheetList() {
     setError(null);
     try {
       const response = await sendBulkTimesheetEmails(bulkTimesheetId, [jobseekerId]);
-      setMessage(response.message || `Email sent to ${jobseekerName}`);
+      setMessage(response.message || t('bulkTimesheetManagement.messages.emailSentTo', { name: jobseekerName }));
       setTimeout(() => setMessage(null), 4000);
       // Update local state for instant UI feedback
       setBulkTimesheets(prevBulkTimesheets => prevBulkTimesheets.map(bt => {
@@ -250,7 +253,7 @@ export function BulkTimesheetList() {
         };
       }));
     } catch (err) {
-      setError(err instanceof Error ? err.message : `Failed to send email to ${jobseekerName}`);
+      setError(err instanceof Error ? err.message : t('bulkTimesheetManagement.messages.failedToSendEmail', { name: jobseekerName }));
       setTimeout(() => setError(null), 4000);
     } finally {
       setSendingJobseekerEmail(prev => ({ ...prev, [key]: false }));
@@ -260,7 +263,7 @@ export function BulkTimesheetList() {
   return (
     <div className="page-container bulk-timesheet-list">
       <AppHeader
-        title="Bulk Timesheet List"
+        title={t('bulkTimesheetManagement.listTitle')}
         actions={
           <>
             <button
@@ -268,7 +271,7 @@ export function BulkTimesheetList() {
               onClick={handleCreateBulkTimesheet}
             >
               <Plus size={16} />
-              <span>New Bulk Timesheet</span>
+              <span>{t('bulkTimesheetManagement.newBulkTimesheet')}</span>
             </button>
           </>
         }
@@ -278,13 +281,13 @@ export function BulkTimesheetList() {
       <div className="content-container">
         <div className="card">
           <div className="card-header">
-            <h2>Bulk Timesheet List</h2>
+            <h2>{t('bulkTimesheetManagement.listTitle')}</h2>
             <div className="filter-container">
               <div className="search-box">
                 <Search size={14} className="search-icon" />
                 <input
                   type="text"
-                  placeholder="Global search..."
+                  placeholder={t('bulkTimesheetManagement.globalSearch')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="search-input"
@@ -293,7 +296,7 @@ export function BulkTimesheetList() {
                   className="button secondary button-icon reset-filters-btn"
                   onClick={resetFilters}
                 >
-                  <span>Reset Filters</span>
+                  <span>{t('bulkTimesheetManagement.resetFilters')}</span>
                 </button>
               </div>
             </div>
@@ -302,15 +305,15 @@ export function BulkTimesheetList() {
           <div className="pagination-controls top">
             <div className="pagination-info">
               <span className="pagination-text">
-                Showing {Math.min((pagination.page - 1) * pagination.limit + 1, pagination.total)} to{' '}
-                {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} entries
+                {t('bulkTimesheetManagement.pagination.showing')} {Math.min((pagination.page - 1) * pagination.limit + 1, pagination.total)} {t('bulkTimesheetManagement.pagination.to')}{' '}
+                {Math.min(pagination.page * pagination.limit, pagination.total)} {t('bulkTimesheetManagement.pagination.of')} {pagination.total} {t('bulkTimesheetManagement.pagination.entries')}
                 {pagination.totalFiltered !== pagination.total && (
-                  <span className="filtered-info"> (filtered from {pagination.total} total entries)</span>
+                  <span className="filtered-info"> ({t('bulkTimesheetManagement.pagination.filteredFrom')} {pagination.total} {t('bulkTimesheetManagement.pagination.totalEntries')})</span>
                 )}
               </span>
             </div>
             <div className="pagination-size-selector">
-              <label htmlFor="pageSize" className="page-size-label">Show:</label>
+              <label htmlFor="pageSize" className="page-size-label">{t('bulkTimesheetManagement.pagination.show')}</label>
               <select
                 id="pageSize"
                 value={pagination.limit}
@@ -322,7 +325,7 @@ export function BulkTimesheetList() {
                 <option value={50}>50</option>
                 <option value={100}>100</option>
               </select>
-              <span className="page-size-label">per page</span>
+              <span className="page-size-label">{t('bulkTimesheetManagement.pagination.perPage')}</span>
             </div>
           </div>
           <div className="table-container">
@@ -331,11 +334,11 @@ export function BulkTimesheetList() {
                 <tr>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">Invoice #</div>
+                      <div className="column-title">{t('bulkTimesheetManagement.columns.invoiceNumber')}</div>
                       <div className="column-search">
                         <input
                           type="text"
-                          placeholder="Search invoice #..."
+                          placeholder={t('bulkTimesheetManagement.placeholders.searchInvoice')}
                           value={invoiceNumberFilter}
                           onChange={(e) => setInvoiceNumberFilter(e.target.value)}
                           className="column-search-input"
@@ -345,11 +348,11 @@ export function BulkTimesheetList() {
                   </th>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">Client</div>
+                      <div className="column-title">{t('bulkTimesheetManagement.columns.client')}</div>
                       <div className="column-search">
                         <input
                           type="text"
-                          placeholder="Search client..."
+                          placeholder={t('bulkTimesheetManagement.placeholders.searchClient')}
                           value={clientFilter}
                           onChange={(e) => setClientFilter(e.target.value)}
                           className="column-search-input"
@@ -359,11 +362,11 @@ export function BulkTimesheetList() {
                   </th>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">Position</div>
+                      <div className="column-title">{t('bulkTimesheetManagement.columns.position')}</div>
                       <div className="column-search">
                         <input
                           type="text"
-                          placeholder="Search position..."
+                          placeholder={t('bulkTimesheetManagement.placeholders.searchPosition')}
                           value={positionFilter}
                           onChange={(e) => setPositionFilter(e.target.value)}
                           className="column-search-input"
@@ -373,7 +376,7 @@ export function BulkTimesheetList() {
                   </th>
                   <th>
                     <div className="column-filter" style={{alignItems: 'center' }}>
-                      <div className="column-title">Week Period</div>
+                      <div className="column-title">{t('bulkTimesheetManagement.columns.weekPeriod')}</div>
                       <div className="column-search" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '4px' }}>
                         <div className="date-picker-wrapper">
                           <input
@@ -384,7 +387,7 @@ export function BulkTimesheetList() {
                             onClick={(e) => e.currentTarget.showPicker()}
                           />
                         </div>
-                        <span style={{ margin: '0 4px' }}>to</span>
+                        <span style={{ margin: '0 4px' }}>{t('bulkTimesheetManagement.filters.to')}</span>
                         <div className="date-picker-wrapper">
                           <input
                             type="date"
@@ -399,10 +402,10 @@ export function BulkTimesheetList() {
                   </th>
                   <th>
                     <div className="column-filter"  style={{alignItems: 'center' }}>
-                      <div className="column-title">Jobseekers</div>
+                      <div className="column-title">{t('bulkTimesheetManagement.columns.jobseekers')}</div>
                       <div className="column-search">
                         <div className="actions-info">
-                          <span className="actions-help-text">Names & Emails (click to send email)</span>
+                          <span className="actions-help-text">{t('bulkTimesheetManagement.email.namesAndEmails')}</span>
                         </div>
                       </div>
                     </div>
@@ -412,17 +415,17 @@ export function BulkTimesheetList() {
                       <div className="column-title">Total Pay</div>
                       <div className="column-search">
                         <div className="actions-info">
-                          <span className="actions-help-text">Amount</span>
+                          <span className="actions-help-text">{t('bulkTimesheetManagement.email.amount')}</span>
                         </div>
                       </div>
                     </div>
                   </th>
                   <th>
                     <div className="column-filter" style={{alignItems: 'flex-end', marginRight: '10px' }}>
-                      <div className="column-title">Actions</div>
+                      <div className="column-title">{t('bulkTimesheetManagement.columns.actions')}</div>
                       <div className="column-search">
                         <div className="actions-info">
-                          <span className="actions-help-text">View • Delete</span>
+                          <span className="actions-help-text">{t('bulkTimesheetManagement.actions.viewDelete')}</span>
                         </div>
                       </div>
                     </div>
@@ -475,7 +478,7 @@ export function BulkTimesheetList() {
                   <tr>
                     <td colSpan={9} className="empty-state-cell">
                       <div className="empty-state">
-                        <p>No bulk timesheets match your search criteria.</p>
+                        <p>{t('bulkTimesheetManagement.messages.noBulkTimesheets')}</p>
                       </div>
                     </td>
                   </tr>
@@ -485,8 +488,8 @@ export function BulkTimesheetList() {
                     return (
                       <tr key={String(bulkTimesheet.id)}>
                         <td className="invoice-number-cell"># {bulkTimesheet.invoiceNumber}</td>
-                        <td className="client-cell">{getClientDisplayName(bulkTimesheet.client)}</td>
-                        <td className="position-cell">{getPositionDisplayName(bulkTimesheet.position)}</td>
+                        <td className="client-cell">{getClientDisplayName(bulkTimesheet.client, t)}</td>
+                        <td className="position-cell">{getPositionDisplayName(bulkTimesheet.position, t)}</td>
                         <td className="date-cell">{bulkTimesheet.weekPeriod}</td>
                         <td className="jobseekers-cell">
                           {bulkTimesheet.jobseekerTimesheets.map((ts) => {
@@ -505,7 +508,7 @@ export function BulkTimesheetList() {
                                   <span className="jobseeker-email">{email}</span>
                                 </div>
                                 <div className="jobseeker-actions">
-                                  <span className={`email-status-dot ${statusClass}`} title={emailSent ? 'Email sent' : 'Not sent'}></span>
+                                  <span className={`email-status-dot ${statusClass}`} title={emailSent ? t('bulkTimesheetManagement.email.emailSent') : t('bulkTimesheetManagement.email.notSent')}></span>
                                   <button
                                     className={`button button-xs send-email-cell ${emailSent ? 'resend-email' : 'send-email'}`}
                                     disabled={isSending}
@@ -514,15 +517,15 @@ export function BulkTimesheetList() {
                                   >
                                     {isSending ? (
                                       <>
-                                        <Mail size={14} className="mail-icon" /> Sending...
+                                        <Mail size={14} className="mail-icon" /> {t('bulkTimesheetManagement.email.sending')}
                                       </>
                                     ) : emailSent ? (
                                       <>
-                                        <Mail size={14} className="mail-icon" /> Resend
+                                        <Mail size={14} className="mail-icon" /> {t('bulkTimesheetManagement.email.resend')}
                                       </>
                                     ) : (
                                       <>
-                                        <Mail size={14} className="mail-icon" /> Send Email
+                                        <Mail size={14} className="mail-icon" /> {t('bulkTimesheetManagement.email.sendEmail')}
                                       </>
                                     )}
                                   </button>
@@ -539,16 +542,16 @@ export function BulkTimesheetList() {
                             <button
                               className="action-icon-btn view-btn"
                               onClick={() => handleViewBulkTimesheet(String(bulkTimesheet.id))}
-                              title="View bulk timesheet details"
-                              aria-label="View bulk timesheet"
+                              title={t('bulkTimesheetManagement.actions.viewDetails')}
+                              aria-label={t('bulkTimesheetManagement.actions.viewDetails')}
                             >
                               <Eye size={16} />
                             </button>
                             <button
                               className="action-icon-btn delete-btn"
                               onClick={() => handleDeleteClick(bulkTimesheet)}
-                              title="Delete bulk timesheet"
-                              aria-label="Delete bulk timesheet"
+                              title={t('bulkTimesheetManagement.actions.deleteTimesheet')}
+                              aria-label={t('bulkTimesheetManagement.actions.deleteTimesheet')}
                             >
                               <Trash2 size={16} />
                             </button>
@@ -566,7 +569,7 @@ export function BulkTimesheetList() {
             <div className="pagination-controls bottom">
               <div className="pagination-info">
                 <span className="pagination-text">
-                  Page {pagination.page} of {pagination.totalPages}
+                  {t('bulkTimesheetManagement.pagination.page')} {pagination.page} {t('bulkTimesheetManagement.pagination.of')} {pagination.totalPages}
                 </span>
               </div>
               <div className="pagination-buttons">
@@ -574,11 +577,11 @@ export function BulkTimesheetList() {
                   className="pagination-btn prev"
                   onClick={handlePreviousPage}
                   disabled={!pagination.hasPrevPage}
-                  title="Previous page"
-                  aria-label="Previous page"
+                  title={t('bulkTimesheetManagement.pagination.previousPage')}
+                  aria-label={t('bulkTimesheetManagement.pagination.previousPage')}
                 >
                   <ChevronLeft size={16} />
-                  <span>Previous</span>
+                  <span>{t('bulkTimesheetManagement.pagination.previous')}</span>
                 </button>
                 {/* Page numbers */}
                 <div className="page-numbers">
@@ -598,7 +601,7 @@ export function BulkTimesheetList() {
                         key={pageNum}
                         className={`page-number-btn ${pageNum === pagination.page ? 'active' : ''}`}
                         onClick={() => handlePageChange(pageNum)}
-                        aria-label={`Go to page ${pageNum}`}
+                        aria-label={t('bulkTimesheetManagement.pagination.goToPage', { page: pageNum })}
                       >
                         {pageNum}
                       </button>
@@ -609,10 +612,10 @@ export function BulkTimesheetList() {
                   className="pagination-btn next"
                   onClick={handleNextPage}
                   disabled={!pagination.hasNextPage}
-                  title="Next page"
-                  aria-label="Next page"
+                  title={t('bulkTimesheetManagement.pagination.nextPage')}
+                  aria-label={t('bulkTimesheetManagement.pagination.nextPage')}
                 >
-                  <span>Next</span>
+                  <span>{t('bulkTimesheetManagement.pagination.next')}</span>
                   <ChevronRight size={16} />
                 </button>
               </div>
@@ -623,10 +626,12 @@ export function BulkTimesheetList() {
       {/* Delete Confirmation Modal */}
       <ConfirmationModal
         isOpen={isDeleteModalOpen}
-        title="Delete Bulk Timesheet"
-        message={`Are you sure you want to delete the bulk timesheet "${bulkTimesheetToDelete ? bulkTimesheetToDelete.invoiceNumber : 'Unknown'}"? This action cannot be undone.${deleteError ? `\n\nError: ${deleteError}` : ''}`}
-        confirmText={isDeleting ? 'Deleting...' : 'Delete Bulk Timesheet'}
-        cancelText="Cancel"
+        title={t('bulkTimesheetManagement.deleteModal.title')}
+        message={t('bulkTimesheetManagement.deleteModal.message', { 
+          invoiceNumber: bulkTimesheetToDelete ? bulkTimesheetToDelete.invoiceNumber : t('bulkTimesheetManagement.constants.unknown')
+        }) + (deleteError ? `\n\nError: ${deleteError}` : '')}
+        confirmText={isDeleting ? t('bulkTimesheetManagement.deleteModal.deleting') : t('bulkTimesheetManagement.deleteModal.confirmText')}
+        cancelText={t('bulkTimesheetManagement.deleteModal.cancel')}
         confirmButtonClass="danger"
         onConfirm={handleConfirmDelete}
         onCancel={handleCancelDelete}
