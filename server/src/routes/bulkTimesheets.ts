@@ -1173,7 +1173,7 @@ router.post(
         try {
           await sgMail.send({
             to: emailObj.to,
-            from: process.env.DEFAULT_FROM_EMAIL || 'godspeed@aimotion.com',
+            from: process.env.DEFAULT_FROM_EMAIL as string,
             subject: emailObj.subject,
             text: emailObj.text,
             html: emailObj.html,

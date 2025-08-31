@@ -1185,7 +1185,7 @@ router.post('/:id/send-email',
       const sendPayload = {
         to: email,
         cc: cc.length > 0 ? cc : undefined,
-        from: process.env.DEFAULT_FROM_EMAIL || 'godspeed@aimotion.com',
+        from: process.env.DEFAULT_FROM_EMAIL as string,
         subject,
         html,
         attachments,

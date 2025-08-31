@@ -93,7 +93,7 @@ function generateConsentEmail(recipientName: string, documentName: string, conse
   <div class="container">
     <div class="content">
       <div class="header">
-        <div class="logo">Godspeed Ops Portal</div>
+        <div class="logo">HD Group Ops Portal</div>
         <h1>Digital Consent Request</h1>
       </div>
       
@@ -115,7 +115,7 @@ function generateConsentEmail(recipientName: string, documentName: string, conse
       
       <p>If you have any questions about this consent request, please contact our support team.</p>
       
-      <p>Best regards,<br>Godspeed Team</p>
+      <p>Best regards,<br>HD Group Team</p>
     </div>
     
     <div class="footer">
@@ -144,7 +144,7 @@ IMPORTANT: This link is unique to you and should not be shared. The link will ex
 If you have any questions about this consent request, please contact our support team.
 
 Best regards,
-Godspeed Team
+HD Group Team
 
 ---
 This is an automated message. Please do not reply to this email.

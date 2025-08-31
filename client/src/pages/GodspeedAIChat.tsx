@@ -10,7 +10,7 @@ export function GodspeedAIChat() {
   const navigate = useNavigate();
 
   // Define the external AI chat URL from environment variable
-  const AI_CHAT_URL = import.meta.env.VITE_AI_CHAT_URL || 'https://godspeed-ops-ai-mhbl.onrender.com/';
+  const AI_CHAT_URL = import.meta.env.VITE_AI_CHAT_URL;
   
   // Define which user types can access the AI chat
   const ALLOWED_USER_TYPES: ('admin' | 'recruiter' | 'jobseeker')[] = ['admin'];
@@ -43,7 +43,7 @@ export function GodspeedAIChat() {
   return (
     <div className="godspeed-ai-chat-container">
       <AppHeader 
-        title="Godspeed AI Chat" 
+        title="HD Group AI Chat" 
         hideHamburgerMenu={false}
       />
       
@@ -51,7 +51,7 @@ export function GodspeedAIChat() {
         <div className="ai-chat-content">
           <IframeViewer
             url={AI_CHAT_URL}
-            title="Godspeed AI Chat"
+            title="HD Group AI Chat"
             allowedUserTypes={ALLOWED_USER_TYPES}
             currentUserType={currentUserType}
             onAccessDenied={handleAccessDenied}
