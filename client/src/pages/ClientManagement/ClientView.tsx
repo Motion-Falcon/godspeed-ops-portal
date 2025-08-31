@@ -97,12 +97,12 @@ export function ClientView() {
     setConsentPagination((prev) => ({ ...prev, currentPage: page }));
   };
   useEffect(() => {
-    if (client?.id) {
+    if (client && client.id) {
       const fetchConsentRecords = async () => {
         setConsentLoading(true);
         setConsentError(null);
         try {
-          const response = await getConsentRecordsByEntity(client.id, {
+          const response = await getConsentRecordsByEntity(client.id as string, {
             page: consentPagination.currentPage,
             limit: consentPagination.itemsPerPage,
             consentableType: 'client',

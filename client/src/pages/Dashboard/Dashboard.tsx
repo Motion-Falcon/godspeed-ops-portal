@@ -7,7 +7,6 @@ import "../../styles/variables.css";
 import "../../styles/pages/Dashboard.css";
 import "../../styles/components/button.css";
 import { AdminDashboard } from "./AdminDashboard";
-import { useLanguage } from "../../contexts/language/language-provider";
 
 export function Dashboard() {
   const {
