@@ -130,7 +130,7 @@ export function AllUsersManagement() {
         userRoleFilter,
         managerIdFilter,
       });
-      setUsers(data.users.filter(user => user.userType !== "jobseeker"));
+      setUsers(data.users);
       setPagination(data.pagination);
     } catch (err) {
       const errorMessage =
