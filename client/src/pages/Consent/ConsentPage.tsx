@@ -7,7 +7,7 @@ import { useLanguage } from '../../contexts/language/language-provider';
 import { ThemeToggle } from '../../components/theme-toggle';
 import { LanguageToggle } from '../../components/LanguageToggle';
 import { supabase } from '../../lib/supabaseClient';
-import godspeedLogo from '../../assets/logos/godspped-logo-fulllength.png';
+import godspeedLogo from '../../assets/logos/allstaff-logo.png';
 import '../../styles/pages/ConsentPage.css';
 
 // Set worker path for react-pdf

@@ -67,7 +67,7 @@ router.post('/route',
 if (!req.user) {
   req.user = {
     id: '00000000-0000-0000-0000-000000000000',
-    email: 'system@godspeedxp.com',
+    email: 'system@allstaff.com',
     user_metadata: { name: 'System', user_type: 'admin' }
   } as any;
 }

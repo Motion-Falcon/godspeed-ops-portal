@@ -46,7 +46,7 @@ Deductions: -$${(vars.deduction_amount || 0).toFixed(2)}` : ''}
 TOTAL JOBSEEKER PAY: $${(vars.total_jobseeker_pay || 0).toFixed(2)}
 
 ---
-This is an automated timesheet summary from Godspeed Operations Portal.
+This is an automated timesheet summary from AllStaff Operations Portal.
 If you have any questions about this timesheet, please contact your recruitment team.
 Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}`;
 } 

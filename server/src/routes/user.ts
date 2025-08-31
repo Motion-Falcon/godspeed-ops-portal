@@ -681,7 +681,7 @@ router.post(
         try {
           await sgMail.send({
             to: user.email,
-            from: process.env.DEFAULT_FROM_EMAIL || 'godspeed@aimotion.com',
+            from: process.env.DEFAULT_FROM_EMAIL as string,
             subject: 'Complete Your Account Setup - Action Required',
             text: textContent,
             html: htmlContent,

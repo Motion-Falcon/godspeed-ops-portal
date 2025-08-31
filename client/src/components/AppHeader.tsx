@@ -1,7 +1,7 @@
 import { ReactNode, useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RotateCcw, ChevronDown, RefreshCcw } from 'lucide-react';
-import godspeedLogo from '../assets/logos/godspped-logo-fulllength.png';
+import godspeedLogo from '../assets/logos/allstaff-logo.png';
 import godspeedIconLogo from '../assets/logos/godspped-logo.png';
 import canHireIconLogo from '../assets/logos/canhire-logo.png';
 import allStaffIconLogo from '../assets/logos/allstaff-logo.png';
@@ -13,7 +13,7 @@ import '../styles/components/header.css';
 // Company data
 const companies = [
   { name: 'CanHire Ops', logo: canHireIconLogo, url: 'https://app.canhiresolutions.ca' },
-  { name: 'All Staff Inc. Ops', logo: allStaffIconLogo, url: 'https://app.allstaff.ca' },
+  { name: 'Godspeed Ops', logo: godspeedIconLogo, url: 'https://app.godspeedxp.com' },
   { name: 'HD Group Ops', logo: hdGroupIconLogo, url: 'https://app.hdgroup.ca' }
 ];
 
@@ -158,13 +158,13 @@ export function AppHeader({
                   <div className="trigger-content">
                     <div className="current-portal">
                       <img 
-                        src={godspeedIconLogo} 
-                        alt="Godspeed Logo"
+                        src={allStaffIconLogo} 
+                        alt="AllStaff Logo"
                         className="portal-logo"
                       />
                       <div className="portal-info">
                         <span className="portal-label">Portal</span>
-                        <span className="portal-name">Godspeed Ops</span>
+                        <span className="portal-name">AllStaff Ops</span>
                       </div>
                     </div>
                     <div className="switcher-actions">

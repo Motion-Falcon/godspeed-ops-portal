@@ -25,7 +25,7 @@ export function onboardingReminderHtmlTemplate(vars: Record<string, any>) {
 
     <p>If you have any questions or need assistance, please don't hesitate to reach out to our support team.</p>
 
-    <p>Best regards,<br><strong>The Godspeed Team</strong></p>
+    <p>Best regards,<br><strong>The AllStaff Team</strong></p>
 
     <div style="font-size: 12px; color: #888; margin-top: 32px; border-top: 1px solid #eee; padding-top: 16px;">
       This email was sent because you have an incomplete account setup. If you believe this message was sent in error, please contact our support team.
