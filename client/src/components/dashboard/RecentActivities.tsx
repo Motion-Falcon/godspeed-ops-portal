@@ -18,6 +18,8 @@ import {
   ChevronDown,
   Loader2,
   Mail,
+  FileCheck,
+  Send,
 } from "lucide-react";
 import "./RecentActivities.css";
 
@@ -55,7 +57,15 @@ interface RecentActivity {
     | "update_bulk_timesheet"
     | "delete_bulk_timesheet"
     | "send_bulk_timesheet_email"
-    | "send_invoice_email";
+    | "send_invoice_email"
+    | "update_user_manager"
+    | "update_user_roles"
+    | "complete_onboarding"
+    | "invite_recruiter"
+    | "resend_invitation"
+    | "create_consent_request"
+    | "user_consent_given"
+    | "resend_consent_request";
   action_verb: string;
   actor_name: string;
   actor_type: string;
@@ -64,7 +74,8 @@ interface RecentActivity {
     | "client_management"
     | "financial"
     | "system"
-    | "candidate_management";
+    | "candidate_management"
+    | "user_management";
   display_message: string;
   primary_entity_name?: string;
   primary_entity_type: string;
@@ -111,10 +122,17 @@ const getActivityIcon = (actionType: string, category: string) => {
       return <Target size={16} />;
     case "financial":
       return <FileText size={16} />;
+    case "user_management":
+      if (actionType.includes("consent")) {
+        return <FileCheck size={16} />;
+      }
+      return <User size={16} />;
     case "send_bulk_timesheet_email":
       return <Mail size={16} />;
     case "send_invoice_email":
       return <Mail size={16} />;
+    case "consent_management":
+      return <FileCheck size={16} />;
     default:
       return <AlertCircle size={16} />;
   }
@@ -146,6 +164,14 @@ const getStatusIcon = (actionType: string) => {
       return <PlusCircleIcon size={12} className="status-success" />;
     case "update_invoice":
       return <Pencil size={12} className="status-success" />;
+    case "update_user_manager":
+    case "update_user_roles":
+      return <Pencil size={12} className="status-success" />;
+    case "complete_onboarding":
+      return <CheckCircle size={12} className="status-success" />;
+    case "invite_recruiter":
+    case "resend_invitation":
+      return <UserPlus size={12} className="status-success" />;
     case "delete_invoice":
       return <Trash size={12} className="status-error" />;
     case "create_timesheet":
@@ -165,6 +191,12 @@ const getStatusIcon = (actionType: string) => {
       return <Clock size={12} className="status-pending" />;
     case "send_invoice_email":
       return <Mail size={12} className="status-success" />;
+    case "create_consent_request":
+      return <PlusCircleIcon size={12} className="status-success" />;
+    case "user_consent_given":
+      return <CheckCircle size={12} className="status-success" />;
+    case "resend_consent_request":
+      return <Send size={12} className="status-success" />;
 
     default:
       return <AlertCircle size={12} className="status-info" />;
@@ -618,6 +650,64 @@ const formatActivityMessage = (activity: RecentActivity): React.ReactNode => {
       );
     }
 
+    case "update_user_manager": {
+      const hasManager = activity.secondary_entity_name && activity.secondary_entity_name !== "None";
+      return hasManager ? (
+        <>
+          <ActorName>{actor_name}</ActorName> updated manager for <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity> to <SecondaryEntity>{activity.secondary_entity_name}</SecondaryEntity>
+        </>
+      ) : (
+        <>
+          <ActorName>{actor_name}</ActorName> removed manager for <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity>
+        </>
+      );
+    }
+
+    case "update_user_roles": {
+      const roles = Array.isArray(activity.metadata?.roles)
+        ? (activity.metadata?.roles as string[])
+        : [];
+      const rolesText = roles.join(", ");
+      return (
+        <>
+          <ActorName>{actor_name}</ActorName> updated roles for <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity>
+          {roles.length > 0 ? (
+            <>
+              {" "}to <SecondaryEntity>{rolesText}</SecondaryEntity>
+            </>
+          ) : null}
+        </>
+      );
+    }
+
+    case "complete_onboarding": {
+      return (
+        <>
+          <ActorName>{actor_name}</ActorName> completed onboarding setup
+        </>
+      );
+    }
+
+    case "invite_recruiter": {
+      const invitedName = activity.metadata?.invitedName as string;
+      const invitedEmail = cleanPrimaryName; // email is stored as primary entity name
+      return (
+        <>
+          <ActorName>{actor_name}</ActorName> invited <PrimaryEntity>{invitedName}</PrimaryEntity> (<SecondaryEntity>{invitedEmail}</SecondaryEntity>) as a recruiter
+        </>
+      );
+    }
+
+    case "resend_invitation": {
+      const invitationType = activity.metadata?.invitationType as string;
+      const isOnboardingReminder = invitationType === 'onboarding_reminder';
+      return (
+        <>
+          <ActorName>{actor_name}</ActorName> resent {isOnboardingReminder ? 'onboarding reminder' : 'invitation'} to <PrimaryEntity>{cleanPrimaryName}</PrimaryEntity>
+        </>
+      );
+    }
+
     case "send_bulk_timesheet_email": {
       const invoice = cleanPrimaryName;
       const emailsSent = (activity.metadata?.emailsSent as { name: string; email: string }[]) || [];
@@ -648,6 +738,39 @@ const formatActivityMessage = (activity: RecentActivity): React.ReactNode => {
           <ActorName>{actor_name}</ActorName> sent invoice <PrimaryEntity>{primary_entity_name}</PrimaryEntity> to <SecondaryEntity>{recipient}</SecondaryEntity>
           {" "}for{" "}
           {clientName ? <SecondaryEntity>{clientName}</SecondaryEntity> : null}
+        </>
+      );
+    }
+
+    case "create_consent_request": {
+      const recipientCount = Number(metadata?.recipientCount) || 0;
+      const recipientType = metadata?.recipientType as string;
+      const recipientLabel = recipientType === 'client' ? 'client' : 'jobseeker';
+      const pluralSuffix = recipientCount === 1 ? '' : 's';
+
+      return (
+        <>
+          <ActorName>{actor_name}</ActorName> created consent request <PrimaryEntity>{primary_entity_name}</PrimaryEntity> for {recipientCount} {recipientLabel}{pluralSuffix}
+        </>
+      );
+    }
+
+    case "user_consent_given": {
+      const documentName = secondary_entity_name || 'Unknown Document';
+      return (
+        <>
+          <PrimaryEntity>{primary_entity_name}</PrimaryEntity> provided digital consent for <SecondaryEntity>{documentName}</SecondaryEntity>
+        </>
+      );
+    }
+
+    case "resend_consent_request": {
+      const recordCount = Number(metadata?.recordCount) || 0;
+      const pluralSuffix = recordCount === 1 ? '' : 's';
+
+      return (
+        <>
+          <ActorName>{actor_name}</ActorName> resent {recordCount} consent email{pluralSuffix}
         </>
       );
     }

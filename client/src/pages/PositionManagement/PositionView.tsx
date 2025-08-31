@@ -7,6 +7,7 @@ import {
 } from "../../services/api/position";
 import { ConfirmationModal } from "../../components/ConfirmationModal";
 import { AppHeader } from "../../components/AppHeader";
+import { useLanguage } from "../../contexts/language/language-provider";
 import {
   ArrowLeft,
   Edit,
@@ -25,6 +26,7 @@ interface ExtendedPositionData extends PositionData {
 }
 
 export function PositionView() {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const [position, setPosition] = useState<ExtendedPositionData | null>(null);
@@ -91,7 +93,7 @@ export function PositionView() {
         const errorMessage =
           err instanceof Error
             ? err.message
-            : "Failed to fetch position details";
+            : t("positionManagement.failedToLoadPosition");
         setError(errorMessage);
       } finally {
         setLoading(false);
@@ -128,12 +130,12 @@ export function PositionView() {
     startDate?: string | null,
     endDate?: string | null
   ) => {
-    if (!startDate) return "N/A";
+    if (!startDate) return t("positionManagement.nA");
 
     const start = new Date(startDate);
     const formattedStart = start.toLocaleDateString();
 
-    if (!endDate) return `${formattedStart} (ongoing)`;
+    if (!endDate) return `${formattedStart} (${t("positionManagement.ongoing")})`;
 
     const end = new Date(endDate);
     const formattedEnd = end.toLocaleDateString();
@@ -142,7 +144,7 @@ export function PositionView() {
     const durationMs = end.getTime() - start.getTime();
     const durationDays = Math.ceil(durationMs / (1000 * 60 * 60 * 24));
 
-    return `${formattedStart} to ${formattedEnd} (${durationDays} days)`;
+    return `${formattedStart} to ${formattedEnd} (${durationDays} ${t("positionManagement.days")})`;
   };
 
   const renderDetailItem = (
@@ -152,9 +154,9 @@ export function PositionView() {
     let displayValue;
 
     if (value === null || value === undefined || value === "") {
-      displayValue = "N/A";
+      displayValue = t("positionManagement.nA");
     } else if (typeof value === "boolean") {
-      displayValue = value ? "Yes" : "No";
+      displayValue = value ? t("positionManagement.yes") : t("positionManagement.no");
     } else if (typeof value === "object") {
       // Handle documents required object
       if (label === "Documents Required" && value) {
@@ -162,7 +164,7 @@ export function PositionView() {
           .filter(([, isRequired]) => isRequired)
           .map(([doc]) => formatDocumentName(doc))
           .join(", ");
-        displayValue = documents || "None";
+        displayValue = documents || t("positionManagement.none");
       } else {
         displayValue = JSON.stringify(value);
       }
@@ -191,11 +193,11 @@ export function PositionView() {
     return (
       <div className="client-view-container">
         <AppHeader
-          title="Position Details"
+          title={t("positionManagement.positionDetails")}
           actions={
             <button className="button" disabled>
               <ArrowLeft size={16} className="icon" />
-              <span>Back to Position Management</span>
+              <span>{t("positionManagement.backToPositionManagement")}</span>
             </button>
           }
         />
@@ -255,15 +257,15 @@ export function PositionView() {
           {/* Details Grid Skeleton */}
           <div className="profile-content grid-container">
             {[
-              'Basic Details',
-              'Address Details',
-              'Employment Categorization',
-              'Documents Required',
-              'Position Details',
-              'Overtime',
-              'Payment & Billings',
-              'Notes',
-              'Tasks',
+              t("positionManagement.basicDetails"),
+              t("positionManagement.addressDetails"),
+              t("positionManagement.employmentCategorization"),
+              t("positionManagement.documentsRequired"),
+              t("positionManagement.positionDetailsSection"),
+              t("positionManagement.overtime"),
+              t("positionManagement.paymentBillings"),
+              t("positionManagement.notes"),
+              t("positionManagement.tasks"),
             ].map((section) => (
               <div key={section} className="section-card">
                 <div className="skeleton-text" style={{ width: '180px', height: '20px', marginBottom: '20px' }}></div>
@@ -287,16 +289,16 @@ export function PositionView() {
     return (
       <div className="client-view-container">
         <div className="error-container">
-          <p className="error-message">{error || "Failed to load position"}</p>
+          <p className="error-message">{error || t("positionManagement.failedToLoadPosition")}</p>
           <div className="error-actions">
             <button className="button " onClick={handleNavigateBack}>
-              Back to Positions
+              {t("positionManagement.backToPositions")}
             </button>
             <button
               className="button primary"
               onClick={() => window.location.reload()}
             >
-              Try Again
+              {t("positionManagement.tryAgain")}
             </button>
           </div>
         </div>
@@ -304,21 +306,21 @@ export function PositionView() {
     );
   }
 
-  const positionTitle = position.title || "Unnamed Position";
+  const positionTitle = position.title || t("positionManagement.unnamedPosition");
 
   return (
     <div className="client-view-container">
       <AppHeader
-        title={positionTitle || "Position Details"}
+        title={positionTitle || t("positionManagement.positionDetails")}
         actions={
           <>
             <button className="button" onClick={handleNavigateBack}>
               <ArrowLeft size={16} />
-              <span>Back to Positions</span>
+              <span>{t("positionManagement.backToPositions")}</span>
             </button>
             <button className="button secondary" onClick={confirmEditPosition}>
               <Edit size={16} />
-              Edit
+              {t("buttons.edit")}
             </button>
           </>
         }
@@ -337,37 +339,37 @@ export function PositionView() {
             <div className="client-info-header">
               <div className="position-basic-info">
                 <h1 className="client-name">{positionTitle}</h1>
-                {renderDetailItem("Client", position.clientName)}
-                {renderDetailItem("Position Id", position.positionCode)}
+                {renderDetailItem(t("common.client"), position.clientName)}
+                {renderDetailItem(t("positionManagement.positionId"), position.positionCode)}
                 {renderDetailItem(
-                  "Duration",
+                  t("positionManagement.duration"),
                   formatDateRange(position.startDate, position.endDate)
                 )}
-                {renderDetailItem("Created", formatDate(position.createdAt))}
-                {renderDetailItem("Updated", formatDate(position.updatedAt))}
+                {renderDetailItem(t("positionManagement.created"), formatDate(position.createdAt))}
+                {renderDetailItem(t("positionManagement.updated"), formatDate(position.updatedAt))}
               </div>
 
               <div className="position-assignment-info">
                 <div className="assignment-summary">
                   <h3 className="assignment-title">
                     <Users size={20} />
-                    Position Assignment
+                    {t("positionManagement.positionAssignment")}
                   </h3>
                   <div className="jsp-status-tabs">
                     <div className="jsp-tab active">
-                      Total Positions:
+                      {t("positionManagement.totalPositions")}:
                       <span className="jsp-count">
                         {position.numberOfPositions || 0}
                       </span>
                     </div>
                     <div className="jsp-tab active">
-                      Assigned:
+                      {t("positionManagement.assigned")}:
                       <span className="jsp-count">
                         {assignedJobseekers.length}
                       </span>
                     </div>
                     <div className="jsp-tab active">
-                      Available:
+                      {t("positionManagement.available")}:
                       <span className="jsp-count">
                         {Math.max(
                           0,
@@ -380,16 +382,16 @@ export function PositionView() {
                 </div>
 
                 <div className="assigned-jobseekers">
-                  <h4 className="jobseekers-title">Assigned Jobseekers</h4>
+                  <h4 className="jobseekers-title">{t("positionManagement.assignedJobseekers")}</h4>
                   {assignedJobseekersLoading ? (
                     <div className="loading-jobseekers">
                       <div className="loading-spinner small"></div>
-                      <span>Loading assigned candidates...</span>
+                      <span>{t("positionManagement.loadingAssignments")}</span>
                     </div>
                   ) : assignedJobseekers.length === 0 ? (
                     <div className="no-assignments">
                       <User size={24} className="empty-icon" />
-                      <p>No jobseekers assigned yet</p>
+                      <p>{t("positionManagement.noJobseekersAssigned")}</p>
                     </div>
                   ) : (
                     <div className="jobseekers-list">
@@ -421,7 +423,7 @@ export function PositionView() {
                   onClick={handleNavigateToMatching}
                 >
                   <Users size={16} />
-                  Manage Position Assignment
+                  {t("positionManagement.managePositionAssignment")}
                 </button>
               </div>
             </div>
@@ -430,83 +432,83 @@ export function PositionView() {
 
         <div className="profile-content grid-container">
           <div className="basic-details-section section-card">
-            <h2 className="section-title">Basic Details</h2>
+            <h2 className="section-title">{t("positionManagement.basicDetails")}</h2>
             <div className="detail-group">
-              {renderDetailItem("Title", position.title)}
-              {renderDetailItem("Client", position.clientName)}
-              {renderDetailItem("Position Id", position.positionCode)}
-              {renderDetailItem("Start Date", formatDate(position.startDate))}
+              {renderDetailItem(t("forms.title"), position.title)}
+              {renderDetailItem(t("common.client"), position.clientName)}
+              {renderDetailItem(t("positionManagement.positionId"), position.positionCode)}
+              {renderDetailItem(t("positionManagement.startDate"), formatDate(position.startDate))}
               {renderDetailItem(
-                "End Date",
+                t("positionManagement.endDate"),
                 position.endDate
                   ? formatDate(position.endDate)
-                  : "No end date (ongoing)"
+                  : t("positionManagement.noEndDate")
               )}
-              {renderDetailItem("Show on Job Portal", position.showOnJobPortal)}
-              {renderDetailItem("Client Manager", position.clientManager)}
-              {renderDetailItem("Sales Manager", position.salesManager)}
-              {renderDetailItem("Position Code", position.positionNumber)}
-              {renderDetailItem("Description", position.description)}
+              {renderDetailItem(t("positionManagement.showOnJobPortal"), position.showOnJobPortal)}
+              {renderDetailItem(t("positionManagement.clientManager"), position.clientManager)}
+              {renderDetailItem(t("positionManagement.salesManager"), position.salesManager)}
+              {renderDetailItem(t("positionManagement.positionCode"), position.positionNumber)}
+              {renderDetailItem(t("invoiceManagement.description"), position.description)}
             </div>
           </div>
 
           <div className="address-section section-card">
-            <h2 className="section-title">Address Details</h2>
+            <h2 className="section-title">{t("positionManagement.addressDetails")}</h2>
             <div className="detail-group">
-              {renderDetailItem("Street Address", position.streetAddress)}
-              {renderDetailItem("City", position.city)}
-              {renderDetailItem("Province", position.province)}
-              {renderDetailItem("Postal Code", position.postalCode)}
+              {renderDetailItem(t("positionManagement.streetAddress"), position.streetAddress)}
+              {renderDetailItem(t("positionManagement.city"), position.city)}
+              {renderDetailItem(t("positionManagement.province"), position.province)}
+              {renderDetailItem(t("positionManagement.postalCode"), position.postalCode)}
             </div>
           </div>
 
           <div className="employment-section section-card">
-            <h2 className="section-title">Employment Categorization</h2>
+            <h2 className="section-title">{t("positionManagement.employmentCategorization")}</h2>
             <div className="detail-group">
-              {renderDetailItem("Employment Term", position.employmentTerm)}
-              {renderDetailItem("Employment Type", position.employmentType)}
-              {renderDetailItem("Position Category", position.positionCategory)}
-              {renderDetailItem("Experience", position.experience)}
+              {renderDetailItem(t("positionManagement.employmentTerm"), position.employmentTerm)}
+              {renderDetailItem(t("positionManagement.employmentType"), position.employmentType)}
+              {renderDetailItem(t("positionManagement.positionCategory"), position.positionCategory)}
+              {renderDetailItem(t("positionManagement.experience"), position.experience)}
             </div>
           </div>
 
           <div className="documents-section section-card">
-            <h2 className="section-title">Documents Required</h2>
+            <h2 className="section-title">{t("positionManagement.documentsRequired")}</h2>
             <div className="detail-group">
               {renderDetailItem(
-                "Documents Required",
+                t("positionManagement.documentsRequired"),
                 position.documentsRequired
               )}
             </div>
           </div>
 
           <div className="position-details-section section-card">
-            <h2 className="section-title">Position Details</h2>
+            <h2 className="section-title">{t("positionManagement.positionDetailsSection")}</h2>
             <div className="detail-group">
-              {renderDetailItem("Payrate Type", position.payrateType)}
+              {renderDetailItem(t("positionManagement.payrateType"), position.payrateType)}
               {renderDetailItem(
-                "Number of Positions",
+                t("positionManagement.numberOfPositions"),
                 position.numberOfPositions
               )}
-              {renderDetailItem("Regular Pay Rate", position.regularPayRate)}
-              {renderDetailItem("Markup", position.markup)}
-              {renderDetailItem("Bill Rate", position.billRate)}
+              {renderDetailItem(t("positionManagement.regularPayRate"), position.regularPayRate)}
+              {renderDetailItem(t("positionManagement.markup"), position.markup)}
+              {renderDetailItem(t("positionManagement.billRate"), position.billRate)}
             </div>
           </div>
 
           <div className="overtime-section section-card">
-            <h2 className="section-title">Overtime</h2>
+            <h2 className="section-title">{t("positionManagement.overtime")}</h2>
             <div className="detail-group">
-              {renderDetailItem("Overtime Enabled", position.overtimeEnabled)}
+              {renderDetailItem(t("positionManagement.overtimeEnabled"), position.overtimeEnabled)}
               {position.overtimeEnabled && (
                 <>
-                  {renderDetailItem("Overtime Hours", position.overtimeHours)}
+                  {renderDetailItem(t("positionManagement.overtimeHours"), position.overtimeHours)}
                   {renderDetailItem(
-                    "Overtime Bill Rate",
+                    t("positionManagement.overtimeBillRate"),
                     position.overtimeBillRate
                   )}
                   {renderDetailItem(
-                    "Overtime Pay Rate",
+                    t("positionManagement.overtimePayRate"),
                     position.overtimePayRate
                   )}
                 </>
@@ -515,32 +517,32 @@ export function PositionView() {
           </div>
 
           <div className="payment-section section-card">
-            <h2 className="section-title">Payment & Billings</h2>
+            <h2 className="section-title">{t("positionManagement.paymentBillings")}</h2>
             <div className="detail-group">
               {renderDetailItem(
-                "Preferred Payment Method",
+                t("positionManagement.preferredPaymentMethod"),
                 position.preferredPaymentMethod
               )}
-              {renderDetailItem("Terms", position.terms)}
+              {renderDetailItem(t("positionManagement.terms"), position.terms)}
             </div>
           </div>
 
           <div className="notes-section section-card">
-            <h2 className="section-title">Notes</h2>
+            <h2 className="section-title">{t("positionManagement.notes")}</h2>
             <div className="detail-group">
-              {renderDetailItem("Notes", position.notes)}
+              {renderDetailItem(t("positionManagement.notes"), position.notes)}
             </div>
           </div>
 
           <div className="tasks-section section-card">
-            <h2 className="section-title">Tasks</h2>
+            <h2 className="section-title">{t("positionManagement.tasks")}</h2>
             <div className="detail-group">
-              {renderDetailItem("Assigned To", position.assignedTo)}
+              {renderDetailItem(t("positionManagement.assignedTo"), position.assignedTo)}
               {renderDetailItem(
-                "Project Completion Date",
+                t("positionManagement.projectCompletionDate"),
                 formatDate(position.projCompDate)
               )}
-              {renderDetailItem("Task Time", position.taskTime)}
+              {renderDetailItem(t("positionManagement.taskTime"), position.taskTime)}
             </div>
           </div>
         </div>
@@ -549,10 +551,10 @@ export function PositionView() {
       {showEditConfirmation && (
         <ConfirmationModal
           isOpen={showEditConfirmation}
-          title="Edit Position"
-          message="Are you sure you want to edit this position?"
-          confirmText="Edit"
-          cancelText="Cancel"
+          title={t("positionManagement.editPosition")}
+          message={t("positionManagement.editPositionConfirm")}
+          confirmText={t("buttons.edit")}
+          cancelText={t("buttons.cancel")}
           onConfirm={() => {
             navigate(`/position-management/edit/${id}`);
           }}

@@ -1547,7 +1547,6 @@ select.form-input {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
   width: 100%;
   max-width: 450px;
-  overflow: hidden;
   animation: slideIn 0.3s ease-out;
   border: 1px solid var(--border);
 }
@@ -2449,15 +2448,6 @@ select.form-input {
   display: inline-block;
 }
 
-.skeleton-icon {
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-  background-size: 200% 100%;
-  animation: skeleton-loading 1.5s infinite;
-  border-radius: 50%;
-  display: inline-block;
-  width: 16px;
-  height: 16px;
-}
 
 .skeleton-avatar {
   background: transparent !important;
@@ -2496,11 +2486,6 @@ select.form-input {
   background-size: 200% 100%;
 }
 
-.dark .skeleton-icon {
-  background: linear-gradient(90deg, #333 25%, #444 50%, #333 75%);
-  background-size: 200% 100%;
-}
-
 .dark .skeleton-score-gauge {
   background: rgba(51, 51, 51, 0.3) !important;
 }
@@ -2523,5 +2508,220 @@ select.form-input {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* Consent Records Section Styles */
+.jsp-consent-content {
+  margin-top: 20px;
+}
+
+.jsp-consent-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+  margin-bottom: 30px;
+}
+
+.jsp-consent-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.jsp-consent-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: var(--pending);
+  transition: background 0.3s ease;
+}
+
+.jsp-consent-card[data-status="completed"]::before {
+  background: var(--success);
+}
+
+.jsp-consent-card[data-status="pending"]::before {
+  background: var(--pending);
+}
+
+.jsp-consent-card[data-status="expired"]::before {
+  background: var(--failure);
+}
+
+.jsp-consent-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.jsp-consent-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+  gap: 16px;
+}
+
+.jsp-consent-title-section {
+  flex: 1;
+  min-width: 0;
+}
+
+.jsp-consent-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 4px 0;
+  word-break: break-word;
+  line-height: 1.3;
+}
+
+.jsp-consent-code {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+  background: var(--background);
+  padding: 2px 8px;
+  border-radius: 12px;
+  display: inline-block;
+  border: 1px solid var(--border);
+}
+
+.jsp-consent-details {
+  margin-bottom: 16px;
+}
+
+.jsp-consent-details .jsp-detail-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.jsp-consent-details .jsp-detail-row:last-child {
+  margin-bottom: 0;
+}
+
+.jsp-consent-details .jsp-detail-row svg {
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.jsp-consent-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: flex-end;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.jsp-consent-actions .button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  padding: 8px 16px;
+  min-width: auto;
+}
+
+/* Status badge styling for consent cards */
+.jsp-consent-card .jsp-status-badge {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 12px;
+  border-radius: 16px;
+  text-transform: capitalize;
+  flex-shrink: 0;
+  border: 1px solid;
+}
+
+.jsp-consent-card .jsp-status-badge.completed {
+  background: var(--success-bg);
+  color: var(--success);
+  border-color: var(--success);
+}
+
+.jsp-consent-card .jsp-status-badge.pending {
+  background: var(--pending-bg);
+  color: var(--pending);
+  border-color: var(--pending);
+}
+
+.jsp-consent-card .jsp-status-badge.expired {
+  background: var(--failure-bg);
+  color: var(--failure);
+  border-color: var(--failure);
+}
+
+/* Responsive adjustments for consent cards */
+@media (max-width: 768px) {
+  .jsp-consent-list {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .jsp-consent-card {
+    padding: 16px;
+  }
+  
+  .jsp-consent-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .jsp-consent-actions {
+    justify-content: center;
+  }
+  
+  .jsp-consent-actions .button {
+    flex: 1;
+    justify-content: center;
+  }
+}
+
+/* Empty state styling for consent records */
+.jsp-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+  background: var(--background);
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  min-height: 200px;
+}
+
+.jsp-empty-icon {
+  color: var(--text-muted);
+  margin-bottom: 16px;
+  opacity: 0.6;
+}
+
+.jsp-empty-state h3 {
+  color: var(--text);
+  margin-bottom: 8px;
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.jsp-empty-state p {
+  color: var(--text-muted);
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+  max-width: 300px;
 }
 

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { useLanguage } from "../../contexts/language/language-provider";
 import {
   getAllPositionDrafts,
   deletePositionDraft,
@@ -64,6 +65,7 @@ interface PaginationInfo {
 
 export function PositionDrafts() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [drafts, setDrafts] = useState<PositionDraft[]>([]);
   const [pagination, setPagination] = useState<PaginationInfo>({
     page: 1,
@@ -203,7 +205,7 @@ export function PositionDrafts() {
         prevDrafts.filter((draft) => draft.id !== draftToDelete)
       );
 
-      setSuccess("Draft deleted successfully");
+      setSuccess(t("positionDrafts.messages.draftDeletedSuccess"));
 
       // Auto-hide message after 3 seconds
       setTimeout(() => {
@@ -284,11 +286,11 @@ export function PositionDrafts() {
   return (
     <div className="page-container">
       <AppHeader
-        title="Position Drafts"
+        title={t("positionDrafts.title")}
         actions={
           <button className="button" onClick={handleNavigateBack}>
             <ArrowLeft size={16} />
-            <span>Back to Position Management</span>
+            <span>{t("positionDrafts.backToPositionManagement")}</span>
           </button>
         }
         statusMessage={success || error}
@@ -300,13 +302,13 @@ export function PositionDrafts() {
 
         <div className="card">
           <div className="card-header">
-            <h2>Your Saved Drafts</h2>
+            <h2>{t("positionDrafts.yourSavedDrafts")}</h2>
             <div className="filter-container">
               <div className="search-box">
                 <Search size={14} className="search-icon" />
                 <input
                   type="text"
-                  placeholder="Global search..."
+                  placeholder={t("positionDrafts.globalSearch")}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="search-input"
@@ -315,7 +317,7 @@ export function PositionDrafts() {
                   className="button secondary button-icon reset-filters-btn"
                   onClick={resetFilters}
                 >
-                  <span>Reset Filters</span>
+                  <span>{t("positionDrafts.resetFilters")}</span>
                 </button>
               </div>
             </div>
@@ -325,25 +327,25 @@ export function PositionDrafts() {
           <div className="pagination-controls top">
             <div className="pagination-info">
               <span className="pagination-text">
-                Showing{" "}
-                {Math.min(
-                  (pagination.page - 1) * pagination.limit + 1,
-                  pagination.total
-                )}{" "}
-                to{" "}
-                {Math.min(pagination.page * pagination.limit, pagination.total)}{" "}
-                of {pagination.total} entries
+                {t("positionDrafts.pagination.showing", {
+                  start: Math.min(
+                    (pagination.page - 1) * pagination.limit + 1,
+                    pagination.total
+                  ),
+                  end: Math.min(pagination.page * pagination.limit, pagination.total),
+                  total: pagination.total
+                })}
                 {pagination.totalFiltered !== pagination.total && (
                   <span className="filtered-info">
                     {" "}
-                    (filtered from {pagination.total} total entries)
+                    {t("positionDrafts.pagination.filtered", { total: pagination.total })}
                   </span>
                 )}
               </span>
             </div>
             <div className="pagination-size-selector">
               <label htmlFor="pageSize" className="page-size-label">
-                Show:
+                {t("positionDrafts.pagination.show")}:
               </label>
               <select
                 id="pageSize"
@@ -356,7 +358,7 @@ export function PositionDrafts() {
                 <option value={50}>50</option>
                 <option value={100}>100</option>
               </select>
-              <span className="page-size-label">per page</span>
+              <span className="page-size-label">{t("positionDrafts.pagination.perPage")}</span>
             </div>
           </div>
 
@@ -366,11 +368,11 @@ export function PositionDrafts() {
                 <tr>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">Title</div>
+                      <div className="column-title">{t("positionDrafts.table.title")}</div>
                       <div className="column-search">
                         <input
                           type="text"
-                          placeholder="Search title..."
+                          placeholder={t("positionDrafts.table.searchTitle")}
                           value={titleFilter}
                           onChange={(e) => setTitleFilter(e.target.value)}
                           className="column-search-input"
@@ -380,11 +382,11 @@ export function PositionDrafts() {
                   </th>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">Client</div>
+                      <div className="column-title">{t("positionDrafts.table.client")}</div>
                       <div className="column-search">
                         <input
                           type="text"
-                          placeholder="Search client..."
+                          placeholder={t("positionDrafts.table.searchClient")}
                           value={clientFilter}
                           onChange={(e) => setClientFilter(e.target.value)}
                           className="column-search-input"
@@ -394,11 +396,11 @@ export function PositionDrafts() {
                   </th>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">Position ID</div>
+                      <div className="column-title">{t("positionDrafts.table.positionId")}</div>
                       <div className="column-search">
                         <input
                           type="text"
-                          placeholder="Search position ID..."
+                          placeholder={t("positionDrafts.table.searchPositionId")}
                           value={positionIdFilter}
                           onChange={(e) => setPositionIdFilter(e.target.value)}
                           className="column-search-input"
@@ -408,11 +410,11 @@ export function PositionDrafts() {
                   </th>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">Position Code</div>
+                      <div className="column-title">{t("positionDrafts.table.positionCode")}</div>
                       <div className="column-search">
                         <input
                           type="text"
-                          placeholder="Search position code..."
+                          placeholder={t("positionDrafts.table.searchPositionCode")}
                           value={positionCodeFilter}
                           onChange={(e) =>
                             setPositionCodeFilter(e.target.value)
@@ -424,7 +426,7 @@ export function PositionDrafts() {
                   </th>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">Start Date</div>
+                      <div className="column-title">{t("positionDrafts.table.startDate")}</div>
                       <div className="column-search">
                         <div className="date-picker-wrapper">
                           <input
@@ -440,7 +442,7 @@ export function PositionDrafts() {
                   </th>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">Created At</div>
+                      <div className="column-title">{t("positionDrafts.table.createdAt")}</div>
                       <div className="column-search">
                         <div className="date-picker-wrapper">
                           <input
@@ -458,7 +460,7 @@ export function PositionDrafts() {
                   </th>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">Last Updated</div>
+                      <div className="column-title">{t("positionDrafts.table.lastUpdated")}</div>
                       <div className="column-search">
                         <div className="date-picker-wrapper">
                           <input
@@ -474,11 +476,11 @@ export function PositionDrafts() {
                   </th>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">Created By</div>
+                      <div className="column-title">{t("positionDrafts.table.createdBy")}</div>
                       <div className="column-search">
                         <input
                           type="text"
-                          placeholder="Search creator..."
+                          placeholder={t("positionDrafts.table.searchCreator")}
                           value={creatorFilter}
                           onChange={(e) => setCreatorFilter(e.target.value)}
                           className="column-search-input"
@@ -488,11 +490,11 @@ export function PositionDrafts() {
                   </th>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">Last Updated By</div>
+                      <div className="column-title">{t("positionDrafts.table.lastUpdatedBy")}</div>
                       <div className="column-search">
                         <input
                           type="text"
-                          placeholder="Search updater..."
+                          placeholder={t("positionDrafts.table.searchUpdater")}
                           value={updaterFilter}
                           onChange={(e) => setUpdaterFilter(e.target.value)}
                           className="column-search-input"
@@ -502,11 +504,11 @@ export function PositionDrafts() {
                   </th>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">Actions</div>
+                      <div className="column-title">{t("positionDrafts.table.actions")}</div>
                       <div className="column-search">
                         <div className="actions-info">
                           <span className="actions-help-text">
-                            Edit • Delete
+                            {t("positionDrafts.table.actionsHelp")}
                           </span>
                         </div>
                       </div>
@@ -581,8 +583,7 @@ export function PositionDrafts() {
                     <td colSpan={10} className="empty-state-cell">
                       <div className="empty-state">
                         <p>
-                          No drafts found. Create a new position to save a
-                          draft.
+                          {t("positionDrafts.emptyState.noDrafts")}
                         </p>
                         <button
                           className="button primary"
@@ -592,7 +593,7 @@ export function PositionDrafts() {
                             })
                           }
                         >
-                          Create New Position
+                          {t("positionDrafts.emptyState.createNewPosition")}
                         </button>
                       </div>
                     </td>
@@ -600,10 +601,10 @@ export function PositionDrafts() {
                 ) : (
                   drafts.map((draft) => (
                     <tr key={draft.id}>
-                      <td>{draft.title || "Untitled"}</td>
-                      <td>{draft.clientName || "N/A"}</td>
-                      <td>{draft.positionCode || "N/A"}</td>
-                      <td>{draft.positionNumber || "N/A"}</td>
+                      <td>{draft.title || t("positionDrafts.table.untitled")}</td>
+                      <td>{draft.clientName || t("common.notAvailable")}</td>
+                      <td>{draft.positionCode || t("common.notAvailable")}</td>
+                      <td>{draft.positionNumber || t("common.notAvailable")}</td>
                       <td>
                         {draft.startDate && (
                           <div className="date-with-icon">
@@ -647,16 +648,16 @@ export function PositionDrafts() {
                           <button
                             className="action-icon-btn edit-btn"
                             onClick={() => handleEditDraft(draft.id)}
-                            title="Edit this draft"
-                            aria-label="Edit draft"
+                            title={t("positionDrafts.table.editDraft")}
+                            aria-label={t("positionDrafts.table.editDraft")}
                           >
                             <Pencil size={16} />
                           </button>
                           <button
                             className="action-icon-btn delete-btn"
                             onClick={() => confirmDeleteDraft(draft.id)}
-                            title="Delete this draft"
-                            aria-label="Delete draft"
+                            title={t("positionDrafts.table.deleteDraft")}
+                            aria-label={t("positionDrafts.table.deleteDraft")}
                           >
                             <Trash2 size={16} />
                           </button>
@@ -674,7 +675,7 @@ export function PositionDrafts() {
             <div className="pagination-controls bottom">
               <div className="pagination-info">
                 <span className="pagination-text">
-                  Page {pagination.page} of {pagination.totalPages}
+                  {t("positionDrafts.pagination.pageOf", { current: pagination.page, total: pagination.totalPages })}
                 </span>
               </div>
               <div className="pagination-buttons">
@@ -682,11 +683,11 @@ export function PositionDrafts() {
                   className="pagination-btn prev"
                   onClick={handlePreviousPage}
                   disabled={!pagination.hasPrevPage}
-                  title="Previous page"
-                  aria-label="Previous page"
+                  title={t("positionDrafts.pagination.previousPage")}
+                  aria-label={t("positionDrafts.pagination.previousPage")}
                 >
                   <ChevronLeft size={16} />
-                  <span>Previous</span>
+                  <span>{t("buttons.previous")}</span>
                 </button>
 
                 {/* Page numbers */}
@@ -712,7 +713,7 @@ export function PositionDrafts() {
                             pageNum === pagination.page ? "active" : ""
                           }`}
                           onClick={() => handlePageChange(pageNum)}
-                          aria-label={`Go to page ${pageNum}`}
+                          aria-label={t("positionDrafts.pagination.goToPage", { page: pageNum })}
                         >
                           {pageNum}
                         </button>
@@ -725,10 +726,10 @@ export function PositionDrafts() {
                   className="pagination-btn next"
                   onClick={handleNextPage}
                   disabled={!pagination.hasNextPage}
-                  title="Next page"
-                  aria-label="Next page"
+                  title={t("positionDrafts.pagination.nextPage")}
+                  aria-label={t("positionDrafts.pagination.nextPage")}
                 >
-                  <span>Next</span>
+                  <span>{t("buttons.next")}</span>
                   <ChevronRight size={16} />
                 </button>
               </div>
@@ -740,10 +741,10 @@ export function PositionDrafts() {
       {showDeleteConfirmation && (
         <ConfirmationModal
           isOpen={showDeleteConfirmation}
-          title="Delete Draft"
-          message="Are you sure you want to delete this draft? This action cannot be undone."
-          confirmText="Delete Draft"
-          cancelText="Cancel"
+          title={t("positionDrafts.modal.deleteDraft")}
+          message={t("positionDrafts.modal.deleteConfirmation")}
+          confirmText={t("positionDrafts.modal.deleteDraft")}
+          cancelText={t("buttons.cancel")}
           confirmButtonClass="danger"
           onConfirm={handleDeleteDraft}
           onCancel={() => setShowDeleteConfirmation(false)}

@@ -353,6 +353,8 @@ function DataViewToggle({
   label,
   description,
 }: DataViewToggleProps) {
+  const { t } = useLanguage();
+  
   return (
     <div className="data-view-toggle">
       <div className="data-view-info">
@@ -370,7 +372,7 @@ function DataViewToggle({
               onChange={onChange}
             />
             <label htmlFor={id} className="label-form toggle-label">
-              Show All
+              {t('common.showAll')}
             </label>
           </>
         )}
@@ -818,7 +820,7 @@ export function AdminDashboard() {
 
   return (
     <div className="dashboard-container">
-      <AppHeader title={t('dashboard.welcome')} />
+      <AppHeader title={t('dashboard.welcome')} showCompanySwitcher={true} />
 
       <main className="dashboard-main">
         <div className="dashboard-heading">

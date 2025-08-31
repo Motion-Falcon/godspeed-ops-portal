@@ -1,0 +1,112 @@
+.calendar-page {
+  min-height: 100vh;
+  color: var(--text);
+  margin-left: 68px;
+  margin-top: 60px;
+}
+
+.calendar-content {
+  padding-top: 80px;  
+  padding: var(--spacing-8) var(--spacing-6);
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.calendar-layout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-5);
+}
+
+.calendar-filters-section {
+  width: 100%;
+  margin-bottom: var(--spacing-5);
+}
+
+.calendar-summary-section {
+  width: 100%;
+  margin-top: var(--spacing-5);
+}
+
+.calendar-main-content {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: var(--spacing-5);
+  min-height: 600px;
+}
+
+.calendar-view {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-5);
+}
+
+.day-view-panel {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-5);
+}
+
+/* Responsive design */
+@media (max-width: 1024px) {
+  .calendar-main-content {
+    grid-template-columns: 1fr;
+  }
+  
+  .day-view-panel {
+    order: -1; /* Show day view panel above calendar on mobile */
+  }
+}
+
+/* Error State */
+.calendar-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--spacing-8);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius);
+  min-height: 400px;
+  gap: var(--spacing-5);
+}
+
+.calendar-error h3 {
+  margin: 0;
+  font-size: var(--font-size-header);
+  font-weight: var(--font-weight-semibold);
+  color: var(--danger);
+}
+
+.calendar-error p {
+  margin: 0;
+  color: var(--text-muted);
+  max-width: 400px;
+}
+
+.retry-button {
+  background: var(--primary);
+  color: var(--background);
+  border: none;
+  border-radius: var(--border-radius);
+  padding: var(--spacing-3) var(--spacing-5);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.retry-button:hover {
+  background: var(--primary-hover);
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+@media (max-width: 768px) {
+  .calendar-content {
+    padding: var(--spacing-4);
+  }
+}

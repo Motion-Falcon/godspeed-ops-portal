@@ -1,3 +1,9 @@
+/* Use only variables which are present in this file. 
+For colours if any colour is not defined here, use the that colour's hex code directly in the particular file where it is used.
+For example, if you need to use a colour that is not defined here, use the hex code directly in the particular file where it is used.
+Do not create new variables for colours that are not defined here.
+*/
+
 /* Base Variables */
 :root {
   --background-light: #FFFFFF;

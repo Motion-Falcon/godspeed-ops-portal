@@ -71,34 +71,48 @@ export const requestTracker = (req: Request, res: Response, next: NextFunction) 
 
 // Input sanitization middleware
 export const sanitizeInputs = (req: Request, res: Response, next: NextFunction) => {
+  // Fields that should not have forward slashes sanitized (file paths, URLs, etc.)
+  const pathFields = ['filePath', 'documentPath', 'file_path', 'document_path', 'path', 'url'];
+  
   // Basic sanitization - should be expanded for specific needs
-  const sanitize = (obj: any): any => {
+  const sanitize = (obj: any, key?: string): any => {
     if (!obj) return obj;
     
     if (typeof obj !== 'object') {
       // For strings, perform basic sanitization
       if (typeof obj === 'string') {
+        // Check if this is a path field that should preserve forward slashes
+        const isPathField = key && pathFields.some(field => 
+          key.toLowerCase().includes(field.toLowerCase())
+        );
+        
         // Replace potentially harmful characters
-        return obj
+        let sanitized = obj
           .replace(/</g, '&lt;')
           .replace(/>/g, '&gt;')
           .replace(/"/g, '&quot;')
-          .replace(/'/g, '&#x27;')
-          .replace(/\//g, '&#x2F;');
+          .replace(/'/g, '&#x27;');
+          
+        // Only sanitize forward slashes if it's not a path field
+        if (!isPathField) {
+          sanitized = sanitized.replace(/\//g, '&#x2F;');
+        }
+        
+        return sanitized;
       }
       return obj;
     }
 
     // For arrays
     if (Array.isArray(obj)) {
-      return obj.map(item => sanitize(item));
+      return obj.map((item, index) => sanitize(item, key));
     }
 
     // For objects
     const result: any = {};
-    for (const key in obj) {
-      if (Object.prototype.hasOwnProperty.call(obj, key)) {
-        result[key] = sanitize(obj[key]);
+    for (const objKey in obj) {
+      if (Object.prototype.hasOwnProperty.call(obj, objKey)) {
+        result[objKey] = sanitize(obj[objKey], objKey);
       }
     }
     return result;

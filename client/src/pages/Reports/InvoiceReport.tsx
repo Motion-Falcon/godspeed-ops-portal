@@ -3,6 +3,7 @@ import { getInvoiceReport, InvoiceReportFilter, InvoiceReportRow } from "../../s
 import { getClients, ClientData } from "../../services/api/client";
 import { AppHeader } from "../../components/AppHeader";
 import { CustomDropdown, DropdownOption } from "../../components/CustomDropdown";
+import { useLanguage } from "../../contexts/language/language-provider";
 import { Loader2, Calendar, Building } from "lucide-react";
 import "../../styles/pages/CommonReportsStyles.css";
 import { exportToCSV } from '../../utils/csvExport';
@@ -16,21 +17,21 @@ const formatDate = (dateString: string | undefined) => {
 };
 
 // Define the columns for the invoice report
-const TABLE_COLUMNS: { key: string; label: string; format?: (val: unknown) => string }[] = [
-  { key: 'invoice_number', label: 'Invoice Number', format: (val) => String(val ?? '') },
-  { key: 'client_name', label: 'Client Name', format: (val) => String(val ?? '') },
-  { key: 'contact_person', label: 'Contact Person', format: (val) => String(val ?? '') },
-  { key: 'terms', label: 'Terms', format: (val) => String(val ?? '') },
-  { key: 'invoice_date', label: 'Invoice Date', format: (val) => formatDate(String(val ?? '')) },
-  { key: 'due_date', label: 'Due Date', format: (val) => formatDate(String(val ?? '')) },
-  { key: 'total_amount', label: 'Total Amount', format: (val) => val ? `$${val}` : 'N/A' },
-  { key: 'currency', label: 'Currency', format: (val) => String(val ?? '') },
-  { key: 'email_sent', label: 'Email Sent', format: (val) => String(val ?? '') },
-  { key: 'email_sent_date', label: 'Email Sent Date', format: (val) => formatDate(String(val ?? '')) },
+const getTableColumns = (t: (key: string) => string): { key: string; label: string; format?: (val: unknown) => string }[] => [
+  { key: 'invoice_number', label: t('reports.columns.invoiceNumber'), format: (val) => String(val ?? '') },
+  { key: 'client_name', label: t('reports.columns.clientName'), format: (val) => String(val ?? '') },
+  { key: 'contact_person', label: t('reports.columns.contactPerson'), format: (val) => String(val ?? '') },
+  { key: 'terms', label: t('reports.columns.terms'), format: (val) => String(val ?? '') },
+  { key: 'invoice_date', label: t('reports.columns.invoiceDate'), format: (val) => formatDate(String(val ?? '')) },
+  { key: 'due_date', label: t('reports.columns.dueDate'), format: (val) => formatDate(String(val ?? '')) },
+  { key: 'total_amount', label: t('reports.columns.totalAmount'), format: (val) => val ? `$${val}` : 'N/A' },
+  { key: 'currency', label: t('reports.columns.currency'), format: (val) => String(val ?? '') },
+  { key: 'email_sent', label: t('reports.columns.emailSent'), format: (val) => String(val ?? '') },
+  { key: 'email_sent_date', label: t('reports.columns.emailSentDate'), format: (val) => formatDate(String(val ?? '')) },
 ];
 
 // For CSV export
-const CSV_COLUMNS = TABLE_COLUMNS.map(col => ({
+const getCsvColumns = (tableColumns: ReturnType<typeof getTableColumns>) => tableColumns.map(col => ({
   ...col,
   format: (val: unknown) => {
     if (col.key === 'invoice_date' || col.key === 'due_date' || col.key === 'email_sent_date') {
@@ -44,6 +45,9 @@ const CSV_COLUMNS = TABLE_COLUMNS.map(col => ({
 }));
 
 export function InvoiceReport() {
+  const { t } = useLanguage();
+  const tableColumns = getTableColumns(t);
+  const csvColumns = getCsvColumns(tableColumns);
   // Filter state
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
@@ -99,7 +103,7 @@ export function InvoiceReport() {
 
   return (
     <div className="page-container common-report-container">
-      <AppHeader title="Invoice Report" />
+      <AppHeader title={t('reports.types.invoiceReport.title')} />
       <div className="common-report-card">
         <div className="timesheet-selection-bar">
           <div className="selection-row">
@@ -112,7 +116,7 @@ export function InvoiceReport() {
                     onClick={() => document.getElementById('start-date-input')?.focus()}
                   >
                     <Calendar size={16} />
-                    Start Date
+                    {t('reports.filters.startDate')}
                   </label>
                   <input
                     id="start-date-input"
@@ -129,7 +133,7 @@ export function InvoiceReport() {
                     onClick={() => document.getElementById('end-date-input')?.focus()}
                   >
                     <Calendar size={16} />
-                    End Date
+                    {t('reports.filters.endDate')}
                   </label>
                   <input
                     id="end-date-input"
@@ -142,7 +146,7 @@ export function InvoiceReport() {
               </div>
             </div>
             <div className="selection-section client-section" style={{ width: '50%' }}>
-              <label className="selection-label">Clients</label>
+              <label className="selection-label">{t('reports.filters.clients')}</label>
               {clientLoading ? (
                 <div className="invoice-dropdown-skeleton">
                   <div className="skeleton-dropdown-trigger">
@@ -160,11 +164,11 @@ export function InvoiceReport() {
                     else if (opts && typeof opts === 'object') setSelectedClients([opts.value as ClientData]);
                     else setSelectedClients([]);
                   }}
-                  placeholder="Select clients (optional)..."
+                  placeholder={t('reports.placeholders.selectClientsOptional')}
                   multiSelect={true}
                   showSelectAll={true}
                   icon={<Building size={16} />}
-                  emptyMessage="No clients found"
+                  emptyMessage={t('reports.emptyMessages.noClients')}
                   maxVisibleTagsOverride={5}
                 />
               )}
@@ -179,7 +183,7 @@ export function InvoiceReport() {
               onClick={() => {
                 const csvData = reportRows.map(row => {
                   const csvRow: Record<string, unknown> = {};
-                  CSV_COLUMNS.forEach(col => {
+                  csvColumns.forEach(col => {
                     const val = row[col.key as keyof typeof row];
                     csvRow[col.label] = col.format ? col.format(val) : (val !== undefined && val !== null ? String(val) : 'N/A');
                   });
@@ -188,27 +192,27 @@ export function InvoiceReport() {
                 exportToCSV(
                   csvData,
                   'Invoice Report.csv',
-                  CSV_COLUMNS.map(col => col.label)
+                  csvColumns.map(col => col.label)
                 );
               }}
             >
-              Download CSV
+              {t('reports.states.downloadCSV')}
             </button>
           </div>
         )}
 
         <div className="report-table-container timesheet-selection-bar">
           {loading ? (
-            <div className="loading-indicator"><Loader2 size={24} className="spin" /> Loading...</div>
+            <div className="loading-indicator"><Loader2 size={24} className="spin" /> {t('reports.states.loading')}</div>
           ) : error ? (
             <div className="error-message">{error}</div>
           ) : reportRows.length === 0 ? (
-            <div className="empty-state">No invoice data found for selected date range.</div>
+            <div className="empty-state">{t('reports.states.noInvoiceData')}</div>
           ) : (
             <table className="common-table">
               <thead>
                 <tr>
-                  {TABLE_COLUMNS.map(col => (
+                  {tableColumns.map(col => (
                     <th key={col.key}>{col.label}</th>
                   ))}
                 </tr>
@@ -216,7 +220,7 @@ export function InvoiceReport() {
               <tbody>
                 {reportRows.map((row, idx) => (
                   <tr key={idx}>
-                    {TABLE_COLUMNS.map((col, i) => {
+                    {tableColumns.map((col, i) => {
                       const val = row[col.key as keyof typeof row];
                       const displayValue = col.format ? col.format(val) : (val !== undefined && val !== null ? String(val) : 'N/A');
                       return <td key={i}>{displayValue}</td>;

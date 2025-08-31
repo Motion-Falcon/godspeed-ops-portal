@@ -48,7 +48,7 @@ export function ForgotPassword() {
       if (error instanceof Error) {
         setError(error.message);
       } else {
-        setError("An error occurred. Please try again later.");
+        setError(t('messages.error'));
       }
     } finally {
       setIsLoading(false);
@@ -59,7 +59,7 @@ export function ForgotPassword() {
     return (
       <div className={`page-container ${hideHamburgerMenu ? "hide-hamburger-menu" : ""}`}>
         <AppHeader
-          title="Password Reset"
+          title={t('forgot.title')}
           hideHamburgerMenu={hideHamburgerMenu}
         />
         <div className="centered-container">
@@ -69,30 +69,25 @@ export function ForgotPassword() {
               <MailCheck />
             </div>
 
-            <h1 className="auth-card-title">Check your email</h1>
+            <h1 className="auth-card-title">{t('forgot.success.title')}</h1>
 
-            <p>
-              We've sent a password reset link to{" "}
-              <span className="bold-text">{emailSent}</span>. Click the link to
-              reset your password.
-            </p>
+            <p dangerouslySetInnerHTML={{ __html: t('forgot.success.message', { email: `<span class="bold-text">${emailSent}</span>` }) }} />
 
             <div className="card-actions">
               <p className="text-muted">
-                Didn't receive an email? Check your spam folder or request
-                another reset link.
+                {t('forgot.success.instructions')}
               </p>
 
               <button
                 className="button outline"
                 onClick={() => setIsSuccess(false)}
               >
-                Try again
+                {t('forgot.success.tryAgain')}
               </button>
 
               <div>
                 <Link to="/login" className="auth-link">
-                  Back to login
+                  {t('forgot.success.backToLogin')}
                 </Link>
               </div>
             </div>

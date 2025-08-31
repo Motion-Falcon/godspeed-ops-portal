@@ -9,8 +9,8 @@ export function GodspeedAIChat() {
   const { user, isAdmin, isRecruiter, isJobSeeker } = useAuth();
   const navigate = useNavigate();
 
-  // Define the external AI chat URL - you can change this to your desired URL
-  const AI_CHAT_URL = 'https://godspeed-ops-ai-mhbl.onrender.com/';
+  // Define the external AI chat URL from environment variable
+  const AI_CHAT_URL = import.meta.env.VITE_AI_CHAT_URL || 'https://godspeed-ops-ai-mhbl.onrender.com/';
   
   // Define which user types can access the AI chat
   const ALLOWED_USER_TYPES: ('admin' | 'recruiter' | 'jobseeker')[] = ['admin'];

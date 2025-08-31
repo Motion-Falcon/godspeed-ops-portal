@@ -329,6 +329,8 @@ const useBasicAIInsights = () => {
 
 // Reusable Components
 function DataViewToggle({ id, checked, onChange, label, description }: DataViewToggleProps) {
+  const { t } = useLanguage();
+  
   return (
     <div className="data-view-toggle">
       <div className="data-view-info">
@@ -344,7 +346,7 @@ function DataViewToggle({ id, checked, onChange, label, description }: DataViewT
           onChange={onChange}
         />
         <label htmlFor={id} className="label-form toggle-label">
-          Show All
+          {t('common.showAll')}
         </label>
       </div>
     </div>
@@ -674,7 +676,7 @@ export function RecruiterDashboard() {
 
   return (
     <div className="dashboard-container">
-      <AppHeader title={t('dashboard.welcome')} />
+      <AppHeader title={t('dashboard.welcome')} showCompanySwitcher={true} />
 
       <main className="dashboard-main">
         <div className="dashboard-heading">

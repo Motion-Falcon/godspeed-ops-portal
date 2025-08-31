@@ -104,16 +104,7 @@ const SALES_TAX_OPTIONS = [
   "5.00% [QC]",
 ];
 
-// Combined supplier and PO options
-const COMBINED_OPTIONS = [
-  {
-    id: "supplier-no",
-    type: "supplier",
-    value: "Supplier No",
-    label: "Supplier No",
-  },
-  { id: "po-no", type: "po", value: "PO No", label: "PO No" },
-];
+// Combined supplier and PO options - will be generated inside component with translation
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
 
@@ -146,6 +137,17 @@ export function InvoiceManagement() {
   const { user } = useAuth();
   const { t } = useLanguage();
   const [searchParams] = useSearchParams();
+  
+  // Combined supplier and PO options with translation
+  const COMBINED_OPTIONS = [
+    {
+      id: "supplier-no",
+      type: "supplier",
+      value: "Supplier No",
+      label: t('invoiceManagement.supplierNo'),
+    },
+    { id: "po-no", type: "po", value: "PO No", label: t('invoiceManagement.poNo') },
+  ];
   
   // Edit mode state
   const [isEditMode, setIsEditMode] = useState(false);
@@ -455,14 +457,14 @@ export function InvoiceManagement() {
   // Convert data to dropdown options
   const clientOptions: DropdownOption[] = clients.map((client) => ({
     id: client.id!,
-    label: client.companyName || "Unknown Client",
+    label: client.companyName || t('invoiceManagement.unknownClient'),
     sublabel: client.shortCode || "",
     value: client,
   }));
 
   const positionOptions: DropdownOption[] = positions.map((position) => ({
     id: position.id,
-    label: position.title || "Unknown Position",
+    label: position.title || t('invoiceManagement.unknownPosition'),
     sublabel: `${position.positionCode} [${position.positionNumber}]`,
     value: position,
   }));
@@ -471,7 +473,7 @@ export function InvoiceManagement() {
     const jobseekers = assignedJobseekersByPosition[positionId] || [];
     return jobseekers.map((jobseeker) => ({
       id: jobseeker.candidateId,
-      label: `${jobseeker.firstName} ${jobseeker.lastName}`.trim() || "Unknown",
+      label: `${jobseeker.firstName} ${jobseeker.lastName}`.trim() || t('invoiceManagement.unknown'),
       sublabel: jobseeker.email,
       value: jobseeker,
     }));
@@ -760,13 +762,13 @@ export function InvoiceManagement() {
   const handleInvoiceSubmit = async () => {
     if (!selectedClient || lineItems.length === 0) {
       setGenerationError(
-        "Please select a client and add line items before " + (isEditMode ? "updating" : "generating") + " invoice"
+        t('invoiceManagement.missingClientAndLineItems')
       );
       return;
     }
 
     if (!invoiceNumber) {
-      setGenerationError("Please generate an invoice number first");
+      setGenerationError(t('invoiceManagement.missingInvoiceNumber'));
       return;
     }
 
@@ -1120,7 +1122,7 @@ export function InvoiceManagement() {
       setGenerationError(
         error instanceof Error
           ? error.message
-          : "Failed to " + (isEditMode ? "update" : "create") + " invoice. Please try again."
+          : (isEditMode ? t('invoiceManagement.updateInvoiceFailed') : t('invoiceManagement.createInvoiceFailed'))
       );
     } finally {
       setIsGeneratingInvoice(false);
@@ -1236,7 +1238,7 @@ export function InvoiceManagement() {
   // Function to send invoice to client
   async function sendInvoiceToClient() {
     if (!createdInvoice?.id || !emailToSend) {
-      setSendInvoiceMessage("Missing invoice ID or email address");
+      setSendInvoiceMessage(t('invoiceManagement.missingEmailForSend'));
       return;
     }
 
@@ -1255,7 +1257,7 @@ export function InvoiceManagement() {
         setSendInvoiceMessage(`Invoice sent successfully to ${emailToSend}`);
         // Optionally, you could refetch the invoice or update local state
       } else {
-        throw new Error(response.message || "Failed to send invoice");
+        throw new Error(response.message || t('invoiceManagement.sendInvoiceFailed'));
       }
     } catch (err) {
       console.error("Error sending invoice:", err);
@@ -1435,7 +1437,7 @@ export function InvoiceManagement() {
                 placeholder="Search and select client..."
                 loading={false}
                 icon={<Building size={16} />}
-                emptyMessage="No clients found"
+                emptyMessage={t('invoiceManagement.noClientsFound')}
               />
             )}
           </div>

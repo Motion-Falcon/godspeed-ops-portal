@@ -36,7 +36,19 @@ export interface RecentActivity {
     | "delete_client_draft"
     | "create_position_draft"
     | "update_position_draft"
-    | "delete_position_draft";
+    | "delete_position_draft"
+    | "create_bulk_timesheet"
+    | "update_bulk_timesheet"
+    | "delete_bulk_timesheet"
+    | "send_bulk_timesheet_email"
+    | "send_invoice_email"
+    // User management actions
+    | "update_user_manager"
+    | "update_user_roles"
+    // Consent management actions
+    | "create_consent_request"
+    | "user_consent_given"
+    | "resend_consent_request";
   action_verb: string;
   primary_entity_type: string;
   primary_entity_id?: string;
@@ -50,7 +62,7 @@ export interface RecentActivity {
   status?: string;
   metadata: Record<string, unknown>;
   display_message: string;
-  category: "position_management" | "client_management" | "financial" | "system" | "candidate_management";
+  category: "position_management" | "client_management" | "financial" | "system" | "candidate_management" | "user_management";
   priority: 'low' | 'normal' | 'high' | 'urgent';
   is_deleted: boolean;
 }

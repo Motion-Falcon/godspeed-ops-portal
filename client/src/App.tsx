@@ -1,10 +1,11 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './components/theme-provider';
 import { AuthProvider } from './contexts/AuthContext';
-import { ProtectedRoute, PublicRoute, JobSeekerRoute, RecruiterRoute } from './components/ProtectedRoute';
+import { ProtectedRoute, PublicRoute, JobSeekerRoute, RecruiterRoute, AdminRoute } from './components/ProtectedRoute';
 import { Signup } from './pages/Authentication/Signup';
 import { Login } from './pages/Authentication/Login';
 import { VerificationPending } from './pages/Authentication/VerificationPending';
+import { CompleteSignup } from './pages/Authentication/CompleteSignup';
 import { ProfileVerificationPending } from './pages/JobseekerManagement/ProfileVerificationPending';
 import { ProfileVerificationRejected } from './pages/JobseekerManagement/ProfileVerificationRejected';
 import { ForgotPassword } from './pages/Authentication/ForgotPassword';
@@ -56,6 +57,13 @@ import { MetricExamplePage } from './pages/Dashboard/MetricExamplePage';
 import { BulkTimesheetManagement } from './pages/BulkTimesheetManagement/BulkTimesheetManagement';
 import { BulkTimesheetList } from './pages/BulkTimesheetManagement/BulkTimesheetList';
 import { GodspeedAIChat } from './pages/GodspeedAIChat';
+import { RecruiterHierarchy } from './pages/RecruiterHierarchy';
+import { InviteRecruiter } from './pages/RecruiterManagement/InviteRecruiter';
+import { CalendarPage } from './pages/Calendar/CalendarPage';
+import { ConsentListPage } from './pages/Consent/ConsentListPage';
+import { CreateConsentPage } from './pages/Consent/CreateConsentPage';
+import { ConsentDetailPage } from './pages/Consent/ConsentDetailPage';
+import { ConsentPage } from './pages/Consent/ConsentPage';
 
 function App() {
   return (
@@ -68,15 +76,19 @@ function App() {
             <Routes>
               {/* Public routes */}
               <Route element={<PublicRoute />}>
-                <Route path="/signup" element={<Signup />} />
                 <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<Signup />} />
                 <Route path="/verification-pending" element={<VerificationPending />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/complete-signup" element={<CompleteSignup />} />
               </Route>
 
               {/* Routes accessible regardless of auth status */}
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/two-factor-auth" element={<TwoFactorAuth />} />
+              
+              {/* Public consent page (no authentication required) */}
+              <Route path="/consent" element={<ConsentPage />} />
 
               {/* Protected routes for all authenticated users */}
               <Route element={<ProtectedRoute />}>
@@ -124,7 +136,16 @@ function App() {
                   <Route path="/reports/envelope-printing-position" element={<EnvelopePrintingReport />} />
                   <Route path="/bulk-timesheet-management" element={<BulkTimesheetManagement />} />
                   <Route path="/bulk-timesheet-management/list" element={<BulkTimesheetList />} />
+                  <Route path="/recruiter-hierarchy" element={<RecruiterHierarchy />} />
+                  <Route path="/calendar" element={<CalendarPage />} />
+                  <Route path="/consent-dashboard" element={<ConsentListPage />} />
+                  <Route path="/consent-dashboard/new" element={<CreateConsentPage />} />
+                  <Route path="/consent-dashboard/:documentId" element={<ConsentDetailPage />} />
                   {/* Add more recruiter-specific routes here */}
+                </Route>
+
+                <Route element={<AdminRoute />}>
+                  <Route path="/invite-recruiter" element={<InviteRecruiter />} />
                 </Route>
                 
                 <Route element={<JobSeekerRoute />}>
@@ -137,7 +158,7 @@ function App() {
               </Route>
 
               {/* Redirects */}
-              <Route path="/" element={<Navigate to="/signup" replace />} />
+              <Route path="/" element={<Navigate to="/login" replace />} />
               <Route path="*" element={<Navigate to="/login" replace />} />
             </Routes>
           </Router>

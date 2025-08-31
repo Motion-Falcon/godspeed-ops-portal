@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
+import { useLanguage } from "../../contexts/language/language-provider";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -33,33 +34,33 @@ const getTodayFormatted = (): string => {
 };
 
 
-// Define form schema
-const positionFormSchema = z.object({
+// Define form schema function to support translations
+const createPositionFormSchema = (t: (key: string) => string) => z.object({
   // Basic Details
-  client: z.string().min(1, { message: "Client is required" }),
-  title: z.string().min(1, { message: "Title is required" }),
+  client: z.string().min(1, { message: t("positionCreate.errors.clientRequired") }),
+  title: z.string().min(1, { message: t("positionCreate.errors.titleRequired") }),
   positionCode: z.string().optional(),
-  startDate: z.string().min(1, { message: "Start date is required" }),
-  endDate: z.string().min(1, { message: "End date is required" }),
+  startDate: z.string().min(1, { message: t("positionCreate.errors.startDateRequired") }),
+  endDate: z.string().min(1, { message: t("positionCreate.errors.endDateRequired") }),
   showOnJobPortal: z.boolean().default(false),
   clientManager: z.string().optional(),
   salesManager: z.string().optional(),
   positionNumber: z.string().optional(),
-  description: z.string().min(1, { message: "Description is required" }),
+  description: z.string().min(1, { message: t("positionCreate.errors.descriptionRequired") }),
 
   // Address Details
-  streetAddress: z.string().min(1, { message: "Street address is required" }),
-  city: z.string().min(1, { message: "City is required" }),
-  province: z.string().min(1, { message: "Province is required" }),
-  postalCode: z.string().min(1, { message: "Postal code is required" }),
+  streetAddress: z.string().min(1, { message: t("positionCreate.errors.streetAddressRequired") }),
+  city: z.string().min(1, { message: t("positionCreate.errors.cityRequired") }),
+  province: z.string().min(1, { message: t("positionCreate.errors.provinceRequired") }),
+  postalCode: z.string().min(1, { message: t("positionCreate.errors.postalCodeRequired") }),
 
   // Employment Categorization
-  employmentTerm: z.string().min(1, { message: "Employment term is required" }),
-  employmentType: z.string().min(1, { message: "Employment type is required" }),
+  employmentTerm: z.string().min(1, { message: t("positionCreate.errors.employmentTermRequired") }),
+  employmentType: z.string().min(1, { message: t("positionCreate.errors.employmentTypeRequired") }),
   positionCategory: z
     .string()
-    .min(1, { message: "Position category is required" }),
-  experience: z.string().min(1, { message: "Experience is required" }),
+    .min(1, { message: t("positionCreate.errors.positionCategoryRequired") }),
+  experience: z.string().min(1, { message: t("positionCreate.errors.experienceRequired") }),
 
   // Documents Required
   documentsRequired: z
@@ -79,21 +80,21 @@ const positionFormSchema = z.object({
       // At least one document must be selected
       (data) => Object.values(data).some((value) => value === true),
       {
-        message: "At least one document must be selected",
+        message: t("positionCreate.errors.documentsRequired"),
         path: ["root"],
       }
     ),
 
   // Position Details
-  payrateType: z.string().min(1, { message: "Payrate type is required" }),
+  payrateType: z.string().min(1, { message: t("positionCreate.errors.payrateTypeRequired") }),
   numberOfPositions: z.coerce
     .number()
-    .min(1, { message: "Number of positions is required" }),
+    .min(1, { message: t("positionCreate.errors.numberOfPositionsRequired") }),
   regularPayRate: z
     .string()
-    .min(1, { message: "Regular pay rate is required" }),
+    .min(1, { message: t("positionCreate.errors.regularPayRateRequired") }),
   markup: z.string().optional(),
-  billRate: z.string().min(1, { message: "Bill rate is required" }),
+  billRate: z.string().min(1, { message: t("positionCreate.errors.billRateRequired") }),
 
   // Overtime
   overtimeEnabled: z.boolean().default(false),
@@ -104,11 +105,11 @@ const positionFormSchema = z.object({
   // Payment & Billings
   preferredPaymentMethod: z
     .string()
-    .min(1, { message: "Payment method is required" }),
-  terms: z.string().min(1, { message: "Terms are required" }),
+    .min(1, { message: t("positionCreate.errors.preferredPaymentMethodRequired") }),
+  terms: z.string().min(1, { message: t("positionCreate.errors.termsRequired") }),
 
   // Notes & Task
-  notes: z.string().min(1, { message: "Notes are required" }),
+  notes: z.string().min(1, { message: t("positionCreate.errors.notesRequired") }),
   assignedTo: z.string().optional(),
   projCompDate: z.string().optional(),
   taskTime: z.string().optional(),
@@ -128,7 +129,7 @@ const positionFormSchema = z.object({
     return true;
   },
   {
-    message: "All overtime fields are required when overtime is enabled",
+    message: t("positionCreate.errors.overtimeFieldsRequired"),
     path: ["overtimeEnabled"],
   }
 ).transform((data) => {
@@ -144,7 +145,7 @@ const positionFormSchema = z.object({
   return data;
 });
 
-type PositionFormData = z.infer<typeof positionFormSchema>;
+type PositionFormData = z.infer<ReturnType<typeof createPositionFormSchema>>;
 
 interface PositionCreateProps {
   isEditMode?: boolean;
@@ -158,6 +159,7 @@ export function PositionCreate({
   const navigate = useNavigate();
   const location = useLocation();
   const params = useParams();
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -167,7 +169,7 @@ export function PositionCreate({
   const [draftId, setDraftId] = useState<string | null>(null);
   const [positionId, setPositionId] = useState<string | null>(null);
   const [lastSaved, setLastSaved] = useState<string | null>(null);
-  const [pageTitle, setPageTitle] = useState("Create Position");
+  const [pageTitle, setPageTitle] = useState(t("positionCreate.createPosition"));
   const [clients, setClients] = useState<
     Array<{ id: string; companyName: string }>
   >([]);
@@ -188,7 +190,7 @@ export function PositionCreate({
 
   // Initialize form with validation
   const methods = useForm<PositionFormData>({
-    resolver: zodResolver(positionFormSchema),
+    resolver: zodResolver(createPositionFormSchema(t)),
     defaultValues: {
       showOnJobPortal: false,
       documentsRequired: {
@@ -203,7 +205,7 @@ export function PositionCreate({
         articlesOfIncorporation: false,
         directDeposit: false,
       },
-      payrateType: "Hourly",
+      payrateType: t("positionCreate.defaults.hourly"),
     },
     mode: "onBlur",
   });
@@ -260,7 +262,7 @@ export function PositionCreate({
       } catch (err) {
         console.error("Error fetching clients:", err);
         const errorMessage =
-          err instanceof Error ? err.message : "Failed to fetch clients";
+          err instanceof Error ? err.message : t("positionCreate.errors.failedToFetchClients");
         setError(errorMessage);
         setTimeout(() => setError(null), 3000);
       } finally {
@@ -302,13 +304,13 @@ export function PositionCreate({
   // Set page title based on mode
   useEffect(() => {
     if (isEditMode) {
-      setPageTitle("Edit Position");
+      setPageTitle(t("positionCreate.editPosition"));
     } else if (isEditDraftMode) {
-      setPageTitle("Edit Position Draft");
+      setPageTitle(t("positionCreate.editPositionDraft"));
     } else {
-      setPageTitle("Create Position");
+      setPageTitle(t("positionCreate.createPosition"));
     }
-  }, [isEditMode, isEditDraftMode]);
+  }, [isEditMode, isEditDraftMode, t]);
 
   // Update load position effect
   useEffect(() => {
@@ -338,7 +340,7 @@ export function PositionCreate({
         } catch (err) {
           console.error("Error loading position:", err);
           const errorMessage =
-            err instanceof Error ? err.message : "Error loading position";
+            err instanceof Error ? err.message : t("positionCreate.errors.errorLoadingPosition");
           setError(errorMessage);
           setTimeout(() => setError(null), 3000);
         } finally {
@@ -394,7 +396,7 @@ export function PositionCreate({
         } catch (err) {
           console.error("Error loading draft:", err);
           const errorMessage =
-            err instanceof Error ? err.message : "Error loading draft";
+            err instanceof Error ? err.message : t("positionCreate.errors.errorLoadingDraft");
           setError(errorMessage);
           setTimeout(() => setError(null), 3000);
         } finally {
@@ -509,7 +511,7 @@ export function PositionCreate({
 
     // Check if client is selected before saving draft
     if (!formData.client) {
-      setError("Client selection is required to save draft");
+      setError(t("positionCreate.errors.clientRequired"));
       setTimeout(() => setError(null), 3000);
       return;
     }
@@ -520,7 +522,7 @@ export function PositionCreate({
       const endDate = new Date(formData.endDate);
 
       if (endDate <= startDate) {
-        setError("End date must be after start date");
+        setError(t("positionCreate.errors.endDateAfterStart"));
         setTimeout(() => setError(null), 3000);
         return;
       }
@@ -541,13 +543,13 @@ export function PositionCreate({
         setDraftId((response.draft.id as string) || null);
         setLastSaved(response.lastUpdated || new Date().toISOString());
         setHasUnsavedChanges(false);
-        setSuccess("Draft saved successfully");
+        setSuccess(t("positionCreate.messages.draftSaved"));
         setTimeout(() => setSuccess(null), 3000);
       }
     } catch (err) {
       console.error("Error saving draft:", err);
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to save draft";
+              const errorMessage =
+          err instanceof Error ? err.message : t("positionCreate.errors.failedToSaveDraft");
       setError(errorMessage);
       setTimeout(() => setError(null), 3000);
     } finally {
@@ -562,7 +564,7 @@ export function PositionCreate({
       const endDate = new Date(data.endDate);
 
       if (endDate <= startDate) {
-        setError("End date must be after start date");
+        setError(t("positionCreate.errors.endDateAfterStart"));
         setTimeout(() => setError(null), 3000);
         return;
       }
@@ -583,7 +585,7 @@ export function PositionCreate({
           positionId,
           dataToSubmit as unknown as PositionData
         );
-        setSuccess("Position updated successfully");
+        setSuccess(t("positionCreate.messages.positionUpdated"));
         setTimeout(() => {
           setSuccess(null);
           navigateBack();
@@ -603,7 +605,7 @@ export function PositionCreate({
           await deletePositionDraft(draftId);
         }
 
-        setSuccess("Position created successfully");
+        setSuccess(t("positionCreate.messages.positionCreated"));
         setTimeout(() => {
           setSuccess(null);
           navigateBack();
@@ -611,8 +613,8 @@ export function PositionCreate({
       }
     } catch (err) {
       console.error("Error creating/updating position:", err);
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to create/update position";
+              const errorMessage =
+          err instanceof Error ? err.message : t("positionCreate.errors.failedToCreateUpdatePosition");
       setError(errorMessage);
       setTimeout(() => setError(null), 3000);
     } finally {
@@ -668,12 +670,12 @@ export function PositionCreate({
                 disabled={saving || !hasUnsavedChanges}
               >
                 <Save size={16} />
-                <span>{saving ? "Saving..." : "Save Draft"}</span>
+                <span>{saving ? t("positionCreate.buttons.saving") : t("positionCreate.buttons.saveDraft")}</span>
               </button>
             )}
             <button className="button button-icon" onClick={handleCancel}>
               <ArrowLeft size={16} />
-              <span>Back To Position Management</span>
+              <span>{t("positionCreate.buttons.backToPositionManagement")}</span>
             </button>
           </>
         }
@@ -684,7 +686,7 @@ export function PositionCreate({
       <div className="content-container">
         {lastSaved && !isEditMode && (
           <div className="last-saved">
-            Last saved: {new Date(lastSaved).toLocaleString()}
+            {t("positionCreate.info.lastSaved", { date: new Date(lastSaved).toLocaleString() })}
           </div>
         )}
 
@@ -696,7 +698,7 @@ export function PositionCreate({
             <div className="form-card">
               {/* Basic Details Section */}
               <div className="form-section">
-                <h2>Basic Details</h2>
+                <h2>{t("positionCreate.sections.basicDetails")}</h2>
 
                 <div className="form-row">
                   <div className="form-group">
@@ -705,7 +707,7 @@ export function PositionCreate({
                       className="form-label"
                       data-required="*"
                     >
-                      Client
+                      {t("positionCreate.fields.client")}
                     </label>
                     {/* Hidden input for form registration */}
                     <input type="hidden" {...methods.register("client")} />
@@ -733,7 +735,7 @@ export function PositionCreate({
                           return null;
                         })()}
                         onSelect={(option) => { if (Array.isArray(option)) return; handleClientSelect(option); }}
-                        placeholder="Search clients..."
+                        placeholder={t("positionCreate.placeholders.searchClients")}
                         searchable={true}
                         clearable={true}
                         onClear={() => methods.setValue("client", "")}
@@ -753,7 +755,7 @@ export function PositionCreate({
                       className="form-label"
                       data-required="*"
                     >
-                      Title
+                      {t("positionCreate.fields.title")}
                     </label>
                     {/* Hidden input for form registration */}
                     <input type="hidden" {...methods.register("title")} />
@@ -765,11 +767,11 @@ export function PositionCreate({
                         value: methods.getValues("title")
                       } : null}
                       onSelect={(option) => { if (Array.isArray(option)) return; handleTitleSelect(option); }}
-                      placeholder="Search job titles..."
+                      placeholder={t("positionCreate.placeholders.searchJobTitles")}
                       searchable={true}
                       clearable={true}
                       onClear={() => methods.setValue("title", "")}
-                      emptyMessage="No job titles found"
+                      emptyMessage={t("positionCreate.emptyMessages.noJobTitles")}
                     />
                     {methods.formState.errors.title && (
                       <p className="form-error">
@@ -780,13 +782,13 @@ export function PositionCreate({
 
                   <div className="form-group">
                     <label htmlFor="positionNumber" className="form-label">
-                      Position Code
+                      {t("positionCreate.fields.positionNumber")}
                     </label>
                     <input
                       type="text"
                       id="positionNumber"
                       className="form-input"
-                      placeholder="Enter position code"
+                      placeholder={t("positionCreate.placeholders.positionCode")}
                       {...methods.register("positionNumber")}
                     />
                   </div>
@@ -795,20 +797,20 @@ export function PositionCreate({
                 <div className="form-row">
                   <div className="form-group">
                     <label htmlFor="positionCode" className="form-label">
-                      Position ID
+                      {t("positionCreate.fields.positionId")}
                     </label>
                     <input
                       type="text"
                       id="positionCode"
                       className="form-input auto-populated"
-                      placeholder={isEditDraftMode ? "Auto-regenerated for uniqueness" : "Auto-generated from client"}
+                      placeholder={isEditDraftMode ? t("positionCreate.placeholders.autoRegenerated") : t("positionCreate.placeholders.autoGenerated")}
                       disabled
                       {...methods.register("positionCode")}
                     />
                     {isEditDraftMode && (
                       <div className="form-info">
                         <small>
-                          Position ID is regenerated when editing drafts to ensure uniqueness
+                          {t("positionCreate.info.positionIdRegenerated")}
                         </small>
                       </div>
                     )}
@@ -824,7 +826,7 @@ export function PositionCreate({
                       className="form-label"
                       data-required="*"
                     >
-                      Start Date
+                      {t("positionCreate.fields.startDate")}
                     </label>
                     <div className="date-picker-container">
                       <input
@@ -848,7 +850,7 @@ export function PositionCreate({
                       className="form-label"
                       data-required="*"
                     >
-                      End Date
+                      {t("positionCreate.fields.endDate")}
                     </label>
                     <div className="date-picker-container">
                       <input
@@ -878,20 +880,20 @@ export function PositionCreate({
                         {...methods.register('showOnJobPortal')}
                       />
                       <label htmlFor="showOnJobPortal" className="label-form">
-                        Show on Job Portal
+                        {t("positionCreate.fields.showOnJobPortal")}
                       </label>
                     </div>
                   </div>
 
                   <div className="form-group">
                     <label htmlFor="clientManager" className="form-label">
-                      Client Manager
+                      {t("positionCreate.fields.clientManager")}
                     </label>
                     <input
                       type="text"
                       id="clientManager"
                       className="form-input auto-populated"
-                      placeholder="Auto-filled from client"
+                      placeholder={t("positionCreate.placeholders.autoFilled")}
                       disabled
                       {...methods.register("clientManager")}
                     />
@@ -899,13 +901,13 @@ export function PositionCreate({
 
                   <div className="form-group">
                     <label htmlFor="salesManager" className="form-label">
-                      Sales Manager
+                      {t("positionCreate.fields.salesManager")}
                     </label>
                     <input
                       type="text"
                       id="salesManager"
                       className="form-input auto-populated"
-                      placeholder="Auto-filled from client"
+                      placeholder={t("positionCreate.placeholders.autoFilled")}
                       disabled
                       {...methods.register("salesManager")}
                     />
@@ -919,12 +921,12 @@ export function PositionCreate({
                       className="form-label"
                       data-required="*"
                     >
-                      Description
+                      {t("positionCreate.fields.description")}
                     </label>
                     <textarea
                       id="description"
                       className="form-textarea"
-                      placeholder="Enter position description"
+                      placeholder={t("positionCreate.placeholders.positionDescription")}
                       rows={4}
                       {...methods.register("description")}
                     />
@@ -939,12 +941,11 @@ export function PositionCreate({
 
               {/* Address Details Section */}
               <div className="form-section">
-                <h2>Address Details</h2>
+                <h2>{t("positionCreate.sections.addressDetails")}</h2>
 
                 <div className="form-info" data-required="*">
                   <small>
-                    Note: Address details are auto-filled from the selected
-                    client but can be modified if needed
+                    {t("positionCreate.info.addressAutoFill")}
                   </small>
                 </div>
 
@@ -955,13 +956,13 @@ export function PositionCreate({
                       className="form-label"
                       data-required="*"
                     >
-                      Street Address
+                      {t("positionCreate.fields.streetAddress")}
                     </label>
                     <input
                       type="text"
                       id="streetAddress"
                       className="form-input auto-populated"
-                      placeholder="Enter street address"
+                      placeholder={t("positionCreate.placeholders.streetAddress")}
                       {...methods.register("streetAddress")}
                     />
                     {methods.formState.errors.streetAddress && (
@@ -979,13 +980,13 @@ export function PositionCreate({
                       className="form-label"
                       data-required="*"
                     >
-                      City
+                      {t("positionCreate.fields.city")}
                     </label>
                     <input
                       type="text"
                       id="city"
                       className="form-input auto-populated"
-                      placeholder="Enter city"
+                      placeholder={t("positionCreate.placeholders.city")}
                       {...methods.register("city")}
                     />
                     {methods.formState.errors.city && (
@@ -1001,13 +1002,13 @@ export function PositionCreate({
                       className="form-label"
                       data-required="*"
                     >
-                      Province
+                      {t("positionCreate.fields.province")}
                     </label>
                     <input
                       type="text"
                       id="province"
                       className="form-input auto-populated"
-                      placeholder="Enter province (e.g., ON)"
+                      placeholder={t("positionCreate.placeholders.province")}
                       {...methods.register("province")}
                     />
                     {methods.formState.errors.province && (
@@ -1023,13 +1024,13 @@ export function PositionCreate({
                       className="form-label"
                       data-required="*"
                     >
-                      Postal Code
+                      {t("positionCreate.fields.postalCode")}
                     </label>
                     <input
                       type="text"
                       id="postalCode"
                       className="form-input auto-populated"
-                      placeholder="Enter postal code"
+                      placeholder={t("positionCreate.placeholders.postalCode")}
                       {...methods.register("postalCode")}
                     />
                     {methods.formState.errors.postalCode && (
@@ -1043,7 +1044,7 @@ export function PositionCreate({
 
               {/* Employment Categorization Section */}
               <div className="form-section">
-                <h2>Employment Categorization</h2>
+                <h2>{t("positionCreate.sections.employmentCategorization")}</h2>
 
                 <div className="form-row">
                   <div className="form-group">
@@ -1052,14 +1053,14 @@ export function PositionCreate({
                       className="form-label"
                       data-required="*"
                     >
-                      Employment Term
+                      {t("positionCreate.fields.employmentTerm")}
                     </label>
                     <select
                       id="employmentTerm"
                       className="form-input"
                       {...methods.register("employmentTerm")}
                     >
-                      <option value="">Select employment term</option>
+                      <option value="">{t("positionCreate.selectOptions.selectEmploymentTerm")}</option>
                       {EMPLOYMENT_TERMS.map((term) => (
                         <option key={term} value={term}>
                           {term}
@@ -1079,14 +1080,14 @@ export function PositionCreate({
                       className="form-label"
                       data-required="*"
                     >
-                      Employment Type
+                      {t("positionCreate.fields.employmentType")}
                     </label>
                     <select
                       id="employmentType"
                       className="form-input"
                       {...methods.register("employmentType")}
                     >
-                      <option value="">Select employment type</option>
+                      <option value="">{t("positionCreate.selectOptions.selectEmploymentType")}</option>
                       {EMPLOYMENT_TYPES.map((type) => (
                         <option key={type} value={type}>
                           {type}
@@ -1106,14 +1107,14 @@ export function PositionCreate({
                       className="form-label"
                       data-required="*"
                     >
-                      Position Category
+                      {t("positionCreate.fields.positionCategory")}
                     </label>
                     <select
                       id="positionCategory"
                       className="form-input"
                       {...methods.register("positionCategory")}
                     >
-                      <option value="">Select position category</option>
+                      <option value="">{t("positionCreate.selectOptions.selectPositionCategory")}</option>
                       {POSITION_CATEGORIES.map((category) => (
                         <option key={category} value={category}>
                           {category}
@@ -1133,14 +1134,14 @@ export function PositionCreate({
                       className="form-label"
                       data-required="*"
                     >
-                      Experience
+                      {t("positionCreate.fields.experience")}
                     </label>
                     <select
                       id="experience"
                       className="form-input"
                       {...methods.register("experience")}
                     >
-                      <option value="">Select experience level</option>
+                      <option value="">{t("positionCreate.selectOptions.selectExperienceLevel")}</option>
                       {EXPERIENCE_LEVELS.map((level) => (
                         <option key={level} value={level}>
                           {level}
@@ -1158,7 +1159,7 @@ export function PositionCreate({
 
               {/* Documents Required Section */}
               <div className="form-section">
-                <h2>Documents Required</h2>
+                <h2>{t("positionCreate.sections.documentsRequired")}</h2>
 
                 <div className="form-row">
                   {/* <div className="form-group"> */}
@@ -1170,7 +1171,7 @@ export function PositionCreate({
                       {...methods.register("documentsRequired.license")}
                     />
                     <label htmlFor="license" className="checkbox-label">
-                      License
+                      {t("positionCreate.documents.license")}
                     </label>
                   </div>
                   <div className="checkbox-container">
@@ -1181,7 +1182,7 @@ export function PositionCreate({
                       {...methods.register("documentsRequired.driverAbstract")}
                     />
                     <label htmlFor="driverAbstract" className="checkbox-label">
-                      Driver Abstract
+                      {t("positionCreate.documents.driverAbstract")}
                     </label>
                   </div>
                   <div className="checkbox-container">
@@ -1192,7 +1193,7 @@ export function PositionCreate({
                       {...methods.register("documentsRequired.tdgCertificate")}
                     />
                     <label htmlFor="tdgCertificate" className="checkbox-label">
-                      TDG Certificate
+                      {t("positionCreate.documents.tdgCertificate")}
                     </label>
                   </div>
                   <div className="checkbox-container">
@@ -1203,7 +1204,7 @@ export function PositionCreate({
                       {...methods.register("documentsRequired.sin")}
                     />
                     <label htmlFor="sin" className="checkbox-label">
-                      SIN
+                      {t("positionCreate.documents.sin")}
                     </label>
                   </div>
                   <div className="checkbox-container">
@@ -1219,7 +1220,7 @@ export function PositionCreate({
                       htmlFor="immigrationStatus"
                       className="checkbox-label"
                     >
-                      Immigration Status
+                      {t("positionCreate.documents.immigrationStatus")}
                     </label>
                   </div>
                 </div>
@@ -1233,7 +1234,7 @@ export function PositionCreate({
                       {...methods.register("documentsRequired.passport")}
                     />
                     <label htmlFor="passport" className="checkbox-label">
-                      Passport
+                      {t("positionCreate.documents.passport")}
                     </label>
                   </div>
                   <div className="checkbox-container">
@@ -1244,7 +1245,7 @@ export function PositionCreate({
                       {...methods.register("documentsRequired.cvor")}
                     />
                     <label htmlFor="cvor" className="checkbox-label">
-                      CVOR
+                      {t("positionCreate.documents.cvor")}
                     </label>
                   </div>
                   <div className="checkbox-container">
@@ -1255,7 +1256,7 @@ export function PositionCreate({
                       {...methods.register("documentsRequired.resume")}
                     />
                     <label htmlFor="resume" className="checkbox-label">
-                      Resume
+                      {t("positionCreate.documents.resume")}
                     </label>
                   </div>
                   <div className="checkbox-container">
@@ -1271,7 +1272,7 @@ export function PositionCreate({
                       htmlFor="articlesOfIncorporation"
                       className="checkbox-label"
                     >
-                      Articles of Incorporation
+                      {t("positionCreate.documents.articlesOfIncorporation")}
                     </label>
                   </div>
                   <div className="checkbox-container">
@@ -1282,7 +1283,7 @@ export function PositionCreate({
                       {...methods.register("documentsRequired.directDeposit")}
                     />
                     <label htmlFor="directDeposit" className="checkbox-label">
-                      Direct Deposit
+                      {t("positionCreate.documents.directDeposit")}
                     </label>
                   </div>
                 </div>
@@ -1292,14 +1293,14 @@ export function PositionCreate({
                   <p className="form-error">
                     {methods.formState.errors.documentsRequired?.root?.message || 
                      methods.formState.errors.documentsRequired?.message ||
-                     "At least one document must be selected"}
+                     t("positionCreate.errors.documentsRequired")}
                   </p>
                 )}
               </div>
 
               {/* Position Details Section */}
               <div className="form-section">
-                <h2>Position Details</h2>
+                <h2>{t("positionCreate.sections.positionDetails")}</h2>
 
                 <div className="form-row">
                   <div className="form-group">
@@ -1308,13 +1309,13 @@ export function PositionCreate({
                       className="form-label"
                       data-required="*"
                     >
-                      Number of Positions
+                      {t("positionCreate.fields.numberOfPositions")}
                     </label>
                     <input
                       type="number"
                       id="numberOfPositions"
                       className="form-input"
-                      placeholder="Enter number of positions"
+                      placeholder={t("positionCreate.placeholders.numberOfPositions")}
                       min="1"
                       required
                       {...methods.register("numberOfPositions")}
@@ -1331,14 +1332,14 @@ export function PositionCreate({
                       className="form-label"
                       data-required="*"
                     >
-                      Payrate Type
+                      {t("positionCreate.fields.payrateType")}
                     </label>
                     <select
                       id="payrateType"
                       className="form-input"
                       {...methods.register("payrateType")}
                     >
-                      <option value="">Select payrate type</option>
+                      <option value="">{t("positionCreate.selectOptions.selectPayrateType")}</option>
                       {PAYRATE_TYPES.map((type) => (
                         <option key={type} value={type}>
                           {type}
@@ -1357,13 +1358,13 @@ export function PositionCreate({
                       className="form-label"
                       data-required="*"
                     >
-                      Regular Pay Rate
+                      {t("positionCreate.fields.regularPayRate")}
                     </label>
                     <input
                       type="text"
                       id="regularPayRate"
                       className="form-input"
-                      placeholder="Enter regular pay rate"
+                      placeholder={t("positionCreate.placeholders.regularPayRate")}
                       {...methods.register("regularPayRate")}
                     />
                     {methods.formState.errors.regularPayRate && (
@@ -1378,13 +1379,13 @@ export function PositionCreate({
                       className="form-label"
                       data-required="*"
                     >
-                      Bill Rate
+                      {t("positionCreate.fields.billRate")}
                     </label>
                     <input
                       type="text"
                       id="billRate"
                       className="form-input"
-                      placeholder="Enter bill rate"
+                      placeholder={t("positionCreate.placeholders.billRate")}
                       {...methods.register("billRate")}
                     />
                     {methods.formState.errors.billRate && (
@@ -1395,13 +1396,13 @@ export function PositionCreate({
                   </div>
                   <div className="form-group">
                     <label htmlFor="markup" className="form-label">
-                      Markup
+                      {t("positionCreate.fields.markup")}
                     </label>
                     <input
                       type="text"
                       id="markup"
                       className="form-input"
-                      placeholder="Enter markup"
+                      placeholder={t("positionCreate.placeholders.markup")}
                       {...methods.register("markup")}
                     />
                   </div>
@@ -1410,7 +1411,7 @@ export function PositionCreate({
 
               {/* Overtime Section */}
               <div className="form-section">
-                <h2>Overtime</h2>
+                <h2>{t("positionCreate.sections.overtime")}</h2>
 
                 <div className="form-row">
                   <div className="container-form">
@@ -1420,9 +1421,9 @@ export function PositionCreate({
                       className="toggle-form"
                       {...methods.register("overtimeEnabled")}
                     />
-                    <label htmlFor="overtimeEnabled" className="label-form">
-                      Enable Overtime
-                    </label>
+                                          <label htmlFor="overtimeEnabled" className="label-form">
+                        {t("positionCreate.fields.overtimeEnabled")}
+                      </label>
                   </div>
                 </div>
 
@@ -1431,13 +1432,13 @@ export function PositionCreate({
                     <div className="form-row">
                       <div className="form-group">
                         <label htmlFor="overtimeHours" className="form-label">
-                          Overtime Hours
+                          {t("positionCreate.fields.overtimeHours")}
                         </label>
                         <input
                           type="text"
                           id="overtimeHours"
                           className="form-input"
-                          placeholder="Enter overtime hours"
+                          placeholder={t("positionCreate.placeholders.overtimeHours")}
                           {...methods.register("overtimeHours")}
                         />
                         {methods.formState.errors.overtimeHours && (
@@ -1452,13 +1453,13 @@ export function PositionCreate({
                           htmlFor="overtimeBillRate"
                           className="form-label"
                         >
-                          Overtime Bill Rate
+                          {t("positionCreate.fields.overtimeBillRate")}
                         </label>
                         <input
                           type="text"
                           id="overtimeBillRate"
                           className="form-input"
-                          placeholder="Enter overtime bill rate"
+                          placeholder={t("positionCreate.placeholders.overtimeBillRate")}
                           {...methods.register("overtimeBillRate")}
                         />
                         {methods.formState.errors.overtimeBillRate && (
@@ -1470,13 +1471,13 @@ export function PositionCreate({
 
                       <div className="form-group">
                         <label htmlFor="overtimePayRate" className="form-label">
-                          Overtime Pay Rate
+                          {t("positionCreate.fields.overtimePayRate")}
                         </label>
                         <input
                           type="text"
                           id="overtimePayRate"
                           className="form-input"
-                          placeholder="Enter overtime pay rate"
+                          placeholder={t("positionCreate.placeholders.overtimePayRate")}
                           {...methods.register("overtimePayRate")}
                         />
                         {methods.formState.errors.overtimePayRate && (
@@ -1498,7 +1499,7 @@ export function PositionCreate({
 
               {/* Payment & Billings Section */}
               <div className="form-section">
-                <h2>Payment & Billings</h2>
+                <h2>{t("positionCreate.sections.paymentBillings")}</h2>
 
                 <div className="form-row">
                   <div className="form-group">
@@ -1507,17 +1508,17 @@ export function PositionCreate({
                       className="form-label"
                       data-required="*"
                     >
-                      Preferred Payment Method
+                      {t("positionCreate.fields.preferredPaymentMethod")}
                     </label>
                     <select
                       id="preferredPaymentMethod"
                       className="form-input"
                       {...methods.register("preferredPaymentMethod")}
                     >
-                      <option value="">Select preferred payment method</option>
-                      <option value="Direct Deposit">Direct Deposit</option>
-                      <option value="Cheque">Cheque</option>
-                      <option value="Wire Transfer">Wire Transfer</option>
+                      <option value="">{t("positionCreate.selectOptions.selectPaymentMethod")}</option>
+                      <option value="Direct Deposit">{t("positionCreate.selectOptions.directDeposit")}</option>
+                      <option value="Cheque">{t("positionCreate.selectOptions.cheque")}</option>
+                      <option value="Wire Transfer">{t("positionCreate.selectOptions.wireTransfer")}</option>
                     </select>
                     {methods.formState.errors.preferredPaymentMethod && (
                       <p className="form-error">
@@ -1535,22 +1536,22 @@ export function PositionCreate({
                       className="form-label"
                       data-required="*"
                     >
-                      Terms
+                      {t("positionCreate.fields.terms")}
                     </label>
                     <select
                       id="terms"
                       className="form-input"
                       {...methods.register("terms")}
                     >
-                      <option value="">Select terms</option>
-                      <option value="Due on Receipt">Due on Receipt</option>
-                      <option value="Net 15">Net 15</option>
-                      <option value="Net 22">Net 22</option>
-                      <option value="Net 30">Net 30</option>
-                      <option value="Net 45">Net 45</option>
-                      <option value="Net 60">Net 60</option>
-                      <option value="Net 65">Net 65</option>
-                      <option value="Net 90">Net 90</option>
+                      <option value="">{t("positionCreate.selectOptions.selectTerms")}</option>
+                      <option value="Due on Receipt">{t("positionCreate.selectOptions.dueOnReceipt")}</option>
+                      <option value="Net 15">{t("positionCreate.selectOptions.net15")}</option>
+                      <option value="Net 22">{t("positionCreate.selectOptions.net22")}</option>
+                      <option value="Net 30">{t("positionCreate.selectOptions.net30")}</option>
+                      <option value="Net 45">{t("positionCreate.selectOptions.net45")}</option>
+                      <option value="Net 60">{t("positionCreate.selectOptions.net60")}</option>
+                      <option value="Net 65">{t("positionCreate.selectOptions.net65")}</option>
+                      <option value="Net 90">{t("positionCreate.selectOptions.net90")}</option>
                     </select>
                     {methods.formState.errors.terms && (
                       <p className="form-error">
@@ -1563,7 +1564,7 @@ export function PositionCreate({
 
               {/* Notes & Task Section */}
               <div className="form-section">
-                <h2>Notes</h2>
+                <h2>{t("positionCreate.sections.notes")}</h2>
 
                 <div className="form-row">
                   <div className="form-group">
@@ -1572,12 +1573,12 @@ export function PositionCreate({
                       className="form-label"
                       data-required="*"
                     >
-                      Notes
+                      {t("positionCreate.fields.notes")}
                     </label>
                     <textarea
                       id="notes"
                       className="form-textarea"
-                      placeholder="Enter notes"
+                      placeholder={t("positionCreate.placeholders.notes")}
                       rows={4}
                       {...methods.register("notes")}
                     />
@@ -1592,25 +1593,25 @@ export function PositionCreate({
 
               {/* Tasks Section */}
               <div className="form-section">
-                <h2>Tasks</h2>
+                <h2>{t("positionCreate.sections.tasks")}</h2>
 
                 <div className="form-row">
                   <div className="form-group">
                     <label htmlFor="assignedTo" className="form-label">
-                      Assigned To
+                      {t("positionCreate.fields.assignedTo")}
                     </label>
                     <input
                       type="text"
                       id="assignedTo"
                       className="form-input"
-                      placeholder="Enter assigned to"
+                      placeholder={t("positionCreate.placeholders.assignedTo")}
                       {...methods.register("assignedTo")}
                     />
                   </div>
 
                   <div className="form-group">
                     <label htmlFor="projCompDate" className="form-label">
-                      Project Completion Date
+                      {t("positionCreate.fields.projCompDate")}
                     </label>
                     <div className="date-picker-container">
                       <input
@@ -1625,13 +1626,13 @@ export function PositionCreate({
 
                   <div className="form-group">
                     <label htmlFor="taskTime" className="form-label">
-                      Task Time
+                      {t("positionCreate.fields.taskTime")}
                     </label>
                     <input
                       type="text"
                       id="taskTime"
                       className="form-input"
-                      placeholder="Enter task time"
+                      placeholder={t("positionCreate.placeholders.taskTime")}
                       {...methods.register("taskTime")}
                     />
                   </div>
@@ -1646,7 +1647,7 @@ export function PositionCreate({
                 onClick={handleCancel}
                 disabled={loading}
               >
-                Cancel
+                {t("buttons.cancel")}
               </button>
               <button
                 type="submit"
@@ -1655,11 +1656,11 @@ export function PositionCreate({
               >
                 {loading
                   ? isEditMode
-                    ? "Updating..."
-                    : "Creating..."
+                    ? t("positionCreate.buttons.updating")
+                    : t("positionCreate.buttons.creating")
                   : isEditMode
-                  ? "Update Position"
-                  : "Create Position"}
+                  ? t("positionCreate.buttons.updatePosition")
+                  : t("positionCreate.buttons.createPosition")}
               </button>
             </div>
           </form>
@@ -1669,10 +1670,10 @@ export function PositionCreate({
       {showExitConfirmation && (
         <ConfirmationModal
           isOpen={showExitConfirmation}
-          title="Unsaved Changes"
-          message="You have unsaved changes. Do you want to save your draft before leaving?"
-          confirmText="Save Draft"
-          cancelText="Discard"
+          title={t("positionCreate.modal.unsavedChanges")}
+          message={t("positionCreate.modal.unsavedChangesMessage")}
+          confirmText={t("positionCreate.buttons.saveDraft")}
+          cancelText={t("positionCreate.buttons.discard")}
           onConfirm={async () => {
             await handleSaveDraft();
             setShowExitConfirmation(false);

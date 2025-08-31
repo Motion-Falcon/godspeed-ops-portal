@@ -1,0 +1,192 @@
+---
+description: Enforce proper usage of the translation system for all user-facing text
+globs: client/src/**/*.{tsx,ts,jsx,js}
+alwaysApply: true
+---
+
+# **Translation System Rules for Godspeed Ops Portal**
+
+This project uses a custom React context-based translation system with support for English and French. All user-facing text **MUST** use the translation system.
+
+## **System Overview**
+
+- **Hook**: `useLanguage()` to get the `t` function
+- **Usage**: `t(key, interpolations?)` 
+- **Files**: `client/src/contexts/language/locales/en.json` and `fr.json`
+- **Features**: Nested keys with dot notation, string interpolation with `{{variable}}`
+
+## **Required Usage**
+
+### **✅ Basic Pattern**
+```typescript
+import { useLanguage } from "../contexts/language/language-provider";
+
+export function MyComponent() {
+  const { t } = useLanguage();
+  
+  return (
+    <div>
+      <h1>{t("dashboard.welcome")}</h1>
+      <button>{t("buttons.submit")}</button>
+      <input placeholder={t("forms.emailPlaceholder")} />
+    </div>
+  );
+}
+```
+
+### **✅ Interpolation**
+```typescript
+const message = t("userManagement.pagination.showing", { 
+  start: 1, end: 10, total: 100 
+});
+```
+
+### **✅ Naming Conventions**
+- `navigation.*` - Navigation menu items
+- `buttons.*` - Button labels  
+- `forms.*` - Form field labels and placeholders
+- `messages.*` - Success/error/status messages
+- `auth.*` - Authentication related text
+- `[featureName].*` - Feature-specific translations
+
+### **✅ Both Languages Required**
+Always add to both `en.json` and `fr.json`:
+```json
+// en.json
+"recruiterManagement": {
+  "inviteRecruiter": "Invite Recruiter",
+  "sendInvitation": "Send Invitation"
+}
+
+// fr.json  
+"recruiterManagement": {
+  "inviteRecruiter": "Inviter un recruteur",
+  "sendInvitation": "Envoyer l'invitation"
+}
+```
+
+## **What to Translate**
+
+### **✅ TRANSLATE: User-Facing Content**
+```typescript
+// UI elements users see
+<h1>{t("title")}</h1>
+<button>{t("buttons.save")}</button>
+<p>{t("messages.success")}</p>
+<input placeholder={t("forms.placeholder")} />
+<img alt={t("images.logo")} />
+<span title={t("tooltips.help")}></span>
+
+// User messages
+toast.success(t("messages.saved"));
+alert(t("messages.confirm"));
+```
+
+### **❌ DON'T TRANSLATE: Technical/Logic Strings**
+```typescript
+// API endpoints, database fields, constants
+const endpoint = "/api/users";
+const field = "created_at";
+const status = "pending";
+const role = "admin";
+
+// Console logs, debug messages
+console.log("Debug info");
+console.error("API failed");
+
+// File types, formats, config
+const fileType = ".pdf";
+const format = "YYYY-MM-DD";
+```
+
+## **Quick Decision Guide**
+
+**Ask: Will users see this text in the UI?**
+- **YES** → Translate it with `t()`
+- **NO** → Keep as hardcoded string
+
+## **Forbidden Patterns**
+
+### **❌ DON'T: Hardcode UI Text**
+```typescript
+// BAD
+<h1>Invite Recruiter</h1>
+<button>Send Invite</button>
+return "Loading...";
+
+// GOOD
+<h1>{t("recruiterManagement.inviteRecruiter")}</h1>
+<button>{t("buttons.sendInvite")}</button>
+return t("messages.loading");
+```
+
+### **❌ DON'T: Use Non-Descriptive Keys**
+```typescript
+// BAD
+t("text1")
+t("msg")
+
+// GOOD
+t("userManagement.deleteConfirmation")
+t("forms.emailPlaceholder")
+```
+
+## **Integration Requirements**
+
+### **Component Requirements**
+1. Import `useLanguage` hook
+2. Extract `t` function: `const { t } = useLanguage();`
+3. Use `t()` for all user-facing text
+4. Never render hardcoded UI strings
+
+### **French Translation Guidelines**
+- If unsure about French, use placeholder: `"[FR_TODO] English text"`
+- Maintain same interpolation variables as English
+- Keep same structure and nesting
+
+## **Examples from Codebase**
+
+### **✅ GOOD**
+```typescript
+// From HamburgerMenu.tsx
+label: t("navigation.dashboard")
+title={t('userManagement.title')}
+placeholder={t('userManagement.globalSearch')}
+```
+
+### **❌ BAD (needs fixing)**
+```typescript
+// From InviteRecruiter.tsx
+<AppHeader title="Invite Recruiter" />
+<h1>Invite Recruiter</h1>
+<button>Send Invite</button>
+```
+
+## **Validation Checklist**
+
+- [ ] All user-facing text uses `t()` function
+- [ ] Translation keys exist in both `en.json` and `fr.json`  
+- [ ] Key names follow naming conventions
+- [ ] No hardcoded UI strings in JSX
+- [ ] Component imports `useLanguage` hook
+
+## **Documentation Updates**
+
+**After completing translation for any component, update the translation tracking document:**
+
+1. **Add completed components** to `docs/translated_component_list.md`
+2. **Mark with ✅** next to component name
+3. **Update section status** count (e.g., "Status: 14/15 Complete")
+4. **Group by feature area** (Authentication, Dashboard, Management, etc.)
+
+### **Example Entry**
+```markdown
+## Dashboard Components ✅
+- ✅ RecentActivities.tsx
+- ✅ MetricCard.tsx
+- ❌ ProfileCompletion.tsx (needs translation)
+
+**Status: 2/3 Complete**
+```
+
+This ensures translation progress is tracked and visible to the team.
