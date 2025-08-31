@@ -103,7 +103,7 @@ export function Login() {
       <div className="auth-column brand">
         <div className="brand-content">
           <div className="brand-logo">
-            <img src={canhireLogo} alt={t('common.canhireLogo')} className="godspeed-logo" />
+            <img src={canhireLogo} alt={t('common.godspeedLogo')} className="godspeed-logo" />
           </div>
           <h2 className="brand-title">{t('auth.welcomeBack')}</h2>
           <p className="brand-description">

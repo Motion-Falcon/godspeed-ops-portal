@@ -40,9 +40,9 @@ export const emailNotifier = (options: EmailNotifierOptions = {}) => {
               console.log('[EmailNotifier] Sending email:', {
                 to: email.to,
                 subject: email.subject,
-                from: process.env.DEFAULT_FROM_EMAIL || 'godspeed@aimotion.com',
+                from: process.env.DEFAULT_FROM_EMAIL,
               });
-              await sgMail.send({ from: process.env.DEFAULT_FROM_EMAIL || 'godspeed@aimotion.com', ...email, text });
+              await sgMail.send({ from: process.env.DEFAULT_FROM_EMAIL as string, ...email, text });
               console.log('[EmailNotifier] Email sent successfully to', email.to);
             }
           } else {

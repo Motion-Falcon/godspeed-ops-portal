@@ -537,7 +537,7 @@ export function Signup() {
           <div className="brand-logo">
             <img
               src={canhireLogo}
-              alt={t('common.canhireLogo')}
+              alt={t('common.godspeedLogo')}
               className="godspeed-logo"
             />
           </div>

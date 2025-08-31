@@ -4,7 +4,7 @@ globs: client/src/**/*.{tsx,ts,jsx,js}
 alwaysApply: true
 ---
 
-# **Translation System Rules for Godspeed Ops Portal**
+# **Translation System Rules for CanHire Ops Portal**
 
 This project uses a custom React context-based translation system with support for English and French. All user-facing text **MUST** use the translation system.
 

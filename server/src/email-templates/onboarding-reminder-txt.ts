@@ -12,7 +12,7 @@ ${vars.onboarding_url}
 If you have any questions or need assistance, please don't hesitate to reach out to our support team.
 
 Best regards,
-The Godspeed Team
+The CanHire Team
 
 ---
 This email was sent because you have an incomplete account setup. If you believe this message was sent in error, please contact our support team.

@@ -12,7 +12,7 @@ import '../styles/components/header.css';
 
 // Company data
 const companies = [
-  { name: 'CanHire Ops', logo: canHireIconLogo, url: 'https://app.canhiresolutions.ca' },
+  { name: 'Godspeed Ops', logo: godspeedIconLogo, url: 'https://app.godspeedxp.com' },
   { name: 'All Staff Inc. Ops', logo: allStaffIconLogo, url: 'https://app.allstaff.ca' },
   { name: 'HD Group Ops', logo: hdGroupIconLogo, url: 'https://app.hdgroup.ca' }
 ];
@@ -158,13 +158,13 @@ export function AppHeader({
                   <div className="trigger-content">
                     <div className="current-portal">
                       <img 
-                        src={godspeedIconLogo} 
-                        alt="Godspeed Logo"
+                        src={canHireIconLogo} 
+                        alt="CanHire Logo"
                         className="portal-logo"
                       />
                       <div className="portal-info">
                         <span className="portal-label">Portal</span>
-                        <span className="portal-name">Godspeed Ops</span>
+                        <span className="portal-name">CanHire Ops</span>
                       </div>
                     </div>
                     <div className="switcher-actions">
