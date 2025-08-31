@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import { createClient } from "@supabase/supabase-js";
 import authRoutes from "./routes/auth.js";
+import userRoutes from "./routes/user.js";
 import profileRoutes from "./routes/profile.js";
 import jobseekersRoutes from "./routes/jobseekers.js";
 import clientsRoutes from "./routes/clients.js";
@@ -17,6 +18,8 @@ import timesheetMetricsRoutes from "./routes/timesheetMetrics.js";
 import invoiceMetricsRoutes from "./routes/invoiceMetrics.js";
 import reportsRoutes from "./routes/reports.js";
 import bulkTimesheetsRoutes from "./routes/bulkTimesheets.js";
+import calendarRoutes from "./routes/calendar.js";
+import consentRoutes from "./routes/consent.js";
 import {
   configureSecurityHeaders,
   forceTLS,
@@ -32,17 +35,21 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Trust proxy configuration for Vercel deployment
+// Only trust the first proxy (Vercel) to prevent IP spoofing
+app.set('trust proxy', 1);
+
 // Security Middleware - Apply early in middleware chain
 app.use(forceTLS);
 app.use(configureSecurityHeaders);
 app.use(requestTracker);
-// app.use(apiRateLimiter); // Global rate limiter
+app.use(apiRateLimiter); // Global rate limiter
 app.use(sanitizeInputs); // Global input sanitization
 
 // Standard Middleware
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || "http://localhost:3000",
+    origin: process.env.CLIENT_URL,
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     allowedHeaders: [
@@ -81,6 +88,9 @@ app.get("/health", (req, res) => {
 
 // Auth routes
 app.use("/api/auth", authRoutes);
+
+// User routes
+app.use("/api/users", userRoutes);
 
 // Profile routes
 app.use("/api/profile", profileRoutes);
@@ -123,6 +133,12 @@ app.use("/api/reports", reportsRoutes);
 
 // AI insights routes
 app.use("/api/ai", aiInsightsRoutes);
+
+// Calendar routes
+app.use("/api/calendar", calendarRoutes);
+
+// Consent routes
+app.use("/api/consent", consentRoutes);
 
 // Error handling middleware
 app.use(

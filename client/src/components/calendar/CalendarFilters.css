@@ -1,0 +1,315 @@
+/* CalendarFilters Component Styles */
+.calendar-filters {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius);
+  overflow: visible;
+  transition: var(--transition-normal);
+}
+
+.filters-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-5);
+  border-bottom: 1px solid var(--border);
+  background: #F5F5F5;
+}
+
+.dark .filters-header {
+  background: #1A1A1A;
+}
+
+.filters-title {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+.filters-title h3 {
+  margin: 0;
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text);
+}
+
+.filters-title svg {
+  color: var(--text-muted);
+}
+
+.filters-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+.clear-filters-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  background: var(--danger);
+  color: var(--background);
+  border: none;
+  border-radius: var(--border-radius);
+  padding: var(--spacing-2) var(--spacing-3);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.clear-filters-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.filters-content {
+  padding: var(--spacing-5);
+  overflow: visible;
+  position: relative;
+}
+
+.filters-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: var(--spacing-5);
+  align-items: start;
+}
+
+.filter-group {
+  margin-bottom: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.filter-label {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-3);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  color: var(--text);
+  width: 140px;
+  min-width: 140px;
+}
+
+.filter-label svg {
+  color: var(--text-muted);
+}
+
+.date-range-inputs {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  margin-bottom: var(--spacing-3);
+}
+
+.date-input-group {
+  flex: 1;
+}
+
+.date-input {
+  width: 100%;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-3);
+  font-size: var(--font-size-body);
+  color: var(--text);
+  transition: var(--transition-fast);
+  font-family: var(--font-family);
+}
+
+.date-input:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-color: var(--primary);
+}
+
+.date-separator {
+  color: var(--text-muted);
+  font-weight: var(--font-weight-medium);
+  padding: 0 var(--spacing-2);
+}
+
+.quick-date-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-2);
+}
+
+.quick-date-btn {
+  background: #E0E0E0;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-2) var(--spacing-3);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: var(--transition-fast);
+  text-align: center;
+  font-family: var(--font-family);
+}
+
+.dark .quick-date-btn {
+  background: #333333;
+}
+
+.quick-date-btn:hover {
+  background: var(--primary);
+  color: var(--background);
+  transform: translateY(-1px);
+}
+
+.filter-dropdown {
+  width: 100%;
+  margin-bottom: var(--spacing-3);
+  position: relative;
+  z-index: 10;
+}
+
+/* Ensure dropdown portal renders above other content */
+.filter-group .filter-dropdown [data-dropdown-portal] {
+  z-index: 1000 !important;
+}
+
+.active-filter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--primary);
+  color: var(--background);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-2) var(--spacing-3);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-medium);
+  margin-top: var(--spacing-2);
+}
+
+.remove-filter-btn {
+  background: none;
+  border: none;
+  color: var(--background);
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-fast);
+}
+
+.remove-filter-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+
+
+/* Screen reader only class */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Loading and disabled states */
+.filter-dropdown:disabled,
+.date-input:disabled,
+.quick-date-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.filter-dropdown:disabled:hover,
+.date-input:disabled:hover,
+.quick-date-btn:disabled:hover {
+  transform: none;
+  background: #E0E0E0;
+}
+
+.dark .filter-dropdown:disabled:hover,
+.dark .date-input:disabled:hover,
+.dark .quick-date-btn:disabled:hover {
+  background: #333333;
+}
+
+
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .filters-row {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-4);
+  }
+}
+
+@media (max-width: 768px) {
+  .filters-header {
+    padding: var(--spacing-3);
+  }
+
+  .filters-content {
+    padding: var(--spacing-3);
+  }
+
+  .filters-row {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-3);
+  }
+
+  .filters-actions {
+    flex-direction: column;
+    gap: var(--spacing-2);
+  }
+
+  .clear-filters-btn {
+    font-size: var(--font-size-tiny);
+    padding: var(--spacing-2);
+  }
+
+  .date-range-inputs {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .date-separator {
+    text-align: center;
+    padding: var(--spacing-2) 0;
+  }
+
+  .quick-date-buttons {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-2);
+  }
+}
+
+@media (max-width: 480px) {
+  .filters-title h3 {
+    font-size: var(--font-size-small);
+  }
+
+  .filter-label {
+    font-size: var(--font-size-small);
+    width: auto;
+    min-width: auto;
+  }
+
+  .date-input,
+  .filter-dropdown {
+    font-size: var(--font-size-small);
+    padding: var(--spacing-2);
+  }
+
+  .quick-date-btn {
+    font-size: var(--font-size-tiny);
+    padding: var(--spacing-2);
+  }
+}

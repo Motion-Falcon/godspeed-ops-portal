@@ -26,6 +26,7 @@ export interface AllAuthUserListItem {
   email: string;
   name: string;
   userType: string;
+  roles: string[];
   phoneNumber: string;
   emailVerified: boolean;
   createdAt: string;

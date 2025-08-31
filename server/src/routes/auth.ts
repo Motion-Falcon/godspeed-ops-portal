@@ -1,7 +1,7 @@
 import express from 'express';
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
-import { authenticateToken, isAdminOrRecruiter } from '../middleware/auth.js';
+import { authenticateToken, authorizeRoles } from '../middleware/auth.js';
 import twilio from 'twilio';
 import { activityLogger } from '../middleware/activityLogger.js';
 
@@ -32,10 +32,18 @@ const isTwilioConfigured = !!(
 const supabase = createClient(supabaseUrl, supabaseKey);
 const router = express.Router();
 
+// Ensure phone numbers are in E.164 format with leading '+' for external services and metadata
+const normalizeToE164 = (phone?: string) => {
+  if (!phone) return phone;
+  const trimmed = String(phone).replace(/\s+/g, '');
+  return trimmed.startsWith('+') ? trimmed : `+${trimmed}`;
+};
+
 // Send phone verification code
 router.post('/send-verification', async (req, res) => {
   try {
-    const { phoneNumber } = req.body;
+    let { phoneNumber } = req.body;
+    phoneNumber = normalizeToE164(phoneNumber);
 
     if (!phoneNumber) {
       return res.status(400).json({ error: 'Phone number is required' });
@@ -77,7 +85,8 @@ router.post('/send-verification', async (req, res) => {
 // Verify phone verification code
 router.post('/verify-otp', async (req, res) => {
   try {
-    const { phoneNumber, code, userId } = req.body;
+    let { phoneNumber, code, userId } = req.body as { phoneNumber: string; code: string; userId?: string };
+    phoneNumber = normalizeToE164(phoneNumber) as string;
 
     if (!phoneNumber || !code) {
       return res.status(400).json({ error: 'Phone number and verification code are required' });
@@ -185,7 +194,7 @@ router.post('/register',
         secondaryEntityId: res.locals.newUser?.id,
         secondaryEntityName: res.locals.newUser?.user_metadata?.name || req.body.name || 'Unknown',
         displayMessage: `New user registered: ${res.locals.newUser?.email || req.body.email}`,
-        category: 'candidate_management',
+        category: 'user_management',
         priority: 'normal',
         metadata: {
           userType: res.locals.newUser?.user_metadata?.user_type || 'jobseeker',
@@ -200,6 +209,7 @@ router.post('/register',
   async (req, res) => {
   try {
     const { email, password, name, phoneNumber } = req.body;
+    const normalizedPhone = phoneNumber ? normalizeToE164(phoneNumber) : undefined;
 
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
@@ -217,19 +227,28 @@ router.post('/register',
     const userMetadata: Record<string, any> = {
       name,
       user_type: userType,
+      // Ensure user_role exists for new users
+      user_role: userType === 'recruiter' ? ['recruiter'] : (userType === 'admin' ? ['admin'] : []),
+      // Ensure hierarchy container exists for new users
+      hierarchy: {
+        org_id: null,
+        team_id: null,
+        manager_id: null,
+        level: 0,
+      },
+      phone_verified: true
     };
 
     // If phone number is provided, store it in metadata for now
-    if (phoneNumber) {
-      userMetadata.phoneNumber = phoneNumber;
-      userMetadata.phone_verified = true;
+    if (normalizedPhone) {
+      userMetadata.phoneNumber = normalizedPhone;
     }
     
     // Register the user with email and password
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      phone: phoneNumber,
+      phone: normalizedPhone,
       options: {
         data: userMetadata
       }
@@ -242,6 +261,25 @@ router.post('/register',
     // Check if user is null, which indicates the email already exists
     if (!data.user) {
       return res.status(400).json({ error: 'An account with this email already exists' });
+    }
+
+    // Re-assert metadata (and phone) after signUp to avoid provider defaults overwriting our values
+    if (data.user) {
+      const { user } = data;
+      const currentMeta = (user as any).user_metadata || {};
+      const updatedMeta = {
+        ...currentMeta,
+        phone_verified: true,
+        ...(normalizedPhone ? { phoneNumber: normalizedPhone } : {})
+      };
+      try {
+        await supabase.auth.admin.updateUserById(user.id, {
+          user_metadata: updatedMeta,
+          ...(normalizedPhone ? { phone: normalizedPhone as any } : {})
+        });
+      } catch (metaUpdateErr) {
+        console.error('Post-signup metadata update error:', metaUpdateErr);
+      }
     }
 
     // Store user data for activity logging
@@ -498,6 +536,82 @@ router.post('/update-password', async (req, res) => {
   }
 });
 
+// Complete onboarding: set password (if provided), phone metadata, and mark onboarding complete
+router.post('/complete-onboarding', 
+  authenticateToken, 
+  authorizeRoles(['admin', 'recruiter']),
+  activityLogger({
+    onSuccess: (req, res) => {
+      const user = req.user;
+      const userName = user?.user_metadata?.name || user?.email || 'Unknown';
+      return {
+        actionType: 'complete_onboarding',
+        actionVerb: 'completed',
+        primaryEntityType: 'user',
+        primaryEntityId: user?.id,
+        primaryEntityName: userName,
+        displayMessage: `${userName} completed onboarding`,
+        category: 'user_management',
+        priority: 'normal',
+        metadata: {
+          hasPassword: !!req.body.password,
+          hasPhone: !!req.body.phoneNumber,
+          userType: user?.user_metadata?.user_type || 'unknown'
+        }
+      };
+    }
+  }),
+  async (req, res) => {
+  try {
+    const { password } = req.body as { password?: string; phoneNumber?: string };
+    const phoneNumberRaw = (req.body as any).phoneNumber as string | undefined;
+    const phoneNumber = normalizeToE164(phoneNumberRaw);
+
+    // Get current user from auth middleware
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    // Update password if provided
+    if (password && password.length >= 8) {
+      const { error: passErr } = await supabase.auth.admin.updateUserById(userId, { password });
+      if (passErr) {
+        return res.status(400).json({ error: 'Failed to set password' });
+      }
+    }
+
+    // Merge metadata: set phone and flags
+    const { data: current, error: getErr } = await supabase.auth.admin.getUserById(userId);
+    if (getErr || !current?.user) {
+      return res.status(400).json({ error: 'Failed to load user' });
+    }
+    const currentMeta = (current.user as any).user_metadata || {};
+    const updatedMeta = {
+      ...currentMeta,
+      onboarding_complete: true,
+      phone_verified: !!phoneNumber || currentMeta.phone_verified || false,
+      ...(phoneNumber ? { phoneNumber } : {}),
+    };
+
+    // Update phone field and metadata atomically (two calls as required by API)
+    if (phoneNumber) {
+      await supabase.auth.admin.updateUserById(userId, { phone: phoneNumber as any });
+    }
+    const { error: metaErr } = await supabase.auth.admin.updateUserById(userId, {
+      user_metadata: updatedMeta,
+    });
+    if (metaErr) {
+      return res.status(400).json({ error: 'Failed to update profile' });
+    }
+
+    return res.status(200).json({ success: true });
+  } catch (e) {
+    console.error('Complete onboarding error:', e);
+    return res.status(500).json({ error: 'Failed to complete onboarding' });
+  }
+});
+
 // Resend verification email
 router.post('/resend-verification', async (req, res) => {
   try {
@@ -606,149 +720,6 @@ router.get('/check-phone', async (req, res) => {
   } catch (error) {
     console.error('Error checking phone availability:', error);
     return res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-/**
- * @route GET /api/auth/users
- * @desc Get all auth users with filters and pagination
- * @access Private (Admin, Recruiter)
- */
-router.get('/users', authenticateToken, isAdminOrRecruiter, async (req, res) => {
-  try {
-    // Extract pagination and filter parameters from query
-    const {
-      page = '1',
-      limit = '10',
-      search = '',
-      nameFilter = '',
-      emailFilter = '',
-      mobileFilter = '',
-      userTypeFilter = '',
-      emailVerifiedFilter = ''
-    } = req.query as {
-      page?: string;
-      limit?: string;
-      search?: string;
-      nameFilter?: string;
-      emailFilter?: string;
-      mobileFilter?: string;
-      userTypeFilter?: string;
-      emailVerifiedFilter?: string;
-    };
-
-    const pageNum = parseInt(page);
-    const limitNum = parseInt(limit);
-    const offset = (pageNum - 1) * limitNum;
-
-    // Fetch all users (no filters, no pagination)
-    const { data: allUsers, error } = await supabase.rpc('list_auth_users', {
-      search: null,
-      name_filter: null,
-      email_filter: null,
-      mobile_filter: null,
-      user_type_filter: null,
-      email_verified_filter: null,
-      limit_count: 10000, // fetch a large number
-      offset_count: 0
-    });
-
-    if (error) {
-      console.error('Error calling list_auth_users function:', error);
-      return res.status(500).json({ error: 'Failed to fetch users' });
-    }
-
-    // Format for frontend (raw user JSON, plus some display fields)
-    type ListAuthUser = {
-      id: string;
-      email: string;
-      user_metadata: {
-        name?: string;
-        user_type?: string;
-        phoneNumber?: string;
-        [key: string]: any;
-      } | null;
-      created_at: string;
-      last_sign_in_at: string | null;
-      email_confirmed_at: string | null;
-      [key: string]: any;
-    };
-    let formattedUsers = (allUsers || []).map((user: ListAuthUser) => {
-      const meta = user.user_metadata || {};
-      return {
-        id: user.id,
-        email: user.email,
-        name: meta.name || '',
-        userType: meta.user_type || '',
-        phoneNumber: meta.phoneNumber || '',
-        emailVerified: !!user.email_confirmed_at,
-        createdAt: user.created_at,
-        lastSignInAt: user.last_sign_in_at,
-        raw: user // full raw user JSON
-      };
-    });
-
-    // Apply filtering in Node.js
-    type FormattedUser = {
-      id: string;
-      email: string;
-      name: string;
-      userType: string;
-      phoneNumber: string;
-      emailVerified: boolean;
-      createdAt: string;
-      lastSignInAt: string | null;
-      raw: ListAuthUser;
-    };
-    if (search && search.trim().length > 0) {
-      const s = search.trim().toLowerCase();
-      formattedUsers = formattedUsers.filter((u: FormattedUser) =>
-        u.email.toLowerCase().includes(s) ||
-        u.name.toLowerCase().includes(s) ||
-        u.phoneNumber.toLowerCase().includes(s) ||
-        u.userType.toLowerCase().includes(s)
-      );
-    }
-    if (nameFilter) {
-      formattedUsers = formattedUsers.filter((u: FormattedUser) => u.name.toLowerCase().includes(nameFilter.toLowerCase()));
-    }
-    if (emailFilter) {
-      formattedUsers = formattedUsers.filter((u: FormattedUser) => u.email.toLowerCase().includes(emailFilter.toLowerCase()));
-    }
-    if (mobileFilter) {
-      formattedUsers = formattedUsers.filter((u: FormattedUser) => u.phoneNumber.toLowerCase().includes(mobileFilter.toLowerCase()));
-    }
-    if (userTypeFilter) {
-      formattedUsers = formattedUsers.filter((u: FormattedUser) => u.userType === userTypeFilter);
-    }
-    if (emailVerifiedFilter) {
-      if (emailVerifiedFilter === 'true') {
-        formattedUsers = formattedUsers.filter((u: FormattedUser) => u.emailVerified);
-      } else if (emailVerifiedFilter === 'false') {
-        formattedUsers = formattedUsers.filter((u: FormattedUser) => !u.emailVerified);
-      }
-    }
-
-    const total = allUsers ? allUsers.length : 0;
-    const totalFiltered = formattedUsers.length;
-    const totalPages = Math.ceil(totalFiltered / limitNum);
-    const paginatedUsers = formattedUsers.slice(offset, offset + limitNum);
-
-    res.json({
-      users: paginatedUsers,
-      pagination: {
-        page: pageNum,
-        limit: limitNum,
-        total,
-        totalFiltered,
-        totalPages,
-        hasNextPage: pageNum < totalPages,
-        hasPrevPage: pageNum > 1
-      }
-    });
-  } catch (error) {
-    console.error('Unexpected error fetching auth users:', error);
-    res.status(500).json({ error: 'An unexpected error occurred while fetching auth users' });
   }
 });
 

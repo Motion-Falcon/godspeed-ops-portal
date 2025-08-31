@@ -18,6 +18,7 @@ import {
 } from "../../services/api/position";
 import { ConfirmationModal } from "../../components/ConfirmationModal";
 import { AppHeader } from "../../components/AppHeader";
+import { useLanguage } from "../../contexts/language/language-provider";
 import "../../styles/pages/PositionManagement.css";
 import "../../styles/components/header.css";
 import "../../styles/components/CommonTable.css";
@@ -43,6 +44,7 @@ interface PaginationInfo {
 }
 
 export function PositionManagement() {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
   const [positions, setPositions] = useState<ExtendedPositionData[]>([]);
@@ -140,7 +142,7 @@ export function PositionManagement() {
       const errorMessage =
         err instanceof Error
           ? err.message
-          : "An error occurred while fetching positions";
+          : t("positionManagement.messages.failedToFetchPositions");
       console.error("Error fetching positions:", err);
       setError(errorMessage);
 
@@ -251,7 +253,7 @@ export function PositionManagement() {
       // Refresh the positions list
       await fetchPositions();
 
-      setMessage("Position deleted successfully");
+      setMessage(t("positionManagement.messages.positionDeleted"));
 
       // Auto-hide message after 3 seconds
       setTimeout(() => {
@@ -260,7 +262,7 @@ export function PositionManagement() {
     } catch (err) {
       console.error("Error deleting position:", err);
       const errorMessage =
-        err instanceof Error ? err.message : "Failed to delete position";
+        err instanceof Error ? err.message : t("positionManagement.messages.failedToDeletePosition");
       setDeleteError(errorMessage);
     } finally {
       setIsDeleting(false);
@@ -307,14 +309,14 @@ export function PositionManagement() {
 
   // Format date for display
   const formatDate = (dateString: string | undefined) => {
-    if (!dateString) return "N/A";
+    if (!dateString) return t("positionManagement.nA");
     return new Date(dateString).toLocaleDateString();
   };
 
   return (
     <div className="page-container">
       <AppHeader
-        title="Position Management"
+        title={t("positionManagement.title")}
         actions={
           <>
             <button
@@ -322,14 +324,14 @@ export function PositionManagement() {
               onClick={handleViewDrafts}
             >
               <FileText size={16} />
-              <span>View Drafts</span>
+              <span>{t("positionManagement.viewDrafts")}</span>
             </button>
             <button
               className="button primary button-icon"
               onClick={handleCreatePosition}
             >
               <Plus size={16} />
-              <span>New Position</span>
+              <span>{t("positionManagement.newPosition")}</span>
             </button>
           </>
         }
@@ -343,13 +345,13 @@ export function PositionManagement() {
 
         <div className="card">
           <div className="card-header">
-            <h2>Position List</h2>
+            <h2>{t("positionManagement.positionsTitle")}</h2>
             <div className="filter-container">
               <div className="search-box">
                 <Search size={14} className="search-icon" />
                 <input
                   type="text"
-                  placeholder="Global search..."
+                  placeholder={t("positionManagement.globalSearch")}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="search-input"
@@ -358,7 +360,7 @@ export function PositionManagement() {
                   className="button secondary button-icon reset-filters-btn"
                   onClick={resetFilters}
                 >
-                  <span>Reset Filters</span>
+                  <span>{t("positionManagement.resetFilters")}</span>
                 </button>
               </div>
             </div>
@@ -368,25 +370,27 @@ export function PositionManagement() {
           <div className="pagination-controls top">
             <div className="pagination-info">
               <span className="pagination-text">
-                Showing{" "}
-                {Math.min(
-                  (pagination.page - 1) * pagination.limit + 1,
-                  pagination.total
-                )}{" "}
-                to{" "}
-                {Math.min(pagination.page * pagination.limit, pagination.total)}{" "}
-                of {pagination.total} entries
+                {t("positionManagement.pagination.showing", {
+                  start: Math.min(
+                    (pagination.page - 1) * pagination.limit + 1,
+                    pagination.total
+                  ),
+                  end: Math.min(pagination.page * pagination.limit, pagination.total),
+                  total: pagination.total
+                })}
                 {pagination.totalFiltered !== pagination.total && (
                   <span className="filtered-info">
                     {" "}
-                    (filtered from {pagination.total} total entries)
+                    {t("positionManagement.pagination.filteredFrom", {
+                      total: pagination.total
+                    })}
                   </span>
                 )}
               </span>
             </div>
             <div className="pagination-size-selector">
               <label htmlFor="pageSize" className="page-size-label">
-                Show:
+                {t("positionManagement.pagination.show")}
               </label>
               <select
                 id="pageSize"
@@ -399,7 +403,7 @@ export function PositionManagement() {
                 <option value={50}>50</option>
                 <option value={100}>100</option>
               </select>
-              <span className="page-size-label">per page</span>
+              <span className="page-size-label">{t("positionManagement.pagination.perPage")}</span>
             </div>
           </div>
 
@@ -409,11 +413,11 @@ export function PositionManagement() {
                 <tr>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">Position ID</div>
+                      <div className="column-title">{t("positionManagement.columns.positionId")}</div>
                       <div className="column-search">
                         <input
                           type="text"
-                          placeholder="Search ID..."
+                          placeholder={t("positionManagement.placeholders.searchPositionId")}
                           value={positionIdFilter}
                           onChange={(e) => setPositionIdFilter(e.target.value)}
                           className="column-search-input"
@@ -423,11 +427,11 @@ export function PositionManagement() {
                   </th>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">Position Title</div>
+                      <div className="column-title">{t("positionManagement.columns.title")}</div>
                       <div className="column-search">
                         <input
                           type="text"
-                          placeholder="Search title..."
+                          placeholder={t("positionManagement.placeholders.searchTitle")}
                           value={titleFilter}
                           onChange={(e) => setTitleFilter(e.target.value)}
                           className="column-search-input"
@@ -437,11 +441,11 @@ export function PositionManagement() {
                   </th>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">Client's Name</div>
+                      <div className="column-title">{t("positionManagement.columns.client")}</div>
                       <div className="column-search">
                         <input
                           type="text"
-                          placeholder="Search client..."
+                          placeholder={t("positionManagement.placeholders.searchClient")}
                           value={clientFilter}
                           onChange={(e) => setClientFilter(e.target.value)}
                           className="column-search-input"
@@ -451,7 +455,7 @@ export function PositionManagement() {
                   </th>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">Start Date</div>
+                      <div className="column-title">{t("positionManagement.columns.startDate")}</div>
                       <div className="column-search">
                         <div className="date-picker-wrapper">
                           <input
@@ -467,11 +471,11 @@ export function PositionManagement() {
                   </th>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">Client's Location</div>
+                      <div className="column-title">{t("positionManagement.columns.location")}</div>
                       <div className="column-search">
                         <input
                           type="text"
-                          placeholder="Search location..."
+                          placeholder={t("positionManagement.placeholders.searchLocation")}
                           value={locationFilter}
                           onChange={(e) => setLocationFilter(e.target.value)}
                           className="column-search-input"
@@ -481,7 +485,7 @@ export function PositionManagement() {
                   </th>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">Employment Term</div>
+                      <div className="column-title">{t("positionManagement.columns.employmentTerm")}</div>
                       <div className="column-search">
                         <select
                           value={employmentTermFilter}
@@ -490,7 +494,7 @@ export function PositionManagement() {
                           }
                           className="column-filter-select"
                         >
-                          <option value="all">All Terms</option>
+                          <option value="all">{t("positionManagement.filters.allEmploymentTerms")}</option>
                           {EMPLOYMENT_TERMS.map((term) => (
                             <option key={term} value={term}>
                               {term}
@@ -502,7 +506,7 @@ export function PositionManagement() {
                   </th>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">Employment Type</div>
+                      <div className="column-title">{t("positionManagement.columns.employmentType")}</div>
                       <div className="column-search">
                         <select
                           value={employmentTypeFilter}
@@ -511,7 +515,7 @@ export function PositionManagement() {
                           }
                           className="column-filter-select"
                         >
-                          <option value="all">All Types</option>
+                          <option value="all">{t("positionManagement.filters.allEmploymentTypes")}</option>
                           {EMPLOYMENT_TYPES.map((type) => (
                             <option key={type} value={type}>
                               {type}
@@ -523,7 +527,7 @@ export function PositionManagement() {
                   </th>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">Position Category</div>
+                      <div className="column-title">{t("positionManagement.columns.category")}</div>
                       <div className="column-search">
                         <select
                           value={positionCategoryFilter}
@@ -532,7 +536,7 @@ export function PositionManagement() {
                           }
                           className="column-filter-select"
                         >
-                          <option value="all">All Categories</option>
+                          <option value="all">{t("positionManagement.filters.allCategories")}</option>
                           {POSITION_CATEGORIES.map((category) => (
                             <option key={category} value={category}>
                               {category}
@@ -544,14 +548,14 @@ export function PositionManagement() {
                   </th>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">Experience</div>
+                      <div className="column-title">{t("positionManagement.columns.experience")}</div>
                       <div className="column-search">
                         <select
                           value={experienceFilter}
                           onChange={(e) => setExperienceFilter(e.target.value)}
                           className="column-filter-select"
                         >
-                          <option value="all">All Experience</option>
+                          <option value="all">{t("positionManagement.filters.allExperience")}</option>
                           {EXPERIENCE_LEVELS.map((level) => (
                             <option key={level} value={level}>
                               {level}
@@ -563,7 +567,7 @@ export function PositionManagement() {
                   </th>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">Show on Portal</div>
+                      <div className="column-title">{t("positionManagement.columns.showOnPortal")}</div>
                       <div className="column-search">
                         <select
                           value={showOnPortalFilter}
@@ -572,20 +576,20 @@ export function PositionManagement() {
                           }
                           className="column-filter-select"
                         >
-                          <option value="all">All</option>
-                          <option value="true">Yes</option>
-                          <option value="false">No</option>
+                          <option value="all">{t("positionManagement.filters.allPortalStatus")}</option>
+                          <option value="true">{t("positionManagement.yes")}</option>
+                          <option value="false">{t("positionManagement.no")}</option>
                         </select>
                       </div>
                     </div>
                   </th>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">Actions</div>
+                      <div className="column-title">{t("positionManagement.columns.actions")}</div>
                       <div className="column-search">
                         <div className="actions-info">
                           <span className="actions-help-text">
-                            View • Edit • Delete
+                            {t("positionManagement.actions.helpText")}
                           </span>
                         </div>
                       </div>
@@ -646,7 +650,7 @@ export function PositionManagement() {
                   <tr>
                     <td colSpan={11} className="empty-state-cell">
                       <div className="empty-state">
-                        <p>No positions match your search criteria.</p>
+                        <p>{t("positionManagement.emptyState.noPositions")}</p>
                       </div>
                     </td>
                   </tr>
@@ -654,7 +658,7 @@ export function PositionManagement() {
                   positions.map((position) => (
                     <tr key={position.id}>
                       <td className="position-id-cell">
-                        {position.positionCode || "N/A"}
+                        {position.positionCode || t("positionManagement.nA")}
                       </td>
                       <td className="title-cell">{position.title}</td>
                       <td className="client-cell">{position.clientName}</td>
@@ -667,16 +671,16 @@ export function PositionManagement() {
                         {position.city}, {position.province}
                       </td>
                       <td className="employment-term-cell">
-                        {position.employmentTerm || "N/A"}
+                        {position.employmentTerm || t("positionManagement.nA")}
                       </td>
                       <td className="employment-type-cell">
-                        {position.employmentType || "N/A"}
+                        {position.employmentType || t("positionManagement.nA")}
                       </td>
                       <td className="position-category-cell">
-                        {position.positionCategory || "N/A"}
+                        {position.positionCategory || t("positionManagement.nA")}
                       </td>
                       <td className="experience-cell">
-                        {position.experience || "N/A"}
+                        {position.experience || t("positionManagement.nA")}
                       </td>
                       <td className="status-cell">
                         <span
@@ -684,7 +688,7 @@ export function PositionManagement() {
                             position.showOnJobPortal ? "active" : "inactive"
                           }`}
                         >
-                          {position.showOnJobPortal ? "Yes" : "No"}
+                          {position.showOnJobPortal ? t("positionManagement.yes") : t("positionManagement.no")}
                         </span>
                       </td>
                       <td className="actions-cell">
@@ -694,8 +698,8 @@ export function PositionManagement() {
                             onClick={() =>
                               handleViewPosition(position.id as string)
                             }
-                            title="View position details"
-                            aria-label="View position"
+                            title={t("positionManagement.actions.viewPosition")}
+                            aria-label={t("positionManagement.actions.viewPosition")}
                           >
                             <Eye size={16} />
                           </button>
@@ -704,8 +708,8 @@ export function PositionManagement() {
                             onClick={() =>
                               confirmEditPosition(position.id as string)
                             }
-                            title="Edit position"
-                            aria-label="Edit position"
+                            title={t("positionManagement.actions.editPosition")}
+                            aria-label={t("positionManagement.actions.editPosition")}
                           >
                             <Pencil size={16} />
                           </button>
@@ -714,8 +718,8 @@ export function PositionManagement() {
                             onClick={() =>
                               confirmDeletePosition(position.id as string)
                             }
-                            title="Delete position"
-                            aria-label="Delete position"
+                            title={t("positionManagement.actions.deletePosition")}
+                            aria-label={t("positionManagement.actions.deletePosition")}
                           >
                             <Trash2 size={16} />
                           </button>
@@ -733,7 +737,10 @@ export function PositionManagement() {
             <div className="pagination-controls bottom">
               <div className="pagination-info">
                 <span className="pagination-text">
-                  Page {pagination.page} of {pagination.totalPages}
+                  {t("positionManagement.pagination.pageOf", {
+                    current: pagination.page,
+                    total: pagination.totalPages
+                  })}
                 </span>
               </div>
               <div className="pagination-buttons">
@@ -741,11 +748,11 @@ export function PositionManagement() {
                   className="pagination-btn prev"
                   onClick={handlePreviousPage}
                   disabled={!pagination.hasPrevPage}
-                  title="Previous page"
-                  aria-label="Previous page"
+                  title={t("positionManagement.pagination.previousPage")}
+                  aria-label={t("positionManagement.pagination.previousPage")}
                 >
                   <ChevronLeft size={16} />
-                  <span>Previous</span>
+                  <span>{t("positionManagement.pagination.previous")}</span>
                 </button>
 
                 {/* Page numbers */}
@@ -771,7 +778,7 @@ export function PositionManagement() {
                             pageNum === pagination.page ? "active" : ""
                           }`}
                           onClick={() => handlePageChange(pageNum)}
-                          aria-label={`Go to page ${pageNum}`}
+                          aria-label={t("positionManagement.pagination.goToPage", { page: pageNum })}
                         >
                           {pageNum}
                         </button>
@@ -784,10 +791,10 @@ export function PositionManagement() {
                   className="pagination-btn next"
                   onClick={handleNextPage}
                   disabled={!pagination.hasNextPage}
-                  title="Next page"
-                  aria-label="Next page"
+                  title={t("positionManagement.pagination.nextPage")}
+                  aria-label={t("positionManagement.pagination.nextPage")}
                 >
-                  <span>Next</span>
+                  <span>{t("positionManagement.pagination.next")}</span>
                   <ChevronRight size={16} />
                 </button>
               </div>
@@ -799,12 +806,12 @@ export function PositionManagement() {
       {/* Delete Confirmation Modal */}
       <ConfirmationModal
         isOpen={showDeleteConfirmation}
-        title="Delete Position"
-        message={`Are you sure you want to delete this position? This action cannot be undone.${
-          deleteError ? `\n\nError: ${deleteError}` : ""
+        title={t("positionManagement.deleteModal.title")}
+        message={`${t("positionManagement.deleteModal.message", { title: "" })}${
+          deleteError ? `\n\n${t("positionManagement.deleteModal.error", { error: deleteError })}` : ""
         }`}
-        confirmText={isDeleting ? "Deleting..." : "Delete Position"}
-        cancelText="Cancel"
+        confirmText={isDeleting ? t("positionManagement.deleteModal.deleting") : t("positionManagement.deleteModal.confirm")}
+        cancelText={t("positionManagement.deleteModal.cancel")}
         confirmButtonClass="danger"
         onConfirm={handleDeletePosition}
         onCancel={() => setShowDeleteConfirmation(false)}
@@ -813,10 +820,10 @@ export function PositionManagement() {
       {/* Edit Confirmation Modal */}
       <ConfirmationModal
         isOpen={showEditConfirmation}
-        title="Edit Position"
-        message="Are you sure you want to edit this position's information?"
-        confirmText="Edit Position"
-        cancelText="Cancel"
+        title={t("positionManagement.editModal.title")}
+        message={t("positionManagement.editModal.message", { title: "" })}
+        confirmText={t("positionManagement.editModal.confirm")}
+        cancelText={t("positionManagement.editModal.cancel")}
         confirmButtonClass="primary"
         onConfirm={() => {
           navigate(`/position-management/edit/${positionToEdit}`);

@@ -11,6 +11,7 @@ import {
 } from '../../services/api/invoice';
 import { AppHeader } from '../../components/AppHeader';
 import { ConfirmationModal } from '../../components/ConfirmationModal';
+import { useLanguage } from '../../contexts/language/language-provider';
 import '../../styles/pages/InvoiceManagement.css';
 
 interface PaginationInfo {
@@ -23,14 +24,14 @@ interface PaginationInfo {
   hasPrevPage: boolean;
 }
 
-function getClientDisplayName(client: Record<string, unknown> | undefined): string {
+function getClientDisplayName(client: Record<string, unknown> | undefined, t: (key: string) => string): string {
   return (
     String(
       client?.companyName ||
       client?.company_name ||
       client?.shortCode ||
       client?.short_code ||
-      'Unknown Client'
+      t('invoiceManagement.unknownClient')
     )
   );
 }
@@ -40,6 +41,8 @@ function getClientEmail(client: Record<string, unknown> | undefined): string {
 }
 
 export function InvoiceList() {
+  const { t } = useLanguage();
+  
   // State management
   const [invoices, setInvoices] = useState<InvoiceData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -261,14 +264,14 @@ export function InvoiceList() {
   // Function to send invoice to client (robust, like InvoiceManagement)
   const sendInvoiceToClient = async (invoice: InvoiceData) => {
     if (!invoice.id) {
-      setSendEmailMessage("Missing invoice ID");
+      setSendEmailMessage(t('invoiceManagement.missingEmailForSend'));
       setSendEmailStatus('error');
       return;
     }
 
     const emailToSend = invoice.invoice_sent_to || getClientEmail(invoice.client) || '';
     if (!emailToSend) {
-      setSendEmailMessage("No email address found for this invoice");
+      setSendEmailMessage(t('invoiceManagement.noEmailAddress'));
       setSendEmailStatus('error');
       return;
     }
@@ -290,11 +293,11 @@ export function InvoiceList() {
           )
         );
       } else {
-        setSendEmailMessage(response.message || "Failed to send invoice");
+        setSendEmailMessage(response.message || t('invoiceManagement.sendInvoiceFailed'));
         setSendEmailStatus('error');
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to send invoice. Please try again.";
+      const errorMessage = err instanceof Error ? err.message : t('invoiceManagement.sendInvoiceFailed');
       setSendEmailMessage(errorMessage);
       setSendEmailStatus('error');
     } finally {
@@ -557,11 +560,11 @@ export function InvoiceList() {
                     return (
                       <tr key={String(invoice.id)}>
                         <td className="invoice-number-cell"># {invoice.invoiceNumber}</td>
-                        <td className="client-cell">{getClientDisplayName(invoice.client)}</td>
+                        <td className="client-cell">{getClientDisplayName(invoice.client, t)}</td>
                         <td className="client-email-cell">{getClientEmail(invoice.client)}</td>
                         <td className="date-cell" style={{textAlign: 'center'}}>{formatted.formattedInvoiceDate}</td>
-                        <td className="email-sent-cell">{invoice.emailSent ? 'Yes' : 'No'}</td>
-                        <td className="pdf-generated-cell">{invoice.documentGenerated ? 'Yes' : 'No'}</td>
+                        <td className="email-sent-cell">{invoice.emailSent ? t('invoiceManagement.filters.yes') : t('invoiceManagement.filters.no')}</td>
+                        <td className="pdf-generated-cell">{invoice.documentGenerated ? t('invoiceManagement.filters.yes') : t('invoiceManagement.filters.no')}</td>
                         <td className="send-email-cell">
                           <button
                             className={`button button-xs send-email-cell ${invoice.emailSent ? 'resend-email' : 'send-email'}`}
@@ -569,9 +572,9 @@ export function InvoiceList() {
                             disabled={isCurrentlySending || !hasEmail || !invoice.documentGenerated}
                             title={
                               !hasEmail 
-                                ? "No email address available" 
+                                ? t('invoiceManagement.noEmailAddress') 
                                 : !invoice.documentGenerated 
-                                  ? "PDF must be generated first"
+                                  ? t('invoiceManagement.pdfNotGenerated')
                                   : invoice.emailSent 
                                     ? `Send again to ${clientEmail}` 
                                     : `Send to ${clientEmail}`
@@ -597,16 +600,16 @@ export function InvoiceList() {
                             <button
                               className="action-icon-btn view-btn"
                               onClick={() => handleViewInvoice(String(invoice.id))}
-                              title="View invoice details"
-                              aria-label="View invoice"
+                              title={t('invoiceManagement.viewInvoiceDetails')}
+                              aria-label={t('invoiceManagement.viewInvoice')}
                             >
                               <Eye size={16} />
                             </button>
                             <button
                               className="action-icon-btn delete-btn"
                               onClick={() => handleDeleteClick(invoice)}
-                              title="Delete invoice"
-                              aria-label="Delete invoice"
+                              title={t('invoiceManagement.deleteInvoice')}
+                              aria-label={t('invoiceManagement.deleteInvoice')}
                             >
                               <Trash2 size={16} />
                             </button>
@@ -632,11 +635,11 @@ export function InvoiceList() {
                   className="pagination-btn prev"
                   onClick={handlePreviousPage}
                   disabled={!pagination.hasPrevPage}
-                  title="Previous page"
-                  aria-label="Previous page"
+                  title={t('invoiceManagement.previousPage')}
+                  aria-label={t('invoiceManagement.previousPage')}
                 >
                   <ChevronLeft size={16} />
-                  <span>Previous</span>
+                  <span>{t('common.previous')}</span>
                 </button>
                 {/* Page numbers */}
                 <div className="page-numbers">
@@ -667,10 +670,10 @@ export function InvoiceList() {
                   className="pagination-btn next"
                   onClick={handleNextPage}
                   disabled={!pagination.hasNextPage}
-                  title="Next page"
-                  aria-label="Next page"
+                  title={t('invoiceManagement.nextPage')}
+                  aria-label={t('invoiceManagement.nextPage')}
                 >
-                  <span>Next</span>
+                  <span>{t('common.next')}</span>
                   <ChevronRight size={16} />
                 </button>
               </div>
@@ -681,10 +684,10 @@ export function InvoiceList() {
       {/* Delete Confirmation Modal */}
       <ConfirmationModal
         isOpen={isDeleteModalOpen}
-        title="Delete Invoice"
-        message={`Are you sure you want to delete the invoice "${invoiceToDelete ? invoiceToDelete.invoiceNumber : 'Unknown'}"? This action cannot be undone.${deleteError ? `\n\nError: ${deleteError}` : ''}`}
-        confirmText={isDeleting ? 'Deleting...' : 'Delete Invoice'}
-        cancelText="Cancel"
+        title={t('invoiceManagement.deleteInvoice')}
+        message={`${t('invoiceManagement.deleteInvoiceConfirm').replace('this invoice', `"${invoiceToDelete ? invoiceToDelete.invoiceNumber : t('invoiceManagement.unknown')}"`)}${deleteError ? `\n\nError: ${deleteError}` : ''}`}
+        confirmText={isDeleting ? t('buttons.deleting') : t('invoiceManagement.deleteInvoice')}
+        cancelText={t('buttons.cancel')}
         confirmButtonClass="danger"
         onConfirm={handleConfirmDelete}
         onCancel={handleCancelDelete}

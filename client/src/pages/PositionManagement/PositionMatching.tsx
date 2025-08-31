@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
+import { useLanguage } from "../../contexts/language/language-provider";
 import Lottie from "lottie-react";
 import {
   Users,
@@ -57,12 +58,13 @@ interface AssignedJobseeker {
   similarityScore?: number;
 }
 
-const loadingMessages = [
-  { text: "🧠 Initializing AI matching engine...", duration: 1000 },
-  { text: "🔬 Processing candidate data vectors...", duration: 1200 },
-  { text: "⚡ Running neural network analysis...", duration: 1000 },
-  { text: "🎯 Computing similarity algorithms...", duration: 800 },
-  { text: "🚀 Optimizing match predictions...", duration: 600 },
+// Loading messages will be translated in the component
+const loadingMessageKeys = [
+  { key: "positionMatching.ai.initializingEngine", duration: 1000 },
+  { key: "positionMatching.ai.processingVectors", duration: 1200 },
+  { key: "positionMatching.ai.runningAnalysis", duration: 1000 },
+  { key: "positionMatching.ai.computingAlgorithms", duration: 800 },
+  { key: "positionMatching.ai.optimizingPredictions", duration: 600 },
 ];
 
 export function PositionMatching() {
@@ -104,6 +106,7 @@ export function PositionMatching() {
   );
 
   const { isAdmin, isRecruiter } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -116,9 +119,9 @@ export function PositionMatching() {
     positions.map((position) => ({
       id: position.id || '',
       value: position.id || '',
-      label: `${position.clientName || 'Unknown Client'} - ${position.title}`,
-      sublabel: `${position.positionCategory} • ${position.city}, ${position.province}`
-    })), [positions]
+      label: `${position.clientName || t("positionMatching.unknownClient")} - ${position.title}`,
+      sublabel: `${position.positionCategory} • ${position.city || t("positionMatching.unknownCity")}, ${position.province || t("positionMatching.unknownProvince")}`
+    })), [positions, t]
   );
 
   const vacantSlotsCount = useMemo(() => {
@@ -153,9 +156,9 @@ export function PositionMatching() {
 
     const interval = setInterval(() => {
       setLoadingMessageIndex((prevIndex) => 
-        (prevIndex + 1) % loadingMessages.length
+        (prevIndex + 1) % loadingMessageKeys.length
       );
-    }, loadingMessages[loadingMessageIndex]?.duration || 1000);
+    }, loadingMessageKeys[loadingMessageIndex]?.duration || 1000);
 
     return () => clearInterval(interval);
   }, [candidatesLoading, loadingMessageIndex]);
@@ -226,8 +229,8 @@ export function PositionMatching() {
             userId: assignment.candidate_id,
             name: assignment.jobseekerProfile
               ? `${assignment.jobseekerProfile.first_name} ${assignment.jobseekerProfile.last_name}`
-              : "Unknown",
-            email: assignment.jobseekerProfile?.email || "N/A",
+              : t("positionMatching.notSpecified"),
+            email: assignment.jobseekerProfile?.email || t("positionMatching.notSpecified"),
             mobile: assignment.jobseekerProfile?.mobile || undefined,
             similarityScore: undefined,
           })
@@ -244,7 +247,7 @@ export function PositionMatching() {
     } finally {
       setAssignedJobseekersLoading(false);
     }
-  }, []);
+  }, [t]);
 
   // Initialize component
   useEffect(() => {
@@ -305,7 +308,7 @@ export function PositionMatching() {
     if (!selectedPosition?.id) return;
 
     if (assignedJobseekers.length >= (selectedPosition.numberOfPositions || 1)) {
-      setStatusWithTimeout("All positions are filled for this role", "error");
+      setStatusWithTimeout(t("positionMatching.errors.allPositionsFilled"), "error");
       return;
     }
 
@@ -325,19 +328,19 @@ export function PositionMatching() {
       if (response.success) {
         await fetchAssignedJobseekers(selectedPosition.id);
         setStatusWithTimeout(
-          `${candidate.name} has been successfully assigned to the position`,
+          t("positionMatching.messages.candidateAssignedSuccess", { candidateName: candidate.name }),
           "success"
         );
       } else {
-        setStatusWithTimeout(response.message || "Failed to assign candidate", "error");
+        setStatusWithTimeout(response.message || t("positionMatching.errors.assignCandidateFailed"), "error");
       }
     } catch (error) {
       console.error("Error assigning candidate:", error);
-      setStatusWithTimeout("Failed to assign candidate. Please try again.", "error");
+      setStatusWithTimeout(t("positionMatching.errors.assignCandidateGeneric"), "error");
     } finally {
       setAssignmentLoading(null);
     }
-  }, [selectedPosition, assignedJobseekers.length, fetchAssignedJobseekers, setStatusWithTimeout]);
+  }, [selectedPosition, assignedJobseekers.length, fetchAssignedJobseekers, setStatusWithTimeout, t]);
 
   // Handle candidate removal
   const handleRemoveCandidate = useCallback(async (candidateId: string) => {
@@ -358,19 +361,19 @@ export function PositionMatching() {
 
         await fetchAssignedJobseekers(selectedPosition.id);
         setStatusWithTimeout(
-          `${removedCandidate?.name || "Candidate"} has been successfully removed from the position`,
+          t("positionMatching.messages.candidateRemovedSuccess", { candidateName: removedCandidate?.name || t("positionMatching.candidate") }),
           "success"
         );
       } else {
-        setStatusWithTimeout(response.message || "Failed to remove candidate", "error");
+        setStatusWithTimeout(response.message || t("positionMatching.errors.removeCandidateFailed"), "error");
       }
     } catch (error) {
       console.error("Error removing candidate:", error);
-      setStatusWithTimeout("Failed to remove candidate. Please try again.", "error");
+      setStatusWithTimeout(t("positionMatching.errors.removeCandidateGeneric"), "error");
     } finally {
       setAssignmentLoading(null);
     }
-  }, [selectedPosition?.id, assignedJobseekers, fetchAssignedJobseekers, setStatusWithTimeout]);
+  }, [selectedPosition?.id, assignedJobseekers, fetchAssignedJobseekers, setStatusWithTimeout, t]);
 
   // Pagination handlers
   const handlePageChange = useCallback((newPage: number) => {
@@ -446,22 +449,32 @@ export function PositionMatching() {
   // Modal message builder
   const getConfirmationMessage = useCallback(() => {
     if (!confirmationModal.candidate || !selectedPosition) return "";
-    const candidateName = (confirmationModal.candidate as PositionCandidate).name || (confirmationModal.candidate as AssignedJobseeker).name;
-    const candidateEmail = (confirmationModal.candidate as PositionCandidate).email || (confirmationModal.candidate as AssignedJobseeker).email;
-    const positionTitle = selectedPosition.title;
-    const clientName = selectedPosition.clientName || "Unknown Client";
+    const candidateName = (confirmationModal.candidate as PositionCandidate).name || (confirmationModal.candidate as AssignedJobseeker).name || "";
+    const candidateEmail = (confirmationModal.candidate as PositionCandidate).email || (confirmationModal.candidate as AssignedJobseeker).email || "";
+    const positionTitle = selectedPosition.title || "";
+    const clientName = selectedPosition.clientName || t("positionMatching.unknownClient");
     if (confirmationModal.action === "assign") {
-      return `Are you sure you want to assign "${candidateName}" to the position "${positionTitle}" for client "${clientName}"? Upon confirmation, an email will be sent to ${candidateEmail}.`;
+      return t("positionMatching.modal.assignConfirmation", {
+        candidateName,
+        positionTitle,
+        clientName,
+        candidateEmail
+      });
     } else if (confirmationModal.action === "remove") {
-      return `Are you sure you want to remove "${candidateName}" from the position "${positionTitle}" for client "${clientName}"? Upon confirmation, an email will be sent to ${candidateEmail}.`;
+      return t("positionMatching.modal.removeConfirmation", {
+        candidateName,
+        positionTitle,
+        clientName,
+        candidateEmail
+      });
     }
     return "";
-  }, [confirmationModal, selectedPosition]);
+  }, [confirmationModal, selectedPosition, t]);
 
   return (
     <div className="position-matching">
       <AppHeader
-        title="Position Matching"
+        title={t("positionMatching.title")}
         statusMessage={statusMessage}
         statusType={statusType}
       />
@@ -473,7 +486,7 @@ export function PositionMatching() {
             <div className="panel-header">
               <div className="header-left">
                 <Users className="header-icon" size={20} />
-                <h2>Best Match Jobseekers</h2>
+                <h2>{t("positionMatching.bestMatchJobseekers")}</h2>
                 {selectedPosition && (
                   <span className="position-badge">
                     {selectedPosition.title}
@@ -488,7 +501,7 @@ export function PositionMatching() {
                       <Search className="search-icon" size={16} />
                       <input
                         type="text"
-                        placeholder="Search jobseekers..."
+                        placeholder={t("positionMatching.searchJobseekers")}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="search-input"
@@ -502,14 +515,14 @@ export function PositionMatching() {
                       onChange={(e) => setExperienceFilter(e.target.value)}
                       className="filter-select"
                     >
-                      <option value="all">All Experience</option>
-                      <option value="0-6 Months">0-6 Months</option>
-                      <option value="6-12 Months">6-12 Months</option>
-                      <option value="1-2 Years">1-2 Years</option>
-                      <option value="2-3 Years">2-3 Years</option>
-                      <option value="3-4 Years">3-4 Years</option>
-                      <option value="4-5 Years">4-5 Years</option>
-                      <option value="5+ Years">5+ Years</option>
+                      <option value="all">{t("positionMatching.filters.allExperience")}</option>
+                      <option value="0-6 Months">{t("positionMatching.filters.experience06Months")}</option>
+                      <option value="6-12 Months">{t("positionMatching.filters.experience612Months")}</option>
+                      <option value="1-2 Years">{t("positionMatching.filters.experience12Years")}</option>
+                      <option value="2-3 Years">{t("positionMatching.filters.experience23Years")}</option>
+                      <option value="3-4 Years">{t("positionMatching.filters.experience34Years")}</option>
+                      <option value="4-5 Years">{t("positionMatching.filters.experience45Years")}</option>
+                      <option value="5+ Years">{t("positionMatching.filters.experience5Plus")}</option>
                     </select>
 
                     <select
@@ -517,9 +530,9 @@ export function PositionMatching() {
                       onChange={(e) => setAvailabilityFilter(e.target.value)}
                       className="filter-select"
                     >
-                      <option value="all">All Availability</option>
-                      <option value="Full-Time">Full-Time</option>
-                      <option value="Part-Time">Part-Time</option>
+                      <option value="all">{t("positionMatching.filters.allAvailability")}</option>
+                      <option value="Full-Time">{t("positionMatching.filters.fullTime")}</option>
+                      <option value="Part-Time">{t("positionMatching.filters.partTime")}</option>
                     </select>
 
                     <div className="container-form">
@@ -536,7 +549,7 @@ export function PositionMatching() {
                         htmlFor="weekendAvailabilityOnly"
                         className="label-form"
                       >
-                        Weekend Available
+                        {t("positionMatching.filters.weekendAvailable")}
                       </label>
                     </div>
 
@@ -546,7 +559,7 @@ export function PositionMatching() {
                         checked={onlyAvailable}
                         onChange={(e) => setOnlyAvailable(e.target.checked)}
                       />
-                      Available Only
+                      {t("positionMatching.filters.availableOnly")}
                     </label>
                   </div>
                 </div>
@@ -557,10 +570,9 @@ export function PositionMatching() {
               {!selectedPosition ? (
                 <div className="empty-state">
                   <Users className="empty-icon" size={48} />
-                  <h3>Select a Position</h3>
+                  <h3>{t("positionMatching.emptyState.selectPosition")}</h3>
                   <p>
-                    Choose a position from the dropdown to view matching
-                    Jobseekers
+                    {t("positionMatching.emptyState.selectPositionDescription")}
                   </p>
                 </div>
               ) : candidatesLoading ? (
@@ -576,19 +588,19 @@ export function PositionMatching() {
                     ) : (
                       <div className="lottie-placeholder">
                         <div className="loading-spinner"></div>
-                        <p>AI Processing</p>
+                        <p>{t("positionMatching.ai.processing")}</p>
                       </div>
                     )}
                   </div>
                   <div className="ai-loading-message">
-                    <h3>{loadingMessages[loadingMessageIndex]?.text}</h3>
+                    <h3>{t(loadingMessageKeys[loadingMessageIndex]?.key || "positionMatching.ai.processing")}</h3>
                     <div className="ai-progress-bar">
                       <div
                         className="ai-progress-fill"
                         style={{
                           width: `${
                             ((loadingMessageIndex + 1) /
-                              loadingMessages.length) *
+                              loadingMessageKeys.length) *
                             100
                           }%`,
                         }}
@@ -596,14 +608,14 @@ export function PositionMatching() {
                       <div className="progress-pulse"></div>
                     </div>
                     <p className="ai-loading-subtitle">
-                      Training models on {selectedPosition?.title} parameters...
+                      {t("positionMatching.ai.trainingModels", { positionTitle: selectedPosition?.title || "" })}
                     </p>
                     <div className="algorithm-metrics">
                       <span className="metric">
-                        Accuracy: {(85 + Math.random() * 10).toFixed(1)}%
+                        {t("positionMatching.ai.accuracy", { percentage: (85 + Math.random() * 10).toFixed(1) })}
                       </span>
                       <span className="metric">
-                        Processing: {(loadingMessageIndex + 1) * 1247} vectors
+                        {t("positionMatching.ai.processingVectors", { count: (loadingMessageIndex + 1) * 1247 })}
                       </span>
                     </div>
                   </div>
@@ -611,8 +623,8 @@ export function PositionMatching() {
               ) : candidates.length === 0 ? (
                 <div className="empty-state">
                   <Users className="empty-icon" size={48} />
-                  <h3>No Jobseekers Found</h3>
-                  <p>No jobseekers match the current filters</p>
+                  <h3>{t("positionMatching.emptyState.noJobseekers")}</h3>
+                  <p>{t("positionMatching.emptyState.noJobseekersDescription")}</p>
                 </div>
               ) : (
                 <>
@@ -656,12 +668,12 @@ export function PositionMatching() {
                                 {assignmentLoading === candidate.candidateId ? (
                                   <>
                                     <div className="loading-spinner small"></div>
-                                    Removing...
+                                    {t("positionMatching.buttons.removing")}
                                   </>
                                 ) : (
                                   <>
                                     <Minus size={16} />
-                                    Remove
+                                    {t("buttons.remove")}
                                   </>
                                 )}
                               </button>
@@ -679,12 +691,12 @@ export function PositionMatching() {
                                 {assignmentLoading === candidate.candidateId ? (
                                   <>
                                     <div className="loading-spinner small"></div>
-                                    Assigning...
+                                    {t("positionMatching.buttons.assigning")}
                                   </>
                                 ) : (
                                   <>
                                     <Plus size={16} />
-                                    Assign
+                                    {t("buttons.assign")}
                                   </>
                                 )}
                               </button>
@@ -701,14 +713,14 @@ export function PositionMatching() {
                             <div className="meta-item">
                               <Clock size={14} />
                               <span>
-                                {candidate.experience || "Not specified"}
+                                {candidate.experience || t("positionMatching.notSpecified")}
                               </span>
                             </div>
 
                             <div className="meta-item">
                               <Calendar size={14} />
                               <span>
-                                {candidate.availability || "Not specified"}
+                                {candidate.availability || t("positionMatching.notSpecified")}
                               </span>
                             </div>
 
@@ -720,8 +732,8 @@ export function PositionMatching() {
                               }`}
                             >
                               {candidate.isAvailable
-                                ? "Available"
-                                : "Unavailable"}
+                                ? t("positionMatching.status.available")
+                                : t("positionMatching.status.unavailable")}
                             </div>
 
                             {candidate.weekendAvailability !== undefined && (
@@ -733,8 +745,8 @@ export function PositionMatching() {
                                 }`}
                               >
                                 {candidate.weekendAvailability
-                                  ? "Weekend Available"
-                                  : "No Weekends"}
+                                  ? t("positionMatching.status.weekendAvailable")
+                                  : t("positionMatching.status.noWeekends")}
                               </div>
                             )}
                           </div>
@@ -747,19 +759,20 @@ export function PositionMatching() {
                   <div className="pagination-controls">
                     <div className="pagination-info">
                       <span className="pagination-text">
-                        Showing {(pagination.page - 1) * pagination.limit + 1}{" "}
-                        to{" "}
-                        {Math.min(
-                          pagination.page * pagination.limit,
-                          pagination.totalFiltered
-                        )}{" "}
-                        of {pagination.totalFiltered} jobseekers
+                        {t("positionMatching.pagination.showing", {
+                          start: (pagination.page - 1) * pagination.limit + 1,
+                          end: Math.min(
+                            pagination.page * pagination.limit,
+                            pagination.totalFiltered
+                          ),
+                          total: pagination.totalFiltered
+                        })}
                       </span>
                     </div>
 
                     <div className="pagination-size-selector">
                       <label htmlFor="pageSize" className="page-size-label">
-                        Show:
+                        {t("positionMatching.pagination.show")}:
                       </label>
                       <select
                         id="pageSize"
@@ -774,7 +787,7 @@ export function PositionMatching() {
                         <option value={25}>25</option>
                         <option value={50}>50</option>
                       </select>
-                      <span className="page-size-label">per page</span>
+                      <span className="page-size-label">{t("positionMatching.pagination.perPage")}</span>
                     </div>
 
                     <div className="pagination-buttons">
@@ -784,11 +797,11 @@ export function PositionMatching() {
                         disabled={!pagination.hasPrevPage}
                       >
                         <ChevronLeft size={16} />
-                        <span>Previous</span>
+                        <span>{t("buttons.previous")}</span>
                       </button>
 
                       <span className="page-indicator">
-                        Page {pagination.page} of {pagination.totalPages}
+                        {t("positionMatching.pagination.pageOf", { current: pagination.page, total: pagination.totalPages })}
                       </span>
 
                       <button
@@ -796,7 +809,7 @@ export function PositionMatching() {
                         onClick={handleNextPage}
                         disabled={!pagination.hasNextPage}
                       >
-                        <span>Next</span>
+                        <span>{t("buttons.next")}</span>
                         <ChevronRight size={16} />
                       </button>
                     </div>
@@ -811,33 +824,33 @@ export function PositionMatching() {
             <div className="panel-header">
               <div className="header-left">
                 <MapPin className="header-icon" size={20} />
-                <h2>Position Assignment</h2>
+                <h2>{t("positionMatching.positionAssignment")}</h2>
               </div>
             </div>
 
             <div className="position-content">
               {/* Position Selector */}
               <div className="position-selector">
-                <label htmlFor="position-select">Select Position:</label>
+                <label htmlFor="position-select">{t("positionMatching.selectPosition")}:</label>
                 {positionsLoading ? (
                   <div className="position-loading">
                     <div className="loading-spinner"></div>
-                    <span>Loading positions...</span>
+                    <span>{t("positionMatching.loadingPositions")}</span>
                   </div>
                 ) : (
                   <CustomDropdown
                     options={positionOptions}
                     selectedOption={selectedPosition ? {
                       id: selectedPosition.id || '',
-                      label: `${selectedPosition.clientName || 'Unknown Client'} - ${selectedPosition.title}`,
-                      sublabel: `${selectedPosition.clientName || 'Unknown Client'} - ${selectedPosition.city || 'Unknown City'}, ${selectedPosition.province || 'Unknown Province'}`,
+                      label: `${selectedPosition.clientName || t("positionMatching.unknownClient")} - ${selectedPosition.title}`,
+                      sublabel: `${selectedPosition.clientName || t("positionMatching.unknownClient")} - ${selectedPosition.city || t("positionMatching.unknownCity")}, ${selectedPosition.province || t("positionMatching.unknownProvince")}`,
                       value: selectedPosition
                     } : null}
                     onSelect={(option) => { if (Array.isArray(option)) return; handlePositionSelectDropdown(option); }}
-                    placeholder="Select a position..."
+                    placeholder={t("positionMatching.selectPositionPlaceholder")}
                     searchable={true}
                     loading={positionsLoading}
-                    emptyMessage="No positions available"
+                    emptyMessage={t("positionMatching.noPositionsAvailable")}
                   />
                 )}
               </div>
@@ -852,36 +865,36 @@ export function PositionMatching() {
                         <div className="meta-row">
                           <Building2 size={14} />
                           <span>
-                            <strong>Client:</strong>{" "}
-                            {selectedPosition.clientName || "N/A"}
+                            <strong>{t("positionMatching.details.client")}:</strong>{" "}
+                            {selectedPosition.clientName || t("positionMatching.unknownClient")}
                           </span>
                         </div>
                         <div className="meta-row">
                           <Hash size={14} />
                           <span>
-                            <strong>Code:</strong>{" "}
-                            {selectedPosition.positionCode || "N/A"}
+                            <strong>{t("positionMatching.details.code")}:</strong>{" "}
+                            {selectedPosition.positionCode || t("positionMatching.notSpecified")}
                           </span>
                         </div>
                         <div className="meta-row">
                           <MapPin size={14} />
                           <span>
-                            <strong>Location:</strong> {selectedPosition.city},{" "}
+                            <strong>{t("positionMatching.details.location")}:</strong> {selectedPosition.city},{" "}
                             {selectedPosition.province}
                           </span>
                         </div>
                         <div className="meta-row">
                           <Users size={14} />
                           <span>
-                            <strong>Positions:</strong>{" "}
-                            {selectedPosition.numberOfPositions} available
+                            <strong>{t("positionMatching.details.positions")}:</strong>{" "}
+                            {t("positionMatching.details.positionsAvailable", { count: selectedPosition.numberOfPositions || 0 })}
                           </span>
                         </div>
                         {selectedPosition.startDate && (
                           <div className="meta-row">
                             <Calendar size={14} />
                             <span>
-                              <strong>Start Date:</strong>{" "}
+                              <strong>{t("positionMatching.details.startDate")}:</strong>{" "}
                               {new Date(
                                 selectedPosition.startDate
                               ).toLocaleDateString()}
@@ -892,7 +905,7 @@ export function PositionMatching() {
                           <div className="meta-row">
                             <Clock size={14} />
                             <span>
-                              <strong>Created:</strong>{" "}
+                              <strong>{t("positionMatching.details.created")}:</strong>{" "}
                               {new Date(
                                 selectedPosition.createdAt
                               ).toLocaleDateString()}
@@ -904,7 +917,7 @@ export function PositionMatching() {
                         <div className="meta-row">
                           <BriefcaseIcon size={14} />
                           <span>
-                            <strong>Employment:</strong>{" "}
+                                                          <strong>{t("positionMatching.details.employment")}:</strong>{" "}
                             {selectedPosition.employmentTerm} /{" "}
                             {selectedPosition.employmentType}
                           </span>
@@ -913,7 +926,7 @@ export function PositionMatching() {
                           <div className="meta-row">
                             <Shield size={14} />
                             <span>
-                              <strong>Category:</strong>{" "}
+                              <strong>{t("positionMatching.details.category")}:</strong>{" "}
                               {selectedPosition.positionCategory}
                             </span>
                           </div>
@@ -922,7 +935,7 @@ export function PositionMatching() {
                           <div className="meta-row">
                             <Award size={14} />
                             <span>
-                              <strong>Experience Required:</strong>{" "}
+                              <strong>{t("positionMatching.details.experienceRequired")}:</strong>{" "}
                               {selectedPosition.experience}
                             </span>
                           </div>
@@ -930,17 +943,17 @@ export function PositionMatching() {
                         <div className="meta-row">
                           <Eye size={14} />
                           <span>
-                            <strong>Job Portal:</strong>{" "}
+                                                          <strong>{t("positionMatching.details.jobPortal")}:</strong>{" "}
                             {selectedPosition.showOnJobPortal
-                              ? "Visible"
-                              : "Hidden"}
+                              ? t("positionMatching.details.visible")
+                              : t("positionMatching.details.hidden")}
                           </span>
                         </div>
                         {selectedPosition.endDate && (
                           <div className="meta-row">
                             <Calendar size={14} />
                             <span>
-                              <strong>End Date:</strong>{" "}
+                              <strong>{t("positionMatching.details.endDate")}:</strong>{" "}
                               {new Date(
                                 selectedPosition.endDate
                               ).toLocaleDateString()}
@@ -953,38 +966,38 @@ export function PositionMatching() {
 
                   {/* Assignment Summary */}
                   <div className="assignment-summary">
-                    <h4>Assignment Status</h4>
+                    <h4>{t("positionMatching.assignmentStatus")}</h4>
                     <div className="status-overview">
                       <div className="status-item filled">
                         <span className="status-count">
                           {assignedJobseekers.length}
                         </span>
-                        <span className="status-label">Assigned</span>
+                        <span className="status-label">{t("positionMatching.status.assigned")}</span>
                       </div>
                       <div className="status-item vacant">
                         <span className="status-count">
                           {vacantSlotsCount}
                         </span>
-                        <span className="status-label">Vacant</span>
+                        <span className="status-label">{t("positionMatching.status.vacant")}</span>
                       </div>
                       <div className="status-item total">
                         <span className="status-count">
                           {selectedPosition.numberOfPositions}
                         </span>
-                        <span className="status-label">Total</span>
+                        <span className="status-label">{t("positionMatching.status.total")}</span>
                       </div>
                     </div>
                   </div>
 
                   {/* Position Slots */}
                   <div className="position-slots">
-                    <h4>Position Slots</h4>
+                    <h4>{t("positionMatching.positionSlots")}</h4>
                     <div className="slots-container">
                       {/* Loading State for Assigned Jobseekers */}
                       {assignedJobseekersLoading && (
                         <div className="slots-loading">
                           <div className="loading-spinner"></div>
-                          <span>Loading assigned jobseekers...</span>
+                          <span>{t("positionMatching.loadingAssignedJobseekers")}</span>
                         </div>
                       )}
 
@@ -1049,7 +1062,7 @@ export function PositionMatching() {
                             <div className="slot-content">
                               <div className="vacant-indicator">
                                 <User size={16} />
-                                <span>Position Vacant</span>
+                                <span>{t("positionMatching.positionVacant")}</span>
                               </div>
                             </div>
                           </div>
@@ -1067,11 +1080,11 @@ export function PositionMatching() {
         isOpen={confirmationModal.isOpen}
         title={
           confirmationModal.action === "assign"
-            ? "Confirm Assignment"
-            : "Confirm Removal"
+            ? t("positionMatching.modal.confirmAssignment")
+            : t("positionMatching.modal.confirmRemoval")
         }
         message={getConfirmationMessage()}
-        confirmText={confirmationModal.action === "assign" ? "Assign" : "Remove"}
+        confirmText={confirmationModal.action === "assign" ? t("buttons.assign") : t("buttons.remove")}
         confirmButtonClass={confirmationModal.action === "assign" ? "success" : "danger"}
         onConfirm={handleModalConfirm}
         onCancel={closeConfirmationModal}

@@ -41,7 +41,7 @@
   flex-direction: column;
   overflow: hidden;
   position: fixed;
-  top: 95px;
+  top: 70px;
   right: 20px;
   min-height: calc(100vh - 120px);
 }

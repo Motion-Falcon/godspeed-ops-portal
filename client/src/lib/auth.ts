@@ -2,6 +2,8 @@ import { supabase } from './supabaseClient';
 import type { User, AuthError } from '@supabase/supabase-js';
 import { VerificationStatus } from '../contexts/AuthContext';
 import { complete2FAAPI, registerUserAPI, resendVerificationEmailAPI, updatePasswordAPI, validateCredentialsAPI } from '../services/api/auth';
+import { getAuthUserByIdAPI } from '../services/api/user';
+import type { AllAuthUserListItem } from '../types/auth';
 
 // User role types
 export type UserRole = 'jobseeker' | 'recruiter' | 'admin';
@@ -12,6 +14,8 @@ export interface AppUser extends User {
     name: string;
     user_type: UserRole;
     hasProfile?: boolean;
+    user_role?: unknown;
+    hierarchy?: unknown;
     [key: string]: unknown;
   };
 }
@@ -55,8 +59,8 @@ export function hasJobseekerProfile(user: User | null): boolean {
   if (!user) return false;
   
   const metadata = user.user_metadata || {};
-  return metadata.hasProfile;
-} 
+  return (metadata as Record<string, unknown>).hasProfile as boolean;
+}
 
 // Get jobseeker profile verification status
 export async function getJobseekerVerificationStatus(userId: string | undefined): Promise<VerificationStatus> {
@@ -79,6 +83,44 @@ export async function getJobseekerVerificationStatus(userId: string | undefined)
     return 'not_created';
   }
 }
+
+// Helper: safely extract roles array from a raw user JSON (e.g., API "raw" field)
+export function getUserRolesFromRaw(raw: unknown): string[] {
+  if (!raw || typeof raw !== 'object') return [];
+  const root = raw as Record<string, unknown>;
+  const meta = root['user_metadata'];
+  if (!meta || typeof meta !== 'object') return [];
+  const metaObj = meta as Record<string, unknown>;
+  const roles = metaObj['user_role'];
+  if (!Array.isArray(roles)) return [];
+  return roles.filter((r): r is string => typeof r === 'string');
+}
+
+// Helper: safely extract manager_id (uuid string) from raw user JSON
+export function getUsersManagerIdFromRaw(raw: unknown): string | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const root = raw as Record<string, unknown>;
+  const meta = root['user_metadata'];
+  if (!meta || typeof meta !== 'object') return null;
+  const metaObj = meta as Record<string, unknown>;
+  const hierarchy = metaObj['hierarchy'];
+  if (!hierarchy || typeof hierarchy !== 'object') return null;
+  const hierObj = hierarchy as Record<string, unknown>;
+  const managerId = hierObj['manager_id'];
+  return typeof managerId === 'string' && managerId.length > 0 ? managerId : null;
+}
+
+// New: Get a user's manager details by the user's id using the server API
+export async function getUsersManager(userId: string): Promise<AllAuthUserListItem | null> {
+  if (!userId) return null;
+  const user = await getAuthUserByIdAPI(userId);
+  if (!user) return null;
+  const managerId = getUsersManagerIdFromRaw(user.raw);
+  if (!managerId) return null;
+  const manager = await getAuthUserByIdAPI(managerId);
+  return manager || null;
+}
+
 // Register a new user
 export const registerUser = async (
   email: string, 
@@ -138,8 +180,9 @@ export const validateCredentials = async (
 ) => {
   const result = await validateCredentialsAPI(email, password);
   
-  if (!result.requiresTwoFactor) {
-    // For non-recruiters, we get a session back - set it in Supabase
+  // Only set session if email is verified
+  if (!result.requiresTwoFactor && result.user?.user_metadata?.email_verified) {
+    // For non-recruiters with verified email, we get a session back - set it in Supabase
     if (result.session) {
       await supabase.auth.setSession({
         access_token: result.session.access_token,

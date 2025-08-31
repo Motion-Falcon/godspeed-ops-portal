@@ -49,7 +49,7 @@ export function Login() {
       const result = await validateCredentials(data.email, data.password);
       
       // Check if email is verified
-      if (!result.emailVerified && result.email) {
+      if (!result.user.user_metadata.email_verified && result.user.email) {
         // If not verified, redirect to verification pending page
         navigate('/verification-pending', { 
           state: { 
@@ -61,7 +61,7 @@ export function Login() {
       }
 
       // Check if 2FA is required
-      if (result.requiresTwoFactor) {
+      if (result.user.user_metadata.user_type === 'recruiter' || result.user.user_metadata.user_type === 'admin') {
         // Check if user has a phone number for 2FA
         const phoneNumber = result.user?.user_metadata?.phoneNumber;
         

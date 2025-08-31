@@ -60,9 +60,7 @@ console.log(isAuthenticated, 'isAuthenticated');
         } else {
           // No valid tokens or session found
           setIsVerifying(false);
-          setError(
-            "Password reset link is invalid or has expired. Please request a new one."
-          );
+          setError(t('reset.errors.invalidLink'));
         }
       }
     };
@@ -84,9 +82,7 @@ console.log(isAuthenticated, 'isAuthenticated');
             setIsVerifying(false);
           } else {
             setIsVerifying(false);
-            setError(
-              "Password reset link is invalid or has expired. Please request a new one."
-            );
+            setError(t('reset.errors.invalidLink'));
           }
         } else if (data && data.session) {
           setHasToken(true);
@@ -97,9 +93,7 @@ console.log(isAuthenticated, 'isAuthenticated');
         }
       } catch (err) {
         setIsVerifying(false);
-        setError(
-          "An error occurred while validating your reset link. Please try again."
-        );
+        setError(t('reset.errors.validationError'));
       }
     };
 
@@ -154,7 +148,7 @@ type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
       if (error instanceof Error) {
         setError(error.message);
       } else {
-        setError("An error occurred while resetting your password.");
+        setError(t('reset.errors.resetError'));
       }
       setIsLoading(false);
     }

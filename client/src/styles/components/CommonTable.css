@@ -40,6 +40,7 @@
 .common-table tbody tr {
   border-bottom: 1px solid var(--border);
   transition: background-color var(--transition-fast);
+  height: 42px;
 }
 
 .common-table tbody tr:last-child {
@@ -173,6 +174,12 @@
   width: 160px;
   word-break: break;
 }
+.status-display {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
 .status-cell .status-display .status-icon {
   height: 12px;
   width: 12px;
@@ -185,7 +192,7 @@
 .action-buttons {
   display: flex;
   gap: var(--spacing-3);
-  justify-content: flex-end;
+  justify-content: flex-start;
 }
 
 .action-icon-btn {
@@ -494,65 +501,6 @@
   transform: none;
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .action-buttons {
-    flex-direction: row;
-  }
-  
-  .common-table th, .common-table td {
-    padding: var(--spacing-3) var(--spacing-2);
-  }
-
-  /* Pagination responsive */
-  .pagination-controls {
-    flex-direction: column;
-    gap: var(--spacing-3);
-    align-items: stretch;
-  }
-
-  .pagination-controls.top {
-    align-items: flex-start;
-  }
-
-  .pagination-size-selector {
-    justify-content: center;
-  }
-
-  .pagination-buttons {
-    justify-content: center;
-  }
-
-  .page-numbers {
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-
-  .pagination-btn span {
-    display: none;
-  }
-
-  .pagination-text {
-    text-align: center;
-  }
-}
-
-@media (max-width: 576px) {
-  .pagination-controls {
-    padding: var(--spacing-3) 0;
-  }
-
-  .page-numbers {
-    gap: var(--spacing-1);
-  }
-
-  .page-number-btn {
-    width: 32px;
-    height: 32px;
-    font-size: calc(var(--font-size-small) - 1px);
-  }
-}
-
 /* ==================== SKELETON LOADING STYLES ==================== */
 
 /* Base skeleton styles */
@@ -565,12 +513,6 @@
   margin: 2px 0;
 }
 
-.skeleton-icon {
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-  background-size: 200% 100%;
-  animation: skeleton-loading 1.5s infinite;
-  border-radius: 50%;
-}
 .skeleton-badge.skeleton-status-text {
   width: 60%;
 }
@@ -646,7 +588,6 @@
 
 /* Dark mode skeleton adjustments */
 .dark .skeleton-text,
-.dark .skeleton-icon,
 .dark .skeleton-badge {
   background: linear-gradient(90deg, #333 25%, #444 50%, #333 75%);
   background-size: 200% 100%;

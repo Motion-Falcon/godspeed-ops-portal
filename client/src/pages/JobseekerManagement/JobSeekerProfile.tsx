@@ -26,6 +26,7 @@ import {
   Calendar,
   ChevronLeft,
   ChevronRight,
+  FileCheck,
 } from "lucide-react";
 import {
   getJobseekerProfile,
@@ -40,7 +41,14 @@ import { ConfirmationModal } from "../../components/ConfirmationModal";
 import { AppHeader } from "../../components/AppHeader";
 import "../../styles/components/header.css";
 import "../../styles/pages/JobseekerProfileStyles.css";
-import { getCandidateAssignments, CandidateAssignment } from "../../services/api/position";
+import {
+  getCandidateAssignments,
+  CandidateAssignment,
+} from "../../services/api/position";
+import {
+  getConsentRecordsByEntity,
+  ConsentRecordWithDocument,
+} from "../../services/api/consent";
 import "../../styles/pages/JobSeekerPositions.css";
 
 // Define a local comprehensive type reflecting the backend response
@@ -125,16 +133,18 @@ const getDisplayLocation = (
 };
 
 // Helper function to check if profile needs attention based on document validation issues
-const profileNeedsAttention = (profile: FullJobseekerProfile | null): boolean => {
+const profileNeedsAttention = (
+  profile: FullJobseekerProfile | null
+): boolean => {
   // Only check for pending profiles
   if (!profile || profile.verificationStatus !== "pending") return false;
-  
+
   // Check if profile has documents with AI validation issues
   if (!profile.documents || profile.documents.length === 0) return false;
-  
-  return profile.documents.some(doc => {
+
+  return profile.documents.some((doc) => {
     if (!doc.aiValidation) return false;
-    
+
     return (
       doc.aiValidation.is_tampered === true ||
       doc.aiValidation.is_blurry === true ||
@@ -147,28 +157,31 @@ const profileNeedsAttention = (profile: FullJobseekerProfile | null): boolean =>
 // Helper function to calculate days until SIN expiry
 const calculateDaysUntilExpiry = (expiryDate: string | null): number | null => {
   if (!expiryDate) return null;
-  
+
   try {
     const expiry = new Date(expiryDate);
     const today = new Date();
-    
+
     // Reset time to start of day for accurate day calculation
     expiry.setHours(0, 0, 0, 0);
     today.setHours(0, 0, 0, 0);
-    
+
     const timeDiff = expiry.getTime() - today.getTime();
     const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
-    
+
     return daysDiff;
   } catch (error) {
-    console.error('Error calculating days until SIN expiry:', error);
+    console.error("Error calculating days until SIN expiry:", error);
     return null;
   }
 };
 
 // Helper function to get SIN expiry alert info
-const getSinExpiryAlert = (profile: FullJobseekerProfile | null, t?: (key: string, interpolations?: Record<string, string | number>) => string): {
-  type: 'expired' | 'warning-30' | 'warning-60' | 'warning-90' | null;
+const getSinExpiryAlert = (
+  profile: FullJobseekerProfile | null,
+  t?: (key: string, interpolations?: Record<string, string | number>) => string
+): {
+  type: "expired" | "warning-30" | "warning-60" | "warning-90" | null;
   daysUntilExpiry: number | null;
   message: string;
   icon: React.ReactNode;
@@ -179,31 +192,33 @@ const getSinExpiryAlert = (profile: FullJobseekerProfile | null, t?: (key: strin
   if (!t) t = (k) => k; // fallback if t not provided
   if (daysUntilExpiry < 0) {
     return {
-      type: 'expired',
+      type: "expired",
       daysUntilExpiry,
-      message: t('jobSeekerProfile.sinExpired', { days: Math.abs(daysUntilExpiry) }),
-      icon: <AlertTriangle size={20} />
+      message: t("jobSeekerProfile.sinExpired", {
+        days: Math.abs(daysUntilExpiry),
+      }),
+      icon: <AlertTriangle size={20} />,
     };
   } else if (daysUntilExpiry <= 30) {
     return {
-      type: 'warning-30',
+      type: "warning-30",
       daysUntilExpiry,
-      message: t('jobSeekerProfile.sinExpiresIn', { days: daysUntilExpiry }),
-      icon: <AlertTriangle size={20} />
+      message: t("jobSeekerProfile.sinExpiresIn", { days: daysUntilExpiry }),
+      icon: <AlertTriangle size={20} />,
     };
   } else if (daysUntilExpiry <= 60) {
     return {
-      type: 'warning-60',
+      type: "warning-60",
       daysUntilExpiry,
-      message: t('jobSeekerProfile.sinExpiresIn', { days: daysUntilExpiry }),
-      icon: <AlertCircle size={20} />
+      message: t("jobSeekerProfile.sinExpiresIn", { days: daysUntilExpiry }),
+      icon: <AlertCircle size={20} />,
     };
   } else if (daysUntilExpiry <= 90) {
     return {
-      type: 'warning-90',
+      type: "warning-90",
       daysUntilExpiry,
-      message: t('jobSeekerProfile.sinExpiresIn', { days: daysUntilExpiry }),
-      icon: <CircleAlert size={20} />
+      message: t("jobSeekerProfile.sinExpiresIn", { days: daysUntilExpiry }),
+      icon: <CircleAlert size={20} />,
     };
   }
   return null;
@@ -279,11 +294,14 @@ export function JobSeekerProfile() {
     "pending" | "verified" | "rejected"
   >("pending");
   const [rejectionReason, setRejectionReason] = useState<string>("");
-  const [rejectionReasonError, setRejectionReasonError] = useState<string | null>(null);
+  const [rejectionReasonError, setRejectionReasonError] = useState<
+    string | null
+  >(null);
   const [expandedNotesIds, setExpandedNotesIds] = useState<Set<string>>(
     new Set()
   );
-  const [showFullRejectionReason, setShowFullRejectionReason] = useState<boolean>(false);
+  const [showFullRejectionReason, setShowFullRejectionReason] =
+    useState<boolean>(false);
   const { id } = useParams<{ id: string }>();
   const { isAdmin, isRecruiter, isJobSeeker } = useAuth();
   const navigate = useNavigate();
@@ -297,7 +315,20 @@ export function JobSeekerProfile() {
     currentPage: 1,
     totalPages: 1,
     totalItems: 0,
-    itemsPerPage: 20,
+    itemsPerPage: 6,
+  });
+
+  // Add state for consent records
+  const [consentRecords, setConsentRecords] = useState<
+    ConsentRecordWithDocument[]
+  >([]);
+  const [consentLoading, setConsentLoading] = useState<boolean>(true);
+  const [consentError, setConsentError] = useState<string | null>(null);
+  const [consentPagination, setConsentPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalItems: 0,
+    itemsPerPage: 6,
   });
 
   useEffect(() => {
@@ -392,9 +423,16 @@ export function JobSeekerProfile() {
           itemsPerPage: response.pagination.limit,
         }));
       } catch (err) {
-        setPositionsError(err instanceof Error ? err.message : 'Failed to fetch positions');
+        setPositionsError(
+          err instanceof Error ? err.message : "Failed to fetch positions"
+        );
         setAssignments([]);
-        setPositionsPagination((prev) => ({ ...prev, currentPage: 1, totalPages: 1, totalItems: 0 }));
+        setPositionsPagination((prev) => ({
+          ...prev,
+          currentPage: 1,
+          totalPages: 1,
+          totalItems: 0,
+        }));
       } finally {
         setPositionsLoading(false);
       }
@@ -428,9 +466,16 @@ export function JobSeekerProfile() {
             itemsPerPage: response.pagination.limit,
           }));
         } catch (err) {
-          setPositionsError(err instanceof Error ? err.message : 'Failed to fetch positions');
+          setPositionsError(
+            err instanceof Error ? err.message : "Failed to fetch positions"
+          );
           setAssignments([]);
-          setPositionsPagination((prev) => ({ ...prev, currentPage: 1, totalPages: 1, totalItems: 0 }));
+          setPositionsPagination((prev) => ({
+            ...prev,
+            currentPage: 1,
+            totalPages: 1,
+            totalItems: 0,
+          }));
         } finally {
           setPositionsLoading(false);
         }
@@ -439,6 +484,92 @@ export function JobSeekerProfile() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [positionsPagination.currentPage, profile?.userId]);
+
+  // Fetch consent records when profile is loaded
+  useEffect(() => {
+    const fetchConsentRecords = async (page = 1) => {
+      if (!profile?.id) return;
+      setConsentLoading(true);
+      setConsentError(null);
+      try {
+        const response = await getConsentRecordsByEntity(profile.id, {
+          page,
+          limit: consentPagination.itemsPerPage,
+          consentableType: "jobseeker_profile",
+        });
+        setConsentRecords(response.records);
+        setConsentPagination((prev) => ({
+          ...prev,
+          currentPage: response.pagination.page,
+          totalPages: response.pagination.totalPages,
+          totalItems: response.pagination.total,
+          itemsPerPage: response.pagination.limit,
+        }));
+      } catch (err) {
+        setConsentError(
+          err instanceof Error ? err.message : "Failed to fetch consent records"
+        );
+        setConsentRecords([]);
+        setConsentPagination((prev) => ({
+          ...prev,
+          currentPage: 1,
+          totalPages: 1,
+          totalItems: 0,
+        }));
+      } finally {
+        setConsentLoading(false);
+      }
+    };
+    if (profile?.id) {
+      fetchConsentRecords(1);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.id]);
+
+  // Pagination handlers for consent records
+  const handleConsentPageChange = (page: number) => {
+    setConsentPagination((prev) => ({ ...prev, currentPage: page }));
+  };
+  useEffect(() => {
+    if (profile?.id) {
+      const fetchConsentRecords = async () => {
+        setConsentLoading(true);
+        setConsentError(null);
+        try {
+          const response = await getConsentRecordsByEntity(profile.id, {
+            page: consentPagination.currentPage,
+            limit: consentPagination.itemsPerPage,
+            consentableType: "jobseeker_profile",
+          });
+          setConsentRecords(response.records);
+          setConsentPagination((prev) => ({
+            ...prev,
+            currentPage: response.pagination.page,
+            totalPages: response.pagination.totalPages,
+            totalItems: response.pagination.total,
+            itemsPerPage: response.pagination.limit,
+          }));
+        } catch (err) {
+          setConsentError(
+            err instanceof Error
+              ? err.message
+              : "Failed to fetch consent records"
+          );
+          setConsentRecords([]);
+          setConsentPagination((prev) => ({
+            ...prev,
+            currentPage: 1,
+            totalPages: 1,
+            totalItems: 0,
+          }));
+        } finally {
+          setConsentLoading(false);
+        }
+      };
+      fetchConsentRecords();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [consentPagination.currentPage, profile?.id]);
 
   const handleStatusUpdate = async (
     newStatus: "verified" | "rejected" | "pending"
@@ -456,7 +587,11 @@ export function JobSeekerProfile() {
 
     try {
       setUpdateStatus("Updating status...");
-      const response = await updateJobseekerStatus(id, newStatus, newStatus === "rejected" ? rejectionReason : null);
+      const response = await updateJobseekerStatus(
+        id,
+        newStatus,
+        newStatus === "rejected" ? rejectionReason : null
+      );
 
       // Check the structure of the response to find the correct property
       console.log("Status update response:", response);
@@ -741,7 +876,7 @@ export function JobSeekerProfile() {
       await deleteJobseeker(id);
       setIsDeleteConfirmationOpen(false);
       navigate("/jobseekers", {
-        state: { message: t('jobSeekerProfile.profileDeleted') },
+        state: { message: t("jobSeekerProfile.profileDeleted") },
       });
     } catch (err) {
       console.error("Error deleting profile:", err);
@@ -759,18 +894,21 @@ export function JobSeekerProfile() {
       (profile?.verificationStatus as "pending" | "verified" | "rejected") ||
         "pending"
     );
-    
+
     // If profile is rejected, prefill the rejection reason from profile data
-    if (profile?.verificationStatus === "rejected" && profile?.rejectionReason) {
+    if (
+      profile?.verificationStatus === "rejected" &&
+      profile?.rejectionReason
+    ) {
       setRejectionReason(profile.rejectionReason);
     } else {
       // Otherwise clear the rejection reason
       setRejectionReason("");
     }
-    
+
     // Clear any error message
     setRejectionReasonError(null);
-    
+
     setIsStatusModalOpen(true);
   };
 
@@ -780,10 +918,10 @@ export function JobSeekerProfile() {
       setRejectionReasonError("Please provide a reason for rejection");
       return;
     }
-    
+
     // Clear any error before proceeding
     setRejectionReasonError(null);
-    
+
     // Only proceed with status update and close modal if validation passes
     handleStatusUpdate(selectedStatus);
     setIsStatusModalOpen(false);
@@ -811,27 +949,34 @@ export function JobSeekerProfile() {
   };
 
   const renderRejectionReason = () => {
-    if (profile?.verificationStatus !== "rejected" || !profile?.rejectionReason) {
+    if (
+      profile?.verificationStatus !== "rejected" ||
+      !profile?.rejectionReason
+    ) {
       return null;
     }
-    
+
     const showToggle = profile.rejectionReason.length > 200;
-    
+
     return (
       <div className="profile-rejection-reason">
         <div className="rejection-reason-header">
           <AlertCircle size={16} className="rejection-reason-icon" />
           <span className="rejection-reason-title">Rejection Reason</span>
         </div>
-        <div className={`rejection-reason-content ${showFullRejectionReason ? 'expanded' : ''}`}>
+        <div
+          className={`rejection-reason-content ${
+            showFullRejectionReason ? "expanded" : ""
+          }`}
+        >
           {profile.rejectionReason}
         </div>
         {showToggle && (
-          <button 
+          <button
             className="toggle-rejection-btn"
             onClick={() => setShowFullRejectionReason(!showFullRejectionReason)}
           >
-            {showFullRejectionReason ? 'Show less' : 'Show full reason'}
+            {showFullRejectionReason ? "Show less" : "Show full reason"}
           </button>
         )}
       </div>
@@ -843,11 +988,11 @@ export function JobSeekerProfile() {
     return (
       <div className="profile-container">
         <AppHeader
-          title={t('jobSeekerProfile.title')}
+          title={t("jobSeekerProfile.title")}
           actions={
             <button className="button" disabled>
               <ArrowLeft size={16} className="icon" />
-              <span>{t('jobSeekerProfile.backToManagement')}</span>
+              <span>{t("jobSeekerProfile.backToManagement")}</span>
             </button>
           }
         />
@@ -859,16 +1004,40 @@ export function JobSeekerProfile() {
               <div className="profile-banner-status-container">
                 <div className="profile-status skeleton-status">
                   <div className="skeleton-icon"></div>
-                  <div className="skeleton-text" style={{ width: '120px', height: '16px' }}></div>
+                  <div
+                    className="skeleton-text"
+                    style={{ width: "120px", height: "16px" }}
+                  ></div>
                 </div>
               </div>
               <div className="profile-actions-container">
-                <div className="profile-actions" style={{padding: 0}}>
-                  <div className="skeleton-text" style={{ width: '100px', height: '32px', borderRadius: '2rem' }}></div>
+                <div className="profile-actions" style={{ padding: 0 }}>
+                  <div
+                    className="skeleton-text"
+                    style={{
+                      width: "100px",
+                      height: "32px",
+                      borderRadius: "2rem",
+                    }}
+                  ></div>
                 </div>
                 <div className="profile-actions">
-                  <div className="skeleton-icon" style={{width: '32px', height: '32px', borderRadius: '2rem'}}></div>
-                  <div className="skeleton-icon" style={{width: '32px', height: '32px', borderRadius: '2rem'}}></div>
+                  <div
+                    className="skeleton-icon"
+                    style={{
+                      width: "32px",
+                      height: "32px",
+                      borderRadius: "2rem",
+                    }}
+                  ></div>
+                  <div
+                    className="skeleton-icon"
+                    style={{
+                      width: "32px",
+                      height: "32px",
+                      borderRadius: "2rem",
+                    }}
+                  ></div>
                 </div>
               </div>
             </div>
@@ -876,32 +1045,68 @@ export function JobSeekerProfile() {
             <div className="profile-details">
               <div className="profile-avatar-container">
                 <div className="profile-avatar skeleton-avatar">
-                  <div className="skeleton-icon" style={{ width: '40px', height: '40px' }}></div>
+                  <div
+                    className="skeleton-icon"
+                    style={{ width: "40px", height: "40px" }}
+                  ></div>
                 </div>
-                <div className="skeleton-text" style={{ width: '200px', height: '32px', margin: '8px 0' }}></div>
+                <div
+                  className="skeleton-text"
+                  style={{ width: "200px", height: "32px", margin: "8px 0" }}
+                ></div>
               </div>
               <div className="profile-info-header">
                 <div className="profile-info-details">
                   {[1, 2, 3].map((i) => (
                     <div key={i} className="detail-item">
-                      <div className="skeleton-text" style={{ width: '80px', height: '14px' }}></div>
-                      <div className="skeleton-text" style={{ width: '120px', height: '16px', marginLeft: '10px' }}></div>
+                      <div
+                        className="skeleton-text"
+                        style={{ width: "80px", height: "14px" }}
+                      ></div>
+                      <div
+                        className="skeleton-text"
+                        style={{
+                          width: "120px",
+                          height: "16px",
+                          marginLeft: "10px",
+                        }}
+                      ></div>
                     </div>
                   ))}
                 </div>
                 <div className="profile-info-details">
                   {[1, 2].map((i) => (
                     <div key={i} className="detail-item">
-                      <div className="skeleton-text" style={{ width: '80px', height: '14px' }}></div>
-                      <div className="skeleton-text" style={{ width: '120px', height: '16px', marginLeft: '10px' }}></div>
+                      <div
+                        className="skeleton-text"
+                        style={{ width: "80px", height: "14px" }}
+                      ></div>
+                      <div
+                        className="skeleton-text"
+                        style={{
+                          width: "120px",
+                          height: "16px",
+                          marginLeft: "10px",
+                        }}
+                      ></div>
                     </div>
                   ))}
                 </div>
                 <div className="profile-info-details">
                   {[1, 2].map((i) => (
                     <div key={i} className="detail-item">
-                      <div className="skeleton-text" style={{ width: '80px', height: '14px' }}></div>
-                      <div className="skeleton-text" style={{ width: '120px', height: '16px', marginLeft: '10px' }}></div>
+                      <div
+                        className="skeleton-text"
+                        style={{ width: "80px", height: "14px" }}
+                      ></div>
+                      <div
+                        className="skeleton-text"
+                        style={{
+                          width: "120px",
+                          height: "16px",
+                          marginLeft: "10px",
+                        }}
+                      ></div>
                     </div>
                   ))}
                 </div>
@@ -911,43 +1116,102 @@ export function JobSeekerProfile() {
 
           {/* Documents Section Skeleton */}
           <div className="documents-section section-card">
-            <div className="skeleton-text" style={{ width: '180px', height: '24px', marginBottom: '20px' }}></div>
+            <div
+              className="skeleton-text"
+              style={{ width: "180px", height: "24px", marginBottom: "20px" }}
+            ></div>
             <div className="document-list">
               {[1].map((i) => (
                 <div key={i} className="document-item skeleton-document">
                   <div className="document-content">
-                    <div className="skeleton-icon" style={{ width: '18px', height: '18px' }}></div>
+                    <div
+                      className="skeleton-icon"
+                      style={{ width: "18px", height: "18px" }}
+                    ></div>
                     <div className="document-info">
-                      <div className="skeleton-text" style={{ width: '150px', height: '16px', marginBottom: '8px' }}></div>
-                      <div className="skeleton-text" style={{ width: '100px', height: '14px', marginBottom: '8px' }}></div>
+                      <div
+                        className="skeleton-text"
+                        style={{
+                          width: "150px",
+                          height: "16px",
+                          marginBottom: "8px",
+                        }}
+                      ></div>
+                      <div
+                        className="skeleton-text"
+                        style={{
+                          width: "100px",
+                          height: "14px",
+                          marginBottom: "8px",
+                        }}
+                      ></div>
                       <div className="document-actions">
-                        <div className="skeleton-text" style={{ width: '80px', height: '32px', borderRadius: '6px' }}></div>
-                        <div className="skeleton-text" style={{ width: '90px', height: '32px', borderRadius: '6px' }}></div>
+                        <div
+                          className="skeleton-text"
+                          style={{
+                            width: "80px",
+                            height: "32px",
+                            borderRadius: "6px",
+                          }}
+                        ></div>
+                        <div
+                          className="skeleton-text"
+                          style={{
+                            width: "90px",
+                            height: "32px",
+                            borderRadius: "6px",
+                          }}
+                        ></div>
                       </div>
                     </div>
                     <div className="document-validation">
                       <div className="validation-header">
-                        <div className="skeleton-icon" style={{ width: '16px', height: '16px' }}></div>
-                        <div className="skeleton-text" style={{ width: '140px', height: '16px' }}></div>
+                        <div
+                          className="skeleton-icon"
+                          style={{ width: "16px", height: "16px" }}
+                        ></div>
+                        <div
+                          className="skeleton-text"
+                          style={{ width: "140px", height: "16px" }}
+                        ></div>
                       </div>
                       <div className="authentication-score">
                         <div className="score-gauge skeleton-score-gauge">
-                          <div className="skeleton-progress-fill" style={{ width: '60%' }}></div>
+                          <div
+                            className="skeleton-progress-fill"
+                            style={{ width: "60%" }}
+                          ></div>
                         </div>
-                        <div className="skeleton-text" style={{ width: '120px', height: '14px' }}></div>
+                        <div
+                          className="skeleton-text"
+                          style={{ width: "120px", height: "14px" }}
+                        ></div>
                       </div>
                       <div className="validation-status-list">
                         {[1, 2, 3, 4].map((j) => (
                           <div key={j} className="validation-status-item">
-                            <div className="skeleton-icon" style={{ width: '16px', height: '16px' }}></div>
-                            <div className="skeleton-text" style={{ width: '120px', height: '14px' }}></div>
+                            <div
+                              className="skeleton-icon"
+                              style={{ width: "16px", height: "16px" }}
+                            ></div>
+                            <div
+                              className="skeleton-text"
+                              style={{ width: "120px", height: "14px" }}
+                            ></div>
                           </div>
                         ))}
                       </div>
                     </div>
                   </div>
                   <div className="document-preview">
-                    <div className="skeleton-text" style={{ width: '100%', height: '120px', borderRadius: '8px' }}></div>
+                    <div
+                      className="skeleton-text"
+                      style={{
+                        width: "100%",
+                        height: "120px",
+                        borderRadius: "8px",
+                      }}
+                    ></div>
                   </div>
                 </div>
               ))}
@@ -957,20 +1221,37 @@ export function JobSeekerProfile() {
           {/* Profile Content Grid Skeleton */}
           <div className="profile-content grid-container">
             {[
-              'Personal Information',
-              'Identification',
-              'Address',
-              'Qualifications',
-              'Compensation',
-              'Meta Information'
+              "Personal Information",
+              "Identification",
+              "Address",
+              "Qualifications",
+              "Compensation",
+              "Meta Information",
             ].map((index) => (
               <div key={index} className="section-card">
-                <div className="skeleton-text" style={{ width: '180px', height: '20px', marginBottom: '20px' }}></div>
+                <div
+                  className="skeleton-text"
+                  style={{
+                    width: "180px",
+                    height: "20px",
+                    marginBottom: "20px",
+                  }}
+                ></div>
                 <div className="detail-group">
                   {[1, 2, 3, 4, 5].map((i) => (
                     <div key={i} className="detail-item">
-                      <div className="skeleton-text" style={{ width: '100px', height: '14px' }}></div>
-                      <div className="skeleton-text" style={{ width: '140px', height: '16px', marginLeft: '10px' }}></div>
+                      <div
+                        className="skeleton-text"
+                        style={{ width: "100px", height: "14px" }}
+                      ></div>
+                      <div
+                        className="skeleton-text"
+                        style={{
+                          width: "140px",
+                          height: "16px",
+                          marginLeft: "10px",
+                        }}
+                      ></div>
                     </div>
                   ))}
                 </div>
@@ -989,6 +1270,23 @@ export function JobSeekerProfile() {
   if (error || !profile) {
     return (
       <div className="profile-container">
+        <AppHeader
+          title={t("jobSeekerProfile.title")}
+          actions={
+            <button
+              className="button"
+              onClick={() => navigate("/jobseeker-management")}
+            >
+              <ArrowLeft size={16} className="icon" />
+              <span>
+                {isJobSeeker
+                  ? "Back to Dashboard"
+                  : "Back to Job Seeker Management"}
+              </span>
+            </button>
+          }
+          statusMessage={updateStatus}
+        />
         <div className="error-container">
           <p className="error-message">{error || "Failed to load profile"}</p>
           <div className="error-actions">
@@ -1013,21 +1311,24 @@ export function JobSeekerProfile() {
   ) => {
     const displayValue =
       value === null || value === undefined || value === ""
-        ? t('jobSeekerProfile.nA')
+        ? t("jobSeekerProfile.nA")
         : typeof value === "boolean"
         ? value
-          ? t('jobSeekerProfile.yes')
-          : t('jobSeekerProfile.no')
+          ? t("jobSeekerProfile.yes")
+          : t("jobSeekerProfile.no")
         : value;
 
     let finalDisplayValue: string | number = displayValue;
-    if (typeof displayValue === "string" && displayValue !== t('jobSeekerProfile.nA')) {
+    if (
+      typeof displayValue === "string" &&
+      displayValue !== t("jobSeekerProfile.nA")
+    ) {
       if (
         [
-          t('jobSeekerProfile.licenseNumber'),
-          t('jobSeekerProfile.passportNumber'),
-          t('jobSeekerProfile.sinNumber'),
-          t('jobSeekerProfile.businessNumber'),
+          t("jobSeekerProfile.licenseNumber"),
+          t("jobSeekerProfile.passportNumber"),
+          t("jobSeekerProfile.sinNumber"),
+          t("jobSeekerProfile.businessNumber"),
         ].includes(label)
       ) {
         finalDisplayValue =
@@ -1056,34 +1357,51 @@ export function JobSeekerProfile() {
       return `${diffDays} days`;
     } else if (diffDays < 365) {
       const months = Math.floor(diffDays / 30);
-      return `${months} month${months > 1 ? 's' : ''}`;
+      return `${months} month${months > 1 ? "s" : ""}`;
     } else {
       const years = Math.floor(diffDays / 365);
-      return `${years} year${years > 1 ? 's' : ''}`;
+      return `${years} year${years > 1 ? "s" : ""}`;
     }
   };
   const getStatusBadgeClass = (assignment: CandidateAssignment) => {
-    const statusMap = { active: 'current', completed: 'past', upcoming: 'future' };
-    const cssStatus = statusMap[assignment.status as keyof typeof statusMap] || assignment.status;
+    const statusMap = {
+      active: "current",
+      completed: "past",
+      upcoming: "future",
+    };
+    const cssStatus =
+      statusMap[assignment.status as keyof typeof statusMap] ||
+      assignment.status;
     return `jsp-status-badge ${cssStatus}`;
   };
   const getStatusText = (assignment: CandidateAssignment) => {
     switch (assignment.status) {
-      case 'active': return t('jobSeekerProfile.statusActive');
-      case 'completed': return t('jobSeekerProfile.statusCompleted');
-      case 'upcoming': return t('jobSeekerProfile.statusUpcoming');
-      default: return t('jobSeekerProfile.statusUnknown');
+      case "active":
+        return t("jobSeekerProfile.statusActive");
+      case "completed":
+        return t("jobSeekerProfile.statusCompleted");
+      case "upcoming":
+        return t("jobSeekerProfile.statusUpcoming");
+      default:
+        return t("jobSeekerProfile.statusUnknown");
     }
   };
 
   return (
     <div className="profile-container">
       <AppHeader
-        title={t('jobSeekerProfile.title')}
+        title={t("jobSeekerProfile.title")}
         actions={
-          <button className="button" onClick={() => navigate("/jobseeker-management")}>
+          <button
+            className="button"
+            onClick={() => navigate("/jobseeker-management")}
+          >
             <ArrowLeft size={16} className="icon" />
-            <span>{isJobSeeker ? "Back to Dashboard" : "Back to Job Seeker Management"}</span>
+            <span>
+              {isJobSeeker
+                ? "Back to Dashboard"
+                : "Back to Job Seeker Management"}
+            </span>
           </button>
         }
         statusMessage={updateStatus}
@@ -1105,15 +1423,22 @@ export function JobSeekerProfile() {
                   }`}
                 >
                   {profile?.verificationStatus
-                    ? `${t('jobSeekerProfile.status', { status: profile.verificationStatus.charAt(0).toUpperCase() + profile.verificationStatus.slice(1) })}`
-                    : `${t('jobSeekerProfile.status', { status: 'Pending' })}`}
+                    ? `${t("jobSeekerProfile.status", {
+                        status:
+                          profile.verificationStatus.charAt(0).toUpperCase() +
+                          profile.verificationStatus.slice(1),
+                      })}`
+                    : `${t("jobSeekerProfile.status", { status: "Pending" })}`}
                 </span>
               </div>
               {profileNeedsAttention(profile) && (
                 <div className="profile-status need-attention">
-                  <AlertTriangle className="status-icon need-attention" size={16} />
+                  <AlertTriangle
+                    className="status-icon need-attention"
+                    size={16}
+                  />
                   <span className="status-text need-attention">
-                    {t('jobSeekerProfile.needsAttention')}
+                    {t("jobSeekerProfile.needsAttention")}
                   </span>
                 </div>
               )}
@@ -1124,11 +1449,13 @@ export function JobSeekerProfile() {
                   <button
                     className="action-icon-btn update-status-btn"
                     onClick={openStatusModal}
-                    title={t('jobSeekerProfile.updateStatus')}
-                    aria-label={t('jobSeekerProfile.updateStatus')}
+                    title={t("jobSeekerProfile.updateStatus")}
+                    aria-label={t("jobSeekerProfile.updateStatus")}
                   >
-                    <span className="status-text">{t('jobSeekerProfile.updateStatus')}</span>{" "}
-                    <RefreshCw size={16} className="icon"/>
+                    <span className="status-text">
+                      {t("jobSeekerProfile.updateStatus")}
+                    </span>{" "}
+                    <RefreshCw size={16} className="icon" />
                   </button>
                 </div>
               )}
@@ -1136,19 +1463,19 @@ export function JobSeekerProfile() {
                 <button
                   className="action-icon-btn edit-btn"
                   onClick={handleEditProfile}
-                  title={t('jobSeekerProfile.editProfile')}
-                  aria-label={t('jobSeekerProfile.editProfile')}
+                  title={t("jobSeekerProfile.editProfile")}
+                  aria-label={t("jobSeekerProfile.editProfile")}
                 >
-                  <Pencil size={20} className="icon"/>
+                  <Pencil size={20} className="icon" />
                 </button>
                 {(isAdmin || isRecruiter) && (
                   <button
                     className="action-icon-btn delete-btn"
                     onClick={handleDeleteProfile}
-                    title={t('jobSeekerProfile.deleteProfile')}
-                    aria-label={t('jobSeekerProfile.deleteProfile')}
+                    title={t("jobSeekerProfile.deleteProfile")}
+                    aria-label={t("jobSeekerProfile.deleteProfile")}
                   >
-                    <Trash2 size={20} className="icon"/>
+                    <Trash2 size={20} className="icon" />
                   </button>
                 )}
               </div>
@@ -1157,29 +1484,27 @@ export function JobSeekerProfile() {
 
           <div className="profile-details">
             {renderRejectionReason()}
-            
+
             {/* SIN Expiry Alert */}
             {(() => {
               const sinAlert = getSinExpiryAlert(profile, t);
               if (!sinAlert) return null;
-              
+
               return (
                 <div className={`sin-expiry-alert ${sinAlert.type}`}>
-                  <div className="sin-alert-icon">
-                    {sinAlert.icon}
-                  </div>
+                  <div className="sin-alert-icon">{sinAlert.icon}</div>
                   <div className="sin-alert-content">
-                    <div className="sin-alert-message">
-                      {sinAlert.message}
-                    </div>
+                    <div className="sin-alert-message">{sinAlert.message}</div>
                     <div className="sin-alert-details">
-                      {t('jobSeekerProfile.sinExpiry', { date: formatDate(profile.sinExpiry, false) })}
+                      {t("jobSeekerProfile.sinExpiry", {
+                        date: formatDate(profile.sinExpiry, false),
+                      })}
                     </div>
                   </div>
                 </div>
               );
             })()}
-            
+
             <div className="profile-avatar-container">
               <div className="profile-avatar">
                 <User size={40} />
@@ -1188,23 +1513,40 @@ export function JobSeekerProfile() {
             </div>
             <div className="profile-info-header">
               <div className="profile-info-details">
-                {renderDetailItem(t('jobSeekerProfile.employeeId'), profile.employeeId)}
-                {renderDetailItem(t('jobSeekerProfile.email'), profile.email)}
-                {renderDetailItem(t('jobSeekerProfile.mobile'), profile.mobile)}
+                {renderDetailItem(
+                  t("jobSeekerProfile.employeeId"),
+                  profile.employeeId
+                )}
+                {renderDetailItem(t("jobSeekerProfile.email"), profile.email)}
+                {renderDetailItem(t("jobSeekerProfile.mobile"), profile.mobile)}
               </div>
               <div className="profile-info-details">
-                {renderDetailItem(t('jobSeekerProfile.location'), displayLocation)}
-                {renderDetailItem(t('jobSeekerProfile.joined'), formatDate(profile.createdAt))}
+                {renderDetailItem(
+                  t("jobSeekerProfile.location"),
+                  displayLocation
+                )}
+                {renderDetailItem(
+                  t("jobSeekerProfile.joined"),
+                  formatDate(profile.createdAt)
+                )}
               </div>
               <div className="profile-info-details">
-                {renderDetailItem(t('jobSeekerProfile.lastUpdated'), formatDate(profile.updatedAt))}
-                {renderDetailItem(t('jobSeekerProfile.dob'), formatDate(profile.dob, false))}
+                {renderDetailItem(
+                  t("jobSeekerProfile.lastUpdated"),
+                  formatDate(profile.updatedAt)
+                )}
+                {renderDetailItem(
+                  t("jobSeekerProfile.dob"),
+                  formatDate(profile.dob, false)
+                )}
               </div>
             </div>
           </div>
         </div>
         <div className="documents-section section-card">
-          <h2 className="section-title">{t('jobSeekerProfile.uploadedDocuments')}</h2>
+          <h2 className="section-title">
+            {t("jobSeekerProfile.uploadedDocuments")}
+          </h2>
           {downloadError && (
             <div className="error-message download-error">
               <p>{downloadError}</p>
@@ -1213,7 +1555,7 @@ export function JobSeekerProfile() {
           {loadingPdfs && (
             <div className="loading-pdfs">
               <div className="pdf-loading-spinner"></div>
-              <p>{t('jobSeekerProfile.loadingDocumentPreviews')}</p>
+              <p>{t("jobSeekerProfile.loadingDocumentPreviews")}</p>
             </div>
           )}
           {profile?.documents && profile.documents.length > 0 ? (
@@ -1235,16 +1577,22 @@ export function JobSeekerProfile() {
                             {doc.documentFileName || "Unnamed Document"}
                           </p>
                           <p className="document-type">
-                            {t('jobSeekerProfile.documentType', { type: doc.documentType })}
+                            {t("jobSeekerProfile.documentType", {
+                              type: doc.documentType,
+                            })}
                           </p>
                           {doc.documentTitle && (
                             <p className="document-title">
-                              {t('jobSeekerProfile.documentTitle', { title: doc.documentTitle })}
+                              {t("jobSeekerProfile.documentTitle", {
+                                title: doc.documentTitle,
+                              })}
                             </p>
                           )}
                           {doc.documentNotes && (
                             <p className="document-notes">
-                              {t('jobSeekerProfile.documentNotes', { notes: doc.documentNotes })}
+                              {t("jobSeekerProfile.documentNotes", {
+                                notes: doc.documentNotes,
+                              })}
                             </p>
                           )}
 
@@ -1258,7 +1606,8 @@ export function JobSeekerProfile() {
                               }
                               className="button primary"
                             >
-                              <Eye size={16} className="icon"/> {t('jobSeekerProfile.previewDocument')}
+                              <Eye size={16} className="icon" />{" "}
+                              {t("jobSeekerProfile.previewDocument")}
                             </button>
                             <button
                               onClick={() =>
@@ -1274,11 +1623,12 @@ export function JobSeekerProfile() {
                               {downloadingDocId === doc.id ? (
                                 <>
                                   <span className="download-spinner"></span>{" "}
-                                  {t('jobSeekerProfile.downloading')}...
+                                  {t("jobSeekerProfile.downloading")}...
                                 </>
                               ) : (
                                 <>
-                                  <Download size={16} className="icon"/> {t('jobSeekerProfile.downloadDocument')}
+                                  <Download size={16} className="icon" />{" "}
+                                  {t("jobSeekerProfile.downloadDocument")}
                                 </>
                               )}
                             </button>
@@ -1289,7 +1639,9 @@ export function JobSeekerProfile() {
                         <div className="document-validation">
                           <div className="validation-header">
                             <Shield size={16} />
-                            <h3>{t('jobSeekerProfile.aiDocumentValidation')}</h3>
+                            <h3>
+                              {t("jobSeekerProfile.aiDocumentValidation")}
+                            </h3>
                           </div>
 
                           {doc.aiValidation === null ? (
@@ -1301,13 +1653,17 @@ export function JobSeekerProfile() {
                                 </div>
                               </div>
                               <h4 className="validation-progress-title">
-                                {t('jobSeekerProfile.aiValidationInProgress')}
+                                {t("jobSeekerProfile.aiValidationInProgress")}
                               </h4>
                               <p className="validation-progress-message">
-                                {t('jobSeekerProfile.aiValidationInProgressMessage')}
+                                {t(
+                                  "jobSeekerProfile.aiValidationInProgressMessage"
+                                )}
                               </p>
                               <p className="validation-progress-note">
-                                {t('jobSeekerProfile.aiValidationInProgressNote')}
+                                {t(
+                                  "jobSeekerProfile.aiValidationInProgressNote"
+                                )}
                               </p>
                             </div>
                           ) : (
@@ -1330,7 +1686,7 @@ export function JobSeekerProfile() {
                                   </span>
                                 </div>
                                 <span className="score-label">
-                                  {t('jobSeekerProfile.authenticationScore')}
+                                  {t("jobSeekerProfile.authenticationScore")}
                                 </span>
                               </div>
 
@@ -1349,8 +1705,8 @@ export function JobSeekerProfile() {
                                   )}
                                   <span>
                                     {!doc.aiValidation?.is_tampered
-                                      ? t('jobSeekerProfile.notTampered')
-                                      : t('jobSeekerProfile.tampered')}
+                                      ? t("jobSeekerProfile.notTampered")
+                                      : t("jobSeekerProfile.tampered")}
                                   </span>
                                 </div>
                                 <div
@@ -1367,8 +1723,8 @@ export function JobSeekerProfile() {
                                   )}
                                   <span>
                                     {!doc.aiValidation?.is_blurry
-                                      ? t('jobSeekerProfile.notBlurry')
-                                      : t('jobSeekerProfile.blurry')}
+                                      ? t("jobSeekerProfile.notBlurry")
+                                      : t("jobSeekerProfile.blurry")}
                                   </span>
                                 </div>
                                 <div
@@ -1385,8 +1741,8 @@ export function JobSeekerProfile() {
                                   )}
                                   <span>
                                     {doc.aiValidation?.is_text_clear
-                                      ? t('jobSeekerProfile.textClear')
-                                      : t('jobSeekerProfile.textUnclear')}
+                                      ? t("jobSeekerProfile.textClear")
+                                      : t("jobSeekerProfile.textUnclear")}
                                   </span>
                                 </div>
                                 <div
@@ -1404,8 +1760,12 @@ export function JobSeekerProfile() {
                                   )}
                                   <span>
                                     {!doc.aiValidation?.is_resubmission_required
-                                      ? t('jobSeekerProfile.noResubmissionRequired')
-                                      : t('jobSeekerProfile.resubmissionRequired')}
+                                      ? t(
+                                          "jobSeekerProfile.noResubmissionRequired"
+                                        )
+                                      : t(
+                                          "jobSeekerProfile.resubmissionRequired"
+                                        )}
                                   </span>
                                 </div>
                               </div>
@@ -1413,7 +1773,9 @@ export function JobSeekerProfile() {
                               <div className="validation-notes">
                                 <div className="validation-notes-header">
                                   <AlertCircle size={14} />
-                                  <span>{t('jobSeekerProfile.aiAnalysisNotes')}</span>
+                                  <span>
+                                    {t("jobSeekerProfile.aiAnalysisNotes")}
+                                  </span>
                                 </div>
                                 <p
                                   className={`validation-notes-content ${
@@ -1429,8 +1791,8 @@ export function JobSeekerProfile() {
                                   onClick={() => toggleNotes(doc.id)}
                                 >
                                   {expandedNotesIds.has(doc.id || "")
-                                    ? t('jobSeekerProfile.showLess')
-                                    : t('jobSeekerProfile.showFullNotes')}
+                                    ? t("jobSeekerProfile.showLess")
+                                    : t("jobSeekerProfile.showFullNotes")}
                                 </button>
                               </div>
                             </>
@@ -1455,7 +1817,9 @@ export function JobSeekerProfile() {
                               size={24}
                               className="document-preview-placeholder-icon"
                             />
-                            <span>{t('jobSeekerProfile.noPreviewAvailable')}</span>
+                            <span>
+                              {t("jobSeekerProfile.noPreviewAvailable")}
+                            </span>
                           </div>
                         )}
                       </div>
@@ -1465,73 +1829,161 @@ export function JobSeekerProfile() {
               )}
             </div>
           ) : (
-            <p className="empty-documents">{t('jobSeekerProfile.noDocumentsUploaded')}</p>
+            <p className="empty-documents">
+              {t("jobSeekerProfile.noDocumentsUploaded")}
+            </p>
           )}
         </div>
         <div className="profile-content grid-container">
           <div className="personal-details-section section-card">
-            <h2 className="section-title">{t('jobSeekerProfile.personalInformation')}</h2>
+            <h2 className="section-title">
+              {t("jobSeekerProfile.personalInformation")}
+            </h2>
             <div className="detail-group">
-              {renderDetailItem(t('jobSeekerProfile.firstName'), profile.firstName)}
-              {renderDetailItem(t('jobSeekerProfile.lastName'), profile.lastName)}
-              {renderDetailItem(t('jobSeekerProfile.email'), profile.email)}
-              {renderDetailItem(t('jobSeekerProfile.mobile'), profile.mobile)}
-              {renderDetailItem(t('jobSeekerProfile.dateOfBirth'), formatDate(profile.dob, false))}
+              {renderDetailItem(
+                t("jobSeekerProfile.firstName"),
+                profile.firstName
+              )}
+              {renderDetailItem(
+                t("jobSeekerProfile.lastName"),
+                profile.lastName
+              )}
+              {renderDetailItem(t("jobSeekerProfile.email"), profile.email)}
+              {renderDetailItem(t("jobSeekerProfile.mobile"), profile.mobile)}
+              {renderDetailItem(
+                t("jobSeekerProfile.dateOfBirth"),
+                formatDate(profile.dob, false)
+              )}
             </div>
           </div>
 
           <div className="identification-section section-card">
-            <h2 className="section-title">{t('jobSeekerProfile.identification')}</h2>
+            <h2 className="section-title">
+              {t("jobSeekerProfile.identification")}
+            </h2>
             <div className="detail-group">
-              {renderDetailItem(t('jobSeekerProfile.licenseNumber'), profile.licenseNumber)}
-              {renderDetailItem(t('jobSeekerProfile.passportNumber'), profile.passportNumber)}
-              {renderDetailItem(t('jobSeekerProfile.sinNumber'), profile.sinNumber)}
-              {renderDetailItem(t('jobSeekerProfile.sinExpiry'), formatDate(profile.sinExpiry, false))}
-              {renderDetailItem(t('jobSeekerProfile.businessNumber'), profile.businessNumber)}
-              {renderDetailItem(t('jobSeekerProfile.corporationName'), profile.corporationName)}
+              {renderDetailItem(
+                t("jobSeekerProfile.licenseNumber"),
+                profile.licenseNumber
+              )}
+              {renderDetailItem(
+                t("jobSeekerProfile.passportNumber"),
+                profile.passportNumber
+              )}
+              {renderDetailItem(
+                t("jobSeekerProfile.sinNumber"),
+                profile.sinNumber
+              )}
+              {renderDetailItem(
+                t("jobSeekerProfile.sinExpiry"),
+                formatDate(profile.sinExpiry, false)
+              )}
+              {renderDetailItem(
+                t("jobSeekerProfile.businessNumber"),
+                profile.businessNumber
+              )}
+              {renderDetailItem(
+                t("jobSeekerProfile.corporationName"),
+                profile.corporationName
+              )}
             </div>
           </div>
 
           <div className="address-section section-card">
-            <h2 className="section-title">{t('jobSeekerProfile.address')}</h2>
+            <h2 className="section-title">{t("jobSeekerProfile.address")}</h2>
             <div className="detail-group">
-              {renderDetailItem(t('jobSeekerProfile.street'), profile.street)}
-              {renderDetailItem(t('jobSeekerProfile.city'), profile.city)}
-              {renderDetailItem(t('jobSeekerProfile.province'), profile.province)}
-              {renderDetailItem(t('jobSeekerProfile.postalCode'), profile.postalCode)}
+              {renderDetailItem(t("jobSeekerProfile.street"), profile.street)}
+              {renderDetailItem(t("jobSeekerProfile.city"), profile.city)}
+              {renderDetailItem(
+                t("jobSeekerProfile.province"),
+                profile.province
+              )}
+              {renderDetailItem(
+                t("jobSeekerProfile.postalCode"),
+                profile.postalCode
+              )}
             </div>
           </div>
 
           <div className="qualifications-section section-card">
-            <h2 className="section-title">{t('jobSeekerProfile.qualifications')}</h2>
+            <h2 className="section-title">
+              {t("jobSeekerProfile.qualifications")}
+            </h2>
             <div className="detail-group">
-              {renderDetailItem(t('jobSeekerProfile.workPreference'), profile?.workPreference)}
-              {renderDetailItem(t('jobSeekerProfile.bio'), profile?.bio)}
-              {renderDetailItem(t('jobSeekerProfile.licenseType'), profile?.licenseType)}
-              {renderDetailItem(t('jobSeekerProfile.experience'), profile?.experience)}
-              {renderDetailItem(t('jobSeekerProfile.manualDriving'), profile?.manualDriving)}
-              {renderDetailItem(t('jobSeekerProfile.availability'), profile?.availability)}
-              {renderDetailItem(t('jobSeekerProfile.weekendAvailability'), profile?.weekendAvailability)}
+              {renderDetailItem(
+                t("jobSeekerProfile.workPreference"),
+                profile?.workPreference
+              )}
+              {renderDetailItem(t("jobSeekerProfile.bio"), profile?.bio)}
+              {renderDetailItem(
+                t("jobSeekerProfile.licenseType"),
+                profile?.licenseType
+              )}
+              {renderDetailItem(
+                t("jobSeekerProfile.experience"),
+                profile?.experience
+              )}
+              {renderDetailItem(
+                t("jobSeekerProfile.manualDriving"),
+                profile?.manualDriving
+              )}
+              {renderDetailItem(
+                t("jobSeekerProfile.availability"),
+                profile?.availability
+              )}
+              {renderDetailItem(
+                t("jobSeekerProfile.weekendAvailability"),
+                profile?.weekendAvailability
+              )}
             </div>
           </div>
 
           {/* Only show compensation section for admins and recruiters */}
           {!isJobSeeker && (
             <div className="compensation-section section-card">
-              <h2 className="section-title">{t('jobSeekerProfile.compensation')}</h2>
+              <h2 className="section-title">
+                {t("jobSeekerProfile.compensation")}
+              </h2>
               <div className="detail-group">
-                {renderDetailItem(t('jobSeekerProfile.payrateType'), profile.payrateType)}
-                {renderDetailItem(t('jobSeekerProfile.billRate'), profile.billRate)}
-                {renderDetailItem(t('jobSeekerProfile.payRate'), profile.payRate)}
-                {renderDetailItem(t('jobSeekerProfile.paymentMethod'), profile.paymentMethod)}
-                {renderDetailItem(t('jobSeekerProfile.hstGst'), profile.hstGst)}
-                {renderDetailItem(t('jobSeekerProfile.cashDeduction'), profile.cashDeduction)}
-                {renderDetailItem(t('jobSeekerProfile.overtimeEnabled'), profile.overtimeEnabled)}
+                {renderDetailItem(
+                  t("jobSeekerProfile.payrateType"),
+                  profile.payrateType
+                )}
+                {renderDetailItem(
+                  t("jobSeekerProfile.billRate"),
+                  profile.billRate
+                )}
+                {renderDetailItem(
+                  t("jobSeekerProfile.payRate"),
+                  profile.payRate
+                )}
+                {renderDetailItem(
+                  t("jobSeekerProfile.paymentMethod"),
+                  profile.paymentMethod
+                )}
+                {renderDetailItem(t("jobSeekerProfile.hstGst"), profile.hstGst)}
+                {renderDetailItem(
+                  t("jobSeekerProfile.cashDeduction"),
+                  profile.cashDeduction
+                )}
+                {renderDetailItem(
+                  t("jobSeekerProfile.overtimeEnabled"),
+                  profile.overtimeEnabled
+                )}
                 {profile.overtimeEnabled && (
                   <>
-                    {renderDetailItem(t('jobSeekerProfile.overtimeHoursAfter'), profile.overtimeHours)}
-                    {renderDetailItem(t('jobSeekerProfile.overtimeBillRate'), profile.overtimeBillRate)}
-                    {renderDetailItem(t('jobSeekerProfile.overtimePayRate'), profile.overtimePayRate)}
+                    {renderDetailItem(
+                      t("jobSeekerProfile.overtimeHoursAfter"),
+                      profile.overtimeHours
+                    )}
+                    {renderDetailItem(
+                      t("jobSeekerProfile.overtimeBillRate"),
+                      profile.overtimeBillRate
+                    )}
+                    {renderDetailItem(
+                      t("jobSeekerProfile.overtimePayRate"),
+                      profile.overtimePayRate
+                    )}
                   </>
                 )}
               </div>
@@ -1539,25 +1991,51 @@ export function JobSeekerProfile() {
           )}
 
           <div className="meta-section section-card">
-            <h2 className="section-title">{t('jobSeekerProfile.metaInformation')}</h2>
+            <h2 className="section-title">
+              {t("jobSeekerProfile.metaInformation")}
+            </h2>
             <div className="detail-group">
               {profile.creatorDetails ? (
                 <div className="detail-section">
-                  <h3>{t('jobSeekerProfile.createdBy')}</h3>
-                  {renderDetailItem(t('jobSeekerProfile.name'), profile.creatorDetails.name)}
-                  {renderDetailItem(t('jobSeekerProfile.email'), profile.creatorDetails.email)}
-                  {renderDetailItem(t('jobSeekerProfile.userType'), profile.creatorDetails.userType)}
-                  {renderDetailItem(t('jobSeekerProfile.accountCreatedAt'), formatDate(profile.creatorDetails.createdAt))}
+                  <h3>{t("jobSeekerProfile.createdBy")}</h3>
+                  {renderDetailItem(
+                    t("jobSeekerProfile.name"),
+                    profile.creatorDetails.name
+                  )}
+                  {renderDetailItem(
+                    t("jobSeekerProfile.email"),
+                    profile.creatorDetails.email
+                  )}
+                  {renderDetailItem(
+                    t("jobSeekerProfile.userType"),
+                    profile.creatorDetails.userType
+                  )}
+                  {renderDetailItem(
+                    t("jobSeekerProfile.accountCreatedAt"),
+                    formatDate(profile.creatorDetails.createdAt)
+                  )}
                 </div>
               ) : null}
 
               {profile.updaterDetails ? (
                 <div className="detail-section">
-                  <h3>{t('jobSeekerProfile.lastUpdatedBy')}</h3>
-                  {renderDetailItem(t('jobSeekerProfile.name'), profile.updaterDetails.name)}
-                  {renderDetailItem(t('jobSeekerProfile.email'), profile.updaterDetails.email)}
-                  {renderDetailItem(t('jobSeekerProfile.userType'), profile.updaterDetails.userType)}
-                  {renderDetailItem(t('jobSeekerProfile.lastUpdatedAt'), formatDate(profile.updaterDetails.updatedAt))}
+                  <h3>{t("jobSeekerProfile.lastUpdatedBy")}</h3>
+                  {renderDetailItem(
+                    t("jobSeekerProfile.name"),
+                    profile.updaterDetails.name
+                  )}
+                  {renderDetailItem(
+                    t("jobSeekerProfile.email"),
+                    profile.updaterDetails.email
+                  )}
+                  {renderDetailItem(
+                    t("jobSeekerProfile.userType"),
+                    profile.updaterDetails.userType
+                  )}
+                  {renderDetailItem(
+                    t("jobSeekerProfile.lastUpdatedAt"),
+                    formatDate(profile.updaterDetails.updatedAt)
+                  )}
                 </div>
               ) : null}
             </div>
@@ -1566,19 +2044,27 @@ export function JobSeekerProfile() {
 
         {/* Jobseeker Positions Section */}
         <section className="" style={{ marginTop: 40 }}>
-          <h2 className="section-title">{t('jobSeekerProfile.positions', { name: displayName })}</h2>
+          <h2 className="section-title">
+            {t("jobSeekerProfile.positions", { name: displayName })}
+          </h2>
           <div className="jsp-positions-content">
             {positionsLoading ? (
               <div className="jsp-positions-list">
-                {Array.from({ length: positionsPagination.itemsPerPage }, (_, index) => (
-                  <SkeletonCard key={index} />
-                ))}
+                {Array.from(
+                  { length: positionsPagination.itemsPerPage },
+                  (_, index) => (
+                    <SkeletonCard key={index} />
+                  )
+                )}
               </div>
             ) : positionsError ? (
               <div className="error-container">
                 <p className="error-message">{positionsError}</p>
-                <button className="button primary" onClick={() => handlePositionsPageChange(1)}>
-                  {t('jobSeekerProfile.tryAgain')}
+                <button
+                  className="button primary"
+                  onClick={() => handlePositionsPageChange(1)}
+                >
+                  {t("jobSeekerProfile.tryAgain")}
                 </button>
               </div>
             ) : (
@@ -1586,19 +2072,35 @@ export function JobSeekerProfile() {
                 {assignments.length === 0 ? (
                   <div className="jsp-empty-state">
                     <Briefcase size={48} className="jsp-empty-icon" />
-                    <h3>{t('jobSeekerProfile.noPositionsFound')}</h3>
-                    <p>{t('jobSeekerProfile.noPositionsMessage')}</p>
+                    <h3>{t("jobSeekerProfile.noPositionsFound")}</h3>
+                    <p>{t("jobSeekerProfile.noPositionsMessage")}</p>
                   </div>
                 ) : (
                   assignments.map((assignment) => (
-                    <div key={assignment.id} className="jsp-position-card" data-status={(() => {
-                      const statusMap = { active: 'current', completed: 'past', upcoming: 'future' };
-                      return statusMap[assignment.status as keyof typeof statusMap] || assignment.status;
-                    })()}>
+                    <div
+                      key={assignment.id}
+                      className="jsp-position-card"
+                      data-status={(() => {
+                        const statusMap = {
+                          active: "current",
+                          completed: "past",
+                          upcoming: "future",
+                        };
+                        return (
+                          statusMap[
+                            assignment.status as keyof typeof statusMap
+                          ] || assignment.status
+                        );
+                      })()}
+                    >
                       <div className="jsp-position-header">
                         <div className="jsp-position-title-section">
-                          <h3 className="jsp-position-title">{assignment.position?.title}</h3>
-                          <div className="jsp-position-code">{assignment.position?.positionCode}</div>
+                          <h3 className="jsp-position-title">
+                            {assignment.position?.title}
+                          </h3>
+                          <div className="jsp-position-code">
+                            {assignment.position?.positionCode}
+                          </div>
                         </div>
                         <div className={getStatusBadgeClass(assignment)}>
                           {getStatusText(assignment)}
@@ -1611,32 +2113,58 @@ export function JobSeekerProfile() {
                         </div>
                         <div className="jsp-detail-row">
                           <MapPin size={16} />
-                          <span>{assignment.position?.city}, {assignment.position?.province}</span>
+                          <span>
+                            {assignment.position?.city},{" "}
+                            {assignment.position?.province}
+                          </span>
                         </div>
                         {assignment.position?.startDate && (
                           <div className="jsp-detail-row">
                             <Calendar size={16} />
                             <span>
-                              {t('jobSeekerProfile.positionPeriod', {
-                                startDate: formatDate(assignment.position.startDate, false),
-                                endDate: assignment.position.endDate ? formatDate(assignment.position.endDate, false) : ''
+                              {t("jobSeekerProfile.positionPeriod", {
+                                startDate: formatDate(
+                                  assignment.position.startDate,
+                                  false
+                                ),
+                                endDate: assignment.position.endDate
+                                  ? formatDate(
+                                      assignment.position.endDate,
+                                      false
+                                    )
+                                  : "",
                               })}
                             </span>
                           </div>
                         )}
                         <div className="jsp-detail-row">
                           <Clock size={16} />
-                          <span>{t('jobSeekerProfile.duration', { duration: formatDuration(assignment.startDate, assignment.endDate) })}</span>
+                          <span>
+                            {t("jobSeekerProfile.duration", {
+                              duration: formatDuration(
+                                assignment.startDate,
+                                assignment.endDate
+                              ),
+                            })}
+                          </span>
                         </div>
                       </div>
                       <div className="jsp-position-meta">
                         <div className="jsp-meta-tags">
-                          <span className="jsp-tag employment-type">{assignment.position?.employmentType}</span>
+                          <span className="jsp-tag employment-type">
+                            {assignment.position?.employmentType}
+                          </span>
                           {assignment.position?.employmentTerm && (
-                            <span className="jsp-tag employment-term">{assignment.position.employmentTerm}</span>
+                            <span className="jsp-tag employment-term">
+                              {assignment.position.employmentTerm}
+                            </span>
                           )}
-                          <span className="jsp-tag position-category">{assignment.position?.positionCategory}</span>
-                          <span className="jsp-tag experience">{assignment.position?.experience}</span>
+                          <span className="jsp-tag position-category">
+                            {assignment.position?.positionCategory}
+                          </span>
+                          <span className="jsp-tag experience">
+                            {assignment.position?.experience}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -1649,55 +2177,253 @@ export function JobSeekerProfile() {
               <div className="jsp-pagination-controls bottom">
                 <div className="jsp-pagination-info">
                   <span className="jsp-pagination-text">
-                    {t('jobSeekerProfile.paginationInfo', {
+                    {t("jobSeekerProfile.paginationInfo", {
                       currentPage: positionsPagination.currentPage,
-                      totalPages: positionsPagination.totalPages
+                      totalPages: positionsPagination.totalPages,
                     })}
                   </span>
                 </div>
                 <div className="jsp-pagination-buttons">
                   <button
                     className="jsp-pagination-btn prev"
-                    onClick={() => handlePositionsPageChange(positionsPagination.currentPage - 1)}
+                    onClick={() =>
+                      handlePositionsPageChange(
+                        positionsPagination.currentPage - 1
+                      )
+                    }
                     disabled={positionsPagination.currentPage === 1}
-                    title={t('jobSeekerProfile.previousPage')}
-                    aria-label={t('jobSeekerProfile.previousPage')}
+                    title={t("jobSeekerProfile.previousPage")}
+                    aria-label={t("jobSeekerProfile.previousPage")}
                   >
                     <ChevronLeft size={16} />
-                    <span>{t('jobSeekerProfile.previous')}</span>
+                    <span>{t("jobSeekerProfile.previous")}</span>
                   </button>
                   <div className="jsp-page-numbers">
-                    {Array.from({ length: Math.min(5, positionsPagination.totalPages) }, (_, i) => {
-                      let pageNum;
-                      if (positionsPagination.totalPages <= 5) {
-                        pageNum = i + 1;
-                      } else if (positionsPagination.currentPage <= 3) {
-                        pageNum = i + 1;
-                      } else if (positionsPagination.currentPage >= positionsPagination.totalPages - 2) {
-                        pageNum = positionsPagination.totalPages - 4 + i;
-                      } else {
-                        pageNum = positionsPagination.currentPage - 2 + i;
+                    {Array.from(
+                      { length: Math.min(5, positionsPagination.totalPages) },
+                      (_, i) => {
+                        let pageNum;
+                        if (positionsPagination.totalPages <= 5) {
+                          pageNum = i + 1;
+                        } else if (positionsPagination.currentPage <= 3) {
+                          pageNum = i + 1;
+                        } else if (
+                          positionsPagination.currentPage >=
+                          positionsPagination.totalPages - 2
+                        ) {
+                          pageNum = positionsPagination.totalPages - 4 + i;
+                        } else {
+                          pageNum = positionsPagination.currentPage - 2 + i;
+                        }
+                        return (
+                          <button
+                            key={pageNum}
+                            className={`jsp-page-number-btn ${
+                              pageNum === positionsPagination.currentPage
+                                ? "active"
+                                : ""
+                            }`}
+                            onClick={() => handlePositionsPageChange(pageNum)}
+                            aria-label={t("jobSeekerProfile.goToPage", {
+                              page: pageNum,
+                            })}
+                          >
+                            {pageNum}
+                          </button>
+                        );
                       }
-                      return (
-                        <button
-                          key={pageNum}
-                          className={`jsp-page-number-btn ${pageNum === positionsPagination.currentPage ? 'active' : ''}`}
-                          onClick={() => handlePositionsPageChange(pageNum)}
-                          aria-label={t('jobSeekerProfile.goToPage', { page: pageNum })}
-                        >
-                          {pageNum}
-                        </button>
-                      );
-                    })}
+                    )}
                   </div>
                   <button
                     className="jsp-pagination-btn next"
-                    onClick={() => handlePositionsPageChange(positionsPagination.currentPage + 1)}
-                    disabled={positionsPagination.currentPage === positionsPagination.totalPages}
-                    title={t('jobSeekerProfile.nextPage')}
-                    aria-label={t('jobSeekerProfile.nextPage')}
+                    onClick={() =>
+                      handlePositionsPageChange(
+                        positionsPagination.currentPage + 1
+                      )
+                    }
+                    disabled={
+                      positionsPagination.currentPage ===
+                      positionsPagination.totalPages
+                    }
+                    title={t("jobSeekerProfile.nextPage")}
+                    aria-label={t("jobSeekerProfile.nextPage")}
                   >
-                    <span>{t('jobSeekerProfile.next')}</span>
+                    <span>{t("jobSeekerProfile.next")}</span>
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* Consent Records Section */}
+        <section className="" style={{ marginTop: 40 }}>
+          <h2 className="section-title">
+            {t("jobSeekerProfile.digitalConsentRecords", { name: displayName })}
+          </h2>
+          <div className="jsp-consent-content">
+            {consentLoading ? (
+              <div className="jsp-consent-list">
+                {Array.from(
+                  { length: consentPagination.itemsPerPage },
+                  (_, index) => (
+                    <SkeletonCard key={index} />
+                  )
+                )}
+              </div>
+            ) : consentError ? (
+              <div className="error-container">
+                <p className="error-message">{consentError}</p>
+                <button
+                  className="button primary"
+                  onClick={() => handleConsentPageChange(1)}
+                >
+                  {t("jobSeekerProfile.tryAgain")}
+                </button>
+              </div>
+            ) : (
+              <div className="jsp-consent-list">
+                {consentRecords.length === 0 ? (
+                  <div className="jsp-empty-state">
+                    <FileCheck size={48} className="jsp-empty-icon" />
+                    <h3>{t("jobSeekerProfile.noConsentRecords")}</h3>
+                    <p>
+                      {t("jobSeekerProfile.noConsentMessage")}
+                    </p>
+                  </div>
+                ) : (
+                  consentRecords.map((record) => (
+                    <div
+                      key={record.id}
+                      className="jsp-consent-card"
+                      data-status={record.status}
+                    >
+                      <div className="jsp-consent-header">
+                        <div className="jsp-consent-title-section">
+                          <h3 className="jsp-consent-title">
+                            {record.consent_documents.file_name}
+                          </h3>
+                          <div className="jsp-consent-code">
+                            {t("jobSeekerProfile.version", { version: record.consent_documents.version })}
+                          </div>
+                        </div>
+                        <div className={`jsp-status-badge ${record.status}`}>
+                          {record.status.charAt(0).toUpperCase() +
+                            record.status.slice(1)}
+                        </div>
+                      </div>
+                      <div className="jsp-consent-details">
+                        <div className="jsp-detail-row">
+                          <Calendar size={16} />
+                          <span>{t("jobSeekerProfile.consentSent", { date: formatDate(record.sent_at) })}</span>
+                        </div>
+                        <div className="jsp-detail-row">
+                          <CheckCircle size={16} />
+                          <span>
+                            {t("jobSeekerProfile.consentCompleted", { date: formatDate(record.completed_at) })}
+                          </span>
+                        </div>
+                        <div className="jsp-detail-row">
+                          <User size={16} />
+                          <span>
+                            {t("jobSeekerProfile.consentedName", { 
+                              name: record.consented_name ? record.consented_name : t("jobSeekerProfile.nA")
+                            })}
+                          </span>
+                        </div>
+                        <div className="jsp-detail-row">
+                          <Clock size={16} />
+                          <span>{t("jobSeekerProfile.consentStatus", { status: record.status })}</span>
+                        </div>
+                      </div>
+                      <div className="jsp-consent-actions">
+                        <button
+                          className="button primary"
+                          onClick={() =>
+                            navigate(`/consent-dashboard/${record.document_id}`)
+                          }
+                        >
+                          <Eye size={16} />
+                          {t("jobSeekerProfile.viewConsentRecord")}
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+            {/* Consent Pagination Controls */}
+            {!consentLoading && consentPagination.totalPages > 1 && (
+              <div className="jsp-pagination-controls bottom">
+                <div className="jsp-pagination-info">
+                  <span className="jsp-pagination-text">
+                    {t("jobSeekerProfile.paginationInfo", {
+                      currentPage: consentPagination.currentPage,
+                      totalPages: consentPagination.totalPages
+                    })}
+                  </span>
+                </div>
+                <div className="jsp-pagination-buttons">
+                  <button
+                    className="jsp-pagination-btn prev"
+                    onClick={() =>
+                      handleConsentPageChange(consentPagination.currentPage - 1)
+                    }
+                    disabled={consentPagination.currentPage === 1}
+                    title={t("jobSeekerProfile.previousPage")}
+                    aria-label={t("jobSeekerProfile.previousPage")}
+                  >
+                    <ChevronLeft size={16} />
+                    <span>{t("jobSeekerProfile.previous")}</span>
+                  </button>
+                  <div className="jsp-page-numbers">
+                    {Array.from(
+                      { length: Math.min(5, consentPagination.totalPages) },
+                      (_, i) => {
+                        let pageNum;
+                        if (consentPagination.totalPages <= 5) {
+                          pageNum = i + 1;
+                        } else if (consentPagination.currentPage <= 3) {
+                          pageNum = i + 1;
+                        } else if (
+                          consentPagination.currentPage >=
+                          consentPagination.totalPages - 2
+                        ) {
+                          pageNum = consentPagination.totalPages - 4 + i;
+                        } else {
+                          pageNum = consentPagination.currentPage - 2 + i;
+                        }
+                        return (
+                          <button
+                            key={pageNum}
+                            className={`jsp-page-number-btn ${
+                              pageNum === consentPagination.currentPage
+                                ? "active"
+                                : ""
+                            }`}
+                            onClick={() => handleConsentPageChange(pageNum)}
+                            aria-label={t("jobSeekerProfile.goToPage", { page: pageNum })}
+                          >
+                            {pageNum}
+                          </button>
+                        );
+                      }
+                    )}
+                  </div>
+                  <button
+                    className="jsp-pagination-btn next"
+                    onClick={() =>
+                      handleConsentPageChange(consentPagination.currentPage + 1)
+                    }
+                    disabled={
+                      consentPagination.currentPage ===
+                      consentPagination.totalPages
+                    }
+                    title={t("jobSeekerProfile.nextPage")}
+                    aria-label={t("jobSeekerProfile.nextPage")}
+                  >
+                    <span>{t("jobSeekerProfile.next")}</span>
                     <ChevronRight size={16} />
                   </button>
                 </div>
@@ -1718,10 +2444,10 @@ export function JobSeekerProfile() {
       {/* Edit Confirmation Modal for Jobseekers */}
       <ConfirmationModal
         isOpen={isEditConfirmationOpen}
-        title={t('jobSeekerProfile.profileStatusChangeNoticeTitle')}
-        message={t('jobSeekerProfile.profileStatusChangeNoticeMessage')}
-        confirmText={t('jobSeekerProfile.continueToEdit')}
-        cancelText={t('jobSeekerProfile.cancel')}
+        title={t("jobSeekerProfile.profileStatusChangeNoticeTitle")}
+        message={t("jobSeekerProfile.profileStatusChangeNoticeMessage")}
+        confirmText={t("jobSeekerProfile.continueToEdit")}
+        cancelText={t("jobSeekerProfile.cancel")}
         confirmButtonClass="primary"
         onConfirm={confirmEdit}
         onCancel={() => setIsEditConfirmationOpen(false)}
@@ -1730,10 +2456,14 @@ export function JobSeekerProfile() {
       {/* Delete Confirmation Modal */}
       <ConfirmationModal
         isOpen={isDeleteConfirmationOpen}
-        title={t('jobSeekerProfile.deleteProfileTitle')}
-        message={t('jobSeekerProfile.deleteProfileMessage')}
-        confirmText={isDeleting ? t('jobSeekerProfile.deleting') : t('jobSeekerProfile.deleteProfile')}
-        cancelText={t('jobSeekerProfile.cancel')}
+        title={t("jobSeekerProfile.deleteProfileTitle")}
+        message={t("jobSeekerProfile.deleteProfileMessage")}
+        confirmText={
+          isDeleting
+            ? t("jobSeekerProfile.deleting")
+            : t("jobSeekerProfile.deleteProfile")
+        }
+        cancelText={t("jobSeekerProfile.cancel")}
         confirmButtonClass="danger"
         onConfirm={confirmDelete}
         onCancel={() => setIsDeleteConfirmationOpen(false)}
@@ -1749,12 +2479,12 @@ export function JobSeekerProfile() {
           onClick={(e) => e.stopPropagation()}
         >
           <div className="modal-header">
-            <h3>{t('jobSeekerProfile.updateProfileStatus')}</h3>
+            <h3>{t("jobSeekerProfile.updateProfileStatus")}</h3>
             <button
               className="close-button"
               onClick={() => setIsStatusModalOpen(false)}
             >
-              <XCircle size={20} className="icon"/>
+              <XCircle size={20} className="icon" />
             </button>
           </div>
           <div className="modal-body">
@@ -1776,7 +2506,7 @@ export function JobSeekerProfile() {
                   }`}
                 >
                   <CheckCircle className="status-icon verified" size={18} />
-                  <span>{t('jobSeekerProfile.verified')}</span>
+                  <span>{t("jobSeekerProfile.verified")}</span>
                 </label>
               </div>
 
@@ -1797,7 +2527,7 @@ export function JobSeekerProfile() {
                   }`}
                 >
                   <XCircle className="status-icon rejected" size={18} />
-                  <span>{t('jobSeekerProfile.rejected')}</span>
+                  <span>{t("jobSeekerProfile.rejected")}</span>
                 </label>
               </div>
 
@@ -1818,7 +2548,7 @@ export function JobSeekerProfile() {
                   }`}
                 >
                   <Clock className="status-icon pending" size={18} />
-                  <span>{t('jobSeekerProfile.pending')}</span>
+                  <span>{t("jobSeekerProfile.pending")}</span>
                 </label>
               </div>
             </div>
@@ -1826,11 +2556,16 @@ export function JobSeekerProfile() {
             {/* Rejection reason textarea - only visible when rejected status is selected */}
             {selectedStatus === "rejected" && (
               <div className="rejection-reason-container">
-                <label htmlFor="rejection-reason" className="form-label">{t('jobSeekerProfile.rejectionReasonLabel')} <span className="required">*</span></label>
+                <label htmlFor="rejection-reason" className="form-label">
+                  {t("jobSeekerProfile.rejectionReasonLabel")}{" "}
+                  <span className="required">*</span>
+                </label>
                 <textarea
                   id="rejection-reason"
-                  className={`form-textarea ${rejectionReasonError ? 'error-input' : ''}`}
-                  placeholder={t('jobSeekerProfile.rejectionReasonPlaceholder')}
+                  className={`form-textarea ${
+                    rejectionReasonError ? "error-input" : ""
+                  }`}
+                  placeholder={t("jobSeekerProfile.rejectionReasonPlaceholder")}
                   value={rejectionReason}
                   onChange={(e) => {
                     setRejectionReason(e.target.value);
@@ -1841,9 +2576,13 @@ export function JobSeekerProfile() {
                   required
                 />
                 {rejectionReasonError && (
-                  <p className="error-message rejection-error">{rejectionReasonError}</p>
+                  <p className="error-message rejection-error">
+                    {rejectionReasonError}
+                  </p>
                 )}
-                <p className="field-note">{t('jobSeekerProfile.rejectionReasonNote')}</p>
+                <p className="field-note">
+                  {t("jobSeekerProfile.rejectionReasonNote")}
+                </p>
               </div>
             )}
           </div>
@@ -1852,13 +2591,13 @@ export function JobSeekerProfile() {
               className="button secondary"
               onClick={() => setIsStatusModalOpen(false)}
             >
-              {t('jobSeekerProfile.cancel')}
+              {t("jobSeekerProfile.cancel")}
             </button>
             <button
               className="button primary"
               onClick={handleUpdateStatusFromModal}
             >
-              {t('jobSeekerProfile.updateStatus')}
+              {t("jobSeekerProfile.updateStatus")}
             </button>
           </div>
         </div>
