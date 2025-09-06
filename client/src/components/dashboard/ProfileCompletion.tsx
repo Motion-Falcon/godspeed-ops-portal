@@ -44,7 +44,7 @@ export function ProfileCompletion({ userId }: ProfileCompletionProps) {
           {
             name: "Personal Info",
             completed: 0,
-            total: 11,
+            total: 13,
             percentage: 0,
             icon: <UserIcon size={16} />,
           },
@@ -73,7 +73,7 @@ export function ProfileCompletion({ userId }: ProfileCompletionProps) {
       };
     }
 
-    // Personal Info Section - Count each field individually (11 fields)
+    // Personal Info Section - Count each field individually (13 fields)
     const personalInfoFields = [
       profile.firstName,
       profile.lastName,
@@ -84,6 +84,8 @@ export function ProfileCompletion({ userId }: ProfileCompletionProps) {
       profile.passportNumber,
       profile.sinNumber,
       profile.sinExpiry,
+      profile.workPermitUci,
+      profile.workPermitExpiry,
       profile.businessNumber,
       profile.corporationName,
     ];

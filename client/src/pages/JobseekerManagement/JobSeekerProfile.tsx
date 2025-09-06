@@ -65,6 +65,8 @@ interface FullJobseekerProfile {
   passportNumber?: string | null; // Potentially encrypted
   sinNumber?: string | null; // Potentially encrypted
   sinExpiry?: string | null;
+  workPermitUci?: string | null; // Work/Study permit UCI for temporary residents
+  workPermitExpiry?: string | null; // Work/Study permit expiry date for temporary residents
   businessNumber?: string | null; // Potentially encrypted
   corporationName?: string | null;
   street?: string | null;
@@ -115,11 +117,11 @@ interface FullJobseekerProfile {
 }
 
 // Helper function to generate display name
-const getDisplayName = (profile: FullJobseekerProfile | null): string => {
-  if (!profile) return "Unknown User";
+const getDisplayName = (profile: FullJobseekerProfile | null, t: (key: string) => string): string => {
+  if (!profile) return t("jobSeekerProfile.unknownUser");
   return (
     `${profile.firstName || ""} ${profile.lastName || ""}`.trim() ||
-    "Unnamed Profile"
+    t("jobSeekerProfile.unnamedProfile")
   );
 };
 
@@ -224,6 +226,54 @@ const getSinExpiryAlert = (
   return null;
 };
 
+// Helper function to get Work Permit expiry alert info
+const getWorkPermitExpiryAlert = (
+  profile: FullJobseekerProfile | null,
+  t?: (key: string, interpolations?: Record<string, string | number>) => string
+): {
+  type: "expired" | "warning-30" | "warning-60" | "warning-90" | null;
+  daysUntilExpiry: number | null;
+  message: string;
+  icon: React.ReactNode;
+} | null => {
+  if (!profile?.workPermitExpiry) return null;
+  const daysUntilExpiry = calculateDaysUntilExpiry(profile.workPermitExpiry);
+  if (daysUntilExpiry === null) return null;
+  if (!t) t = (k) => k; // fallback if t not provided
+  if (daysUntilExpiry < 0) {
+    return {
+      type: "expired",
+      daysUntilExpiry,
+      message: t("jobSeekerProfile.workPermitExpired", {
+        days: Math.abs(daysUntilExpiry),
+      }),
+      icon: <AlertTriangle size={20} />,
+    };
+  } else if (daysUntilExpiry <= 30) {
+    return {
+      type: "warning-30",
+      daysUntilExpiry,
+      message: t("jobSeekerProfile.workPermitExpiresIn", { days: daysUntilExpiry }),
+      icon: <AlertTriangle size={20} />,
+    };
+  } else if (daysUntilExpiry <= 60) {
+    return {
+      type: "warning-60",
+      daysUntilExpiry,
+      message: t("jobSeekerProfile.workPermitExpiresIn", { days: daysUntilExpiry }),
+      icon: <AlertCircle size={20} />,
+    };
+  } else if (daysUntilExpiry <= 90) {
+    return {
+      type: "warning-90",
+      daysUntilExpiry,
+      message: t("jobSeekerProfile.workPermitExpiresIn", { days: daysUntilExpiry }),
+      icon: <CircleAlert size={20} />,
+    };
+  }
+  return null;
+};
+
 // Helper function to decode HTML entities for slashes
 const decodePath = (path: string | undefined): string | undefined => {
   return path ? path.replace(/&#x2F;/g, "/") : undefined;
@@ -307,6 +357,11 @@ export function JobSeekerProfile() {
   const navigate = useNavigate();
   const { t } = useLanguage();
 
+  // Update selectedPdfName with translation when t is available
+  useEffect(() => {
+    setSelectedPdfName(t("jobSeekerProfile.document"));
+  }, [t]);
+
   // Add state for positions
   const [assignments, setAssignments] = useState<CandidateAssignment[]>([]);
   const [positionsLoading, setPositionsLoading] = useState<boolean>(true);
@@ -335,7 +390,7 @@ export function JobSeekerProfile() {
     const fetchProfile = async () => {
       try {
         setLoading(true);
-        if (!id) throw new Error("Profile ID is missing");
+        if (!id) throw new Error(t("messages.profileIdMissing"));
         const data = await getJobseekerProfile(id);
         console.log("Fetched detailed profile:", data);
         setProfile(data);
@@ -343,7 +398,7 @@ export function JobSeekerProfile() {
         setError(
           err instanceof Error
             ? err.message
-            : "An error occurred while fetching the profile"
+            : t("messages.errorOccurred")
         );
         console.error("Error fetching profile:", err);
       } finally {
@@ -424,7 +479,7 @@ export function JobSeekerProfile() {
         }));
       } catch (err) {
         setPositionsError(
-          err instanceof Error ? err.message : "Failed to fetch positions"
+          err instanceof Error ? err.message : t("messages.failedToFetchPositions")
         );
         setAssignments([]);
         setPositionsPagination((prev) => ({
@@ -467,7 +522,7 @@ export function JobSeekerProfile() {
           }));
         } catch (err) {
           setPositionsError(
-            err instanceof Error ? err.message : "Failed to fetch positions"
+            err instanceof Error ? err.message : t("messages.failedToFetchPositions")
           );
           setAssignments([]);
           setPositionsPagination((prev) => ({
@@ -507,7 +562,7 @@ export function JobSeekerProfile() {
         }));
       } catch (err) {
         setConsentError(
-          err instanceof Error ? err.message : "Failed to fetch consent records"
+          err instanceof Error ? err.message : t("messages.failedToFetchConsentRecords")
         );
         setConsentRecords([]);
         setConsentPagination((prev) => ({
@@ -553,7 +608,7 @@ export function JobSeekerProfile() {
           setConsentError(
             err instanceof Error
               ? err.message
-              : "Failed to fetch consent records"
+              : t("messages.failedToFetchConsentRecords")
           );
           setConsentRecords([]);
           setConsentPagination((prev) => ({
@@ -581,7 +636,7 @@ export function JobSeekerProfile() {
 
     // Require rejection reason when rejecting a profile
     if (newStatus === "rejected" && !rejectionReason.trim()) {
-      setRejectionReasonError("Please provide a reason for rejection");
+      setRejectionReasonError(t("messages.rejectionReasonRequired"));
       return;
     }
 
@@ -632,7 +687,7 @@ export function JobSeekerProfile() {
       setTimeout(() => setUpdateStatus(null), 3000);
     } catch (err) {
       setUpdateStatus(
-        err instanceof Error ? err.message : "Failed to update status"
+        err instanceof Error ? err.message : t("messages.failedToUpdateStatus")
       );
       console.error("Error updating status:", err);
 
@@ -734,7 +789,7 @@ export function JobSeekerProfile() {
 
       if (signedUrl) {
         setSelectedPdfUrl(signedUrl);
-        setSelectedPdfName(documentFileName || "Document");
+        setSelectedPdfName(documentFileName || t("jobSeekerProfile.document"));
         setIsPdfModalOpen(true);
 
         // Cache the URL if not already cached
@@ -881,7 +936,7 @@ export function JobSeekerProfile() {
     } catch (err) {
       console.error("Error deleting profile:", err);
       setUpdateStatus(
-        err instanceof Error ? err.message : "Failed to delete profile"
+        err instanceof Error ? err.message : t("messages.failedToDeleteProfile")
       );
       setTimeout(() => setUpdateStatus(null), 3000);
       setIsDeleting(false);
@@ -915,7 +970,7 @@ export function JobSeekerProfile() {
   const handleUpdateStatusFromModal = () => {
     // If status is rejected and no reason is provided, show error but don't close the modal
     if (selectedStatus === "rejected" && !rejectionReason.trim()) {
-      setRejectionReasonError("Please provide a reason for rejection");
+      setRejectionReasonError(t("messages.rejectionReasonRequired"));
       return;
     }
 
@@ -976,7 +1031,7 @@ export function JobSeekerProfile() {
             className="toggle-rejection-btn"
             onClick={() => setShowFullRejectionReason(!showFullRejectionReason)}
           >
-            {showFullRejectionReason ? "Show less" : "Show full reason"}
+            {showFullRejectionReason ? t("jobSeekerProfile.showLess") : t("jobSeekerProfile.showFullReason")}
           </button>
         )}
       </div>
@@ -1221,12 +1276,12 @@ export function JobSeekerProfile() {
           {/* Profile Content Grid Skeleton */}
           <div className="profile-content grid-container">
             {[
-              "Personal Information",
-              "Identification",
-              "Address",
-              "Qualifications",
-              "Compensation",
-              "Meta Information",
+              t("jobSeekerProfile.personalInformation"),
+              t("jobSeekerProfile.identification"),
+              t("jobSeekerProfile.address"),
+              t("jobSeekerProfile.qualifications"),
+              t("jobSeekerProfile.compensation"),
+              t("jobSeekerProfile.metaInformation"),
             ].map((index) => (
               <div key={index} className="section-card">
                 <div
@@ -1279,25 +1334,25 @@ export function JobSeekerProfile() {
             >
               <ArrowLeft size={16} className="icon" />
               <span>
-                {isJobSeeker
-                  ? "Back to Dashboard"
-                  : "Back to Job Seeker Management"}
+              {isJobSeeker
+                ? t("jobSeekerProfile.backToDashboard")
+                : t("jobSeekerProfile.backToJobSeekerManagement")}
               </span>
             </button>
           }
           statusMessage={updateStatus}
         />
         <div className="error-container">
-          <p className="error-message">{error || "Failed to load profile"}</p>
+          <p className="error-message">{error || t("jobSeekerProfile.failedToLoadProfile")}</p>
           <div className="error-actions">
             <button className="button " onClick={() => navigate("/jobseekers")}>
-              Back to List
+              {t("buttons.back")}
             </button>
             <button
               className="button primary"
               onClick={() => window.location.reload()}
             >
-              Try Again
+              {t("buttons.tryAgain")}
             </button>
           </div>
         </div>
@@ -1344,7 +1399,7 @@ export function JobSeekerProfile() {
     );
   };
 
-  const displayName = getDisplayName(profile);
+  const displayName = getDisplayName(profile, t);
   const displayLocation = getDisplayLocation(profile);
 
   // Helper functions for rendering positions (copied from JobSeekerPositions)
@@ -1399,8 +1454,8 @@ export function JobSeekerProfile() {
             <ArrowLeft size={16} className="icon" />
             <span>
               {isJobSeeker
-                ? "Back to Dashboard"
-                : "Back to Job Seeker Management"}
+                ? t("jobSeekerProfile.backToDashboard")
+                : t("jobSeekerProfile.backToJobSeekerManagement")}
             </span>
           </button>
         }
@@ -1428,7 +1483,7 @@ export function JobSeekerProfile() {
                           profile.verificationStatus.charAt(0).toUpperCase() +
                           profile.verificationStatus.slice(1),
                       })}`
-                    : `${t("jobSeekerProfile.status", { status: "Pending" })}`}
+                    : `${t("jobSeekerProfile.status", { status: t("jobSeekerProfile.pending") })}`}
                 </span>
               </div>
               {profileNeedsAttention(profile) && (
@@ -1505,6 +1560,26 @@ export function JobSeekerProfile() {
               );
             })()}
 
+            {/* Work Permit Expiry Alert */}
+            {(() => {
+              const workPermitAlert = getWorkPermitExpiryAlert(profile, t);
+              if (!workPermitAlert) return null;
+
+              return (
+                <div className={`sin-expiry-alert ${workPermitAlert.type}`}>
+                  <div className="sin-alert-icon">{workPermitAlert.icon}</div>
+                  <div className="sin-alert-content">
+                    <div className="sin-alert-message">{workPermitAlert.message}</div>
+                    <div className="sin-alert-details">
+                      {t("jobSeekerProfile.workPermitExpiryLabel", {
+                        date: formatDate(profile.workPermitExpiry, false),
+                      })}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
             <div className="profile-avatar-container">
               <div className="profile-avatar">
                 <User size={40} />
@@ -1574,7 +1649,7 @@ export function JobSeekerProfile() {
                             className="document-name"
                             title={doc.documentFileName}
                           >
-                            {doc.documentFileName || "Unnamed Document"}
+                            {doc.documentFileName || t("jobSeekerProfile.unnamedDocument")}
                           </p>
                           <p className="document-type">
                             {t("jobSeekerProfile.documentType", {
@@ -1877,6 +1952,14 @@ export function JobSeekerProfile() {
               {renderDetailItem(
                 t("jobSeekerProfile.sinExpiry"),
                 formatDate(profile.sinExpiry, false)
+              )}
+              {renderDetailItem(
+                t("jobSeekerProfile.workPermitUci"),
+                profile.workPermitUci
+              )}
+              {renderDetailItem(
+                t("jobSeekerProfile.workPermitExpiry"),
+                formatDate(profile.workPermitExpiry, false)
               )}
               {renderDetailItem(
                 t("jobSeekerProfile.businessNumber"),
@@ -2304,9 +2387,6 @@ export function JobSeekerProfile() {
                           <h3 className="jsp-consent-title">
                             {record.consent_documents.file_name}
                           </h3>
-                          <div className="jsp-consent-code">
-                            {t("jobSeekerProfile.version", { version: record.consent_documents.version })}
-                          </div>
                         </div>
                         <div className={`jsp-status-badge ${record.status}`}>
                           {record.status.charAt(0).toUpperCase() +

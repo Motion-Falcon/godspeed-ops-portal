@@ -60,6 +60,9 @@ export function ProfileCreate({
     mobileRequired: t('profileCreate.personalInfo.mobileRequired'),
     licenseOrPassportRequired: t('profileCreate.personalInfo.licenseOrPassportRequired'),
     sinExpiryRequired: t('profileCreate.personalInfo.sinExpiryRequired'),
+    workPermitUciRequired: t('profileCreate.personalInfo.workPermitUciRequired'),
+    workPermitUciInvalid: t('profileCreate.personalInfo.workPermitUciInvalid'),
+    workPermitExpiryRequired: t('profileCreate.personalInfo.workPermitExpiryRequired'),
     // Address validation messages
     streetRequired: t('profileCreate.address.streetRequired'),
     cityRequired: t('profileCreate.address.cityRequired'),
@@ -158,6 +161,8 @@ export function ProfileCreate({
       passportNumber: "",
       sinNumber: "",
       sinExpiry: "",
+      workPermitUci: "",
+      workPermitExpiry: "",
       businessNumber: "",
       corporationName: "",
 
@@ -233,6 +238,8 @@ export function ProfileCreate({
             passportNumber: profileData.passportNumber || "",
             sinNumber: profileData.sinNumber || "",
             sinExpiry: profileData.sinExpiry || "",
+            workPermitUci: profileData.workPermitUci || "",
+            workPermitExpiry: profileData.workPermitExpiry || "",
             businessNumber: profileData.businessNumber || "",
             corporationName: profileData.corporationName || "",
 
@@ -278,7 +285,6 @@ export function ProfileCreate({
           // Reset the initialLoad flag after a delay to prevent auto-submission
           setTimeout(() => {
             isInitialLoad.current = false;
-            console.log("Reset isInitialLoad flag after data load");
           }, 1000); // Increased from 500ms to 1000ms for more reliability
         } catch (err) {
           console.error("Error loading profile for editing:", err);
@@ -907,23 +913,15 @@ export function ProfileCreate({
 
   // Function to handle final form submission
   const handleSubmit = async (data: JobseekerProfileFormData) => {
-    console.log("Submit handler called with data:", data);
-
     // AGGRESSIVE protection against auto-submission in edit mode
     if (isEditMode) {
       // If component just mounted or initial load
       if (justMounted.current || isInitialLoad.current) {
-        console.log(
-          "BLOCKING: Preventing auto-submission on initial load in edit mode"
-        );
         return;
       }
 
       // Additional check - if we haven't seen user interaction
       if (!userInteracted && !previousUserInteraction.current) {
-        console.log(
-          "BLOCKING: No user interaction detected, preventing submission"
-        );
         return;
       }
     }
@@ -1154,6 +1152,8 @@ export function ProfileCreate({
           "passportNumber",
           "sinNumber",
           "sinExpiry",
+          "workPermitUci",
+          "workPermitExpiry",
           "businessNumber",
           "corporationName",
         ];
@@ -1414,16 +1414,6 @@ export function ProfileCreate({
         <FormProvider {...methods}>
           <form
             onSubmit={(e) => {
-              console.log("Form submit event triggered");
-              console.log("Submit flags state:", {
-                isEditMode,
-                isDraftEditMode,
-                justMounted: justMounted.current,
-                isInitialLoad: isInitialLoad.current,
-                isFormLoaded: isFormLoaded.current,
-                userInteracted,
-              });
-
               // Prevent default form submission and manually handle later
               e.preventDefault();
 
@@ -1437,29 +1427,18 @@ export function ProfileCreate({
                 (justMounted.current ||
                   (isInitialLoad.current && !isFormLoaded.current))
               ) {
-                console.log(
-                  "Preventing auto-submission on initial load in edit mode"
-                );
                 return;
-              }
-
-              // If there was any prevention happening but now we're good, log this
-              if (isDraftEditMode) {
-                console.log("Proceeding with form submission for draft edit!");
               }
 
               // Call React Hook Form's handleSubmit
               methods.handleSubmit(
                 // On valid submission
                 (data) => {
-                  console.log(
-                    "Form validated successfully, calling handleSubmit"
-                  );
                   handleSubmit(data);
                 },
                 // On validation error
                 (errors) => {
-                  console.log("Validation errors:", errors);
+                  console.error("Validation errors:", errors);
                   scrollToError();
                 }
               )();

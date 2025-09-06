@@ -75,3 +75,47 @@ export const getJobseekerMetrics = async (
     throw error;
   }
 };
+
+// Expiry Status Counts Types
+export interface ExpiryStatusCounts {
+  expired: number;
+  expiringUnder30: number;
+  expiringUnder60: number;
+  expiringUnder90: number;
+  expiringAfter90: number;
+  noData: number;
+  totalWithData: number;
+}
+
+export interface ExpiryStatusSummary {
+  criticalCount: number;
+  urgentCount: number;
+  warningCount: number;
+  cautionCount: number;
+}
+
+export interface ExpiryStatusResponse {
+  totalProfiles: number;
+  sin: ExpiryStatusCounts;
+  workPermit: ExpiryStatusCounts;
+  summary: ExpiryStatusSummary;
+  generatedAt: string;
+}
+
+/**
+ * Get expiry status counts for SIN and Work Permit documents
+ * @returns Promise<ExpiryStatusResponse>
+ */
+export const getExpiryStatusCounts = async (): Promise<ExpiryStatusResponse> => {
+  try {
+    const response = await api.get("/api/metrics/jobseekers/expiry-status-counts");
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(
+        error.response.data.error || "Failed to fetch expiry status counts"
+      );
+    }
+    throw error;
+  }
+};
