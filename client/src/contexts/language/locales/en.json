@@ -986,6 +986,7 @@
       "licenseOrPassportRequired": "Either a license number or passport number is required",
       "sinNumber": "SIN (Social Insurance Number)",
       "sinNumberPlaceholder": "XXXXXXXXX",
+      "sinNumberRequired": "SIN number is required",
       "sinNumberNote": "Enter a valid 9-digit Canadian SIN using numbers only (no spaces or dashes). This information is encrypted and securely stored.",
       "sinExpiry": "SIN Expiry Date",
       "sinExpiryRequired": "SIN Expiry is required if SIN is provided",
