@@ -35,6 +35,7 @@ import "../../styles/components/header.css";
 import "../../styles/pages/Dashboard.css";
 import { RecentActivities } from '../../components/dashboard/RecentActivities';
 import { useLanguage } from '../../contexts/language/language-provider';
+import { ExpiryStatusOverview } from "../../components/dashboard/ExpiryStatusOverview";
 
 // Constants
 const CACHE_DURATION = 30000; // 30 seconds
@@ -727,7 +728,8 @@ export function RecruiterDashboard() {
             />
           </div>
         </div>
-
+        {/* Document Expiry Status Overview */}
+        <ExpiryStatusOverview />
         {/* Position Metrics */}
         <div className="position-metrics-container">
           <DataViewToggle

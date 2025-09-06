@@ -17,6 +17,8 @@ interface JobseekerProfile {
   passport_number?: string;
   sin_number?: string;
   sin_expiry?: string;
+  work_permit_uci?: string;
+  work_permit_expiry?: string;
   business_number?: string;
   corporation_name?: string;
   street?: string;
@@ -206,6 +208,8 @@ export function ProfileSuccess() {
                 {renderDetailItem(t('jobSeekerProfile.passportNumber'), profile.passport_number)}
                 {renderDetailItem(t('jobSeekerProfile.sinNumber'), profile.sin_number)}
                 {renderDetailItem(t('jobSeekerProfile.sinExpiry'), formatDate(profile.sin_expiry))}
+                {profile.work_permit_uci && renderDetailItem(t('profileCreate.personalInfo.workPermitUci'), profile.work_permit_uci)}
+                {profile.work_permit_expiry && renderDetailItem(t('profileCreate.personalInfo.workPermitExpiry'), formatDate(profile.work_permit_expiry))}
                 {renderDetailItem(t('jobSeekerProfile.businessNumber'), profile.business_number)}
                 {renderDetailItem(t('jobSeekerProfile.corporationName'), profile.corporation_name)}
               </div>

@@ -12,6 +12,8 @@ export interface ProfileData {
   passportNumber?: string;
   sinNumber?: string;
   sinExpiry?: string;
+  workPermitUci?: string;
+  workPermitExpiry?: string;
   businessNumber?: string;
   corporationName?: string;
   street?: string;

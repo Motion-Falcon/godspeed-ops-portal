@@ -13,6 +13,8 @@ export const getPersonalInfoSchema = (messages: Record<string, string>) =>
       passportNumber: z.string().optional(),
       sinNumber: z.string().optional(),
       sinExpiry: z.string().optional(),
+      workPermitUci: z.string().optional(),
+      workPermitExpiry: z.string().optional(),
       businessNumber: z.string().optional(),
       corporationName: z.string().optional(),
     })
@@ -31,6 +33,49 @@ export const getPersonalInfoSchema = (messages: Record<string, string>) =>
       {
         message: messages.sinExpiryRequired,
         path: ["sinExpiry"],
+      }
+    )
+    .refine(
+      (data) => {
+        // Only require work permit UCI for temporary residents (SIN starting with '9')
+        if (data.sinNumber && data.sinNumber.trim() !== "" && data.sinNumber.startsWith('9')) {
+          return data.workPermitUci && data.workPermitUci.trim() !== "";
+        }
+        return true;
+      },
+      {
+        message: messages.workPermitUciRequired,
+        path: ["workPermitUci"],
+      }
+    )
+    .refine(
+      (data) => {
+        // Validate UCI format if provided
+        if (data.workPermitUci && data.workPermitUci.trim() !== "") {
+          const uciValue = data.workPermitUci.trim();
+          // Check if UCI is exactly 8 or 10 digits
+          if (!/^\d{8}$|^\d{10}$/.test(uciValue)) {
+            return false;
+          }
+        }
+        return true;
+      },
+      {
+        message: messages.workPermitUciInvalid,
+        path: ["workPermitUci"],
+      }
+    )
+    .refine(
+      (data) => {
+        // Only require work permit expiry for temporary residents (SIN starting with '9')
+        if (data.sinNumber && data.sinNumber.trim() !== "" && data.sinNumber.startsWith('9')) {
+          return data.workPermitExpiry && data.workPermitExpiry.trim() !== "";
+        }
+        return true;
+      },
+      {
+        message: messages.workPermitExpiryRequired,
+        path: ["workPermitExpiry"],
       }
     );
 
@@ -93,7 +138,8 @@ const getSingleDocumentSchema = (messages: Record<string, string>) => z
   })
   .refine(
     (data) => {
-      return !!data.documentPath || !!data.documentFile;
+      const hasFile = !!data.documentPath || !!data.documentFile;
+      return hasFile;
     },
     {
       message: messages.documentFileRequired,
@@ -121,6 +167,8 @@ export const createFormSchema = (messages: Record<string, string>) => {
       passportNumber: z.string().optional(),
       sinNumber: z.string().optional(),
       sinExpiry: z.string().optional(),
+      workPermitUci: z.string().optional(),
+      workPermitExpiry: z.string().optional(),
       businessNumber: z.string().optional(),
       corporationName: z.string().optional(),
 
@@ -176,6 +224,49 @@ export const createFormSchema = (messages: Record<string, string>) => {
       {
         message: messages.sinExpiryRequired,
         path: ["sinExpiry"],
+      }
+    )
+    .refine(
+      (data) => {
+        // Only require work permit UCI for temporary residents (SIN starting with '9')
+        if (data.sinNumber && data.sinNumber.trim() !== "" && data.sinNumber.startsWith('9')) {
+          return data.workPermitUci && data.workPermitUci.trim() !== "";
+        }
+        return true;
+      },
+      {
+        message: messages.workPermitUciRequired,
+        path: ["workPermitUci"],
+      }
+    )
+    .refine(
+      (data) => {
+        // Validate UCI format if provided
+        if (data.workPermitUci && data.workPermitUci.trim() !== "") {
+          const uciValue = data.workPermitUci.trim();
+          // Check if UCI is exactly 8 or 10 digits
+          if (!/^\d{8}$|^\d{10}$/.test(uciValue)) {
+            return false;
+          }
+        }
+        return true;
+      },
+      {
+        message: messages.workPermitUciInvalid,
+        path: ["workPermitUci"],
+      }
+    )
+    .refine(
+      (data) => {
+        // Only require work permit expiry for temporary residents (SIN starting with '9')
+        if (data.sinNumber && data.sinNumber.trim() !== "" && data.sinNumber.startsWith('9')) {
+          return data.workPermitExpiry && data.workPermitExpiry.trim() !== "";
+        }
+        return true;
+      },
+      {
+        message: messages.workPermitExpiryRequired,
+        path: ["workPermitExpiry"],
       }
     );
 };

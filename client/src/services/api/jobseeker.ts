@@ -18,6 +18,12 @@ export interface PaginationParams {
   statusFilter?: string;
   dateFilter?: string;
   employeeIdFilter?: string;
+  sinNumberFilter?: string;
+  sinExpiryFilter?: string;
+  workPermitUciFilter?: string;
+  workPermitExpiryFilter?: string;
+  sinExpiryStatusFilter?: string;
+  workPermitExpiryStatusFilter?: string;
 }
 
 export interface PaginatedJobSeekerResponse {
@@ -60,6 +66,18 @@ export const getJobseekerProfiles = async (
             statusFilter: params.statusFilter,
           }),
         ...(params.dateFilter && { dateFilter: params.dateFilter }),
+        ...(params.sinNumberFilter && { sinNumberFilter: params.sinNumberFilter }),
+        ...(params.sinExpiryFilter && { sinExpiryFilter: params.sinExpiryFilter }),
+        ...(params.workPermitUciFilter && { workPermitUciFilter: params.workPermitUciFilter }),
+        ...(params.workPermitExpiryFilter && { workPermitExpiryFilter: params.workPermitExpiryFilter }),
+        ...(params.sinExpiryStatusFilter &&
+          params.sinExpiryStatusFilter !== "all" && {
+            sinExpiryStatusFilter: params.sinExpiryStatusFilter,
+          }),
+        ...(params.workPermitExpiryStatusFilter &&
+          params.workPermitExpiryStatusFilter !== "all" && {
+            workPermitExpiryStatusFilter: params.workPermitExpiryStatusFilter,
+          }),
       },
     };
 
