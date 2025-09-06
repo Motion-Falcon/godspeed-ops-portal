@@ -42,6 +42,7 @@ import {
   getInvoiceMetrics,
   InvoiceMetric,
 } from "../../services/api/invoiceMetrics";
+import { ExpiryStatusOverview } from "../../components/dashboard/ExpiryStatusOverview";
 import { useLanguage } from '../../contexts/language/language-provider';
 
 // Constants
@@ -870,6 +871,9 @@ export function AdminDashboard() {
             />
           </div>
         </div>
+
+        {/* Document Expiry Status Overview */}
+        <ExpiryStatusOverview />
 
         {/* Position Metrics */}
         <div className="position-metrics-container">

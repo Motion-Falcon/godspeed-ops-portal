@@ -132,6 +132,37 @@ export function validateDOB(dob: string): {isValid: boolean, errorMessage?: stri
 }
 
 /**
+ * Validate UCI (Unique Client Identifier) for work/study permits
+ * UCI must be exactly 8 or 10 digits only
+ * @param {string|number} uci - UCI number
+ * @returns {Object} Result with isValid flag and optional error message
+ */
+export function validateUCI(uci: string | number): {isValid: boolean, errorMessage?: string} {
+  if (!uci) return { isValid: true }; // Allow empty value as it's optional
+  
+  const originalInput = uci.toString();
+  
+  // Check if the original input contains ONLY digits - no spaces, dashes or other characters
+  const validInputRegex = /^\d+$/;
+  if (!validInputRegex.test(originalInput)) {
+    return { 
+      isValid: false, 
+      errorMessage: "UCI must contain only numbers (no spaces or dashes)" 
+    };
+  }
+  
+  // Must be exactly 8 or 10 digits
+  if (originalInput.length !== 8 && originalInput.length !== 10) {
+    return { 
+      isValid: false, 
+      errorMessage: "UCI must be exactly 8 or 10 digits" 
+    };
+  }
+  
+  return { isValid: true };
+}
+
+/**
  * Get the maximum valid DOB date (18 years ago from today)
  * @returns {string} Date string in ISO format (YYYY-MM-DD)
  */

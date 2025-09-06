@@ -39,6 +39,125 @@ interface MonthlyStats {
 }
 
 /**
+ * Get expiry status counts for SIN and Work Permit documents
+ * GET /api/metrics/jobseekers/expiry-status-counts
+ * @access Private (Admin, Recruiter only)
+ */
+router.get(
+  "/expiry-status-counts",
+  authenticateToken,
+  authorizeRoles(["admin", "recruiter"]),
+  async (req: Request, res: Response) => {
+    try {
+      console.log("Fetching expiry status counts...");
+
+      // Get current date for calculations
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      // Calculate date thresholds
+      const in30Days = new Date(today);
+      in30Days.setDate(in30Days.getDate() + 30);
+      
+      const in60Days = new Date(today);
+      in60Days.setDate(in60Days.getDate() + 60);
+      
+      const in90Days = new Date(today);
+      in90Days.setDate(in90Days.getDate() + 90);
+
+      // Get all jobseeker profiles with SIN and Work Permit data
+      const { data: profiles, error: profilesError } = await supabase
+        .from("jobseeker_profiles")
+        .select("sin_expiry, work_permit_expiry")
+
+      if (profilesError) {
+        console.error("Error fetching profiles for expiry counts:", profilesError);
+        return res.status(500).json({ error: "Failed to fetch expiry data" });
+      }
+
+      // Initialize counters
+      const sinCounts = {
+        expired: 0,
+        expiringUnder30: 0,
+        expiringUnder60: 0,
+        expiringUnder90: 0,
+        expiringAfter90: 0,
+        noData: 0
+      };
+
+      const workPermitCounts = {
+        expired: 0,
+        expiringUnder30: 0,
+        expiringUnder60: 0,
+        expiringUnder90: 0,
+        expiringAfter90: 0,
+        noData: 0
+      };
+
+      // Helper function to categorize expiry date
+      const categorizeExpiryDate = (expiryDate: string | null) => {
+        if (!expiryDate) return 'noData';
+        
+        const expiry = new Date(expiryDate);
+        expiry.setHours(0, 0, 0, 0);
+        
+        if (expiry < today) return 'expired';
+        if (expiry <= in30Days) return 'expiringUnder30';
+        if (expiry <= in60Days) return 'expiringUnder60';
+        if (expiry <= in90Days) return 'expiringUnder90';
+        return 'expiringAfter90';
+      };
+
+      // Process each profile and categorize
+      profiles?.forEach((profile) => {
+        // Categorize SIN expiry
+        const sinCategory = categorizeExpiryDate(profile.sin_expiry);
+        sinCounts[sinCategory as keyof typeof sinCounts]++;
+
+        // Categorize Work Permit expiry
+        const workPermitCategory = categorizeExpiryDate(profile.work_permit_expiry);
+        workPermitCounts[workPermitCategory as keyof typeof workPermitCounts]++;
+      });
+
+      // Calculate totals
+      const totalProfiles = profiles?.length || 0;
+      const sinTotal = sinCounts.expired + sinCounts.expiringUnder30 + sinCounts.expiringUnder60 + 
+                      sinCounts.expiringUnder90 + sinCounts.expiringAfter90;
+      const workPermitTotal = workPermitCounts.expired + workPermitCounts.expiringUnder30 + 
+                             workPermitCounts.expiringUnder60 + workPermitCounts.expiringUnder90 + 
+                             workPermitCounts.expiringAfter90;
+
+      console.log("Expiry status counts calculated successfully");
+
+      res.json({
+        totalProfiles,
+        sin: {
+          ...sinCounts,
+          totalWithData: sinTotal
+        },
+        workPermit: {
+          ...workPermitCounts,
+          totalWithData: workPermitTotal
+        },
+        summary: {
+          criticalCount: sinCounts.expired + workPermitCounts.expired,
+          urgentCount: sinCounts.expiringUnder30 + workPermitCounts.expiringUnder30,
+          warningCount: sinCounts.expiringUnder60 + workPermitCounts.expiringUnder60,
+          cautionCount: sinCounts.expiringUnder90 + workPermitCounts.expiringUnder90
+        },
+        generatedAt: new Date().toISOString()
+      });
+
+    } catch (error) {
+      console.error("Unexpected error fetching expiry status counts:", error);
+      res.status(500).json({
+        error: "An unexpected error occurred while fetching expiry status counts"
+      });
+    }
+  }
+);
+
+/**
  * Get dashboard metrics for a specific jobseeker
  * GET /api/jobseeker-metrics/:candidateId
  * @access Private (Admin, Recruiter, JobSeeker - limited access for jobseekers)

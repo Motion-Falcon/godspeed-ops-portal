@@ -29,6 +29,7 @@ import {
   MessageSquare,
   GitBranch,
   Calendar,
+  CreditCard,
 } from "lucide-react";
 import { ThemeToggle } from "./theme-toggle";
 import { LanguageToggle } from "./LanguageToggle";
@@ -465,6 +466,12 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
           label: t("navigation.jobseekerDrafts"),
           path: "/jobseekers/drafts",
           icon: <FileEdit size={16} />,
+          exact: true,
+        },
+        {
+          label: t("navigation.sinWorkPermitManagement"),
+          path: "/sin-work-permit-management",
+          icon: <CreditCard size={16} />,
           exact: true,
         },
       ],

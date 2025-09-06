@@ -87,8 +87,6 @@ const decodePath = (path: string | undefined): string | undefined => {
     decodedPath = decodedPath.split('?')[0];
   }
   
-  console.log(`Original path: ${path}`);
-  console.log(`Decoded path: ${decodedPath}`);
   
   return decodedPath;
 };
@@ -179,8 +177,13 @@ function DocumentItem({
   // Check if we have a field error for the file
   const hasFileError = !!getDocumentFieldError(index, 'documentFile');
 
-  // Add conditional text/behavior based on edit mode
-  const documentLabel = `${t('profileCreate.documents.documentLabel').replace('{{number}}', (index + 1).toString())}`;
+  // Check if this is a mandatory document (first 2 documents)
+  const isMandatoryDocument = index < 2;
+  
+  // Add conditional text/behavior based on edit mode and mandatory status
+  const documentLabel = isMandatoryDocument 
+    ? `${t('profileCreate.documents.mandatoryDocument')} ${index + 1} - ${t(`profileCreate.documents.documentTypes.${documentType || (index === 0 ? 'sin' : 'work_permit')}`)}` 
+    : `${t('profileCreate.documents.documentLabel').replace('{{number}}', (index + 1).toString())}`;
 
   // Update local PDF URL when a new file is selected or from cache when document path changes
   useEffect(() => {
@@ -199,7 +202,6 @@ function DocumentItem({
     // Cleanup function to revoke URL when component unmounts or dependencies change
     return () => {
       if (objectUrl && objectUrl.startsWith('blob:')) {
-        console.log(`Cleaning up object URL: ${objectUrl}`);
         URL.revokeObjectURL(objectUrl);
       }
     };
@@ -245,7 +247,6 @@ function DocumentItem({
   const handleReplaceFile = () => {
     // First revoke any existing object URL to prevent memory leaks
     if (localPdfUrl && localPdfUrl.startsWith('blob:')) {
-      console.log(`Revoking object URL: ${localPdfUrl}`);
       URL.revokeObjectURL(localPdfUrl);
       setLocalPdfUrl(null);
     }
@@ -278,8 +279,6 @@ function DocumentItem({
       // Decode the path before using it
       const decodedPath = decodePath(documentPath);
       
-      console.log(`Preview requested for original path: '${documentPath}'`); 
-      console.log(`Preview using decoded path: '${decodedPath}'`); 
 
       if (!decodedPath) {
         console.error("Preview attempted with no valid documentPath.");
@@ -301,7 +300,6 @@ function DocumentItem({
         }
 
         if (data?.signedUrl) {
-          console.log("Signed URL generated:", data.signedUrl);
           onPreviewPdf(data.signedUrl, documentFileName || t('common.user'));
         } else {
           throw new Error(t('profileCreate.documents.couldNotRetrieveSignedUrl'));
@@ -332,24 +330,56 @@ function DocumentItem({
           {previewError && <p className="error-message preview-error">{t('profileCreate.documents.previewError').replace('{{error}}', previewError)}</p>}
 
           <div className="form-group document-type">
-            <label htmlFor={`documentType-${index}`} className="form-label" data-required="*">{t('profileCreate.documents.type')}</label>
-            <select
-              id={`documentType-${index}`}
-              className={`form-input${hasTypeError ? ' error-input' : ''}`}
-              {...register(`documents.${index}.documentType`)}
-            >
-              <option value="">{t('profileCreate.documents.selectType')}</option>
-              <option value="resume">{t('profileCreate.documents.documentTypes.resume')}</option>
-              <option value="drivers_license">{t('profileCreate.documents.documentTypes.drivers_license')}</option>
-              <option value="passport">{t('profileCreate.documents.documentTypes.passport')}</option>
-              <option value="sin">{t('profileCreate.documents.documentTypes.sin')}</option>
-              <option value="work_permit">{t('profileCreate.documents.documentTypes.work_permit')}</option>
-              <option value="void_cheque">{t('profileCreate.documents.documentTypes.void_cheque')}</option>
-              <option value="hst_registration">{t('profileCreate.documents.documentTypes.hst_registration')}</option>
-              <option value="business_registration">{t('profileCreate.documents.documentTypes.business_registration')}</option>
-              <option value="forklift_license">{t('profileCreate.documents.documentTypes.forklift_license')}</option>
-              <option value="other">{t('profileCreate.documents.documentTypes.other')}</option>
-            </select>
+            <label htmlFor={`documentType-${index}`} className="form-label" data-required="*">
+              {t('profileCreate.documents.type')}
+              {isMandatoryDocument && (
+                <span className="mandatory-indicator">
+                  ({t('profileCreate.documents.mandatoryDocumentType').replace('{{type}}', t(`profileCreate.documents.documentTypes.${documentType || (index === 0 ? 'sin' : 'work_permit')}`).toLowerCase())})
+                </span>
+              )}
+            </label>
+            {isMandatoryDocument ? (
+              // Disabled input for mandatory documents
+              <div className="mandatory-document-type-container">
+                <input
+                  type="text"
+                  className="form-input mandatory-document-type"
+                  value={t(`profileCreate.documents.documentTypes.${documentType || (index === 0 ? 'sin' : 'work_permit')}`)}
+                  disabled
+                  readOnly
+                />
+                <input
+                  type="hidden"
+                  {...register(`documents.${index}.documentType`)}
+                  value={documentType || (index === 0 ? 'sin' : 'work_permit')}
+                />
+                <div className="mandatory-reason">
+                  {index === 0 
+                    ? t('profileCreate.documents.sinMandatoryReason')
+                    : t('profileCreate.documents.workPermitMandatoryReason')
+                  }
+                </div>
+              </div>
+            ) : (
+              // Regular select for optional documents
+              <select
+                id={`documentType-${index}`}
+                className={`form-input${hasTypeError ? ' error-input' : ''}`}
+                {...register(`documents.${index}.documentType`)}
+              >
+                <option value="">{t('profileCreate.documents.selectType')}</option>
+                <option value="resume">{t('profileCreate.documents.documentTypes.resume')}</option>
+                <option value="drivers_license">{t('profileCreate.documents.documentTypes.drivers_license')}</option>
+                <option value="passport">{t('profileCreate.documents.documentTypes.passport')}</option>
+                <option value="sin">{t('profileCreate.documents.documentTypes.sin')}</option>
+                <option value="work_permit">{t('profileCreate.documents.documentTypes.work_permit')}</option>
+                <option value="void_cheque">{t('profileCreate.documents.documentTypes.void_cheque')}</option>
+                <option value="hst_registration">{t('profileCreate.documents.documentTypes.hst_registration')}</option>
+                <option value="business_registration">{t('profileCreate.documents.documentTypes.business_registration')}</option>
+                <option value="forklift_license">{t('profileCreate.documents.documentTypes.forklift_license')}</option>
+                <option value="other">{t('profileCreate.documents.documentTypes.other')}</option>
+              </select>
+            )}
           </div>
 
           <div className="form-group document-title">
@@ -466,7 +496,7 @@ function DocumentItem({
         )}
         
         <div className="remove-document-container" >
-        {index > 0 && (
+        {index > 1 && (
               <button 
                 type="button" 
                 className="button attachment-upload-button" 
@@ -499,23 +529,108 @@ export function DocumentUploadForm({ allFields = [], disableSubmit = false, isEd
   const [isPdfModalOpen, setIsPdfModalOpen] = useState<boolean>(false);
   const [userInteracted, setUserInteracted] = useState(false);
   const [forceShowErrors, setForceShowErrors] = useState(false);
+  const [mandatoryDocsInitialized, setMandatoryDocsInitialized] = useState(false);
   
   const { fields, append, remove } = useFieldArray({
     control,
     name: "documents",
   });
 
+  // Initialize mandatory documents if not already present
+  useEffect(() => {
+    // Case 1: No documents exist - create mandatory documents
+    if (!mandatoryDocsInitialized && fields.length === 0) {
+      // Add SIN document (mandatory)
+      const sinDoc = {
+        documentType: 'sin',
+        documentTitle: '',
+        documentNotes: '',
+        id: crypto.randomUUID()
+      } as DocumentItemData;
+      
+      const workPermitDoc = {
+        documentType: 'work_permit',
+        documentTitle: '',
+        documentNotes: '',
+        id: crypto.randomUUID()
+      } as DocumentItemData;
+      
+      append(sinDoc);
+      append(workPermitDoc);
+      
+      setMandatoryDocsInitialized(true);
+    } 
+    // Case 2: Documents exist but first two don't have mandatory types (edit mode)
+    else if (!mandatoryDocsInitialized && fields.length > 0) {
+      const needsFixing = (
+        fields.length >= 2 && 
+        (fields[0].documentType !== 'sin' || fields[1].documentType !== 'work_permit')
+      );
+      
+      if (needsFixing) {
+        // Set first document to SIN if it's not already
+        if (fields[0].documentType !== 'sin') {
+          setValue('documents.0.documentType', 'sin');
+        }
+        
+        // Set second document to Work Permit if it's not already  
+        if (fields[1].documentType !== 'work_permit') {
+          setValue('documents.1.documentType', 'work_permit');
+        }
+        
+        // Trigger validation after fixing the types
+        setTimeout(() => {
+          trigger('documents');
+        }, 100);
+      } else if (fields.length < 2) {
+        // If we have less than 2 documents, we need to add them
+        const documentsToAdd = [];
+        
+        if (fields.length === 0) {
+          documentsToAdd.push({
+            documentType: 'sin',
+            documentTitle: '',
+            documentNotes: '',
+            id: crypto.randomUUID()
+          });
+        } else if (fields[0].documentType !== 'sin') {
+          setValue('documents.0.documentType', 'sin');
+        }
+        
+        if (fields.length <= 1) {
+          documentsToAdd.push({
+            documentType: 'work_permit',
+            documentTitle: '',
+            documentNotes: '',
+            id: crypto.randomUUID()
+          });
+        }
+        
+        documentsToAdd.forEach(doc => {
+          append(doc);
+        });
+        
+        // Trigger validation after adding documents
+        if (documentsToAdd.length > 0) {
+          setTimeout(() => {
+            trigger('documents');
+          }, 100);
+        }
+      }
+      
+      setMandatoryDocsInitialized(true);
+    }
+  }, [fields.length, append, mandatoryDocsInitialized, isEditMode, setValue, fields]);
+
   // Add a specific effect to handle initial load in edit mode
   useEffect(() => {
     if (isEditMode) {
-      console.log("In edit mode - disabling initial validation");
-      
       // Forcefully disable validation triggering in edit mode
       setForceShowErrors(false);
       
       // Prevent any automatic validation for the first 2 seconds in edit mode
       const timer = setTimeout(() => {
-        console.log("Edit mode initial protection period ended");
+        // Timer ended
       }, 2000);
       
       return () => clearTimeout(timer);
@@ -529,7 +644,6 @@ export function DocumentUploadForm({ allFields = [], disableSubmit = false, isEd
   useEffect(() => {
     const timer = setTimeout(() => {
       initialLoading.current = false;
-      console.log("Initial loading phase ended");
     }, 1500);
     
     return () => clearTimeout(timer);
@@ -538,34 +652,40 @@ export function DocumentUploadForm({ allFields = [], disableSubmit = false, isEd
   // Override trigger function to prevent accidental validation in edit mode
   const safeTrigger = useCallback((...args: Parameters<typeof trigger>) => {
     if (isEditMode && initialLoading.current) {
-      console.log("BLOCKED: Preventing validation trigger during initial load in edit mode");
       return Promise.resolve(false);
     }
+    
+    // Also prevent validation if we just initialized mandatory documents and user hasn't interacted
+    if (mandatoryDocsInitialized && !userInteracted && !isSubmitted && submitCount === 0) {
+      return Promise.resolve(true); // Return true to avoid blocking form flow
+    }
+    
     return trigger(...args);
-  }, [trigger, isEditMode, initialLoading]);
+  }, [trigger, isEditMode, initialLoading, mandatoryDocsInitialized, userInteracted, isSubmitted, submitCount]);
 
   // Force validation check after mount
   useEffect(() => {
     // Skip auto-validation in edit mode to prevent accidental form submission
     if (isEditMode || initialLoading.current) {
-      console.log("Skipping automatic validation in edit mode");
       return;
     }
 
     const timer = setTimeout(() => {
       // Check if we already have documents with no file
       const documents = getValues().documents || [];
+      
       if (documents.length > 0) {
         // Check if any document is missing a file
         const hasMissingFile = documents.some(doc => 
           !doc.documentFile && !doc.documentPath
         );
         
-        // If form was previously submitted or we have missing files
-        if (isSubmitted || submitCount > 0 || hasMissingFile) {
-          console.log("Forcing validation to run and show errors");
+        // Only validate if form was actually submitted, not just because documents are initialized
+        if ((isSubmitted || submitCount > 0) && hasMissingFile) {
           safeTrigger('documents');
           setForceShowErrors(true);
+        } else if (documents.length > 0 && !hasMissingFile) {
+          safeTrigger('documents');
         }
       }
     }, 500);
@@ -576,10 +696,12 @@ export function DocumentUploadForm({ allFields = [], disableSubmit = false, isEd
   // Track when a document is added or removed
   useEffect(() => {
     if (fields.length > 0) {
-      // Re-run validation
-      safeTrigger('documents');
+      // Only trigger validation if user has interacted or form was submitted
+      if (userInteracted || isSubmitted || submitCount > 0) {
+        safeTrigger('documents');
+      }
     }
-  }, [fields.length, safeTrigger]);
+  }, [fields.length, safeTrigger, userInteracted, isSubmitted, submitCount]);
 
   // Effect to load cached URLs for existing documents
   useEffect(() => {
@@ -622,12 +744,9 @@ export function DocumentUploadForm({ allFields = [], disableSubmit = false, isEd
             setLoadingPdfs(false);
             
             // Prevent triggering validation or form submission in edit mode
-            if (isEditMode) {
-              console.log("PDF loading complete in edit mode - not triggering validation");
-            } else {
+            if (!isEditMode) {
               // Only trigger validation in create mode if needed
               if ((isSubmitted || submitCount > 0) && !isEditMode) {
-                console.log("PDF loading complete - running validation in create mode");
                 safeTrigger('documents');
               }
             }
@@ -660,8 +779,6 @@ export function DocumentUploadForm({ allFields = [], disableSubmit = false, isEd
         return null;
       }
 
-      console.log(`Getting signed URL for: ${decodedPath}`);
-
       const { data, error } = await supabase.storage
         .from('jobseeker-documents')
         .createSignedUrl(decodedPath, 300); // 5 minutes expiry
@@ -671,7 +788,6 @@ export function DocumentUploadForm({ allFields = [], disableSubmit = false, isEd
         return null;
       }
 
-      console.log(`Signed URL created successfully: ${data?.signedUrl?.substring(0, 100)}...`);
       return data?.signedUrl || null;
     } catch (err) {
       console.error("Error in getSignedUrl:", err);
@@ -689,11 +805,14 @@ export function DocumentUploadForm({ allFields = [], disableSubmit = false, isEd
 
   // Get if an error should be displayed
   const getDocumentFieldError = (index: number, fieldName: string): string | undefined => {
-    if (!allErrors.documents) return undefined;
+    if (!allErrors.documents) {
+      return undefined;
+    }
     const documentsErrors = allErrors.documents as Record<string, Record<string, DocumentFieldError>>;
     // Check if the error exists at the specific index and field
     if (documentsErrors[index] && documentsErrors[index][fieldName]) {
-       return String(documentsErrors[index][fieldName].message);
+      const errorMessage = String(documentsErrors[index][fieldName].message);
+      return errorMessage;
     }
     return undefined;
   };
@@ -737,7 +856,6 @@ export function DocumentUploadForm({ allFields = [], disableSubmit = false, isEd
     // Function to intercept form submissions
     const interceptFormSubmission = (e: Event) => {
       if (initialLoading.current) {
-        console.log('BLOCKED: Intercepted form submission during initial loading');
         e.preventDefault();
         e.stopPropagation();
         return false;
@@ -761,6 +879,34 @@ export function DocumentUploadForm({ allFields = [], disableSubmit = false, isEd
       <p className="form-description">
         {t('profileCreate.documents.sectionDescription')}
       </p>
+
+      {/* Mandatory Documents Information */}
+      <div className="mandatory-documents-info">
+        <div className="mandatory-info-header">
+          <AlertCircle size={20} className="info-icon" />
+          <h3>{t('profileCreate.documents.mandatoryDocumentsInfo')}</h3>
+        </div>
+        <div className="mandatory-requirements">
+          <div className="mandatory-requirement">
+            <div className="requirement-icon">
+              <FileText size={16} />
+            </div>
+            <div className="requirement-content">
+              <strong>{t('profileCreate.documents.documentTypes.sin')}</strong>
+              <p>{t('profileCreate.documents.sinMandatoryReason')}</p>
+            </div>
+          </div>
+          <div className="mandatory-requirement">
+            <div className="requirement-icon">
+              <FileText size={16} />
+            </div>
+            <div className="requirement-content">
+              <strong>{t('profileCreate.documents.documentTypes.work_permit')}</strong>
+              <p>{t('profileCreate.documents.workPermitMandatoryReason')}</p>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {shouldDisplayErrors && hasDocumentsError && (
         <div className="documents-error-banner">

@@ -1065,6 +1065,7 @@ select.form-input {
   display: flex;
   gap: 16px;
   width: 72%;
+  border-radius: 12px;
 }
 
 .document-icon {
@@ -2643,6 +2644,7 @@ select.form-input {
   text-transform: capitalize;
   flex-shrink: 0;
   border: 1px solid;
+  margin-top: 0;
 }
 
 .jsp-consent-card .jsp-status-badge.completed {
@@ -2723,5 +2725,177 @@ select.form-input {
   font-size: 14px;
   line-height: 1.4;
   max-width: 300px;
+}
+
+/* Mandatory Documents Styling */
+.mandatory-documents-info {
+  background: linear-gradient(135deg, #f8f9ff 0%, #eef2ff 100%);
+  border: 1px solid #d1d9ff;
+  border-radius: 12px;
+  padding: 20px;
+  margin: 20px 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.dark .mandatory-documents-info {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border-color: #2a3f66;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.mandatory-info-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.mandatory-info-header .info-icon {
+  color: #3b82f6;
+  flex-shrink: 0;
+}
+
+.dark .mandatory-info-header .info-icon {
+  color: #60a5fa;
+}
+
+.mandatory-info-header h3 {
+  color: var(--text);
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.mandatory-requirements {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mandatory-requirement {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 8px;
+  border-left: 3px solid #3b82f6;
+}
+
+.dark .mandatory-requirement {
+  background: rgba(255, 255, 255, 0.05);
+  border-left-color: #60a5fa;
+}
+
+.requirement-icon {
+  color: #3b82f6;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.dark .requirement-icon {
+  color: #60a5fa;
+}
+
+.requirement-content {
+  flex: 1;
+}
+
+.requirement-content strong {
+  color: var(--text);
+  font-weight: 600;
+  font-size: 14px;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.requirement-content p {
+  color: var(--text-secondary);
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+/* Mandatory Document Type Styling */
+.mandatory-document-type-container {
+  position: relative;
+}
+
+.mandatory-document-type {
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+  color: #64748b !important;
+  cursor: not-allowed !important;
+  font-weight: 500;
+}
+
+.dark .mandatory-document-type {
+  background: #1e293b !important;
+  border-color: #475569 !important;
+  color: #94a3b8 !important;
+}
+
+.mandatory-indicator {
+  color: #3b82f6;
+  font-weight: 500;
+  font-size: 12px;
+  margin-left: 8px;
+}
+
+.dark .mandatory-indicator {
+  color: #60a5fa;
+}
+
+.mandatory-reason {
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-top: 8px;
+  font-size: 12px;
+  color: #1e40af;
+  line-height: 1.4;
+}
+
+.dark .mandatory-reason {
+  background: rgba(96, 165, 250, 0.1);
+  border-color: rgba(96, 165, 250, 0.2);
+  color: #93c5fd;
+}
+
+/* Enhanced Document Item Styling for Mandatory Documents */
+.document-item:nth-child(1) .document-content,
+.document-item:nth-child(2) .document-content {
+  border-left: 3px solid #3b82f6;
+  background: linear-gradient(to right, rgba(59, 130, 246, 0.05), transparent);
+}
+
+.dark .document-item:nth-child(1) .document-content,
+.dark .document-item:nth-child(2) .document-content {
+  border-left-color: #60a5fa;
+  background: linear-gradient(to right, rgba(96, 165, 250, 0.05), transparent);
+}
+
+.document-item:nth-child(1) .document-icon,
+.document-item:nth-child(2) .document-icon {
+  color: #3b82f6;
+}
+
+.dark .document-item:nth-child(1) .document-icon,
+.dark .document-item:nth-child(2) .document-icon {
+  color: #60a5fa;
+}
+
+/* Responsive Design for Mandatory Requirements */
+@media (min-width: 768px) {
+  .mandatory-requirements {
+    flex-direction: row;
+    gap: 16px;
+  }
+  
+  .mandatory-requirement {
+    flex: 1;
+  }
 }
 

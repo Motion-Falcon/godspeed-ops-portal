@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { checkEmailAvailability } from "../../services/api/profile";
 import { useNavigate } from "react-router-dom";
 import { Eye, Pencil } from "lucide-react";
-import { validateSIN, validateDOB, getMaxDobDate, logValidation } from "../../utils/validation";
+import { validateSIN, validateDOB, validateUCI, getMaxDobDate, logValidation } from "../../utils/validation";
 import { useLanguage } from "../../contexts/language/language-provider";
 import { PersonalInfoFormData } from "./profileSchemas";
 
@@ -116,6 +116,38 @@ export function PersonalInfoForm({
     
     debounceTimeoutRef.current = setTimeout(() => {
       validateSinNumber(value);
+    }, 300); // Only validate after 300ms of inactivity
+  };
+
+  // UCI validation wrapper for react-hook-form with debouncing
+  const validateUciNumber = (value: string | undefined) => {
+    if (!value) {
+      clearErrors("workPermitUci");
+      return true; // Field is optional when not a temporary resident
+    }
+    
+    const result = validateUCI(value);
+    if (!result.isValid && result.errorMessage) {
+      setError("workPermitUci", {
+        type: "manual",
+        message: result.errorMessage,
+      });
+      return false;
+    }
+    
+    // Clear errors if validation passes
+    clearErrors("workPermitUci");
+    return true;
+  };
+
+  // Debounced validation for UCI to prevent excessive validation
+  const debouncedValidateUci = (value: string | undefined) => {
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+    }
+    
+    debounceTimeoutRef.current = setTimeout(() => {
+      validateUciNumber(value);
     }, 300); // Only validate after 300ms of inactivity
   };
 
@@ -509,6 +541,65 @@ export function PersonalInfoForm({
             )}
           </div>
         </div>
+          {/* UCI fields - only show for temporary residents (SIN starting with '9') */}
+          {watchedSin && watchedSin.startsWith('9') && (
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="workPermitUci" className="form-label" data-required="*">
+                  {t('profileCreate.personalInfo.workPermitUci')}
+                </label>
+                <input
+                  id="workPermitUci"
+                  type="text"
+                  className="form-input"
+                  placeholder={t('profileCreate.personalInfo.workPermitUciPlaceholder')}
+                  maxLength={10}
+                  pattern="\d*"
+                  inputMode="numeric"
+                  {...register("workPermitUci", {
+                    validate: validateUciNumber,
+                    onChange: (e) => {
+                      // Remove any non-digit characters as the user types
+                      const value = e.target.value;
+                      const digitsOnly = value.replace(/\D/g, '');
+                      if (value !== digitsOnly) {
+                        e.target.value = digitsOnly;
+                      }
+                      // Debounced validation on change for immediate feedback
+                      debouncedValidateUci(digitsOnly);
+                    }
+                  })}
+                />
+                {shouldShowError("workPermitUci") && (
+                  <p className="error-message">{allErrors.workPermitUci?.message}</p>
+                )}
+                <p className="field-note">
+                  {t('profileCreate.personalInfo.workPermitUciNote')}
+                </p>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="workPermitExpiry" className="form-label" data-required="*">
+                  {t('profileCreate.personalInfo.workPermitExpiry')}
+                </label>
+                <div className="date-picker-container">
+                  <input
+                    id="workPermitExpiry"
+                    type="date"
+                    className="form-input"
+                    {...register("workPermitExpiry")}
+                    onClick={(e) => e.currentTarget.showPicker()}
+                  />
+                </div>
+                {shouldShowError("workPermitExpiry") && (
+                  <p className="error-message">{allErrors.workPermitExpiry?.message}</p>
+                )}
+                <p className="field-note">
+                  {t('profileCreate.personalInfo.workPermitExpiryNote')}
+                </p>
+              </div>
+            </div>
+          )}
 
         <div className="form-row">
           <div className="form-group">
