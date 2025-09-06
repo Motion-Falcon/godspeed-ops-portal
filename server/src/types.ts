@@ -86,6 +86,8 @@ export interface DbJobseekerProfile {
   passport_number?: string;
   sin_number?: string;
   sin_expiry?: string;
+  work_permit_uci?: string;
+  work_permit_expiry?: string;
   business_number?: string;
   corporation_name?: string;
   

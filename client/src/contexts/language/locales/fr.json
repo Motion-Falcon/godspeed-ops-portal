@@ -29,9 +29,9 @@
     "allRecruiters": "Tous les recruteurs",
     "allJobseekers": "Tous les demandeurs d'emploi",
     "jobseekerManagement": "Gestion des demandeurs d'emploi",
-    "allJobseekers": "Tous les demandeurs d'emploi",
     "createJobseeker": "Créer un demandeur d'emploi",
     "jobseekerDrafts": "Brouillons des demandeurs d'emploi",
+    "sinWorkPermitManagement": "Info NAS et Permis de Travail",
     "clientManagement": "Gestion des clients",
     "allClients": "Tous les clients",
     "createClient": "Créer un client",
@@ -125,7 +125,14 @@
     "failedToFetchMetrics": "Échec de récupération des métriques",
     "invitationResentSuccess": "Invitation renvoyée avec succès à {{email}}",
     "onboardingReminderSentSuccess": "Rappel d'intégration envoyé avec succès à {{email}}",
-    "invitationResentFailure": "Échec du renvoi de l'invitation"
+    "invitationResentFailure": "Échec du renvoi de l'invitation",
+    "failedToFetchConsentRecords": "Échec de la récupération des dossiers de consentement",
+    "failedToUpdateStatus": "Échec de la mise à jour du statut",
+    "failedToDeleteProfile": "Échec de la suppression du profil",
+    "profileIdMissing": "L'ID du profil est manquant",
+    "errorOccurred": "Une erreur s'est produite lors de la récupération du profil",
+    "rejectionReasonRequired": "Veuillez fournir une raison du rejet",
+    "failedToFetchPositions": "Échec de la récupération des postes"
   },
 
   "validation": {
@@ -177,7 +184,20 @@
     "toggleAllRecruitersPositionData": "Basculer pour afficher les données de postes de tous les recruteurs",
     "toggleAllRecruitersTimesheetData": "Basculer pour afficher les données de feuilles de temps de tous les recruteurs",
     "toggleAllRecruitersInvoiceData": "Basculer pour afficher les données de factures de tous les recruteurs",
-    "firstLogin": "Première connexion"
+    "firstLogin": "Première connexion",
+    "expiry": {
+      "title": "Aperçu du Statut d'Expiration des Documents",
+      "description": "Surveiller le statut d'expiration des documents NAS et Permis de Travail pour tous les demandeurs d'emploi vérifiés",
+      "totalProfiles": "Profils Totaux",
+      "criticalItems": "Éléments Critiques",
+      "urgentItems": "Éléments Urgents",
+      "sinDocuments": "Nombre de Documents NAS Expirés",
+      "workPermitDocuments": "Nombre de Documents Permis de Travail Expirés",
+      "totalDocuments": "documents",
+      "lastUpdated": "Dernière mise à jour",
+      "fetchError": "Échec de récupération des données de statut d'expiration",
+      "errorTitle": "Impossible de charger les données d'expiration"
+    }
   },
 
   "profile": {
@@ -696,6 +716,63 @@
     },
     "backToManagement": "Retour à la gestion des demandeurs d'emploi"
   },
+  "sinWorkPermitManagement": {
+    "title": "Informations NAS et Permis de Travail",
+    "tableTitle": "Données NAS et Permis de Travail",
+    "globalSearch": "Recherche globale...",
+    "resetFilters": "Réinitialiser les filtres",
+    "columns": {
+      "name": "Nom",
+      "email": "Email",
+      "phone": "Numéro de téléphone",
+      "sinNumber": "Numéro NAS",
+      "sinExpiry": "Expiration NAS",
+      "workPermitUci": "UCI Permis de Travail",
+      "workPermitExpiry": "Expiration Permis de Travail",
+      "sinExpiryStatus": "Statut NAS",
+      "workPermitExpiryStatus": "Statut Permis de Travail",
+      "sinExpiryStatusHelp": "Jours jusqu'à l'expiration du NAS",
+      "workPermitExpiryStatusHelp": "Jours jusqu'à l'expiration du permis de travail",
+      "actions": "Actions"
+    },
+    "placeholders": {
+      "searchName": "Rechercher nom...",
+      "searchEmail": "Rechercher email...",
+      "searchPhone": "Rechercher téléphone...",
+      "searchSinNumber": "Rechercher numéro NAS...",
+      "searchWorkPermitUci": "Rechercher UCI..."
+    },
+    "actions": {
+      "helpText": "Voir le profil",
+      "viewProfile": "Voir les détails du profil"
+    },
+    "emptyState": {
+      "noProfiles": "Aucun profil avec des données NAS/Permis de travail trouvé."
+    },
+    "na": "N/D",
+    "pagination": {
+      "showing": "Affichage de {{start}} à {{end}} sur {{total}} entrées",
+      "filteredFrom": "(filtré à partir de {{total}} entrées totales)",
+      "show": "Afficher :",
+      "perPage": "par page",
+      "pageOf": "Page {{current}} sur {{total}}",
+      "previous": "Précédent",
+      "next": "Suivant",
+      "previousPage": "Page précédente",
+      "nextPage": "Page suivante",
+      "goToPage": "Aller à la page {{page}}"
+    },
+    "filters": {
+      "allStatuses": "Tous les statuts",
+      "expired": "Expiré",
+      "expiringUnder30": "Expire dans 30 jours",
+      "expiringUnder60": "Expire dans 60 jours",
+      "expiringUnder90": "Expire dans 90 jours",
+      "expiringAfter90": "Expire après 90 jours"
+    },
+    "expiredDaysAgo": "Expiré il y a {{days}} jour(s)",
+    "expiresInDays": "{{days}} jour(s) restant(s)"
+  },
   "jobSeekerProfile": {
     "title": "Profil du demandeur d'emploi",
     "backToManagement": "Retour à la gestion des demandeurs d'emploi",
@@ -726,6 +803,11 @@
     "sinExpired": "Le NAS a expiré il y a {{days}} jour(s)",
     "sinExpiresIn": "Le NAS expire dans {{days}} jour(s)",
     "sinExpiry": "Expiration du NAS : {{date}}",
+    "workPermitExpired": "Le permis de travail/d'études a expiré il y a {{days}} jour(s)",
+    "workPermitExpiresIn": "Le permis de travail/d'études expire dans {{days}} jour(s)",
+    "workPermitExpiryLabel": "Expiration du permis de travail/d'études : {{date}}",
+    "workPermitUci": "UCI du permis de travail/d'études",
+    "workPermitExpiry": "Expiration du permis de travail/d'études",
     "personalInformation": "Informations personnelles",
     "identification": "Identification",
     "address": "Adresse",
@@ -740,8 +822,8 @@
     "loadingDocumentPreviews": "Chargement des aperçus des documents...",
     "aiDocumentValidation": "Validation de document IA",
     "aiValidationInProgress": "Validation IA en cours",
-    "aiValidationProgressMessage": "Notre IA analyse ce document pour l'authenticité et la qualité. Ce processus prend généralement quelques minutes.",
-    "aiValidationProgressNote": "Veuillez revenir plus tard pour les résultats complets de l'analyse.",
+    "aiValidationInProgressMessage": "Notre IA analyse ce document pour l'authenticité et la qualité. Ce processus prend généralement quelques minutes.",
+    "aiValidationInProgressNote": "Veuillez revenir plus tard pour les résultats complets de l'analyse.",
     "noPositionsFound": "Aucun poste trouvé",
     "noAssignments": "Vous n'avez encore aucune affectation de poste.",
     "positions": "Postes",
@@ -791,7 +873,6 @@
     "licenseNumber": "Numéro de permis",
     "passportNumber": "Numéro de passeport",
     "sinNumber": "Numéro NAS",
-    "sinExpiry": "Expiration du NAS",
     "businessNumber": "Numéro d'entreprise",
     "corporationName": "Nom/Numéro de société",
     "street": "Rue",
@@ -816,12 +897,7 @@
     "overtimeBillRate": "Taux de facturation des heures supplémentaires",
     "overtimePayRate": "Taux de rémunération des heures supplémentaires",
     "userType": "Type d'utilisateur",
-    "accountCreatedAt": "Compte créé le",
-    "lastUpdatedAt": "Dernière modification le",
     "name": "Nom",
-    "yes": "Oui",
-    "no": "Non",
-    "nA": "N/A",
     "positionPeriod": "{{startDate}} - {{endDate}}",
     "duration": "Durée : {{duration}}",
     "statusActive": "Actif",
@@ -830,7 +906,6 @@
     "statusUnknown": "Inconnu",
     "profileStatusChangeNoticeTitle": "Avis de changement de statut du profil",
     "profileStatusChangeNoticeMessage": "La modification de votre profil réinitialisera votre statut de vérification à 'en attente'. Tant que votre profil est en statut en attente, il ne sera pas visible aux employeurs jusqu'à ce que notre équipe révise et approuve les modifications. Voulez-vous procéder à la page de modification ?",
-    "continueToEdit": "Continuer vers l'édition",
     "paginationInfo": "Page {{currentPage}} sur {{totalPages}}",
     "previousPage": "Page précédente",
     "nextPage": "Page suivante",
@@ -845,7 +920,15 @@
     "consentedName": "Nom du consentement : {{name}}",
     "consentStatus": "Statut : {{status}}",
     "viewConsentRecord": "Voir le dossier de consentement",
-    "version": "Version {{version}}"
+    "version": "Version {{version}}",
+    "unknownUser": "Utilisateur inconnu",
+    "unnamedProfile": "Profil sans nom",
+    "backToJobSeekerManagement": "Retour à la gestion des demandeurs d'emploi",
+    "failedToLoadProfile": "Échec du chargement du profil",
+    "unnamedDocument": "Document sans nom",
+    "document": "Document",
+    "failedToFetchPositions": "Échec de la récupération des postes",
+    "failedToFetchConsentRecords": "Échec de la récupération des dossiers de consentement"
   },
   "profileCreate": {
     "editProfileTitle": "Modifier le profil du demandeur d'emploi",
@@ -906,6 +989,14 @@
       "sinNumberNote": "Entrez un NAS canadien valide à 9 chiffres en utilisant uniquement des chiffres (sans espaces ni tirets). Cette information est chiffrée et stockée en toute sécurité.",
       "sinExpiry": "Date d'expiration du NAS",
       "sinExpiryRequired": "La date d'expiration du NAS est requise si un NAS est fourni",
+      "workPermitUci": "UCI du permis de travail/d'études",
+      "workPermitUciPlaceholder": "Entrez votre UCI (Identifiant client unique)",
+      "workPermitUciRequired": "L'UCI du permis de travail/d'études est requis pour les résidents temporaires",
+      "workPermitUciNote": "L'UCI doit comporter exactement 8 ou 10 chiffres. On le trouve sur votre permis de travail, permis d'études ou fiche de visiteur.",
+      "workPermitUciInvalid": "L'UCI doit comporter exactement 8 ou 10 chiffres seulement",
+      "workPermitExpiry": "Date d'expiration du permis de travail/d'études",
+      "workPermitExpiryRequired": "La date d'expiration du permis de travail/d'études est requise pour les résidents temporaires",
+      "workPermitExpiryNote": "Entrez la date d'expiration telle qu'indiquée sur votre permis de travail ou d'études",
       "businessNumber": "Numéro d'entreprise/TVH/TPS",
       "businessNumberPlaceholder": "Entrez votre numéro d'entreprise",
       "corporationName": "Nom/Numéro de société",
@@ -977,7 +1068,11 @@
     },
     "documents": {
       "sectionTitle": "Téléversement de documents",
-      "sectionDescription": "Téléversez les documents requis (format PDF, max 2 Mo). Au moins un document est requis.",
+      "sectionDescription": "Téléversez les documents requis (format PDF, max 2 Mo). Les deux premiers documents (NAS et Permis de travail) sont obligatoires et essentiels pour la vérification de l'admissibilité à l'emploi.",
+      "mandatoryDocumentsInfo": "Les documents suivants sont obligatoires pour tous les demandeurs d'emploi et ne peuvent pas être modifiés :",
+      "sinMandatoryReason": "Le document NAS est requis pour la déclaration fiscale et l'emploi légal au Canada.",
+      "workPermitMandatoryReason": "Le permis de travail est requis pour vérifier votre autorisation légale de travailler au Canada.",
+      "mandatoryDocumentType": "Obligatoire - {{type}}",
       "documentLabel": "Document {{number}}",
       "fileSize": "Taille",
       "fileSizeBytes": "Octets",
@@ -1027,7 +1122,9 @@
       "atLeastOneDocumentRequired": "Au moins un document est requis",
       "maxFileSize": "La taille maximale du fichier est de 2 Mo.",
       "onlyPdfFiles": "Seuls les fichiers .pdf sont acceptés.",
-      "documentTypeRequired": "Le type de document est requis"
+      "documentTypeRequired": "Le type de document est requis",
+      "mandatoryDocument": "Document obligatoire",
+      "cannotChangeType": "Le type ne peut pas être modifié pour les documents obligatoires"
     }
   },
   "profileAccountCreated": {

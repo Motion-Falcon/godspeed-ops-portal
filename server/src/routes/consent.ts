@@ -4,6 +4,7 @@ import { authenticateToken, authorizeRoles } from '../middleware/auth.js';
 import { sanitizeInputs, apiRateLimiter } from '../middleware/security.js';
 import { activityLogger } from '../middleware/activityLogger.js';
 import { emailNotifier } from '../middleware/emailNotifier.js';
+import { consentHtmlTemplate, generateConsentTextTemplate } from '../email-templates/consent-html.js';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
 
@@ -71,89 +72,16 @@ function generateConsentToken(): string {
  * Generate consent email content
  */
 function generateConsentEmail(recipientName: string, documentName: string, consentUrl: string) {
-  const htmlContent = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Digital Consent Request</title>
-  <style>
-    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
-    .container { max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9; }
-    .content { background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-    .header { text-align: center; margin-bottom: 30px; }
-    .logo { font-size: 24px; font-weight: bold; color: #d97706; }
-    .button { display: inline-block; background-color: #d97706; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold; margin: 20px 0; }
-    .footer { text-align: center; margin-top: 30px; font-size: 12px; color: #666; }
-    .warning { background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="content">
-      <div class="header">
-        <div class="logo">HD Group Ops Portal</div>
-        <h1>Digital Consent Request</h1>
-      </div>
-      
-      <p>Hello ${recipientName},</p>
-      
-      <p>You have received a digital consent request for the following document:</p>
-      
-      <p><strong>${documentName}</strong></p>
-      
-      <p>Please click the button below to review and provide your consent:</p>
-      
-      <div style="text-align: center;">
-        <a href="${consentUrl}" class="button">Review & Provide Consent</a>
-      </div>
-      
-      <div class="warning">
-        <p><strong>Important:</strong> This link is unique to you and should not be shared. The link will expire if not used within a reasonable timeframe.</p>
-      </div>
-      
-      <p>If you have any questions about this consent request, please contact our support team.</p>
-      
-      <p>Best regards,<br>HD Group Team</p>
-    </div>
-    
-    <div class="footer">
-      <p>This is an automated message. Please do not reply to this email.</p>
-    </div>
-  </div>
-</body>
-</html>
-  `;
-
-  const textContent = `
-Digital Consent Request
-
-Hello ${recipientName},
-
-You have received a digital consent request for the following document:
-
-${documentName}
-
-Please click the link below to review and provide your consent:
-
-${consentUrl}
-
-IMPORTANT: This link is unique to you and should not be shared. The link will expire if not used within a reasonable timeframe.
-
-If you have any questions about this consent request, please contact our support team.
-
-Best regards,
-HD Group Team
-
----
-This is an automated message. Please do not reply to this email.
-  `;
+  const templateVars = {
+    recipientName,
+    documentName,
+    consentUrl
+  };
 
   return {
     subject: `Digital Consent Request: ${documentName}`,
-    html: htmlContent,
-    text: textContent
+    html: consentHtmlTemplate(templateVars),
+    text: generateConsentTextTemplate(templateVars)
   };
 }
 

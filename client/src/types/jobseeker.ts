@@ -33,6 +33,10 @@ export interface JobSeekerProfile {
   createdAt: string;
   location?: string;
   documents?: DocumentRecord[];
+  sinNumber?: string;
+  sinExpiry?: string;
+  workPermitUci?: string;
+  workPermitExpiry?: string;
 }
 
 export interface JobSeekerDetailedProfile extends JobSeekerProfile {
@@ -52,6 +56,8 @@ export interface JobSeekerDetailedProfile extends JobSeekerProfile {
   passportNumber?: string;
   sinNumber?: string; // Consider security implications before displaying
   sinExpiry?: string;
+  workPermitUci?: string; // Work/Study permit UCI for temporary residents
+  workPermitExpiry?: string; // Work/Study permit expiry date for temporary residents
   businessNumber?: string;
   corporationName?: string;
   street?: string;

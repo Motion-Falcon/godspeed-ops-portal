@@ -82,6 +82,8 @@ interface DbJobseekerProfile {
   passport_number?: string;
   sin_number?: string;
   sin_expiry?: string;
+  work_permit_uci?: string;
+  work_permit_expiry?: string;
   business_number?: string;
   corporation_name?: string;
   street?: string;
@@ -132,6 +134,10 @@ interface DbJobseekerProfileListView {
   created_by_user_id?: string;
   updated_by_user_id?: string;
   updated_at: string;
+  sin_number?: string;
+  sin_expiry?: string;
+  work_permit_uci?: string;
+  work_permit_expiry?: string;
 }
 
 // Interface for the simplified JobSeekerProfile list view (matches frontend expectation)
@@ -147,6 +153,10 @@ interface JobSeekerProfile {
   experience?: string;
   documents?: DocumentRecord[];
   employeeId?: string; // Employee identification number
+  sinNumber?: string;
+  sinExpiry?: string;
+  workPermitUci?: string;
+  workPermitExpiry?: string;
 }
 
 // Interface for the detailed JobSeekerProfile view (matches frontend expectation)
@@ -234,7 +244,13 @@ router.get('/', isAdminOrRecruiter, async (req, res) => {
       creatorFilter = '', 
       updaterFilter = '',
       dateFilter = '',
-      createdDateFilter = ''
+      createdDateFilter = '',
+      sinNumberFilter = '',
+      sinExpiryFilter = '',
+      workPermitUciFilter = '',
+      workPermitExpiryFilter = '',
+      sinExpiryStatusFilter = '',
+      workPermitExpiryStatusFilter = ''
     } = req.query as {
       page?: string;
       limit?: string;
@@ -250,6 +266,12 @@ router.get('/', isAdminOrRecruiter, async (req, res) => {
       updaterFilter?: string;
       dateFilter?: string;
       createdDateFilter?: string;
+      sinNumberFilter?: string;
+      sinExpiryFilter?: string;
+      workPermitUciFilter?: string;
+      workPermitExpiryFilter?: string;
+      sinExpiryStatusFilter?: string;
+      workPermitExpiryStatusFilter?: string;
     };
 
     const pageNum = parseInt(page);
@@ -274,7 +296,11 @@ router.get('/', isAdminOrRecruiter, async (req, res) => {
         employee_id,
         created_by_user_id,
         updated_by_user_id,
-        updated_at
+        updated_at,
+        sin_number,
+        sin_expiry,
+        work_permit_uci,
+        work_permit_expiry
       `);
 
     // Apply all filters at database level
@@ -290,7 +316,13 @@ router.get('/', isAdminOrRecruiter, async (req, res) => {
       creatorFilter,
       updaterFilter,
       dateFilter,
-      createdDateFilter
+      createdDateFilter,
+      sinNumberFilter,
+      sinExpiryFilter,
+      workPermitUciFilter,
+      workPermitExpiryFilter,
+      sinExpiryStatusFilter,
+      workPermitExpiryStatusFilter
     });
 
     // Get total count (unfiltered)
@@ -320,7 +352,13 @@ router.get('/', isAdminOrRecruiter, async (req, res) => {
       creatorFilter,
       updaterFilter,
       dateFilter,
-      createdDateFilter
+      createdDateFilter,
+      sinNumberFilter,
+      sinExpiryFilter,
+      workPermitUciFilter,
+      workPermitExpiryFilter,
+      sinExpiryStatusFilter,
+      workPermitExpiryStatusFilter
     });
 
     const { count: filteredCount, error: filteredCountError } = await countQuery;
@@ -367,6 +405,10 @@ router.get('/', isAdminOrRecruiter, async (req, res) => {
       experience: profile.experience,
       location: extractLocation(profile),
       employeeId: profile.employee_id,
+      sinNumber: profile.sin_number,
+      sinExpiry: profile.sin_expiry,
+      workPermitUci: profile.work_permit_uci,
+      workPermitExpiry: profile.work_permit_expiry,
     }));
 
     // Calculate pagination metadata
@@ -410,6 +452,12 @@ function applyFilters(query: any, filters: {
   updaterFilter?: string;
   dateFilter?: string;
   createdDateFilter?: string;
+  sinNumberFilter?: string;
+  sinExpiryFilter?: string;
+  workPermitUciFilter?: string;
+  workPermitExpiryFilter?: string;
+  sinExpiryStatusFilter?: string;
+  workPermitExpiryStatusFilter?: string;
 }) {
   const {
     search,
@@ -423,7 +471,13 @@ function applyFilters(query: any, filters: {
     creatorFilter,
     updaterFilter,
     dateFilter,
-    createdDateFilter
+    createdDateFilter,
+    sinNumberFilter,
+    sinExpiryFilter,
+    workPermitUciFilter,
+    workPermitExpiryFilter,
+    sinExpiryStatusFilter,
+    workPermitExpiryStatusFilter
   } = filters;
 
   // Global search across multiple fields
@@ -476,6 +530,96 @@ function applyFilters(query: any, filters: {
     const nextDay = new Date(filterDate);
     nextDay.setDate(nextDay.getDate() + 1);
     query = query.gte('created_at', filterDate.toISOString()).lt('created_at', nextDay.toISOString());
+  }
+
+  // SIN Number filter
+  if (sinNumberFilter && sinNumberFilter.trim().length > 0) {
+    query = query.ilike('sin_number', `%${sinNumberFilter.trim()}%`);
+  }
+
+  // SIN Expiry filter
+  if (sinExpiryFilter && sinExpiryFilter.trim().length > 0) {
+    const filterDate = new Date(sinExpiryFilter);
+    const nextDay = new Date(filterDate);
+    nextDay.setDate(nextDay.getDate() + 1);
+    query = query.gte('sin_expiry', filterDate.toISOString()).lt('sin_expiry', nextDay.toISOString());
+  }
+
+  // Work Permit UCI filter
+  if (workPermitUciFilter && workPermitUciFilter.trim().length > 0) {
+    query = query.ilike('work_permit_uci', `%${workPermitUciFilter.trim()}%`);
+  }
+
+  // Work Permit Expiry filter
+  if (workPermitExpiryFilter && workPermitExpiryFilter.trim().length > 0) {
+    const filterDate = new Date(workPermitExpiryFilter);
+    const nextDay = new Date(filterDate);
+    nextDay.setDate(nextDay.getDate() + 1);
+    query = query.gte('work_permit_expiry', filterDate.toISOString()).lt('work_permit_expiry', nextDay.toISOString());
+  }
+
+  // SIN Expiry Status filter
+  if (sinExpiryStatusFilter && sinExpiryStatusFilter !== 'all') {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    switch (sinExpiryStatusFilter) {
+      case 'expired':
+        query = query.lt('sin_expiry', today.toISOString());
+        break;
+      case 'expiring-30':
+        const in30Days = new Date(today);
+        in30Days.setDate(in30Days.getDate() + 30);
+        query = query.gte('sin_expiry', today.toISOString()).lte('sin_expiry', in30Days.toISOString());
+        break;
+      case 'expiring-60':
+        const in60Days = new Date(today);
+        in60Days.setDate(in60Days.getDate() + 60);
+        query = query.gte('sin_expiry', today.toISOString()).lte('sin_expiry', in60Days.toISOString());
+        break;
+      case 'expiring-90':
+        const in90Days = new Date(today);
+        in90Days.setDate(in90Days.getDate() + 90);
+        query = query.gte('sin_expiry', today.toISOString()).lte('sin_expiry', in90Days.toISOString());
+        break;
+      case 'expiring-after-90':
+        const after90Days = new Date(today);
+        after90Days.setDate(after90Days.getDate() + 90);
+        query = query.gt('sin_expiry', after90Days.toISOString());
+        break;
+    }
+  }
+
+  // Work Permit Expiry Status filter
+  if (workPermitExpiryStatusFilter && workPermitExpiryStatusFilter !== 'all') {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    switch (workPermitExpiryStatusFilter) {
+      case 'expired':
+        query = query.lt('work_permit_expiry', today.toISOString());
+        break;
+      case 'expiring-30':
+        const in30Days = new Date(today);
+        in30Days.setDate(in30Days.getDate() + 30);
+        query = query.gte('work_permit_expiry', today.toISOString()).lte('work_permit_expiry', in30Days.toISOString());
+        break;
+      case 'expiring-60':
+        const in60Days = new Date(today);
+        in60Days.setDate(in60Days.getDate() + 60);
+        query = query.gte('work_permit_expiry', today.toISOString()).lte('work_permit_expiry', in60Days.toISOString());
+        break;
+      case 'expiring-90':
+        const in90Days = new Date(today);
+        in90Days.setDate(in90Days.getDate() + 90);
+        query = query.gte('work_permit_expiry', today.toISOString()).lte('work_permit_expiry', in90Days.toISOString());
+        break;
+      case 'expiring-after-90':
+        const after90Days = new Date(today);
+        after90Days.setDate(after90Days.getDate() + 90);
+        query = query.gt('work_permit_expiry', after90Days.toISOString());
+        break;
+    }
   }
 
   // Note: creatorFilter and updaterFilter would require JOINs with auth.users
@@ -1012,6 +1156,8 @@ router.put('/profile/:id/update',
       if (profileData.passportNumber) updateData.passport_number = profileData.passportNumber;
       if (profileData.sinNumber) updateData.sin_number = profileData.sinNumber;
       if (profileData.sinExpiry) updateData.sin_expiry = profileData.sinExpiry;
+      if (profileData.workPermitUci) updateData.work_permit_uci = profileData.workPermitUci;
+      if (profileData.workPermitExpiry) updateData.work_permit_expiry = profileData.workPermitExpiry;
       if (profileData.businessNumber) updateData.business_number = profileData.businessNumber;
       if (profileData.corporationName) updateData.corporation_name = profileData.corporationName;
       if (profileData.street) updateData.street = profileData.street;

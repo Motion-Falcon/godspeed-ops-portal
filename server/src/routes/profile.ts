@@ -219,6 +219,8 @@ router.post('/submit',
         passport_number: profileData.passportNumber,
         sin_number: profileData.sinNumber,
         sin_expiry: profileData.sinExpiry,
+        work_permit_uci: profileData.workPermitUci,
+        work_permit_expiry: profileData.workPermitExpiry,
         business_number: profileData.businessNumber,
         corporation_name: profileData.corporationName,
         // Address fields
