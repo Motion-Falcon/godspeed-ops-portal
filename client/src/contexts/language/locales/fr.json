@@ -986,6 +986,7 @@
       "licenseOrPassportRequired": "Un numéro de permis ou de passeport est requis",
       "sinNumber": "NAS (Numéro d'assurance sociale)",
       "sinNumberPlaceholder": "XXXXXXXXX",
+      "sinNumberRequired": "Le numéro NAS est requis",
       "sinNumberNote": "Entrez un NAS canadien valide à 9 chiffres en utilisant uniquement des chiffres (sans espaces ni tirets). Cette information est chiffrée et stockée en toute sécurité.",
       "sinExpiry": "Date d'expiration du NAS",
       "sinExpiryRequired": "La date d'expiration du NAS est requise si un NAS est fourni",

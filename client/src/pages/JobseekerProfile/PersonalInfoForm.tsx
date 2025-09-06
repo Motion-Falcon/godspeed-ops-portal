@@ -90,8 +90,11 @@ export function PersonalInfoForm({
   // SIN validation wrapper for react-hook-form with debouncing
   const validateSinNumber = (value: string | undefined) => {
     if (!value) {
-      clearErrors("sinNumber");
-      return true; // Field is optional, so empty is allowed
+      setError("sinNumber", {
+        type: "manual",
+        message: t('profileCreate.personalInfo.sinNumberRequired'),
+      });
+      return false; // Field is now required
     }
     
     const result = validateSIN(value);
@@ -480,7 +483,7 @@ export function PersonalInfoForm({
 
         <div className="form-row">
           <div className="form-group">
-            <label htmlFor="sinNumber" className="form-label">
+            <label htmlFor="sinNumber" className="form-label" data-required="*">
               {t('profileCreate.personalInfo.sinNumber')}
             </label>
             <input
