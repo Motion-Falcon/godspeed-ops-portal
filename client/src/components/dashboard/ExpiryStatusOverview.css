@@ -1,0 +1,427 @@
+/* ExpiryStatusOverview.css */
+
+.expiry-status-overview {
+  background: radial-gradient(
+    circle at 15% 45%,
+    rgba(120, 120, 180, 0.06) 20%,
+    transparent 45%
+  ),
+  radial-gradient(
+    circle at 85% 55%,
+    rgba(180, 120, 180, 0.06) 20%,
+    transparent 45%
+  ),
+  linear-gradient(135deg, rgba(0, 0, 0, 0.02) 50%, rgba(0, 0, 0, 0.01) 100%),
+  var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-4);
+  margin-top: var(--spacing-6);
+  box-shadow: var(--card-shadow);
+  transition: all var(--transition-normal);
+}
+
+.expiry-status-overview:hover {
+  transform: translateY(-1px);
+  box-shadow: 0px 6px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* Header Styling */
+.expiry-overview-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-4);
+  padding-bottom: var(--spacing-3);
+  border-bottom: 1px solid var(--border);
+}
+
+.expiry-overview-title {
+  font-size: var(--font-size-subheader);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text);
+  margin: 0;
+}
+
+.expiry-overview-description {
+  font-size: var(--font-size-small);
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.expiry-overview-stats {
+  display: flex;
+  gap: var(--spacing-3);
+  align-items: center;
+}
+
+.overview-stat {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-3);
+  background: var(--input-bg);
+  border-radius: var(--border-radius);
+  border: 1px solid var(--border);
+}
+
+.overview-stat.critical {
+  background: var(--failure-bg);
+  border-color: var(--failure);
+}
+
+.overview-stat.warning {
+  background: var(--pending-bg);
+  border-color: var(--pending);
+}
+
+.stat-value {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text);
+}
+
+.overview-stat.critical .stat-value {
+  color: var(--failure);
+}
+
+.overview-stat.warning .stat-value {
+  color: var(--pending);
+}
+
+.stat-label {
+  font-size: var(--font-size-tiny);
+  color: var(--text-muted);
+}
+
+/* Documents Grid */
+.expiry-documents-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  margin-bottom: var(--spacing-3);
+}
+
+.document-type-overview {
+  background: #ffffff99;
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius);
+  box-shadow: var(--card-shadow);
+  padding: var(--spacing-3);
+  transition: all var(--transition-fast);
+  cursor: pointer;
+}
+
+.document-type-overview:hover {
+  transform: translateY(-2px);
+  box-shadow: 0px 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.dark .document-type-overview {
+  background: #00000099;
+}
+
+.document-type-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-3);
+  padding-bottom: var(--spacing-2);
+  border-bottom: 1px solid var(--border);
+}
+
+.document-type-title {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  color: var(--text);
+  margin: 0;
+}
+
+.document-type-total {
+  font-size: var(--font-size-tiny);
+  color: var(--text-muted);
+  font-weight: var(--font-weight-normal);
+}
+
+/* Expiry Status Grid */
+.expiry-status-grid {
+  display: flex;
+  gap: var(--spacing-2);
+  overflow-x: auto;
+}
+
+/* Individual Status Cards */
+.expiry-status-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-2);
+  transition: all var(--transition-fast);
+  position: relative;
+  flex: 1;
+  min-width: 120px;
+}
+
+.expiry-status-card.clickable {
+  cursor: pointer;
+}
+
+.expiry-status-card.clickable:hover {
+  border-color: var(--primary);
+  transform: translateY(-1px);
+}
+
+.expiry-status-card.loading {
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+/* Status-specific styling using CSS variables */
+.expiry-status-card.expired {
+  border-left: 3px solid var(--failure);
+}
+
+.expiry-status-card.critical {
+  border-left: 3px solid #ea580c;
+}
+
+.expiry-status-card.warning {
+  border-left: 3px solid #d97706;
+}
+
+.expiry-status-card.caution {
+  border-left: 3px solid #ca8a04;
+}
+
+.expiry-status-card.valid {
+  border-left: 3px solid var(--success);
+}
+
+.expiry-status-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-1);
+}
+
+.expiry-status-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border-radius: var(--border-radius);
+  flex-shrink: 0;
+}
+
+.expiry-status-icon.expired {
+  background: var(--failure-bg);
+  color: var(--failure);
+}
+
+.expiry-status-icon.critical {
+  background: rgba(234, 88, 12, 0.1);
+  color: #ea580c;
+}
+
+.expiry-status-icon.warning {
+  background: rgba(217, 119, 6, 0.1);
+  color: #d97706;
+}
+
+.expiry-status-icon.caution {
+  background: rgba(202, 138, 4, 0.1);
+  color: #ca8a04;
+}
+
+.expiry-status-icon.valid {
+  background: var(--success-bg);
+  color: var(--success);
+}
+
+.expiry-status-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.expiry-status-title {
+  font-size: var(--font-size-tiny);
+  font-weight: var(--font-weight-medium);
+  color: var(--text);
+  margin: 0 0 var(--spacing-1) 0;
+  line-height: 1.2;
+}
+
+.expiry-status-count {
+  font-size: 20px;
+  font-weight: var(--font-weight-medium);
+  color: var(--text);
+}
+
+.expiry-status-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  color: var(--text-muted);
+  transition: color var(--transition-fast);
+  opacity: 0.7;
+}
+
+.expiry-status-card.clickable:hover .expiry-status-action {
+  color: var(--primary);
+  opacity: 1;
+}
+
+
+/* Footer */
+.expiry-overview-footer {
+  display: flex;
+  justify-content: center;
+  padding-top: var(--spacing-2);
+  border-top: 1px solid var(--border);
+  margin-top: var(--spacing-2);
+}
+
+.last-updated {
+  font-size: var(--font-size-tiny);
+  color: var(--text-muted);
+  margin: 0;
+  font-style: italic;
+}
+
+/* Error State */
+.expiry-status-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-4);
+  text-align: center;
+  background: var(--failure-bg);
+  border: 1px solid var(--failure);
+  border-radius: var(--border-radius);
+}
+
+.error-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.error-content svg {
+  color: var(--failure);
+}
+
+.error-text h4 {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  color: var(--text);
+  margin: 0;
+}
+
+.error-text p {
+  font-size: var(--font-size-small);
+  color: var(--text-muted);
+  margin: var(--spacing-1) 0 0 0;
+}
+
+.retry-button {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-3);
+  background: var(--primary);
+  color: var(--card);
+  border: none;
+  border-radius: var(--border-radius);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  font-family: var(--font-family);
+}
+
+.retry-button:hover {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+.retry-button:active {
+  transform: translateY(0);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .expiry-documents-grid {
+    gap: var(--spacing-2);
+  }
+}
+
+@media (max-width: 480px) {
+  .expiry-status-overview {
+    padding: var(--spacing-3);
+  }
+  
+  .expiry-overview-title {
+    font-size: var(--font-size-body);
+  }
+  
+  .document-type-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-1);
+  }
+  
+  .expiry-status-icon {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .expiry-status-grid {
+    flex-wrap: wrap;
+  }
+  
+  .expiry-status-card {
+    min-width: 100px;
+  }
+}
+
+/* Skeleton Loading Styles */
+.skeleton-text {
+  background: linear-gradient(
+    90deg,
+    var(--border) 25%,
+    var(--input-bg) 50%,
+    var(--border) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+  border-radius: 4px;
+}
+
+.skeleton-icon {
+  background: linear-gradient(
+    90deg,
+    var(--border) 25%,
+    var(--input-bg) 50%,
+    var(--border) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+  border-radius: var(--border-radius);
+  width: 32px;
+  height: 32px;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}

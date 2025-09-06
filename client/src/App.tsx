@@ -22,6 +22,7 @@ import { ClientDrafts } from './pages/ClientManagement/ClientDrafts';
 import { ClientDraftEdit } from './pages/ClientManagement/ClientDraftEdit';
 import { ClientView } from './pages/ClientManagement/ClientView';
 import { JobSeekerManagement } from './pages/JobseekerManagement/JobSeekerManagement';
+import { SinWorkPermitManagement } from './pages/JobseekerManagement/SinWorkPermitManagement';
 import { PositionManagement } from './pages/PositionManagement/PositionManagement';
 import { PositionCreate } from './pages/PositionManagement/PositionCreate';
 import { PositionEdit } from './pages/PositionManagement/PositionEdit';
@@ -106,6 +107,7 @@ function App() {
                   <Route path="/jobseekers/profile/account-created" element={<ProfileAccountCreated />} />
                   <Route path="/jobseekers/profile/success" element={<ProfileSuccess />} />
                   <Route path="/jobseeker-management" element={<JobSeekerManagement />} />
+                  <Route path="/sin-work-permit-management" element={<SinWorkPermitManagement />} />
                   <Route path="/all-users-management" element={<AllUsersManagement />} />
                   <Route path="/jobseekers/drafts" element={<JobseekerDrafts />} />
                   <Route path="/jobseekers/drafts/edit/:id" element={<JobseekerProfileDraftEdit />} />
