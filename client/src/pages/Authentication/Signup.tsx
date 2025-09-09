@@ -14,6 +14,7 @@ import "../../styles/components/form.css";
 import "../../styles/components/button.css";
 import "../../styles/components/phone-input.css";
 import canhireLogo from "../../assets/logos/canhire-logo.png";
+import motionFalconLogo from '../../assets/logos/motion-falcon-logo.png';
 import PhoneInput from "react-phone-number-input";
 import "react-phone-number-input/style.css";
 import {
@@ -525,6 +526,27 @@ export function Signup() {
               {t('auth.login')}
             </Link>
           </div>
+
+          <div className="terms-privacy-notice">
+            {t('auth.termsPrivacyNotice')}{' '}
+            <a 
+              href="/terms-of-service" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="auth-link"
+            >
+              {t('auth.termsOfService')}
+            </a>
+            {' '}{t('common.and')}{' '}
+            <a 
+              href="/privacy-policy" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="auth-link"
+            >
+              {t('auth.privacyPolicy')}
+            </a>.
+          </div>
         </div>
       </div>
 
@@ -548,6 +570,17 @@ export function Signup() {
             {t('signup.brandDescription')}
           </p>
         </div>
+      </div>
+      
+      {/* Motion Falcon Footer - Right Bottom */}
+      <div className="motion-falcon-footer right">
+        <span>Powered by</span>
+        <img 
+          src={motionFalconLogo} 
+          alt="Motion Falcon" 
+          className="motion-falcon-logo" 
+        />
+        <span>Motion Falcon</span>
       </div>
     </div>
   );
