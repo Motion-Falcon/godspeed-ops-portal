@@ -26,13 +26,13 @@ export function PrivacyPolicy() {
             {t('legal.effectiveDate')}: 09.09.2025
           </p>
           <p className="legal-page-company">
-            {t('legal.company')}: Godspeed Group ("Company," "we," "our," "us")
+            {t('legal.company')}: AllStaff Inc. ("Company," "we," "our," "us")
           </p>
         </div>
 
         <div className="legal-page-body">
           <p>
-            Godspeed Group is committed to protecting the privacy and personal information of all 
+            AllStaff Inc. is committed to protecting the privacy and personal information of all 
             individuals who use our website and Services. This Privacy Policy explains how we 
             collect, use, disclose, and safeguard personal information in compliance with the 
             Personal Information Protection and Electronic Documents Act (PIPEDA) and other 
@@ -150,10 +150,10 @@ export function PrivacyPolicy() {
             <h3>10. Contact Us</h3>
             <div className="legal-page-contact-info">
               <p>For privacy-related inquiries, corrections, or withdrawal of consent, please contact:</p>
-              <p><strong>Godspeed Group</strong></p>
-              <p>2795 Slough Street, Mississauga, ON L4T 1G2</p>
-              <p>info@godspeedxp.com</p>
-              <p>905-956-9525</p>
+              <p><strong>AllStaff Inc.</strong></p>
+              <p>4096 Meadowbrook Drive, Suite 121, London, ON N6L 1G4</p>
+              <p>accounting@allstaff.ca</p>
+              <p>519-432-7772</p>
               <p>
                 We will respond within a reasonable timeframe, in accordance with Canadian privacy 
                 legislation.
