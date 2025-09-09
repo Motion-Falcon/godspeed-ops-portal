@@ -65,6 +65,8 @@ import { ConsentListPage } from './pages/Consent/ConsentListPage';
 import { CreateConsentPage } from './pages/Consent/CreateConsentPage';
 import { ConsentDetailPage } from './pages/Consent/ConsentDetailPage';
 import { ConsentPage } from './pages/Consent/ConsentPage';
+import { TermsOfService } from './pages/Legal/TermsOfService';
+import { PrivacyPolicy } from './pages/Legal/PrivacyPolicy';
 
 function App() {
   return (
@@ -90,6 +92,10 @@ function App() {
               
               {/* Public consent page (no authentication required) */}
               <Route path="/consent" element={<ConsentPage />} />
+              
+              {/* Legal pages (no authentication required) */}
+              <Route path="/terms-of-service" element={<TermsOfService />} />
+              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
 
               {/* Protected routes for all authenticated users */}
               <Route element={<ProtectedRoute />}>

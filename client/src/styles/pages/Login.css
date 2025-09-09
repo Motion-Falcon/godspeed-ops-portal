@@ -5,6 +5,7 @@
   flex-direction: column;
   background: var(--background-gradient);
   overflow: hidden;
+  position: relative;
 }
 
 .auth-column {
@@ -159,6 +160,43 @@
   color: var(--danger);
   font-size: 0.875rem;
   animation: fadeIn 0.3s ease;
+}
+
+/* Motion Falcon Footer */
+.motion-falcon-footer {
+  position: absolute;
+  bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-muted);
+  z-index: 10;
+  opacity: 0.8;
+  transition: opacity var(--transition-normal);
+}
+
+.motion-falcon-footer:hover {
+  opacity: 1;
+}
+
+.motion-falcon-footer.left {
+  left: 16px;
+}
+
+.motion-falcon-footer.right {
+  right: 16px;
+}
+
+.motion-falcon-logo {
+  height: 16px;
+  width: auto;
+  filter: grayscale(20%);
+  transition: filter var(--transition-normal);
+}
+
+.motion-falcon-footer:hover .motion-falcon-logo {
+  filter: grayscale(0%);
 }
 
 /* Responsive Styles */
