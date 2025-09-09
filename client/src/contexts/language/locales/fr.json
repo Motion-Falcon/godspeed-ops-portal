@@ -229,7 +229,10 @@
     "rememberMe": "Se souvenir de moi",
     "noAccount": "Vous n'avez pas de compte ?",
     "twoFactorPhoneRequired": "L'authentification à deux facteurs est requise mais aucun numéro de téléphone n'est enregistré. Veuillez contacter le support.",
-    "invalidCredentials": "Email ou mot de passe invalide"
+    "invalidCredentials": "Email ou mot de passe invalide",
+    "termsPrivacyNotice": "En continuant, vous acceptez nos",
+    "termsOfService": "Conditions d'utilisation",
+    "privacyPolicy": "Politique de confidentialité"
   },
 
   "roles": {
@@ -278,7 +281,8 @@
     "language": "Langue",
     "godspeedLogo": "Logo AllStaff",
     "user": "Utilisateur",
-    "notAvailable": "N/D"
+    "notAvailable": "N/D",
+    "and": "et"
   },
 
   "training": {
@@ -2493,5 +2497,13 @@
         "emailSentDate": "Date d'envoi de l'email"
       }
     }
+  },
+
+  "legal": {
+    "termsOfService": "Conditions d'utilisation",
+    "privacyPolicy": "Politique de confidentialité",
+    "effectiveDate": "Date d'entrée en vigueur",
+    "company": "Entreprise",
+    "goBack": "Retour"
   }
 } 

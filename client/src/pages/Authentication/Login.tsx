@@ -12,6 +12,7 @@ import '../../styles/pages/Login.css';
 import '../../styles/components/form.css';
 import '../../styles/components/button.css';
 import godspeedLogo from '../../assets/logos/allstaff-logo.png';
+import motionFalconLogo from '../../assets/logos/motion-falcon-logo.png';
 import { LanguageToggle } from '../../components/LanguageToggle';
 
 export function Login() {
@@ -212,7 +213,39 @@ export function Login() {
               {t('auth.signup')}
             </Link>
           </div>
+
+          <div className="terms-privacy-notice">
+            {t('auth.termsPrivacyNotice')}{' '}
+            <a 
+              href="/terms-of-service" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="auth-link"
+            >
+              {t('auth.termsOfService')}
+            </a>
+            {' '}{t('common.and')}{' '}
+            <a 
+              href="/privacy-policy" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="auth-link"
+            >
+              {t('auth.privacyPolicy')}
+            </a>.
+          </div>
         </div>
+      </div>
+      
+      {/* Motion Falcon Footer - Left Bottom */}
+      <div className="motion-falcon-footer left">
+        <span>Powered by</span>
+        <img 
+          src={motionFalconLogo} 
+          alt="Motion Falcon" 
+          className="motion-falcon-logo" 
+        />
+        <span>Motion Falcon</span>
       </div>
     </div>
   );
