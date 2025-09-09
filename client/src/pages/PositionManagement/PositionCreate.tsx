@@ -22,7 +22,7 @@ import "../../styles/components/form.css";
 import "../../styles/components/header.css";
 import { AppHeader } from "../../components/AppHeader";
 import { CustomDropdown, DropdownOption } from "../../components/CustomDropdown";
-import { JOB_TITLES, EMPLOYMENT_TERMS, EMPLOYMENT_TYPES, POSITION_CATEGORIES, EXPERIENCE_LEVELS, PAYRATE_TYPES } from "../../constants/formOptions";
+import { JOB_TITLES, EMPLOYMENT_TERMS, EMPLOYMENT_TYPES, POSITION_CATEGORIES, EXPERIENCE_LEVELS, PAYRATE_TYPES, PAYMENT_METHODS, PAYMENT_TERMS } from "../../constants/formOptions";
 
 // Helper function for date formatting and validation
 const formatDateForInput = (date: Date): string => {
@@ -183,6 +183,55 @@ export function PositionCreate({
     label: title,
   }));
 
+  // Employment term options
+  const employmentTermOptions: DropdownOption[] = EMPLOYMENT_TERMS.map((term) => ({
+    id: term,
+    value: term,
+    label: term,
+  }));
+
+  // Employment type options
+  const employmentTypeOptions: DropdownOption[] = EMPLOYMENT_TYPES.map((type) => ({
+    id: type,
+    value: type,
+    label: type,
+  }));
+
+  // Position category options
+  const positionCategoryOptions: DropdownOption[] = POSITION_CATEGORIES.map((category) => ({
+    id: category,
+    value: category,
+    label: category,
+  }));
+
+  // Experience level options
+  const experienceOptions: DropdownOption[] = EXPERIENCE_LEVELS.map((level) => ({
+    id: level,
+    value: level,
+    label: level,
+  }));
+
+  // Payrate type options
+  const payrateTypeOptions: DropdownOption[] = PAYRATE_TYPES.map((type) => ({
+    id: type,
+    value: type,
+    label: type,
+  }));
+
+  // Payment method options
+  const paymentMethodOptions: DropdownOption[] = PAYMENT_METHODS.map((method) => ({
+    id: method,
+    value: method,
+    label: method,
+  }));
+
+  // Payment terms options
+  const paymentTermsOptions: DropdownOption[] = PAYMENT_TERMS.map((term) => ({
+    id: term,
+    value: term,
+    label: term,
+  }));
+
   // Get ID from URL params or location state
   const idFromParams = params.id;
   const idFromLocation = location.state?.id;
@@ -210,7 +259,7 @@ export function PositionCreate({
     mode: "onBlur",
   });
 
-  const { handleSubmit, reset, formState, watch } = methods;
+  const { handleSubmit, reset, formState, watch, setValue, getValues } = methods;
   const { isDirty } = formState;
 
   // Function to convert snake_case keys to camelCase
@@ -1055,18 +1104,19 @@ export function PositionCreate({
                     >
                       {t("positionCreate.fields.employmentTerm")}
                     </label>
-                    <select
-                      id="employmentTerm"
-                      className="form-input"
-                      {...methods.register("employmentTerm")}
-                    >
-                      <option value="">{t("positionCreate.selectOptions.selectEmploymentTerm")}</option>
-                      {EMPLOYMENT_TERMS.map((term) => (
-                        <option key={term} value={term}>
-                          {term}
-                        </option>
-                      ))}
-                    </select>
+                    <input type="hidden" {...methods.register("employmentTerm")} />
+                    <CustomDropdown
+                      options={employmentTermOptions}
+                      selectedOption={employmentTermOptions.find(option => option.value === getValues('employmentTerm')) || null}
+                      onSelect={(option) => {
+                        if (Array.isArray(option)) return;
+                        setValue('employmentTerm', option.value as string, { shouldValidate: true });
+                      }}
+                      placeholder={t("positionCreate.selectOptions.selectEmploymentTerm")}
+                      searchable={true}
+                      clearable={true}
+                      onClear={() => setValue('employmentTerm', '', { shouldValidate: true })}
+                    />
                     {methods.formState.errors.employmentTerm && (
                       <p className="form-error">
                         {methods.formState.errors.employmentTerm.message}
@@ -1082,18 +1132,19 @@ export function PositionCreate({
                     >
                       {t("positionCreate.fields.employmentType")}
                     </label>
-                    <select
-                      id="employmentType"
-                      className="form-input"
-                      {...methods.register("employmentType")}
-                    >
-                      <option value="">{t("positionCreate.selectOptions.selectEmploymentType")}</option>
-                      {EMPLOYMENT_TYPES.map((type) => (
-                        <option key={type} value={type}>
-                          {type}
-                        </option>
-                      ))}
-                    </select>
+                    <input type="hidden" {...methods.register("employmentType")} />
+                    <CustomDropdown
+                      options={employmentTypeOptions}
+                      selectedOption={employmentTypeOptions.find(option => option.value === getValues('employmentType')) || null}
+                      onSelect={(option) => {
+                        if (Array.isArray(option)) return;
+                        setValue('employmentType', option.value as string, { shouldValidate: true });
+                      }}
+                      placeholder={t("positionCreate.selectOptions.selectEmploymentType")}
+                      searchable={true}
+                      clearable={true}
+                      onClear={() => setValue('employmentType', '', { shouldValidate: true })}
+                    />
                     {methods.formState.errors.employmentType && (
                       <p className="form-error">
                         {methods.formState.errors.employmentType.message}
@@ -1109,18 +1160,19 @@ export function PositionCreate({
                     >
                       {t("positionCreate.fields.positionCategory")}
                     </label>
-                    <select
-                      id="positionCategory"
-                      className="form-input"
-                      {...methods.register("positionCategory")}
-                    >
-                      <option value="">{t("positionCreate.selectOptions.selectPositionCategory")}</option>
-                      {POSITION_CATEGORIES.map((category) => (
-                        <option key={category} value={category}>
-                          {category}
-                        </option>
-                      ))}
-                    </select>
+                    <input type="hidden" {...methods.register("positionCategory")} />
+                    <CustomDropdown
+                      options={positionCategoryOptions}
+                      selectedOption={positionCategoryOptions.find(option => option.value === getValues('positionCategory')) || null}
+                      onSelect={(option) => {
+                        if (Array.isArray(option)) return;
+                        setValue('positionCategory', option.value as string, { shouldValidate: true });
+                      }}
+                      placeholder={t("positionCreate.selectOptions.selectPositionCategory")}
+                      searchable={true}
+                      clearable={true}
+                      onClear={() => setValue('positionCategory', '', { shouldValidate: true })}
+                    />
                     {methods.formState.errors.positionCategory && (
                       <p className="form-error">
                         {methods.formState.errors.positionCategory.message}
@@ -1136,18 +1188,19 @@ export function PositionCreate({
                     >
                       {t("positionCreate.fields.experience")}
                     </label>
-                    <select
-                      id="experience"
-                      className="form-input"
-                      {...methods.register("experience")}
-                    >
-                      <option value="">{t("positionCreate.selectOptions.selectExperienceLevel")}</option>
-                      {EXPERIENCE_LEVELS.map((level) => (
-                        <option key={level} value={level}>
-                          {level}
-                        </option>
-                      ))}
-                    </select>
+                    <input type="hidden" {...methods.register("experience")} />
+                    <CustomDropdown
+                      options={experienceOptions}
+                      selectedOption={experienceOptions.find(option => option.value === getValues('experience')) || null}
+                      onSelect={(option) => {
+                        if (Array.isArray(option)) return;
+                        setValue('experience', option.value as string, { shouldValidate: true });
+                      }}
+                      placeholder={t("positionCreate.selectOptions.selectExperienceLevel")}
+                      searchable={true}
+                      clearable={true}
+                      onClear={() => setValue('experience', '', { shouldValidate: true })}
+                    />
                     {methods.formState.errors.experience && (
                       <p className="form-error">
                         {methods.formState.errors.experience.message}
@@ -1334,18 +1387,19 @@ export function PositionCreate({
                     >
                       {t("positionCreate.fields.payrateType")}
                     </label>
-                    <select
-                      id="payrateType"
-                      className="form-input"
-                      {...methods.register("payrateType")}
-                    >
-                      <option value="">{t("positionCreate.selectOptions.selectPayrateType")}</option>
-                      {PAYRATE_TYPES.map((type) => (
-                        <option key={type} value={type}>
-                          {type}
-                        </option>
-                      ))}
-                    </select>
+                    <input type="hidden" {...methods.register("payrateType")} />
+                    <CustomDropdown
+                      options={payrateTypeOptions}
+                      selectedOption={payrateTypeOptions.find(option => option.value === getValues('payrateType')) || null}
+                      onSelect={(option) => {
+                        if (Array.isArray(option)) return;
+                        setValue('payrateType', option.value as string, { shouldValidate: true });
+                      }}
+                      placeholder={t("positionCreate.selectOptions.selectPayrateType")}
+                      searchable={true}
+                      clearable={true}
+                      onClear={() => setValue('payrateType', '', { shouldValidate: true })}
+                    />
                     {methods.formState.errors.payrateType && (
                       <p className="form-error">
                         {methods.formState.errors.payrateType.message}
@@ -1510,16 +1564,19 @@ export function PositionCreate({
                     >
                       {t("positionCreate.fields.preferredPaymentMethod")}
                     </label>
-                    <select
-                      id="preferredPaymentMethod"
-                      className="form-input"
-                      {...methods.register("preferredPaymentMethod")}
-                    >
-                      <option value="">{t("positionCreate.selectOptions.selectPaymentMethod")}</option>
-                      <option value="Direct Deposit">{t("positionCreate.selectOptions.directDeposit")}</option>
-                      <option value="Cheque">{t("positionCreate.selectOptions.cheque")}</option>
-                      <option value="Wire Transfer">{t("positionCreate.selectOptions.wireTransfer")}</option>
-                    </select>
+                    <input type="hidden" {...methods.register("preferredPaymentMethod")} />
+                    <CustomDropdown
+                      options={paymentMethodOptions}
+                      selectedOption={paymentMethodOptions.find(option => option.value === getValues('preferredPaymentMethod')) || null}
+                      onSelect={(option) => {
+                        if (Array.isArray(option)) return;
+                        setValue('preferredPaymentMethod', option.value as string, { shouldValidate: true });
+                      }}
+                      placeholder={t("positionCreate.selectOptions.selectPaymentMethod")}
+                      searchable={true}
+                      clearable={true}
+                      onClear={() => setValue('preferredPaymentMethod', '', { shouldValidate: true })}
+                    />
                     {methods.formState.errors.preferredPaymentMethod && (
                       <p className="form-error">
                         {
@@ -1538,21 +1595,19 @@ export function PositionCreate({
                     >
                       {t("positionCreate.fields.terms")}
                     </label>
-                    <select
-                      id="terms"
-                      className="form-input"
-                      {...methods.register("terms")}
-                    >
-                      <option value="">{t("positionCreate.selectOptions.selectTerms")}</option>
-                      <option value="Due on Receipt">{t("positionCreate.selectOptions.dueOnReceipt")}</option>
-                      <option value="Net 15">{t("positionCreate.selectOptions.net15")}</option>
-                      <option value="Net 22">{t("positionCreate.selectOptions.net22")}</option>
-                      <option value="Net 30">{t("positionCreate.selectOptions.net30")}</option>
-                      <option value="Net 45">{t("positionCreate.selectOptions.net45")}</option>
-                      <option value="Net 60">{t("positionCreate.selectOptions.net60")}</option>
-                      <option value="Net 65">{t("positionCreate.selectOptions.net65")}</option>
-                      <option value="Net 90">{t("positionCreate.selectOptions.net90")}</option>
-                    </select>
+                    <input type="hidden" {...methods.register("terms")} />
+                    <CustomDropdown
+                      options={paymentTermsOptions}
+                      selectedOption={paymentTermsOptions.find(option => option.value === getValues('terms')) || null}
+                      onSelect={(option) => {
+                        if (Array.isArray(option)) return;
+                        setValue('terms', option.value as string, { shouldValidate: true });
+                      }}
+                      placeholder={t("positionCreate.selectOptions.selectTerms")}
+                      searchable={true}
+                      clearable={true}
+                      onClear={() => setValue('terms', '', { shouldValidate: true })}
+                    />
                     {methods.formState.errors.terms && (
                       <p className="form-error">
                         {methods.formState.errors.terms.message}
