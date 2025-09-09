@@ -26,13 +26,13 @@ export function PrivacyPolicy() {
             {t('legal.effectiveDate')}: 09.09.2025
           </p>
           <p className="legal-page-company">
-            {t('legal.company')}: Godspeed Group ("Company," "we," "our," "us")
+            {t('legal.company')}: HD Group ("Company," "we," "our," "us")
           </p>
         </div>
 
         <div className="legal-page-body">
           <p>
-            Godspeed Group is committed to protecting the privacy and personal information of all 
+            HD Group is committed to protecting the privacy and personal information of all 
             individuals who use our website and Services. This Privacy Policy explains how we 
             collect, use, disclose, and safeguard personal information in compliance with the 
             Personal Information Protection and Electronic Documents Act (PIPEDA) and other 
@@ -150,10 +150,10 @@ export function PrivacyPolicy() {
             <h3>10. Contact Us</h3>
             <div className="legal-page-contact-info">
               <p>For privacy-related inquiries, corrections, or withdrawal of consent, please contact:</p>
-              <p><strong>Godspeed Group</strong></p>
-              <p>2795 Slough Street, Mississauga, ON L4T 1G2</p>
-              <p>info@godspeedxp.com</p>
-              <p>905-956-9525</p>
+              <p><strong>HD Group</strong></p>
+              <p>6175 Highway 7 , Woodbridge, ON L4H 0P6 Unit #3B (Upper Floor)</p>
+              <p>info@hdgroup.ca</p>
+              <p>905-800-1572</p>
               <p>
                 We will respond within a reasonable timeframe, in accordance with Canadian privacy 
                 legislation.

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Document, Page, Text, View, StyleSheet, pdf, Image } from '@react-pdf/renderer';
-import godspeedLogo from '../assets/logos/godspped-logo-fulllength.png';
+import godspeedLogo from '../assets/logos/hdgroup-logo.png'
 
 // Color scheme
 const colors = {
@@ -35,7 +35,7 @@ const styles = StyleSheet.create({
   },
   logoPlaceholder: {
     width: 185,
-    height: 40,
+    height: 60,
     objectFit: 'contain',
   },
   companyInfo: {
@@ -230,10 +230,10 @@ const styles = StyleSheet.create({
 
 // Company information
 const COMPANY_INFO = {
-  name: '9084380 Canada Inc. O/A Godspeed Group',
+  name: 'HD Group',
   address: '240 Humberline Dr',
   address2: 'Etobicoke ON, M9W 5X1',
-  gst: 'GST/HST No. 825183387',
+  gst: 'GST/HST No. 703991745',
 };
 
 // Interfaces
