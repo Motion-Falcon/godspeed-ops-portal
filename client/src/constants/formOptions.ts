@@ -263,4 +263,43 @@ export const USER_ROLES = [
   "accountant"
 ] as const;
 
-export type UserRole = typeof USER_ROLES[number]; 
+export const STAFF_MEMBERS = [
+  "Mansha Malik",
+  "Amandeep Kaur",
+  "Sumanpreet Kaur",
+  "Mandeep Kaur",
+  "Rishi Dhaliwal",
+  "Yashpal Kaur",
+  "Morgan Drouin",
+  "Ajay",
+  "Rahul Singh Rawat",
+  "Vinayak",
+  "Kirandeep Kaur",
+  "Komal",
+  "Vani Sreeram",
+  "Hiral",
+  "Rahul Sharma",
+  "Samuel Jacob",
+  "Sharmili",
+  "Rajneet Kaur",
+] as const;
+
+export const CANADIAN_PROVINCES = [
+  { code: "AB", name: "Alberta" },
+  { code: "BC", name: "British Columbia" },
+  { code: "MB", name: "Manitoba" },
+  { code: "NB", name: "New Brunswick" },
+  { code: "NL", name: "Newfoundland and Labrador" },
+  { code: "NT", name: "Northwest Territories" },
+  { code: "NS", name: "Nova Scotia" },
+  { code: "NU", name: "Nunavut" },
+  { code: "ON", name: "Ontario" },
+  { code: "PE", name: "Prince Edward Island" },
+  { code: "QC", name: "Quebec" },
+  { code: "SK", name: "Saskatchewan" },
+  { code: "YK", name: "Yukon" },
+] as const;
+
+export type UserRole = typeof USER_ROLES[number];
+export type StaffMember = typeof STAFF_MEMBERS[number];
+export type CanadianProvince = typeof CANADIAN_PROVINCES[number]; 
