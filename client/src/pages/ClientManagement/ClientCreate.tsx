@@ -14,8 +14,9 @@ import {
 } from '../../services/api/client';
 import { ConfirmationModal } from '../../components/ConfirmationModal';
 import { AppHeader } from '../../components/AppHeader';
+import { CustomDropdown, DropdownOption } from '../../components/CustomDropdown';
 import { ArrowLeft, Save } from 'lucide-react';
-import { PAYMENT_METHODS, PAYMENT_TERMS, PAY_CYCLES, LIST_NAMES } from '../../constants/formOptions';
+import { PAYMENT_METHODS, PAYMENT_TERMS, PAY_CYCLES, LIST_NAMES, STAFF_MEMBERS, CANADIAN_PROVINCES } from '../../constants/formOptions';
 import '../../styles/pages/ClientManagement.css';
 import '../../styles/components/form.css';
 import '../../styles/components/header.css';
@@ -91,6 +92,76 @@ interface ClientCreateProps {
   isEditDraftMode?: boolean;
 }
 
+// Helper function to convert staff members to dropdown options
+const createStaffOptions = (): DropdownOption[] => {
+  return STAFF_MEMBERS.map((member) => ({
+    id: member,
+    label: member,
+    value: member,
+  }));
+};
+
+// Helper function to convert provinces to dropdown options
+const createProvinceOptions = (): DropdownOption[] => {
+  return CANADIAN_PROVINCES.map((province) => ({
+    id: province.code,
+    label: `${province.name} (${province.code})`,
+    value: province.code,
+  }));
+};
+
+// Helper function to convert list names to dropdown options
+const createListNameOptions = (): DropdownOption[] => {
+  return LIST_NAMES.map((name) => ({
+    id: name,
+    label: name,
+    value: name,
+  }));
+};
+
+// Helper function to create currency options
+const createCurrencyOptions = (): DropdownOption[] => {
+  return [
+    { id: 'CAD', label: 'CAD', value: 'CAD' },
+    { id: 'USD', label: 'USD', value: 'USD' },
+  ];
+};
+
+// Helper function to create invoice language options
+const createInvoiceLanguageOptions = (): DropdownOption[] => {
+  return [
+    { id: 'English', label: 'English', value: 'English' },
+    { id: 'French', label: 'French', value: 'French' },
+  ];
+};
+
+// Helper function to convert payment methods to dropdown options
+const createPaymentMethodOptions = (): DropdownOption[] => {
+  return PAYMENT_METHODS.map((method) => ({
+    id: method,
+    label: method,
+    value: method,
+  }));
+};
+
+// Helper function to convert payment terms to dropdown options
+const createPaymentTermsOptions = (): DropdownOption[] => {
+  return PAYMENT_TERMS.map((term) => ({
+    id: term,
+    label: term,
+    value: term,
+  }));
+};
+
+// Helper function to convert pay cycles to dropdown options
+const createPayCycleOptions = (): DropdownOption[] => {
+  return PAY_CYCLES.map((cycle) => ({
+    id: cycle,
+    label: cycle,
+    value: cycle,
+  }));
+};
+
 export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: ClientCreateProps) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -127,8 +198,18 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
     mode: 'onBlur',
   });
 
-  const { handleSubmit, reset, formState, watch } = methods;
+  const { handleSubmit, reset, formState, watch, setValue, getValues } = methods;
   const { isDirty } = formState;
+
+  // Create all dropdown options
+  const staffOptions = createStaffOptions();
+  const provinceOptions = createProvinceOptions();
+  const listNameOptions = createListNameOptions();
+  const currencyOptions = createCurrencyOptions();
+  const invoiceLanguageOptions = createInvoiceLanguageOptions();
+  const paymentMethodOptions = createPaymentMethodOptions();
+  const paymentTermsOptions = createPaymentTermsOptions();
+  const payCycleOptions = createPayCycleOptions();
 
   // Function to decode HTML entities for website field
   const decodeHtmlEntities = (text: string): string => {
@@ -471,16 +552,17 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
                     <label htmlFor="listName" className="form-label">
                       List Name
                     </label>
-                    <select
-                      id="listName"
-                      className="form-input"
-                      {...methods.register('listName')}
-                    >
-                      <option value="">Select a list name</option>
-                      {LIST_NAMES.map((name) => (
-                        <option key={name} value={name}>{name}</option>
-                      ))}
-                    </select>
+                    <CustomDropdown
+                      options={listNameOptions}
+                      selectedOption={listNameOptions.find(option => option.value === getValues('listName')) || null}
+                      onSelect={(option) => {
+                        setValue('listName', (option as DropdownOption).value as string, { shouldValidate: true });
+                      }}
+                      placeholder="Select a list name"
+                      searchable={true}
+                      clearable={true}
+                      onClear={() => setValue('listName', '', { shouldValidate: true })}
+                    />
                     {methods.formState.errors.listName && (
                       <p className="form-error">{methods.formState.errors.listName.message}</p>
                     )}
@@ -508,16 +590,17 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
                     <label htmlFor="clientManager" className="form-label">
                       Client Manager
                     </label>
-                    <select
-                      id="clientManager"
-                      className="form-input"
-                      {...methods.register('clientManager')}
-                    >
-                      <option value="">Select a client manager</option>
-                      <option value="Manager 1">Manager 1</option>
-                      <option value="Manager 2">Manager 2</option>
-                      <option value="Manager 3">Manager 3</option>
-                    </select>
+                    <CustomDropdown
+                      options={staffOptions}
+                      selectedOption={staffOptions.find(option => option.value === getValues('clientManager')) || null}
+                      onSelect={(option) => {
+                        setValue('clientManager', (option as DropdownOption).value as string, { shouldValidate: true });
+                      }}
+                      placeholder="Select a client manager"
+                      searchable={true}
+                      clearable={true}
+                      onClear={() => setValue('clientManager', '', { shouldValidate: true })}
+                    />
                     {methods.formState.errors.clientManager && (
                       <p className="form-error">{methods.formState.errors.clientManager.message}</p>
                     )}
@@ -527,16 +610,17 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
                     <label htmlFor="clientRep" className="form-label">
                       Client Representative
                     </label>
-                    <select
-                      id="clientRep"
-                      className="form-input"
-                      {...methods.register('clientRep')}
-                    >
-                      <option value="">Select a client representative</option>
-                      <option value="Client Rep 1">Client Rep 1</option>
-                      <option value="Client Rep 2">Client Rep 2</option>
-                      <option value="Client Rep 3">Client Rep 3</option>
-                    </select>
+                    <CustomDropdown
+                      options={staffOptions}
+                      selectedOption={staffOptions.find(option => option.value === getValues('clientRep')) || null}
+                      onSelect={(option) => {
+                        setValue('clientRep', (option as DropdownOption).value as string, { shouldValidate: true });
+                      }}
+                      placeholder="Select a client representative"
+                      searchable={true}
+                      clearable={true}
+                      onClear={() => setValue('clientRep', '', { shouldValidate: true })}
+                    />
                     {methods.formState.errors.clientRep && (
                       <p className="form-error">{methods.formState.errors.clientRep.message}</p>
                     )}
@@ -546,16 +630,17 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
                     <label htmlFor="salesPerson" className="form-label">
                       Sales Person
                     </label>
-                    <select
-                      id="salesPerson"
-                      className="form-input"
-                      {...methods.register('salesPerson')}
-                    >
-                      <option value="">Select a sales person</option>
-                      <option value="Sales 1">Sales 1</option>
-                      <option value="Sales 2">Sales 2</option>
-                      <option value="Sales 3">Sales 3</option>
-                    </select>
+                    <CustomDropdown
+                      options={staffOptions}
+                      selectedOption={staffOptions.find(option => option.value === getValues('salesPerson')) || null}
+                      onSelect={(option) => {
+                        setValue('salesPerson', (option as DropdownOption).value as string, { shouldValidate: true });
+                      }}
+                      placeholder="Select a sales person"
+                      searchable={true}
+                      clearable={true}
+                      onClear={() => setValue('salesPerson', '', { shouldValidate: true })}
+                    />
                     {methods.formState.errors.salesPerson && (
                       <p className="form-error">{methods.formState.errors.salesPerson.message}</p>
                     )}
@@ -565,16 +650,17 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
                     <label htmlFor="accountingPerson" className="form-label">
                       Accounting Person
                     </label>
-                    <select
-                      id="accountingPerson"
-                      className="form-input"
-                      {...methods.register('accountingPerson')}
-                    >
-                      <option value="">Select an accounting person</option>
-                      <option value="Accounting 1">Accounting 1</option>
-                      <option value="Accounting 2">Accounting 2</option>
-                      <option value="Accounting 3">Accounting 3</option>
-                    </select>
+                    <CustomDropdown
+                      options={staffOptions}
+                      selectedOption={staffOptions.find(option => option.value === getValues('accountingPerson')) || null}
+                      onSelect={(option) => {
+                        setValue('accountingPerson', (option as DropdownOption).value as string, { shouldValidate: true });
+                      }}
+                      placeholder="Select an accounting person"
+                      searchable={true}
+                      clearable={true}
+                      onClear={() => setValue('accountingPerson', '', { shouldValidate: true })}
+                    />
                     {methods.formState.errors.accountingPerson && (
                       <p className="form-error">{methods.formState.errors.accountingPerson.message}</p>
                     )}
@@ -584,16 +670,17 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
                     <label htmlFor="accountingManager" className="form-label">
                       Accounting Manager
                     </label>
-                    <select
-                      id="accountingManager"
-                      className="form-input"
-                      {...methods.register('accountingManager')}
-                    >
-                      <option value="">Select an accounting manager</option>
-                      <option value="Accounting Manager 1">Accounting Manager 1</option>
-                      <option value="Accounting Manager 2">Accounting Manager 2</option>
-                      <option value="Accounting Manager 3">Accounting Manager 3</option>
-                    </select>
+                    <CustomDropdown
+                      options={staffOptions}
+                      selectedOption={staffOptions.find(option => option.value === getValues('accountingManager')) || null}
+                      onSelect={(option) => {
+                        setValue('accountingManager', (option as DropdownOption).value as string, { shouldValidate: true });
+                      }}
+                      placeholder="Select an accounting manager"
+                      searchable={true}
+                      clearable={true}
+                      onClear={() => setValue('accountingManager', '', { shouldValidate: true })}
+                    />
                     {methods.formState.errors.accountingManager && (
                       <p className="form-error">{methods.formState.errors.accountingManager.message}</p>
                     )}
@@ -620,14 +707,16 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
                     <label htmlFor="currency" className="form-label">
                       Currency
                     </label>
-                    <select
-                      id="currency"
-                      className="form-input"
-                      {...methods.register('currency')}
-                    >
-                      <option value="CAD">CAD</option>
-                      <option value="USD">USD</option>
-                    </select>
+                    <CustomDropdown
+                      options={currencyOptions}
+                      selectedOption={currencyOptions.find(option => option.value === getValues('currency')) || null}
+                      onSelect={(option) => {
+                        setValue('currency', (option as DropdownOption).value as 'CAD' | 'USD', { shouldValidate: true });
+                      }}
+                      placeholder="Select currency"
+                      searchable={false}
+                      clearable={false}
+                    />
                     {methods.formState.errors.currency && (
                       <p className="form-error">{methods.formState.errors.currency.message}</p>
                     )}
@@ -637,26 +726,17 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
                     <label htmlFor="workProvince" className="form-label" data-required="*">
                       Work Province
                     </label>
-                    <select
-                      id="workProvince"
-                      className="form-input"
-                      {...methods.register('workProvince')}
-                    >
-                      <option value="">Select a province</option>
-                      <option value="AB">Alberta (AB)</option>
-                      <option value="BC">British Columbia (BC)</option>
-                      <option value="MB">Manitoba (MB)</option>
-                      <option value="NB">New Brunswick (NB)</option>
-                      <option value="NL">Newfoundland and Labrador (NL)</option>
-                      <option value="NT">Northwest Territories (NT)</option>
-                      <option value="NS">Nova Scotia (NS)</option>
-                      <option value="NU">Nunavut (NU)</option>
-                      <option value="ON">Ontario (ON)</option>
-                      <option value="PE">Prince Edward Island (PE)</option>
-                      <option value="QC">Quebec (QC)</option>
-                      <option value="SK">Saskatchewan (SK)</option>
-                      <option value="YK">Yukon (YK)</option>
-                    </select>
+                    <CustomDropdown
+                      options={provinceOptions}
+                      selectedOption={provinceOptions.find(option => option.value === getValues('workProvince')) || null}
+                      onSelect={(option) => {
+                        setValue('workProvince', (option as DropdownOption).value as string, { shouldValidate: true });
+                      }}
+                      placeholder="Select a province"
+                      searchable={true}
+                      clearable={true}
+                      onClear={() => setValue('workProvince', '', { shouldValidate: true })}
+                    />
                     {methods.formState.errors.workProvince && (
                       <p className="form-error">{methods.formState.errors.workProvince.message}</p>
                     )}
@@ -941,14 +1021,16 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
                       <label htmlFor="invoiceLanguage" className="form-label">
                         Invoice Language
                       </label>
-                      <select
-                        id="invoiceLanguage"
-                        className="form-input"
-                        {...methods.register('invoiceLanguage')}
-                      >
-                        <option value="English">English</option>
-                        <option value="French">French</option>
-                      </select>
+                      <CustomDropdown
+                        options={invoiceLanguageOptions}
+                        selectedOption={invoiceLanguageOptions.find(option => option.value === getValues('invoiceLanguage')) || null}
+                        onSelect={(option) => {
+                          setValue('invoiceLanguage', (option as DropdownOption).value as 'English' | 'French', { shouldValidate: true });
+                        }}
+                        placeholder="Select language"
+                        searchable={false}
+                        clearable={false}
+                      />
                       {methods.formState.errors.invoiceLanguage && (
                         <p className="form-error">{methods.formState.errors.invoiceLanguage.message}</p>
                       )}
@@ -1003,26 +1085,17 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
                       <label htmlFor="province1" className="form-label" data-required="*">
                         Province 1
                       </label>
-                      <select
-                        id="province1"
-                        className="form-input"
-                        {...methods.register('province1')}
-                      >
-                        <option value="">Select a province</option>
-                        <option value="AB">Alberta (AB)</option>
-                        <option value="BC">British Columbia (BC)</option>
-                        <option value="MB">Manitoba (MB)</option>
-                        <option value="NB">New Brunswick (NB)</option>
-                        <option value="NL">Newfoundland and Labrador (NL)</option>
-                        <option value="NT">Northwest Territories (NT)</option>
-                        <option value="NS">Nova Scotia (NS)</option>
-                        <option value="NU">Nunavut (NU)</option>
-                        <option value="ON">Ontario (ON)</option>
-                        <option value="PE">Prince Edward Island (PE)</option>
-                        <option value="QC">Quebec (QC)</option>
-                        <option value="SK">Saskatchewan (SK)</option>
-                        <option value="YK">Yukon (YK)</option>
-                      </select>
+                      <CustomDropdown
+                        options={provinceOptions}
+                        selectedOption={provinceOptions.find(option => option.value === getValues('province1')) || null}
+                        onSelect={(option) => {
+                          setValue('province1', (option as DropdownOption).value as string, { shouldValidate: true });
+                        }}
+                        placeholder="Select a province"
+                        searchable={true}
+                        clearable={true}
+                        onClear={() => setValue('province1', '', { shouldValidate: true })}
+                      />
                       {methods.formState.errors.province1 && (
                         <p className="form-error">{methods.formState.errors.province1.message}</p>
                       )}
@@ -1088,26 +1161,17 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
                       <label htmlFor="province2" className="form-label">
                         Province 2
                       </label>
-                      <select
-                        id="province2"
-                        className="form-input"
-                        {...methods.register('province2')}
-                      >
-                        <option value="">Select a province</option>
-                        <option value="AB">Alberta (AB)</option>
-                        <option value="BC">British Columbia (BC)</option>
-                        <option value="MB">Manitoba (MB)</option>
-                        <option value="NB">New Brunswick (NB)</option>
-                        <option value="NL">Newfoundland and Labrador (NL)</option>
-                        <option value="NT">Northwest Territories (NT)</option>
-                        <option value="NS">Nova Scotia (NS)</option>
-                        <option value="NU">Nunavut (NU)</option>
-                        <option value="ON">Ontario (ON)</option>
-                        <option value="PE">Prince Edward Island (PE)</option>
-                        <option value="QC">Quebec (QC)</option>
-                        <option value="SK">Saskatchewan (SK)</option>
-                        <option value="YK">Yukon (YK)</option>
-                      </select>
+                      <CustomDropdown
+                        options={provinceOptions}
+                        selectedOption={provinceOptions.find(option => option.value === getValues('province2')) || null}
+                        onSelect={(option) => {
+                          setValue('province2', (option as DropdownOption).value as string, { shouldValidate: true });
+                        }}
+                        placeholder="Select a province"
+                        searchable={true}
+                        clearable={true}
+                        onClear={() => setValue('province2', '', { shouldValidate: true })}
+                      />
                       {methods.formState.errors.province2 && (
                         <p className="form-error">{methods.formState.errors.province2.message}</p>
                       )}
@@ -1173,26 +1237,17 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
                       <label htmlFor="province3" className="form-label">
                         Province 3
                       </label>
-                      <select
-                        id="province3"
-                        className="form-input"
-                        {...methods.register('province3')}
-                      >
-                        <option value="">Select a province</option>
-                        <option value="AB">Alberta (AB)</option>
-                        <option value="BC">British Columbia (BC)</option>
-                        <option value="MB">Manitoba (MB)</option>
-                        <option value="NB">New Brunswick (NB)</option>
-                        <option value="NL">Newfoundland and Labrador (NL)</option>
-                        <option value="NT">Northwest Territories (NT)</option>
-                        <option value="NS">Nova Scotia (NS)</option>
-                        <option value="NU">Nunavut (NU)</option>
-                        <option value="ON">Ontario (ON)</option>
-                        <option value="PE">Prince Edward Island (PE)</option>
-                        <option value="QC">Quebec (QC)</option>
-                        <option value="SK">Saskatchewan (SK)</option>
-                        <option value="YK">Yukon (YK)</option>
-                      </select>
+                      <CustomDropdown
+                        options={provinceOptions}
+                        selectedOption={provinceOptions.find(option => option.value === getValues('province3')) || null}
+                        onSelect={(option) => {
+                          setValue('province3', (option as DropdownOption).value as string, { shouldValidate: true });
+                        }}
+                        placeholder="Select a province"
+                        searchable={true}
+                        clearable={true}
+                        onClear={() => setValue('province3', '', { shouldValidate: true })}
+                      />
                       {methods.formState.errors.province3 && (
                         <p className="form-error">{methods.formState.errors.province3.message}</p>
                       )}
@@ -1225,18 +1280,17 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
                     <label htmlFor="preferredPaymentMethod" className="form-label" data-required="*">
                       Preferred Payment Method
                     </label>
-                    <select
-                      id="preferredPaymentMethod"
-                      className="form-input"
-                      {...methods.register('preferredPaymentMethod')}
-                    >
-                      <option value="">Select payment method</option>
-                      {PAYMENT_METHODS.map((method) => (
-                        <option key={method} value={method}>
-                          {method}
-                        </option>
-                      ))}
-                    </select>
+                    <CustomDropdown
+                      options={paymentMethodOptions}
+                      selectedOption={paymentMethodOptions.find(option => option.value === getValues('preferredPaymentMethod')) || null}
+                      onSelect={(option) => {
+                        setValue('preferredPaymentMethod', (option as DropdownOption).value as string, { shouldValidate: true });
+                      }}
+                      placeholder="Select payment method"
+                      searchable={true}
+                      clearable={true}
+                      onClear={() => setValue('preferredPaymentMethod', '', { shouldValidate: true })}
+                    />
                     {methods.formState.errors.preferredPaymentMethod && (
                       <p className="form-error">{methods.formState.errors.preferredPaymentMethod.message}</p>
                     )}
@@ -1246,18 +1300,17 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
                     <label htmlFor="terms" className="form-label" data-required="*">
                       Terms
                     </label>
-                    <select
-                      id="terms"
-                      className="form-input"
-                      {...methods.register('terms')}
-                    >
-                      <option value="">Select terms</option>
-                      {PAYMENT_TERMS.map((term) => (
-                        <option key={term} value={term}>
-                          {term}
-                        </option>
-                      ))}
-                    </select>
+                    <CustomDropdown
+                      options={paymentTermsOptions}
+                      selectedOption={paymentTermsOptions.find(option => option.value === getValues('terms')) || null}
+                      onSelect={(option) => {
+                        setValue('terms', (option as DropdownOption).value as string, { shouldValidate: true });
+                      }}
+                      placeholder="Select terms"
+                      searchable={true}
+                      clearable={true}
+                      onClear={() => setValue('terms', '', { shouldValidate: true })}
+                    />
                     {methods.formState.errors.terms && (
                       <p className="form-error">{methods.formState.errors.terms.message}</p>
                     )}
@@ -1269,18 +1322,17 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
                     <label htmlFor="payCycle" className="form-label" data-required="*">
                       Pay Cycle
                     </label>
-                    <select
-                      id="payCycle"
-                      className="form-input"
-                      {...methods.register('payCycle')}
-                    >
-                      <option value="">Select pay cycle</option>
-                      {PAY_CYCLES.map((cycle) => (
-                        <option key={cycle} value={cycle}>
-                          {cycle}
-                        </option>
-                      ))}
-                    </select>
+                    <CustomDropdown
+                      options={payCycleOptions}
+                      selectedOption={payCycleOptions.find(option => option.value === getValues('payCycle')) || null}
+                      onSelect={(option) => {
+                        setValue('payCycle', (option as DropdownOption).value as string, { shouldValidate: true });
+                      }}
+                      placeholder="Select pay cycle"
+                      searchable={true}
+                      clearable={true}
+                      onClear={() => setValue('payCycle', '', { shouldValidate: true })}
+                    />
                     {methods.formState.errors.payCycle && (
                       <p className="form-error">{methods.formState.errors.payCycle.message}</p>
                     )}
