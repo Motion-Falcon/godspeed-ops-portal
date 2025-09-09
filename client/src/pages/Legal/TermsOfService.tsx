@@ -26,7 +26,7 @@ export function TermsOfService() {
             {t('legal.effectiveDate')}: 09.09.2025
           </p>
           <p className="legal-page-company">
-            {t('legal.company')}: Godspeed Group
+            {t('legal.company')}: CanHire Solutions
           </p>
         </div>
 
@@ -40,7 +40,7 @@ export function TermsOfService() {
           </p>
 
           <h2>1. Scope of Services</h2>
-          <h3>1.1. Godspeed Group provides an online platform for:</h3>
+          <h3>1.1. CanHire Solutions provides an online platform for:</h3>
           <ul>
             <li>Candidate sourcing, screening, and placement.</li>
             <li>HR consulting and advisory services.</li>
@@ -86,7 +86,7 @@ export function TermsOfService() {
             grounds per the Canadian Human Rights Act and Employment Equity Act.</li>
           </ul>
           <p>
-            <strong>4.2.</strong> Employers are solely responsible for final hiring decisions. Godspeed Group is
+            <strong>4.2.</strong> Employers are solely responsible for final hiring decisions. CanHire Solutions is
             not liable for employment outcomes, workplace behaviour, or performance of hired
             candidates.
           </p>
@@ -146,7 +146,7 @@ export function TermsOfService() {
           <h2>9. Intellectual Property</h2>
           <p>
             <strong>9.1.</strong> All content on our Website and platform — including text, graphics, trademarks, and
-            software — remains the property of Godspeed Group.
+            software — remains the property of CanHire Solutions.
           </p>
           <p>
             <strong>9.2.</strong> Users may not copy, redistribute, reverse engineer, or exploit our intellectual
@@ -174,7 +174,7 @@ export function TermsOfService() {
           </ul>
 
           <h2>12. Indemnification</h2>
-          <h3>12.1. You agree to indemnify and hold Godspeed Group, its directors, employees, and
+          <h3>12.1. You agree to indemnify and hold CanHire Solutions, its directors, employees, and
           affiliates harmless from any claims, damages, or expenses arising from your:</h3>
           <ul>
             <li>Use of the Services.</li>
@@ -227,10 +227,9 @@ export function TermsOfService() {
             <h3>17. Contact Information</h3>
             <div className="legal-page-contact-info">
               <p>For any questions or concerns regarding these Terms, please contact:</p>
-              <p><strong>Godspeed Group</strong></p>
-              <p>2795 Slough Street, Mississauga, ON L4T 1G2</p>
-              <p>info@godspeedxp.com</p>
-              <p>905-956-9525</p>
+              <p><strong>CanHire Solutions</strong></p>
+              <p>240 Humberline Dr, Etobicoke ON, M9W 5X1</p>
+              <p>info@canhiresolutions.ca</p>
             </div>
           </div>
         </div>

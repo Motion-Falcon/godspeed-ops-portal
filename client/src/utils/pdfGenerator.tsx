@@ -230,10 +230,10 @@ const styles = StyleSheet.create({
 
 // Company information
 const COMPANY_INFO = {
-  name: '9084380 Canada Inc. O/A Godspeed Group',
+  name: 'CANHIRE SOLUTION O/A 2695049 Ontario Inc',
   address: '240 Humberline Dr',
   address2: 'Etobicoke ON, M9W 5X1',
-  gst: 'GST/HST No. 825183387',
+  gst: 'GST/HST No. 795288877',
 };
 
 // Interfaces
