@@ -17,9 +17,8 @@
     "contact": "Contact",
     "menu": "Menu",
     "dashboard": "Dashboard",
-    "profile": "Profile",
+    "profile": "Profile", 
     "training": "Training",
-    "reports": "Reports",
     "logout": "Logout",
     "myAccount": "My Account",
     "userManagement": "User Management",
@@ -47,6 +46,7 @@
     "bulkTimesheetList": "Bulk Timesheet List",
     "invoiceManagement": "Create Client Invoices",
     "invoiceList": "Client Invoices List",
+    "reports": "Reports",
     "reportsAnalytics": "Reports & Analytics",
     "consentManagement": "Consent Management",
     "allConsentDocuments": "All Consent Documents",
@@ -2317,7 +2317,8 @@
     "modal": {
       "unsavedChanges": "Unsaved Changes",
       "unsavedChangesMessage": "You have unsaved changes. Do you want to save your draft before leaving?"
-    },
+    }
+  },
     "reports": {
       "title": "Reports",
       "subtitle": "Access and generate various reports to gain insights into your organization. Select a report type below to get started.",
@@ -2496,9 +2497,7 @@
         "emailSent": "Email Sent",
         "emailSentDate": "Email Sent Date"
       }
-    }
-  },
-
+    },
   "legal": {
     "termsOfService": "Terms of Service",
     "privacyPolicy": "Privacy Policy",
