@@ -17,6 +17,7 @@ import {
   Download,
   CheckCircle,
   Eye,
+  ClipboardList,
 } from "lucide-react";
 import { getClients, ClientData, getClient } from "../../services/api/client";
 import {
@@ -39,6 +40,8 @@ import {
   updateInvoice,
   getInvoice,
   sendInvoiceEmail,
+  getTimesheetsByClientAndDateRange,
+  TimesheetFromAPI,
 } from "../../services/api/invoice";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/language/language-provider";
@@ -177,6 +180,12 @@ export function InvoiceManagement() {
   const [selectedTerms, setSelectedTerms] = useState<string>("");
   const [invoiceDate, setInvoiceDate] = useState<string>("");
   const [dueDate, setDueDate] = useState<string>("");
+  
+  // State for date range to fetch timesheets
+  const [timesheetStartDate, setTimesheetStartDate] = useState<string>("");
+  const [timesheetEndDate, setTimesheetEndDate] = useState<string>("");
+  const [isFetchingTimesheets, setIsFetchingTimesheets] = useState(false);
+  const [timesheetFetchMessage, setTimesheetFetchMessage] = useState<string>("");
 
   // State for additional information
   const [messageOnInvoice, setMessageOnInvoice] = useState<string>(
@@ -402,6 +411,170 @@ export function InvoiceManagement() {
     setDueDate(dueDate.toISOString().split("T")[0]);
   };
 
+  // Fetch and populate timesheets for the selected date range
+  const fetchAndPopulateTimesheets = async () => {
+    if (!selectedClient?.id) {
+      setTimesheetFetchMessage(t('invoiceManagement.selectClientFirst'));
+      return;
+    }
+
+    if (!timesheetStartDate || !timesheetEndDate) {
+      setTimesheetFetchMessage(t('invoiceManagement.selectDateRange'));
+      return;
+    }
+
+    setIsFetchingTimesheets(true);
+    setTimesheetFetchMessage("");
+
+    try {
+      const response = await getTimesheetsByClientAndDateRange(
+        selectedClient.id,
+        timesheetStartDate,
+        timesheetEndDate
+      );
+
+      if (!response.success || !response.timesheets || response.timesheets.length === 0) {
+        setTimesheetFetchMessage(t('invoiceManagement.noTimesheetsFound'));
+        setIsFetchingTimesheets(false);
+        return;
+      }
+
+      // Group timesheets by position and jobseeker to aggregate hours
+      const groupedData: Record<string, {
+        position: ClientPosition;
+        jobseeker: AssignedJobseeker;
+        totalHours: number;
+        regularBillRate: number;
+        regularPayRate: number;
+        timesheetIds: string[];
+        description: string;
+      }> = {};
+
+      response.timesheets.forEach((timesheet: TimesheetFromAPI) => {
+        // Create a unique key for position + jobseeker combination
+        const key = `${timesheet.positionId}_${timesheet.jobseekerProfileId}`;
+
+        if (!groupedData[key]) {
+          groupedData[key] = {
+            position: {
+              id: timesheet.position.id,
+              positionCode: timesheet.position.positionCode,
+              positionNumber: timesheet.position.positionNumber,
+              title: timesheet.position.title,
+              regularPayRate: timesheet.regularPayRate.toString(),
+              billRate: timesheet.regularBillRate.toString(),
+              markup: "0",
+            },
+            jobseeker: {
+              id: timesheet.jobseekerProfileId,
+              candidateId: timesheet.jobseekerUserId,
+              firstName: timesheet.jobseekerProfile.firstName,
+              lastName: timesheet.jobseekerProfile.lastName,
+              email: timesheet.jobseekerProfile.email,
+              employeeId: timesheet.jobseekerProfile.employeeId,
+              status: "active",
+              startDate: timesheet.weekStartDate,
+              endDate: timesheet.weekEndDate,
+            },
+            totalHours: 0,
+            regularBillRate: timesheet.regularBillRate,
+            regularPayRate: timesheet.regularPayRate,
+            timesheetIds: [],
+            description: `Work period: ${new Date(timesheet.weekStartDate).toLocaleDateString()} - ${new Date(timesheet.weekEndDate).toLocaleDateString()}`,
+          };
+        }
+
+        // Aggregate hours
+        groupedData[key].totalHours += timesheet.totalRegularHours;
+        groupedData[key].timesheetIds.push(timesheet.id);
+      });
+
+      // Convert grouped data to line items
+      const newLineItems: InvoiceLineItem[] = Object.values(groupedData).map((data, index) => ({
+        id: `timesheet_${Date.now()}_${index}`,
+        position: data.position,
+        jobseeker: data.jobseeker,
+        description: data.description,
+        hours: data.totalHours.toString(),
+        regularBillRate: data.regularBillRate.toString(),
+        regularPayRate: data.regularPayRate.toString(),
+        salesTax: "13.00% [ON]", // Default tax, can be changed by user
+      }));
+
+      // Update positions state with unique positions from timesheets
+      const uniquePositions: ClientPosition[] = Array.from(
+        new Set(response.timesheets.map((t) => t.position.id))
+      )
+        .map((positionId) => {
+          const timesheet = response.timesheets.find((t) => t.position.id === positionId);
+          if (!timesheet) return null;
+          return {
+            id: timesheet.position.id,
+            positionCode: timesheet.position.positionCode,
+            positionNumber: timesheet.position.positionNumber,
+            title: timesheet.position.title,
+            regularPayRate: timesheet.regularPayRate.toString(),
+            billRate: timesheet.regularBillRate.toString(),
+            markup: "0",
+          } as ClientPosition;
+        })
+        .filter((p): p is ClientPosition => p !== null);
+
+      // Update positions if not already present
+      setPositions((prevPositions) => {
+        const existingIds = new Set(prevPositions.map((p) => p.id));
+        const newPositions = uniquePositions.filter((p) => p && !existingIds.has(p.id));
+        return [...prevPositions, ...newPositions];
+      });
+
+      // Populate jobseeker data for each position
+      const jobseekersByPosition: Record<string, AssignedJobseeker[]> = {};
+      response.timesheets.forEach((timesheet) => {
+        if (!jobseekersByPosition[timesheet.position.id]) {
+          jobseekersByPosition[timesheet.position.id] = [];
+        }
+        
+        // Check if jobseeker already exists for this position
+        const exists = jobseekersByPosition[timesheet.position.id].some(
+          (js) => js.id === timesheet.jobseekerProfileId
+        );
+        
+        if (!exists) {
+          jobseekersByPosition[timesheet.position.id].push({
+            id: timesheet.jobseekerProfileId,
+            candidateId: timesheet.jobseekerUserId,
+            firstName: timesheet.jobseekerProfile.firstName,
+            lastName: timesheet.jobseekerProfile.lastName,
+            email: timesheet.jobseekerProfile.email,
+            employeeId: timesheet.jobseekerProfile.employeeId,
+            status: "active",
+            startDate: timesheet.weekStartDate,
+            endDate: timesheet.weekEndDate,
+          });
+        }
+      });
+
+      setAssignedJobseekersByPosition((prev) => ({
+        ...prev,
+        ...jobseekersByPosition,
+      }));
+
+      // Replace existing line items with new ones
+      setLineItems(newLineItems);
+
+      setTimesheetFetchMessage(
+        `${t('invoiceManagement.timesheetsLoaded')}: ${newLineItems.length} ${t('invoiceManagement.lineItems')}`
+      );
+    } catch (error) {
+      console.error("Error fetching timesheets:", error);
+      setTimesheetFetchMessage(
+        error instanceof Error ? error.message : t('invoiceManagement.fetchTimesheetsFailed')
+      );
+    } finally {
+      setIsFetchingTimesheets(false);
+    }
+  };
+
   // Line item management functions
   const addLineItem = () => {
     const newLineItem: InvoiceLineItem = {
@@ -465,7 +638,7 @@ export function InvoiceManagement() {
   const positionOptions: DropdownOption[] = positions.map((position) => ({
     id: position.id,
     label: position.title || t('invoiceManagement.unknownPosition'),
-    sublabel: `${position.positionCode} [${position.positionNumber}]`,
+    sublabel: position.positionCode || "",
     value: position,
   }));
 
@@ -1410,7 +1583,7 @@ export function InvoiceManagement() {
       <AppHeader
         title={t("navigation.invoiceManagement")}
         hideHamburgerMenu={false}
-        statusMessage={generationMessage || generationError}
+        statusMessage={generationMessage || generationError || timesheetFetchMessage}
       />
 
       <div className="invoice-content-container">
@@ -1419,7 +1592,7 @@ export function InvoiceManagement() {
           <div className="selection-section">
             <label className="selection-label">
               <Building size={16} />
-              Client
+              {t('invoiceManagement.client')}
             </label>
             {clientLoading ? (
               <div className="invoice-dropdown-skeleton">
@@ -1434,7 +1607,7 @@ export function InvoiceManagement() {
                 options={clientOptions}
                 selectedOption={selectedClientOption}
                 onSelect={handleClientSelect}
-                placeholder="Search and select client..."
+                placeholder={t('invoiceManagement.searchSelectClient')}
                 loading={false}
                 icon={<Building size={16} />}
                 emptyMessage={t('invoiceManagement.noClientsFound')}
@@ -1445,7 +1618,7 @@ export function InvoiceManagement() {
           <div className="selection-section">
             <label className="selection-label">
               <FileText size={16} />
-              Payment Terms
+              {t('invoiceManagement.paymentTerms')}
             </label>
             <CustomDropdown
               options={termsOptions}
@@ -1453,13 +1626,13 @@ export function InvoiceManagement() {
               onSelect={handleTermsSelect}
               placeholder={
                 selectedClient
-                  ? "Select payment terms..."
-                  : "Please select a client first"
+                  ? t('invoiceManagement.selectPaymentTerms')
+                  : t('invoiceManagement.pleaseSelectClientFirst')
               }
               disabled={!selectedClient}
               loading={false}
               icon={<FileText size={16} />}
-              emptyMessage="No payment terms available"
+              emptyMessage={t('invoiceManagement.noPaymentTermsAvailable')}
             />
           </div>
 
@@ -1470,7 +1643,7 @@ export function InvoiceManagement() {
               onClick={handleInvoiceDateClick}
             >
               <Calendar size={16} />
-              Invoice Date
+              {t('invoiceManagement.invoiceDate')}
             </label>
             <input
               id="invoice-date-input"
@@ -1488,7 +1661,7 @@ export function InvoiceManagement() {
               onClick={handleDueDateClick}
             >
               <Calendar size={16} />
-              Due Date
+              {t('invoiceManagement.dueDate')}
             </label>
             <input
               id="due-date-input"
@@ -1496,18 +1669,73 @@ export function InvoiceManagement() {
               value={dueDate}
               onChange={(e) => handleDueDateChange(e.target.value)}
               className="invoice-date-input"
-              title="Due date can be manually adjusted if needed"
+              title={t('invoiceManagement.dueDateAdjustable')}
             />
           </div>
         </div>
+
+        {/* Timesheet Date Range Section */}
+        {selectedClient && (
+          <div className="invoice-selection-bar timesheet-date-range">
+            <div className="selection-section">
+              <label className="selection-label" htmlFor="timesheet-start-date">
+                <Calendar size={16} />
+                {t('invoiceManagement.timesheetStartDate')}
+              </label>
+              <input
+                id="timesheet-start-date"
+                type="date"
+                value={timesheetStartDate}
+                onChange={(e) => setTimesheetStartDate(e.target.value)}
+                className="invoice-date-input"
+              />
+            </div>
+
+            <div className="selection-section">
+              <label className="selection-label" htmlFor="timesheet-end-date">
+                <Calendar size={16} />
+                {t('invoiceManagement.timesheetEndDate')}
+              </label>
+              <input
+                id="timesheet-end-date"
+                type="date"
+                value={timesheetEndDate}
+                onChange={(e) => setTimesheetEndDate(e.target.value)}
+                className="invoice-date-input"
+              />
+            </div>
+
+            <div className="selection-section">
+              <label className="selection-label">&nbsp;</label>
+              <button
+                className={`button ${isFetchingTimesheets || !timesheetStartDate || !timesheetEndDate ? 'disabled' : ''}`}
+                onClick={fetchAndPopulateTimesheets}
+                disabled={isFetchingTimesheets || !timesheetStartDate || !timesheetEndDate}
+                style={{ width: 'fit-content' }}
+              >
+                {isFetchingTimesheets ? (
+                  <>
+                    <Loader2 size={16} className="timesheet-loading-spinner" />
+                    {t('invoiceManagement.fetchingTimesheets')}
+                  </>
+                ) : (
+                  <>
+                    <ClipboardList size={16} />
+                    {t('invoiceManagement.loadTimesheets')}
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* No Clients State */}
         {!clientLoading && clients.length === 0 && (
           <div className="invoice-card empty-state-card">
             <div className="invoice-empty-state">
               <Building size={48} />
-              <h3>No Clients Available</h3>
-              <p>No clients found for invoice creation.</p>
+              <h3>{t('invoiceManagement.noClientsAvailable')}</h3>
+              <p>{t('invoiceManagement.noClientsForInvoice')}</p>
             </div>
           </div>
         )}
@@ -1517,25 +1745,25 @@ export function InvoiceManagement() {
           <div className="timesheet-unified-header">
             <div className="timesheet-header-sections">
               <div className="timesheet-section timesheet-client-section">
-                <h4 className="timesheet-section-title">Client Information</h4>
+                <h4 className="timesheet-section-title">{t('invoiceManagement.clientInformation')}</h4>
                 <div className="timesheet-section-content">
                   <div className="timesheet-detail-item">
                     <span className="timesheet-detail-label">
-                      Company Name:
+                      {t('invoiceManagement.companyName')}
                     </span>
                     <span className="timesheet-detail-value">
                       {selectedClient.companyName}
                     </span>
                   </div>
                   <div className="timesheet-detail-item">
-                    <span className="timesheet-detail-label">Short Code:</span>
+                    <span className="timesheet-detail-label">{t('invoiceManagement.shortCode')}</span>
                     <span className="timesheet-detail-value">
                       {selectedClient.shortCode || "N/A"}
                     </span>
                   </div>
                   <div className="timesheet-detail-item">
                     <span className="timesheet-detail-label">
-                      Primary Email:
+                      {t('invoiceManagement.primaryEmail')}
                     </span>
                     <span className="timesheet-detail-value">
                       {selectedClient.emailAddress1}
@@ -1545,39 +1773,39 @@ export function InvoiceManagement() {
               </div>
 
               <div className="timesheet-section timesheet-payment-section">
-                <h4 className="timesheet-section-title">Payment Details</h4>
+                <h4 className="timesheet-section-title">{t('invoiceManagement.paymentDetails')}</h4>
                 <div className="timesheet-section-content">
                   <div className="timesheet-detail-item">
-                    <span className="timesheet-detail-label">Currency:</span>
+                    <span className="timesheet-detail-label">{t('invoiceManagement.currencyLabel')}</span>
                     <span className="timesheet-detail-value">
                       {selectedClient.currency || "CAD"}
                     </span>
                   </div>
                   <div className="timesheet-detail-item">
                     <span className="timesheet-detail-label">
-                      Payment Terms:
+                      {t('invoiceManagement.paymentTerms')}
                     </span>
                     <span className="timesheet-detail-value">
-                      {selectedTerms || "Not selected"}
+                      {selectedTerms || t('invoiceManagement.notSet')}
                     </span>
                   </div>
                   <div className="timesheet-detail-item">
                     <span className="timesheet-detail-label">
-                      Payment Method:
+                      {t('invoiceManagement.paymentMethod')}
                     </span>
                     <span className="timesheet-detail-value">
-                      {selectedClient.preferredPaymentMethod || "Not specified"}
+                      {selectedClient.preferredPaymentMethod || t('invoiceManagement.notSpecified')}
                     </span>
                   </div>
                 </div>
               </div>
 
               <div className="timesheet-section timesheet-dates-section">
-                <h4 className="timesheet-section-title">Invoice & Dates</h4>
+                <h4 className="timesheet-section-title">{t('invoiceManagement.invoiceAndDates')}</h4>
                 <div className="timesheet-section-content">
                   <div className="timesheet-detail-item">
                     <span className="timesheet-detail-label">
-                      Invoice Number:
+                      {t('invoiceManagement.invoiceNumber')}
                     </span>
                     <span className="timesheet-detail-value">
                       {invoiceNumberLoading ? (
@@ -1586,18 +1814,18 @@ export function InvoiceManagement() {
                             size={14}
                             className="timesheet-loading-spinner"
                           />
-                          Generating...
+                          {t('invoiceManagement.generatingInvoiceNumber')}
                         </span>
                       ) : invoiceNumber ? (
                         <strong>{invoiceNumber}</strong>
                       ) : (
-                        "Not generated"
+                        t('invoiceManagement.notGenerated')
                       )}
                     </span>
                   </div>
                   <div className="timesheet-detail-item">
                     <span className="timesheet-detail-label">
-                      Invoice Date:
+                      {t('invoiceManagement.invoiceDate')}
                     </span>
                     <span className="timesheet-detail-value">
                       {invoiceDate
@@ -1606,11 +1834,11 @@ export function InvoiceManagement() {
                             month: "short",
                             day: "numeric",
                           })
-                        : "Not set"}
+                        : t('invoiceManagement.notSet')}
                     </span>
                   </div>
                   <div className="timesheet-detail-item">
-                    <span className="timesheet-detail-label">Due Date:</span>
+                    <span className="timesheet-detail-label">{t('invoiceManagement.dueDate')}</span>
                     <span className="timesheet-detail-value">
                       {dueDate
                         ? new Date(dueDate).toLocaleDateString("en-CA", {
@@ -1618,13 +1846,13 @@ export function InvoiceManagement() {
                             month: "short",
                             day: "numeric",
                           })
-                        : "Not calculated"}
+                        : t('invoiceManagement.notCalculated')}
                     </span>
                   </div>
                   <div className="timesheet-detail-item">
-                    <span className="timesheet-detail-label">Pay Cycle:</span>
+                    <span className="timesheet-detail-label">{t('invoiceManagement.payCycle')}</span>
                     <span className="timesheet-detail-value">
-                      {selectedClient.payCycle || "Not specified"}
+                      {selectedClient.payCycle || t('invoiceManagement.notSpecified')}
                     </span>
                   </div>
                 </div>
@@ -1638,8 +1866,8 @@ export function InvoiceManagement() {
           <div className="invoice-card empty-state-card">
             <div className="invoice-empty-state">
               <FileText size={48} />
-              <h3>No Positions Available</h3>
-              <p>No positions found for this client.</p>
+              <h3>{t('invoiceManagement.noPositionsAvailable')}</h3>
+              <p>{t('invoiceManagement.noPositionsForClient')}</p>
             </div>
           </div>
         )}
@@ -1649,7 +1877,7 @@ export function InvoiceManagement() {
             {/* Line Items Section */}
             <div className="invoice-line-items-container">
               <div className="invoice-line-items-header">
-                <h3>Invoice Line Items</h3>
+                <h3>{t('invoiceManagement.invoiceLineItems')}</h3>
               </div>
 
               <div className="invoice-line-items-list">
@@ -1661,7 +1889,7 @@ export function InvoiceManagement() {
                         <div className="selection-section position-selection">
                           <label className="selection-label">
                             <FileText size={16} />
-                            Position
+                            {t('invoiceManagement.position')}
                           </label>
                           <CustomDropdown
                             options={positionOptions}
@@ -1675,17 +1903,17 @@ export function InvoiceManagement() {
                             onSelect={(option) =>
                               handlePositionSelect(lineItem.id, option)
                             }
-                            placeholder="Select position..."
+                            placeholder={t('invoiceManagement.selectPositionPlaceholder')}
                             loading={false}
                             icon={<FileText size={16} />}
-                            emptyMessage="No positions found"
+                            emptyMessage={t('invoiceManagement.noPositionsFoundMessage')}
                           />
                         </div>
 
                         <div className="selection-section jobseeker-selection">
                           <label className="selection-label">
                             <User size={16} />
-                            Job Seeker
+                            {t('invoiceManagement.jobSeeker')}
                           </label>
                           {lineItem.position &&
                           jobseekerLoadingByPosition[lineItem.position.id] ? (
@@ -1719,16 +1947,16 @@ export function InvoiceManagement() {
                               }
                               placeholder={
                                 lineItem.position
-                                  ? "Select jobseeker..."
-                                  : "Please select a position first"
+                                  ? t('invoiceManagement.selectJobseekerPlaceholder')
+                                  : t('invoiceManagement.pleaseSelectPositionFirst')
                               }
                               disabled={!lineItem.position}
                               loading={false}
                               icon={<User size={16} />}
                               emptyMessage={
                                 lineItem.position
-                                  ? "No assigned jobseekers found"
-                                  : "Please select a position first"
+                                  ? t('invoiceManagement.noAssignedJobseekers')
+                                  : t('invoiceManagement.pleaseSelectPositionFirst')
                               }
                             />
                           )}
@@ -1737,7 +1965,7 @@ export function InvoiceManagement() {
                         <div className="selection-section description-selection">
                           <label className="selection-label">
                             <FileText size={16} />
-                            Description (Optional)
+                            {t('invoiceManagement.descriptionOptional')}
                           </label>
                           <input
                             type="text"
@@ -1747,7 +1975,7 @@ export function InvoiceManagement() {
                                 description: e.target.value,
                               })
                             }
-                            placeholder="Enter description..."
+                            placeholder={t('invoiceManagement.enterDescription')}
                             className="invoice-text-input"
                           />
                         </div>
@@ -1755,7 +1983,7 @@ export function InvoiceManagement() {
                         <div className="selection-section hours-selection">
                           <label className="selection-label">
                             <FileText size={16} />
-                            Hours
+                            {t('invoiceManagement.hours')}
                           </label>
                           <input
                             type="number"
@@ -1775,7 +2003,7 @@ export function InvoiceManagement() {
                         <div className="selection-section rate-selection">
                           <label className="selection-label">
                             <DollarSign size={16} />
-                            Rate
+                            {t('invoiceManagement.rate')}
                           </label>
                           <input
                             type="number"
@@ -1795,7 +2023,7 @@ export function InvoiceManagement() {
                         <div className="selection-section tax-selection">
                           <label className="selection-label">
                             <DollarSign size={16} />
-                            Sales Tax
+                            {t('invoiceManagement.salesTax')}
                           </label>
                           <CustomDropdown
                             options={salesTaxOptions}
@@ -1805,28 +2033,28 @@ export function InvoiceManagement() {
                             onSelect={(option) =>
                               handleSalesTaxSelect(lineItem.id, option)
                             }
-                            placeholder="Select tax..."
+                            placeholder={t('invoiceManagement.selectTax')}
                             loading={false}
                             icon={<DollarSign size={16} />}
-                            emptyMessage="No sales tax options available"
+                            emptyMessage={t('invoiceManagement.noSalesTaxOptions')}
                           />
                         </div>
 
                         {/* Action buttons section */}
                         <div className="selection-section line-item-actions">
-                          <label className="selection-label">Actions</label>
+                          <label className="selection-label">{t('invoiceManagement.actions')}</label>
                           <div className="line-item-buttons">
                             <button
                               className="button secondary"
                               onClick={addLineItem}
-                              title="Add new line item"
+                              title={t('invoiceManagement.addNewLineItem')}
                             >
                               <Plus size={16} />
                             </button>
                             <button
                               className="button danger"
                               onClick={() => removeLineItem(lineItem.id)}
-                              title="Remove line item"
+                              title={t('invoiceManagement.removeLineItem')}
                               disabled={lineItems.length === 1}
                             >
                               <Minus size={16} />
@@ -1844,7 +2072,7 @@ export function InvoiceManagement() {
             <div className="invoice-bottom-sections-container">
               <div className="invoice-line-items-container supplier-po-section">
                 <div className="invoice-line-items-header">
-                  <h3>Supplier/PO Number Details</h3>
+                  <h3>{t('invoiceManagement.supplierPODetails')}</h3>
                 </div>
 
                 <div className="invoice-line-items-list">
@@ -1859,7 +2087,7 @@ export function InvoiceManagement() {
                           <div className="selection-section combined-selection">
                             <label className="selection-label">
                               <Building size={16} />
-                              Supplier No / PO No
+                              {t('invoiceManagement.supplierNoPONo')}
                             </label>
                             <CustomDropdown
                               options={combinedOptions}
@@ -1877,17 +2105,17 @@ export function InvoiceManagement() {
                                   option
                                 )
                               }
-                              placeholder="Select supplier or PO number..."
+                              placeholder={t('invoiceManagement.selectSupplierOrPO')}
                               loading={false}
                               icon={<Building size={16} />}
-                              emptyMessage="No options found"
+                              emptyMessage={t('invoiceManagement.noOptionsFound')}
                             />
                           </div>
 
                           <div className="selection-section supplier-po-number-selection">
                             <label className="selection-label">
                               <FileText size={16} />
-                              Supplier/PO #
+                              {t('invoiceManagement.supplierPONumber')}
                             </label>
                             <input
                               type="text"
@@ -1898,19 +2126,19 @@ export function InvoiceManagement() {
                                   e.target.value
                                 )
                               }
-                              placeholder="Enter supplier/PO number..."
+                              placeholder={t('invoiceManagement.enterSupplierPONumber')}
                               className="invoice-text-input"
                             />
                           </div>
 
                           {/* Action buttons section */}
                           <div className="selection-section line-item-actions">
-                            <label className="selection-label">Actions</label>
+                            <label className="selection-label">{t('invoiceManagement.actions')}</label>
                             <div className="line-item-buttons">
                               <button
                                 className="button secondary"
                                 onClick={addSupplierPOItem}
-                                title="Add new supplier/PO item"
+                                title={t('invoiceManagement.addSupplierPOItem')}
                               >
                                 <Plus size={16} />
                               </button>
@@ -1919,7 +2147,7 @@ export function InvoiceManagement() {
                                 onClick={() =>
                                   removeSupplierPOItem(supplierPOItem.id)
                                 }
-                                title="Remove supplier/PO item"
+                                title={t('invoiceManagement.removeSupplierPOItem')}
                                 disabled={supplierPOItems.length === 1}
                               >
                                 <Minus size={16} />
@@ -1936,18 +2164,18 @@ export function InvoiceManagement() {
               {/* Message and Terms Section */}
               <div className="invoice-message-terms-container">
                 <div className="invoice-line-items-header">
-                  <h3>Additional Information</h3>
+                  <h3>{t('invoiceManagement.additionalInformation')}</h3>
                 </div>
 
                 <div className="message-terms-grid">
                   <div className="selection-section message-section">
                     <label className="selection-label">
                       <FileText size={16} />
-                      Message on Invoice
+                      {t('invoiceManagement.messageOnInvoice')}
                     </label>
                     <textarea
                       className="invoice-textarea"
-                      placeholder="Enter message to appear on invoice..."
+                      placeholder={t('invoiceManagement.enterMessageOnInvoice')}
                       rows={6}
                       value={messageOnInvoice}
                       onChange={(e) => setMessageOnInvoice(e.target.value)}
@@ -1957,11 +2185,11 @@ export function InvoiceManagement() {
                   <div className="selection-section terms-section">
                     <label className="selection-label">
                       <FileText size={16} />
-                      Terms
+                      {t('invoiceManagement.terms')}
                     </label>
                     <textarea
                       className="invoice-textarea"
-                      placeholder="Enter additional terms and conditions..."
+                      placeholder={t('invoiceManagement.enterAdditionalTerms')}
                       rows={6}
                       value={termsOnInvoice}
                       onChange={(e) => setTermsOnInvoice(e.target.value)}
@@ -1974,11 +2202,11 @@ export function InvoiceManagement() {
             <div className="timesheet-invoice-container">
               <div className="timesheet-invoice-table">
                 <div className="timesheet-invoice-table-header">
-                  <div className="timesheet-col-description">Description</div>
-                  <div className="timesheet-col-hours">Hours</div>
-                  <div className="timesheet-col-rate">Rate</div>
-                  <div className="timesheet-col-tax">Tax</div>
-                  <div className="timesheet-col-amount">Amount</div>
+                  <div className="timesheet-col-description">{t('invoiceManagement.description')}</div>
+                  <div className="timesheet-col-hours">{t('invoiceManagement.hours')}</div>
+                  <div className="timesheet-col-rate">{t('invoiceManagement.rate')}</div>
+                  <div className="timesheet-col-tax">{t('invoiceManagement.tax')}</div>
+                  <div className="timesheet-col-amount">{t('invoiceManagement.amount')}</div>
                 </div>
 
                 <div className="timesheet-invoice-table-body">
@@ -1992,12 +2220,12 @@ export function InvoiceManagement() {
                       >
                         <div className="timesheet-col-description">
                           <div className="timesheet-item-title">
-                            {item.position?.title || "No Position Selected"}
+                            {item.position?.title || t('invoiceManagement.noPositionSelected')}
                           </div>
                           <div className="timesheet-item-subtitle">
                             {item.jobseeker
                               ? `${item.jobseeker.firstName} ${item.jobseeker.lastName}`.trim()
-                              : "No Jobseeker Selected"}
+                              : t('invoiceManagement.noJobseekerSelected')}
                             {item.description && ` - ${item.description}`}
                           </div>
                         </div>
@@ -2086,7 +2314,7 @@ export function InvoiceManagement() {
                       <>
                         <div className="timesheet-total-line">
                           <div className="timesheet-total-label">
-                            Total Hours:
+                            {t('invoiceManagement.totalHours')}:
                           </div>
                           <div className="timesheet-total-value">
                             {lineItems
@@ -2099,7 +2327,7 @@ export function InvoiceManagement() {
                           </div>
                         </div>
                         <div className="timesheet-total-line timesheet-subtotal">
-                          <div className="timesheet-total-label">Subtotal:</div>
+                          <div className="timesheet-total-label">{t('invoiceManagement.subtotal')}:</div>
                           <div className="timesheet-total-value">
                             ${subtotal.toFixed(2)}
                           </div>
@@ -2107,7 +2335,7 @@ export function InvoiceManagement() {
                         {totalHST > 0 && (
                           <div className="timesheet-total-line">
                             <div className="timesheet-total-label">
-                              Total HST:
+                              {t('invoiceManagement.totalHST')}:
                             </div>
                             <div className="timesheet-total-value">
                               ${totalHST.toFixed(2)}
@@ -2117,7 +2345,7 @@ export function InvoiceManagement() {
                         {totalGST > 0 && (
                           <div className="timesheet-total-line">
                             <div className="timesheet-total-label">
-                              Total GST:
+                              {t('invoiceManagement.totalGST')}:
                             </div>
                             <div className="timesheet-total-value">
                               ${totalGST.toFixed(2)}
@@ -2127,7 +2355,7 @@ export function InvoiceManagement() {
                         {totalQST > 0 && (
                           <div className="timesheet-total-line">
                             <div className="timesheet-total-label">
-                              Total QST:
+                              {t('invoiceManagement.totalQST')}:
                             </div>
                             <div className="timesheet-total-value">
                               ${totalQST.toFixed(2)}
@@ -2136,7 +2364,7 @@ export function InvoiceManagement() {
                         )}
                         <div className="timesheet-total-line">
                           <div className="timesheet-total-label">
-                            Total Tax:
+                            {t('invoiceManagement.totalTax')}:
                           </div>
                           <div className="timesheet-total-value">
                             ${totalTax.toFixed(2)}
@@ -2144,7 +2372,7 @@ export function InvoiceManagement() {
                         </div>
                         <div className="timesheet-total-line timesheet-grand-total">
                           <div className="timesheet-total-label">
-                            Grand Total:
+                            {t('invoiceManagement.grandTotal')}:
                           </div>
                           <div className="timesheet-total-value">
                             ${grandTotal.toFixed(2)}{" "}
@@ -2197,7 +2425,7 @@ export function InvoiceManagement() {
                       </span>
                       <div className="attachment-status uploaded">
                         <CheckCircle size={14} />
-                        <span>Generated</span>
+                        <span>{t('invoiceManagement.generated')}</span>
                       </div>
                     </div>
                   </div>
@@ -2211,7 +2439,7 @@ export function InvoiceManagement() {
                           .createSignedUrl(documentPath.replace(/&#x2F;/g, "/"), 300);
                         if (data?.signedUrl) window.open(data.signedUrl, "_blank");
                       }}
-                      title="Preview"
+                      title={t('invoiceManagement.preview')}
                     >
                       <Eye size={16} />
                     </button>
@@ -2231,7 +2459,7 @@ export function InvoiceManagement() {
                           document.body.removeChild(a);
                         }
                       }}
-                      title="Download"
+                      title={t('invoiceManagement.download')}
                     >
                       <Download size={16} />
                     </button>
@@ -2273,12 +2501,12 @@ export function InvoiceManagement() {
                 {isGeneratingInvoice ? (
                   <>
                     <Loader2 size={16} className="timesheet-loading-spinner" />
-                    {isEditMode ? "Updating..." : "Generating..."}
+                    {isEditMode ? t('invoiceManagement.updating') : t('invoiceManagement.generating')}
                   </>
                 ) : (
                   <>
                     <Plus size={16} />
-                    {isEditMode ? "Update Invoice" : "Generate Invoice"}
+                    {isEditMode ? t('invoiceManagement.updateInvoice') : t('invoiceManagement.generateInvoice')}
                   </>
                 )}
               </button>
@@ -2499,8 +2727,8 @@ export function InvoiceManagement() {
                 <Document
                   file={pdfBlobUrl || ""}
                   onLoadSuccess={onPdfLoadSuccess}
-                  loading={<div>Loading PDF...</div>}
-                  error={<div>Failed to load PDF.</div>}
+                  loading={<div>{t('invoiceManagement.loadingPDF')}</div>}
+                  error={<div>{t('invoiceManagement.failedToLoadPDF')}</div>}
                 >
                   <Page
                     pageNumber={pdfPageNumber}
@@ -2514,16 +2742,16 @@ export function InvoiceManagement() {
               {pdfNumPages && (
                 <div className="invoice-success-modal-pdf-navigation">
                   <button onClick={goToPrevPage} disabled={pdfPageNumber <= 1}>
-                    Previous
+                    {t('invoiceManagement.previous')}
                   </button>
                   <span>
-                    Page {pdfPageNumber} of {pdfNumPages}
+                    {t('invoiceManagement.page')} {pdfPageNumber} {t('invoiceManagement.of')} {pdfNumPages}
                   </span>
                   <button
                     onClick={goToNextPage}
                     disabled={pdfPageNumber >= pdfNumPages}
                   >
-                    Next
+                    {t('invoiceManagement.next')}
                   </button>
                 </div>
               )}
@@ -2531,19 +2759,19 @@ export function InvoiceManagement() {
 
             {/* Info Right Side */}
             <div className="invoice-success-modal-info-panel">
-              <h2>Invoice Created Successfully!</h2>
+              <h2>{t('invoiceManagement.invoiceCreatedSuccessfully')}</h2>
               <button
                 className="button"
                 style={{ alignSelf: "center", width: "fit-content" }}
                 onClick={handleDownloadInvoice}
                 disabled={!pdfBlobUrl}
               >
-                <Download /> Download Invoice
+                <Download /> {t('invoiceManagement.downloadInvoice')}
               </button>
               <div className="invoice-success-modal-details">
                 <div className="invoice-success-modal-detail-item">
                   <span className="invoice-success-modal-detail-label">
-                    Invoice Number:
+                    {t('invoiceManagement.invoiceNumberLabel')}
                   </span>
                   <span className="invoice-success-modal-detail-value">
                     #{createdInvoice.invoiceNumber}
@@ -2551,7 +2779,7 @@ export function InvoiceManagement() {
                 </div>
                 <div className="invoice-success-modal-detail-item">
                   <span className="invoice-success-modal-detail-label">
-                    Client:
+                    {t('invoiceManagement.clientLabel')}
                   </span>
                   <span className="invoice-success-modal-detail-value">
                     {createdInvoice.client?.companyName ||
@@ -2561,7 +2789,7 @@ export function InvoiceManagement() {
                 </div>
                 <div className="invoice-success-modal-detail-item">
                   <span className="invoice-success-modal-detail-label">
-                    Date:
+                    {t('invoiceManagement.dateLabel')}
                   </span>
                   <span className="invoice-success-modal-detail-value">
                     {createdInvoice.invoiceDate}
@@ -2569,7 +2797,7 @@ export function InvoiceManagement() {
                 </div>
                 <div className="invoice-success-modal-detail-item">
                   <span className="invoice-success-modal-detail-label">
-                    Total:
+                    {t('invoiceManagement.totalLabel')}
                   </span>
                   <span className="invoice-success-modal-detail-value">
                     ${createdInvoice.grandTotal}
@@ -2579,7 +2807,7 @@ export function InvoiceManagement() {
 
               <div className="invoice-success-modal-email-section">
                 <label>
-                  Send to Email:
+                  {t('invoiceManagement.sendToEmail')}
                   <input
                     type="email"
                     value={emailToSend}
@@ -2596,7 +2824,7 @@ export function InvoiceManagement() {
                   onClick={sendInvoiceToClient}
                   disabled={isSendingInvoice || !emailToSend || !emailToSend.trim()}
                 >
-                  {isSendingInvoice ? "Sending..." : "Send Invoice to Client"}
+                  {isSendingInvoice ? t('invoiceManagement.sending') : t('invoiceManagement.sendInvoiceToClient')}
                 </button>
                 {/* Wrap both messages in a fragment to avoid adjacent JSX errors */}
                 <>

@@ -66,6 +66,16 @@
   transition: all var(--transition-normal);
 }
 
+/* ===== Timesheet Date Range Section ===== */
+.invoice-selection-bar.timesheet-date-range {
+  justify-content: center;
+  align-items: center;
+}
+
+.invoice-selection-bar.timesheet-date-range .selection-section {
+  width: 200px;
+}
+
 .selection-section {
   display: flex;
   flex-direction: column;

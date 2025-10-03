@@ -244,8 +244,8 @@ export function TimesheetManagement() {
       weekEndDate.setDate(weekEndDate.getDate() + 6);
 
       const response = await getJobseekerTimesheets(jobseekerUserId, {
-        weekStartFilter: weekStartDate,
-        weekEndFilter: weekEndDate.toISOString().split("T")[0],
+        dateRangeStart: weekStartDate,
+        dateRangeEnd: weekEndDate.toISOString().split("T")[0],
         limit: 100,
       });
 
@@ -373,12 +373,7 @@ export function TimesheetManagement() {
     if (selectedJobseeker && selectedPosition && selectedWeekStart) {
       initializeTimesheetsForPosition();
     }
-  }, [
-    selectedJobseeker,
-    selectedPosition,
-    selectedWeekStart,
-    existingTimesheets,
-  ]);
+  }, [existingTimesheets]);
 
   const initializeTimesheetsForPosition = async () => {
     if (!selectedJobseeker || !selectedPosition || !selectedWeekStart) {

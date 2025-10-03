@@ -6,6 +6,8 @@ import { activityLogger } from '../middleware/activityLogger.js';
 import { emailNotifier } from '../middleware/emailNotifier.js';
 import { timesheetHtmlTemplate } from '../email-templates/timesheet-html.js';
 import { timesheetTextTemplate } from '../email-templates/timesheet-txt.js';
+import sgMail from '@sendgrid/mail';
+sgMail.setApiKey(process.env.SENDGRID_API_KEY!);
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -46,6 +48,25 @@ interface TimesheetData {
   emailSent?: boolean;
   document?: string; // PDF file path or URL
   invoiceNumber?: string; // Auto-generated invoice number
+}
+
+interface OptimizedTimesheetData {
+  id: string;
+  invoice_number: string;
+  week_start_date: string;
+  week_end_date: string;
+  total_jobseeker_pay: number;
+  email_sent: boolean;
+  jobseeker_profiles: {
+    first_name: string;
+    last_name: string;
+    email: string;
+  } | null;
+  positions: {
+    title: string;
+    position_code: string;
+    client_name: string;
+  } | null;
 }
 
 interface VersionHistoryEntry {
@@ -123,6 +144,30 @@ function transformToDbFormat(data: TimesheetData): Omit<DbTimesheetData, 'id' | 
 }
 
 /**
+ * Transform optimized timesheet data to frontend format
+ */
+function transformOptimizedToFrontendFormat(data: OptimizedTimesheetData): Record<string, unknown> {
+  return {
+    id: data.id,
+    invoiceNumber: data.invoice_number,
+    weekStartDate: data.week_start_date,
+    weekEndDate: data.week_end_date,
+    totalJobseekerPay: data.total_jobseeker_pay,
+    emailSent: data.email_sent,
+    jobseekerProfile: data.jobseeker_profiles ? {
+      firstName: data.jobseeker_profiles.first_name,
+      lastName: data.jobseeker_profiles.last_name,
+      email: data.jobseeker_profiles.email
+    } : null,
+    position: data.positions ? {
+      title: data.positions.title,
+      positionCode: data.positions.position_code,
+      clientName: data.positions.client_name
+    } : null
+  };
+}
+
+/**
  * Transform timesheet data from snake_case to camelCase for frontend
  */
 function transformToFrontendFormat(data: DbTimesheetData): Record<string, unknown> {
@@ -144,7 +189,7 @@ function transformToFrontendFormat(data: DbTimesheetData): Record<string, unknow
 router.get('/generate-invoice-number', 
   authenticateToken, 
   authorizeRoles(['admin', 'recruiter', 'jobseeker']),
-  apiRateLimiter,
+  // apiRateLimiter,
   async (req: Request, res: Response) => {
     try {
       if (!req.user || !req.user.id) {
@@ -214,7 +259,7 @@ router.get('/generate-invoice-number',
 router.get('/', 
   authenticateToken, 
   authorizeRoles(['admin', 'recruiter', 'jobseeker']),
-  apiRateLimiter,
+  // apiRateLimiter,
   async (req: Request, res: Response) => {
     try {
       if (!req.user || !req.user.id) {
@@ -231,10 +276,9 @@ router.get('/',
         searchTerm = '', 
         jobseekerFilter = '',
         positionFilter = '',
-        weekStartFilter = '',
-        weekEndFilter = '',
+        clientFilter = '',
+        invoiceNumberFilter = '',
         emailSentFilter = '',
-        documentFilter = '',
         dateRangeStart = '',
         dateRangeEnd = ''
       } = req.query as {
@@ -243,10 +287,9 @@ router.get('/',
         searchTerm?: string;
         jobseekerFilter?: string;
         positionFilter?: string;
-        weekStartFilter?: string;
-        weekEndFilter?: string;
+        clientFilter?: string;
+        invoiceNumberFilter?: string;
         emailSentFilter?: string;
-        documentFilter?: string;
         dateRangeStart?: string;
         dateRangeEnd?: string;
       };
@@ -255,13 +298,18 @@ router.get('/',
       const limitNum = parseInt(limit);
       const offset = (pageNum - 1) * limitNum;
 
-      // Build the base query with joins for related data
+      // Build the base query with joins for related data - use INNER JOIN for positions if filtering by position fields
       let baseQuery = supabase
         .from('timesheets')
         .select(`
-          *,
-          jobseeker_profiles!inner(id, first_name, last_name, email),
-          positions(id, position_code, title, client)
+          id,
+          invoice_number,
+          week_start_date,
+          week_end_date,
+          total_jobseeker_pay,
+          email_sent,
+          jobseeker_profiles!inner(first_name, last_name, email),
+          positions!inner(title, position_code, client_name)
         `);
 
       // Apply role-based filtering
@@ -276,10 +324,9 @@ router.get('/',
         searchTerm,
         jobseekerFilter,
         positionFilter,
-        weekStartFilter,
-        weekEndFilter,
+        clientFilter,
+        invoiceNumberFilter,
         emailSentFilter,
-        documentFilter,
         dateRangeStart,
         dateRangeEnd
       });
@@ -300,13 +347,18 @@ router.get('/',
         return res.status(500).json({ error: 'Failed to get total count of timesheets' });
       }
 
-      // Get filtered count
+      // Get filtered count - using same optimized query with conditional INNER JOIN
       let filteredCountQuery = supabase
         .from('timesheets')
         .select(`
-          *,
-          jobseeker_profiles!inner(id, first_name, last_name, email),
-          positions(id, position_code, title, client)
+          id,
+          invoice_number,
+          week_start_date,
+          week_end_date,
+          total_jobseeker_pay,
+          email_sent,
+          jobseeker_profiles!inner(first_name, last_name, email),
+          positions!inner(title, position_code, client_name)
         `, { count: 'exact', head: true });
 
       if (userType === 'jobseeker') {
@@ -317,10 +369,9 @@ router.get('/',
         searchTerm,
         jobseekerFilter,
         positionFilter,
-        weekStartFilter,
-        weekEndFilter,
+        clientFilter,
+        invoiceNumberFilter,
         emailSentFilter,
-        documentFilter,
         dateRangeStart,
         dateRangeEnd
       });
@@ -359,17 +410,7 @@ router.get('/',
 
       // Transform timesheets to frontend format
       const formattedTimesheets = timesheets.map(timesheet => {
-        const formatted = transformToFrontendFormat(timesheet);
-        
-        // Add related data
-        formatted.jobseekerProfile = timesheet.jobseeker_profiles;
-        formatted.position = timesheet.positions;
-        
-        // Clean up the joined data from the main object
-        delete formatted.jobseekerProfiles;
-        delete formatted.positions;
-        
-        return formatted;
+        return transformOptimizedToFrontendFormat(timesheet as any);
       });
 
       // Calculate pagination metadata
@@ -404,10 +445,9 @@ function applyTimesheetFilters(query: any, filters: {
   searchTerm?: string;
   jobseekerFilter?: string;
   positionFilter?: string;
-  weekStartFilter?: string;
-  weekEndFilter?: string;
+  clientFilter?: string;
+  invoiceNumberFilter?: string;
   emailSentFilter?: string;
-  documentFilter?: string;
   dateRangeStart?: string;
   dateRangeEnd?: string;
 }) {
@@ -415,10 +455,9 @@ function applyTimesheetFilters(query: any, filters: {
     searchTerm,
     jobseekerFilter,
     positionFilter,
-    weekStartFilter,
-    weekEndFilter,
+    clientFilter,
+    invoiceNumberFilter,
     emailSentFilter,
-    documentFilter,
     dateRangeStart,
     dateRangeEnd
   } = filters;
@@ -426,33 +465,37 @@ function applyTimesheetFilters(query: any, filters: {
   // Global search across multiple fields
   if (searchTerm && searchTerm.trim().length > 0) {
     const searchTermTrimmed = searchTerm.trim();
-    query = query.or(`jobseeker_profiles.name.ilike.%${searchTermTrimmed}%,jobseeker_profiles.email.ilike.%${searchTermTrimmed}%,positions.position_code.ilike.%${searchTermTrimmed}%,positions.title.ilike.%${searchTermTrimmed}%,positions.client_name.ilike.%${searchTermTrimmed}%`);
+    // query = query.ilike('jobseeker_profiles.first_name', `%${searchTermTrimmed}%`);
+    // query = query.ilike('jobseeker_profiles.last_name', `%${searchTermTrimmed}%`);
+    // query = query.ilike('jobseeker_profiles.email', `%${searchTermTrimmed}%`);
+   query = query.ilike('invoice_number', `%${searchTermTrimmed}%`);
+    query = query.ilike('positions.position_code', `%${searchTermTrimmed}%`);
+    query = query.ilike('positions.title', `%${searchTermTrimmed}%`);
+    query = query.ilike('positions.client_name', `%${searchTermTrimmed}%`);
   }
 
   // Individual column filters
   if (jobseekerFilter && jobseekerFilter.trim().length > 0) {
-    query = query.or(`jobseeker_profiles.name.ilike.%${jobseekerFilter.trim()}%,jobseeker_profiles.email.ilike.%${jobseekerFilter.trim()}%`);
+    query = query.ilike('jobseeker_profiles.first_name', `%${jobseekerFilter.trim()}%`);
+    // query = query.ilike('jobseeker_profiles.last_name', `%${jobseekerFilter.trim()}%`);
+    // query = query.ilike('jobseeker_profiles.email', `%${jobseekerFilter.trim()}%`);
   }
 
   if (positionFilter && positionFilter.trim().length > 0) {
-    query = query.or(`positions.position_code.ilike.%${positionFilter.trim()}%,positions.title.ilike.%${positionFilter.trim()}%`);
+    query = query.ilike('positions.title', `%${positionFilter.trim()}%`);
   }
 
-  if (weekStartFilter && weekStartFilter.trim().length > 0) {
-    query = query.eq('week_start_date', weekStartFilter.trim());
+  if (clientFilter && clientFilter.trim().length > 0) {
+    query = query.ilike('positions.client_name', `%${clientFilter.trim()}%`);
   }
 
-  if (weekEndFilter && weekEndFilter.trim().length > 0) {
-    query = query.eq('week_end_date', weekEndFilter.trim());
+  if (invoiceNumberFilter && invoiceNumberFilter.trim().length > 0) {
+    query = query.ilike('invoice_number', `%${invoiceNumberFilter.trim()}%`);
   }
 
   if (emailSentFilter && emailSentFilter.trim().length > 0) {
     const emailSentBool = emailSentFilter.toLowerCase() === 'true';
     query = query.eq('email_sent', emailSentBool);
-  }
-
-  if (documentFilter && documentFilter.trim().length > 0) {
-    query = query.eq('document', documentFilter.trim());
   }
 
   // Date range filters
@@ -468,6 +511,164 @@ function applyTimesheetFilters(query: any, filters: {
 }
 
 /**
+ * Send email for a timesheet
+ * POST /api/timesheets/send-email/:id
+ * @access Private (Admin, Recruiter, Jobseeker - own timesheets only)
+ */
+router.post(
+  "/send-email/:id",
+  authenticateToken,
+  authorizeRoles(["admin", "recruiter", "jobseeker"]),
+  // apiRateLimiter,
+  activityLogger({
+    onSuccess: (req, res) => {
+      const { id } = req.params;
+      const result = res.locals.timesheetSendResult || res.locals.timesheet || {};
+      return {
+        actionType: "send_bulk_timesheet_email",
+        actionVerb: "sent email",
+        primaryEntityType: "timesheet",
+        primaryEntityId: id,
+        primaryEntityName: result.invoiceNumber || result.invoice_number || id,
+        displayMessage: `Sent timesheet email for invoice ${result.invoiceNumber || result.invoice_number || id} to ${result.jobseekerName || 'jobseeker'}`,
+        category: "financial",
+        priority: "normal",
+        metadata: {
+          invoiceNumber: result.invoiceNumber || result.invoice_number,
+          jobseekerName: result.jobseekerName,
+          emailSent: result.emailSent,
+        },
+      };
+    },
+  }),
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Fetch timesheet with jobseeker profile and position details
+      const { data: timesheet } = await supabase
+        .from("timesheets")
+        .select(`
+          *,
+          jobseeker_profiles!inner(
+            first_name,
+            last_name,
+            email
+          ),
+          positions!inner(
+            title,
+            client_name,
+            city,
+            province
+          )
+        `)
+        .eq("id", id)
+        .maybeSingle();
+
+      if (!timesheet) {
+        return res.status(404).json({ error: "Timesheet not found" });
+      }
+
+      const jobseekerProfile = timesheet.jobseeker_profiles;
+      const position = timesheet.positions;
+
+      if (!jobseekerProfile?.email) {
+        return res.status(400).json({ error: "Jobseeker email not found" });
+      }
+
+      // Check if user has permission to send this timesheet email
+      if (req.user?.user_metadata?.user_type === 'jobseeker' && 
+          req.user?.id !== timesheet.jobseeker_user_id) {
+        return res.status(403).json({ error: "Access denied: You can only send emails for your own timesheets" });
+      }
+
+      // Prepare template variables
+      const templateVars = {
+        invoice_number: timesheet.invoice_number,
+        jobseeker_name: `${jobseekerProfile.first_name} ${jobseekerProfile.last_name}`,
+        jobseeker_email: jobseekerProfile.email,
+        position_title: position?.title || 'Unknown Position',
+        week_start_date: timesheet.week_start_date,
+        week_end_date: timesheet.week_end_date,
+        daily_hours: timesheet.daily_hours || [],
+        total_regular_hours: timesheet.total_regular_hours,
+        total_overtime_hours: timesheet.total_overtime_hours,
+        regular_pay_rate: timesheet.regular_pay_rate,
+        overtime_pay_rate: timesheet.overtime_pay_rate,
+        total_jobseeker_pay: timesheet.total_jobseeker_pay,
+        overtime_enabled: timesheet.overtime_enabled || timesheet.total_overtime_hours > 0,
+        bonus_amount: timesheet.bonus_amount,
+        deduction_amount: timesheet.deduction_amount,
+        generated_date: new Date().toLocaleDateString(),
+      };
+
+      // Generate email content
+      const html = timesheetHtmlTemplate(templateVars);
+      const text = timesheetTextTemplate(templateVars);
+      const [subjectLine, ...bodyLines] = text.split('\n');
+      const subject = subjectLine.replace('Subject:', '').trim();
+
+      let emailSent = false;
+      let errorMsg = '';
+
+      try {
+        // Send email
+        await sgMail.send({
+          to: jobseekerProfile.email,
+          from: process.env.DEFAULT_FROM_EMAIL || 'godspeed@aimotion.com',
+          subject,
+          text: bodyLines.join('\n').trim(),
+          html,
+        });
+        emailSent = true;
+      } catch (err) {
+        if (err instanceof Error) {
+          errorMsg = err.message;
+        } else if (typeof err === 'string') {
+          errorMsg = err;
+        } else {
+          errorMsg = JSON.stringify(err);
+        }
+      }
+
+      // Update timesheet email_sent status if email was successful
+      if (emailSent) {
+        await supabase
+          .from("timesheets")
+          .update({ email_sent: true })
+          .eq("id", id);
+      }
+
+      // Store result for activity logger
+      res.locals.timesheetSendResult = {
+        invoiceNumber: timesheet.invoice_number,
+        jobseekerName: `${jobseekerProfile.first_name} ${jobseekerProfile.last_name}`,
+        emailSent,
+        error: errorMsg,
+      };
+
+      if (emailSent) {
+        return res.status(200).json({
+          success: true,
+          message: `Email sent successfully to ${jobseekerProfile.email}`,
+          email_sent: true,
+        });
+      } else {
+        return res.status(500).json({
+          success: false,
+          message: `Failed to send email: ${errorMsg}`,
+          email_sent: false,
+          error: errorMsg,
+        });
+      }
+    } catch (error) {
+      console.error("Error sending email for timesheet:", error);
+      return res.status(500).json({ error: "Failed to send email for timesheet" });
+    }
+  }
+);
+
+/**
  * Get timesheet by ID
  * GET /api/timesheets/:id
  * @access Private (Admin, Recruiter, Jobseeker - own timesheets only)
@@ -475,7 +676,7 @@ function applyTimesheetFilters(query: any, filters: {
 router.get('/:id', 
   authenticateToken, 
   authorizeRoles(['admin', 'recruiter', 'jobseeker']),
-  apiRateLimiter,
+  // apiRateLimiter,
   async (req: Request, res: Response) => {
     try {
       if (!req.user || !req.user.id) {
@@ -695,6 +896,27 @@ router.post('/',
         return res.status(403).json({ error: 'You can only create timesheets for yourself' });
       }
 
+      // Check for duplicate timesheet (same jobseeker, position and week)
+      const { data: duplicateTimesheet, error: duplicateCheckError } = await supabase
+        .from('timesheets')
+        .select('id')
+        .eq('jobseeker_profile_id', timesheetData.jobseekerProfileId)
+        .eq('position_id', timesheetData.positionId)
+        .eq('week_start_date', timesheetData.weekStartDate)
+        .maybeSingle();
+
+      if (duplicateCheckError) {
+        console.error('Error checking for duplicate timesheet:', duplicateCheckError);
+        return res.status(500).json({ error: 'Failed to validate timesheet uniqueness' });
+      }
+
+      if (duplicateTimesheet) {
+        return res.status(409).json({ 
+          error: 'A timesheet for this jobseeker, position and week already exists',
+          field: 'positionId'
+        });
+      }
+
       // Prepare timesheet data for database
       const dbTimesheetData: Omit<DbTimesheetData, 'id' | 'created_at' | 'updated_at'> = {
         ...transformToDbFormat(timesheetData),
@@ -713,7 +935,12 @@ router.post('/',
 
       if (insertError) {
         console.error('Error creating timesheet:', insertError);
-        return res.status(500).json({ error: 'Failed to create timesheet' });
+        console.error('Attempted to insert data:', dbTimesheetData);
+        return res.status(500).json({ 
+          error: 'Failed to create timesheet', 
+          details: insertError.message,
+          code: insertError.code 
+        });
       }
 
       // Store for activity logging
@@ -1121,7 +1348,7 @@ router.delete('/:id',
 router.get('/jobseeker/:jobseekerUserId', 
   authenticateToken, 
   authorizeRoles(['admin', 'recruiter', 'jobseeker']),
-  apiRateLimiter,
+  // apiRateLimiter,
   async (req: Request, res: Response) => {
     try {
       if (!req.user || !req.user.id) {
@@ -1140,13 +1367,13 @@ router.get('/jobseeker/:jobseekerUserId',
       const { 
         page = '1', 
         limit = '10',
-        weekStartFilter = '',
-        weekEndFilter = ''
+        dateRangeStart = '',
+        dateRangeEnd = ''
       } = req.query as {
         page?: string;
         limit?: string;
-        weekStartFilter?: string;
-        weekEndFilter?: string;
+        dateRangeStart?: string;
+        dateRangeEnd?: string;
       };
 
       const pageNum = parseInt(page);
@@ -1164,11 +1391,11 @@ router.get('/jobseeker/:jobseekerUserId',
         .eq('jobseeker_user_id', jobseekerUserId);
 
       // Apply date filters if provided
-      if (weekStartFilter) {
-        query = query.gte('week_start_date', weekStartFilter);
+      if (dateRangeStart) {
+        query = query.gte('week_start_date', dateRangeStart);
       }
-      if (weekEndFilter) {
-        query = query.lte('week_end_date', weekEndFilter);
+      if (dateRangeEnd) {
+        query = query.lte('week_end_date', dateRangeEnd);
       }
 
       // Get count
@@ -1177,11 +1404,11 @@ router.get('/jobseeker/:jobseekerUserId',
         .select('*', { count: 'exact', head: true })
         .eq('jobseeker_user_id', jobseekerUserId);
 
-      if (weekStartFilter) {
-        countQuery = countQuery.gte('week_start_date', weekStartFilter);
+      if (dateRangeStart) {
+        countQuery = countQuery.gte('week_start_date', dateRangeStart);
       }
-      if (weekEndFilter) {
-        countQuery = countQuery.lte('week_end_date', weekEndFilter);
+      if (dateRangeEnd) {
+        countQuery = countQuery.lte('week_end_date', dateRangeEnd);
       }
 
       const { count, error: countError } = await countQuery;
@@ -1307,6 +1534,7 @@ router.patch('/:id/document',
   }
 );
 
+
 /**
  * Create version history entry
  */
@@ -1334,3 +1562,4 @@ function addVersionToHistory(existingHistory: VersionHistoryEntry[], userId: str
 }
 
 export default router; 
+

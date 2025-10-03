@@ -101,7 +101,7 @@ function convertObjectToCamelCase(obj: any): any {
 router.get('/', 
   authenticateToken, 
   authorizeRoles(['admin', 'recruiter']),
-  apiRateLimiter,
+  // apiRateLimiter,
   async (req: Request, res: Response) => {
     try {
       // Extract pagination and filter parameters from query
@@ -316,7 +316,7 @@ function applyClientFilters(query: any, filters: {
 router.get('/drafts', 
   authenticateToken, 
   authorizeRoles(['admin', 'recruiter']),
-  apiRateLimiter,
+  // apiRateLimiter,
   async (req: Request, res: Response) => {
     try {
       // Extract pagination and filter parameters from query
@@ -548,7 +548,7 @@ router.get('/drafts',
 router.get('/:id', 
   authenticateToken, 
   authorizeRoles(['admin', 'recruiter']),
-  apiRateLimiter,
+  // apiRateLimiter,
   async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
@@ -1053,7 +1053,7 @@ router.put('/draft/:id?',
 router.get('/draft', 
   authenticateToken, 
   authorizeRoles(['admin', 'recruiter']),
-  apiRateLimiter,
+  // apiRateLimiter,
   async (req: Request, res: Response) => {
     try {
       if (!req.user || !req.user.id) {
@@ -1254,7 +1254,7 @@ router.post('/draft',
 router.get('/draft/:id', 
   authenticateToken, 
   authorizeRoles(['admin', 'recruiter']),
-  apiRateLimiter,
+  // apiRateLimiter,
   async (req: Request, res: Response) => {
     try {
       if (!req.user || !req.user.id) {
