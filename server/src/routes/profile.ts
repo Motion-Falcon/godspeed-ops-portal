@@ -361,7 +361,7 @@ router.post('/submit',
  */
 router.get('/', 
   authenticateToken,
-  apiRateLimiter,
+  // apiRateLimiter,
   async (req: Request, res: Response) => {
     try {
       if (!req.user || !req.user.id) {
@@ -423,7 +423,7 @@ router.get('/',
 router.put('/draft', 
   authenticateToken,
   sanitizeInputs,
-  apiRateLimiter,
+  // apiRateLimiter,
   async (req: Request, res: Response) => {
     try {
       if (!req.user || !req.user.id) {

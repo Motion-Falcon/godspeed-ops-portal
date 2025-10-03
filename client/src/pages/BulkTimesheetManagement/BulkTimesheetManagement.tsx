@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
 import { AppHeader } from "../../components/AppHeader";
 import { CustomDropdown, DropdownOption } from "../../components/CustomDropdown";
 import { useLanguage } from "../../contexts/language/language-provider";
@@ -7,7 +6,7 @@ import { getClients, ClientData } from "../../services/api/client";
 import { getClientPositions, PositionData } from "../../services/api/position";
 import { getPositionAssignments, AssignmentRecord } from "../../services/api/position";
 import { generateWeekOptions, formatDate } from "../../utils/weekUtils";
-import { generateInvoiceNumber, createBulkTimesheetFromFrontendData, getBulkTimesheet, updateBulkTimesheet } from "../../services/api/bulkTimesheet";
+import { generateInvoiceNumber, createTimesheet, TimesheetData } from "../../services/api/timesheet";
 import { Building, Minus } from "lucide-react";
 import "../../styles/pages/BulkTimesheetManagement.css";
 import { PositionWithOvertime } from "../TimesheetManagement/TimesheetManagement";
@@ -47,8 +46,7 @@ export function BulkTimesheetManagement() {
   const [weekOptions, setWeekOptions] = useState<Array<{ value: string; label: string }>>([]);
   const [selectedWeekStart, setSelectedWeekStart] = useState<string>("");
 
-  // State for invoice number
-  const [invoiceNumber, setInvoiceNumber] = useState<string>("");
+  // Note: Individual invoice numbers are generated during timesheet creation
 
   // State for assigned jobseekers
   const [assignedJobseekers, setAssignedJobseekers] = useState<AssignmentRecord[]>([]);
@@ -61,39 +59,27 @@ export function BulkTimesheetManagement() {
   const [isGeneratingBulkTimesheet, setIsGeneratingBulkTimesheet] = useState(false);
   const [generationMessage, setGenerationMessage] = useState<string>("");
   const [generationError, setGenerationError] = useState<string>("");
+  const [currentInvoiceNumber, setCurrentInvoiceNumber] = useState<string>("");
 
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  // Individual invoice numbers are generated during bulk timesheet creation
+
+  // Function to reset form state after successful completion
+  const resetFormState = () => {
+    setSelectedClient(null);
+    setSelectedPosition(null);
+    setSelectedWeekStart("");
+    setAssignedJobseekers([]);
+    setJobseekerTimesheets([]);
+    setSendEmail(false);
+    setGenerationMessage("");
+    setGenerationError("");
+    setCurrentInvoiceNumber("");
+  };
 
   useEffect(() => {
     fetchClients();
     setWeekOptions(generateWeekOptions());
   }, []);
-
-  // On mount, check for ?id=... and fetch if present
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const id = params.get("id");
-    if (id) {
-      // Reset all relevant state before populating for edit mode
-      setIsEditMode(true);
-      setEditingId(id);
-      setSelectedClient(null);
-      setPositions([]);
-      setSelectedPosition(null);
-      setAssignedJobseekers([]);
-      setJobseekerTimesheets([]);
-      setSelectedWeekStart("");
-      setInvoiceNumber("");
-      setSendEmail(false);
-      setIsGeneratingBulkTimesheet(false);
-      setGenerationMessage("");
-      setGenerationError("");
-      fetchAndPopulateBulkTimesheet(id);
-    }
-  }, [location.search]);
 
   useEffect(() => {
     if (selectedClient) {
@@ -105,7 +91,6 @@ export function BulkTimesheetManagement() {
   }, [selectedClient]);
 
   useEffect(() => {
-    if (isEditMode) return; // Prevent overwrite in edit mode
     if (assignedJobseekers.length && selectedWeekStart && selectedPosition) {
       // Initialize timesheet for each jobseeker
       const weekDates = generateWeekDates(selectedWeekStart);
@@ -125,7 +110,7 @@ export function BulkTimesheetManagement() {
     } else {
       setJobseekerTimesheets([]);
     }
-  }, [assignedJobseekers, selectedWeekStart, selectedPosition, isEditMode]);
+  }, [assignedJobseekers, selectedWeekStart, selectedPosition]);
 
   useEffect(() => {
     if (selectedPosition && selectedPosition.id) {
@@ -133,12 +118,7 @@ export function BulkTimesheetManagement() {
     }
   }, [selectedPosition]);
 
-  // Generate invoice number when client and position are selected
-  useEffect(() => {
-    if (!isEditMode && selectedClient && selectedPosition) {
-      generateAndSetInvoiceNumber();
-    }
-  }, [selectedClient, selectedPosition]);
+  // Note: Invoice numbers are generated individually for each timesheet during creation
 
   // Sync global sendEmail state with individual jobseeker emailSent states
   useEffect(() => {
@@ -182,17 +162,6 @@ export function BulkTimesheetManagement() {
       setAssignedJobseekers(response.assignments || []);
     } catch (e) {
       setAssignedJobseekers([]);
-    }
-  };
-
-  // Generate invoice number
-  const generateAndSetInvoiceNumber = async () => {
-    try {
-      const newInvoiceNumber = await generateInvoiceNumber();
-      setInvoiceNumber(newInvoiceNumber);
-    } catch (error) {
-      console.error("Failed to generate invoice number:", error);
-      setInvoiceNumber(t('bulkTimesheetManagement.constants.tbd'));
     }
   };
 
@@ -457,199 +426,199 @@ export function BulkTimesheetManagement() {
     setGenerationError("");
 
     try {
-      console.log("Starting bulk timesheet creation...");
-
-      // Calculate additional grand totals using only jobseekers with hours
-      const grandTotalBill = jobseekersWithHours.reduce((sum, ts) => sum + ts.clientBill, 0);
-      const grandTotalBonus = jobseekersWithHours.reduce((sum, ts) => sum + ts.bonusAmount, 0);
-      const grandTotalDeduction = jobseekersWithHours.reduce((sum, ts) => sum + ts.deductionAmount, 0);
-      const grandTotalHours = jobseekersWithHours.reduce((sum, ts) => sum + ts.totalRegularHours + ts.totalOvertimeHours, 0);
+      console.log("Starting bulk timesheet creation using individual timesheet API...");
       
-      // Calculate overtime pay specifically
       const position = selectedPosition as PositionWithOvertime;
-      let overtimePayRate = parseFloat(position.regularPayRate || "0");
-      if (position.overtimeEnabled && position.overtimePayRate) {
-        overtimePayRate = parseFloat(position.overtimePayRate);
-      }
-      const grandTotalOvertimePay = jobseekersWithHours.reduce((sum, ts) => sum + ts.totalOvertimeHours, 0) * overtimePayRate;
-
-      // Calculate week end date
       const weekEndDate = new Date(selectedWeekStart);
       weekEndDate.setDate(weekEndDate.getDate() + 6);
+      
+      const createdTimesheets: TimesheetData[] = [];
+      const failedTimesheets: Array<{ jobseeker: string; error: string }> = [];
 
-      // Create flattened bulk timesheet object for API submission
-      const bulkTimesheetData = {
-        clientId: selectedClient.id!,
-        positionId: selectedPosition.id!,
-        invoiceNumber: invoiceNumber,
-        weekStartDate: selectedWeekStart,
-        weekEndDate: weekEndDate.toISOString().split("T")[0],
-        weekPeriod: `${formatDate(selectedWeekStart)} - ${formatDate(weekEndDate.toISOString().split("T")[0])}`,
-        emailSent: sendEmail,
-        totalHours: grandTotalHours,
-        totalRegularHours: jobseekersWithHours.reduce((sum, ts) => sum + ts.totalRegularHours, 0),
-        totalOvertimeHours: jobseekersWithHours.reduce((sum, ts) => sum + ts.totalOvertimeHours, 0),
-        totalOvertimePay: grandTotalOvertimePay,
-        totalJobseekerPay: jobseekersWithHours.reduce((sum, ts) => sum + ts.jobseekerPay, 0),
-        totalClientBill: grandTotalBill,
-        totalBonus: grandTotalBonus,
-        totalDeductions: grandTotalDeduction,
-        netPay: jobseekersWithHours.reduce((sum, ts) => sum + ts.jobseekerPay, 0), // This already includes bonus and deductions
-        numberOfJobseekers: jobseekersWithHours.length,
-        averageHoursPerJobseeker: grandTotalHours / jobseekersWithHours.length,
-        averagePayPerJobseeker: jobseekersWithHours.reduce((sum, ts) => sum + ts.jobseekerPay, 0) / jobseekersWithHours.length,
-        jobseekerTimesheets: jobseekersWithHours.map(ts => ({
-          jobseeker: {
-            id: ts.jobseeker.id,
-            jobseekerProfile: {
-              first_name: ts.jobseeker.jobseekerProfile?.first_name || '',
-              last_name: ts.jobseeker.jobseekerProfile?.last_name || '',
-              email: ts.jobseeker.jobseekerProfile?.email || '',
-            },
-            assignmentId: ts.jobseeker.id,
-          },
-          entries: ts.entries,
-          bonusAmount: ts.bonusAmount,
-          deductionAmount: ts.deductionAmount,
-          totalRegularHours: ts.totalRegularHours,
-          totalOvertimeHours: ts.totalOvertimeHours,
-          jobseekerPay: ts.jobseekerPay,
-          clientBill: ts.clientBill,
-          emailSent: ts.emailSent, // Include emailSent in the bulk timesheet data
-        })),
-      };
+      // Process each jobseeker sequentially
+      for (let i = 0; i < jobseekersWithHours.length; i++) {
+        const ts = jobseekersWithHours[i];
+        const jobseekerName = `${ts.jobseeker.jobseekerProfile?.first_name || ''} ${ts.jobseeker.jobseekerProfile?.last_name || ''}`.trim();
+        
+        try {
+          // Update status message to show progress
+          setGenerationMessage(t('bulkTimesheetManagement.messages.processing', {
+            current: i + 1,
+            total: jobseekersWithHours.length,
+            jobseekerName: jobseekerName || 'Unknown'
+          }));
 
-      // Submit to API
-      const result = await createBulkTimesheetFromFrontendData(bulkTimesheetData);
-      
-      console.log("Bulk timesheet created successfully:", result);
-      
-      // Show success message with details
-      setGenerationMessage(t('bulkTimesheetManagement.messages.bulkTimesheetCreated', {
-        invoiceNumber: result.bulkTimesheet.invoiceNumber,
-        jobseekerCount: jobseekersWithHours.length,
-        totalHours: grandTotalHours.toFixed(1),
-        totalPay: jobseekersWithHours.reduce((sum, ts) => sum + ts.jobseekerPay, 0).toFixed(2),
-        emailStatus: sendEmail ? t('bulkTimesheetManagement.messages.emailWillBeSent') : t('bulkTimesheetManagement.messages.emailWillNotBeSent')
-      }));
-      
-      // Redirect to list page after successful creation
-      if (result && result.success) {
+          // Generate unique invoice number for each timesheet
+          const individualInvoiceNumber = await generateInvoiceNumber();
+          setCurrentInvoiceNumber(individualInvoiceNumber);
+
+          // Transform daily hours to the format expected by createTimesheet
+          const dailyHours = ts.entries.map(entry => ({
+            date: entry.date,
+            hours: entry.hours
+          }));
+
+          // Transform data to the format expected by createTimesheet API, ensuring all payments include bonuses/deductions
+          const timesheetData: Omit<TimesheetData, 'id' | 'createdAt' | 'updatedAt' | 'createdByUserId' | 'updatedByUserId'> = {
+            invoiceNumber: individualInvoiceNumber,
+            jobseekerProfileId: ts.jobseeker.jobseekerProfile?.id || ts.jobseeker.id,
+            jobseekerUserId: ts.jobseeker.candidate_id,
+            positionId: selectedPosition.id,
+            weekStartDate: selectedWeekStart,
+            weekEndDate: weekEndDate.toISOString().split("T")[0],
+            dailyHours: dailyHours,
+            totalRegularHours: ts.totalRegularHours,
+            totalOvertimeHours: ts.totalOvertimeHours,
+            regularPayRate: parseFloat(position.regularPayRate || "0"),
+            overtimePayRate: position.overtimeEnabled && position.overtimePayRate ? 
+              parseFloat(position.overtimePayRate) : parseFloat(position.regularPayRate || "0"),
+            regularBillRate: parseFloat(position.billRate || "0"),
+            overtimeBillRate: position.overtimeEnabled && position.overtimeBillRate ? 
+              parseFloat(position.overtimeBillRate) : parseFloat(position.billRate || "0"),
+            totalJobseekerPay: ts.jobseekerPay, // This already includes bonus and deductions
+            totalClientBill: ts.clientBill,
+            overtimeEnabled: position.overtimeEnabled || false,
+            bonusAmount: ts.bonusAmount || 0,
+            deductionAmount: ts.deductionAmount || 0,
+            emailSent: ts.emailSent
+          };
+
+          // Create individual timesheet
+          const result = await createTimesheet(timesheetData);
+          createdTimesheets.push(result.timesheet);
+          
+          console.log(`Created timesheet ${i + 1}/${jobseekersWithHours.length} for ${jobseekerName}:`, result);
+
+        } catch (error) {
+          let errorMessage = 'Unknown error';
+          
+          // Handle different types of errors
+          if (error instanceof Error) {
+            errorMessage = error.message;
+          } else if (typeof error === 'object' && error !== null && 'error' in error) {
+            errorMessage = (error as { error: string }).error;
+          }
+          
+          failedTimesheets.push({ 
+            jobseeker: jobseekerName || 'Unknown', 
+            error: errorMessage 
+          });
+          console.error(`Failed to create timesheet for ${jobseekerName}:`, error);
+          
+          // If it's a duplicate error, show immediate feedback
+          if (errorMessage.includes('already exists') || errorMessage.includes('duplicate')) {
+            setGenerationMessage(t('bulkTimesheetManagement.messages.duplicateDetected', {
+              jobseekerName: jobseekerName
+            }));
+            
+            // Clear duplicate message after a delay
+            setTimeout(() => {
+              setGenerationMessage("");
+            }, 5000);
+          }
+        }
+      }
+
+      // Show results
+      if (createdTimesheets.length > 0) {
+        const grandTotalHours = jobseekersWithHours.reduce((sum, ts) => sum + ts.totalRegularHours + ts.totalOvertimeHours, 0);
+        const grandTotalPay = jobseekersWithHours.reduce((sum, ts) => sum + ts.jobseekerPay, 0);
+        
+        if (failedTimesheets.length === 0) {
+          // All timesheets created successfully
+          setGenerationMessage(t('bulkTimesheetManagement.messages.allTimesheetsCreated', {
+            count: createdTimesheets.length,
+            totalHours: grandTotalHours.toFixed(1),
+            totalPay: grandTotalPay.toFixed(2)
+          }));
+        } else {
+          // Some timesheets failed
+          setGenerationMessage(t('bulkTimesheetManagement.messages.partialTimesheetsCreated', {
+            successful: createdTimesheets.length,
+            total: createdTimesheets.length + failedTimesheets.length,
+            failed: failedTimesheets.length,
+            totalHours: grandTotalHours.toFixed(1),
+            totalPay: grandTotalPay.toFixed(2)
+          }));
+        }
+        
+        // Reset form state after successful creation (with longer delay for user to see message)
         setTimeout(() => {
-          navigate('/bulk-timesheet-management/list');
-        }, 1200);
+          resetFormState();
+        }, 8000);
+      } else {
+        // All timesheets failed
+        const duplicateErrors = failedTimesheets.filter(f => 
+          f.error.includes('already exists') || f.error.includes('duplicate')
+        );
+        
+        if (duplicateErrors.length === failedTimesheets.length) {
+          // All failures were due to duplicates
+          setGenerationError(t('bulkTimesheetManagement.messages.allTimesheetsExist'));
+        } else {
+          // Mixed or other errors
+          setGenerationError(t('bulkTimesheetManagement.messages.allTimesheetsFailed', {
+            failureDetails: failedTimesheets.map(f => `${f.jobseeker}: ${f.error}`).join('; ')
+          }));
+        }
+        
+        // Clear any success message when showing error
+        setGenerationMessage("");
+        
+        // Clear error message after longer delay
+        setTimeout(() => {
+          setGenerationError("");
+        }, 10000);
       }
-      return result;
+
+      return { success: createdTimesheets.length > 0, createdTimesheets, failedTimesheets };
+      
     } catch (error) {
-      console.error("Error creating bulk timesheet:", error);
+      console.error("Error in bulk timesheet generation:", error);
       setGenerationError(`${t('bulkTimesheetManagement.messages.failedToCreate')} ${error instanceof Error ? error.message : 'Unknown error'}`);
-    } finally {
-      setIsGeneratingBulkTimesheet(false);
-    }
-  };
-
-  // Add update handler for edit mode
-  const updateBulkTimesheetData = async () => {
-    if (!editingId || !selectedClient || !selectedPosition || !selectedWeekStart || jobseekerTimesheets.length === 0) {
-      setGenerationError(t('bulkTimesheetManagement.messages.cannotUpdate'));
-      return;
-    }
-    // Build update payload (similar to create)
-    const jobseekersWithHours = jobseekerTimesheets.filter(ts => (ts.totalRegularHours + ts.totalOvertimeHours) > 0);
-    if (jobseekersWithHours.length === 0) {
-      setGenerationError(t('bulkTimesheetManagement.messages.noJobseekersWithHoursUpdate'));
-      return;
-    }
-    setIsGeneratingBulkTimesheet(true);
-    setGenerationMessage("");
-    setGenerationError("");
-    try {
-      const weekEndDate = new Date(selectedWeekStart);
-      weekEndDate.setDate(weekEndDate.getDate() + 6);
-      const bulkTimesheetData = {
-        clientId: selectedClient.id!,
-        positionId: selectedPosition.id!,
-        invoiceNumber: invoiceNumber,
-        weekStartDate: selectedWeekStart,
-        weekEndDate: weekEndDate.toISOString().split("T")[0],
-        weekPeriod: `${formatDate(selectedWeekStart)} - ${formatDate(weekEndDate.toISOString().split("T")[0])}`,
-        totalHours: jobseekersWithHours.reduce((sum, ts) => sum + ts.totalRegularHours + ts.totalOvertimeHours, 0),
-        totalRegularHours: jobseekersWithHours.reduce((sum, ts) => sum + ts.totalRegularHours, 0),
-        totalOvertimeHours: jobseekersWithHours.reduce((sum, ts) => sum + ts.totalOvertimeHours, 0),
-        totalOvertimePay: jobseekersWithHours.reduce((sum, ts) => sum + ts.totalOvertimeHours, 0) * parseFloat((selectedPosition as PositionWithOvertime).overtimePayRate || "0"),
-        totalJobseekerPay: jobseekersWithHours.reduce((sum, ts) => sum + ts.jobseekerPay, 0),
-        totalClientBill: jobseekersWithHours.reduce((sum, ts) => sum + ts.clientBill, 0),
-        totalBonus: jobseekersWithHours.reduce((sum, ts) => sum + ts.bonusAmount, 0),
-        totalDeductions: jobseekersWithHours.reduce((sum, ts) => sum + ts.deductionAmount, 0),
-        netPay: jobseekersWithHours.reduce((sum, ts) => sum + ts.jobseekerPay, 0),
-        numberOfJobseekers: jobseekersWithHours.length,
-        averageHoursPerJobseeker: jobseekersWithHours.reduce((sum, ts) => sum + ts.totalRegularHours + ts.totalOvertimeHours, 0) / jobseekersWithHours.length,
-        averagePayPerJobseeker: jobseekersWithHours.reduce((sum, ts) => sum + ts.jobseekerPay, 0) / jobseekersWithHours.length,
-        jobseekerTimesheets: jobseekersWithHours.map(ts => ({
-          jobseeker: {
-            id: ts.jobseeker.id,
-            jobseekerProfile: {
-              first_name: ts.jobseeker.jobseekerProfile?.first_name || '',
-              last_name: ts.jobseeker.jobseekerProfile?.last_name || '',
-              email: ts.jobseeker.jobseekerProfile?.email || '',
-            },
-            assignmentId: ts.jobseeker.id,
-          },
-          entries: ts.entries,
-          bonusAmount: ts.bonusAmount,
-          deductionAmount: ts.deductionAmount,
-          totalRegularHours: ts.totalRegularHours,
-          totalOvertimeHours: ts.totalOvertimeHours,
-          jobseekerPay: ts.jobseekerPay,
-          clientBill: ts.clientBill,
-          emailSent: ts.emailSent,
-        })),
-      };
-      const result = await updateBulkTimesheet(editingId, bulkTimesheetData);
-      setGenerationMessage(t('bulkTimesheetManagement.messages.bulkTimesheetUpdated'));
+      setGenerationMessage(""); // Clear any success message when showing error
+      
+      // Clear error message after longer delay
       setTimeout(() => {
-        navigate('/bulk-timesheet-management/list');
-      }, 1200);
-      return result;
-    } catch (error) {
-      setGenerationError(`${t('bulkTimesheetManagement.messages.failedToUpdate')} ${error instanceof Error ? error.message : 'Unknown error'}`);
+        setGenerationError("");
+      }, 10000);
     } finally {
       setIsGeneratingBulkTimesheet(false);
-    }
-  };
-
-  // Fetch and populate for edit
-  const fetchAndPopulateBulkTimesheet = async (id: string) => {
-    try {
-      const data = await getBulkTimesheet(id);
-      // Set client first
-      if (data.client) setSelectedClient(data.client);
-      // Fetch positions for the client, then set position
-      if (data.client && data.position && data.position.id) {
-        setPositionLoading(true);
-        const posResp = await getClientPositions(data.client.id, { limit: 1000000 });
-        setPositions(posResp.positions);
-        let selectedPos: PositionData | null = null;
-        selectedPos = posResp.positions.find((p: PositionData) => p.id === data.position?.id) || null;
-        setSelectedPosition(selectedPos);
-        setPositionLoading(false);
-      } else if (data.position && data.position.id) {
-        setSelectedPosition(data.position);
-      }
-      if (data.weekStartDate) setSelectedWeekStart(data.weekStartDate);
-      if (data.invoiceNumber) setInvoiceNumber(data.invoiceNumber);
-      if (data.jobseekerTimesheets) setJobseekerTimesheets((data.jobseekerTimesheets as unknown) as JobseekerTimesheet[]);
-    } catch (err) {
-      setGenerationError(t('bulkTimesheetManagement.messages.failedToLoad'));
+      setCurrentInvoiceNumber(""); // Clear current invoice number when done
     }
   };
 
   return (
     <div className="bulk-timesheet-page-container timesheet-page-container">
+      {/* Full-screen loader overlay */}
+      {isGeneratingBulkTimesheet && (
+        <div className="bulk-timesheet-loader-overlay">
+          <div className="bulk-timesheet-loader-content">
+            <div className="bulk-timesheet-spinner"></div>
+            <h3 className="bulk-timesheet-loader-title">
+              {t('bulkTimesheetManagement.messages.generating')}
+            </h3>
+            <p className="bulk-timesheet-loader-message">
+              {generationMessage || t('bulkTimesheetManagement.messages.pleaseWait')}
+            </p>
+            <div className="bulk-timesheet-loader-details">
+              <p>{t('bulkTimesheetManagement.messages.processingMultiple')}</p>
+              <p>{t('bulkTimesheetManagement.messages.generatingInvoices')}</p>
+              {currentInvoiceNumber && (
+                <p className="bulk-timesheet-current-invoice">
+                  {t('bulkTimesheetManagement.messages.currentInvoice')}: #{currentInvoiceNumber}
+                </p>
+              )}
+              <p>{t('bulkTimesheetManagement.messages.doNotClose')}</p>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <AppHeader 
         title={t('bulkTimesheetManagement.title')} 
         hideHamburgerMenu={false} 
-        statusMessage={generationMessage || generationError}
+        statusMessage={generationError || (!isGeneratingBulkTimesheet ? generationMessage : "")}
         statusType={
           generationError ? "error" : generationMessage ? "success" : undefined
         }
@@ -751,8 +720,8 @@ export function BulkTimesheetManagement() {
                 <h4 className="timesheet-section-title">{t('bulkTimesheetManagement.form.invoiceAndPeriod')}</h4>
                 <div className="timesheet-section-content">
                   <div className="timesheet-detail-item">
-                    <span className="timesheet-detail-label">{t('bulkTimesheetManagement.form.invoiceNumber')}:</span>
-                    <span className="timesheet-detail-value">#{invoiceNumber || t('bulkTimesheetManagement.constants.tbd')}</span>
+                    <span className="timesheet-detail-label">{t('bulkTimesheetManagement.form.invoiceNumbers')}:</span>
+                    <span className="timesheet-detail-value">{t('bulkTimesheetManagement.form.generatedIndividually')}</span>
                   </div>
                   <div className="timesheet-detail-item">
                     <span className="timesheet-detail-label">{t('bulkTimesheetManagement.form.period')}:</span>
@@ -1161,14 +1130,14 @@ export function BulkTimesheetManagement() {
               </div>
               <button
                 className="button"
-                onClick={isEditMode ? updateBulkTimesheetData : generateBulkTimesheetData}
+                onClick={generateBulkTimesheetData}
                 disabled={
                   jobseekerTimesheets.length === 0 || 
                   isGeneratingBulkTimesheet ||
                   jobseekerTimesheets.every(ts => (ts.totalRegularHours + ts.totalOvertimeHours) === 0)
                 }
               >
-                {isGeneratingBulkTimesheet ? t('bulkTimesheetManagement.buttons.generating') : isEditMode ? t('bulkTimesheetManagement.buttons.updateBulkTimesheet') : t('bulkTimesheetManagement.buttons.generateBulkTimesheet')}
+                {isGeneratingBulkTimesheet ? t('bulkTimesheetManagement.buttons.generating') : t('bulkTimesheetManagement.buttons.generateBulkTimesheet')}
               </button>
             </div>
           </div>

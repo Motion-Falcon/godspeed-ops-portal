@@ -21,6 +21,7 @@ export function CalendarPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
+  const [viewedDate, setViewedDate] = useState<Date>(new Date()); // Track currently viewed month
   
   // Filter state - COMMENTED OUT
   // const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
@@ -41,16 +42,15 @@ export function CalendarPage() {
   // const clientOptions = getUniqueClientsFromEvents(events);
   // const jobseekerOptions = getUniqueJobseekersFromEvents(events);
 
-  // Fetch calendar data
+  // Fetch calendar data for the viewed month
   const fetchCalendarData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       
-      // Get current month range as default (no filter state)
-      const now = new Date();
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      // Get the month range for the currently viewed date
+      const startOfMonth = new Date(viewedDate.getFullYear(), viewedDate.getMonth(), 1);
+      const endOfMonth = new Date(viewedDate.getFullYear(), viewedDate.getMonth() + 1, 0);
       
       const response = await getCalendarEvents({
         startDate: startOfMonth.toISOString().split('T')[0],
@@ -64,7 +64,7 @@ export function CalendarPage() {
     } finally {
       setLoading(false);
     }
-  }, []); // No dependencies since we're not using filters
+  }, [viewedDate]); // Refetch when viewed date changes
 
   // Load data on mount and when filters change
   useEffect(() => {
@@ -79,6 +79,10 @@ export function CalendarPage() {
 
   const handleSelectSlot = useCallback((slotInfo: { start: Date; end: Date; slots: Date[] }) => {
     setSelectedDate(slotInfo.start);
+  }, []);
+
+  const handleNavigate = useCallback((newDate: Date) => {
+    setViewedDate(newDate);
   }, []);
 
   // Filter handlers - COMMENTED OUT
@@ -135,6 +139,7 @@ export function CalendarPage() {
               events={events}
               onSelectEvent={handleSelectEvent}
               onSelectSlot={handleSelectSlot}
+              onNavigate={handleNavigate}
               loading={loading}
               selectedDate={selectedDate}
             />

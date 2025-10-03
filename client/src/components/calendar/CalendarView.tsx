@@ -19,6 +19,7 @@ interface CalendarViewProps {
   events: CalendarEvent[];
   onSelectEvent: (event: CalendarEvent) => void;
   onSelectSlot: (slotInfo: { start: Date; end: Date; slots: Date[] }) => void;
+  onNavigate?: (date: Date) => void;
   loading: boolean;
   selectedDate?: Date | null;
 }
@@ -27,6 +28,7 @@ export function CalendarView({
   events, 
   onSelectEvent, 
   onSelectSlot, 
+  onNavigate,
   loading,
   selectedDate 
 }: CalendarViewProps) {
@@ -49,7 +51,8 @@ export function CalendarView({
   // Handle date navigation
   const handleNavigate = useCallback((newDate: Date) => {
     setDate(newDate);
-  }, []);
+    onNavigate?.(newDate);
+  }, [onNavigate]);
 
   // Handle event selection and convert back to CalendarEvent format
   const handleEventSelect = useCallback((calendarEvent: CalendarEventWithDates) => {
