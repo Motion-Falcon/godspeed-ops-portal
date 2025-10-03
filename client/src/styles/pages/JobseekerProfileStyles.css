@@ -1088,6 +1088,7 @@ select.form-input {
   margin-bottom: 6px;
   color: var(--text);
   word-wrap: break-word;
+  width: 215px;
 }
 
 .document-type, .document-title, .document-notes {

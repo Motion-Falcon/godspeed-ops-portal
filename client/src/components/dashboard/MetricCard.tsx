@@ -66,6 +66,12 @@ export const MetricCard: React.FC<MetricCardProps> = ({
     [graphType, data.color, processedData.growth.trend]
   );
 
+  // Check if historical data has any non-zero values
+  const hasValidHistoricalData = useMemo(() => {
+    if (!data.historicalData || data.historicalData.length === 0) return false;
+    return data.historicalData.some(point => point.value > 0);
+  }, [data.historicalData]);
+
   const handleToggleGraph = () => {
     const newState = !graphVisible;
     setGraphVisible(newState);
@@ -247,7 +253,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({
           </div>
         </div>
 
-        {data.historicalData && data.historicalData.length > 0 && layout !== "horizontal" && (
+        {hasValidHistoricalData && layout !== "horizontal" && (
           <div className="metric-card-controls">
             <button
               className={`chart-toggle-button ${graphVisible ? "active" : ""}`}
