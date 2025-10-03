@@ -54,10 +54,9 @@ export interface TimesheetFilters {
   searchTerm?: string;
   jobseekerFilter?: string;
   positionFilter?: string;
-  weekStartFilter?: string;
-  weekEndFilter?: string;
+  clientFilter?: string;
+  invoiceNumberFilter?: string;
   emailSentFilter?: string;
-  documentFilter?: string;
   dateRangeStart?: string;
   dateRangeEnd?: string;
 }
@@ -98,10 +97,9 @@ export const getTimesheets = async (
     if (params.searchTerm) queryParams.append("searchTerm", params.searchTerm);
     if (params.jobseekerFilter) queryParams.append("jobseekerFilter", params.jobseekerFilter);
     if (params.positionFilter) queryParams.append("positionFilter", params.positionFilter);
-    if (params.weekStartFilter) queryParams.append("weekStartFilter", params.weekStartFilter);
-    if (params.weekEndFilter) queryParams.append("weekEndFilter", params.weekEndFilter);
+    if (params.clientFilter) queryParams.append("clientFilter", params.clientFilter);
+    if (params.invoiceNumberFilter) queryParams.append("invoiceNumberFilter", params.invoiceNumberFilter);
     if (params.emailSentFilter) queryParams.append("emailSentFilter", params.emailSentFilter);
-    if (params.documentFilter) queryParams.append("documentFilter", params.documentFilter);
     if (params.dateRangeStart) queryParams.append("dateRangeStart", params.dateRangeStart);
     if (params.dateRangeEnd) queryParams.append("dateRangeEnd", params.dateRangeEnd);
 
@@ -228,10 +226,9 @@ export const getJobseekerTimesheets = async (
     // Add filter params
     if (params.searchTerm) queryParams.append("searchTerm", params.searchTerm);
     if (params.positionFilter) queryParams.append("positionFilter", params.positionFilter);
-    if (params.weekStartFilter) queryParams.append("weekStartFilter", params.weekStartFilter);
-    if (params.weekEndFilter) queryParams.append("weekEndFilter", params.weekEndFilter);
-    if (params.emailSentFilter) queryParams.append("emailSentFilter", params.emailSentFilter);
-    if (params.documentFilter) queryParams.append("documentFilter", params.documentFilter);
+    if (params.clientFilter) queryParams.append("clientFilter", params.clientFilter);
+    if (params.invoiceNumberFilter) queryParams.append("invoiceNumberFilter", params.invoiceNumberFilter);
+    if (params.emailSentFilter) queryParams.append("emailSentFilter", params.emailSentFilter);  
     if (params.dateRangeStart) queryParams.append("dateRangeStart", params.dateRangeStart);
     if (params.dateRangeEnd) queryParams.append("dateRangeEnd", params.dateRangeEnd);
 
@@ -332,3 +329,21 @@ export const createTimesheetFromFrontendData = async (
     throw error;
   }
 };
+
+/**
+ * Send emails for a bulk timesheet (without updating version/version_history)
+ */
+export const sendTimesheetEmails = async (
+  id: string,
+  jobseekerId?: string
+): Promise<{ success: boolean; message: string; emailsSent: string[]; emailsSkipped: string[] }> => {
+  try {
+    const response = await api.post(`/api/timesheets/send-email/${id}`, jobseekerId ? { jobseekerId } : {});
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(error.response.data.error || "Failed to send emails for bulk timesheet");
+    }
+    throw error;
+  }
+}; 

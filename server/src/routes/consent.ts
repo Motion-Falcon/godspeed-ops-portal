@@ -192,7 +192,7 @@ function applyConsentRecordFilters(query: any, filters: {
 router.get('/documents',
   authenticateToken,
   authorizeRoles(['admin', 'recruiter']),
-  apiRateLimiter,
+  // apiRateLimiter,
   async (req: Request, res: Response) => {
     try {
       // Extract pagination and filter parameters from query
@@ -429,7 +429,7 @@ router.get('/documents',
 router.get('/records/:documentId',
   authenticateToken,
   authorizeRoles(['admin', 'recruiter']),
-  apiRateLimiter,
+  // apiRateLimiter,
   async (req: Request, res: Response) => {
     try {
       const { documentId } = req.params;
@@ -943,7 +943,8 @@ router.post('/resend',
  * GET /api/consent/view?token=<consent_token>
  * @access Public
  */
-router.get('/view', apiRateLimiter, async (req: Request, res: Response) => {
+router.get('/view', // apiRateLimiter,
+  async (req: Request, res: Response) => {
   try {
     const { token } = req.query as { token?: string };
 
@@ -1051,7 +1052,7 @@ router.get('/view', apiRateLimiter, async (req: Request, res: Response) => {
  * @access Public
  */
 router.post('/submit', 
-  apiRateLimiter,
+  // apiRateLimiter,
   sanitizeInputs,
   activityLogger({
     onSuccess: (req, res) => {
