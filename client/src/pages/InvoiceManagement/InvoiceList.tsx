@@ -146,7 +146,7 @@ export function InvoiceList() {
       setInvoices(response.invoices);
       setPagination(response.pagination);
     } catch (err) {
-      setError('Failed to fetch invoices. Please try again.');
+      setError(t('invoiceManagement.list.fetchFailed'));
     } finally {
       setLoading(false);
     }
@@ -237,7 +237,7 @@ export function InvoiceList() {
       setDeleteError(null);
       await deleteInvoice(invoiceToDelete.id as string);
       setInvoices(invoices.filter(i => i.id !== invoiceToDelete.id));
-      setMessage(`Invoice "${invoiceToDelete.invoiceNumber}" deleted successfully.`);
+      setMessage(t('invoiceManagement.list.deleteSuccess', { invoiceNumber: invoiceToDelete.invoiceNumber || t('invoiceManagement.unknown') }));
       
       // Close modal and reset state after successful deletion
       setIsDeleteModalOpen(false);
@@ -248,7 +248,7 @@ export function InvoiceList() {
         setMessage(null);
       }, 3000);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to delete invoice';
+      const errorMessage = err instanceof Error ? err.message : t('invoiceManagement.list.deleteFailed');
       setDeleteError(errorMessage);
     } finally {
       setIsDeleting(false);
@@ -282,7 +282,7 @@ export function InvoiceList() {
     try {
       const response = await sendInvoiceEmail(invoice.id, emailToSend);
       if (response.success) {
-        setSendEmailMessage(`Invoice sent successfully to ${emailToSend}`);
+        setSendEmailMessage(t('invoiceManagement.list.sendSuccess', { email: emailToSend }));
         setSendEmailStatus('success');
         // Optionally update local invoice state
         setInvoices(prevInvoices =>
@@ -312,7 +312,7 @@ export function InvoiceList() {
   return (
     <div className="page-container">
       <AppHeader
-        title=" Client Invoices List"
+        title={t('invoiceManagement.list.title')}
         actions={
           <>
             <button
@@ -320,7 +320,7 @@ export function InvoiceList() {
               onClick={handleCreateInvoice}
             >
               <Plus size={16} />
-              <span>New Invoice</span>
+              <span>{t('invoiceManagement.list.newInvoice')}</span>
             </button>
           </>
         }
@@ -330,13 +330,13 @@ export function InvoiceList() {
       <div className="content-container">
         <div className="card">
           <div className="card-header">
-            <h2>Invoice List</h2>
+            <h2>{t('invoiceManagement.list.invoiceListTitle')}</h2>
             <div className="filter-container">
               <div className="search-box">
                 <Search size={14} className="search-icon" />
                 <input
                   type="text"
-                  placeholder="Global search..."
+                  placeholder={t('invoiceManagement.list.globalSearchPlaceholder')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="search-input"
@@ -345,7 +345,7 @@ export function InvoiceList() {
                   className="button secondary button-icon reset-filters-btn"
                   onClick={resetFilters}
                 >
-                  <span>Reset Filters</span>
+                  <span>{t('invoiceManagement.resetFilters')}</span>
                 </button>
               </div>
             </div>
@@ -354,15 +354,18 @@ export function InvoiceList() {
           <div className="pagination-controls top">
             <div className="pagination-info">
               <span className="pagination-text">
-                Showing {Math.min((pagination.page - 1) * pagination.limit + 1, pagination.total)} to{' '}
-                {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} entries
+                {t('invoiceManagement.list.pagination.showing', {
+                  start: Math.min((pagination.page - 1) * pagination.limit + 1, pagination.total),
+                  end: Math.min(pagination.page * pagination.limit, pagination.total),
+                  total: pagination.total
+                })}
                 {pagination.totalFiltered !== pagination.total && (
-                  <span className="filtered-info"> (filtered from {pagination.total} total entries)</span>
+                  <span className="filtered-info"> {t('invoiceManagement.list.pagination.filteredFrom', { total: pagination.total })}</span>
                 )}
               </span>
             </div>
             <div className="pagination-size-selector">
-              <label htmlFor="pageSize" className="page-size-label">Show:</label>
+              <label htmlFor="pageSize" className="page-size-label">{t('invoiceManagement.list.pagination.show')}</label>
               <select
                 id="pageSize"
                 value={pagination.limit}
@@ -374,7 +377,7 @@ export function InvoiceList() {
                 <option value={50}>50</option>
                 <option value={100}>100</option>
               </select>
-              <span className="page-size-label">per page</span>
+              <span className="page-size-label">{t('invoiceManagement.list.pagination.perPage')}</span>
             </div>
           </div>
           <div className="table-container">
@@ -383,11 +386,11 @@ export function InvoiceList() {
                 <tr>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">Invoice #</div>
+                      <div className="column-title">{t('invoiceManagement.list.invoiceHash')}</div>
                       <div className="column-search">
                         <input
                           type="text"
-                          placeholder="Search invoice #..."
+                          placeholder={t('invoiceManagement.list.searchInvoiceNumberPlaceholder')}
                           value={invoiceNumberFilter}
                           onChange={(e) => setInvoiceNumberFilter(e.target.value)}
                           className="column-search-input"
@@ -397,11 +400,11 @@ export function InvoiceList() {
                   </th>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">Client</div>
+                      <div className="column-title">{t('invoiceManagement.client')}</div>
                       <div className="column-search">
                         <input
                           type="text"
-                          placeholder="Search client..."
+                          placeholder={t('invoiceManagement.list.searchClientPlaceholder')}
                           value={clientFilter}
                           onChange={(e) => setClientFilter(e.target.value)}
                           className="column-search-input"
@@ -411,11 +414,11 @@ export function InvoiceList() {
                   </th>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">Client Email</div>
+                      <div className="column-title">{t('invoiceManagement.clientEmail')}</div>
                       <div className="column-search">
                         <input
                           type="text"
-                          placeholder="Search email..."
+                          placeholder={t('invoiceManagement.list.searchEmailPlaceholder')}
                           value={clientEmailFilter}
                           onChange={(e) => setClientEmailFilter(e.target.value)}
                           className="column-search-input"
@@ -425,7 +428,7 @@ export function InvoiceList() {
                   </th>
                   <th>
                     <div className="column-filter" style={{alignItems: 'center' }}>
-                      <div className="column-title">Invoice Date</div>
+                      <div className="column-title">{t('invoiceManagement.invoiceDate')}</div>
                       <div className="column-search" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '4px' }}>
                         <div className="date-picker-wrapper">
                           <input
@@ -436,7 +439,7 @@ export function InvoiceList() {
                             onClick={(e) => e.currentTarget.showPicker()}
                           />
                         </div>
-                        <span style={{ margin: '0 4px' }}>to</span>
+                        <span style={{ margin: '0 4px' }}>{t('invoiceManagement.list.dateTo')}</span>
                         <div className="date-picker-wrapper">
                           <input
                             type="date"
@@ -451,52 +454,52 @@ export function InvoiceList() {
                   </th>
                   <th>
                     <div className="column-filter" >
-                      <div className="column-title">Invoice Emailed</div>
+                      <div className="column-title">{t('invoiceManagement.list.invoiceEmailed')}</div>
                       <div className="column-search">
                         <select
                           value={invoiceSentFilter}
                           onChange={(e) => setInvoiceSentFilter(e.target.value)}
                           className="column-search-input"
                         >
-                          <option value="">All</option>
-                          <option value="true">Yes</option>
-                          <option value="false">No</option>
+                          <option value="">{t('invoiceManagement.filters.all')}</option>
+                          <option value="true">{t('invoiceManagement.filters.yes')}</option>
+                          <option value="false">{t('invoiceManagement.filters.no')}</option>
                         </select>
                       </div>
                     </div>
                   </th>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">Invoice PDF Generated</div>
+                      <div className="column-title">{t('invoiceManagement.list.invoicePdfGenerated')}</div>
                       <div className="column-search">
                         <select
                           value={documentGeneratedFilter}
                           onChange={(e) => setDocumentGeneratedFilter(e.target.value)}
                           className="column-search-input"
                         >
-                          <option value="">All</option>
-                          <option value="true">Yes</option>
-                          <option value="false">No</option>
+                          <option value="">{t('invoiceManagement.filters.all')}</option>
+                          <option value="true">{t('invoiceManagement.filters.yes')}</option>
+                          <option value="false">{t('invoiceManagement.filters.no')}</option>
                         </select>
                       </div>
                     </div>
                   </th>
                   <th>
                     <div className="column-filter" style={{alignItems: 'center' }}>
-                      <div className="column-title">Send Email</div>
+                      <div className="column-title">{t('invoiceManagement.list.sendEmailColumn')}</div>
                       <div className="column-search">
                         <div className="actions-info">
-                          <span className="actions-help-text">Send • Resend</span>
+                          <span className="actions-help-text">{t('invoiceManagement.list.sendEmailAction')}</span>
                         </div>
                       </div>
                     </div>
                   </th>
                   <th>
                     <div className="column-filter" style={{alignItems: 'flex-end', marginRight: '10px' }}>
-                      <div className="column-title">Actions</div>
+                      <div className="column-title">{t('invoiceManagement.actions')}</div>
                       <div className="column-search">
                         <div className="actions-info">
-                          <span className="actions-help-text">View • Delete</span>
+                          <span className="actions-help-text">{t('invoiceManagement.list.viewDeleteAction')}</span>
                         </div>
                       </div>
                     </div>
@@ -546,7 +549,7 @@ export function InvoiceList() {
                   <tr>
                     <td colSpan={8} className="empty-state-cell">
                       <div className="empty-state">
-                        <p>No invoices match your search criteria.</p>
+                        <p>{t('invoiceManagement.list.noInvoicesMatch')}</p>
                       </div>
                     </td>
                   </tr>
@@ -576,21 +579,21 @@ export function InvoiceList() {
                                 : !invoice.documentGenerated 
                                   ? t('invoiceManagement.pdfNotGenerated')
                                   : invoice.emailSent 
-                                    ? `Send again to ${clientEmail}` 
-                                    : `Send to ${clientEmail}`
+                                    ? t('invoiceManagement.list.sendAgainTo', { email: clientEmail })
+                                    : t('invoiceManagement.list.sendTo', { email: clientEmail })
                             }
                           >
                             {isCurrentlySending ? (
                               <>
-                                <Mail size={14} className="mail-icon" /> Sending...
+                                <Mail size={14} className="mail-icon" /> {t('invoiceManagement.sending')}
                               </>
                             ) : invoice.emailSent ? (
                               <>
-                                <Mail size={14} className="mail-icon" /> Resend
+                                <Mail size={14} className="mail-icon" /> {t('invoiceManagement.list.resend')}
                               </>
                             ) : (
                               <>
-                                <Mail size={14} className="mail-icon" /> Send Email
+                                <Mail size={14} className="mail-icon" /> {t('invoiceManagement.list.sendEmail')}
                               </>
                             )}
                           </button>
@@ -627,7 +630,7 @@ export function InvoiceList() {
             <div className="pagination-controls bottom">
               <div className="pagination-info">
                 <span className="pagination-text">
-                  Page {pagination.page} of {pagination.totalPages}
+                  {t('invoiceManagement.list.pagination.pageOf', { current: pagination.page, total: pagination.totalPages })}
                 </span>
               </div>
               <div className="pagination-buttons">
@@ -659,7 +662,7 @@ export function InvoiceList() {
                         key={pageNum}
                         className={`page-number-btn ${pageNum === pagination.page ? 'active' : ''}`}
                         onClick={() => handlePageChange(pageNum)}
-                        aria-label={`Go to page ${pageNum}`}
+                        aria-label={t('invoiceManagement.list.pagination.goToPage', { page: pageNum })}
                       >
                         {pageNum}
                       </button>
