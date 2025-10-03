@@ -55,7 +55,7 @@ interface CalendarResponse {
  * - jobseekerId: string (UUID) - optional filter
  */
 router.get('/',
-  apiRateLimiter,
+  // apiRateLimiter,
   authenticateToken,
   authorizeRoles(['admin', 'recruiter']),
   sanitizeInputs,
@@ -305,7 +305,7 @@ router.get('/',
  * - jobseekerId: string (UUID) - optional filter
  */
 router.get('/summary',
-  apiRateLimiter,
+  // apiRateLimiter,
   authenticateToken,
   authorizeRoles(['admin', 'recruiter']),
   sanitizeInputs,

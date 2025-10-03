@@ -17,7 +17,6 @@ import aiInsightsRoutes from "./routes/aiInsights.js";
 import timesheetMetricsRoutes from "./routes/timesheetMetrics.js";
 import invoiceMetricsRoutes from "./routes/invoiceMetrics.js";
 import reportsRoutes from "./routes/reports.js";
-import bulkTimesheetsRoutes from "./routes/bulkTimesheets.js";
 import calendarRoutes from "./routes/calendar.js";
 import consentRoutes from "./routes/consent.js";
 import {
@@ -43,7 +42,7 @@ app.set('trust proxy', 1);
 app.use(forceTLS);
 app.use(configureSecurityHeaders);
 app.use(requestTracker);
-app.use(apiRateLimiter); // Global rate limiter
+// app.use(apiRateLimiter); // Global rate limiter
 app.use(sanitizeInputs); // Global input sanitization
 
 // Standard Middleware
@@ -109,9 +108,6 @@ app.use("/api/positions", positionsRoutes);
 
 // Timesheets routes
 app.use("/api/timesheets", timesheetsRoutes);
-
-// Bulk Timesheets routes
-app.use("/api/bulk-timesheets", bulkTimesheetsRoutes);
 
 // Invoices routes
 app.use("/api/invoices", invoicesRoutes);

@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Eye, Trash2, Plus, Search, ChevronLeft, ChevronRight, Mail } from 'lucide-react';
+import { Plus, ChevronLeft, ChevronRight, Mail } from 'lucide-react';
 import {
-  getBulkTimesheets,
-  deleteBulkTimesheet,
-  BulkTimesheetData,
-  sendBulkTimesheetEmails,
-} from '../../services/api/bulkTimesheet';
+  getTimesheets,
+  TimesheetData,
+  TimesheetFilters,
+  PaginatedTimesheetResponse,
+  sendTimesheetEmails,
+} from '../../services/api/timesheet';
 import { AppHeader } from '../../components/AppHeader';
 import { ConfirmationModal } from '../../components/ConfirmationModal';
 import { useLanguage } from '../../contexts/language/language-provider';
@@ -22,24 +23,20 @@ interface PaginationInfo {
   hasPrevPage: boolean;
 }
 
-function getClientDisplayName(client: Record<string, unknown> | undefined, t: (key: string) => string): string {
+function getClientDisplayName(timesheet: TimesheetData, t: (key: string) => string): string {
   return (
     String(
-      client?.companyName ||
-      client?.company_name ||
-      client?.shortCode ||
-      client?.short_code ||
+      timesheet.position?.clientName ||
       t('bulkTimesheetManagement.constants.unknownClient')
     )
   );
 }
 
-function getPositionDisplayName(position: Record<string, unknown> | undefined, t: (key: string) => string): string {
+function getPositionDisplayName(timesheet: TimesheetData, t: (key: string) => string): string {
   return (
     String(
-      position?.title ||
-      position?.positionCode ||
-      position?.position_code ||
+      timesheet.position?.title ||
+      timesheet.position?.positionCode ||
       t('bulkTimesheetManagement.constants.unknownPosition')
     )
   );
@@ -49,7 +46,7 @@ export function BulkTimesheetList() {
   const { t } = useLanguage();
   
   // State management
-  const [bulkTimesheets, setBulkTimesheets] = useState<BulkTimesheetData[]>([]);
+  const [timesheets, setTimesheets] = useState<TimesheetData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -60,6 +57,7 @@ export function BulkTimesheetList() {
   const [invoiceNumberFilter, setInvoiceNumberFilter] = useState('');
   const [clientFilter, setClientFilter] = useState('');
   const [positionFilter, setPositionFilter] = useState('');
+  const [jobseekerFilter, setJobseekerFilter] = useState('');
   const [dateRangeStart, setDateRangeStart] = useState('');
   const [dateRangeEnd, setDateRangeEnd] = useState('');
   const [emailSentFilter, setEmailSentFilter] = useState('');
@@ -76,25 +74,25 @@ export function BulkTimesheetList() {
   });
 
   // Delete confirmation state
-  const [bulkTimesheetToDelete, setBulkTimesheetToDelete] = useState<BulkTimesheetData | null>(null);
+  const [timesheetToDelete, setTimesheetToDelete] = useState<TimesheetData | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  // Track which jobseeker is being emailed (by bulkTimesheetId + jobseekerId)
+  // Track which jobseeker is being emailed (by timesheetId)
   const [sendingJobseekerEmail, setSendingJobseekerEmail] = useState<{ [key: string]: boolean }>({});
 
   // Utility functions
-  const resetFilters = () => {
-    setSearchTerm('');
-    setInvoiceNumberFilter('');
-    setClientFilter('');
-    setPositionFilter('');
-    setDateRangeStart('');
-    setDateRangeEnd('');
-    setEmailSentFilter('');
-    setPagination(prev => ({ ...prev, page: 1 }));
-  };
+  // const resetFilters = () => {
+  //   setSearchTerm('');
+  //   setInvoiceNumberFilter('');
+  //   setClientFilter('');
+  //   setPositionFilter('');
+  //   setJobseekerFilter('');
+  //   setDateRangeStart('');
+  //   setDateRangeEnd('');
+  //   setEmailSentFilter('');
+  //   setPagination(prev => ({ ...prev, page: 1 }));
+  // };
 
   const handlePageChange = (newPage: number) => {
     setPagination(prev => ({ ...prev, page: newPage }));
@@ -116,15 +114,16 @@ export function BulkTimesheetList() {
     }
   };
 
-  // Fetch bulk timesheets with filters
-  const fetchBulkTimesheets = useCallback(async () => {
+  // Fetch timesheets with filters  
+  const fetchTimesheets = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const params = {
+      const params: TimesheetFilters = {
         page: pagination.page,
         limit: pagination.limit,
         searchTerm: searchTerm,
+        jobseekerFilter: jobseekerFilter,
         clientFilter: clientFilter,
         positionFilter: positionFilter,
         invoiceNumberFilter: invoiceNumberFilter,
@@ -132,8 +131,8 @@ export function BulkTimesheetList() {
         dateRangeEnd: dateRangeEnd,
         emailSentFilter: emailSentFilter,
       };
-      const response = await getBulkTimesheets(params);
-      setBulkTimesheets(response.bulkTimesheets);
+      const response: PaginatedTimesheetResponse = await getTimesheets(params);
+      setTimesheets(response.timesheets);
       setPagination(response.pagination);
     } catch (err) {
       setError(t('bulkTimesheetManagement.messages.failedToFetch'));
@@ -144,21 +143,23 @@ export function BulkTimesheetList() {
     pagination.page,
     pagination.limit,
     searchTerm,
+    jobseekerFilter,
     clientFilter,
-    positionFilter,
     invoiceNumberFilter,
+    positionFilter,
     dateRangeStart,
     dateRangeEnd,
     emailSentFilter,
+    t,
   ]);
 
   // Debounced fetch effect
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      fetchBulkTimesheets();
+      fetchTimesheets();
     }, 300);
     return () => clearTimeout(timeoutId);
-  }, [fetchBulkTimesheets]);
+  }, [fetchTimesheets]);
 
   // Reset to first page when filters change
   useEffect(() => {
@@ -167,12 +168,14 @@ export function BulkTimesheetList() {
     }
   }, [
     searchTerm,
-    invoiceNumberFilter,
+    jobseekerFilter,
     clientFilter,
+    invoiceNumberFilter,
     positionFilter,
     dateRangeStart,
     dateRangeEnd,
     emailSentFilter,
+    pagination.page, // Added missing dependency
   ]);
 
   // Initialize filters from query params on mount
@@ -182,9 +185,20 @@ export function BulkTimesheetList() {
     setInvoiceNumberFilter(params.get('invoiceNumber') || '');
     setClientFilter(params.get('client') || '');
     setPositionFilter(params.get('position') || '');
+    setJobseekerFilter(params.get('jobseeker') || '');
     setDateRangeStart(params.get('dateRangeStart') || '');
     setDateRangeEnd(params.get('dateRangeEnd') || '');
     setEmailSentFilter(params.get('emailSent') || '');
+
+    const pageParam = params.get('page');
+    const limitParam = params.get('limit');
+    if (pageParam || limitParam) {
+      setPagination(prev => ({
+        ...prev,
+        page: pageParam ? Math.max(1, parseInt(pageParam)) : prev.page,
+        limit: limitParam ? Math.max(1, parseInt(limitParam)) : prev.limit,
+      }));
+    }
   }, [location.search]);
 
   // Event handlers
@@ -192,66 +206,41 @@ export function BulkTimesheetList() {
     window.location.href = '/bulk-timesheet-management';
   };
 
-  const handleViewBulkTimesheet = (id: string) => {
-    window.location.href = `/bulk-timesheet-management?id=${id}`;
-  };
+  // const handleViewTimesheet = (id: string) => {
+  //   // Keep UI but remove functionality for now
+  //   console.log('View timesheet:', id);
+  // };
 
-  const handleDeleteClick = (bulkTimesheet: BulkTimesheetData) => {
-    setBulkTimesheetToDelete(bulkTimesheet);
-    setIsDeleteModalOpen(true);
-    setDeleteError(null);
-  };
+  // const handleDeleteClick = (timesheet: TimesheetData) => {
+  //   // Keep UI but remove functionality for now  
+  //   console.log('Delete timesheet:', timesheet.id);
+  // };
 
   const handleConfirmDelete = async () => {
-    if (!bulkTimesheetToDelete?.id) return;
-    try {
-      setIsDeleting(true);
-      setDeleteError(null);
-      await deleteBulkTimesheet(bulkTimesheetToDelete.id as string);
-      setBulkTimesheets(bulkTimesheets.filter(bt => bt.id !== bulkTimesheetToDelete.id));
-      setMessage(t('bulkTimesheetManagement.messages.deletedSuccess', { invoiceNumber: bulkTimesheetToDelete.invoiceNumber }));
-      
-      // Close modal and reset state after successful deletion
-      setIsDeleteModalOpen(false);
-      setBulkTimesheetToDelete(null);
-      setDeleteError(null);
-      
-      setTimeout(() => {
-        setMessage(null);
-      }, 3000);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : t('bulkTimesheetManagement.messages.failedToDelete');
-      setDeleteError(errorMessage);
-    } finally {
-      setIsDeleting(false);
-    }
+    // Keep UI but remove functionality for now
+    console.log('Confirm delete');
   };
 
   const handleCancelDelete = () => {
     setIsDeleteModalOpen(false);
-    setBulkTimesheetToDelete(null);
+    setTimesheetToDelete(null);
     setDeleteError(null);
   };
 
-  // Function to send bulk timesheet to jobseekers
-  const sendEmailToJobseeker = async (bulkTimesheetId: string, jobseekerId: string, jobseekerName: string) => {
-    const key = `${bulkTimesheetId}_${jobseekerId}`;
+  // Function to send timesheet email to jobseeker (keeping existing functionality)
+  const sendEmailToJobseeker = async (timesheetId: string, jobseekerName: string) => {
+    const key = timesheetId;
     setSendingJobseekerEmail(prev => ({ ...prev, [key]: true }));
     setError(null);
     try {
-      const response = await sendBulkTimesheetEmails(bulkTimesheetId, [jobseekerId]);
+      const response = await sendTimesheetEmails(timesheetId);
       setMessage(response.message || t('bulkTimesheetManagement.messages.emailSentTo', { name: jobseekerName }));
       setTimeout(() => setMessage(null), 4000);
+      
       // Update local state for instant UI feedback
-      setBulkTimesheets(prevBulkTimesheets => prevBulkTimesheets.map(bt => {
-        if (bt.id !== bulkTimesheetId) return bt;
-        return {
-          ...bt,
-          jobseekerTimesheets: bt.jobseekerTimesheets.map(ts =>
-            ts.jobseeker.id === jobseekerId ? { ...ts, emailSent: true } : ts
-          ),
-        };
-      }));
+      setTimesheets(prevTimesheets => prevTimesheets.map(ts => 
+        ts.id === timesheetId ? { ...ts, emailSent: true } : ts
+      ));
     } catch (err) {
       setError(err instanceof Error ? err.message : t('bulkTimesheetManagement.messages.failedToSendEmail', { name: jobseekerName }));
       setTimeout(() => setError(null), 4000);
@@ -282,7 +271,7 @@ export function BulkTimesheetList() {
         <div className="card">
           <div className="card-header">
             <h2>{t('bulkTimesheetManagement.listTitle')}</h2>
-            <div className="filter-container">
+            {/* <div className="filter-container">
               <div className="search-box">
                 <Search size={14} className="search-icon" />
                 <input
@@ -299,7 +288,7 @@ export function BulkTimesheetList() {
                   <span>{t('bulkTimesheetManagement.resetFilters')}</span>
                 </button>
               </div>
-            </div>
+            </div> */}
           </div>
           {/* Pagination Controls - Top */}
           <div className="pagination-controls top">
@@ -401,26 +390,42 @@ export function BulkTimesheetList() {
                     </div>
                   </th>
                   <th>
-                    <div className="column-filter"  style={{alignItems: 'center' }}>
+                    <div className="column-filter" style={{alignItems: 'center' }}>
                       <div className="column-title">{t('bulkTimesheetManagement.columns.jobseekers')}</div>
                       <div className="column-search">
-                        <div className="actions-info">
-                          <span className="actions-help-text">{t('bulkTimesheetManagement.email.namesAndEmails')}</span>
-                        </div>
+                        <input
+                          type="text"
+                          placeholder={t('bulkTimesheetManagement.placeholders.searchJobseeker')}
+                          value={jobseekerFilter}
+                          onChange={(e) => setJobseekerFilter(e.target.value)}
+                          className="column-search-input"
+                        />
+                      </div>
+                    </div>
+                  </th>
+                  <th>
+                    <div className="column-filter" style={{alignItems: 'center' }}>
+                      <div className="column-title">{t('bulkTimesheetManagement.columns.emailStatus')}</div>
+                      <div className="column-search">
+                        <select
+                          value={emailSentFilter}
+                          onChange={(e) => setEmailSentFilter(e.target.value)}
+                          className="column-filter-select"
+                        >
+                          <option value="">{t('bulkTimesheetManagement.filters.allEmailStatus')}</option>
+                          <option value="true">{t('bulkTimesheetManagement.filters.emailSent')}</option>
+                          <option value="false">{t('bulkTimesheetManagement.filters.emailNotSent')}</option>
+                        </select>
                       </div>
                     </div>
                   </th>
                   <th>
                     <div className="column-filter" style={{alignItems: 'center' }}>
                       <div className="column-title">Total Pay</div>
-                      <div className="column-search">
-                        <div className="actions-info">
-                          <span className="actions-help-text">{t('bulkTimesheetManagement.email.amount')}</span>
-                        </div>
-                      </div>
+
                     </div>
                   </th>
-                  <th>
+                  {/* <th>
                     <div className="column-filter" style={{alignItems: 'flex-end', marginRight: '10px' }}>
                       <div className="column-title">{t('bulkTimesheetManagement.columns.actions')}</div>
                       <div className="column-search">
@@ -429,7 +434,7 @@ export function BulkTimesheetList() {
                         </div>
                       </div>
                     </div>
-                  </th>
+                  </th> */}
                 </tr>
               </thead>
               <tbody>
@@ -463,85 +468,85 @@ export function BulkTimesheetList() {
                         <td className="skeleton-cell">
                           <div className="skeleton-text"></div>
                         </td>
-                        
-                        {/* Actions skeleton - needs special styling */}
                         <td className="skeleton-cell">
+                          <div className="skeleton-text"></div>
+                        </td>
+                        {/* Actions skeleton - needs special styling */}
+                        {/* <td className="skeleton-cell">
                           <div className="skeleton-actions">
                             <div className="skeleton-icon skeleton-action-btn"></div>
                             <div className="skeleton-icon skeleton-action-btn"></div>
                           </div>
-                        </td>
+                        </td> */}
                       </tr>
                     ))}
                   </>
-                ) : bulkTimesheets.length === 0 ? (
+                ) : timesheets.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="empty-state-cell">
+                    <td colSpan={8} className="empty-state-cell">
                       <div className="empty-state">
                         <p>{t('bulkTimesheetManagement.messages.noBulkTimesheets')}</p>
                       </div>
                     </td>
                   </tr>
                 ) : (
-                  bulkTimesheets.map(bulkTimesheet => {
+                  timesheets.map(timesheet => {
+                    const profile = timesheet.jobseekerProfile;
+                    const fullName = profile ? `${profile.firstName || ''} ${profile.lastName || ''}`.trim() : 'Unknown';
+                    const email = profile?.email || '';
+                    const emailSent = timesheet.emailSent || false;
+                    const statusClass = emailSent ? 'email-status-yes' : 'email-status-no';
+                    const isSending = !!sendingJobseekerEmail[timesheet.id || ''];
+                    const weekPeriod = `${timesheet.weekStartDate} - ${timesheet.weekEndDate}`;
                     
                     return (
-                      <tr key={String(bulkTimesheet.id)}>
-                        <td className="invoice-number-cell"># {bulkTimesheet.invoiceNumber}</td>
-                        <td className="client-cell">{getClientDisplayName(bulkTimesheet.client, t)}</td>
-                        <td className="position-cell">{getPositionDisplayName(bulkTimesheet.position, t)}</td>
-                        <td className="date-cell">{bulkTimesheet.weekPeriod}</td>
+                      <tr key={String(timesheet.id)}>
+                        <td className="invoice-number-cell"># {timesheet.invoiceNumber}</td>
+                        <td className="client-cell">{getClientDisplayName(timesheet, t)}</td>
+                        <td className="position-cell">{getPositionDisplayName(timesheet, t)}</td>
+                        <td className="date-cell">{weekPeriod}</td>
                         <td className="jobseekers-cell">
-                          {bulkTimesheet.jobseekerTimesheets.map((ts) => {
-                            const profile = ts.jobseeker?.jobseekerProfile;
-                            if (!profile) return null;
-                            const fullName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim();
-                            const email = profile.email || '';
-                            const emailSent = ts.emailSent || false;
-                            const statusClass = emailSent ? 'email-status-yes' : 'email-status-no';
-                            const key = `${bulkTimesheet.id}_${ts.jobseeker.id}`;
-                            const isSending = !!sendingJobseekerEmail[key];
-                            return (
-                              <div key={key} className="jobseeker-row">
-                                <div className="jobseeker-info">
-                                  <span className="jobseeker-name">{fullName}</span>
-                                  <span className="jobseeker-email">{email}</span>
-                                </div>
-                                <div className="jobseeker-actions">
-                                  <span className={`email-status-dot ${statusClass}`} title={emailSent ? t('bulkTimesheetManagement.email.emailSent') : t('bulkTimesheetManagement.email.notSent')}></span>
-                                  <button
-                                    className={`button button-xs send-email-cell ${emailSent ? 'resend-email' : 'send-email'}`}
-                                    disabled={isSending}
-                                    onClick={() => sendEmailToJobseeker(bulkTimesheet.id as string, ts.jobseeker.id, fullName)}
-                                    title={emailSent ? `Resend to ${fullName}` : `Send to ${fullName}`}
-                                  >
-                                    {isSending ? (
-                                      <>
-                                        <Mail size={14} className="mail-icon" /> {t('bulkTimesheetManagement.email.sending')}
-                                      </>
-                                    ) : emailSent ? (
-                                      <>
-                                        <Mail size={14} className="mail-icon" /> {t('bulkTimesheetManagement.email.resend')}
-                                      </>
-                                    ) : (
-                                      <>
-                                        <Mail size={14} className="mail-icon" /> {t('bulkTimesheetManagement.email.sendEmail')}
-                                      </>
-                                    )}
-                                  </button>
-                                </div>
-                              </div>
-                            );
-                          })}
+                          <div className="jobseeker-row">
+                            <div className="jobseeker-info">
+                              <span className="jobseeker-name">{fullName}</span>
+                              <span className="jobseeker-email">{email}</span>
+                            </div>
+                           
+                          </div>
+                        </td>
+                        <td className="email-status-cell">
+                        <div className="jobseeker-actions">
+                              <span className={`email-status-dot ${statusClass}`} title={emailSent ? t('bulkTimesheetManagement.email.emailSent') : t('bulkTimesheetManagement.email.notSent')}></span>
+                              <button
+                                className={`button button-xs send-email-cell ${emailSent ? 'resend-email' : 'send-email'}`}
+                                disabled={isSending}
+                                onClick={() => sendEmailToJobseeker(timesheet.id || '', fullName)}
+                                title={emailSent ? `Resend to ${fullName}` : `Send to ${fullName}`}
+                              >
+                                {isSending ? (
+                                  <>
+                                    <Mail size={14} className="mail-icon" /> {t('bulkTimesheetManagement.email.sending')}
+                                  </>
+                                ) : emailSent ? (
+                                  <>
+                                    <Mail size={14} className="mail-icon" /> {t('bulkTimesheetManagement.email.resend')}
+                                  </>
+                                ) : (
+                                  <>
+                                    <Mail size={14} className="mail-icon" /> {t('bulkTimesheetManagement.email.sendEmail')}
+                                  </>
+                                )}
+                              </button>
+                            </div>
                         </td>
                         <td className="total-pay-cell">
-                          ${bulkTimesheet.totalJobseekerPay.toFixed(2)}
+                          ${timesheet.totalJobseekerPay.toFixed(2)}
                         </td>
-                        <td className="actions-cell">
+                        {/* <td className="actions-cell">
                           <div className="action-buttons">
                             <button
                               className="action-icon-btn view-btn"
-                              onClick={() => handleViewBulkTimesheet(String(bulkTimesheet.id))}
+                              onClick={() => handleViewTimesheet(String(timesheet.id))}
                               title={t('bulkTimesheetManagement.actions.viewDetails')}
                               aria-label={t('bulkTimesheetManagement.actions.viewDetails')}
                             >
@@ -549,14 +554,14 @@ export function BulkTimesheetList() {
                             </button>
                             <button
                               className="action-icon-btn delete-btn"
-                              onClick={() => handleDeleteClick(bulkTimesheet)}
+                              onClick={() => handleDeleteClick(timesheet)}
                               title={t('bulkTimesheetManagement.actions.deleteTimesheet')}
                               aria-label={t('bulkTimesheetManagement.actions.deleteTimesheet')}
                             >
                               <Trash2 size={16} />
                             </button>
                           </div>
-                        </td>
+                        </td> */}
                       </tr>
                     );
                   })
@@ -628,9 +633,9 @@ export function BulkTimesheetList() {
         isOpen={isDeleteModalOpen}
         title={t('bulkTimesheetManagement.deleteModal.title')}
         message={t('bulkTimesheetManagement.deleteModal.message', { 
-          invoiceNumber: bulkTimesheetToDelete ? bulkTimesheetToDelete.invoiceNumber : t('bulkTimesheetManagement.constants.unknown')
+          invoiceNumber: timesheetToDelete ? timesheetToDelete.invoiceNumber : t('bulkTimesheetManagement.constants.unknown')
         }) + (deleteError ? `\n\nError: ${deleteError}` : '')}
-        confirmText={isDeleting ? t('bulkTimesheetManagement.deleteModal.deleting') : t('bulkTimesheetManagement.deleteModal.confirmText')}
+        confirmText={t('bulkTimesheetManagement.deleteModal.confirmText')}
         cancelText={t('bulkTimesheetManagement.deleteModal.cancel')}
         confirmButtonClass="danger"
         onConfirm={handleConfirmDelete}
