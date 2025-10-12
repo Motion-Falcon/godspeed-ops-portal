@@ -28,7 +28,7 @@ export interface JobSeekerProfile {
   name: string;
   email: string;
   phoneNumber: string;
-  status: 'pending' | 'verified' | 'rejected';
+  status: "pending" | "verified" | "rejected";
   experience: string;
   createdAt: string;
   location?: string;
@@ -45,11 +45,11 @@ export interface JobSeekerDetailedProfile extends JobSeekerProfile {
   updatedAt: string;
   bio?: string; // This will hold the jobseeker's brief professional description
   resume?: string; // This will hold the path to the resume document
-  
+
   // Add direct firstName and lastName which come directly in the API response
-  firstName?: string; 
+  firstName?: string;
   lastName?: string;
-  
+
   // Add fields from DbJobseekerProfile that are needed in the detailed view
   dob?: string;
   licenseNumber?: string;
@@ -66,10 +66,10 @@ export interface JobSeekerDetailedProfile extends JobSeekerProfile {
   postalCode?: string;
   workPreference?: string;
   licenseType?: string;
-  manualDriving?: 'Yes' | 'No' | 'NA';
-  availability?: 'Full-Time' | 'Part-Time';
+  manualDriving?: "Yes" | "No" | "NA";
+  availability?: "Full-Time" | "Part-Time";
   weekendAvailability?: boolean;
-  payrateType?: 'Hourly' | 'Daily' | 'Monthly';
+  payrateType?: "Hourly" | "Daily" | "Monthly";
   billRate?: string;
   payRate?: string;
   paymentMethod?: string;
@@ -79,12 +79,13 @@ export interface JobSeekerDetailedProfile extends JobSeekerProfile {
   overtimeHours?: string;
   overtimeBillRate?: string;
   overtimePayRate?: string;
-  
+  billingEmail?: string;
+
   // Employee identification
   employeeId?: string; // Employee identification number
-  
+
   // Actual fields from the API response
-  verificationStatus?: 'pending' | 'verified' | 'rejected'; // This is more accurate than 'status'
+  verificationStatus?: "pending" | "verified" | "rejected"; // This is more accurate than 'status'
   createdByUserId?: string;
   creatorDetails?: {
     id: string;
@@ -93,10 +94,10 @@ export interface JobSeekerDetailedProfile extends JobSeekerProfile {
     userType: string;
     createdAt: string;
   };
-  
+
   documents?: DocumentRecord[]; // Array of uploaded documents
 
   // Mocked/placeholder fields until related tables are implemented
   education?: unknown[];
-  experienceList?: unknown[]; 
-} 
+  experienceList?: unknown[];
+}
