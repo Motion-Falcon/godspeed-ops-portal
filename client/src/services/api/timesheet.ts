@@ -25,6 +25,7 @@ export interface TimesheetData {
   markup?: number;
   emailSent?: boolean;
   document?: string; // PDF file path or URL
+  notes?: string; // Additional notes or comments
   createdAt?: string;
   updatedAt?: string;
   createdByUserId?: string;
@@ -36,6 +37,7 @@ export interface TimesheetData {
     lastName: string;
     name: string;
     email: string;
+    billingEmail?: string;
     mobile?: string;
   };
   position?: {
@@ -56,6 +58,7 @@ export interface TimesheetFilters {
   positionFilter?: string;
   clientFilter?: string;
   invoiceNumberFilter?: string;
+  billingEmailFilter?: string;
   emailSentFilter?: string;
   dateRangeStart?: string;
   dateRangeEnd?: string;
@@ -88,27 +91,38 @@ export const getTimesheets = async (
 ): Promise<PaginatedTimesheetResponse> => {
   try {
     const queryParams = new URLSearchParams();
-    
+
     // Add pagination params
     if (params.page) queryParams.append("page", params.page.toString());
     if (params.limit) queryParams.append("limit", params.limit.toString());
-    
+
     // Add filter params
     if (params.searchTerm) queryParams.append("searchTerm", params.searchTerm);
-    if (params.jobseekerFilter) queryParams.append("jobseekerFilter", params.jobseekerFilter);
-    if (params.positionFilter) queryParams.append("positionFilter", params.positionFilter);
-    if (params.clientFilter) queryParams.append("clientFilter", params.clientFilter);
-    if (params.invoiceNumberFilter) queryParams.append("invoiceNumberFilter", params.invoiceNumberFilter);
-    if (params.emailSentFilter) queryParams.append("emailSentFilter", params.emailSentFilter);
-    if (params.dateRangeStart) queryParams.append("dateRangeStart", params.dateRangeStart);
-    if (params.dateRangeEnd) queryParams.append("dateRangeEnd", params.dateRangeEnd);
+    if (params.jobseekerFilter)
+      queryParams.append("jobseekerFilter", params.jobseekerFilter);
+    if (params.positionFilter)
+      queryParams.append("positionFilter", params.positionFilter);
+    if (params.clientFilter)
+      queryParams.append("clientFilter", params.clientFilter);
+    if (params.invoiceNumberFilter)
+      queryParams.append("invoiceNumberFilter", params.invoiceNumberFilter);
+    if (params.billingEmailFilter)
+      queryParams.append("billingEmailFilter", params.billingEmailFilter);
+    if (params.emailSentFilter)
+      queryParams.append("emailSentFilter", params.emailSentFilter);
+    if (params.dateRangeStart)
+      queryParams.append("dateRangeStart", params.dateRangeStart);
+    if (params.dateRangeEnd)
+      queryParams.append("dateRangeEnd", params.dateRangeEnd);
 
     const response = await api.get(`/api/timesheets?${queryParams.toString()}`);
     return response.data;
   } catch (error) {
     console.error("Error fetching timesheets:", error);
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || "Failed to fetch timesheets");
+      throw new Error(
+        error.response.data.error || "Failed to fetch timesheets"
+      );
     }
     throw error;
   }
@@ -133,7 +147,10 @@ export const getTimesheet = async (id: string): Promise<TimesheetData> => {
  * Create a new timesheet
  */
 export const createTimesheet = async (
-  timesheetData: Omit<TimesheetData, 'id' | 'createdAt' | 'updatedAt' | 'createdByUserId' | 'updatedByUserId'>
+  timesheetData: Omit<
+    TimesheetData,
+    "id" | "createdAt" | "updatedAt" | "createdByUserId" | "updatedByUserId"
+  >
 ): Promise<TimesheetResponse> => {
   try {
     const response = await api.post("/api/timesheets", timesheetData);
@@ -142,7 +159,9 @@ export const createTimesheet = async (
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || "Failed to create timesheet");
+      throw new Error(
+        error.response.data.error || "Failed to create timesheet"
+      );
     }
     throw error;
   }
@@ -163,7 +182,9 @@ export const updateTimesheet = async (
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || "Failed to update timesheet");
+      throw new Error(
+        error.response.data.error || "Failed to update timesheet"
+      );
     }
     throw error;
   }
@@ -177,14 +198,18 @@ export const updateTimesheetDocument = async (
   document: string
 ): Promise<TimesheetResponse> => {
   try {
-    const response = await api.patch(`/api/timesheets/${id}/document`, { document });
+    const response = await api.patch(`/api/timesheets/${id}/document`, {
+      document,
+    });
     // Clear cache for this timesheet and the timesheets list
     clearCacheFor(`/api/timesheets/${id}`);
     clearCacheFor("/api/timesheets");
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || "Failed to update timesheet document");
+      throw new Error(
+        error.response.data.error || "Failed to update timesheet document"
+      );
     }
     throw error;
   }
@@ -203,7 +228,9 @@ export const deleteTimesheet = async (
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || "Failed to delete timesheet");
+      throw new Error(
+        error.response.data.error || "Failed to delete timesheet"
+      );
     }
     throw error;
   }
@@ -218,26 +245,36 @@ export const getJobseekerTimesheets = async (
 ): Promise<PaginatedTimesheetResponse> => {
   try {
     const queryParams = new URLSearchParams();
-    
+
     // Add pagination params
     if (params.page) queryParams.append("page", params.page.toString());
     if (params.limit) queryParams.append("limit", params.limit.toString());
-    
+
     // Add filter params
     if (params.searchTerm) queryParams.append("searchTerm", params.searchTerm);
-    if (params.positionFilter) queryParams.append("positionFilter", params.positionFilter);
-    if (params.clientFilter) queryParams.append("clientFilter", params.clientFilter);
-    if (params.invoiceNumberFilter) queryParams.append("invoiceNumberFilter", params.invoiceNumberFilter);
-    if (params.emailSentFilter) queryParams.append("emailSentFilter", params.emailSentFilter);  
-    if (params.dateRangeStart) queryParams.append("dateRangeStart", params.dateRangeStart);
-    if (params.dateRangeEnd) queryParams.append("dateRangeEnd", params.dateRangeEnd);
+    if (params.positionFilter)
+      queryParams.append("positionFilter", params.positionFilter);
+    if (params.clientFilter)
+      queryParams.append("clientFilter", params.clientFilter);
+    if (params.invoiceNumberFilter)
+      queryParams.append("invoiceNumberFilter", params.invoiceNumberFilter);
+    if (params.emailSentFilter)
+      queryParams.append("emailSentFilter", params.emailSentFilter);
+    if (params.dateRangeStart)
+      queryParams.append("dateRangeStart", params.dateRangeStart);
+    if (params.dateRangeEnd)
+      queryParams.append("dateRangeEnd", params.dateRangeEnd);
 
-    const response = await api.get(`/api/timesheets/jobseeker/${userId}?${queryParams.toString()}`);
+    const response = await api.get(
+      `/api/timesheets/jobseeker/${userId}?${queryParams.toString()}`
+    );
     return response.data;
   } catch (error) {
     console.error("Error fetching jobseeker timesheets:", error);
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || "Failed to fetch jobseeker timesheets");
+      throw new Error(
+        error.response.data.error || "Failed to fetch jobseeker timesheets"
+      );
     }
     throw error;
   }
@@ -253,7 +290,9 @@ export const generateInvoiceNumber = async (): Promise<string> => {
   } catch (error) {
     console.error("Error generating invoice number:", error);
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || "Failed to generate invoice number");
+      throw new Error(
+        error.response.data.error || "Failed to generate invoice number"
+      );
     }
     throw error;
   }
@@ -263,40 +302,42 @@ export const generateInvoiceNumber = async (): Promise<string> => {
  * Helper function to create timesheet data from frontend format
  * This matches the generateTimesheetData function in TimesheetManagement.tsx
  */
-export const createTimesheetFromFrontendData = async (
-  frontendData: {
-    jobseeker_profile_id: string;
-    jobseeker_user_id: string;
-    week_start_date: string;
-    week_end_date: string;
-    email_sent: boolean;
-    assignments: Array<{
-      position_id?: string;
-      daily_hours: Array<{ date: string; hours: number }>;
-      total_regular_hours: number;
-      total_overtime_hours: number;
-      regular_pay_rate: number;
-      overtime_pay_rate: number;
-      regular_bill_rate: number;
-      overtime_bill_rate: number;
-      total_jobseeker_pay: number;
-      total_client_bill: number;
-      overtime_enabled: boolean;
-      bonus_amount: number;
-      deduction_amount: number;
-      markup?: number;
-    }>;
-  }
-): Promise<TimesheetResponse[]> => {
+export const createTimesheetFromFrontendData = async (frontendData: {
+  jobseeker_profile_id: string;
+  jobseeker_user_id: string;
+  week_start_date: string;
+  week_end_date: string;
+  email_sent: boolean;
+  assignments: Array<{
+    position_id?: string;
+    daily_hours: Array<{ date: string; hours: number }>;
+    total_regular_hours: number;
+    total_overtime_hours: number;
+    regular_pay_rate: number;
+    overtime_pay_rate: number;
+    regular_bill_rate: number;
+    overtime_bill_rate: number;
+    total_jobseeker_pay: number;
+    total_client_bill: number;
+    overtime_enabled: boolean;
+    bonus_amount: number;
+    deduction_amount: number;
+    notes?: string;
+    markup?: number;
+  }>;
+}): Promise<TimesheetResponse[]> => {
   try {
     const results: TimesheetResponse[] = [];
-    
+
     // Create one timesheet per assignment
     for (const assignment of frontendData.assignments) {
       // Generate invoice number for each timesheet
       const invoiceNumber = await generateInvoiceNumber();
-      
-      const timesheetData: Omit<TimesheetData, 'id' | 'createdAt' | 'updatedAt' | 'createdByUserId' | 'updatedByUserId'> = {
+
+      const timesheetData: Omit<
+        TimesheetData,
+        "id" | "createdAt" | "updatedAt" | "createdByUserId" | "updatedByUserId"
+      > = {
         invoiceNumber: invoiceNumber, // Add the generated invoice number
         jobseekerProfileId: frontendData.jobseeker_profile_id,
         jobseekerUserId: frontendData.jobseeker_user_id,
@@ -315,14 +356,15 @@ export const createTimesheetFromFrontendData = async (
         overtimeEnabled: assignment.overtime_enabled,
         bonusAmount: assignment.bonus_amount,
         deductionAmount: assignment.deduction_amount,
+        notes: assignment.notes,
         markup: assignment.markup,
-        emailSent: frontendData.email_sent
+        emailSent: frontendData.email_sent,
       };
-      
+
       const result = await createTimesheet(timesheetData);
       results.push(result);
     }
-    
+
     return results;
   } catch (error) {
     console.error("Error creating timesheets from frontend data:", error);
@@ -336,14 +378,24 @@ export const createTimesheetFromFrontendData = async (
 export const sendTimesheetEmails = async (
   id: string,
   jobseekerId?: string
-): Promise<{ success: boolean; message: string; emailsSent: string[]; emailsSkipped: string[] }> => {
+): Promise<{
+  success: boolean;
+  message: string;
+  emailsSent: string[];
+  emailsSkipped: string[];
+}> => {
   try {
-    const response = await api.post(`/api/timesheets/send-email/${id}`, jobseekerId ? { jobseekerId } : {});
+    const response = await api.post(
+      `/api/timesheets/send-email/${id}`,
+      jobseekerId ? { jobseekerId } : {}
+    );
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || "Failed to send emails for bulk timesheet");
+      throw new Error(
+        error.response.data.error || "Failed to send emails for bulk timesheet"
+      );
     }
     throw error;
   }
-}; 
+};

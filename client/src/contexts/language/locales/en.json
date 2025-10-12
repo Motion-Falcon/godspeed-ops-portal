@@ -683,7 +683,7 @@
       "needsAttention": "Needs Attention"
     },
     "actions": {
-      "helpText": "View • Edit • Delete",
+      "helpText": "View • Edit",
       "viewProfile": "View profile details",
       "editProfile": "Edit this profile",
       "deleteProfile": "Delete this profile"
@@ -865,6 +865,7 @@
     "firstName": "First Name",
     "lastName": "Last Name",
     "email": "Email",
+    "billingEmail": "Billing Email",
     "mobile": "Mobile",
     "dateOfBirth": "Date of Birth",
     "employeeId": "Employee ID",
@@ -955,6 +956,7 @@
     "stepGeneric": "Step {{step}}",
     "createProfile": "Create Profile",
     "updateProfile": "Update Profile",
+    "profileUpdatedSuccess": "Profile updated successfully",
     "submitChanges": "Yes, Submit Changes",
     "profileStatusChangeNoticeTitle": "Profile Status Change Notice",
     "profileStatusChangeNoticeMessage": "Editing your profile will reset your verification status to 'pending'. While your profile is in pending status, it will not be visible to employers until our team reviews and approves the changes. Do you want to proceed to the edit page?",
@@ -978,6 +980,9 @@
       "emailRequired": "Email is required",
       "emailInvalid": "Valid email is required",
       "emailNote": "Email cannot be changed as it's used as a unique identifier for this profile.",
+      "billingEmail": "Billing Email (Optional)",
+      "billingEmailPlaceholder": "billing@example.com",
+      "billingEmailNote": "Separate email address for billing and invoice purposes. If not provided, invoices will be sent to the primary email.",
       "mobile": "Mobile Number",
       "mobilePlaceholder": "(XXX) XXX-XXXX",
       "mobileRequired": "Mobile number is required",
@@ -1073,7 +1078,7 @@
     },
     "documents": {
       "sectionTitle": "Document Upload",
-      "sectionDescription": "Upload required documents (PDF format, max 2MB). The first two documents (SIN and Work Permit) are mandatory and essential for employment eligibility verification.",
+      "sectionDescription": "Upload required documents (PDF or image format: JPG, PNG, max 2MB). The first two documents (SIN and Work Permit) are mandatory and essential for employment eligibility verification.",
       "mandatoryDocumentsInfo": "The following documents are mandatory for all jobseekers and cannot be changed:",
       "sinMandatoryReason": "SIN Document is required for tax reporting and legal employment in Canada.",
       "workPermitMandatoryReason": "Work Permit is required to verify your legal authorization to work in Canada.",
@@ -1087,7 +1092,7 @@
       "uploadedStatus": "Uploaded: {{fileName}}",
       "previouslyUploadedNote": "Previously uploaded document",
       "willBeUploadedNote": "Will be uploaded when you save",
-      "invalidFileType": "Invalid file type. Only PDF files are allowed.",
+      "invalidFileType": "Invalid file type. Only PDF, JPG, JPEG, and PNG files are allowed.",
       "fileSizeExceeded": "File size exceeds the 2MB limit. Current size: {{size}}",
       "previewError": "Preview Error: {{error}}",
       "cannotPreview": "Cannot preview: document path is missing or invalid.",
@@ -1118,7 +1123,7 @@
       "loadingPreview": "Loading preview...",
       "documentRequired": "Document required",
       "noFileSelected": "No file selected",
-      "clickToUpload": "Click to upload a PDF",
+      "clickToUpload": "Click to upload a document (PDF or image)",
       "remove": "Remove {{documentLabel}}",
       "errorBanner": "At least one document with a valid file and type is required",
       "loadingDocumentPreviews": "Loading document previews...",
@@ -1126,7 +1131,7 @@
       "documentFileRequired": "Document file is required for new entries",
       "atLeastOneDocumentRequired": "At least one document is required",
       "maxFileSize": "Max file size is 2MB.",
-      "onlyPdfFiles": "Only .pdf files are accepted.",
+      "onlyPdfFiles": "Only PDF, JPG, JPEG, and PNG files are accepted.",
       "documentTypeRequired": "Document type is required",
       "mandatoryDocument": "Mandatory Document",
       "cannotChangeType": "Type cannot be changed for mandatory documents"
@@ -1270,6 +1275,7 @@
       "position": "Position",
       "weekPeriod": "Week Period",
       "jobseekers": "Jobseekers",
+      "billingEmail": "Billing Email",
       "totalPay": "Total Pay",
       "emailStatus": "Email Status",
       "actions": "Actions"
@@ -1279,6 +1285,7 @@
       "searchClient": "Search client...",
       "searchPosition": "Search position...",
       "searchJobseeker": "Search by First name...",
+      "searchBillingEmail": "Search billing email...",
       "selectClient": "Search and select client...",
       "selectPosition": "Search and select position...",
       "selectWeek": "Select week range...",
@@ -1300,7 +1307,8 @@
       "resend": "Resend",
       "sendEmail": "Send Email",
       "sendToJobseeker": "Send timesheet via email to this jobseeker",
-      "sendToAll": "Send timesheets via email to all jobseekers"
+      "sendToAll": "Send timesheets via email to all jobseekers",
+      "billingEmailNote": "Email will be sent to billing email if provided, otherwise to primary email"
     },
     "actions": {
       "viewDelete": "View • Delete",
@@ -1328,6 +1336,7 @@
       "clientName": "Client Name",
       "positionTitle": "Position Title",
       "positionCode": "Position Code",
+      "positionNumber": "Position Number",
       "invoiceAndPeriod": "Invoice & Period",
       "invoiceNumber": "Invoice Number",
       "invoiceNumbers": "Invoice Numbers",
@@ -1357,7 +1366,9 @@
       "grandTotalHours": "Grand Total Hours",
       "grandTotalBonus": "Grand Total Bonus",
       "grandTotalDeduction": "Grand Total Deduction",
-      "grandTotalPay": "Grand Total Pay"
+      "grandTotalPay": "Grand Total Pay",
+      "additionalNotes": "Additional Notes",
+      "notesPlaceholder": "Add any additional notes or comments about this timesheet..."
     },
     "buttons": {
       "generateBulkTimesheet": "Generate Bulk Timesheet",
@@ -1985,6 +1996,7 @@
       "client": "Client",
       "positionId": "Position ID",
       "positionCode": "Position Code",
+      "positionNumber": "Position Number",
       "location": "Location",
       "employmentTerm": "Employment Term",
       "employmentType": "Employment Type",
@@ -1999,6 +2011,7 @@
       "searchTitle": "Search title...",
       "searchClient": "Search client...",
       "searchPositionId": "Search position ID...",
+      "searchPositionNumber": "Search position number...",
       "searchLocation": "Search location..."
     },
     "filters": {
@@ -2009,7 +2022,7 @@
       "allPortalStatus": "All Portal Status"
     },
     "actions": {
-      "helpText": "View • Edit • Delete",
+      "helpText": "View • Edit",
       "viewPosition": "View position details",
       "editPosition": "Edit this position",
       "deletePosition": "Delete this position"
@@ -2393,7 +2406,9 @@
     "info": {
       "lastSaved": "Last saved: {date}",
       "addressAutoFill": "Note: Address details are auto-filled from the selected client but can be modified if needed",
-      "positionIdRegenerated": "Position ID is regenerated when editing drafts to ensure uniqueness"
+      "positionIdRegenerated": "Position ID is regenerated when editing drafts to ensure uniqueness",
+      "billRateAutoCalc": "Auto-calculates when markup or pay rate changes",
+      "markupAutoCalc": "Auto-calculates when bill rate or pay rate changes"
     },
     "emptyMessages": {
       "noJobTitles": "No job titles found"

@@ -683,7 +683,7 @@
       "needsAttention": "Nécessite une attention"
     },
     "actions": {
-      "helpText": "Voir • Modifier • Supprimer",
+      "helpText": "Voir • Modifier",
       "viewProfile": "Voir les détails du profil",
       "editProfile": "Modifier ce profil",
       "deleteProfile": "Supprimer ce profil"
@@ -867,6 +867,7 @@
     "firstName": "Prénom",
     "lastName": "Nom de famille",
     "email": "Email",
+    "billingEmail": "Email de facturation",
     "mobile": "Téléphone",
     "dateOfBirth": "Date de naissance",
     "employeeId": "ID Employé",
@@ -955,6 +956,7 @@
     "stepGeneric": "Étape {{step}}",
     "createProfile": "Créer le profil",
     "updateProfile": "Mettre à jour le profil",
+    "profileUpdatedSuccess": "Profil mis à jour avec succès",
     "submitChanges": "Oui, soumettre les modifications",
     "profileStatusChangeNoticeTitle": "Avis de changement de statut du profil",
     "profileStatusChangeNoticeMessage": "La modification de votre profil réinitialisera votre statut de vérification à 'en attente'. Tant que votre profil est en attente, il ne sera pas visible par les employeurs jusqu'à ce que notre équipe examine et approuve les modifications. Voulez-vous continuer vers la page d'édition ?",
@@ -978,6 +980,9 @@
       "emailRequired": "L'email est obligatoire",
       "emailInvalid": "Un email valide est requis",
       "emailNote": "L'email ne peut pas être modifié car il sert d'identifiant unique pour ce profil.",
+      "billingEmail": "Email de facturation (Optionnel)",
+      "billingEmailPlaceholder": "facturation@exemple.com",
+      "billingEmailNote": "Adresse email séparée pour la facturation et les factures. Si non fournie, les factures seront envoyées à l'email principal.",
       "mobile": "Numéro de téléphone portable",
       "mobilePlaceholder": "(XXX) XXX-XXXX",
       "mobileRequired": "Le numéro de téléphone portable est obligatoire",
@@ -1073,7 +1078,7 @@
     },
     "documents": {
       "sectionTitle": "Téléversement de documents",
-      "sectionDescription": "Téléversez les documents requis (format PDF, max 2 Mo). Les deux premiers documents (NAS et Permis de travail) sont obligatoires et essentiels pour la vérification de l'admissibilité à l'emploi.",
+      "sectionDescription": "Téléversez les documents requis (format PDF ou image : JPG, PNG, max 2 Mo). Les deux premiers documents (NAS et Permis de travail) sont obligatoires et essentiels pour la vérification de l'admissibilité à l'emploi.",
       "mandatoryDocumentsInfo": "Les documents suivants sont obligatoires pour tous les demandeurs d'emploi et ne peuvent pas être modifiés :",
       "sinMandatoryReason": "Le document NAS est requis pour la déclaration fiscale et l'emploi légal au Canada.",
       "workPermitMandatoryReason": "Le permis de travail est requis pour vérifier votre autorisation légale de travailler au Canada.",
@@ -1087,7 +1092,7 @@
       "uploadedStatus": "Téléversé : {{fileName}}",
       "previouslyUploadedNote": "Document précédemment téléversé",
       "willBeUploadedNote": "Sera téléversé lors de la sauvegarde",
-      "invalidFileType": "Type de fichier invalide. Seuls les fichiers PDF sont autorisés.",
+      "invalidFileType": "Type de fichier invalide. Seuls les fichiers PDF, JPG, JPEG et PNG sont autorisés.",
       "fileSizeExceeded": "La taille du fichier dépasse la limite de 2 Mo. Taille actuelle : {{size}}",
       "previewError": "Erreur d'aperçu : {{error}}",
       "cannotPreview": "Impossible de prévisualiser : le chemin du document est manquant ou invalide.",
@@ -1118,7 +1123,7 @@
       "loadingPreview": "Chargement de l'aperçu...",
       "documentRequired": "Document requis",
       "noFileSelected": "Aucun fichier sélectionné",
-      "clickToUpload": "Cliquez pour téléverser un PDF",
+      "clickToUpload": "Cliquez pour téléverser un document (PDF ou image)",
       "remove": "Supprimer {{documentLabel}}",
       "errorBanner": "Au moins un document avec un fichier valide et un type est requis",
       "loadingDocumentPreviews": "Chargement des aperçus des documents...",
@@ -1126,7 +1131,7 @@
       "documentFileRequired": "Un fichier de document est requis pour les nouvelles entrées",
       "atLeastOneDocumentRequired": "Au moins un document est requis",
       "maxFileSize": "La taille maximale du fichier est de 2 Mo.",
-      "onlyPdfFiles": "Seuls les fichiers .pdf sont acceptés.",
+      "onlyPdfFiles": "Seuls les fichiers PDF, JPG, JPEG et PNG sont acceptés.",
       "documentTypeRequired": "Le type de document est requis",
       "mandatoryDocument": "Document obligatoire",
       "cannotChangeType": "Le type ne peut pas être modifié pour les documents obligatoires"
@@ -1270,6 +1275,7 @@
       "position": "Poste",
       "weekPeriod": "Période de la semaine",
       "jobseekers": "Demandeurs d'emploi",
+      "billingEmail": "Email de facturation",
       "totalPay": "Salaire total",
       "emailStatus": "Statut de l'e-mail",
       "actions": "Actions"
@@ -1279,6 +1285,7 @@
       "searchClient": "Rechercher client...",
       "searchPosition": "Rechercher poste...",
       "searchJobseeker": "Rechercher par prénom...",
+      "searchBillingEmail": "Rechercher email de facturation...",
       "selectClient": "Rechercher et sélectionner un client...",
       "selectPosition": "Rechercher et sélectionner un poste...",
       "selectWeek": "Sélectionner la plage de semaines...",
@@ -1300,7 +1307,8 @@
       "resend": "Renvoyer",
       "sendEmail": "Envoyer un email",
       "sendToJobseeker": "Envoyer la feuille de temps par email à ce demandeur d'emploi",
-      "sendToAll": "Envoyer les feuilles de temps par email à tous les demandeurs d'emploi"
+      "sendToAll": "Envoyer les feuilles de temps par email à tous les demandeurs d'emploi",
+      "billingEmailNote": "L'email sera envoyé à l'adresse de facturation si fournie, sinon à l'email principal"
     },
     "actions": {
       "viewDelete": "Voir • Supprimer",
@@ -1328,6 +1336,7 @@
       "clientName": "Nom du client",
       "positionTitle": "Titre du poste",
       "positionCode": "Code du poste",
+      "positionNumber": "Numéro de poste",
       "invoiceAndPeriod": "Facture et période",
       "invoiceNumber": "Numéro de facture",
       "invoiceNumbers": "Numéros de facture",
@@ -1357,7 +1366,9 @@
       "grandTotalHours": "Grand total des heures",
       "grandTotalBonus": "Grand total des primes",
       "grandTotalDeduction": "Grand total des déductions",
-      "grandTotalPay": "Grand total de la rémunération"
+      "grandTotalPay": "Grand total de la rémunération",
+      "additionalNotes": "Notes supplémentaires",
+      "notesPlaceholder": "Ajoutez des notes ou commentaires supplémentaires sur cette feuille de temps..."
     },
     "buttons": {
       "generateBulkTimesheet": "Générer la feuille de temps en lot",
@@ -1985,6 +1996,7 @@
       "client": "Client",
       "positionId": "ID du poste",
       "positionCode": "Code du poste",
+      "positionNumber": "Numéro du poste",
       "location": "Emplacement",
       "employmentTerm": "Terme d'emploi",
       "employmentType": "Type d'emploi",
@@ -1999,6 +2011,7 @@
       "searchTitle": "Rechercher un titre...",
       "searchClient": "Rechercher un client...",
       "searchPositionId": "Rechercher un ID de poste...",
+      "searchPositionNumber": "Rechercher un numéro de poste...",
       "searchLocation": "Rechercher un emplacement..."
     },
     "filters": {
@@ -2009,7 +2022,7 @@
       "allPortalStatus": "Tous les statuts de portail"
     },
     "actions": {
-      "helpText": "Voir • Modifier • Supprimer",
+      "helpText": "Voir • Modifier",
       "viewPosition": "Voir les détails du poste",
       "editPosition": "Modifier ce poste",
       "deletePosition": "Supprimer ce poste"
@@ -2393,7 +2406,9 @@
     "info": {
       "lastSaved": "Dernière sauvegarde : {date}",
       "addressAutoFill": "Note : Les détails d'adresse sont automatiquement remplis à partir du client sélectionné mais peuvent être modifiés si nécessaire",
-      "positionIdRegenerated": "L'ID de poste est régénéré lors de l'édition des brouillons pour assurer l'unicité"
+      "positionIdRegenerated": "L'ID de poste est régénéré lors de l'édition des brouillons pour assurer l'unicité",
+      "billRateAutoCalc": "Se calcule automatiquement lorsque la majoration ou le taux de salaire change",
+      "markupAutoCalc": "Se calcule automatiquement lorsque le taux de facturation ou le taux de salaire change"
     },
     "emptyMessages": {
       "noJobTitles": "Aucun titre d'emploi trouvé"
