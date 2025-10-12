@@ -132,21 +132,14 @@ export const JOB_TITLES = [
   "Yard Cleaner / Coordinator",
 ] as const;
 
-export const EMPLOYMENT_TERMS = [
-  "Permanent",
-  "Contract",
-  "Temporary",
-] as const;
+export const EMPLOYMENT_TERMS = ["Permanent", "Contract", "Temporary"] as const;
 
-export const EMPLOYMENT_TYPES = [
-  "Full-time",
-  "Part-time",
-  "Casual",
-] as const;
+export const EMPLOYMENT_TYPES = ["Full-time", "Part-time", "Casual"] as const;
 
 export const POSITION_CATEGORIES = [
   "Driver",
   "Warehouse",
+  "Forklifter",
   "Office",
   "Management",
   "Sales",
@@ -199,7 +192,7 @@ export const PAYMENT_METHODS = [
 export const PAYMENT_TERMS = [
   "Due on Receipt",
   "Net 15",
-  "Net 22", 
+  "Net 22",
   "Net 30",
   "Net 45",
   "Net 60",
@@ -210,7 +203,7 @@ export const PAYMENT_TERMS = [
 export const PAY_CYCLES = [
   "1 Week Hold - Weekly Pay",
   "1 Week Hold - Biweekly Pay",
-  "2 Week Hold - Weekly Pay", 
+  "2 Week Hold - Weekly Pay",
   "2 Week Hold - Biweekly Pay",
 ] as const;
 
@@ -233,16 +226,16 @@ export const FILTER_OPTIONS = {
 } as const;
 
 // Type exports for TypeScript support
-export type JobTitle = typeof JOB_TITLES[number];
-export type EmploymentTerm = typeof EMPLOYMENT_TERMS[number];
-export type EmploymentType = typeof EMPLOYMENT_TYPES[number];
-export type PositionCategory = typeof POSITION_CATEGORIES[number];
-export type ExperienceLevel = typeof EXPERIENCE_LEVELS[number];
-export type LicenseType = typeof LICENSE_TYPES[number];
-export type PayrateType = typeof PAYRATE_TYPES[number];
-export type PaymentMethod = typeof PAYMENT_METHODS[number];
-export type PaymentTerm = typeof PAYMENT_TERMS[number];
-export type PayCycle = typeof PAY_CYCLES[number];
+export type JobTitle = (typeof JOB_TITLES)[number];
+export type EmploymentTerm = (typeof EMPLOYMENT_TERMS)[number];
+export type EmploymentType = (typeof EMPLOYMENT_TYPES)[number];
+export type PositionCategory = (typeof POSITION_CATEGORIES)[number];
+export type ExperienceLevel = (typeof EXPERIENCE_LEVELS)[number];
+export type LicenseType = (typeof LICENSE_TYPES)[number];
+export type PayrateType = (typeof PAYRATE_TYPES)[number];
+export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
+export type PaymentTerm = (typeof PAYMENT_TERMS)[number];
+export type PayCycle = (typeof PAY_CYCLES)[number];
 
 export const LIST_NAMES = [
   "AA",
@@ -253,14 +246,14 @@ export const LIST_NAMES = [
   "PRONTO PRO",
   "SA",
   "SB",
-  "SCARBOROUGH"
+  "SCARBOROUGH",
 ] as const;
 
 export const USER_ROLES = [
   "admin",
-  "recruiter", 
+  "recruiter",
   "manager",
-  "accountant"
+  "accountant",
 ] as const;
 
 export const STAFF_MEMBERS = [
@@ -300,6 +293,6 @@ export const CANADIAN_PROVINCES = [
   { code: "YK", name: "Yukon" },
 ] as const;
 
-export type UserRole = typeof USER_ROLES[number];
-export type StaffMember = typeof STAFF_MEMBERS[number];
-export type CanadianProvince = typeof CANADIAN_PROVINCES[number]; 
+export type UserRole = (typeof USER_ROLES)[number];
+export type StaffMember = (typeof STAFF_MEMBERS)[number];
+export type CanadianProvince = (typeof CANADIAN_PROVINCES)[number];

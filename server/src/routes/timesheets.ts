@@ -1,14 +1,14 @@
-import { Router, Request, Response } from 'express';
-import { authenticateToken, authorizeRoles } from '../middleware/auth.js';
-import { createClient } from '@supabase/supabase-js';
-import { apiRateLimiter, sanitizeInputs } from '../middleware/security.js';
-import { activityLogger } from '../middleware/activityLogger.js';
-import { emailNotifier } from '../middleware/emailNotifier.js';
-import { timesheetHtmlTemplate } from '../email-templates/timesheet-html.js';
-import { timesheetTextTemplate } from '../email-templates/timesheet-txt.js';
-import sgMail from '@sendgrid/mail';
+import { Router, Request, Response } from "express";
+import { authenticateToken, authorizeRoles } from "../middleware/auth.js";
+import { createClient } from "@supabase/supabase-js";
+import { apiRateLimiter, sanitizeInputs } from "../middleware/security.js";
+import { activityLogger } from "../middleware/activityLogger.js";
+import { emailNotifier } from "../middleware/emailNotifier.js";
+import { timesheetHtmlTemplate } from "../email-templates/timesheet-html.js";
+import { timesheetTextTemplate } from "../email-templates/timesheet-txt.js";
+import sgMail from "@sendgrid/mail";
 sgMail.setApiKey(process.env.SENDGRID_API_KEY!);
-import dotenv from 'dotenv';
+import dotenv from "dotenv";
 
 dotenv.config();
 
@@ -19,7 +19,7 @@ const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
-  console.error('Missing Supabase credentials');
+  console.error("Missing Supabase credentials");
   process.exit(1);
 }
 
@@ -48,6 +48,7 @@ interface TimesheetData {
   emailSent?: boolean;
   document?: string; // PDF file path or URL
   invoiceNumber?: string; // Auto-generated invoice number
+  notes?: string; // Additional notes or comments
 }
 
 interface OptimizedTimesheetData {
@@ -61,6 +62,7 @@ interface OptimizedTimesheetData {
     first_name: string;
     last_name: string;
     email: string;
+    billing_email: string | null;
   } | null;
   positions: {
     title: string;
@@ -73,7 +75,7 @@ interface VersionHistoryEntry {
   version: number;
   created_by: string;
   created_at: string;
-  action: 'created' | 'updated';
+  action: "created" | "updated";
 }
 
 interface DbTimesheetData {
@@ -99,6 +101,7 @@ interface DbTimesheetData {
   email_sent: boolean;
   document?: string; // PDF file path or URL
   invoice_number?: string; // Auto-generated invoice number
+  notes?: string; // Additional notes or comments
   created_at?: string;
   created_by_user_id?: string;
   updated_at?: string;
@@ -117,7 +120,9 @@ function snakeToCamelCase(str: string): string {
 /**
  * Transform timesheet data from camelCase to snake_case for database
  */
-function transformToDbFormat(data: TimesheetData): Omit<DbTimesheetData, 'id' | 'created_at' | 'updated_at'> {
+function transformToDbFormat(
+  data: TimesheetData
+): Omit<DbTimesheetData, "id" | "created_at" | "updated_at"> {
   return {
     jobseeker_profile_id: data.jobseekerProfileId,
     jobseeker_user_id: data.jobseekerUserId,
@@ -139,14 +144,17 @@ function transformToDbFormat(data: TimesheetData): Omit<DbTimesheetData, 'id' | 
     deduction_amount: data.deductionAmount,
     email_sent: data.emailSent || false,
     document: data.document,
-    invoice_number: data.invoiceNumber
+    invoice_number: data.invoiceNumber,
+    notes: data.notes,
   };
 }
 
 /**
  * Transform optimized timesheet data to frontend format
  */
-function transformOptimizedToFrontendFormat(data: OptimizedTimesheetData): Record<string, unknown> {
+function transformOptimizedToFrontendFormat(
+  data: OptimizedTimesheetData
+): Record<string, unknown> {
   return {
     id: data.id,
     invoiceNumber: data.invoice_number,
@@ -154,30 +162,37 @@ function transformOptimizedToFrontendFormat(data: OptimizedTimesheetData): Recor
     weekEndDate: data.week_end_date,
     totalJobseekerPay: data.total_jobseeker_pay,
     emailSent: data.email_sent,
-    jobseekerProfile: data.jobseeker_profiles ? {
-      firstName: data.jobseeker_profiles.first_name,
-      lastName: data.jobseeker_profiles.last_name,
-      email: data.jobseeker_profiles.email
-    } : null,
-    position: data.positions ? {
-      title: data.positions.title,
-      positionCode: data.positions.position_code,
-      clientName: data.positions.client_name
-    } : null
+    jobseekerProfile: data.jobseeker_profiles
+      ? {
+          firstName: data.jobseeker_profiles.first_name,
+          lastName: data.jobseeker_profiles.last_name,
+          email: data.jobseeker_profiles.email,
+          billingEmail: data.jobseeker_profiles.billing_email,
+        }
+      : null,
+    position: data.positions
+      ? {
+          title: data.positions.title,
+          positionCode: data.positions.position_code,
+          clientName: data.positions.client_name,
+        }
+      : null,
   };
 }
 
 /**
  * Transform timesheet data from snake_case to camelCase for frontend
  */
-function transformToFrontendFormat(data: DbTimesheetData): Record<string, unknown> {
+function transformToFrontendFormat(
+  data: DbTimesheetData
+): Record<string, unknown> {
   const result: Record<string, unknown> = {};
-  
+
   Object.entries(data).forEach(([key, value]) => {
     const camelKey = snakeToCamelCase(key);
     result[camelKey] = value;
   });
-  
+
   return result;
 }
 
@@ -186,67 +201,72 @@ function transformToFrontendFormat(data: DbTimesheetData): Record<string, unknow
  * GET /api/timesheets/generate-invoice-number
  * @access Private (Admin, Recruiter, Jobseeker)
  */
-router.get('/generate-invoice-number', 
-  authenticateToken, 
-  authorizeRoles(['admin', 'recruiter', 'jobseeker']),
+router.get(
+  "/generate-invoice-number",
+  authenticateToken,
+  authorizeRoles(["admin", "recruiter", "jobseeker"]),
   // apiRateLimiter,
   async (req: Request, res: Response) => {
     try {
       if (!req.user || !req.user.id) {
-        return res.status(401).json({ error: 'Authentication required' });
+        return res.status(401).json({ error: "Authentication required" });
       }
 
       // Get the current maximum invoice number
       const { data: maxInvoiceData, error: maxInvoiceError } = await supabase
-        .from('timesheets')
-        .select('invoice_number')
-        .not('invoice_number', 'is', null)
-        .order('invoice_number', { ascending: false })
+        .from("timesheets")
+        .select("invoice_number")
+        .not("invoice_number", "is", null)
+        .order("invoice_number", { ascending: false })
         .limit(1);
 
       if (maxInvoiceError) {
-        console.error('Error fetching max invoice number:', maxInvoiceError);
-        return res.status(500).json({ error: 'Failed to generate invoice number' });
+        console.error("Error fetching max invoice number:", maxInvoiceError);
+        return res
+          .status(500)
+          .json({ error: "Failed to generate invoice number" });
       }
 
       let nextInvoiceNumber: string;
 
       if (!maxInvoiceData || maxInvoiceData.length === 0) {
         // No existing invoice numbers, start with 000001
-        nextInvoiceNumber = '000001';
+        nextInvoiceNumber = "000001";
       } else {
         // Parse the current max invoice number and increment
         const currentMax = maxInvoiceData[0].invoice_number;
         const currentNumber = parseInt(currentMax, 10);
         const nextNumber = currentNumber + 1;
-        nextInvoiceNumber = nextNumber.toString().padStart(6, '0');
+        nextInvoiceNumber = nextNumber.toString().padStart(6, "0");
       }
 
       // Verify this invoice number doesn't already exist (race condition protection)
       const { data: existingInvoice, error: existingError } = await supabase
-        .from('timesheets')
-        .select('id')
-        .eq('invoice_number', nextInvoiceNumber)
+        .from("timesheets")
+        .select("id")
+        .eq("invoice_number", nextInvoiceNumber)
         .maybeSingle();
 
       if (existingError) {
-        console.error('Error checking existing invoice number:', existingError);
-        return res.status(500).json({ error: 'Failed to validate invoice number' });
+        console.error("Error checking existing invoice number:", existingError);
+        return res
+          .status(500)
+          .json({ error: "Failed to validate invoice number" });
       }
 
       if (existingInvoice) {
         // If somehow this number exists, try the next one
         const nextNumber = parseInt(nextInvoiceNumber, 10) + 1;
-        nextInvoiceNumber = nextNumber.toString().padStart(6, '0');
+        nextInvoiceNumber = nextNumber.toString().padStart(6, "0");
       }
 
       return res.status(200).json({
         success: true,
-        invoiceNumber: nextInvoiceNumber
+        invoiceNumber: nextInvoiceNumber,
       });
     } catch (error) {
-      console.error('Unexpected error generating invoice number:', error);
-      return res.status(500).json({ error: 'An unexpected error occurred' });
+      console.error("Unexpected error generating invoice number:", error);
+      return res.status(500).json({ error: "An unexpected error occurred" });
     }
   }
 );
@@ -256,31 +276,33 @@ router.get('/generate-invoice-number',
  * GET /api/timesheets
  * @access Private (Admin, Recruiter, Jobseeker - own timesheets only)
  */
-router.get('/', 
-  authenticateToken, 
-  authorizeRoles(['admin', 'recruiter', 'jobseeker']),
+router.get(
+  "/",
+  authenticateToken,
+  authorizeRoles(["admin", "recruiter", "jobseeker"]),
   // apiRateLimiter,
   async (req: Request, res: Response) => {
     try {
       if (!req.user || !req.user.id) {
-        return res.status(401).json({ error: 'Authentication required' });
+        return res.status(401).json({ error: "Authentication required" });
       }
 
       const userId = req.user.id;
       const userType = req.user.user_metadata?.user_type;
 
       // Extract pagination and filter parameters from query
-      const { 
-        page = '1', 
-        limit = '10', 
-        searchTerm = '', 
-        jobseekerFilter = '',
-        positionFilter = '',
-        clientFilter = '',
-        invoiceNumberFilter = '',
-        emailSentFilter = '',
-        dateRangeStart = '',
-        dateRangeEnd = ''
+      const {
+        page = "1",
+        limit = "10",
+        searchTerm = "",
+        jobseekerFilter = "",
+        positionFilter = "",
+        clientFilter = "",
+        invoiceNumberFilter = "",
+        billingEmailFilter = "",
+        emailSentFilter = "",
+        dateRangeStart = "",
+        dateRangeEnd = "",
       } = req.query as {
         page?: string;
         limit?: string;
@@ -289,6 +311,7 @@ router.get('/',
         positionFilter?: string;
         clientFilter?: string;
         invoiceNumberFilter?: string;
+        billingEmailFilter?: string;
         emailSentFilter?: string;
         dateRangeStart?: string;
         dateRangeEnd?: string;
@@ -299,23 +322,21 @@ router.get('/',
       const offset = (pageNum - 1) * limitNum;
 
       // Build the base query with joins for related data - use INNER JOIN for positions if filtering by position fields
-      let baseQuery = supabase
-        .from('timesheets')
-        .select(`
+      let baseQuery = supabase.from("timesheets").select(`
           id,
           invoice_number,
           week_start_date,
           week_end_date,
           total_jobseeker_pay,
           email_sent,
-          jobseeker_profiles!inner(first_name, last_name, email),
+          jobseeker_profiles!inner(first_name, last_name, email, billing_email),
           positions!inner(title, position_code, client_name)
         `);
 
       // Apply role-based filtering
-      if (userType === 'jobseeker') {
+      if (userType === "jobseeker") {
         // Jobseekers can only see their own timesheets
-        baseQuery = baseQuery.eq('jobseeker_user_id', userId);
+        baseQuery = baseQuery.eq("jobseeker_user_id", userId);
       }
       // Admin and recruiter can see all timesheets (no additional filter needed)
 
@@ -326,43 +347,47 @@ router.get('/',
         positionFilter,
         clientFilter,
         invoiceNumberFilter,
+        billingEmailFilter,
         emailSentFilter,
         dateRangeStart,
-        dateRangeEnd
+        dateRangeEnd,
       });
 
       // Get total count (unfiltered for user's access level)
       let totalCountQuery = supabase
-        .from('timesheets')
-        .select('*', { count: 'exact', head: true });
+        .from("timesheets")
+        .select("*", { count: "exact", head: true });
 
-      if (userType === 'jobseeker') {
-        totalCountQuery = totalCountQuery.eq('jobseeker_user_id', userId);
+      if (userType === "jobseeker") {
+        totalCountQuery = totalCountQuery.eq("jobseeker_user_id", userId);
       }
 
       const { count: totalCount, error: countError } = await totalCountQuery;
 
       if (countError) {
-        console.error('Error getting total count:', countError);
-        return res.status(500).json({ error: 'Failed to get total count of timesheets' });
+        console.error("Error getting total count:", countError);
+        return res
+          .status(500)
+          .json({ error: "Failed to get total count of timesheets" });
       }
 
       // Get filtered count - using same optimized query with conditional INNER JOIN
-      let filteredCountQuery = supabase
-        .from('timesheets')
-        .select(`
+      let filteredCountQuery = supabase.from("timesheets").select(
+        `
           id,
           invoice_number,
           week_start_date,
           week_end_date,
           total_jobseeker_pay,
           email_sent,
-          jobseeker_profiles!inner(first_name, last_name, email),
+          jobseeker_profiles!inner(first_name, last_name, email, billing_email),
           positions!inner(title, position_code, client_name)
-        `, { count: 'exact', head: true });
+        `,
+        { count: "exact", head: true }
+      );
 
-      if (userType === 'jobseeker') {
-        filteredCountQuery = filteredCountQuery.eq('jobseeker_user_id', userId);
+      if (userType === "jobseeker") {
+        filteredCountQuery = filteredCountQuery.eq("jobseeker_user_id", userId);
       }
 
       filteredCountQuery = applyTimesheetFilters(filteredCountQuery, {
@@ -371,26 +396,30 @@ router.get('/',
         positionFilter,
         clientFilter,
         invoiceNumberFilter,
+        billingEmailFilter,
         emailSentFilter,
         dateRangeStart,
-        dateRangeEnd
+        dateRangeEnd,
       });
 
-      const { count: filteredCount, error: filteredCountError } = await filteredCountQuery;
+      const { count: filteredCount, error: filteredCountError } =
+        await filteredCountQuery;
 
       if (filteredCountError) {
-        console.error('Error getting filtered count:', filteredCountError);
-        return res.status(500).json({ error: 'Failed to get filtered count of timesheets' });
+        console.error("Error getting filtered count:", filteredCountError);
+        return res
+          .status(500)
+          .json({ error: "Failed to get filtered count of timesheets" });
       }
 
       // Apply pagination and execute main query
       const { data: timesheets, error } = await baseQuery
         .range(offset, offset + limitNum - 1)
-        .order('created_at', { ascending: false });
+        .order("created_at", { ascending: false });
 
       if (error) {
-        console.error('Error fetching timesheets:', error);
-        return res.status(500).json({ error: 'Failed to fetch timesheets' });
+        console.error("Error fetching timesheets:", error);
+        return res.status(500).json({ error: "Failed to fetch timesheets" });
       }
 
       if (!timesheets || timesheets.length === 0) {
@@ -403,13 +432,13 @@ router.get('/',
             totalFiltered: filteredCount || 0,
             totalPages: Math.ceil((filteredCount || 0) / limitNum),
             hasNextPage: false,
-            hasPrevPage: false
-          }
+            hasPrevPage: false,
+          },
         });
       }
 
       // Transform timesheets to frontend format
-      const formattedTimesheets = timesheets.map(timesheet => {
+      const formattedTimesheets = timesheets.map((timesheet) => {
         return transformOptimizedToFrontendFormat(timesheet as any);
       });
 
@@ -428,12 +457,12 @@ router.get('/',
           totalFiltered,
           totalPages,
           hasNextPage,
-          hasPrevPage
-        }
+          hasPrevPage,
+        },
       });
     } catch (error) {
-      console.error('Unexpected error fetching timesheets:', error);
-      return res.status(500).json({ error: 'An unexpected error occurred' });
+      console.error("Unexpected error fetching timesheets:", error);
+      return res.status(500).json({ error: "An unexpected error occurred" });
     }
   }
 );
@@ -441,25 +470,30 @@ router.get('/',
 /**
  * Helper function to apply filters to a Supabase query
  */
-function applyTimesheetFilters(query: any, filters: {
-  searchTerm?: string;
-  jobseekerFilter?: string;
-  positionFilter?: string;
-  clientFilter?: string;
-  invoiceNumberFilter?: string;
-  emailSentFilter?: string;
-  dateRangeStart?: string;
-  dateRangeEnd?: string;
-}) {
+function applyTimesheetFilters(
+  query: any,
+  filters: {
+    searchTerm?: string;
+    jobseekerFilter?: string;
+    positionFilter?: string;
+    clientFilter?: string;
+    invoiceNumberFilter?: string;
+    billingEmailFilter?: string;
+    emailSentFilter?: string;
+    dateRangeStart?: string;
+    dateRangeEnd?: string;
+  }
+) {
   const {
     searchTerm,
     jobseekerFilter,
     positionFilter,
     clientFilter,
     invoiceNumberFilter,
+    billingEmailFilter,
     emailSentFilter,
     dateRangeStart,
-    dateRangeEnd
+    dateRangeEnd,
   } = filters;
 
   // Global search across multiple fields
@@ -468,43 +502,53 @@ function applyTimesheetFilters(query: any, filters: {
     // query = query.ilike('jobseeker_profiles.first_name', `%${searchTermTrimmed}%`);
     // query = query.ilike('jobseeker_profiles.last_name', `%${searchTermTrimmed}%`);
     // query = query.ilike('jobseeker_profiles.email', `%${searchTermTrimmed}%`);
-   query = query.ilike('invoice_number', `%${searchTermTrimmed}%`);
-    query = query.ilike('positions.position_code', `%${searchTermTrimmed}%`);
-    query = query.ilike('positions.title', `%${searchTermTrimmed}%`);
-    query = query.ilike('positions.client_name', `%${searchTermTrimmed}%`);
+    query = query.ilike("invoice_number", `%${searchTermTrimmed}%`);
+    query = query.ilike("positions.position_code", `%${searchTermTrimmed}%`);
+    query = query.ilike("positions.title", `%${searchTermTrimmed}%`);
+    query = query.ilike("positions.client_name", `%${searchTermTrimmed}%`);
   }
 
   // Individual column filters
   if (jobseekerFilter && jobseekerFilter.trim().length > 0) {
-    query = query.ilike('jobseeker_profiles.first_name', `%${jobseekerFilter.trim()}%`);
+    query = query.ilike(
+      "jobseeker_profiles.first_name",
+      `%${jobseekerFilter.trim()}%`
+    );
     // query = query.ilike('jobseeker_profiles.last_name', `%${jobseekerFilter.trim()}%`);
     // query = query.ilike('jobseeker_profiles.email', `%${jobseekerFilter.trim()}%`);
   }
 
   if (positionFilter && positionFilter.trim().length > 0) {
-    query = query.ilike('positions.title', `%${positionFilter.trim()}%`);
+    query = query.ilike("positions.title", `%${positionFilter.trim()}%`);
   }
 
   if (clientFilter && clientFilter.trim().length > 0) {
-    query = query.ilike('positions.client_name', `%${clientFilter.trim()}%`);
+    query = query.ilike("positions.client_name", `%${clientFilter.trim()}%`);
   }
 
   if (invoiceNumberFilter && invoiceNumberFilter.trim().length > 0) {
-    query = query.ilike('invoice_number', `%${invoiceNumberFilter.trim()}%`);
+    query = query.ilike("invoice_number", `%${invoiceNumberFilter.trim()}%`);
+  }
+
+  if (billingEmailFilter && billingEmailFilter.trim().length > 0) {
+    query = query.ilike(
+      "jobseeker_profiles.billing_email",
+      `%${billingEmailFilter.trim()}%`
+    );
   }
 
   if (emailSentFilter && emailSentFilter.trim().length > 0) {
-    const emailSentBool = emailSentFilter.toLowerCase() === 'true';
-    query = query.eq('email_sent', emailSentBool);
+    const emailSentBool = emailSentFilter.toLowerCase() === "true";
+    query = query.eq("email_sent", emailSentBool);
   }
 
   // Date range filters
   if (dateRangeStart && dateRangeStart.trim().length > 0) {
-    query = query.gte('week_start_date', dateRangeStart.trim());
+    query = query.gte("week_start_date", dateRangeStart.trim());
   }
 
   if (dateRangeEnd && dateRangeEnd.trim().length > 0) {
-    query = query.lte('week_end_date', dateRangeEnd.trim());
+    query = query.lte("week_end_date", dateRangeEnd.trim());
   }
 
   return query;
@@ -523,14 +567,17 @@ router.post(
   activityLogger({
     onSuccess: (req, res) => {
       const { id } = req.params;
-      const result = res.locals.timesheetSendResult || res.locals.timesheet || {};
+      const result =
+        res.locals.timesheetSendResult || res.locals.timesheet || {};
       return {
         actionType: "send_bulk_timesheet_email",
         actionVerb: "sent email",
         primaryEntityType: "timesheet",
         primaryEntityId: id,
         primaryEntityName: result.invoiceNumber || result.invoice_number || id,
-        displayMessage: `Sent timesheet email for invoice ${result.invoiceNumber || result.invoice_number || id} to ${result.jobseekerName || 'jobseeker'}`,
+        displayMessage: `Sent timesheet email for invoice ${
+          result.invoiceNumber || result.invoice_number || id
+        } to ${result.jobseekerName || "jobseeker"}`,
         category: "financial",
         priority: "normal",
         metadata: {
@@ -544,16 +591,18 @@ router.post(
   async (req, res) => {
     try {
       const { id } = req.params;
-      
+
       // Fetch timesheet with jobseeker profile and position details
       const { data: timesheet } = await supabase
         .from("timesheets")
-        .select(`
+        .select(
+          `
           *,
           jobseeker_profiles!inner(
             first_name,
             last_name,
-            email
+            email,
+            billing_email
           ),
           positions!inner(
             title,
@@ -561,7 +610,8 @@ router.post(
             city,
             province
           )
-        `)
+        `
+        )
         .eq("id", id)
         .maybeSingle();
 
@@ -576,18 +626,26 @@ router.post(
         return res.status(400).json({ error: "Jobseeker email not found" });
       }
 
+      // Use billing email if provided, otherwise use primary email
+      const emailTo = jobseekerProfile.billing_email || jobseekerProfile.email;
+
       // Check if user has permission to send this timesheet email
-      if (req.user?.user_metadata?.user_type === 'jobseeker' && 
-          req.user?.id !== timesheet.jobseeker_user_id) {
-        return res.status(403).json({ error: "Access denied: You can only send emails for your own timesheets" });
+      if (
+        req.user?.user_metadata?.user_type === "jobseeker" &&
+        req.user?.id !== timesheet.jobseeker_user_id
+      ) {
+        return res.status(403).json({
+          error:
+            "Access denied: You can only send emails for your own timesheets",
+        });
       }
 
       // Prepare template variables
       const templateVars = {
         invoice_number: timesheet.invoice_number,
         jobseeker_name: `${jobseekerProfile.first_name} ${jobseekerProfile.last_name}`,
-        jobseeker_email: jobseekerProfile.email,
-        position_title: position?.title || 'Unknown Position',
+        jobseeker_email: emailTo,
+        position_title: position?.title || "Unknown Position",
         week_start_date: timesheet.week_start_date,
         week_end_date: timesheet.week_end_date,
         daily_hours: timesheet.daily_hours || [],
@@ -596,35 +654,42 @@ router.post(
         regular_pay_rate: timesheet.regular_pay_rate,
         overtime_pay_rate: timesheet.overtime_pay_rate,
         total_jobseeker_pay: timesheet.total_jobseeker_pay,
-        overtime_enabled: timesheet.overtime_enabled || timesheet.total_overtime_hours > 0,
+        overtime_enabled:
+          timesheet.overtime_enabled || timesheet.total_overtime_hours > 0,
         bonus_amount: timesheet.bonus_amount,
         deduction_amount: timesheet.deduction_amount,
         generated_date: new Date().toLocaleDateString(),
       };
 
+      console.log(
+        "Sending timesheet email to:",
+        emailTo,
+        jobseekerProfile.billing_email ? "(billing email)" : "(primary email)"
+      );
+
       // Generate email content
       const html = timesheetHtmlTemplate(templateVars);
       const text = timesheetTextTemplate(templateVars);
-      const [subjectLine, ...bodyLines] = text.split('\n');
-      const subject = subjectLine.replace('Subject:', '').trim();
+      const [subjectLine, ...bodyLines] = text.split("\n");
+      const subject = subjectLine.replace("Subject:", "").trim();
 
       let emailSent = false;
-      let errorMsg = '';
+      let errorMsg = "";
 
       try {
         // Send email
         await sgMail.send({
-          to: jobseekerProfile.email,
-          from: process.env.DEFAULT_FROM_EMAIL || 'godspeed@aimotion.com',
+          to: emailTo,
+          from: process.env.DEFAULT_FROM_EMAIL || "godspeed@aimotion.com",
           subject,
-          text: bodyLines.join('\n').trim(),
+          text: bodyLines.join("\n").trim(),
           html,
         });
         emailSent = true;
       } catch (err) {
         if (err instanceof Error) {
           errorMsg = err.message;
-        } else if (typeof err === 'string') {
+        } else if (typeof err === "string") {
           errorMsg = err;
         } else {
           errorMsg = JSON.stringify(err);
@@ -650,7 +715,7 @@ router.post(
       if (emailSent) {
         return res.status(200).json({
           success: true,
-          message: `Email sent successfully to ${jobseekerProfile.email}`,
+          message: `Email sent successfully to ${emailTo}`,
           email_sent: true,
         });
       } else {
@@ -663,7 +728,9 @@ router.post(
       }
     } catch (error) {
       console.error("Error sending email for timesheet:", error);
-      return res.status(500).json({ error: "Failed to send email for timesheet" });
+      return res
+        .status(500)
+        .json({ error: "Failed to send email for timesheet" });
     }
   }
 );
@@ -673,14 +740,15 @@ router.post(
  * GET /api/timesheets/:id
  * @access Private (Admin, Recruiter, Jobseeker - own timesheets only)
  */
-router.get('/:id', 
-  authenticateToken, 
-  authorizeRoles(['admin', 'recruiter', 'jobseeker']),
+router.get(
+  "/:id",
+  authenticateToken,
+  authorizeRoles(["admin", "recruiter", "jobseeker"]),
   // apiRateLimiter,
   async (req: Request, res: Response) => {
     try {
       if (!req.user || !req.user.id) {
-        return res.status(401).json({ error: 'Authentication required' });
+        return res.status(401).json({ error: "Authentication required" });
       }
 
       const userId = req.user.id;
@@ -689,39 +757,41 @@ router.get('/:id',
 
       // Build query with joins
       let query = supabase
-        .from('timesheets')
-        .select(`
+        .from("timesheets")
+        .select(
+          `
           *,
           jobseeker_profiles!inner(id, first_name, last_name, email),
           positions(id, position_code, title, client)
-        `)
-        .eq('id', id);
+        `
+        )
+        .eq("id", id);
 
       // Apply role-based filtering
-      if (userType === 'jobseeker') {
-        query = query.eq('jobseeker_user_id', userId);
+      if (userType === "jobseeker") {
+        query = query.eq("jobseeker_user_id", userId);
       }
 
       const { data: timesheet, error } = await query.single();
 
       if (error) {
-        console.error('Error fetching timesheet:', error);
-        return res.status(404).json({ error: 'Timesheet not found' });
+        console.error("Error fetching timesheet:", error);
+        return res.status(404).json({ error: "Timesheet not found" });
       }
 
       // Transform to frontend format
       const formatted = transformToFrontendFormat(timesheet);
       formatted.jobseekerProfile = timesheet.jobseeker_profiles;
       formatted.position = timesheet.positions;
-      
+
       // Clean up joined data
       delete formatted.jobseekerProfiles;
       delete formatted.positions;
 
       return res.status(200).json(formatted);
     } catch (error) {
-      console.error('Unexpected error fetching timesheet:', error);
-      return res.status(500).json({ error: 'An unexpected error occurred' });
+      console.error("Unexpected error fetching timesheet:", error);
+      return res.status(500).json({ error: "An unexpected error occurred" });
     }
   }
 );
@@ -731,64 +801,65 @@ router.get('/:id',
  * POST /api/timesheets
  * @access Private (Admin, Recruiter, Jobseeker - own timesheets only)
  */
-router.post('/', 
-  authenticateToken, 
-  authorizeRoles(['admin', 'recruiter', 'jobseeker']),
+router.post(
+  "/",
+  authenticateToken,
+  authorizeRoles(["admin", "recruiter", "jobseeker"]),
   sanitizeInputs,
   activityLogger({
     onSuccess: async (req: Request, res: Response) => {
       const timesheetData = req.body;
       const newTimesheet = res.locals.newTimesheet;
-      
+
       // Get jobseeker name for display
-      let jobseekerName = 'Unknown Jobseeker';
+      let jobseekerName = "Unknown Jobseeker";
       if (timesheetData.jobseekerProfileId) {
         try {
           const { data: profile } = await supabase
-            .from('jobseeker_profiles')
-            .select('first_name, last_name')
-            .eq('id', timesheetData.jobseekerProfileId)
+            .from("jobseeker_profiles")
+            .select("first_name, last_name")
+            .eq("id", timesheetData.jobseekerProfileId)
             .single();
           if (profile) {
             jobseekerName = `${profile.first_name} ${profile.last_name}`;
           }
         } catch (error) {
-          console.warn('Could not fetch jobseeker name for activity log');
+          console.warn("Could not fetch jobseeker name for activity log");
         }
       }
 
       // Get position title for display
-      let positionTitle = 'Unknown Position';
+      let positionTitle = "Unknown Position";
       if (timesheetData.positionId) {
         try {
           const { data: position } = await supabase
-            .from('positions')
-            .select('title, position_code')
-            .eq('id', timesheetData.positionId)
+            .from("positions")
+            .select("title, position_code")
+            .eq("id", timesheetData.positionId)
             .single();
           if (position) {
             positionTitle = position.title || position.position_code;
           }
         } catch (error) {
-          console.warn('Could not fetch position title for activity log');
+          console.warn("Could not fetch position title for activity log");
         }
       }
 
       return {
-        actionType: 'create_timesheet',
-        actionVerb: 'created',
-        primaryEntityType: 'timesheet',
+        actionType: "create_timesheet",
+        actionVerb: "created",
+        primaryEntityType: "timesheet",
         primaryEntityId: newTimesheet?.id,
         primaryEntityName: `Timesheet for week ${timesheetData.weekStartDate}`,
-        secondaryEntityType: 'jobseeker',
+        secondaryEntityType: "jobseeker",
         secondaryEntityId: timesheetData.jobseekerProfileId,
         secondaryEntityName: jobseekerName,
-        tertiaryEntityType: 'position',
+        tertiaryEntityType: "position",
         tertiaryEntityId: timesheetData.positionId,
         tertiaryEntityName: positionTitle,
         displayMessage: `Created timesheet for ${jobseekerName} (${positionTitle}) - Week ${timesheetData.weekStartDate}`,
-        category: 'financial',
-        priority: 'normal' as const,
+        category: "financial",
+        priority: "normal" as const,
         metadata: {
           weekStartDate: timesheetData.weekStartDate,
           weekEndDate: timesheetData.weekEndDate,
@@ -796,10 +867,10 @@ router.post('/',
           totalOvertimeHours: timesheetData.totalOvertimeHours,
           totalJobseekerPay: timesheetData.totalJobseekerPay,
           totalClientBill: timesheetData.totalClientBill,
-          invoiceNumber: timesheetData.invoiceNumber
-        }
+          invoiceNumber: timesheetData.invoiceNumber,
+        },
       };
-    }
+    },
   }),
   emailNotifier({
     onSuccessEmail: async (req: Request, res: Response) => {
@@ -811,278 +882,35 @@ router.post('/',
 
       // Get jobseeker profile information
       const { data: jobseekerProfile } = await supabase
-        .from('jobseeker_profiles')
-        .select('first_name, last_name, email')
-        .eq('id', timesheetData.jobseekerProfileId)
+        .from("jobseeker_profiles")
+        .select("first_name, last_name, email, billing_email")
+        .eq("id", timesheetData.jobseekerProfileId)
         .single();
 
       if (!jobseekerProfile || !jobseekerProfile.email) {
-        console.log('[EmailNotifier] No jobseeker email found, skipping email send.');
+        console.log(
+          "[EmailNotifier] No jobseeker email found, skipping email send."
+        );
         return null;
       }
 
+      // Use billing email if provided, otherwise use primary email
+      const emailTo = jobseekerProfile.billing_email || jobseekerProfile.email;
+
       // Get position information
       const { data: position } = await supabase
-        .from('positions')
-        .select('title, client_name, city, province')
-        .eq('id', timesheetData.positionId)
+        .from("positions")
+        .select("title, client_name, city, province")
+        .eq("id", timesheetData.positionId)
         .single();
 
       // Prepare variables for template
       const templateVars = {
-        invoice_number: timesheetData.invoiceNumber || newTimesheet?.invoice_number,
+        invoice_number:
+          timesheetData.invoiceNumber || newTimesheet?.invoice_number,
         jobseeker_name: `${jobseekerProfile.first_name} ${jobseekerProfile.last_name}`,
-        jobseeker_email: jobseekerProfile.email,
-        position_title: position?.title || 'Unknown Position',
-        week_start_date: timesheetData.weekStartDate,
-        week_end_date: timesheetData.weekEndDate,
-        daily_hours: timesheetData.dailyHours || [],
-        total_regular_hours: timesheetData.totalRegularHours,
-        total_overtime_hours: timesheetData.totalOvertimeHours,
-        regular_pay_rate: timesheetData.regularPayRate,
-        overtime_pay_rate: timesheetData.overtimePayRate,
-        total_jobseeker_pay: timesheetData.totalJobseekerPay,
-        overtime_enabled: timesheetData.overtimeEnabled,
-        bonus_amount: timesheetData.bonusAmount,
-        deduction_amount: timesheetData.deductionAmount,
-        generated_date: new Date().toLocaleDateString()
-      };
-
-      console.log('[EmailNotifier] templateVars:', templateVars);
-
-      // Use template functions
-      const html = timesheetHtmlTemplate(templateVars);
-      const text = timesheetTextTemplate(templateVars);
-
-      // Extract subject (first line from text template)
-      const [subjectLine, ...bodyLines] = text.split('\n');
-      const subject = subjectLine.replace('Subject:', '').trim();
-
-      return {
-        to: jobseekerProfile.email,
-        subject,
-        text: bodyLines.join('\n').trim(),
-        html,
-      };
-    }
-  }),
-  async (req: Request, res: Response) => {
-    try {
-      if (!req.user || !req.user.id) {
-        return res.status(401).json({ error: 'Authentication required' });
-      }
-
-      const userId = req.user.id;
-      const userType = req.user.user_metadata?.user_type;
-      const timesheetData: TimesheetData = req.body;
-      
-      // Validate required fields
-      const requiredFields = [
-        'jobseekerProfileId', 'jobseekerUserId', 'positionId', 
-        'weekStartDate', 'weekEndDate', 'dailyHours',
-        'totalRegularHours', 'totalOvertimeHours', 'regularPayRate',
-        'overtimePayRate', 'regularBillRate', 'overtimeBillRate',
-        'totalJobseekerPay', 'totalClientBill', 'overtimeEnabled'
-      ];
-
-      for (const field of requiredFields) {
-        if (timesheetData[field as keyof TimesheetData] === undefined || timesheetData[field as keyof TimesheetData] === null) {
-          return res.status(400).json({ error: `Missing required field: ${field}` });
-        }
-      }
-
-      // Role-based validation: jobseekers can only create their own timesheets
-      if (userType === 'jobseeker' && timesheetData.jobseekerUserId !== userId) {
-        return res.status(403).json({ error: 'You can only create timesheets for yourself' });
-      }
-
-      // Check for duplicate timesheet (same jobseeker, position and week)
-      const { data: duplicateTimesheet, error: duplicateCheckError } = await supabase
-        .from('timesheets')
-        .select('id')
-        .eq('jobseeker_profile_id', timesheetData.jobseekerProfileId)
-        .eq('position_id', timesheetData.positionId)
-        .eq('week_start_date', timesheetData.weekStartDate)
-        .maybeSingle();
-
-      if (duplicateCheckError) {
-        console.error('Error checking for duplicate timesheet:', duplicateCheckError);
-        return res.status(500).json({ error: 'Failed to validate timesheet uniqueness' });
-      }
-
-      if (duplicateTimesheet) {
-        return res.status(409).json({ 
-          error: 'A timesheet for this jobseeker, position and week already exists',
-          field: 'positionId'
-        });
-      }
-
-      // Prepare timesheet data for database
-      const dbTimesheetData: Omit<DbTimesheetData, 'id' | 'created_at' | 'updated_at'> = {
-        ...transformToDbFormat(timesheetData),
-        created_by_user_id: userId,
-        updated_by_user_id: userId,
-        version: 1,
-        version_history: initializeVersionHistory(userId)
-      };
-
-      // Insert timesheet into database
-      const { data: newTimesheet, error: insertError } = await supabase
-        .from('timesheets')
-        .insert([dbTimesheetData])
-        .select('*')
-        .single();
-
-      if (insertError) {
-        console.error('Error creating timesheet:', insertError);
-        console.error('Attempted to insert data:', dbTimesheetData);
-        return res.status(500).json({ 
-          error: 'Failed to create timesheet', 
-          details: insertError.message,
-          code: insertError.code 
-        });
-      }
-
-      // Store for activity logging
-      res.locals.newTimesheet = newTimesheet;
-
-      // Transform response to frontend format
-      const formatted = transformToFrontendFormat(newTimesheet);
-
-      return res.status(201).json({
-        success: true,
-        message: 'Timesheet created successfully',
-        timesheet: formatted
-      });
-    } catch (error) {
-      console.error('Unexpected error creating timesheet:', error);
-      return res.status(500).json({ error: 'An unexpected error occurred' });
-    }
-  }
-);
-
-/**
- * Update an existing timesheet
- * PUT /api/timesheets/:id
- * @access Private (Admin, Recruiter, Jobseeker - own timesheets only)
- */
-router.put('/:id', 
-  authenticateToken, 
-  authorizeRoles(['admin', 'recruiter', 'jobseeker']),
-  sanitizeInputs,
-  activityLogger({
-    onSuccess: async (req: Request, res: Response) => {
-      const timesheetData = req.body;
-      const updatedTimesheet = res.locals.updatedTimesheet;
-      const { id } = req.params;
-      
-      // Get jobseeker name for display
-      let jobseekerName = 'Unknown Jobseeker';
-      if (timesheetData.jobseekerProfileId) {
-        try {
-          const { data: profile } = await supabase
-            .from('jobseeker_profiles')
-            .select('first_name, last_name')
-            .eq('id', timesheetData.jobseekerProfileId)
-            .single();
-          if (profile) {
-            jobseekerName = `${profile.first_name} ${profile.last_name}`;
-          }
-        } catch (error) {
-          console.warn('Could not fetch jobseeker name for activity log');
-        }
-      }
-
-      // Get position title for display
-      let positionTitle = 'Unknown Position';
-      if (timesheetData.positionId) {
-        try {
-          const { data: position } = await supabase
-            .from('positions')
-            .select('title, position_code')
-            .eq('id', timesheetData.positionId)
-            .single();
-          if (position) {
-            positionTitle = position.title || position.position_code;
-          }
-        } catch (error) {
-          console.warn('Could not fetch position title for activity log');
-        }
-      }
-
-      return {
-        actionType: 'update_timesheet',
-        actionVerb: 'updated',
-        primaryEntityType: 'timesheet',
-        primaryEntityId: id,
-        primaryEntityName: `Timesheet for week ${timesheetData.weekStartDate}`,
-        secondaryEntityType: 'jobseeker',
-        secondaryEntityId: timesheetData.jobseekerProfileId,
-        secondaryEntityName: jobseekerName,
-        tertiaryEntityType: 'position',
-        tertiaryEntityId: timesheetData.positionId,
-        tertiaryEntityName: positionTitle,
-        displayMessage: `Updated timesheet for ${jobseekerName} (${positionTitle}) - Week ${timesheetData.weekStartDate}`,
-        category: 'financial',
-        priority: 'normal' as const,
-        metadata: {
-          weekStartDate: timesheetData.weekStartDate,
-          weekEndDate: timesheetData.weekEndDate,
-          totalRegularHours: timesheetData.totalRegularHours,
-          totalOvertimeHours: timesheetData.totalOvertimeHours,
-          totalJobseekerPay: timesheetData.totalJobseekerPay,
-          totalClientBill: timesheetData.totalClientBill,
-          invoiceNumber: timesheetData.invoiceNumber
-        }
-      };
-    }
-  }),
-  emailNotifier({
-    onSuccessEmail: async (req: Request, res: Response) => {
-      // Only send email if emailSent is true
-      if (!req.body.emailSent) return null;
-
-      const timesheetData = req.body;
-      const updatedTimesheet = res.locals.updatedTimesheet;
-
-      // Get jobseeker profile information
-      const { data: jobseekerProfile } = await supabase
-        .from('jobseeker_profiles')
-        .select('first_name, last_name, email')
-        .eq('id', timesheetData.jobseekerProfileId)
-        .single();
-
-      if (!jobseekerProfile || !jobseekerProfile.email) {
-        console.log('[EmailNotifier] No jobseeker email found, skipping email send.');
-        return null;
-      }
-
-      // Get position information
-      const { data: position } = await supabase
-        .from('positions')
-        .select('title, client_name, city, province')
-        .eq('id', timesheetData.positionId)
-        .single();
-
-      // Get client information
-      let clientName = position?.client_name || 'Unknown Client';
-      if (position?.client_name) {
-        const { data: client } = await supabase
-          .from('clients')
-          .select('company_name')
-          .eq('company_name', position.client_name)
-          .single();
-        if (client) {
-          clientName = client.company_name;
-        }
-      }
-
-      // Prepare variables for template
-      const templateVars = {
-        invoice_number: timesheetData.invoiceNumber || updatedTimesheet?.invoice_number,
-        jobseeker_name: `${jobseekerProfile.first_name} ${jobseekerProfile.last_name}`,
-        jobseeker_email: jobseekerProfile.email,
-        position_title: position?.title || 'Unknown Position',
+        jobseeker_email: emailTo,
+        position_title: position?.title || "Unknown Position",
         week_start_date: timesheetData.weekStartDate,
         week_end_date: timesheetData.weekEndDate,
         daily_hours: timesheetData.dailyHours || [],
@@ -1095,80 +923,394 @@ router.put('/:id',
         bonus_amount: timesheetData.bonusAmount,
         deduction_amount: timesheetData.deductionAmount,
         generated_date: new Date().toLocaleDateString(),
-        is_updated: true
       };
 
-      console.log('[EmailNotifier] templateVars (update):', templateVars);
+      console.log("[EmailNotifier] templateVars:", templateVars);
+      console.log(
+        "[EmailNotifier] Sending email to:",
+        emailTo,
+        jobseekerProfile.billing_email ? "(billing email)" : "(primary email)"
+      );
 
       // Use template functions
       const html = timesheetHtmlTemplate(templateVars);
       const text = timesheetTextTemplate(templateVars);
 
       // Extract subject (first line from text template)
-      const [subjectLine, ...bodyLines] = text.split('\n');
-      const subject = subjectLine.replace('Subject:', '').trim();
+      const [subjectLine, ...bodyLines] = text.split("\n");
+      const subject = subjectLine.replace("Subject:", "").trim();
 
       return {
-        to: jobseekerProfile.email,
+        to: emailTo,
         subject,
-        text: bodyLines.join('\n').trim(),
+        text: bodyLines.join("\n").trim(),
         html,
       };
-    }
+    },
   }),
   async (req: Request, res: Response) => {
     try {
       if (!req.user || !req.user.id) {
-        return res.status(401).json({ error: 'Authentication required' });
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      const userId = req.user.id;
+      const userType = req.user.user_metadata?.user_type;
+      const timesheetData: TimesheetData = req.body;
+
+      // Validate required fields
+      const requiredFields = [
+        "jobseekerProfileId",
+        "jobseekerUserId",
+        "positionId",
+        "weekStartDate",
+        "weekEndDate",
+        "dailyHours",
+        "totalRegularHours",
+        "totalOvertimeHours",
+        "regularPayRate",
+        "overtimePayRate",
+        "regularBillRate",
+        "overtimeBillRate",
+        "totalJobseekerPay",
+        "totalClientBill",
+        "overtimeEnabled",
+      ];
+
+      for (const field of requiredFields) {
+        if (
+          timesheetData[field as keyof TimesheetData] === undefined ||
+          timesheetData[field as keyof TimesheetData] === null
+        ) {
+          return res
+            .status(400)
+            .json({ error: `Missing required field: ${field}` });
+        }
+      }
+
+      // Role-based validation: jobseekers can only create their own timesheets
+      if (
+        userType === "jobseeker" &&
+        timesheetData.jobseekerUserId !== userId
+      ) {
+        return res
+          .status(403)
+          .json({ error: "You can only create timesheets for yourself" });
+      }
+
+      // Check for duplicate timesheet (same jobseeker, position and week)
+      const { data: duplicateTimesheet, error: duplicateCheckError } =
+        await supabase
+          .from("timesheets")
+          .select("id")
+          .eq("jobseeker_profile_id", timesheetData.jobseekerProfileId)
+          .eq("position_id", timesheetData.positionId)
+          .eq("week_start_date", timesheetData.weekStartDate)
+          .maybeSingle();
+
+      if (duplicateCheckError) {
+        console.error(
+          "Error checking for duplicate timesheet:",
+          duplicateCheckError
+        );
+        return res
+          .status(500)
+          .json({ error: "Failed to validate timesheet uniqueness" });
+      }
+
+      if (duplicateTimesheet) {
+        return res.status(409).json({
+          error:
+            "A timesheet for this jobseeker, position and week already exists",
+          field: "positionId",
+        });
+      }
+
+      // Prepare timesheet data for database
+      const dbTimesheetData: Omit<
+        DbTimesheetData,
+        "id" | "created_at" | "updated_at"
+      > = {
+        ...transformToDbFormat(timesheetData),
+        created_by_user_id: userId,
+        updated_by_user_id: userId,
+        version: 1,
+        version_history: initializeVersionHistory(userId),
+      };
+
+      // Insert timesheet into database
+      const { data: newTimesheet, error: insertError } = await supabase
+        .from("timesheets")
+        .insert([dbTimesheetData])
+        .select("*")
+        .single();
+
+      if (insertError) {
+        console.error("Error creating timesheet:", insertError);
+        console.error("Attempted to insert data:", dbTimesheetData);
+        return res.status(500).json({
+          error: "Failed to create timesheet",
+          details: insertError.message,
+          code: insertError.code,
+        });
+      }
+
+      // Store for activity logging
+      res.locals.newTimesheet = newTimesheet;
+
+      // Transform response to frontend format
+      const formatted = transformToFrontendFormat(newTimesheet);
+
+      return res.status(201).json({
+        success: true,
+        message: "Timesheet created successfully",
+        timesheet: formatted,
+      });
+    } catch (error) {
+      console.error("Unexpected error creating timesheet:", error);
+      return res.status(500).json({ error: "An unexpected error occurred" });
+    }
+  }
+);
+
+/**
+ * Update an existing timesheet
+ * PUT /api/timesheets/:id
+ * @access Private (Admin, Recruiter, Jobseeker - own timesheets only)
+ */
+router.put(
+  "/:id",
+  authenticateToken,
+  authorizeRoles(["admin", "recruiter", "jobseeker"]),
+  sanitizeInputs,
+  activityLogger({
+    onSuccess: async (req: Request, res: Response) => {
+      const timesheetData = req.body;
+      const updatedTimesheet = res.locals.updatedTimesheet;
+      const { id } = req.params;
+
+      // Get jobseeker name for display
+      let jobseekerName = "Unknown Jobseeker";
+      if (timesheetData.jobseekerProfileId) {
+        try {
+          const { data: profile } = await supabase
+            .from("jobseeker_profiles")
+            .select("first_name, last_name")
+            .eq("id", timesheetData.jobseekerProfileId)
+            .single();
+          if (profile) {
+            jobseekerName = `${profile.first_name} ${profile.last_name}`;
+          }
+        } catch (error) {
+          console.warn("Could not fetch jobseeker name for activity log");
+        }
+      }
+
+      // Get position title for display
+      let positionTitle = "Unknown Position";
+      if (timesheetData.positionId) {
+        try {
+          const { data: position } = await supabase
+            .from("positions")
+            .select("title, position_code")
+            .eq("id", timesheetData.positionId)
+            .single();
+          if (position) {
+            positionTitle = position.title || position.position_code;
+          }
+        } catch (error) {
+          console.warn("Could not fetch position title for activity log");
+        }
+      }
+
+      return {
+        actionType: "update_timesheet",
+        actionVerb: "updated",
+        primaryEntityType: "timesheet",
+        primaryEntityId: id,
+        primaryEntityName: `Timesheet for week ${timesheetData.weekStartDate}`,
+        secondaryEntityType: "jobseeker",
+        secondaryEntityId: timesheetData.jobseekerProfileId,
+        secondaryEntityName: jobseekerName,
+        tertiaryEntityType: "position",
+        tertiaryEntityId: timesheetData.positionId,
+        tertiaryEntityName: positionTitle,
+        displayMessage: `Updated timesheet for ${jobseekerName} (${positionTitle}) - Week ${timesheetData.weekStartDate}`,
+        category: "financial",
+        priority: "normal" as const,
+        metadata: {
+          weekStartDate: timesheetData.weekStartDate,
+          weekEndDate: timesheetData.weekEndDate,
+          totalRegularHours: timesheetData.totalRegularHours,
+          totalOvertimeHours: timesheetData.totalOvertimeHours,
+          totalJobseekerPay: timesheetData.totalJobseekerPay,
+          totalClientBill: timesheetData.totalClientBill,
+          invoiceNumber: timesheetData.invoiceNumber,
+        },
+      };
+    },
+  }),
+  emailNotifier({
+    onSuccessEmail: async (req: Request, res: Response) => {
+      // Only send email if emailSent is true
+      if (!req.body.emailSent) return null;
+
+      const timesheetData = req.body;
+      const updatedTimesheet = res.locals.updatedTimesheet;
+
+      // Get jobseeker profile information
+      const { data: jobseekerProfile } = await supabase
+        .from("jobseeker_profiles")
+        .select("first_name, last_name, email, billing_email")
+        .eq("id", timesheetData.jobseekerProfileId)
+        .single();
+
+      if (!jobseekerProfile || !jobseekerProfile.email) {
+        console.log(
+          "[EmailNotifier] No jobseeker email found, skipping email send."
+        );
+        return null;
+      }
+
+      // Use billing email if provided, otherwise use primary email
+      const emailTo = jobseekerProfile.billing_email || jobseekerProfile.email;
+
+      // Get position information
+      const { data: position } = await supabase
+        .from("positions")
+        .select("title, client_name, city, province")
+        .eq("id", timesheetData.positionId)
+        .single();
+
+      // Get client information
+      let clientName = position?.client_name || "Unknown Client";
+      if (position?.client_name) {
+        const { data: client } = await supabase
+          .from("clients")
+          .select("company_name")
+          .eq("company_name", position.client_name)
+          .single();
+        if (client) {
+          clientName = client.company_name;
+        }
+      }
+
+      // Prepare variables for template
+      const templateVars = {
+        invoice_number:
+          timesheetData.invoiceNumber || updatedTimesheet?.invoice_number,
+        jobseeker_name: `${jobseekerProfile.first_name} ${jobseekerProfile.last_name}`,
+        jobseeker_email: emailTo,
+        position_title: position?.title || "Unknown Position",
+        week_start_date: timesheetData.weekStartDate,
+        week_end_date: timesheetData.weekEndDate,
+        daily_hours: timesheetData.dailyHours || [],
+        total_regular_hours: timesheetData.totalRegularHours,
+        total_overtime_hours: timesheetData.totalOvertimeHours,
+        regular_pay_rate: timesheetData.regularPayRate,
+        overtime_pay_rate: timesheetData.overtimePayRate,
+        total_jobseeker_pay: timesheetData.totalJobseekerPay,
+        overtime_enabled: timesheetData.overtimeEnabled,
+        bonus_amount: timesheetData.bonusAmount,
+        deduction_amount: timesheetData.deductionAmount,
+        generated_date: new Date().toLocaleDateString(),
+        is_updated: true,
+      };
+
+      console.log("[EmailNotifier] templateVars (update):", templateVars);
+      console.log(
+        "[EmailNotifier] Sending email to:",
+        emailTo,
+        jobseekerProfile.billing_email ? "(billing email)" : "(primary email)"
+      );
+
+      // Use template functions
+      const html = timesheetHtmlTemplate(templateVars);
+      const text = timesheetTextTemplate(templateVars);
+
+      // Extract subject (first line from text template)
+      const [subjectLine, ...bodyLines] = text.split("\n");
+      const subject = subjectLine.replace("Subject:", "").trim();
+
+      return {
+        to: emailTo,
+        subject,
+        text: bodyLines.join("\n").trim(),
+        html,
+      };
+    },
+  }),
+  async (req: Request, res: Response) => {
+    try {
+      if (!req.user || !req.user.id) {
+        return res.status(401).json({ error: "Authentication required" });
       }
 
       const userId = req.user.id;
       const userType = req.user.user_metadata?.user_type;
       const { id } = req.params;
       const timesheetData: TimesheetData = req.body;
-      
+
       // Check if timesheet exists and user has permission
       let existingQuery = supabase
-        .from('timesheets')
-        .select('id, jobseeker_user_id, week_start_date, position_id, version, version_history')
-        .eq('id', id);
+        .from("timesheets")
+        .select(
+          "id, jobseeker_user_id, week_start_date, position_id, version, version_history"
+        )
+        .eq("id", id);
 
-      if (userType === 'jobseeker') {
-        existingQuery = existingQuery.eq('jobseeker_user_id', userId);
+      if (userType === "jobseeker") {
+        existingQuery = existingQuery.eq("jobseeker_user_id", userId);
       }
 
-      const { data: existingTimesheet, error: timesheetCheckError } = await existingQuery.maybeSingle();
+      const { data: existingTimesheet, error: timesheetCheckError } =
+        await existingQuery.maybeSingle();
 
       if (timesheetCheckError || !existingTimesheet) {
-        return res.status(404).json({ error: 'Timesheet not found or access denied' });
+        return res
+          .status(404)
+          .json({ error: "Timesheet not found or access denied" });
       }
 
       // Role-based validation: jobseekers can only update their own timesheets
-      if (userType === 'jobseeker' && timesheetData.jobseekerUserId !== userId) {
-        return res.status(403).json({ error: 'You can only update your own timesheets' });
+      if (
+        userType === "jobseeker" &&
+        timesheetData.jobseekerUserId !== userId
+      ) {
+        return res
+          .status(403)
+          .json({ error: "You can only update your own timesheets" });
       }
 
       // Check for duplicate if assignment or week is being changed
-      if (timesheetData.weekStartDate !== existingTimesheet.week_start_date || 
-          timesheetData.positionId !== existingTimesheet.position_id) {
-        
-        const { data: duplicateTimesheet, error: duplicateCheckError } = await supabase
-          .from('timesheets')
-          .select('id')
-          .eq('position_id', timesheetData.positionId)
-          .eq('week_start_date', timesheetData.weekStartDate)
-          .neq('id', id)
-          .maybeSingle();
+      if (
+        timesheetData.weekStartDate !== existingTimesheet.week_start_date ||
+        timesheetData.positionId !== existingTimesheet.position_id
+      ) {
+        const { data: duplicateTimesheet, error: duplicateCheckError } =
+          await supabase
+            .from("timesheets")
+            .select("id")
+            .eq("position_id", timesheetData.positionId)
+            .eq("week_start_date", timesheetData.weekStartDate)
+            .neq("id", id)
+            .maybeSingle();
 
         if (duplicateCheckError) {
-          console.error('Error checking for duplicate timesheet:', duplicateCheckError);
-          return res.status(500).json({ error: 'Failed to validate timesheet uniqueness' });
+          console.error(
+            "Error checking for duplicate timesheet:",
+            duplicateCheckError
+          );
+          return res
+            .status(500)
+            .json({ error: "Failed to validate timesheet uniqueness" });
         }
 
         if (duplicateTimesheet) {
-          return res.status(409).json({ 
-            error: 'Another timesheet for this position and week already exists',
-            field: 'positionId'
+          return res.status(409).json({
+            error:
+              "Another timesheet for this position and week already exists",
+            field: "positionId",
           });
         }
       }
@@ -1180,20 +1322,24 @@ router.put('/:id',
         updated_by_user_id: userId,
         updated_at: new Date().toISOString(),
         version: newVersion,
-        version_history: addVersionToHistory(existingTimesheet.version_history || [], userId, newVersion)
+        version_history: addVersionToHistory(
+          existingTimesheet.version_history || [],
+          userId,
+          newVersion
+        ),
       };
 
       // Update timesheet in database
       const { data: updatedTimesheet, error: updateError } = await supabase
-        .from('timesheets')
+        .from("timesheets")
         .update(dbTimesheetData)
-        .eq('id', id)
-        .select('*')
+        .eq("id", id)
+        .select("*")
         .single();
 
       if (updateError) {
-        console.error('Error updating timesheet:', updateError);
-        return res.status(500).json({ error: 'Failed to update timesheet' });
+        console.error("Error updating timesheet:", updateError);
+        return res.status(500).json({ error: "Failed to update timesheet" });
       }
 
       // Store for activity logging
@@ -1204,12 +1350,12 @@ router.put('/:id',
 
       return res.status(200).json({
         success: true,
-        message: 'Timesheet updated successfully',
-        timesheet: formatted
+        message: "Timesheet updated successfully",
+        timesheet: formatted,
       });
     } catch (error) {
-      console.error('Unexpected error updating timesheet:', error);
-      return res.status(500).json({ error: 'An unexpected error occurred' });
+      console.error("Unexpected error updating timesheet:", error);
+      return res.status(500).json({ error: "An unexpected error occurred" });
     }
   }
 );
@@ -1219,63 +1365,68 @@ router.put('/:id',
  * DELETE /api/timesheets/:id
  * @access Private (Admin, Recruiter, Jobseeker - own timesheets only)
  */
-router.delete('/:id', 
-  authenticateToken, 
-  authorizeRoles(['admin', 'recruiter', 'jobseeker']),
+router.delete(
+  "/:id",
+  authenticateToken,
+  authorizeRoles(["admin", "recruiter", "jobseeker"]),
   activityLogger({
     onSuccess: async (req: Request, res: Response) => {
       const { id } = req.params;
       const deletedTimesheet = res.locals.deletedTimesheet;
-      
+
       // Get jobseeker name for display
-      let jobseekerName = 'Unknown Jobseeker';
+      let jobseekerName = "Unknown Jobseeker";
       if (deletedTimesheet?.jobseeker_user_id) {
         try {
           const { data: profile } = await supabase
-            .from('jobseeker_profiles')
-            .select('first_name, last_name')
-            .eq('user_id', deletedTimesheet.jobseeker_user_id)
+            .from("jobseeker_profiles")
+            .select("first_name, last_name")
+            .eq("user_id", deletedTimesheet.jobseeker_user_id)
             .single();
           if (profile) {
             jobseekerName = `${profile.first_name} ${profile.last_name}`;
           }
         } catch (error) {
-          console.warn('Could not fetch jobseeker name for activity log');
+          console.warn("Could not fetch jobseeker name for activity log");
         }
       }
 
       // Get position title for display
-      let positionTitle = 'Unknown Position';
+      let positionTitle = "Unknown Position";
       if (deletedTimesheet?.position_id) {
         try {
           const { data: position } = await supabase
-            .from('positions')
-            .select('title, position_code')
-            .eq('id', deletedTimesheet.position_id)
+            .from("positions")
+            .select("title, position_code")
+            .eq("id", deletedTimesheet.position_id)
             .single();
           if (position) {
             positionTitle = position.title || position.position_code;
           }
         } catch (error) {
-          console.warn('Could not fetch position title for activity log');
+          console.warn("Could not fetch position title for activity log");
         }
       }
 
       return {
-        actionType: 'delete_timesheet',
-        actionVerb: 'deleted',
-        primaryEntityType: 'timesheet',
+        actionType: "delete_timesheet",
+        actionVerb: "deleted",
+        primaryEntityType: "timesheet",
         primaryEntityId: id,
-        primaryEntityName: `Timesheet for week ${deletedTimesheet?.week_start_date || 'Unknown'}`,
-        secondaryEntityType: 'jobseeker',
+        primaryEntityName: `Timesheet for week ${
+          deletedTimesheet?.week_start_date || "Unknown"
+        }`,
+        secondaryEntityType: "jobseeker",
         secondaryEntityId: deletedTimesheet?.jobseeker_profile_id,
         secondaryEntityName: jobseekerName,
-        tertiaryEntityType: 'position',
+        tertiaryEntityType: "position",
         tertiaryEntityId: deletedTimesheet?.position_id,
         tertiaryEntityName: positionTitle,
-        displayMessage: `Deleted timesheet for ${jobseekerName} (${positionTitle}) - Week ${deletedTimesheet?.week_start_date || 'Unknown'}`,
-        category: 'financial',
-        priority: 'high' as const,
+        displayMessage: `Deleted timesheet for ${jobseekerName} (${positionTitle}) - Week ${
+          deletedTimesheet?.week_start_date || "Unknown"
+        }`,
+        category: "financial",
+        priority: "high" as const,
         metadata: {
           weekStartDate: deletedTimesheet?.week_start_date,
           weekEndDate: deletedTimesheet?.week_end_date,
@@ -1283,15 +1434,15 @@ router.delete('/:id',
           totalOvertimeHours: deletedTimesheet?.total_overtime_hours,
           totalJobseekerPay: deletedTimesheet?.total_jobseeker_pay,
           totalClientBill: deletedTimesheet?.total_client_bill,
-          invoiceNumber: deletedTimesheet?.invoice_number
-        }
+          invoiceNumber: deletedTimesheet?.invoice_number,
+        },
       };
-    }
+    },
   }),
   async (req: Request, res: Response) => {
     try {
       if (!req.user || !req.user.id) {
-        return res.status(401).json({ error: 'Authentication required' });
+        return res.status(401).json({ error: "Authentication required" });
       }
 
       const userId = req.user.id;
@@ -1299,19 +1450,19 @@ router.delete('/:id',
       const { id } = req.params;
 
       // Check if timesheet exists and user has permission
-      let existingQuery = supabase
-        .from('timesheets')
-        .select('*')
-        .eq('id', id);
+      let existingQuery = supabase.from("timesheets").select("*").eq("id", id);
 
-      if (userType === 'jobseeker') {
-        existingQuery = existingQuery.eq('jobseeker_user_id', userId);
+      if (userType === "jobseeker") {
+        existingQuery = existingQuery.eq("jobseeker_user_id", userId);
       }
 
-      const { data: existingTimesheet, error: timesheetCheckError } = await existingQuery.maybeSingle();
+      const { data: existingTimesheet, error: timesheetCheckError } =
+        await existingQuery.maybeSingle();
 
       if (timesheetCheckError || !existingTimesheet) {
-        return res.status(404).json({ error: 'Timesheet not found or access denied' });
+        return res
+          .status(404)
+          .json({ error: "Timesheet not found or access denied" });
       }
 
       // Store for activity logging
@@ -1319,23 +1470,23 @@ router.delete('/:id',
 
       // Delete timesheet
       const { error: deleteError } = await supabase
-        .from('timesheets')
+        .from("timesheets")
         .delete()
-        .eq('id', id);
+        .eq("id", id);
 
       if (deleteError) {
-        console.error('Error deleting timesheet:', deleteError);
-        return res.status(500).json({ error: 'Failed to delete timesheet' });
+        console.error("Error deleting timesheet:", deleteError);
+        return res.status(500).json({ error: "Failed to delete timesheet" });
       }
 
       return res.status(200).json({
         success: true,
-        message: 'Timesheet deleted successfully',
-        deletedId: id
+        message: "Timesheet deleted successfully",
+        deletedId: id,
       });
     } catch (error) {
-      console.error('Unexpected error deleting timesheet:', error);
-      return res.status(500).json({ error: 'An unexpected error occurred' });
+      console.error("Unexpected error deleting timesheet:", error);
+      return res.status(500).json({ error: "An unexpected error occurred" });
     }
   }
 );
@@ -1345,14 +1496,15 @@ router.delete('/:id',
  * GET /api/timesheets/jobseeker/:jobseekerUserId
  * @access Private (Admin, Recruiter, Jobseeker - own timesheets only)
  */
-router.get('/jobseeker/:jobseekerUserId', 
-  authenticateToken, 
-  authorizeRoles(['admin', 'recruiter', 'jobseeker']),
+router.get(
+  "/jobseeker/:jobseekerUserId",
+  authenticateToken,
+  authorizeRoles(["admin", "recruiter", "jobseeker"]),
   // apiRateLimiter,
   async (req: Request, res: Response) => {
     try {
       if (!req.user || !req.user.id) {
-        return res.status(401).json({ error: 'Authentication required' });
+        return res.status(401).json({ error: "Authentication required" });
       }
 
       const userId = req.user.id;
@@ -1360,15 +1512,17 @@ router.get('/jobseeker/:jobseekerUserId',
       const { jobseekerUserId } = req.params;
 
       // Role-based validation: jobseekers can only access their own timesheets
-      if (userType === 'jobseeker' && jobseekerUserId !== userId) {
-        return res.status(403).json({ error: 'You can only access your own timesheets' });
+      if (userType === "jobseeker" && jobseekerUserId !== userId) {
+        return res
+          .status(403)
+          .json({ error: "You can only access your own timesheets" });
       }
 
-      const { 
-        page = '1', 
-        limit = '10',
-        dateRangeStart = '',
-        dateRangeEnd = ''
+      const {
+        page = "1",
+        limit = "10",
+        dateRangeStart = "",
+        dateRangeEnd = "",
       } = req.query as {
         page?: string;
         limit?: string;
@@ -1382,61 +1536,65 @@ router.get('/jobseeker/:jobseekerUserId',
 
       // Build query
       let query = supabase
-        .from('timesheets')
-        .select(`
+        .from("timesheets")
+        .select(
+          `
           *,
           jobseeker_profiles!inner(id, first_name, last_name, email),
           positions(id, position_code, title, client)
-        `)
-        .eq('jobseeker_user_id', jobseekerUserId);
+        `
+        )
+        .eq("jobseeker_user_id", jobseekerUserId);
 
       // Apply date filters if provided
       if (dateRangeStart) {
-        query = query.gte('week_start_date', dateRangeStart);
+        query = query.gte("week_start_date", dateRangeStart);
       }
       if (dateRangeEnd) {
-        query = query.lte('week_end_date', dateRangeEnd);
+        query = query.lte("week_end_date", dateRangeEnd);
       }
 
       // Get count
       let countQuery = supabase
-        .from('timesheets')
-        .select('*', { count: 'exact', head: true })
-        .eq('jobseeker_user_id', jobseekerUserId);
+        .from("timesheets")
+        .select("*", { count: "exact", head: true })
+        .eq("jobseeker_user_id", jobseekerUserId);
 
       if (dateRangeStart) {
-        countQuery = countQuery.gte('week_start_date', dateRangeStart);
+        countQuery = countQuery.gte("week_start_date", dateRangeStart);
       }
       if (dateRangeEnd) {
-        countQuery = countQuery.lte('week_end_date', dateRangeEnd);
+        countQuery = countQuery.lte("week_end_date", dateRangeEnd);
       }
 
       const { count, error: countError } = await countQuery;
 
       if (countError) {
-        console.error('Error getting count:', countError);
-        return res.status(500).json({ error: 'Failed to get count of timesheets' });
+        console.error("Error getting count:", countError);
+        return res
+          .status(500)
+          .json({ error: "Failed to get count of timesheets" });
       }
 
       // Execute main query with pagination
       const { data: timesheets, error } = await query
         .range(offset, offset + limitNum - 1)
-        .order('week_start_date', { ascending: false });
+        .order("week_start_date", { ascending: false });
 
       if (error) {
-        console.error('Error fetching jobseeker timesheets:', error);
-        return res.status(500).json({ error: 'Failed to fetch timesheets' });
+        console.error("Error fetching jobseeker timesheets:", error);
+        return res.status(500).json({ error: "Failed to fetch timesheets" });
       }
 
       // Transform timesheets
-      const formattedTimesheets = (timesheets || []).map(timesheet => {
+      const formattedTimesheets = (timesheets || []).map((timesheet) => {
         const formatted = transformToFrontendFormat(timesheet);
         formatted.jobseekerProfile = timesheet.jobseeker_profiles;
         formatted.position = timesheet.positions;
-        
+
         delete formatted.jobseekerProfiles;
         delete formatted.positions;
-        
+
         return formatted;
       });
 
@@ -1451,12 +1609,12 @@ router.get('/jobseeker/:jobseekerUserId',
           total: totalCount,
           totalPages,
           hasNextPage: pageNum < totalPages,
-          hasPrevPage: pageNum > 1
-        }
+          hasPrevPage: pageNum > 1,
+        },
       });
     } catch (error) {
-      console.error('Unexpected error fetching jobseeker timesheets:', error);
-      return res.status(500).json({ error: 'An unexpected error occurred' });
+      console.error("Unexpected error fetching jobseeker timesheets:", error);
+      return res.status(500).json({ error: "An unexpected error occurred" });
     }
   }
 );
@@ -1466,57 +1624,65 @@ router.get('/jobseeker/:jobseekerUserId',
  * PATCH /api/timesheets/:id/document
  * @access Private (Admin, Recruiter, Jobseeker - own timesheets only)
  */
-router.patch('/:id/document', 
-  authenticateToken, 
-  authorizeRoles(['admin', 'recruiter', 'jobseeker']),
+router.patch(
+  "/:id/document",
+  authenticateToken,
+  authorizeRoles(["admin", "recruiter", "jobseeker"]),
   sanitizeInputs,
   async (req: Request, res: Response) => {
     try {
       if (!req.user || !req.user.id) {
-        return res.status(401).json({ error: 'Authentication required' });
+        return res.status(401).json({ error: "Authentication required" });
       }
 
       const userId = req.user.id;
       const userType = req.user.user_metadata?.user_type;
       const { id } = req.params;
       const { document } = req.body;
-      
+
       // Validate document field
-      if (!document || typeof document !== 'string') {
-        return res.status(400).json({ error: 'Document field is required and must be a string' });
+      if (!document || typeof document !== "string") {
+        return res
+          .status(400)
+          .json({ error: "Document field is required and must be a string" });
       }
 
       // Check if timesheet exists and user has permission
       let existingQuery = supabase
-        .from('timesheets')
-        .select('id, jobseeker_user_id')
-        .eq('id', id);
+        .from("timesheets")
+        .select("id, jobseeker_user_id")
+        .eq("id", id);
 
-      if (userType === 'jobseeker') {
-        existingQuery = existingQuery.eq('jobseeker_user_id', userId);
+      if (userType === "jobseeker") {
+        existingQuery = existingQuery.eq("jobseeker_user_id", userId);
       }
 
-      const { data: existingTimesheet, error: timesheetCheckError } = await existingQuery.maybeSingle();
+      const { data: existingTimesheet, error: timesheetCheckError } =
+        await existingQuery.maybeSingle();
 
       if (timesheetCheckError || !existingTimesheet) {
-        return res.status(404).json({ error: 'Timesheet not found or access denied' });
+        return res
+          .status(404)
+          .json({ error: "Timesheet not found or access denied" });
       }
 
       // Update only the document field
       const { data: updatedTimesheet, error: updateError } = await supabase
-        .from('timesheets')
+        .from("timesheets")
         .update({
           document: document,
           updated_by_user_id: userId,
           updated_at: new Date().toISOString(),
         })
-        .eq('id', id)
-        .select('*')
+        .eq("id", id)
+        .select("*")
         .single();
 
       if (updateError) {
-        console.error('Error updating timesheet document:', updateError);
-        return res.status(500).json({ error: 'Failed to update timesheet document' });
+        console.error("Error updating timesheet document:", updateError);
+        return res
+          .status(500)
+          .json({ error: "Failed to update timesheet document" });
       }
 
       // Transform response to frontend format
@@ -1524,26 +1690,29 @@ router.patch('/:id/document',
 
       return res.status(200).json({
         success: true,
-        message: 'Timesheet document updated successfully',
-        timesheet: formatted
+        message: "Timesheet document updated successfully",
+        timesheet: formatted,
       });
     } catch (error) {
-      console.error('Unexpected error updating timesheet document:', error);
-      return res.status(500).json({ error: 'An unexpected error occurred' });
+      console.error("Unexpected error updating timesheet document:", error);
+      return res.status(500).json({ error: "An unexpected error occurred" });
     }
   }
 );
 
-
 /**
  * Create version history entry
  */
-function createVersionEntry(userId: string, version: number, action: 'created' | 'updated'): VersionHistoryEntry {
+function createVersionEntry(
+  userId: string,
+  version: number,
+  action: "created" | "updated"
+): VersionHistoryEntry {
   return {
     version,
     created_by: userId,
     created_at: new Date().toISOString(),
-    action
+    action,
   };
 }
 
@@ -1551,15 +1720,21 @@ function createVersionEntry(userId: string, version: number, action: 'created' |
  * Initialize version history for new timesheet
  */
 function initializeVersionHistory(userId: string): VersionHistoryEntry[] {
-  return [createVersionEntry(userId, 1, 'created')];
+  return [createVersionEntry(userId, 1, "created")];
 }
 
 /**
  * Add version entry to existing history
  */
-function addVersionToHistory(existingHistory: VersionHistoryEntry[], userId: string, newVersion: number): VersionHistoryEntry[] {
-  return [...existingHistory, createVersionEntry(userId, newVersion, 'updated')];
+function addVersionToHistory(
+  existingHistory: VersionHistoryEntry[],
+  userId: string,
+  newVersion: number
+): VersionHistoryEntry[] {
+  return [
+    ...existingHistory,
+    createVersionEntry(userId, newVersion, "updated"),
+  ];
 }
 
-export default router; 
-
+export default router;

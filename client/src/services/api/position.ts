@@ -117,12 +117,12 @@ export interface PositionDraft {
   } | null;
 }
 
-
 export interface PositionPaginationParams {
   page?: number;
   limit?: number;
   search?: string;
   positionIdFilter?: string;
+  positionNumberFilter?: string;
   titleFilter?: string;
   clientFilter?: string;
   locationFilter?: string;
@@ -247,7 +247,12 @@ export const getPositions = async (
         page: params.page || 1,
         limit: params.limit || 10,
         ...(params.search && { search: params.search }),
-        ...(params.positionIdFilter && { positionIdFilter: params.positionIdFilter }),
+        ...(params.positionIdFilter && {
+          positionIdFilter: params.positionIdFilter,
+        }),
+        ...(params.positionNumberFilter && {
+          positionNumberFilter: params.positionNumberFilter,
+        }),
         ...(params.titleFilter && { titleFilter: params.titleFilter }),
         ...(params.clientFilter && { clientFilter: params.clientFilter }),
         ...(params.locationFilter && { locationFilter: params.locationFilter }),
@@ -653,6 +658,7 @@ export interface AssignmentRecord {
     last_name: string;
     email: string;
     mobile?: string;
+    billing_email?: string;
   };
 }
 export const getPositionAssignments = async (
@@ -758,8 +764,10 @@ export const getCandidateAssignments = async (
     if (params.startDate) queryParams.append("startDate", params.startDate);
     if (params.endDate) queryParams.append("endDate", params.endDate);
     if (params.search) queryParams.append("search", params.search);
-    if (params.employmentType) queryParams.append("employmentType", params.employmentType);
-    if (params.positionCategory) queryParams.append("positionCategory", params.positionCategory);
+    if (params.employmentType)
+      queryParams.append("employmentType", params.employmentType);
+    if (params.positionCategory)
+      queryParams.append("positionCategory", params.positionCategory);
 
     const response = await api.get(
       `/api/positions/candidate/${candidateId}/assignments?${queryParams.toString()}`
@@ -775,14 +783,13 @@ export const getCandidateAssignments = async (
   }
 };
 
-
-
 // Client Positions Interface and API
 export interface ClientPositionFilters {
   page?: number;
   limit?: number;
   search?: string;
   positionIdFilter?: string;
+  positionNumberFilter?: string;
   titleFilter?: string;
   locationFilter?: string;
   employmentTermFilter?: string;
@@ -819,20 +826,24 @@ export const getClientPositions = async (
 ): Promise<ClientPositionsResponse> => {
   try {
     const queryParams = new URLSearchParams();
-    
+
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== "") {
         queryParams.append(key, value.toString());
       }
     });
 
-    const url = `/api/positions/client/${clientId}${queryParams.toString() ? `?${queryParams.toString()}` : ""}`;
-    
+    const url = `/api/positions/client/${clientId}${
+      queryParams.toString() ? `?${queryParams.toString()}` : ""
+    }`;
+
     const response = await api.get(url);
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || "Failed to fetch client positions");
+      throw new Error(
+        error.response.data.error || "Failed to fetch client positions"
+      );
     }
     throw error;
   }
