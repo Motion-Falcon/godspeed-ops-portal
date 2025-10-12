@@ -40,8 +40,12 @@
 }
 
 @keyframes bulk-timesheet-spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .bulk-timesheet-loader-title {
@@ -113,9 +117,11 @@
   font-weight: 600;
   color: var(--text);
   border-bottom: none;
+  width: 650px;
 }
 
-.bulk-timesheet-page-container .timesheet-hours-title.timesheet-pay-adjustments-title {
+.bulk-timesheet-page-container
+  .timesheet-hours-title.timesheet-pay-adjustments-title {
   padding-bottom: 20px;
 }
 
@@ -138,7 +144,9 @@
   border-top: 1px solid var(--border);
 }
 
-.bulk-timesheet-page-container .timesheet-email-control .timesheet-checkbox-label {
+.bulk-timesheet-page-container
+  .timesheet-email-control
+  .timesheet-checkbox-label {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -154,7 +162,9 @@
   accent-color: var(--primary);
 }
 
-.bulk-timesheet-page-container .timesheet-email-control .timesheet-checkbox-text {
+.bulk-timesheet-page-container
+  .timesheet-email-control
+  .timesheet-checkbox-text {
   font-weight: 500;
 }
 

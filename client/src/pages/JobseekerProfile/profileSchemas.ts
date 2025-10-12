@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 // Define the form schema types for each step
 export const getPersonalInfoSchema = (messages: Record<string, string>) =>
@@ -8,6 +8,11 @@ export const getPersonalInfoSchema = (messages: Record<string, string>) =>
       lastName: z.string().min(1, { message: messages.lastNameRequired }),
       dob: z.string().min(1, { message: messages.dobRequired }),
       email: z.string().email({ message: messages.emailInvalid }),
+      billingEmail: z
+        .string()
+        .email({ message: messages.emailInvalid })
+        .optional()
+        .or(z.literal("")),
       mobile: z.string().min(1, { message: messages.mobileRequired }),
       licenseNumber: z.string().optional(),
       passportNumber: z.string().optional(),
@@ -25,7 +30,11 @@ export const getPersonalInfoSchema = (messages: Record<string, string>) =>
     .refine(
       (data) => {
         // Only require SIN expiry for temporary residents (SIN starting with '9')
-        if (data.sinNumber && data.sinNumber.trim() !== "" && data.sinNumber.startsWith('9')) {
+        if (
+          data.sinNumber &&
+          data.sinNumber.trim() !== "" &&
+          data.sinNumber.startsWith("9")
+        ) {
           return data.sinExpiry && data.sinExpiry.trim() !== "";
         }
         return true;
@@ -38,7 +47,11 @@ export const getPersonalInfoSchema = (messages: Record<string, string>) =>
     .refine(
       (data) => {
         // Only require work permit UCI for temporary residents (SIN starting with '9')
-        if (data.sinNumber && data.sinNumber.trim() !== "" && data.sinNumber.startsWith('9')) {
+        if (
+          data.sinNumber &&
+          data.sinNumber.trim() !== "" &&
+          data.sinNumber.startsWith("9")
+        ) {
           return data.workPermitUci && data.workPermitUci.trim() !== "";
         }
         return true;
@@ -68,7 +81,11 @@ export const getPersonalInfoSchema = (messages: Record<string, string>) =>
     .refine(
       (data) => {
         // Only require work permit expiry for temporary residents (SIN starting with '9')
-        if (data.sinNumber && data.sinNumber.trim() !== "" && data.sinNumber.startsWith('9')) {
+        if (
+          data.sinNumber &&
+          data.sinNumber.trim() !== "" &&
+          data.sinNumber.startsWith("9")
+        ) {
           return data.workPermitExpiry && data.workPermitExpiry.trim() !== "";
         }
         return true;
@@ -79,7 +96,9 @@ export const getPersonalInfoSchema = (messages: Record<string, string>) =>
       }
     );
 
-export const getAddressQualificationsSchema = (messages: Record<string, string>) =>
+export const getAddressQualificationsSchema = (
+  messages: Record<string, string>
+) =>
   z.object({
     street: z.string().min(1, { message: messages.streetRequired }),
     city: z.string().min(1, { message: messages.cityRequired }),
@@ -117,41 +136,50 @@ export const getCompensationSchema = () =>
 
 // Document Upload Schema
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
-const ALLOWED_FILE_TYPES = ["application/pdf"];
+const ALLOWED_FILE_TYPES = [
+  "application/pdf",
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+];
 
-const getSingleDocumentSchema = (messages: Record<string, string>) => z
-  .object({
-    documentType: z.string().min(1, { message: messages.documentTypeRequired }),
-    documentTitle: z.string().optional(),
-    documentFile: z
-      .instanceof(File, { message: messages.documentFileRequired })
-      .refine((file) => file?.size <= MAX_FILE_SIZE, messages.maxFileSize)
-      .refine(
-        (file) => ALLOWED_FILE_TYPES.includes(file?.type),
-        messages.onlyPdfFiles
-      )
-      .optional(),
-    documentNotes: z.string().optional(),
-    documentPath: z.string().optional(),
-    documentFileName: z.string().optional(),
-    id: z.string().optional(),
-  })
-  .refine(
-    (data) => {
-      const hasFile = !!data.documentPath || !!data.documentFile;
-      return hasFile;
-    },
-    {
-      message: messages.documentFileRequired,
-      path: ["documentFile"],
-    }
-  );
+const getSingleDocumentSchema = (messages: Record<string, string>) =>
+  z
+    .object({
+      documentType: z
+        .string()
+        .min(1, { message: messages.documentTypeRequired }),
+      documentTitle: z.string().optional(),
+      documentFile: z
+        .instanceof(File, { message: messages.documentFileRequired })
+        .refine((file) => file?.size <= MAX_FILE_SIZE, messages.maxFileSize)
+        .refine(
+          (file) => ALLOWED_FILE_TYPES.includes(file?.type),
+          messages.onlyPdfFiles
+        )
+        .optional(),
+      documentNotes: z.string().optional(),
+      documentPath: z.string().optional(),
+      documentFileName: z.string().optional(),
+      id: z.string().optional(),
+    })
+    .refine(
+      (data) => {
+        const hasFile = !!data.documentPath || !!data.documentFile;
+        return hasFile;
+      },
+      {
+        message: messages.documentFileRequired,
+        path: ["documentFile"],
+      }
+    );
 
-export const getDocumentUploadSchema = (messages: Record<string, string>) => z.object({
-  documents: z
-    .array(getSingleDocumentSchema(messages))
-    .min(1, { message: messages.atLeastOneDocumentRequired }),
-});
+export const getDocumentUploadSchema = (messages: Record<string, string>) =>
+  z.object({
+    documents: z
+      .array(getSingleDocumentSchema(messages))
+      .min(1, { message: messages.atLeastOneDocumentRequired }),
+  });
 
 // Function to create form schema with translated messages
 export const createFormSchema = (messages: Record<string, string>) => {
@@ -162,6 +190,11 @@ export const createFormSchema = (messages: Record<string, string>) => {
       lastName: z.string().min(1, { message: messages.lastNameRequired }),
       dob: z.string().min(1, { message: messages.dobRequired }),
       email: z.string().email({ message: messages.emailInvalid }),
+      billingEmail: z
+        .string()
+        .email({ message: messages.emailInvalid })
+        .optional()
+        .or(z.literal("")),
       mobile: z.string().min(1, { message: messages.mobileRequired }),
       licenseNumber: z.string().optional(),
       passportNumber: z.string().optional(),
@@ -216,7 +249,11 @@ export const createFormSchema = (messages: Record<string, string>) => {
     .refine(
       (data) => {
         // Only require SIN expiry for temporary residents (SIN starting with '9')
-        if (data.sinNumber && data.sinNumber.trim() !== "" && data.sinNumber.startsWith('9')) {
+        if (
+          data.sinNumber &&
+          data.sinNumber.trim() !== "" &&
+          data.sinNumber.startsWith("9")
+        ) {
           return data.sinExpiry && data.sinExpiry.trim() !== "";
         }
         return true;
@@ -229,7 +266,11 @@ export const createFormSchema = (messages: Record<string, string>) => {
     .refine(
       (data) => {
         // Only require work permit UCI for temporary residents (SIN starting with '9')
-        if (data.sinNumber && data.sinNumber.trim() !== "" && data.sinNumber.startsWith('9')) {
+        if (
+          data.sinNumber &&
+          data.sinNumber.trim() !== "" &&
+          data.sinNumber.startsWith("9")
+        ) {
           return data.workPermitUci && data.workPermitUci.trim() !== "";
         }
         return true;
@@ -259,7 +300,11 @@ export const createFormSchema = (messages: Record<string, string>) => {
     .refine(
       (data) => {
         // Only require work permit expiry for temporary residents (SIN starting with '9')
-        if (data.sinNumber && data.sinNumber.trim() !== "" && data.sinNumber.startsWith('9')) {
+        if (
+          data.sinNumber &&
+          data.sinNumber.trim() !== "" &&
+          data.sinNumber.startsWith("9")
+        ) {
           return data.workPermitExpiry && data.workPermitExpiry.trim() !== "";
         }
         return true;
@@ -272,7 +317,15 @@ export const createFormSchema = (messages: Record<string, string>) => {
 };
 
 // Type inference for form data
-export type JobseekerProfileFormData = z.infer<ReturnType<typeof createFormSchema>>;
-export type PersonalInfoFormData = z.infer<ReturnType<typeof getPersonalInfoSchema>>;
-export type AddressQualificationsFormData = z.infer<ReturnType<typeof getAddressQualificationsSchema>>;
-export type CompensationFormData = z.infer<ReturnType<typeof getCompensationSchema>>; 
+export type JobseekerProfileFormData = z.infer<
+  ReturnType<typeof createFormSchema>
+>;
+export type PersonalInfoFormData = z.infer<
+  ReturnType<typeof getPersonalInfoSchema>
+>;
+export type AddressQualificationsFormData = z.infer<
+  ReturnType<typeof getAddressQualificationsSchema>
+>;
+export type CompensationFormData = z.infer<
+  ReturnType<typeof getCompensationSchema>
+>;

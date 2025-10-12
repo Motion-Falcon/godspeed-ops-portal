@@ -21,8 +21,20 @@ import "../../styles/pages/PositionManagement.css";
 import "../../styles/components/form.css";
 import "../../styles/components/header.css";
 import { AppHeader } from "../../components/AppHeader";
-import { CustomDropdown, DropdownOption } from "../../components/CustomDropdown";
-import { JOB_TITLES, EMPLOYMENT_TERMS, EMPLOYMENT_TYPES, POSITION_CATEGORIES, EXPERIENCE_LEVELS, PAYRATE_TYPES, PAYMENT_METHODS, PAYMENT_TERMS } from "../../constants/formOptions";
+import {
+  CustomDropdown,
+  DropdownOption,
+} from "../../components/CustomDropdown";
+import {
+  JOB_TITLES,
+  EMPLOYMENT_TERMS,
+  EMPLOYMENT_TYPES,
+  POSITION_CATEGORIES,
+  EXPERIENCE_LEVELS,
+  PAYRATE_TYPES,
+  PAYMENT_METHODS,
+  PAYMENT_TERMS,
+} from "../../constants/formOptions";
 
 // Helper function for date formatting and validation
 const formatDateForInput = (date: Date): string => {
@@ -33,117 +45,158 @@ const getTodayFormatted = (): string => {
   return formatDateForInput(new Date());
 };
 
-
 // Define form schema function to support translations
-const createPositionFormSchema = (t: (key: string) => string) => z.object({
-  // Basic Details
-  client: z.string().min(1, { message: t("positionCreate.errors.clientRequired") }),
-  title: z.string().min(1, { message: t("positionCreate.errors.titleRequired") }),
-  positionCode: z.string().optional(),
-  startDate: z.string().min(1, { message: t("positionCreate.errors.startDateRequired") }),
-  endDate: z.string().min(1, { message: t("positionCreate.errors.endDateRequired") }),
-  showOnJobPortal: z.boolean().default(false),
-  clientManager: z.string().optional(),
-  salesManager: z.string().optional(),
-  positionNumber: z.string().optional(),
-  description: z.string().min(1, { message: t("positionCreate.errors.descriptionRequired") }),
-
-  // Address Details
-  streetAddress: z.string().min(1, { message: t("positionCreate.errors.streetAddressRequired") }),
-  city: z.string().min(1, { message: t("positionCreate.errors.cityRequired") }),
-  province: z.string().min(1, { message: t("positionCreate.errors.provinceRequired") }),
-  postalCode: z.string().min(1, { message: t("positionCreate.errors.postalCodeRequired") }),
-
-  // Employment Categorization
-  employmentTerm: z.string().min(1, { message: t("positionCreate.errors.employmentTermRequired") }),
-  employmentType: z.string().min(1, { message: t("positionCreate.errors.employmentTypeRequired") }),
-  positionCategory: z
-    .string()
-    .min(1, { message: t("positionCreate.errors.positionCategoryRequired") }),
-  experience: z.string().min(1, { message: t("positionCreate.errors.experienceRequired") }),
-
-  // Documents Required
-  documentsRequired: z
+const createPositionFormSchema = (t: (key: string) => string) =>
+  z
     .object({
-      license: z.boolean().default(false),
-      driverAbstract: z.boolean().default(false),
-      tdgCertificate: z.boolean().default(false),
-      sin: z.boolean().default(false),
-      immigrationStatus: z.boolean().default(false),
-      passport: z.boolean().default(false),
-      cvor: z.boolean().default(false),
-      resume: z.boolean().default(false),
-      articlesOfIncorporation: z.boolean().default(false),
-      directDeposit: z.boolean().default(false),
+      // Basic Details
+      client: z
+        .string()
+        .min(1, { message: t("positionCreate.errors.clientRequired") }),
+      title: z
+        .string()
+        .min(1, { message: t("positionCreate.errors.titleRequired") }),
+      positionCode: z.string().optional(),
+      startDate: z
+        .string()
+        .min(1, { message: t("positionCreate.errors.startDateRequired") }),
+      endDate: z
+        .string()
+        .min(1, { message: t("positionCreate.errors.endDateRequired") }),
+      showOnJobPortal: z.boolean().default(false),
+      clientManager: z.string().optional(),
+      salesManager: z.string().optional(),
+      positionNumber: z.string().optional(),
+      description: z
+        .string()
+        .min(1, { message: t("positionCreate.errors.descriptionRequired") }),
+
+      // Address Details
+      streetAddress: z
+        .string()
+        .min(1, { message: t("positionCreate.errors.streetAddressRequired") }),
+      city: z
+        .string()
+        .min(1, { message: t("positionCreate.errors.cityRequired") }),
+      province: z
+        .string()
+        .min(1, { message: t("positionCreate.errors.provinceRequired") }),
+      postalCode: z
+        .string()
+        .min(1, { message: t("positionCreate.errors.postalCodeRequired") }),
+
+      // Employment Categorization
+      employmentTerm: z
+        .string()
+        .min(1, { message: t("positionCreate.errors.employmentTermRequired") }),
+      employmentType: z
+        .string()
+        .min(1, { message: t("positionCreate.errors.employmentTypeRequired") }),
+      positionCategory: z
+        .string()
+        .min(1, {
+          message: t("positionCreate.errors.positionCategoryRequired"),
+        }),
+      experience: z
+        .string()
+        .min(1, { message: t("positionCreate.errors.experienceRequired") }),
+
+      // Documents Required
+      documentsRequired: z
+        .object({
+          license: z.boolean().default(false),
+          driverAbstract: z.boolean().default(false),
+          tdgCertificate: z.boolean().default(false),
+          sin: z.boolean().default(false),
+          immigrationStatus: z.boolean().default(false),
+          passport: z.boolean().default(false),
+          cvor: z.boolean().default(false),
+          resume: z.boolean().default(false),
+          articlesOfIncorporation: z.boolean().default(false),
+          directDeposit: z.boolean().default(false),
+        })
+        .refine(
+          // At least one document must be selected
+          (data) => Object.values(data).some((value) => value === true),
+          {
+            message: t("positionCreate.errors.documentsRequired"),
+            path: ["root"],
+          }
+        ),
+
+      // Position Details
+      payrateType: z
+        .string()
+        .min(1, { message: t("positionCreate.errors.payrateTypeRequired") }),
+      numberOfPositions: z.coerce
+        .number()
+        .min(1, {
+          message: t("positionCreate.errors.numberOfPositionsRequired"),
+        }),
+      regularPayRate: z
+        .string()
+        .min(1, { message: t("positionCreate.errors.regularPayRateRequired") }),
+      markup: z.string().optional(),
+      billRate: z
+        .string()
+        .min(1, { message: t("positionCreate.errors.billRateRequired") }),
+
+      // Overtime
+      overtimeEnabled: z.boolean().default(false),
+      overtimeHours: z.string().optional(),
+      overtimeBillRate: z.string().optional(),
+      overtimePayRate: z.string().optional(),
+
+      // Payment & Billings
+      preferredPaymentMethod: z
+        .string()
+        .min(1, {
+          message: t("positionCreate.errors.preferredPaymentMethodRequired"),
+        }),
+      terms: z
+        .string()
+        .min(1, { message: t("positionCreate.errors.termsRequired") }),
+
+      // Notes & Task
+      notes: z
+        .string()
+        .min(1, { message: t("positionCreate.errors.notesRequired") }),
+      assignedTo: z.string().optional(),
+      projCompDate: z.string().optional(),
+      taskTime: z.string().optional(),
     })
     .refine(
-      // At least one document must be selected
-      (data) => Object.values(data).some((value) => value === true),
+      (data) => {
+        // If overtime is enabled, require overtime fields
+        if (data.overtimeEnabled) {
+          return (
+            data.overtimeHours &&
+            data.overtimeHours.trim() !== "" &&
+            data.overtimeBillRate &&
+            data.overtimeBillRate.trim() !== "" &&
+            data.overtimePayRate &&
+            data.overtimePayRate.trim() !== ""
+          );
+        }
+        return true;
+      },
       {
-        message: t("positionCreate.errors.documentsRequired"),
-        path: ["root"],
+        message: t("positionCreate.errors.overtimeFieldsRequired"),
+        path: ["overtimeEnabled"],
       }
-    ),
-
-  // Position Details
-  payrateType: z.string().min(1, { message: t("positionCreate.errors.payrateTypeRequired") }),
-  numberOfPositions: z.coerce
-    .number()
-    .min(1, { message: t("positionCreate.errors.numberOfPositionsRequired") }),
-  regularPayRate: z
-    .string()
-    .min(1, { message: t("positionCreate.errors.regularPayRateRequired") }),
-  markup: z.string().optional(),
-  billRate: z.string().min(1, { message: t("positionCreate.errors.billRateRequired") }),
-
-  // Overtime
-  overtimeEnabled: z.boolean().default(false),
-  overtimeHours: z.string().optional(),
-  overtimeBillRate: z.string().optional(),
-  overtimePayRate: z.string().optional(),
-
-  // Payment & Billings
-  preferredPaymentMethod: z
-    .string()
-    .min(1, { message: t("positionCreate.errors.preferredPaymentMethodRequired") }),
-  terms: z.string().min(1, { message: t("positionCreate.errors.termsRequired") }),
-
-  // Notes & Task
-  notes: z.string().min(1, { message: t("positionCreate.errors.notesRequired") }),
-  assignedTo: z.string().optional(),
-  projCompDate: z.string().optional(),
-  taskTime: z.string().optional(),
-}).refine(
-  (data) => {
-    // If overtime is enabled, require overtime fields
-    if (data.overtimeEnabled) {
-      return (
-        data.overtimeHours &&
-        data.overtimeHours.trim() !== "" &&
-        data.overtimeBillRate &&
-        data.overtimeBillRate.trim() !== "" &&
-        data.overtimePayRate &&
-        data.overtimePayRate.trim() !== ""
-      );
-    }
-    return true;
-  },
-  {
-    message: t("positionCreate.errors.overtimeFieldsRequired"),
-    path: ["overtimeEnabled"],
-  }
-).transform((data) => {
-  // Clear overtime fields when overtime is disabled
-  if (!data.overtimeEnabled) {
-    return {
-      ...data,
-      overtimeHours: "",
-      overtimeBillRate: "",
-      overtimePayRate: "",
-    };
-  }
-  return data;
-});
+    )
+    .transform((data) => {
+      // Clear overtime fields when overtime is disabled
+      if (!data.overtimeEnabled) {
+        return {
+          ...data,
+          overtimeHours: "",
+          overtimeBillRate: "",
+          overtimePayRate: "",
+        };
+      }
+      return data;
+    });
 
 type PositionFormData = z.infer<ReturnType<typeof createPositionFormSchema>>;
 
@@ -169,7 +222,9 @@ export function PositionCreate({
   const [draftId, setDraftId] = useState<string | null>(null);
   const [positionId, setPositionId] = useState<string | null>(null);
   const [lastSaved, setLastSaved] = useState<string | null>(null);
-  const [pageTitle, setPageTitle] = useState(t("positionCreate.createPosition"));
+  const [pageTitle, setPageTitle] = useState(
+    t("positionCreate.createPosition")
+  );
   const [clients, setClients] = useState<
     Array<{ id: string; companyName: string }>
   >([]);
@@ -184,32 +239,40 @@ export function PositionCreate({
   }));
 
   // Employment term options
-  const employmentTermOptions: DropdownOption[] = EMPLOYMENT_TERMS.map((term) => ({
-    id: term,
-    value: term,
-    label: term,
-  }));
+  const employmentTermOptions: DropdownOption[] = EMPLOYMENT_TERMS.map(
+    (term) => ({
+      id: term,
+      value: term,
+      label: term,
+    })
+  );
 
   // Employment type options
-  const employmentTypeOptions: DropdownOption[] = EMPLOYMENT_TYPES.map((type) => ({
-    id: type,
-    value: type,
-    label: type,
-  }));
+  const employmentTypeOptions: DropdownOption[] = EMPLOYMENT_TYPES.map(
+    (type) => ({
+      id: type,
+      value: type,
+      label: type,
+    })
+  );
 
   // Position category options
-  const positionCategoryOptions: DropdownOption[] = POSITION_CATEGORIES.map((category) => ({
-    id: category,
-    value: category,
-    label: category,
-  }));
+  const positionCategoryOptions: DropdownOption[] = POSITION_CATEGORIES.map(
+    (category) => ({
+      id: category,
+      value: category,
+      label: category,
+    })
+  );
 
   // Experience level options
-  const experienceOptions: DropdownOption[] = EXPERIENCE_LEVELS.map((level) => ({
-    id: level,
-    value: level,
-    label: level,
-  }));
+  const experienceOptions: DropdownOption[] = EXPERIENCE_LEVELS.map(
+    (level) => ({
+      id: level,
+      value: level,
+      label: level,
+    })
+  );
 
   // Payrate type options
   const payrateTypeOptions: DropdownOption[] = PAYRATE_TYPES.map((type) => ({
@@ -219,11 +282,13 @@ export function PositionCreate({
   }));
 
   // Payment method options
-  const paymentMethodOptions: DropdownOption[] = PAYMENT_METHODS.map((method) => ({
-    id: method,
-    value: method,
-    label: method,
-  }));
+  const paymentMethodOptions: DropdownOption[] = PAYMENT_METHODS.map(
+    (method) => ({
+      id: method,
+      value: method,
+      label: method,
+    })
+  );
 
   // Payment terms options
   const paymentTermsOptions: DropdownOption[] = PAYMENT_TERMS.map((term) => ({
@@ -259,7 +324,8 @@ export function PositionCreate({
     mode: "onBlur",
   });
 
-  const { handleSubmit, reset, formState, watch, setValue, getValues } = methods;
+  const { handleSubmit, reset, formState, watch, setValue, getValues } =
+    methods;
   const { isDirty } = formState;
 
   // Function to convert snake_case keys to camelCase
@@ -311,7 +377,9 @@ export function PositionCreate({
       } catch (err) {
         console.error("Error fetching clients:", err);
         const errorMessage =
-          err instanceof Error ? err.message : t("positionCreate.errors.failedToFetchClients");
+          err instanceof Error
+            ? err.message
+            : t("positionCreate.errors.failedToFetchClients");
         setError(errorMessage);
         setTimeout(() => setError(null), 3000);
       } finally {
@@ -389,7 +457,9 @@ export function PositionCreate({
         } catch (err) {
           console.error("Error loading position:", err);
           const errorMessage =
-            err instanceof Error ? err.message : t("positionCreate.errors.errorLoadingPosition");
+            err instanceof Error
+              ? err.message
+              : t("positionCreate.errors.errorLoadingPosition");
           setError(errorMessage);
           setTimeout(() => setError(null), 3000);
         } finally {
@@ -427,14 +497,19 @@ export function PositionCreate({
             // Regenerate position code to ensure it's still unique
             if (formattedDraft.client) {
               try {
-                const result = await generatePositionCode(formattedDraft.client);
+                const result = await generatePositionCode(
+                  formattedDraft.client
+                );
                 console.log("Regenerated position code for draft:", result);
                 methods.setValue("positionCode", result.positionCode);
-                
+
                 // Mark form as having changes since we updated the position code
                 setHasUnsavedChanges(true);
               } catch (error) {
-                console.error("Error regenerating position code for draft:", error);
+                console.error(
+                  "Error regenerating position code for draft:",
+                  error
+                );
                 // Continue loading the draft even if position code regeneration fails
               }
             }
@@ -445,7 +520,9 @@ export function PositionCreate({
         } catch (err) {
           console.error("Error loading draft:", err);
           const errorMessage =
-            err instanceof Error ? err.message : t("positionCreate.errors.errorLoadingDraft");
+            err instanceof Error
+              ? err.message
+              : t("positionCreate.errors.errorLoadingDraft");
           setError(errorMessage);
           setTimeout(() => setError(null), 3000);
         } finally {
@@ -506,9 +583,75 @@ export function PositionCreate({
       methods.setValue("overtimeBillRate", "");
       methods.setValue("overtimePayRate", "");
       // Clear any validation errors for overtime fields
-      methods.clearErrors(["overtimeHours", "overtimeBillRate", "overtimePayRate"]);
+      methods.clearErrors([
+        "overtimeHours",
+        "overtimeBillRate",
+        "overtimePayRate",
+      ]);
     }
   }, [methods.watch("overtimeEnabled"), methods]);
+
+  // Auto-calculate bill rate when markup or pay rate changes
+  useEffect(() => {
+    let isCalculating = false; // Prevent infinite loops
+
+    const subscription = methods.watch((value, { name, type }) => {
+      // Skip if we're in the middle of a calculation or not a user change
+      if (isCalculating || type !== "change") return;
+
+      const payRate = parseFloat(value.regularPayRate || "0");
+      const markup = value.markup ? parseFloat(value.markup) : null;
+      const billRate = value.billRate ? parseFloat(value.billRate) : null;
+
+      isCalculating = true;
+
+      try {
+        // Priority 1: If markup is entered/changed, calculate bill rate
+        if (
+          name === "markup" &&
+          payRate > 0 &&
+          markup !== null &&
+          !isNaN(markup)
+        ) {
+          const calculatedBillRate = payRate * (1 + markup / 100);
+          methods.setValue("billRate", calculatedBillRate.toFixed(2), {
+            shouldValidate: true,
+          });
+        }
+        // Priority 2: If bill rate is entered/changed, calculate markup
+        else if (
+          name === "billRate" &&
+          payRate > 0 &&
+          billRate !== null &&
+          !isNaN(billRate) &&
+          billRate > 0
+        ) {
+          const calculatedMarkup = ((billRate - payRate) / payRate) * 100;
+          methods.setValue("markup", calculatedMarkup.toFixed(2), {
+            shouldValidate: false,
+          });
+        }
+        // Priority 3: If pay rate changes and markup exists, recalculate bill rate
+        else if (name === "regularPayRate" && payRate > 0) {
+          if (markup !== null && !isNaN(markup)) {
+            const calculatedBillRate = payRate * (1 + markup / 100);
+            methods.setValue("billRate", calculatedBillRate.toFixed(2), {
+              shouldValidate: true,
+            });
+          } else if (billRate !== null && !isNaN(billRate) && billRate > 0) {
+            const calculatedMarkup = ((billRate - payRate) / payRate) * 100;
+            methods.setValue("markup", calculatedMarkup.toFixed(2), {
+              shouldValidate: false,
+            });
+          }
+        }
+      } finally {
+        isCalculating = false;
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [methods]);
 
   // Create client options for CustomDropdown
   const clientOptions: DropdownOption[] = clients.map((client) => ({
@@ -518,10 +661,12 @@ export function PositionCreate({
   }));
 
   // Handle client selection for CustomDropdown
-  const handleClientSelect = async (option: DropdownOption | DropdownOption[]) => {
+  const handleClientSelect = async (
+    option: DropdownOption | DropdownOption[]
+  ) => {
     if (Array.isArray(option)) return;
     const clientId = option.value as string;
-    
+
     // Set the client value
     methods.setValue("client", clientId);
 
@@ -597,8 +742,10 @@ export function PositionCreate({
       }
     } catch (err) {
       console.error("Error saving draft:", err);
-              const errorMessage =
-          err instanceof Error ? err.message : t("positionCreate.errors.failedToSaveDraft");
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : t("positionCreate.errors.failedToSaveDraft");
       setError(errorMessage);
       setTimeout(() => setError(null), 3000);
     } finally {
@@ -662,8 +809,10 @@ export function PositionCreate({
       }
     } catch (err) {
       console.error("Error creating/updating position:", err);
-              const errorMessage =
-          err instanceof Error ? err.message : t("positionCreate.errors.failedToCreateUpdatePosition");
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : t("positionCreate.errors.failedToCreateUpdatePosition");
       setError(errorMessage);
       setTimeout(() => setError(null), 3000);
     } finally {
@@ -690,7 +839,7 @@ export function PositionCreate({
   // Function to fetch client details and autofill form fields
   const fetchClientDetails = async (clientId: string) => {
     try {
-      const client = (await getClient(clientId));
+      const client = await getClient(clientId);
 
       // Auto-fill client manager and sales manager
       methods.setValue("clientManager", client.clientManager || "");
@@ -719,12 +868,18 @@ export function PositionCreate({
                 disabled={saving || !hasUnsavedChanges}
               >
                 <Save size={16} />
-                <span>{saving ? t("positionCreate.buttons.saving") : t("positionCreate.buttons.saveDraft")}</span>
+                <span>
+                  {saving
+                    ? t("positionCreate.buttons.saving")
+                    : t("positionCreate.buttons.saveDraft")}
+                </span>
               </button>
             )}
             <button className="button button-icon" onClick={handleCancel}>
               <ArrowLeft size={16} />
-              <span>{t("positionCreate.buttons.backToPositionManagement")}</span>
+              <span>
+                {t("positionCreate.buttons.backToPositionManagement")}
+              </span>
             </button>
           </>
         }
@@ -735,7 +890,9 @@ export function PositionCreate({
       <div className="content-container">
         {lastSaved && !isEditMode && (
           <div className="last-saved">
-            {t("positionCreate.info.lastSaved", { date: new Date(lastSaved).toLocaleString() })}
+            {t("positionCreate.info.lastSaved", {
+              date: new Date(lastSaved).toLocaleString(),
+            })}
           </div>
         )}
 
@@ -774,17 +931,26 @@ export function PositionCreate({
                         selectedOption={(() => {
                           const selectedClientId = methods.getValues("client");
                           if (selectedClientId) {
-                            const selectedClient = clients.find(c => c.id === selectedClientId);
-                            return selectedClient ? {
-                              id: selectedClient.id,
-                              label: selectedClient.companyName,
-                              value: selectedClient.id
-                            } : null;
+                            const selectedClient = clients.find(
+                              (c) => c.id === selectedClientId
+                            );
+                            return selectedClient
+                              ? {
+                                  id: selectedClient.id,
+                                  label: selectedClient.companyName,
+                                  value: selectedClient.id,
+                                }
+                              : null;
                           }
                           return null;
                         })()}
-                        onSelect={(option) => { if (Array.isArray(option)) return; handleClientSelect(option); }}
-                        placeholder={t("positionCreate.placeholders.searchClients")}
+                        onSelect={(option) => {
+                          if (Array.isArray(option)) return;
+                          handleClientSelect(option);
+                        }}
+                        placeholder={t(
+                          "positionCreate.placeholders.searchClients"
+                        )}
                         searchable={true}
                         clearable={true}
                         onClear={() => methods.setValue("client", "")}
@@ -810,17 +976,28 @@ export function PositionCreate({
                     <input type="hidden" {...methods.register("title")} />
                     <CustomDropdown
                       options={titleOptions}
-                      selectedOption={methods.getValues("title") ? {
-                        id: methods.getValues("title"),
-                        label: methods.getValues("title"),
-                        value: methods.getValues("title")
-                      } : null}
-                      onSelect={(option) => { if (Array.isArray(option)) return; handleTitleSelect(option); }}
-                      placeholder={t("positionCreate.placeholders.searchJobTitles")}
+                      selectedOption={
+                        methods.getValues("title")
+                          ? {
+                              id: methods.getValues("title"),
+                              label: methods.getValues("title"),
+                              value: methods.getValues("title"),
+                            }
+                          : null
+                      }
+                      onSelect={(option) => {
+                        if (Array.isArray(option)) return;
+                        handleTitleSelect(option);
+                      }}
+                      placeholder={t(
+                        "positionCreate.placeholders.searchJobTitles"
+                      )}
                       searchable={true}
                       clearable={true}
                       onClear={() => methods.setValue("title", "")}
-                      emptyMessage={t("positionCreate.emptyMessages.noJobTitles")}
+                      emptyMessage={t(
+                        "positionCreate.emptyMessages.noJobTitles"
+                      )}
                     />
                     {methods.formState.errors.title && (
                       <p className="form-error">
@@ -837,7 +1014,9 @@ export function PositionCreate({
                       type="text"
                       id="positionNumber"
                       className="form-input"
-                      placeholder={t("positionCreate.placeholders.positionCode")}
+                      placeholder={t(
+                        "positionCreate.placeholders.positionCode"
+                      )}
                       {...methods.register("positionNumber")}
                     />
                   </div>
@@ -852,7 +1031,11 @@ export function PositionCreate({
                       type="text"
                       id="positionCode"
                       className="form-input auto-populated"
-                      placeholder={isEditDraftMode ? t("positionCreate.placeholders.autoRegenerated") : t("positionCreate.placeholders.autoGenerated")}
+                      placeholder={
+                        isEditDraftMode
+                          ? t("positionCreate.placeholders.autoRegenerated")
+                          : t("positionCreate.placeholders.autoGenerated")
+                      }
                       disabled
                       {...methods.register("positionCode")}
                     />
@@ -926,7 +1109,7 @@ export function PositionCreate({
                         type="checkbox"
                         id="showOnJobPortal"
                         className="toggle-form"
-                        {...methods.register('showOnJobPortal')}
+                        {...methods.register("showOnJobPortal")}
                       />
                       <label htmlFor="showOnJobPortal" className="label-form">
                         {t("positionCreate.fields.showOnJobPortal")}
@@ -975,7 +1158,9 @@ export function PositionCreate({
                     <textarea
                       id="description"
                       className="form-textarea"
-                      placeholder={t("positionCreate.placeholders.positionDescription")}
+                      placeholder={t(
+                        "positionCreate.placeholders.positionDescription"
+                      )}
                       rows={4}
                       {...methods.register("description")}
                     />
@@ -993,9 +1178,7 @@ export function PositionCreate({
                 <h2>{t("positionCreate.sections.addressDetails")}</h2>
 
                 <div className="form-info" data-required="*">
-                  <small>
-                    {t("positionCreate.info.addressAutoFill")}
-                  </small>
+                  <small>{t("positionCreate.info.addressAutoFill")}</small>
                 </div>
 
                 <div className="form-row">
@@ -1011,7 +1194,9 @@ export function PositionCreate({
                       type="text"
                       id="streetAddress"
                       className="form-input auto-populated"
-                      placeholder={t("positionCreate.placeholders.streetAddress")}
+                      placeholder={t(
+                        "positionCreate.placeholders.streetAddress"
+                      )}
                       {...methods.register("streetAddress")}
                     />
                     {methods.formState.errors.streetAddress && (
@@ -1104,18 +1289,32 @@ export function PositionCreate({
                     >
                       {t("positionCreate.fields.employmentTerm")}
                     </label>
-                    <input type="hidden" {...methods.register("employmentTerm")} />
+                    <input
+                      type="hidden"
+                      {...methods.register("employmentTerm")}
+                    />
                     <CustomDropdown
                       options={employmentTermOptions}
-                      selectedOption={employmentTermOptions.find(option => option.value === getValues('employmentTerm')) || null}
+                      selectedOption={
+                        employmentTermOptions.find(
+                          (option) =>
+                            option.value === getValues("employmentTerm")
+                        ) || null
+                      }
                       onSelect={(option) => {
                         if (Array.isArray(option)) return;
-                        setValue('employmentTerm', option.value as string, { shouldValidate: true });
+                        setValue("employmentTerm", option.value as string, {
+                          shouldValidate: true,
+                        });
                       }}
-                      placeholder={t("positionCreate.selectOptions.selectEmploymentTerm")}
+                      placeholder={t(
+                        "positionCreate.selectOptions.selectEmploymentTerm"
+                      )}
                       searchable={true}
                       clearable={true}
-                      onClear={() => setValue('employmentTerm', '', { shouldValidate: true })}
+                      onClear={() =>
+                        setValue("employmentTerm", "", { shouldValidate: true })
+                      }
                     />
                     {methods.formState.errors.employmentTerm && (
                       <p className="form-error">
@@ -1132,18 +1331,32 @@ export function PositionCreate({
                     >
                       {t("positionCreate.fields.employmentType")}
                     </label>
-                    <input type="hidden" {...methods.register("employmentType")} />
+                    <input
+                      type="hidden"
+                      {...methods.register("employmentType")}
+                    />
                     <CustomDropdown
                       options={employmentTypeOptions}
-                      selectedOption={employmentTypeOptions.find(option => option.value === getValues('employmentType')) || null}
+                      selectedOption={
+                        employmentTypeOptions.find(
+                          (option) =>
+                            option.value === getValues("employmentType")
+                        ) || null
+                      }
                       onSelect={(option) => {
                         if (Array.isArray(option)) return;
-                        setValue('employmentType', option.value as string, { shouldValidate: true });
+                        setValue("employmentType", option.value as string, {
+                          shouldValidate: true,
+                        });
                       }}
-                      placeholder={t("positionCreate.selectOptions.selectEmploymentType")}
+                      placeholder={t(
+                        "positionCreate.selectOptions.selectEmploymentType"
+                      )}
                       searchable={true}
                       clearable={true}
-                      onClear={() => setValue('employmentType', '', { shouldValidate: true })}
+                      onClear={() =>
+                        setValue("employmentType", "", { shouldValidate: true })
+                      }
                     />
                     {methods.formState.errors.employmentType && (
                       <p className="form-error">
@@ -1160,18 +1373,34 @@ export function PositionCreate({
                     >
                       {t("positionCreate.fields.positionCategory")}
                     </label>
-                    <input type="hidden" {...methods.register("positionCategory")} />
+                    <input
+                      type="hidden"
+                      {...methods.register("positionCategory")}
+                    />
                     <CustomDropdown
                       options={positionCategoryOptions}
-                      selectedOption={positionCategoryOptions.find(option => option.value === getValues('positionCategory')) || null}
+                      selectedOption={
+                        positionCategoryOptions.find(
+                          (option) =>
+                            option.value === getValues("positionCategory")
+                        ) || null
+                      }
                       onSelect={(option) => {
                         if (Array.isArray(option)) return;
-                        setValue('positionCategory', option.value as string, { shouldValidate: true });
+                        setValue("positionCategory", option.value as string, {
+                          shouldValidate: true,
+                        });
                       }}
-                      placeholder={t("positionCreate.selectOptions.selectPositionCategory")}
+                      placeholder={t(
+                        "positionCreate.selectOptions.selectPositionCategory"
+                      )}
                       searchable={true}
                       clearable={true}
-                      onClear={() => setValue('positionCategory', '', { shouldValidate: true })}
+                      onClear={() =>
+                        setValue("positionCategory", "", {
+                          shouldValidate: true,
+                        })
+                      }
                     />
                     {methods.formState.errors.positionCategory && (
                       <p className="form-error">
@@ -1191,15 +1420,25 @@ export function PositionCreate({
                     <input type="hidden" {...methods.register("experience")} />
                     <CustomDropdown
                       options={experienceOptions}
-                      selectedOption={experienceOptions.find(option => option.value === getValues('experience')) || null}
+                      selectedOption={
+                        experienceOptions.find(
+                          (option) => option.value === getValues("experience")
+                        ) || null
+                      }
                       onSelect={(option) => {
                         if (Array.isArray(option)) return;
-                        setValue('experience', option.value as string, { shouldValidate: true });
+                        setValue("experience", option.value as string, {
+                          shouldValidate: true,
+                        });
                       }}
-                      placeholder={t("positionCreate.selectOptions.selectExperienceLevel")}
+                      placeholder={t(
+                        "positionCreate.selectOptions.selectExperienceLevel"
+                      )}
                       searchable={true}
                       clearable={true}
-                      onClear={() => setValue('experience', '', { shouldValidate: true })}
+                      onClear={() =>
+                        setValue("experience", "", { shouldValidate: true })
+                      }
                     />
                     {methods.formState.errors.experience && (
                       <p className="form-error">
@@ -1341,12 +1580,13 @@ export function PositionCreate({
                   </div>
                 </div>
 
-                {(methods.formState.errors.documentsRequired?.root || 
+                {(methods.formState.errors.documentsRequired?.root ||
                   methods.formState.errors.documentsRequired?.message) && (
                   <p className="form-error">
-                    {methods.formState.errors.documentsRequired?.root?.message || 
-                     methods.formState.errors.documentsRequired?.message ||
-                     t("positionCreate.errors.documentsRequired")}
+                    {methods.formState.errors.documentsRequired?.root
+                      ?.message ||
+                      methods.formState.errors.documentsRequired?.message ||
+                      t("positionCreate.errors.documentsRequired")}
                   </p>
                 )}
               </div>
@@ -1368,7 +1608,9 @@ export function PositionCreate({
                       type="number"
                       id="numberOfPositions"
                       className="form-input"
-                      placeholder={t("positionCreate.placeholders.numberOfPositions")}
+                      placeholder={t(
+                        "positionCreate.placeholders.numberOfPositions"
+                      )}
                       min="1"
                       required
                       {...methods.register("numberOfPositions")}
@@ -1390,15 +1632,25 @@ export function PositionCreate({
                     <input type="hidden" {...methods.register("payrateType")} />
                     <CustomDropdown
                       options={payrateTypeOptions}
-                      selectedOption={payrateTypeOptions.find(option => option.value === getValues('payrateType')) || null}
+                      selectedOption={
+                        payrateTypeOptions.find(
+                          (option) => option.value === getValues("payrateType")
+                        ) || null
+                      }
                       onSelect={(option) => {
                         if (Array.isArray(option)) return;
-                        setValue('payrateType', option.value as string, { shouldValidate: true });
+                        setValue("payrateType", option.value as string, {
+                          shouldValidate: true,
+                        });
                       }}
-                      placeholder={t("positionCreate.selectOptions.selectPayrateType")}
+                      placeholder={t(
+                        "positionCreate.selectOptions.selectPayrateType"
+                      )}
                       searchable={true}
                       clearable={true}
-                      onClear={() => setValue('payrateType', '', { shouldValidate: true })}
+                      onClear={() =>
+                        setValue("payrateType", "", { shouldValidate: true })
+                      }
                     />
                     {methods.formState.errors.payrateType && (
                       <p className="form-error">
@@ -1418,7 +1670,9 @@ export function PositionCreate({
                       type="text"
                       id="regularPayRate"
                       className="form-input"
-                      placeholder={t("positionCreate.placeholders.regularPayRate")}
+                      placeholder={t(
+                        "positionCreate.placeholders.regularPayRate"
+                      )}
                       {...methods.register("regularPayRate")}
                     />
                     {methods.formState.errors.regularPayRate && (
@@ -1442,6 +1696,9 @@ export function PositionCreate({
                       placeholder={t("positionCreate.placeholders.billRate")}
                       {...methods.register("billRate")}
                     />
+                    <div className="form-info">
+                      <small>{t("positionCreate.info.billRateAutoCalc")}</small>
+                    </div>
                     {methods.formState.errors.billRate && (
                       <p className="form-error">
                         {methods.formState.errors.billRate.message}
@@ -1459,6 +1716,9 @@ export function PositionCreate({
                       placeholder={t("positionCreate.placeholders.markup")}
                       {...methods.register("markup")}
                     />
+                    <div className="form-info">
+                      <small>{t("positionCreate.info.markupAutoCalc")}</small>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1475,9 +1735,9 @@ export function PositionCreate({
                       className="toggle-form"
                       {...methods.register("overtimeEnabled")}
                     />
-                                          <label htmlFor="overtimeEnabled" className="label-form">
-                        {t("positionCreate.fields.overtimeEnabled")}
-                      </label>
+                    <label htmlFor="overtimeEnabled" className="label-form">
+                      {t("positionCreate.fields.overtimeEnabled")}
+                    </label>
                   </div>
                 </div>
 
@@ -1492,7 +1752,9 @@ export function PositionCreate({
                           type="text"
                           id="overtimeHours"
                           className="form-input"
-                          placeholder={t("positionCreate.placeholders.overtimeHours")}
+                          placeholder={t(
+                            "positionCreate.placeholders.overtimeHours"
+                          )}
                           {...methods.register("overtimeHours")}
                         />
                         {methods.formState.errors.overtimeHours && (
@@ -1513,7 +1775,9 @@ export function PositionCreate({
                           type="text"
                           id="overtimeBillRate"
                           className="form-input"
-                          placeholder={t("positionCreate.placeholders.overtimeBillRate")}
+                          placeholder={t(
+                            "positionCreate.placeholders.overtimeBillRate"
+                          )}
                           {...methods.register("overtimeBillRate")}
                         />
                         {methods.formState.errors.overtimeBillRate && (
@@ -1531,7 +1795,9 @@ export function PositionCreate({
                           type="text"
                           id="overtimePayRate"
                           className="form-input"
-                          placeholder={t("positionCreate.placeholders.overtimePayRate")}
+                          placeholder={t(
+                            "positionCreate.placeholders.overtimePayRate"
+                          )}
                           {...methods.register("overtimePayRate")}
                         />
                         {methods.formState.errors.overtimePayRate && (
@@ -1564,18 +1830,36 @@ export function PositionCreate({
                     >
                       {t("positionCreate.fields.preferredPaymentMethod")}
                     </label>
-                    <input type="hidden" {...methods.register("preferredPaymentMethod")} />
+                    <input
+                      type="hidden"
+                      {...methods.register("preferredPaymentMethod")}
+                    />
                     <CustomDropdown
                       options={paymentMethodOptions}
-                      selectedOption={paymentMethodOptions.find(option => option.value === getValues('preferredPaymentMethod')) || null}
+                      selectedOption={
+                        paymentMethodOptions.find(
+                          (option) =>
+                            option.value === getValues("preferredPaymentMethod")
+                        ) || null
+                      }
                       onSelect={(option) => {
                         if (Array.isArray(option)) return;
-                        setValue('preferredPaymentMethod', option.value as string, { shouldValidate: true });
+                        setValue(
+                          "preferredPaymentMethod",
+                          option.value as string,
+                          { shouldValidate: true }
+                        );
                       }}
-                      placeholder={t("positionCreate.selectOptions.selectPaymentMethod")}
+                      placeholder={t(
+                        "positionCreate.selectOptions.selectPaymentMethod"
+                      )}
                       searchable={true}
                       clearable={true}
-                      onClear={() => setValue('preferredPaymentMethod', '', { shouldValidate: true })}
+                      onClear={() =>
+                        setValue("preferredPaymentMethod", "", {
+                          shouldValidate: true,
+                        })
+                      }
                     />
                     {methods.formState.errors.preferredPaymentMethod && (
                       <p className="form-error">
@@ -1598,15 +1882,25 @@ export function PositionCreate({
                     <input type="hidden" {...methods.register("terms")} />
                     <CustomDropdown
                       options={paymentTermsOptions}
-                      selectedOption={paymentTermsOptions.find(option => option.value === getValues('terms')) || null}
+                      selectedOption={
+                        paymentTermsOptions.find(
+                          (option) => option.value === getValues("terms")
+                        ) || null
+                      }
                       onSelect={(option) => {
                         if (Array.isArray(option)) return;
-                        setValue('terms', option.value as string, { shouldValidate: true });
+                        setValue("terms", option.value as string, {
+                          shouldValidate: true,
+                        });
                       }}
-                      placeholder={t("positionCreate.selectOptions.selectTerms")}
+                      placeholder={t(
+                        "positionCreate.selectOptions.selectTerms"
+                      )}
                       searchable={true}
                       clearable={true}
-                      onClear={() => setValue('terms', '', { shouldValidate: true })}
+                      onClear={() =>
+                        setValue("terms", "", { shouldValidate: true })
+                      }
                     />
                     {methods.formState.errors.terms && (
                       <p className="form-error">

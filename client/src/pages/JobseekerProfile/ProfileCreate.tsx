@@ -27,7 +27,11 @@ import "../../styles/components/form.css";
 import "../../styles/pages/JobseekerProfileStyles.css";
 import "../../styles/components/header.css";
 import { ArrowLeft, Check, Save } from "lucide-react";
-import { validateSIN, validateDOB, logValidation } from "../../utils/validation";
+import {
+  validateSIN,
+  validateDOB,
+  logValidation,
+} from "../../utils/validation";
 import {
   createFormSchema,
   type JobseekerProfileFormData,
@@ -53,41 +57,59 @@ export function ProfileCreate({
 
   // Create translated validation messages
   const validationMessages = {
-    firstNameRequired: t('profileCreate.personalInfo.firstNameRequired'),
-    lastNameRequired: t('profileCreate.personalInfo.lastNameRequired'),
-    dobRequired: t('profileCreate.personalInfo.dobRequired'),
-    emailInvalid: t('profileCreate.personalInfo.emailInvalid'),
-    mobileRequired: t('profileCreate.personalInfo.mobileRequired'),
-    licenseOrPassportRequired: t('profileCreate.personalInfo.licenseOrPassportRequired'),
-    sinExpiryRequired: t('profileCreate.personalInfo.sinExpiryRequired'),
-    workPermitUciRequired: t('profileCreate.personalInfo.workPermitUciRequired'),
-    workPermitUciInvalid: t('profileCreate.personalInfo.workPermitUciInvalid'),
-    workPermitExpiryRequired: t('profileCreate.personalInfo.workPermitExpiryRequired'),
+    firstNameRequired: t("profileCreate.personalInfo.firstNameRequired"),
+    lastNameRequired: t("profileCreate.personalInfo.lastNameRequired"),
+    dobRequired: t("profileCreate.personalInfo.dobRequired"),
+    emailInvalid: t("profileCreate.personalInfo.emailInvalid"),
+    mobileRequired: t("profileCreate.personalInfo.mobileRequired"),
+    licenseOrPassportRequired: t(
+      "profileCreate.personalInfo.licenseOrPassportRequired"
+    ),
+    sinExpiryRequired: t("profileCreate.personalInfo.sinExpiryRequired"),
+    workPermitUciRequired: t(
+      "profileCreate.personalInfo.workPermitUciRequired"
+    ),
+    workPermitUciInvalid: t("profileCreate.personalInfo.workPermitUciInvalid"),
+    workPermitExpiryRequired: t(
+      "profileCreate.personalInfo.workPermitExpiryRequired"
+    ),
     // Address validation messages
-    streetRequired: t('profileCreate.address.streetRequired'),
-    cityRequired: t('profileCreate.address.cityRequired'),
-    provinceRequired: t('profileCreate.address.provinceRequired'),
-    postalCodeRequired: t('profileCreate.address.postalCodeRequired'),
+    streetRequired: t("profileCreate.address.streetRequired"),
+    cityRequired: t("profileCreate.address.cityRequired"),
+    provinceRequired: t("profileCreate.address.provinceRequired"),
+    postalCodeRequired: t("profileCreate.address.postalCodeRequired"),
     // Qualifications validation messages
-    workPreferenceRequired: t('profileCreate.qualifications.workPreferenceRequired'),
-    bioRequired: t('profileCreate.qualifications.bioRequired'),
-    bioMaxLength: t('profileCreate.qualifications.bioMaxLength'),
-    licenseTypeRequired: t('profileCreate.qualifications.licenseTypeRequired'),
-    experienceRequired: t('profileCreate.qualifications.experienceRequired'),
+    workPreferenceRequired: t(
+      "profileCreate.qualifications.workPreferenceRequired"
+    ),
+    bioRequired: t("profileCreate.qualifications.bioRequired"),
+    bioMaxLength: t("profileCreate.qualifications.bioMaxLength"),
+    licenseTypeRequired: t("profileCreate.qualifications.licenseTypeRequired"),
+    experienceRequired: t("profileCreate.qualifications.experienceRequired"),
     // Compensation validation messages
-    payrateTypeRequired: t('profileCreate.compensation.payrateTypeRequired'),
-    billRateRequired: t('profileCreate.compensation.billRateRequired'),
-    payRateRequired: t('profileCreate.compensation.payRateRequired'),
-    paymentMethodRequired: t('profileCreate.compensation.paymentMethodRequired'),
-    overtimeHoursRequired: t('profileCreate.compensation.overtimeHoursRequired'),
-    overtimeBillRateRequired: t('profileCreate.compensation.overtimeBillRateRequired'),
-    overtimePayRateRequired: t('profileCreate.compensation.overtimePayRateRequired'),
+    payrateTypeRequired: t("profileCreate.compensation.payrateTypeRequired"),
+    billRateRequired: t("profileCreate.compensation.billRateRequired"),
+    payRateRequired: t("profileCreate.compensation.payRateRequired"),
+    paymentMethodRequired: t(
+      "profileCreate.compensation.paymentMethodRequired"
+    ),
+    overtimeHoursRequired: t(
+      "profileCreate.compensation.overtimeHoursRequired"
+    ),
+    overtimeBillRateRequired: t(
+      "profileCreate.compensation.overtimeBillRateRequired"
+    ),
+    overtimePayRateRequired: t(
+      "profileCreate.compensation.overtimePayRateRequired"
+    ),
     // Document validation messages
-    documentTypeRequired: t('profileCreate.documents.documentTypeRequired'),
-    documentFileRequired: t('profileCreate.documents.documentFileRequired'),
-    atLeastOneDocumentRequired: t('profileCreate.documents.atLeastOneDocumentRequired'),
-    maxFileSize: t('profileCreate.documents.maxFileSize'),
-    onlyPdfFiles: t('profileCreate.documents.onlyPdfFiles'),
+    documentTypeRequired: t("profileCreate.documents.documentTypeRequired"),
+    documentFileRequired: t("profileCreate.documents.documentFileRequired"),
+    atLeastOneDocumentRequired: t(
+      "profileCreate.documents.atLeastOneDocumentRequired"
+    ),
+    maxFileSize: t("profileCreate.documents.maxFileSize"),
+    onlyPdfFiles: t("profileCreate.documents.onlyPdfFiles"),
   };
 
   // Create form schema with translated messages
@@ -156,7 +178,11 @@ export function ProfileCreate({
       lastName: "",
       dob: "",
       email: isJobSeeker && user?.email ? user.email : "",
-      mobile: isJobSeeker && user?.user_metadata?.phoneNumber ? user.user_metadata.phoneNumber : "",
+      billingEmail: "",
+      mobile:
+        isJobSeeker && user?.user_metadata?.phoneNumber
+          ? user.user_metadata.phoneNumber
+          : "",
       licenseNumber: "",
       passportNumber: "",
       sinNumber: "",
@@ -233,6 +259,7 @@ export function ProfileCreate({
             lastName: profileData.lastName || "",
             dob: profileData.dob || "",
             email: profileData.email || "",
+            billingEmail: profileData.billingEmail || "",
             mobile: profileData.mobile || "",
             licenseNumber: profileData.licenseNumber || "",
             passportNumber: profileData.passportNumber || "",
@@ -488,12 +515,19 @@ export function ProfileCreate({
             message: dobResult.errorMessage,
           });
           personalInfoValid = false;
-          logValidation("validateCurrentStep: DOB validation failed: " + dobResult.errorMessage);
+          logValidation(
+            "validateCurrentStep: DOB validation failed: " +
+              dobResult.errorMessage
+          );
         }
       }
 
       // Check for ID document requirement
-      if (personalInfoValid && !values.licenseNumber && !values.passportNumber) {
+      if (
+        personalInfoValid &&
+        !values.licenseNumber &&
+        !values.passportNumber
+      ) {
         methods.setError("licenseNumber", {
           type: "custom",
           message: "Either a license number or passport number is required",
@@ -510,17 +544,27 @@ export function ProfileCreate({
             message: sinResult.errorMessage,
           });
           personalInfoValid = false;
-          logValidation("validateCurrentStep: SIN validation failed: " + sinResult.errorMessage);
+          logValidation(
+            "validateCurrentStep: SIN validation failed: " +
+              sinResult.errorMessage
+          );
         }
-        
+
         // Check if SIN Expiry is required and missing - only for SINs starting with '9' (temporary residents)
-        if (values.sinNumber.trim() !== "" && values.sinNumber.startsWith('9') && (!values.sinExpiry || values.sinExpiry.trim() === "")) {
+        if (
+          values.sinNumber.trim() !== "" &&
+          values.sinNumber.startsWith("9") &&
+          (!values.sinExpiry || values.sinExpiry.trim() === "")
+        ) {
           methods.setError("sinExpiry", {
             type: "custom",
-            message: "SIN Expiry is required for temporary residents (SIN starting with '9')",
+            message:
+              "SIN Expiry is required for temporary residents (SIN starting with '9')",
           });
           personalInfoValid = false;
-          logValidation("validateCurrentStep: SIN Expiry validation failed - required when SIN starts with '9'");
+          logValidation(
+            "validateCurrentStep: SIN Expiry validation failed - required when SIN starts with '9'"
+          );
         }
       }
 
@@ -1040,9 +1084,12 @@ export function ProfileCreate({
           return;
         }
 
-        // For recruiter/admin edited profiles, navigate to the jobseekers list with success message
-        navigate("/jobseekers", {
-          state: { message: "Profile updated successfully", type: "success" },
+        // For recruiter/admin edited profiles, navigate to the jobseeker management page with success message
+        navigate("/jobseeker-management", {
+          state: {
+            message: t("profileCreate.profileUpdatedSuccess"),
+            type: "success",
+          },
         });
       } else if (isDraftEditMode && profileId) {
         // We're in draft edit mode and trying to create a profile from the draft
@@ -1076,7 +1123,7 @@ export function ProfileCreate({
             // Navigate to success page
             navigate("/jobseekers/profile/success", {
               state: {
-                message: t('profileSuccess.title'),
+                message: t("profileSuccess.title"),
                 profileId: result.profile?.id,
                 profile: result.profile,
               },
@@ -1117,7 +1164,7 @@ export function ProfileCreate({
             // Navigate to success page
             navigate("/jobseekers/profile/success", {
               state: {
-                message: t('profileSuccess.title'),
+                message: t("profileSuccess.title"),
                 profileId: result.profile?.id,
                 profile: result.profile,
               },
@@ -1147,6 +1194,7 @@ export function ProfileCreate({
           "lastName",
           "dob",
           "email",
+          "billingEmail",
           "mobile",
           "licenseNumber",
           "passportNumber",
@@ -1324,20 +1372,38 @@ export function ProfileCreate({
   // Render loading indicator based on specific loading states
   const renderLoadingIndicator = () => {
     if (loadingStates.formLoading) {
-      return <div className="loading-indicator">{t('profileCreate.loadingDraft')}</div>;
+      return (
+        <div className="loading-indicator">
+          {t("profileCreate.loadingDraft")}
+        </div>
+      );
     }
     if (loadingStates.fileUploading) {
-      return <div className="loading-indicator">{t('profileCreate.uploadingFiles')}</div>;
+      return (
+        <div className="loading-indicator">
+          {t("profileCreate.uploadingFiles")}
+        </div>
+      );
     }
     if (loadingStates.draftSaving) {
-      return <div className="loading-indicator">{t('profileCreate.savingDraft')}</div>;
+      return (
+        <div className="loading-indicator">
+          {t("profileCreate.savingDraft")}
+        </div>
+      );
     }
     if (loadingStates.submitting) {
-      return <div className="loading-indicator">{t('profileCreate.submittingProfile')}</div>;
+      return (
+        <div className="loading-indicator">
+          {t("profileCreate.submittingProfile")}
+        </div>
+      );
     }
     if (loadingStates.emailChecking) {
       return (
-        <div className="loading-indicator">{t('profileCreate.checkingEmail')}</div>
+        <div className="loading-indicator">
+          {t("profileCreate.checkingEmail")}
+        </div>
       );
     }
     return null;
@@ -1348,10 +1414,10 @@ export function ProfileCreate({
       <AppHeader
         title={
           isEditMode
-            ? t('profileCreate.editProfileTitle')
+            ? t("profileCreate.editProfileTitle")
             : isDraftEditMode
-            ? t('profileCreate.editDraftTitle')
-            : t('profileCreate.createProfileTitle')
+            ? t("profileCreate.editDraftTitle")
+            : t("profileCreate.createProfileTitle")
         }
         actions={
           <>
@@ -1371,13 +1437,15 @@ export function ProfileCreate({
                 }
                 title={
                   currentStep === 1 && isEmailAvailable === false
-                    ? t('profileCreate.emailInUseTooltip')
+                    ? t("profileCreate.emailInUseTooltip")
                     : ""
                 }
               >
                 <Save size={16} />
                 <span>
-                  {loadingStates.draftSaving ? t('profileCreate.saving') : t('profileCreate.saveDraft')}
+                  {loadingStates.draftSaving
+                    ? t("profileCreate.saving")
+                    : t("profileCreate.saveDraft")}
                 </span>
               </button>
             )}
@@ -1387,7 +1455,7 @@ export function ProfileCreate({
                 onClick={() => navigate("/jobseeker-management")}
               >
                 <ArrowLeft size={16} />
-                <span>{t('jobseekerManagement.backToManagement')}</span>
+                <span>{t("jobseekerManagement.backToManagement")}</span>
               </button>
             )}
           </>
@@ -1396,7 +1464,7 @@ export function ProfileCreate({
           error
             ? error
             : currentStep === 1 && isEmailAvailable === false
-            ? t('profileCreate.emailInUseMessage')
+            ? t("profileCreate.emailInUseMessage")
             : undefined
         }
         statusType={
@@ -1455,7 +1523,7 @@ export function ProfileCreate({
                   onClick={() => handleBack(true)}
                   disabled={isLoading}
                 >
-                  {t('buttons.back')}
+                  {t("buttons.back")}
                 </button>
               )}
 
@@ -1473,7 +1541,7 @@ export function ProfileCreate({
                     {isLoading ? (
                       <span className="loading-spinner"></span>
                     ) : (
-                      t('buttons.next')
+                      t("buttons.next")
                     )}
                   </button>
                   {isEditMode && (
@@ -1488,9 +1556,9 @@ export function ProfileCreate({
                       {loadingStates.submitting ? (
                         <span className="loading-spinner"></span>
                       ) : isEditMode ? (
-                        t('profileCreate.updateProfile')
+                        t("profileCreate.updateProfile")
                       ) : (
-                        t('profileCreate.createProfile')
+                        t("profileCreate.createProfile")
                       )}
                     </button>
                   )}
@@ -1507,9 +1575,9 @@ export function ProfileCreate({
                   {loadingStates.submitting ? (
                     <span className="loading-spinner"></span>
                   ) : isEditMode ? (
-                    t('profileCreate.updateProfile')
+                    t("profileCreate.updateProfile")
                   ) : (
-                    t('profileCreate.createProfile')
+                    t("profileCreate.createProfile")
                   )}
                 </button>
               )}
@@ -1521,10 +1589,10 @@ export function ProfileCreate({
       {/* Submit Confirmation Modal for Jobseekers */}
       <ConfirmationModal
         isOpen={isSubmitConfirmationOpen}
-        title={t('profileCreate.profileStatusChangeNoticeTitle')}
-        message={t('profileCreate.profileStatusChangeNoticeMessage')}
-        confirmText={t('profileCreate.submitChanges')}
-        cancelText={t('buttons.cancel')}
+        title={t("profileCreate.profileStatusChangeNoticeTitle")}
+        message={t("profileCreate.profileStatusChangeNoticeMessage")}
+        confirmText={t("profileCreate.submitChanges")}
+        cancelText={t("buttons.cancel")}
         confirmButtonClass="primary"
         onConfirm={() => {
           setIsSubmitConfirmationOpen(false);

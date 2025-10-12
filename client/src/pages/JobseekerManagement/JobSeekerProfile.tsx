@@ -60,6 +60,7 @@ interface FullJobseekerProfile {
   lastName?: string | null;
   dob?: string | null;
   email?: string | null;
+  billingEmail?: string | null;
   mobile?: string | null;
   licenseNumber?: string | null; // Potentially encrypted
   passportNumber?: string | null; // Potentially encrypted
@@ -117,7 +118,10 @@ interface FullJobseekerProfile {
 }
 
 // Helper function to generate display name
-const getDisplayName = (profile: FullJobseekerProfile | null, t: (key: string) => string): string => {
+const getDisplayName = (
+  profile: FullJobseekerProfile | null,
+  t: (key: string) => string
+): string => {
   if (!profile) return t("jobSeekerProfile.unknownUser");
   return (
     `${profile.firstName || ""} ${profile.lastName || ""}`.trim() ||
@@ -253,21 +257,27 @@ const getWorkPermitExpiryAlert = (
     return {
       type: "warning-30",
       daysUntilExpiry,
-      message: t("jobSeekerProfile.workPermitExpiresIn", { days: daysUntilExpiry }),
+      message: t("jobSeekerProfile.workPermitExpiresIn", {
+        days: daysUntilExpiry,
+      }),
       icon: <AlertTriangle size={20} />,
     };
   } else if (daysUntilExpiry <= 60) {
     return {
       type: "warning-60",
       daysUntilExpiry,
-      message: t("jobSeekerProfile.workPermitExpiresIn", { days: daysUntilExpiry }),
+      message: t("jobSeekerProfile.workPermitExpiresIn", {
+        days: daysUntilExpiry,
+      }),
       icon: <AlertCircle size={20} />,
     };
   } else if (daysUntilExpiry <= 90) {
     return {
       type: "warning-90",
       daysUntilExpiry,
-      message: t("jobSeekerProfile.workPermitExpiresIn", { days: daysUntilExpiry }),
+      message: t("jobSeekerProfile.workPermitExpiresIn", {
+        days: daysUntilExpiry,
+      }),
       icon: <CircleAlert size={20} />,
     };
   }
@@ -396,9 +406,7 @@ export function JobSeekerProfile() {
         setProfile(data);
       } catch (err) {
         setError(
-          err instanceof Error
-            ? err.message
-            : t("messages.errorOccurred")
+          err instanceof Error ? err.message : t("messages.errorOccurred")
         );
         console.error("Error fetching profile:", err);
       } finally {
@@ -479,7 +487,9 @@ export function JobSeekerProfile() {
         }));
       } catch (err) {
         setPositionsError(
-          err instanceof Error ? err.message : t("messages.failedToFetchPositions")
+          err instanceof Error
+            ? err.message
+            : t("messages.failedToFetchPositions")
         );
         setAssignments([]);
         setPositionsPagination((prev) => ({
@@ -522,7 +532,9 @@ export function JobSeekerProfile() {
           }));
         } catch (err) {
           setPositionsError(
-            err instanceof Error ? err.message : t("messages.failedToFetchPositions")
+            err instanceof Error
+              ? err.message
+              : t("messages.failedToFetchPositions")
           );
           setAssignments([]);
           setPositionsPagination((prev) => ({
@@ -562,7 +574,9 @@ export function JobSeekerProfile() {
         }));
       } catch (err) {
         setConsentError(
-          err instanceof Error ? err.message : t("messages.failedToFetchConsentRecords")
+          err instanceof Error
+            ? err.message
+            : t("messages.failedToFetchConsentRecords")
         );
         setConsentRecords([]);
         setConsentPagination((prev) => ({
@@ -1031,7 +1045,9 @@ export function JobSeekerProfile() {
             className="toggle-rejection-btn"
             onClick={() => setShowFullRejectionReason(!showFullRejectionReason)}
           >
-            {showFullRejectionReason ? t("jobSeekerProfile.showLess") : t("jobSeekerProfile.showFullReason")}
+            {showFullRejectionReason
+              ? t("jobSeekerProfile.showLess")
+              : t("jobSeekerProfile.showFullReason")}
           </button>
         )}
       </div>
@@ -1334,16 +1350,18 @@ export function JobSeekerProfile() {
             >
               <ArrowLeft size={16} className="icon" />
               <span>
-              {isJobSeeker
-                ? t("jobSeekerProfile.backToDashboard")
-                : t("jobSeekerProfile.backToJobSeekerManagement")}
+                {isJobSeeker
+                  ? t("jobSeekerProfile.backToDashboard")
+                  : t("jobSeekerProfile.backToJobSeekerManagement")}
               </span>
             </button>
           }
           statusMessage={updateStatus}
         />
         <div className="error-container">
-          <p className="error-message">{error || t("jobSeekerProfile.failedToLoadProfile")}</p>
+          <p className="error-message">
+            {error || t("jobSeekerProfile.failedToLoadProfile")}
+          </p>
           <div className="error-actions">
             <button className="button " onClick={() => navigate("/jobseekers")}>
               {t("buttons.back")}
@@ -1483,7 +1501,9 @@ export function JobSeekerProfile() {
                           profile.verificationStatus.charAt(0).toUpperCase() +
                           profile.verificationStatus.slice(1),
                       })}`
-                    : `${t("jobSeekerProfile.status", { status: t("jobSeekerProfile.pending") })}`}
+                    : `${t("jobSeekerProfile.status", {
+                        status: t("jobSeekerProfile.pending"),
+                      })}`}
                 </span>
               </div>
               {profileNeedsAttention(profile) && (
@@ -1569,7 +1589,9 @@ export function JobSeekerProfile() {
                 <div className={`sin-expiry-alert ${workPermitAlert.type}`}>
                   <div className="sin-alert-icon">{workPermitAlert.icon}</div>
                   <div className="sin-alert-content">
-                    <div className="sin-alert-message">{workPermitAlert.message}</div>
+                    <div className="sin-alert-message">
+                      {workPermitAlert.message}
+                    </div>
                     <div className="sin-alert-details">
                       {t("jobSeekerProfile.workPermitExpiryLabel", {
                         date: formatDate(profile.workPermitExpiry, false),
@@ -1593,6 +1615,10 @@ export function JobSeekerProfile() {
                   profile.employeeId
                 )}
                 {renderDetailItem(t("jobSeekerProfile.email"), profile.email)}
+                {renderDetailItem(
+                  t("jobSeekerProfile.billingEmail"),
+                  profile.billingEmail
+                )}
                 {renderDetailItem(t("jobSeekerProfile.mobile"), profile.mobile)}
               </div>
               <div className="profile-info-details">
@@ -1649,7 +1675,8 @@ export function JobSeekerProfile() {
                             className="document-name"
                             title={doc.documentFileName}
                           >
-                            {doc.documentFileName || t("jobSeekerProfile.unnamedDocument")}
+                            {doc.documentFileName ||
+                              t("jobSeekerProfile.unnamedDocument")}
                           </p>
                           <p className="document-type">
                             {t("jobSeekerProfile.documentType", {
@@ -1924,6 +1951,10 @@ export function JobSeekerProfile() {
                 profile.lastName
               )}
               {renderDetailItem(t("jobSeekerProfile.email"), profile.email)}
+              {renderDetailItem(
+                t("jobSeekerProfile.billingEmail"),
+                profile.billingEmail
+              )}
               {renderDetailItem(t("jobSeekerProfile.mobile"), profile.mobile)}
               {renderDetailItem(
                 t("jobSeekerProfile.dateOfBirth"),
@@ -2371,9 +2402,7 @@ export function JobSeekerProfile() {
                   <div className="jsp-empty-state">
                     <FileCheck size={48} className="jsp-empty-icon" />
                     <h3>{t("jobSeekerProfile.noConsentRecords")}</h3>
-                    <p>
-                      {t("jobSeekerProfile.noConsentMessage")}
-                    </p>
+                    <p>{t("jobSeekerProfile.noConsentMessage")}</p>
                   </div>
                 ) : (
                   consentRecords.map((record) => (
@@ -2396,25 +2425,37 @@ export function JobSeekerProfile() {
                       <div className="jsp-consent-details">
                         <div className="jsp-detail-row">
                           <Calendar size={16} />
-                          <span>{t("jobSeekerProfile.consentSent", { date: formatDate(record.sent_at) })}</span>
+                          <span>
+                            {t("jobSeekerProfile.consentSent", {
+                              date: formatDate(record.sent_at),
+                            })}
+                          </span>
                         </div>
                         <div className="jsp-detail-row">
                           <CheckCircle size={16} />
                           <span>
-                            {t("jobSeekerProfile.consentCompleted", { date: formatDate(record.completed_at) })}
+                            {t("jobSeekerProfile.consentCompleted", {
+                              date: formatDate(record.completed_at),
+                            })}
                           </span>
                         </div>
                         <div className="jsp-detail-row">
                           <User size={16} />
                           <span>
-                            {t("jobSeekerProfile.consentedName", { 
-                              name: record.consented_name ? record.consented_name : t("jobSeekerProfile.nA")
+                            {t("jobSeekerProfile.consentedName", {
+                              name: record.consented_name
+                                ? record.consented_name
+                                : t("jobSeekerProfile.nA"),
                             })}
                           </span>
                         </div>
                         <div className="jsp-detail-row">
                           <Clock size={16} />
-                          <span>{t("jobSeekerProfile.consentStatus", { status: record.status })}</span>
+                          <span>
+                            {t("jobSeekerProfile.consentStatus", {
+                              status: record.status,
+                            })}
+                          </span>
                         </div>
                       </div>
                       <div className="jsp-consent-actions">
@@ -2440,7 +2481,7 @@ export function JobSeekerProfile() {
                   <span className="jsp-pagination-text">
                     {t("jobSeekerProfile.paginationInfo", {
                       currentPage: consentPagination.currentPage,
-                      totalPages: consentPagination.totalPages
+                      totalPages: consentPagination.totalPages,
                     })}
                   </span>
                 </div>
@@ -2483,7 +2524,9 @@ export function JobSeekerProfile() {
                                 : ""
                             }`}
                             onClick={() => handleConsentPageChange(pageNum)}
-                            aria-label={t("jobSeekerProfile.goToPage", { page: pageNum })}
+                            aria-label={t("jobSeekerProfile.goToPage", {
+                              page: pageNum,
+                            })}
                           >
                             {pageNum}
                           </button>
