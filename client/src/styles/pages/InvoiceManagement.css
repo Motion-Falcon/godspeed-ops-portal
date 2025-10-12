@@ -288,7 +288,6 @@
   cursor: not-allowed;
 }
 
-
 .skeleton-text {
   border-radius: 4px;
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
@@ -887,8 +886,10 @@
 }
 
 /* Add subtle colors to different detail items */
-.invoice-success-modal-detail-item:last-child .invoice-success-modal-detail-label,
-.invoice-success-modal-detail-item:last-child .invoice-success-modal-detail-value {
+.invoice-success-modal-detail-item:last-child
+  .invoice-success-modal-detail-label,
+.invoice-success-modal-detail-item:last-child
+  .invoice-success-modal-detail-value {
   font-weight: 600;
 }
 
@@ -913,7 +914,6 @@
 
 .dark .invoice-success-modal-email-section {
   background: linear-gradient(135deg, black 0%, #fed500 100%);
-
 }
 
 .invoice-success-modal-email-section label {
@@ -1006,12 +1006,12 @@ button.send-email-cell {
 }
 button.send-email {
   background: var(--primary);
-  color: #fff;
+  color: var(--background);
   border: 1px solid var(--primary);
 }
 button.send-email:disabled {
   background: var(--primary-light);
-  color: #fff;
+  color: var(--background);
   opacity: 0.7;
 }
 button.resend-email {
@@ -1024,7 +1024,7 @@ button.resend-email:disabled {
   color: var(--text);
   opacity: 0.7;
 }
-  .mail-icon {
+.mail-icon {
   margin-right: 4px;
   vertical-align: middle;
 }

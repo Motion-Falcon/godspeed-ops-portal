@@ -264,8 +264,12 @@ export function JobSeekerManagement() {
   };
 
   const formatStatusLabel = (status: string): string => {
-    if (status === "need-attention") return t('jobseekerManagement.status.needsAttention');
-    return t(`jobseekerManagement.status.${status}`) || status.charAt(0).toUpperCase() + status.slice(1);
+    if (status === "need-attention")
+      return t("jobseekerManagement.status.needsAttention");
+    return (
+      t(`jobseekerManagement.status.${status}`) ||
+      status.charAt(0).toUpperCase() + status.slice(1)
+    );
   };
 
   const handleCreateProfile = () => {
@@ -321,7 +325,7 @@ export function JobSeekerManagement() {
       // Close the modal
       setIsDeleteModalOpen(false);
       setProfileToDelete(null);
-      setMessage(t('jobSeekerProfile.profileDeleted'));
+      setMessage(t("jobSeekerProfile.profileDeleted"));
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "Failed to delete profile";
@@ -376,7 +380,7 @@ export function JobSeekerManagement() {
   return (
     <div className="page-container">
       <AppHeader
-        title={t('jobseekerManagement.title')}
+        title={t("jobseekerManagement.title")}
         actions={
           <>
             <button
@@ -384,14 +388,14 @@ export function JobSeekerManagement() {
               onClick={handleViewDrafts}
             >
               <FileText size={16} />
-              <span>{t('jobseekerManagement.viewDrafts')}</span>
+              <span>{t("jobseekerManagement.viewDrafts")}</span>
             </button>
             <button
               className="button primary button-icon"
               onClick={handleCreateProfile}
             >
               <Plus size={16} />
-              <span>{t('jobseekerManagement.newJobSeeker')}</span>
+              <span>{t("jobseekerManagement.newJobSeeker")}</span>
             </button>
           </>
         }
@@ -402,13 +406,13 @@ export function JobSeekerManagement() {
       <div className="content-container">
         <div className="card">
           <div className="card-header">
-            <h2>{t('jobseekerManagement.profilesTitle')}</h2>
+            <h2>{t("jobseekerManagement.profilesTitle")}</h2>
             <div className="filter-container">
               <div className="search-box">
                 <Search size={14} className="search-icon" />
                 <input
                   type="text"
-                  placeholder={t('jobseekerManagement.globalSearch')}
+                  placeholder={t("jobseekerManagement.globalSearch")}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="search-input"
@@ -417,7 +421,7 @@ export function JobSeekerManagement() {
                   className="button secondary button-icon reset-filters-btn"
                   onClick={resetFilters}
                 >
-                  <span>{t('jobseekerManagement.resetFilters')}</span>
+                  <span>{t("jobseekerManagement.resetFilters")}</span>
                 </button>
               </div>
             </div>
@@ -427,21 +431,29 @@ export function JobSeekerManagement() {
           <div className="pagination-controls top">
             <div className="pagination-info">
               <span className="pagination-text">
-                {t('jobseekerManagement.pagination.showing', {
-                  start: Math.min((pagination.page - 1) * pagination.limit + 1, pagination.total),
-                  end: Math.min(pagination.page * pagination.limit, pagination.total),
-                  total: pagination.total
+                {t("jobseekerManagement.pagination.showing", {
+                  start: Math.min(
+                    (pagination.page - 1) * pagination.limit + 1,
+                    pagination.total
+                  ),
+                  end: Math.min(
+                    pagination.page * pagination.limit,
+                    pagination.total
+                  ),
+                  total: pagination.total,
                 })}
                 {pagination.totalFiltered !== pagination.total && (
                   <span className="filtered-info">
-                    {t('jobseekerManagement.pagination.filteredFrom', { total: pagination.total })}
+                    {t("jobseekerManagement.pagination.filteredFrom", {
+                      total: pagination.total,
+                    })}
                   </span>
                 )}
               </span>
             </div>
             <div className="pagination-size-selector">
               <label htmlFor="pageSize" className="page-size-label">
-                {t('jobseekerManagement.pagination.show')}
+                {t("jobseekerManagement.pagination.show")}
               </label>
               <select
                 id="pageSize"
@@ -454,7 +466,9 @@ export function JobSeekerManagement() {
                 <option value={50}>50</option>
                 <option value={100}>100</option>
               </select>
-              <span className="page-size-label">{t('jobseekerManagement.pagination.perPage')}</span>
+              <span className="page-size-label">
+                {t("jobseekerManagement.pagination.perPage")}
+              </span>
             </div>
           </div>
 
@@ -468,11 +482,15 @@ export function JobSeekerManagement() {
                 <tr>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">{t('jobseekerManagement.columns.name')}</div>
+                      <div className="column-title">
+                        {t("jobseekerManagement.columns.name")}
+                      </div>
                       <div className="column-search">
                         <input
                           type="text"
-                          placeholder={t('jobseekerManagement.placeholders.searchName')}
+                          placeholder={t(
+                            "jobseekerManagement.placeholders.searchName"
+                          )}
                           value={nameFilter}
                           onChange={(e) => setNameFilter(e.target.value)}
                           className="column-search-input"
@@ -482,11 +500,15 @@ export function JobSeekerManagement() {
                   </th>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">{t('jobseekerManagement.columns.email')}</div>
+                      <div className="column-title">
+                        {t("jobseekerManagement.columns.email")}
+                      </div>
                       <div className="column-search">
                         <input
                           type="text"
-                          placeholder={t('jobseekerManagement.placeholders.searchEmail')}
+                          placeholder={t(
+                            "jobseekerManagement.placeholders.searchEmail"
+                          )}
                           value={emailFilter}
                           onChange={(e) => setEmailFilter(e.target.value)}
                           className="column-search-input"
@@ -496,11 +518,15 @@ export function JobSeekerManagement() {
                   </th>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">{t('jobseekerManagement.columns.phone')}</div>
+                      <div className="column-title">
+                        {t("jobseekerManagement.columns.phone")}
+                      </div>
                       <div className="column-search">
                         <input
                           type="text"
-                          placeholder={t('jobseekerManagement.placeholders.searchPhone')}
+                          placeholder={t(
+                            "jobseekerManagement.placeholders.searchPhone"
+                          )}
                           value={phoneFilter}
                           onChange={(e) => setPhoneFilter(e.target.value)}
                           className="column-search-input"
@@ -510,11 +536,15 @@ export function JobSeekerManagement() {
                   </th>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">{t('jobseekerManagement.columns.location')}</div>
+                      <div className="column-title">
+                        {t("jobseekerManagement.columns.location")}
+                      </div>
                       <div className="column-search">
                         <input
                           type="text"
-                          placeholder={t('jobseekerManagement.placeholders.searchLocation')}
+                          placeholder={t(
+                            "jobseekerManagement.placeholders.searchLocation"
+                          )}
                           value={locationFilter}
                           onChange={(e) => setLocationFilter(e.target.value)}
                           className="column-search-input"
@@ -524,11 +554,15 @@ export function JobSeekerManagement() {
                   </th>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">{t('jobseekerManagement.columns.employeeId')}</div>
+                      <div className="column-title">
+                        {t("jobseekerManagement.columns.employeeId")}
+                      </div>
                       <div className="column-search">
                         <input
                           type="text"
-                          placeholder={t('jobseekerManagement.placeholders.searchEmployeeId')}
+                          placeholder={t(
+                            "jobseekerManagement.placeholders.searchEmployeeId"
+                          )}
                           value={employeeIdFilter}
                           onChange={(e) => setEmployeeIdFilter(e.target.value)}
                           className="column-search-input"
@@ -538,14 +572,18 @@ export function JobSeekerManagement() {
                   </th>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">{t('jobseekerManagement.columns.experience')}</div>
+                      <div className="column-title">
+                        {t("jobseekerManagement.columns.experience")}
+                      </div>
                       <div className="column-search">
                         <select
                           value={experienceFilter}
                           onChange={(e) => setExperienceFilter(e.target.value)}
                           className="column-filter-select"
                         >
-                          <option value="all">{t('jobseekerManagement.filters.allExperience')}</option>
+                          <option value="all">
+                            {t("jobseekerManagement.filters.allExperience")}
+                          </option>
                           {EXPERIENCE_LEVELS.map((level) => (
                             <option key={level} value={level}>
                               {level}
@@ -557,25 +595,39 @@ export function JobSeekerManagement() {
                   </th>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">{t('jobseekerManagement.columns.status')}</div>
+                      <div className="column-title">
+                        {t("jobseekerManagement.columns.status")}
+                      </div>
                       <div className="column-search">
                         <select
                           value={statusFilter}
                           onChange={(e) => setStatusFilter(e.target.value)}
                           className="column-filter-select"
                         >
-                          <option value="all">{t('jobseekerManagement.filters.allStatuses')}</option>
-                          <option value="pending">{t('jobseekerManagement.status.pending')}</option>
-                          <option value="verified">{t('jobseekerManagement.status.verified')}</option>
-                          <option value="rejected">{t('jobseekerManagement.status.rejected')}</option>
-                          <option value="need-attention">{t('jobseekerManagement.status.needsAttention')}</option>
+                          <option value="all">
+                            {t("jobseekerManagement.filters.allStatuses")}
+                          </option>
+                          <option value="pending">
+                            {t("jobseekerManagement.status.pending")}
+                          </option>
+                          <option value="verified">
+                            {t("jobseekerManagement.status.verified")}
+                          </option>
+                          <option value="rejected">
+                            {t("jobseekerManagement.status.rejected")}
+                          </option>
+                          <option value="need-attention">
+                            {t("jobseekerManagement.status.needsAttention")}
+                          </option>
                         </select>
                       </div>
                     </div>
                   </th>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">{t('jobseekerManagement.columns.joinedDate')}</div>
+                      <div className="column-title">
+                        {t("jobseekerManagement.columns.joinedDate")}
+                      </div>
                       <div className="column-search">
                         <div className="date-picker-wrapper">
                           <input
@@ -591,11 +643,13 @@ export function JobSeekerManagement() {
                   </th>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">{t('jobseekerManagement.columns.actions')}</div>
+                      <div className="column-title">
+                        {t("jobseekerManagement.columns.actions")}
+                      </div>
                       <div className="column-search">
                         <div className="actions-info">
                           <span className="actions-help-text">
-                            {t('jobseekerManagement.actions.helpText')}
+                            {t("jobseekerManagement.actions.helpText")}
                           </span>
                         </div>
                       </div>
@@ -647,7 +701,6 @@ export function JobSeekerManagement() {
                           <div className="skeleton-actions">
                             <div className="skeleton-icon skeleton-action-btn"></div>
                             <div className="skeleton-icon skeleton-action-btn"></div>
-                            <div className="skeleton-icon skeleton-action-btn"></div>
                           </div>
                         </td>
                       </tr>
@@ -657,7 +710,7 @@ export function JobSeekerManagement() {
                   <tr>
                     <td colSpan={9} className="empty-state-cell">
                       <div className="empty-state">
-                        <p>{t('jobseekerManagement.emptyState.noProfiles')}</p>
+                        <p>{t("jobseekerManagement.emptyState.noProfiles")}</p>
                       </div>
                     </td>
                   </tr>
@@ -669,13 +722,13 @@ export function JobSeekerManagement() {
                         <td className="name-cell">{profile.name}</td>
                         <td className="email-cell">{profile.email}</td>
                         <td className="phone-cell">
-                          {profile.phoneNumber || t('jobseekerManagement.na')}
+                          {profile.phoneNumber || t("jobseekerManagement.na")}
                         </td>
                         <td className="location-cell">
-                          {profile.location || t('jobseekerManagement.na')}
+                          {profile.location || t("jobseekerManagement.na")}
                         </td>
                         <td className="employee-id-cell">
-                          {profile.employeeId || t('jobseekerManagement.na')}
+                          {profile.employeeId || t("jobseekerManagement.na")}
                         </td>
                         <td className="experience-cell">
                           {profile.experience}
@@ -696,27 +749,41 @@ export function JobSeekerManagement() {
                             <button
                               className="action-icon-btn view-btn"
                               onClick={() => handleViewProfile(profile.id)}
-                              title={t('jobseekerManagement.actions.viewProfile')}
-                              aria-label={t('jobseekerManagement.actions.viewProfile')}
+                              title={t(
+                                "jobseekerManagement.actions.viewProfile"
+                              )}
+                              aria-label={t(
+                                "jobseekerManagement.actions.viewProfile"
+                              )}
                             >
                               <Eye size={16} />
                             </button>
                             <button
                               className="action-icon-btn edit-btn"
                               onClick={() => handleEditClick(profile)}
-                              title={t('jobseekerManagement.actions.editProfile')}
-                              aria-label={t('jobseekerManagement.actions.editProfile')}
+                              title={t(
+                                "jobseekerManagement.actions.editProfile"
+                              )}
+                              aria-label={t(
+                                "jobseekerManagement.actions.editProfile"
+                              )}
                             >
                               <Pencil size={16} />
                             </button>
-                            <button
-                              className="action-icon-btn delete-btn"
-                              onClick={() => handleDeleteClick(profile)}
-                              title={t('jobseekerManagement.actions.deleteProfile')}
-                              aria-label={t('jobseekerManagement.actions.deleteProfile')}
-                            >
-                              <Trash2 size={16} />
-                            </button>
+                            {false && (
+                              <button
+                                className="action-icon-btn delete-btn"
+                                onClick={() => handleDeleteClick(profile)}
+                                title={t(
+                                  "jobseekerManagement.actions.deleteProfile"
+                                )}
+                                aria-label={t(
+                                  "jobseekerManagement.actions.deleteProfile"
+                                )}
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -732,7 +799,10 @@ export function JobSeekerManagement() {
             <div className="pagination-controls bottom">
               <div className="pagination-info">
                 <span className="pagination-text">
-                  {t('jobseekerManagement.pagination.pageOf', { current: pagination.page, total: pagination.totalPages })}
+                  {t("jobseekerManagement.pagination.pageOf", {
+                    current: pagination.page,
+                    total: pagination.totalPages,
+                  })}
                 </span>
               </div>
               <div className="pagination-buttons">
@@ -740,11 +810,11 @@ export function JobSeekerManagement() {
                   className="pagination-btn prev"
                   onClick={handlePreviousPage}
                   disabled={!pagination.hasPrevPage}
-                  title={t('jobseekerManagement.pagination.previousPage')}
-                  aria-label={t('jobseekerManagement.pagination.previousPage')}
+                  title={t("jobseekerManagement.pagination.previousPage")}
+                  aria-label={t("jobseekerManagement.pagination.previousPage")}
                 >
                   <ChevronLeft size={16} />
-                  <span>{t('jobseekerManagement.pagination.previous')}</span>
+                  <span>{t("jobseekerManagement.pagination.previous")}</span>
                 </button>
 
                 {/* Page numbers */}
@@ -770,7 +840,10 @@ export function JobSeekerManagement() {
                             pageNum === pagination.page ? "active" : ""
                           }`}
                           onClick={() => handlePageChange(pageNum)}
-                          aria-label={t('jobseekerManagement.pagination.goToPage', { page: pageNum })}
+                          aria-label={t(
+                            "jobseekerManagement.pagination.goToPage",
+                            { page: pageNum }
+                          )}
                         >
                           {pageNum}
                         </button>
@@ -783,10 +856,10 @@ export function JobSeekerManagement() {
                   className="pagination-btn next"
                   onClick={handleNextPage}
                   disabled={!pagination.hasNextPage}
-                  title={t('jobseekerManagement.pagination.nextPage')}
-                  aria-label={t('jobseekerManagement.pagination.nextPage')}
+                  title={t("jobseekerManagement.pagination.nextPage")}
+                  aria-label={t("jobseekerManagement.pagination.nextPage")}
                 >
-                  <span>{t('jobseekerManagement.pagination.next')}</span>
+                  <span>{t("jobseekerManagement.pagination.next")}</span>
                   <ChevronRight size={16} />
                 </button>
               </div>
@@ -798,10 +871,21 @@ export function JobSeekerManagement() {
       {/* Delete Confirmation Modal */}
       <ConfirmationModal
         isOpen={isDeleteModalOpen}
-        title={t('jobseekerManagement.deleteModal.title')}
-        message={t('jobseekerManagement.deleteModal.message', { name: profileToDelete?.name || '', error: deleteError ? `\n\n${t('jobseekerManagement.deleteModal.error', { error: deleteError })}` : '' })}
-        confirmText={isDeleting ? t('jobseekerManagement.deleteModal.deleting') : t('jobseekerManagement.deleteModal.confirm')}
-        cancelText={t('jobseekerManagement.deleteModal.cancel')}
+        title={t("jobseekerManagement.deleteModal.title")}
+        message={t("jobseekerManagement.deleteModal.message", {
+          name: profileToDelete?.name || "",
+          error: deleteError
+            ? `\n\n${t("jobseekerManagement.deleteModal.error", {
+                error: deleteError,
+              })}`
+            : "",
+        })}
+        confirmText={
+          isDeleting
+            ? t("jobseekerManagement.deleteModal.deleting")
+            : t("jobseekerManagement.deleteModal.confirm")
+        }
+        cancelText={t("jobseekerManagement.deleteModal.cancel")}
         confirmButtonClass="danger"
         onConfirm={handleConfirmDelete}
         onCancel={handleCancelDelete}
@@ -809,10 +893,12 @@ export function JobSeekerManagement() {
       {/* Edit Confirmation Modal */}
       <ConfirmationModal
         isOpen={isEditModalOpen}
-        title={t('jobseekerManagement.editModal.title')}
-        message={t('jobseekerManagement.editModal.message', { name: profileToEdit?.name || '' })}
-        confirmText={t('jobseekerManagement.editModal.confirm')}
-        cancelText={t('jobseekerManagement.editModal.cancel')}
+        title={t("jobseekerManagement.editModal.title")}
+        message={t("jobseekerManagement.editModal.message", {
+          name: profileToEdit?.name || "",
+        })}
+        confirmText={t("jobseekerManagement.editModal.confirm")}
+        cancelText={t("jobseekerManagement.editModal.cancel")}
         confirmButtonClass="primary"
         onConfirm={handleConfirmEdit}
         onCancel={handleCancelEdit}

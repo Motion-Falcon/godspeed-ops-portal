@@ -1,16 +1,15 @@
-import { Router, Request, Response } from 'express';
-import { createClient } from '@supabase/supabase-js';
-import { authenticateToken, authorizeRoles } from '../middleware/auth.js';
-import { sanitizeInputs, apiRateLimiter } from '../middleware/security.js';
-import { activityLogger } from '../middleware/activityLogger.js';
-import dotenv from 'dotenv';
-import { PositionData } from '../types.js';
-import { emailNotifier } from '../middleware/emailNotifier.js';
-import { jobseekerAssignmentTextTemplate } from '../email-templates/jobseeker-assignment-txt.js';
-import { jobseekerAssignmentHtmlTemplate } from '../email-templates/jobseeker-assignment-html.js';
-import { jobseekerRemovalHtmlTemplate } from '../email-templates/jobseeker-removal-html.js';
-import { jobseekerRemovalTextTemplate } from '../email-templates/jobseeker-removal-txt.js';
-import { decode } from 'html-entities';
+import { Router, Request, Response } from "express";
+import { createClient } from "@supabase/supabase-js";
+import { authenticateToken, authorizeRoles } from "../middleware/auth.js";
+import { sanitizeInputs, apiRateLimiter } from "../middleware/security.js";
+import { activityLogger } from "../middleware/activityLogger.js";
+import dotenv from "dotenv";
+import { PositionData } from "../types.js";
+import { emailNotifier } from "../middleware/emailNotifier.js";
+import { jobseekerAssignmentTextTemplate } from "../email-templates/jobseeker-assignment-txt.js";
+import { jobseekerAssignmentHtmlTemplate } from "../email-templates/jobseeker-assignment-html.js";
+import { jobseekerRemovalHtmlTemplate } from "../email-templates/jobseeker-removal-html.js";
+import { jobseekerRemovalTextTemplate } from "../email-templates/jobseeker-removal-txt.js";
 
 dotenv.config();
 
@@ -26,7 +25,6 @@ if (!supabaseUrl || !supabaseKey) {
 }
 
 const supabase = createClient(supabaseUrl, supabaseKey);
-
 
 /**
  * Convert camelCase to snake_case properly handling consecutive capital letters
@@ -85,7 +83,9 @@ async function syncAssignedJobseekers(positionId: string): Promise<string[]> {
       return [];
     }
 
-    return activeAssignments ? activeAssignments.map(assignment => assignment.candidate_id) : [];
+    return activeAssignments
+      ? activeAssignments.map((assignment) => assignment.candidate_id)
+      : [];
   } catch (error) {
     console.error("Error syncing assigned jobseekers:", error);
     return [];
@@ -95,10 +95,12 @@ async function syncAssignedJobseekers(positionId: string): Promise<string[]> {
 /**
  * Helper function to update position's assigned_jobseekers array based on active assignments
  */
-async function updatePositionAssignedJobseekers(positionId: string): Promise<void> {
+async function updatePositionAssignedJobseekers(
+  positionId: string
+): Promise<void> {
   try {
     const activeJobseekers = await syncAssignedJobseekers(positionId);
-    
+
     await supabase
       .from("positions")
       .update({ assigned_jobseekers: activeJobseekers })
@@ -126,6 +128,7 @@ router.get(
         limit = "10",
         search = "",
         positionIdFilter = "",
+        positionNumberFilter = "",
         titleFilter = "",
         clientFilter = "",
         locationFilter = "",
@@ -140,6 +143,7 @@ router.get(
         limit?: string;
         search?: string;
         positionIdFilter?: string;
+        positionNumberFilter?: string;
         titleFilter?: string;
         clientFilter?: string;
         locationFilter?: string;
@@ -156,11 +160,10 @@ router.get(
       const offset = (pageNum - 1) * limitNum;
 
       // Build the base query with all necessary fields
-      let baseQuery = supabase
-        .from("positions")
-        .select(`
+      let baseQuery = supabase.from("positions").select(`
           id,
-          position_code, 
+          position_code,
+          position_number,
           title,
           start_date,
           end_date,
@@ -181,6 +184,7 @@ router.get(
       baseQuery = applyPositionFilters(baseQuery, {
         search,
         positionIdFilter,
+        positionNumberFilter,
         titleFilter,
         clientFilter,
         locationFilter,
@@ -189,7 +193,7 @@ router.get(
         positionCategoryFilter,
         experienceFilter,
         showOnPortalFilter,
-        dateFilter
+        dateFilter,
       });
 
       // Get total count (unfiltered)
@@ -212,6 +216,7 @@ router.get(
       countQuery = applyPositionFilters(countQuery, {
         search,
         positionIdFilter,
+        positionNumberFilter,
         titleFilter,
         clientFilter,
         locationFilter,
@@ -220,10 +225,11 @@ router.get(
         positionCategoryFilter,
         experienceFilter,
         showOnPortalFilter,
-        dateFilter
+        dateFilter,
       });
 
-      const { count: filteredCount, error: filteredCountError } = await countQuery;
+      const { count: filteredCount, error: filteredCountError } =
+        await countQuery;
 
       if (filteredCountError) {
         console.error("Error getting filtered count:", filteredCountError);
@@ -258,37 +264,42 @@ router.get(
       }
 
       // Transform the response to include clientName and convert snake_case to camelCase
-      const formattedPositions = await Promise.all(positions.map(async (position: any) => {
-        // Since we're only selecting specific fields, handle the clients data properly
-        const clientName = position.client_name || null;
-        
-        // Create a clean position object without the clients nested object
-        const positionData = { ...position };
-        delete positionData.client_name;
+      const formattedPositions = await Promise.all(
+        positions.map(async (position: any) => {
+          // Since we're only selecting specific fields, handle the clients data properly
+          const clientName = position.client_name || null;
 
-        // Sync assigned_jobseekers with active assignments from position_candidate_assignments table
-        const activeJobseekers = await syncAssignedJobseekers(position.id);
-        
-        // Update the position data with synced assignments if they differ
-        if (JSON.stringify(position.assigned_jobseekers || []) !== JSON.stringify(activeJobseekers)) {
-          await updatePositionAssignedJobseekers(position.id);
-          positionData.assigned_jobseekers = activeJobseekers;
-        }
+          // Create a clean position object without the clients nested object
+          const positionData = { ...position };
+          delete positionData.client_name;
 
-        // Convert snake_case to camelCase
-        const formattedPosition = Object.entries(positionData).reduce(
-          (acc, [key, value]) => {
-            const camelKey = key.replace(/_([a-z])/g, (_, letter) =>
-              letter.toUpperCase()
-            );
-            acc[camelKey] = value;
-            return acc;
-          },
-          { clientName } as Record<string, any>
-        );
+          // Sync assigned_jobseekers with active assignments from position_candidate_assignments table
+          const activeJobseekers = await syncAssignedJobseekers(position.id);
 
-        return formattedPosition;
-      }));
+          // Update the position data with synced assignments if they differ
+          if (
+            JSON.stringify(position.assigned_jobseekers || []) !==
+            JSON.stringify(activeJobseekers)
+          ) {
+            await updatePositionAssignedJobseekers(position.id);
+            positionData.assigned_jobseekers = activeJobseekers;
+          }
+
+          // Convert snake_case to camelCase
+          const formattedPosition = Object.entries(positionData).reduce(
+            (acc, [key, value]) => {
+              const camelKey = key.replace(/_([a-z])/g, (_, letter) =>
+                letter.toUpperCase()
+              );
+              acc[camelKey] = value;
+              return acc;
+            },
+            { clientName } as Record<string, any>
+          );
+
+          return formattedPosition;
+        })
+      );
 
       // Calculate pagination metadata
       const totalFiltered = filteredCount || 0;
@@ -310,11 +321,9 @@ router.get(
       });
     } catch (error) {
       console.error("Unexpected error fetching positions:", error);
-      return res
-        .status(500)
-        .json({
-          error: "An unexpected error occurred while fetching positions",
-        });
+      return res.status(500).json({
+        error: "An unexpected error occurred while fetching positions",
+      });
     }
   }
 );
@@ -332,13 +341,14 @@ router.get(
   async (req: Request, res: Response) => {
     try {
       const { clientId } = req.params;
-      
+
       // Extract pagination and filter parameters from query
       const {
         page = "1",
         limit = "10",
         search = "",
         positionIdFilter = "",
+        positionNumberFilter = "",
         titleFilter = "",
         locationFilter = "",
         employmentTermFilter = "",
@@ -352,6 +362,7 @@ router.get(
         limit?: string;
         search?: string;
         positionIdFilter?: string;
+        positionNumberFilter?: string;
         titleFilter?: string;
         locationFilter?: string;
         employmentTermFilter?: string;
@@ -369,7 +380,9 @@ router.get(
       // Verify that the client exists
       const { data: client, error: clientError } = await supabase
         .from("clients")
-        .select("id, company_name, client_manager, accounting_person, sales_person")
+        .select(
+          "id, company_name, client_manager, accounting_person, sales_person"
+        )
         .eq("id", clientId)
         .single();
 
@@ -380,7 +393,8 @@ router.get(
       // Build the base query with all necessary fields, filtered by client
       let baseQuery = supabase
         .from("positions")
-        .select(`
+        .select(
+          `
           id,
           position_code, 
           position_number,
@@ -406,13 +420,15 @@ router.get(
           overtime_hours,
           overtime_bill_rate,
           overtime_pay_rate
-        `)
+        `
+        )
         .eq("client", clientId);
 
       // Apply additional filters at database level (excluding clientFilter since we're already filtering by client)
       baseQuery = applyPositionFilters(baseQuery, {
         search,
         positionIdFilter,
+        positionNumberFilter,
         titleFilter,
         locationFilter,
         employmentTermFilter,
@@ -420,7 +436,7 @@ router.get(
         positionCategoryFilter,
         experienceFilter,
         showOnPortalFilter,
-        dateFilter
+        dateFilter,
       });
 
       // Get total count for this client (unfiltered)
@@ -445,6 +461,7 @@ router.get(
       countQuery = applyPositionFilters(countQuery, {
         search,
         positionIdFilter,
+        positionNumberFilter,
         titleFilter,
         locationFilter,
         employmentTermFilter,
@@ -452,10 +469,11 @@ router.get(
         positionCategoryFilter,
         experienceFilter,
         showOnPortalFilter,
-        dateFilter
+        dateFilter,
       });
 
-      const { count: filteredCount, error: filteredCountError } = await countQuery;
+      const { count: filteredCount, error: filteredCountError } =
+        await countQuery;
 
       if (filteredCountError) {
         console.error("Error getting filtered count:", filteredCountError);
@@ -471,7 +489,9 @@ router.get(
 
       if (error) {
         console.error("Error fetching client positions:", error);
-        return res.status(500).json({ error: "Failed to fetch client positions" });
+        return res
+          .status(500)
+          .json({ error: "Failed to fetch client positions" });
       }
 
       if (!positions || positions.length === 0) {
@@ -482,7 +502,7 @@ router.get(
             companyName: client.company_name,
             clientManager: client.client_manager,
             accountingPerson: client.accounting_person,
-            salesPerson: client.sales_person
+            salesPerson: client.sales_person,
           },
           pagination: {
             page: pageNum,
@@ -497,37 +517,42 @@ router.get(
       }
 
       // Transform the response to include clientName and convert snake_case to camelCase
-      const formattedPositions = await Promise.all(positions.map(async (position: any) => {
-        // Since we're only selecting specific fields, handle the clients data properly
-        const clientName = position.client_name || client.company_name;
-        
-        // Create a clean position object
-        const positionData = { ...position };
-        delete positionData.client_name;
+      const formattedPositions = await Promise.all(
+        positions.map(async (position: any) => {
+          // Since we're only selecting specific fields, handle the clients data properly
+          const clientName = position.client_name || client.company_name;
 
-        // Sync assigned_jobseekers with active assignments from position_candidate_assignments table
-        const activeJobseekers = await syncAssignedJobseekers(position.id);
-        
-        // Update the position data with synced assignments if they differ
-        if (JSON.stringify(position.assigned_jobseekers || []) !== JSON.stringify(activeJobseekers)) {
-          await updatePositionAssignedJobseekers(position.id);
-          positionData.assigned_jobseekers = activeJobseekers;
-        }
+          // Create a clean position object
+          const positionData = { ...position };
+          delete positionData.client_name;
 
-        // Convert snake_case to camelCase
-        const formattedPosition = Object.entries(positionData).reduce(
-          (acc, [key, value]) => {
-            const camelKey = key.replace(/_([a-z])/g, (_, letter) =>
-              letter.toUpperCase()
-            );
-            acc[camelKey] = value;
-            return acc;
-          },
-          { clientName } as Record<string, any>
-        );
+          // Sync assigned_jobseekers with active assignments from position_candidate_assignments table
+          const activeJobseekers = await syncAssignedJobseekers(position.id);
 
-        return formattedPosition;
-      }));
+          // Update the position data with synced assignments if they differ
+          if (
+            JSON.stringify(position.assigned_jobseekers || []) !==
+            JSON.stringify(activeJobseekers)
+          ) {
+            await updatePositionAssignedJobseekers(position.id);
+            positionData.assigned_jobseekers = activeJobseekers;
+          }
+
+          // Convert snake_case to camelCase
+          const formattedPosition = Object.entries(positionData).reduce(
+            (acc, [key, value]) => {
+              const camelKey = key.replace(/_([a-z])/g, (_, letter) =>
+                letter.toUpperCase()
+              );
+              acc[camelKey] = value;
+              return acc;
+            },
+            { clientName } as Record<string, any>
+          );
+
+          return formattedPosition;
+        })
+      );
 
       // Calculate pagination metadata
       const totalFiltered = filteredCount || 0;
@@ -542,7 +567,7 @@ router.get(
           companyName: client.company_name,
           clientManager: client.client_manager,
           accountingPerson: client.accounting_person,
-          salesPerson: client.sales_person
+          salesPerson: client.sales_person,
         },
         pagination: {
           page: pageNum,
@@ -556,11 +581,9 @@ router.get(
       });
     } catch (error) {
       console.error("Unexpected error fetching client positions:", error);
-      return res
-        .status(500)
-        .json({
-          error: "An unexpected error occurred while fetching client positions",
-        });
+      return res.status(500).json({
+        error: "An unexpected error occurred while fetching client positions",
+      });
     }
   }
 );
@@ -568,22 +591,27 @@ router.get(
 /**
  * Helper function to apply filters to a Supabase query
  */
-function applyPositionFilters(query: any, filters: {
-  search?: string;
-  positionIdFilter?: string;
-  titleFilter?: string;
-  clientFilter?: string;
-  locationFilter?: string;
-  employmentTermFilter?: string;
-  employmentTypeFilter?: string;
-  positionCategoryFilter?: string;
-  experienceFilter?: string;
-  showOnPortalFilter?: string;
-  dateFilter?: string;
-}) {
+function applyPositionFilters(
+  query: any,
+  filters: {
+    search?: string;
+    positionIdFilter?: string;
+    positionNumberFilter?: string;
+    titleFilter?: string;
+    clientFilter?: string;
+    locationFilter?: string;
+    employmentTermFilter?: string;
+    employmentTypeFilter?: string;
+    positionCategoryFilter?: string;
+    experienceFilter?: string;
+    showOnPortalFilter?: string;
+    dateFilter?: string;
+  }
+) {
   const {
     search,
     positionIdFilter,
+    positionNumberFilter,
     titleFilter,
     clientFilter,
     locationFilter,
@@ -592,18 +620,24 @@ function applyPositionFilters(query: any, filters: {
     positionCategoryFilter,
     experienceFilter,
     showOnPortalFilter,
-    dateFilter
+    dateFilter,
   } = filters;
 
   // Global search across multiple fields
   if (search && search.trim().length > 0) {
     const searchTerm = search.trim();
-    query = query.or(`position_code.ilike.%${searchTerm}%,title.ilike.%${searchTerm}%,city.ilike.%${searchTerm}%,province.ilike.%${searchTerm}%,employment_term.ilike.%${searchTerm}%,employment_type.ilike.%${searchTerm}%,position_category.ilike.%${searchTerm}%,experience.ilike.%${searchTerm}%,client_name.ilike.%${searchTerm}%`);
+    query = query.or(
+      `position_code.ilike.%${searchTerm}%,position_number.ilike.%${searchTerm}%,title.ilike.%${searchTerm}%,city.ilike.%${searchTerm}%,province.ilike.%${searchTerm}%,employment_term.ilike.%${searchTerm}%,employment_type.ilike.%${searchTerm}%,position_category.ilike.%${searchTerm}%,experience.ilike.%${searchTerm}%,client_name.ilike.%${searchTerm}%`
+    );
   }
 
   // Individual column filters
   if (positionIdFilter && positionIdFilter.trim().length > 0) {
     query = query.ilike("position_code", `%${positionIdFilter.trim()}%`);
+  }
+
+  if (positionNumberFilter && positionNumberFilter.trim().length > 0) {
+    query = query.ilike("position_number", `%${positionNumberFilter.trim()}%`);
   }
 
   if (titleFilter && titleFilter.trim().length > 0) {
@@ -612,7 +646,9 @@ function applyPositionFilters(query: any, filters: {
 
   if (locationFilter && locationFilter.trim().length > 0) {
     const locationTerm = locationFilter.trim();
-    query = query.or(`city.ilike.%${locationTerm}%,province.ilike.%${locationTerm}%`);
+    query = query.or(
+      `city.ilike.%${locationTerm}%,province.ilike.%${locationTerm}%`
+    );
   }
 
   if (employmentTermFilter && employmentTermFilter !== "all") {
@@ -632,7 +668,8 @@ function applyPositionFilters(query: any, filters: {
   }
 
   if (showOnPortalFilter && showOnPortalFilter !== "all") {
-    const showOnPortal = showOnPortalFilter === "true" || showOnPortalFilter === "Yes";
+    const showOnPortal =
+      showOnPortalFilter === "true" || showOnPortalFilter === "Yes";
     query = query.eq("show_on_job_portal", showOnPortal);
   }
 
@@ -759,17 +796,17 @@ router.post(
   sanitizeInputs,
   activityLogger({
     onSuccess: (req, res) => ({
-      actionType: 'create_position',
-      actionVerb: 'created',
-      primaryEntityType: 'position',
+      actionType: "create_position",
+      actionVerb: "created",
+      primaryEntityType: "position",
       primaryEntityId: res.locals.newPosition?.id,
       primaryEntityName: req.body.title,
-      secondaryEntityType: 'client',
+      secondaryEntityType: "client",
       secondaryEntityId: req.body.client,
       secondaryEntityName: res.locals.clientName,
       displayMessage: `Created position "${req.body.title}" for client "${res.locals.clientName}"`,
-      category: 'position_management',
-      priority: 'normal',
+      category: "position_management",
+      priority: "normal",
       metadata: {
         positionCode: res.locals.newPosition?.position_code,
         startDate: req.body.startDate,
@@ -778,9 +815,9 @@ router.post(
         numberOfPositions: req.body.numberOfPositions,
         regularPayRate: req.body.regularPayRate,
         billRate: req.body.billRate,
-        location: `${req.body.city}, ${req.body.province}`
-      }
-    })
+        location: `${req.body.city}, ${req.body.province}`,
+      },
+    }),
   }),
   async (req: Request, res: Response) => {
     try {
@@ -908,7 +945,7 @@ router.post(
       dbPositionData.is_draft = false;
       dbPositionData.created_by_user_id = userId;
       dbPositionData.updated_by_user_id = userId;
-      
+
       // Add client_name to the database data
       dbPositionData.client_name = client.company_name;
 
@@ -951,17 +988,17 @@ router.put(
   sanitizeInputs,
   activityLogger({
     onSuccess: (req, res) => ({
-      actionType: 'update_position',
-      actionVerb: 'updated',
-      primaryEntityType: 'position',
+      actionType: "update_position",
+      actionVerb: "updated",
+      primaryEntityType: "position",
       primaryEntityId: req.params.id,
       primaryEntityName: req.body.title,
-      secondaryEntityType: 'client',
+      secondaryEntityType: "client",
       secondaryEntityId: req.body.client,
       secondaryEntityName: res.locals.clientName,
       displayMessage: `Updated position "${req.body.title}" for client "${res.locals.clientName}"`,
-      category: 'position_management',
-      priority: 'normal',
+      category: "position_management",
+      priority: "normal",
       metadata: {
         positionCode: res.locals.updatedPosition?.position_code,
         startDate: req.body.startDate,
@@ -971,9 +1008,11 @@ router.put(
         regularPayRate: req.body.regularPayRate,
         billRate: req.body.billRate,
         location: `${req.body.city}, ${req.body.province}`,
-        updatedFields: Object.keys(req.body).filter(key => key !== 'clientName')
-      }
-    })
+        updatedFields: Object.keys(req.body).filter(
+          (key) => key !== "clientName"
+        ),
+      },
+    }),
   }),
   async (req: Request, res: Response) => {
     try {
@@ -1108,7 +1147,7 @@ router.put(
       dbPositionData.is_draft = false;
       dbPositionData.updated_by_user_id = userId;
       dbPositionData.updated_at = new Date().toISOString();
-      
+
       // Add client_name to the database data
       dbPositionData.client_name = client.company_name;
 
@@ -1117,7 +1156,8 @@ router.put(
         .from("positions")
         .update(dbPositionData)
         .eq("id", id)
-        .select(`
+        .select(
+          `
           id,
           client,
           client_name,
@@ -1160,14 +1200,17 @@ router.put(
           updated_at,
           created_by_user_id,
           updated_by_user_id
-        `)
+        `
+        )
         .single();
 
       if (updateError) {
         console.error("Error updating position:", updateError);
         // Assignment was already deleted, but position update failed
         // This creates an inconsistent state, but we cannot easily rollback the deletion
-        console.error("Warning: Assignment was deleted but position update failed. Manual intervention may be required.");
+        console.error(
+          "Warning: Assignment was deleted but position update failed. Manual intervention may be required."
+        );
         return res.status(500).json({ error: "Failed to remove candidate" });
       }
 
@@ -1186,7 +1229,6 @@ router.put(
   }
 );
 
-
 /**
  * Delete a position
  * DELETE /api/positions/:id
@@ -1198,17 +1240,20 @@ router.delete(
   authorizeRoles(["admin", "recruiter"]),
   activityLogger({
     onSuccess: (req, res) => ({
-      actionType: 'delete_position',
-      actionVerb: 'deleted',
-      primaryEntityType: 'position',
+      actionType: "delete_position",
+      actionVerb: "deleted",
+      primaryEntityType: "position",
       primaryEntityId: req.params.id,
-      primaryEntityName: res.locals.deletedPosition?.title || `Position ID: ${req.params.id}`,
-      secondaryEntityType: 'client',
+      primaryEntityName:
+        res.locals.deletedPosition?.title || `Position ID: ${req.params.id}`,
+      secondaryEntityType: "client",
       secondaryEntityId: res.locals.deletedPosition?.client,
       secondaryEntityName: res.locals.deletedPosition?.client_name,
-      displayMessage: `Deleted position "${res.locals.deletedPosition?.title || req.params.id}"`,
-      category: 'position_management',
-      priority: 'high',
+      displayMessage: `Deleted position "${
+        res.locals.deletedPosition?.title || req.params.id
+      }"`,
+      category: "position_management",
+      priority: "high",
       metadata: {
         positionCode: res.locals.deletedPosition?.position_code,
         clientName: res.locals.deletedPosition?.client_name,
@@ -1216,10 +1261,11 @@ router.delete(
         employmentTerm: res.locals.deletedPosition?.employment_term,
         employmentType: res.locals.deletedPosition?.employment_type,
         numberOfPositions: res.locals.deletedPosition?.number_of_positions,
-        location: res.locals.deletedPosition ? 
-          `${res.locals.deletedPosition.city}, ${res.locals.deletedPosition.province}` : null
-      }
-    })
+        location: res.locals.deletedPosition
+          ? `${res.locals.deletedPosition.city}, ${res.locals.deletedPosition.province}`
+          : null,
+      },
+    }),
   }),
   async (req: Request, res: Response) => {
     try {
@@ -1227,11 +1273,7 @@ router.delete(
 
       // Check if position exists and get position data for logging
       const { data: existingPosition, error: positionCheckError } =
-        await supabase
-          .from("positions")
-          .select("*")
-          .eq("id", id)
-          .maybeSingle();
+        await supabase.from("positions").select("*").eq("id", id).maybeSingle();
 
       if (positionCheckError || !existingPosition) {
         return res.status(404).json({ error: "Position not found" });
@@ -1275,29 +1317,32 @@ router.post(
   sanitizeInputs,
   activityLogger({
     onSuccess: (req, res) => ({
-      actionType: 'assign_jobseeker',
-      actionVerb: 'assigned',
-      primaryEntityType: 'jobseeker',
+      actionType: "assign_jobseeker",
+      actionVerb: "assigned",
+      primaryEntityType: "jobseeker",
       primaryEntityId: req.body.candidateId,
-      primaryEntityName: res.locals.candidateName || `Candidate ID: ${req.body.candidateId}`,
-      secondaryEntityType: 'position',
+      primaryEntityName:
+        res.locals.candidateName || `Candidate ID: ${req.body.candidateId}`,
+      secondaryEntityType: "position",
       secondaryEntityId: req.params.id,
       secondaryEntityName: res.locals.positionTitle,
-      tertiaryEntityType: 'client',
+      tertiaryEntityType: "client",
       tertiaryEntityId: res.locals.clientId,
       tertiaryEntityName: res.locals.clientName,
-      displayMessage: `Assigned candidate "${res.locals.candidateName || req.body.candidateId}" to position "${res.locals.positionTitle}"`,
-      category: 'position_management',
-      priority: 'normal',
-      status: 'active',
+      displayMessage: `Assigned candidate "${
+        res.locals.candidateName || req.body.candidateId
+      }" to position "${res.locals.positionTitle}"`,
+      category: "position_management",
+      priority: "normal",
+      status: "active",
       metadata: {
         startDate: req.body.startDate,
         endDate: req.body.endDate,
         assignmentId: res.locals.newAssignment?.id,
         positionCode: res.locals.positionCode,
-        totalAssignedCandidates: res.locals.totalAssigned
-      }
-    })
+        totalAssignedCandidates: res.locals.totalAssigned,
+      },
+    }),
   }),
   emailNotifier({
     onSuccessEmail: async (req: Request, res: Response) => {
@@ -1316,86 +1361,105 @@ router.post(
         }
       }
       if (!candidateEmail) return null;
-      
+
       // Download employee handbook from Supabase storage
       let handbookAttachment = null;
       try {
         // Try different possible file paths
-        const documentPath = 'employeeHandbook/employeeHandbook2024.pdf';
-        
+        const documentPath = "employeeHandbook/employeeHandbook2024.pdf";
+
         let handbookData = null;
         let handbookError = null;
-        
-        console.log(`[EmailNotifier] Trying to download handbook from path: ${documentPath}`);
+
+        console.log(
+          `[EmailNotifier] Trying to download handbook from path: ${documentPath}`
+        );
         const { data, error } = await supabase.storage
-          .from('default-documents')
+          .from("default-documents")
           .download(documentPath);
-          
-          if (!error && data) {
-            handbookData = data;
-            console.log(`[EmailNotifier] Successfully downloaded handbook from: ${documentPath}`);
-          } else {
-            console.log(`[EmailNotifier] Failed to download from ${documentPath}:`, error);
-            handbookError = error;
-          }
-        
+
+        if (!error && data) {
+          handbookData = data;
+          console.log(
+            `[EmailNotifier] Successfully downloaded handbook from: ${documentPath}`
+          );
+        } else {
+          console.log(
+            `[EmailNotifier] Failed to download from ${documentPath}:`,
+            error
+          );
+          handbookError = error;
+        }
+
         if (handbookData) {
           // Convert to base64 for email attachment
           const handbookBuffer = Buffer.from(await handbookData.arrayBuffer());
           handbookAttachment = {
-            content: handbookBuffer.toString('base64'),
-            filename: 'Godspeed_Employee_Handbook_2024.pdf',
-            type: 'application/pdf',
-            disposition: 'attachment'
+            content: handbookBuffer.toString("base64"),
+            filename: "Godspeed_Employee_Handbook_2024.pdf",
+            type: "application/pdf",
+            disposition: "attachment",
           };
-          console.log('[EmailNotifier] Employee handbook prepared for attachment');
+          console.log(
+            "[EmailNotifier] Employee handbook prepared for attachment"
+          );
         } else {
-          console.error('[EmailNotifier] Failed to download employee handbook from any path:', handbookError);
+          console.error(
+            "[EmailNotifier] Failed to download employee handbook from any path:",
+            handbookError
+          );
         }
       } catch (error) {
-        console.error('[EmailNotifier] Error downloading employee handbook:', error);
+        console.error(
+          "[EmailNotifier] Error downloading employee handbook:",
+          error
+        );
       }
-      
+
       // Prepare variables for template
       const templateVars = {
-        jobseeker_first_name: candidateName?.split(' ')[0] || 'Candidate',
-        title: res.locals.position?.title || '',
-        city: res.locals.position?.city || '',
-        province: res.locals.position?.province || '',
-        employment_type: res.locals.position?.employment_type || '',
-        employment_term: res.locals.position?.employment_term || '',
-        start_date: res.locals.position?.start_date || '',
-        end_date: res.locals.position?.end_date || '',
-        position_category: res.locals.position?.position_category || '',
-        experience: res.locals.position?.experience || '',
+        jobseeker_first_name: candidateName?.split(" ")[0] || "Candidate",
+        title: res.locals.position?.title || "",
+        city: res.locals.position?.city || "",
+        province: res.locals.position?.province || "",
+        employment_type: res.locals.position?.employment_type || "",
+        employment_term: res.locals.position?.employment_term || "",
+        start_date: res.locals.position?.start_date || "",
+        end_date: res.locals.position?.end_date || "",
+        position_category: res.locals.position?.position_category || "",
+        experience: res.locals.position?.experience || "",
       };
-      console.log('[EmailNotifier] templateVars:', templateVars);
+      console.log("[EmailNotifier] templateVars:", templateVars);
       // Use template functions
       const html = jobseekerAssignmentHtmlTemplate(templateVars);
-      console.log('[EmailNotifier] Generated HTML:', html);
+      console.log("[EmailNotifier] Generated HTML:", html);
       const text = jobseekerAssignmentTextTemplate(templateVars);
       // Extract subject (first line from text template)
-      const [subjectLine, ...bodyLines] = text.split('\n');
-      const subject = subjectLine.replace('Subject:', '').trim();
-      
+      const [subjectLine, ...bodyLines] = text.split("\n");
+      const subject = subjectLine.replace("Subject:", "").trim();
+
       // Prepare email data with attachment if available
       const emailData: any = {
         to: candidateEmail,
         subject,
-        text: bodyLines.join('\n').trim(),
+        text: bodyLines.join("\n").trim(),
         html,
       };
-      
+
       // Add attachment if handbook was downloaded successfully
       if (handbookAttachment) {
         emailData.attachments = [handbookAttachment];
-        console.log('[EmailNotifier] Added employee handbook attachment to email');
+        console.log(
+          "[EmailNotifier] Added employee handbook attachment to email"
+        );
       } else {
-        console.log('[EmailNotifier] No handbook attachment available, sending email without attachment');
+        console.log(
+          "[EmailNotifier] No handbook attachment available, sending email without attachment"
+        );
       }
-      
+
       return emailData;
-    }
+    },
   }),
   async (req: Request, res: Response) => {
     try {
@@ -1414,7 +1478,8 @@ router.post(
       // Get current position data
       const { data: position, error: positionError } = await supabase
         .from("positions")
-        .select(`
+        .select(
+          `
           id,
           client,
           title,
@@ -1429,7 +1494,8 @@ router.post(
           experience,
           assigned_jobseekers,
           number_of_positions
-        `)
+        `
+        )
         .eq("id", positionId)
         .single();
 
@@ -1448,11 +1514,12 @@ router.post(
       // No usage of position.client_name or position.number_of_positions in this route
 
       // Get candidate name for activity logging
-      const { data: candidateDetails, error: candidateNameError } = await supabase
-        .from("jobseeker_profiles")
-        .select("first_name, last_name")
-        .eq("user_id", candidateId)
-        .maybeSingle();
+      const { data: candidateDetails, error: candidateNameError } =
+        await supabase
+          .from("jobseeker_profiles")
+          .select("first_name, last_name")
+          .eq("user_id", candidateId)
+          .maybeSingle();
 
       if (candidateDetails) {
         res.locals.candidateName = `${candidateDetails.first_name} ${candidateDetails.last_name}`;
@@ -1473,38 +1540,57 @@ router.post(
       res.locals.candidateName = `${candidate.first_name} ${candidate.last_name}`;
 
       // Check if there's already an active assignment for this position-candidate pair
-      const { data: existingAssignment, error: assignmentCheckError } = await supabase
-        .from("position_candidate_assignments")
-        .select("id, status")
-        .eq("position_id", positionId)
-        .eq("candidate_id", candidateId)
-        .eq("status", "active")
-        .maybeSingle();
+      const { data: existingAssignment, error: assignmentCheckError } =
+        await supabase
+          .from("position_candidate_assignments")
+          .select("id, status")
+          .eq("position_id", positionId)
+          .eq("candidate_id", candidateId)
+          .eq("status", "active")
+          .maybeSingle();
 
       if (assignmentCheckError) {
-        console.error("Error checking existing assignment:", assignmentCheckError);
-        return res.status(500).json({ error: "Failed to check existing assignment" });
+        console.error(
+          "Error checking existing assignment:",
+          assignmentCheckError
+        );
+        return res
+          .status(500)
+          .json({ error: "Failed to check existing assignment" });
       }
 
       if (existingAssignment) {
-        return res.status(400).json({ error: "Candidate already assigned to this position" });
+        return res
+          .status(400)
+          .json({ error: "Candidate already assigned to this position" });
       }
 
       // Get current active assignments for this position
-      const { data: activeAssignments, error: activeAssignmentsError } = await supabase
-        .from("position_candidate_assignments")
-        .select("candidate_id")
-        .eq("position_id", positionId)
-        .eq("status", "active");
+      const { data: activeAssignments, error: activeAssignmentsError } =
+        await supabase
+          .from("position_candidate_assignments")
+          .select("candidate_id")
+          .eq("position_id", positionId)
+          .eq("status", "active");
 
       if (activeAssignmentsError) {
-        console.error("Error getting active assignments:", activeAssignmentsError);
-        return res.status(500).json({ error: "Failed to check position capacity" });
+        console.error(
+          "Error getting active assignments:",
+          activeAssignmentsError
+        );
+        return res
+          .status(500)
+          .json({ error: "Failed to check position capacity" });
       }
 
       // Check if position has available slots
-      if (activeAssignments && activeAssignments.length >= position.number_of_positions) {
-        return res.status(400).json({ error: "No available positions to assign" });
+      if (
+        activeAssignments &&
+        activeAssignments.length >= position.number_of_positions
+      ) {
+        return res
+          .status(400)
+          .json({ error: "No available positions to assign" });
       }
 
       // Create assignment record
@@ -1517,7 +1603,7 @@ router.post(
           end_date: endDate,
           status: "active",
           created_by_user_id: userId,
-          updated_by_user_id: userId
+          updated_by_user_id: userId,
         })
         .select()
         .single();
@@ -1541,7 +1627,8 @@ router.post(
         .from("positions")
         .update({ assigned_jobseekers: updatedAssigned })
         .eq("id", positionId)
-        .select(`
+        .select(
+          `
           id,
           client,
           title,
@@ -1583,14 +1670,17 @@ router.post(
           updated_at,
           created_by_user_id,
           updated_by_user_id
-        `)
+        `
+        )
         .single();
 
       if (updateError) {
         console.error("Error updating position:", updateError);
         // Assignment was already deleted, but position update failed
         // This creates an inconsistent state, but we cannot easily rollback the deletion
-        console.error("Warning: Assignment was deleted but position update failed. Manual intervention may be required.");
+        console.error(
+          "Warning: Assignment was deleted but position update failed. Manual intervention may be required."
+        );
         return res.status(500).json({ error: "Failed to remove candidate" });
       }
 
@@ -1599,7 +1689,7 @@ router.post(
         message: "Candidate assigned successfully",
         assignedJobseekers: updatedAssigned,
         position: updatedPosition,
-        assignment: newAssignment
+        assignment: newAssignment,
       });
     } catch (error) {
       console.error("Unexpected error assigning candidate:", error);
@@ -1619,27 +1709,27 @@ router.delete(
   authorizeRoles(["admin", "recruiter"]),
   activityLogger({
     onSuccess: (req, res) => ({
-      actionType: 'remove_jobseeker',
-      actionVerb: 'removed',
-      primaryEntityType: 'jobseeker',
+      actionType: "remove_jobseeker",
+      actionVerb: "removed",
+      primaryEntityType: "jobseeker",
       primaryEntityId: req.params.candidateId,
       primaryEntityName: res.locals.candidateName,
-      secondaryEntityType: 'position',
+      secondaryEntityType: "position",
       secondaryEntityId: req.params.id,
       secondaryEntityName: res.locals.positionTitle,
-      tertiaryEntityType: 'client',
+      tertiaryEntityType: "client",
       tertiaryEntityId: res.locals.clientId,
       tertiaryEntityName: res.locals.clientName,
       displayMessage: `Removed candidate \"${res.locals.candidateName}\" from position \"${res.locals.positionTitle}\"`,
-      category: 'position_management',
-      priority: 'normal',
-      status: 'removed',
+      category: "position_management",
+      priority: "normal",
+      status: "removed",
       metadata: {
         removedAssignmentId: res.locals.removedAssignmentId,
         positionCode: res.locals.positionCode,
-        remainingAssigned: res.locals.remainingAssigned
-      }
-    })
+        remainingAssigned: res.locals.remainingAssigned,
+      },
+    }),
   }),
   emailNotifier({
     onSuccessEmail: async (req: Request, res: Response) => {
@@ -1660,32 +1750,32 @@ router.delete(
       if (!candidateEmail) return null;
       // Prepare variables for template
       const templateVars = {
-        jobseeker_first_name: candidateName?.split(' ')[0] || 'Candidate',
-        title: res.locals.position?.title || '',
-        city: res.locals.position?.city || '',
-        province: res.locals.position?.province || '',
-        employment_type: res.locals.position?.employment_type || '',
-        employment_term: res.locals.position?.employment_term || '',
-        start_date: res.locals.position?.start_date || '',
-        end_date: res.locals.position?.end_date || '',
-        position_category: res.locals.position?.position_category || '',
-        experience: res.locals.position?.experience || '',
-        number_of_positions: res.locals.position?.number_of_positions || '',
+        jobseeker_first_name: candidateName?.split(" ")[0] || "Candidate",
+        title: res.locals.position?.title || "",
+        city: res.locals.position?.city || "",
+        province: res.locals.position?.province || "",
+        employment_type: res.locals.position?.employment_type || "",
+        employment_term: res.locals.position?.employment_term || "",
+        start_date: res.locals.position?.start_date || "",
+        end_date: res.locals.position?.end_date || "",
+        position_category: res.locals.position?.position_category || "",
+        experience: res.locals.position?.experience || "",
+        number_of_positions: res.locals.position?.number_of_positions || "",
       };
-      console.log('[EmailNotifier] templateVars (removal):', templateVars);
+      console.log("[EmailNotifier] templateVars (removal):", templateVars);
       const html = jobseekerRemovalHtmlTemplate(templateVars);
-      console.log('[EmailNotifier] Generated HTML (removal):', html);
+      console.log("[EmailNotifier] Generated HTML (removal):", html);
       const text = jobseekerRemovalTextTemplate(templateVars);
       // Extract subject (first line from text template)
-      const [subjectLine, ...bodyLines] = text.split('\n');
-      const subject = subjectLine.replace('Subject:', '').trim();
+      const [subjectLine, ...bodyLines] = text.split("\n");
+      const subject = subjectLine.replace("Subject:", "").trim();
       return {
         to: candidateEmail,
         subject,
-        text: bodyLines.join('\n').trim(),
+        text: bodyLines.join("\n").trim(),
         html,
       };
-    }
+    },
   }),
   async (req: Request, res: Response) => {
     try {
@@ -1699,7 +1789,8 @@ router.delete(
       // Get current position data with client info
       const { data: position, error: positionError } = await supabase
         .from("positions")
-        .select(`
+        .select(
+          `
           id,
           client,
           title,
@@ -1713,7 +1804,8 @@ router.delete(
           position_category,
           experience,
           assigned_jobseekers
-        `)
+        `
+        )
         .eq("id", positionId)
         .single();
 
@@ -1750,7 +1842,8 @@ router.delete(
         .single();
 
       // Store data for activity logger
-      const candidateName = `${candidate.first_name} ${candidate.last_name}`.trim();
+      const candidateName =
+        `${candidate.first_name} ${candidate.last_name}`.trim();
       res.locals.candidateName = candidateName;
       res.locals.positionTitle = position.title;
       res.locals.positionCode = position.position_code;
@@ -1759,12 +1852,13 @@ router.delete(
       // No usage of position.client_name or position.number_of_positions in this route
 
       // Check if there's an active assignment for this position-candidate pair
-      const { data: activeAssignment, error: assignmentCheckError } = await supabase
-        .from("position_candidate_assignments")
-        .select("id")
-        .eq("position_id", positionId)
-        .eq("candidate_id", candidateId)
-        .maybeSingle();
+      const { data: activeAssignment, error: assignmentCheckError } =
+        await supabase
+          .from("position_candidate_assignments")
+          .select("id")
+          .eq("position_id", positionId)
+          .eq("candidate_id", candidateId)
+          .maybeSingle();
 
       if (assignmentCheckError) {
         console.error("Error checking assignment:", assignmentCheckError);
@@ -1772,7 +1866,9 @@ router.delete(
       }
 
       if (!activeAssignment) {
-        return res.status(400).json({ error: "Candidate not assigned to this position" });
+        return res
+          .status(400)
+          .json({ error: "Candidate not assigned to this position" });
       }
 
       // Store assignment ID for activity logger
@@ -1791,7 +1887,9 @@ router.delete(
 
       // Update the assigned_jobseekers array in positions table for backward compatibility
       const currentAssigned = position.assigned_jobseekers || [];
-      const updatedAssigned = currentAssigned.filter((id: string) => id !== candidateId);
+      const updatedAssigned = currentAssigned.filter(
+        (id: string) => id !== candidateId
+      );
 
       // Store remaining assigned count for activity logger
       res.locals.remainingAssigned = updatedAssigned.length;
@@ -1800,7 +1898,8 @@ router.delete(
         .from("positions")
         .update({ assigned_jobseekers: updatedAssigned })
         .eq("id", positionId)
-        .select(`
+        .select(
+          `
           id,
           client,
           title,
@@ -1842,14 +1941,17 @@ router.delete(
           updated_at,
           created_by_user_id,
           updated_by_user_id
-        `)
+        `
+        )
         .single();
 
       if (updateError) {
         console.error("Error updating position:", updateError);
         // Assignment was already deleted, but position update failed
         // This creates an inconsistent state, but we cannot easily rollback the deletion
-        console.error("Warning: Assignment was deleted but position update failed. Manual intervention may be required.");
+        console.error(
+          "Warning: Assignment was deleted but position update failed. Manual intervention may be required."
+        );
         return res.status(500).json({ error: "Failed to remove candidate" });
       }
 
@@ -1857,7 +1959,7 @@ router.delete(
         success: true,
         message: "Candidate removed successfully",
         assignedJobseekers: updatedAssigned,
-        position: updatedPosition
+        position: updatedPosition,
       });
     } catch (error) {
       console.error("Unexpected error removing candidate:", error);
@@ -1882,7 +1984,8 @@ router.get(
       // Get all assignments for this position with jobseeker profile data
       const { data: assignments, error } = await supabase
         .from("position_candidate_assignments")
-        .select(`
+        .select(
+          `
           id,
           candidate_id,
           start_date,
@@ -1890,7 +1993,8 @@ router.get(
           status,
           created_at,
           updated_at
-        `)
+        `
+        )
         .eq("position_id", positionId)
         .order("created_at", { ascending: false });
 
@@ -1903,48 +2007,57 @@ router.get(
       if (!assignments || assignments.length === 0) {
         return res.status(200).json({
           success: true,
-          assignments: []
+          assignments: [],
         });
       }
 
       // Get candidate IDs to fetch jobseeker profiles
-      const candidateIds = assignments.map(assignment => assignment.candidate_id);
+      const candidateIds = assignments.map(
+        (assignment) => assignment.candidate_id
+      );
 
       // Fetch jobseeker profiles for all candidates
       const { data: jobseekerProfiles, error: profilesError } = await supabase
         .from("jobseeker_profiles")
-        .select("id, user_id, first_name, last_name, email, mobile, employee_id")
+        .select(
+          "id, user_id, first_name, last_name, email, mobile, employee_id, billing_email"
+        )
         .in("user_id", candidateIds);
 
       if (profilesError) {
         console.error("Error fetching jobseeker profiles:", profilesError);
-        return res.status(500).json({ error: "Failed to fetch candidate profiles" });
+        return res
+          .status(500)
+          .json({ error: "Failed to fetch candidate profiles" });
       }
 
       // Create a map for quick lookup
       const profilesMap = new Map();
       if (jobseekerProfiles) {
-        jobseekerProfiles.forEach(profile => {
+        jobseekerProfiles.forEach((profile) => {
           profilesMap.set(profile.user_id, profile);
         });
       }
 
       // Combine assignments with jobseeker profile data
-      const enrichedAssignments = assignments.map(assignment => {
+      const enrichedAssignments = assignments.map((assignment) => {
         const profile = profilesMap.get(assignment.candidate_id);
         return {
           ...assignment,
-          jobseekerProfile: profile ? {
-            ...profile,
-            jobseeker_profile_id: profile.id,
-            employee_id: profile.employee_id
-          } : null
+          jobseekerProfile: profile
+            ? {
+                ...profile,
+                jobseeker_profile_id: profile.id,
+                employee_id: profile.employee_id,
+                billing_email: profile.billing_email,
+              }
+            : null,
         };
       });
 
       return res.status(200).json({
         success: true,
-        assignments: enrichedAssignments
+        assignments: enrichedAssignments,
       });
     } catch (error) {
       console.error("Unexpected error fetching assignments:", error);
@@ -1990,7 +2103,7 @@ router.get(
       const offset = (pageNum - 1) * limitNum;
 
       // Check if user is NOT a jobseeker (admin or recruiter) to include compensation details
-      const isJobseeker = req.user?.user_metadata?.user_type === 'jobseeker';
+      const isJobseeker = req.user?.user_metadata?.user_type === "jobseeker";
       const includeCompensation = !isJobseeker;
 
       // Verify candidate exists and get basic info
@@ -2009,7 +2122,9 @@ router.get(
       if (includeCompensation) {
         const { data: compData, error: compError } = await supabase
           .from("jobseeker_profiles")
-          .select("payrate_type, bill_rate, pay_rate, payment_method, hst_gst, cash_deduction, overtime_enabled, overtime_hours, overtime_bill_rate, overtime_pay_rate")
+          .select(
+            "payrate_type, bill_rate, pay_rate, payment_method, hst_gst, cash_deduction, overtime_enabled, overtime_hours, overtime_bill_rate, overtime_pay_rate"
+          )
           .eq("user_id", candidateId)
           .single();
 
@@ -2034,16 +2149,16 @@ router.get(
         active: 0,
         completed: 0,
         upcoming: 0,
-        total: statusCounts?.length || 0
+        total: statusCounts?.length || 0,
       };
 
       if (statusCounts) {
         statusCounts.forEach((assignment: any) => {
-          if (assignment.status === 'active') {
+          if (assignment.status === "active") {
             counts.active++;
-          } else if (assignment.status === 'completed') {
+          } else if (assignment.status === "completed") {
             counts.completed++;
-          } else if (assignment.status === 'upcoming') {
+          } else if (assignment.status === "upcoming") {
             counts.upcoming++;
           }
         });
@@ -2052,7 +2167,8 @@ router.get(
       // Build the base query for assignments with position details
       let baseQuery = supabase
         .from("position_candidate_assignments")
-        .select(`
+        .select(
+          `
           id,
           position_id,
           candidate_id,
@@ -2087,7 +2203,8 @@ router.get(
             overtime_bill_rate,
             overtime_pay_rate
           )
-        `)
+        `
+        )
         .eq("candidate_id", candidateId);
 
       // Apply assignment-level filters
@@ -2126,7 +2243,9 @@ router.get(
 
       if (countError) {
         console.error("Error getting assignment count:", countError);
-        return res.status(500).json({ error: "Failed to get assignment count" });
+        return res
+          .status(500)
+          .json({ error: "Failed to get assignment count" });
       }
 
       // Execute main query with pagination
@@ -2145,7 +2264,7 @@ router.get(
             id: candidate.id,
             firstName: candidate.first_name,
             lastName: candidate.last_name,
-            email: candidate.email
+            email: candidate.email,
           },
           assignments: [],
           statusCounts: counts,
@@ -2163,7 +2282,7 @@ router.get(
       // Transform the response to match frontend expectations
       let formattedAssignments = assignments.map((assignment: any) => {
         const position = assignment.positions;
-        
+
         // Convert assignment fields from snake_case to camelCase
         const formattedAssignment = {
           id: assignment.id,
@@ -2174,29 +2293,31 @@ router.get(
           status: assignment.status,
           createdAt: assignment.created_at,
           updatedAt: assignment.updated_at,
-          position: position ? {
-            id: position.id,
-            positionCode: position.position_code,
-            title: position.title,
-            clientName: position.client_name,
-            city: position.city,
-            province: position.province,
-            employmentTerm: position.employment_term,
-            employmentType: position.employment_type,
-            positionCategory: position.position_category,
-            experience: position.experience,
-            showOnJobPortal: position.show_on_job_portal,
-            startDate: position.start_date,
-            endDate: position.end_date,
-            regularPayRate: position.regular_pay_rate,
-            billRate: position.bill_rate,
-            numberOfPositions: position.number_of_positions,
-            markup: position.markup,
-            overtimeEnabled: position.overtime_enabled,
-            overtimeHours: position.overtime_hours,
-            overtimeBillRate: position.overtime_bill_rate,
-            overtimePayRate: position.overtime_pay_rate
-          } : null
+          position: position
+            ? {
+                id: position.id,
+                positionCode: position.position_code,
+                title: position.title,
+                clientName: position.client_name,
+                city: position.city,
+                province: position.province,
+                employmentTerm: position.employment_term,
+                employmentType: position.employment_type,
+                positionCategory: position.position_category,
+                experience: position.experience,
+                showOnJobPortal: position.show_on_job_portal,
+                startDate: position.start_date,
+                endDate: position.end_date,
+                regularPayRate: position.regular_pay_rate,
+                billRate: position.bill_rate,
+                numberOfPositions: position.number_of_positions,
+                markup: position.markup,
+                overtimeEnabled: position.overtime_enabled,
+                overtimeHours: position.overtime_hours,
+                overtimeBillRate: position.overtime_bill_rate,
+                overtimePayRate: position.overtime_pay_rate,
+              }
+            : null,
         };
 
         return formattedAssignment;
@@ -2205,10 +2326,10 @@ router.get(
       // Apply position-level filters (client-side on server for now since we need to join data)
       if (search && search.trim()) {
         const searchTerm = search.trim().toLowerCase();
-        formattedAssignments = formattedAssignments.filter(assignment => {
+        formattedAssignments = formattedAssignments.filter((assignment) => {
           const pos = assignment.position;
           if (!pos) return false;
-          
+
           return (
             pos.title?.toLowerCase().includes(searchTerm) ||
             pos.clientName?.toLowerCase().includes(searchTerm) ||
@@ -2220,27 +2341,39 @@ router.get(
       }
 
       if (employmentType && employmentType !== "all") {
-        formattedAssignments = formattedAssignments.filter(assignment => {
+        formattedAssignments = formattedAssignments.filter((assignment) => {
           const pos = assignment.position;
           if (!pos) return false;
 
-          if (employmentType === "Full-Time") return pos.employmentType === "Full-time";
-          if (employmentType === "Part-Time") return pos.employmentType === "Part-time";
-          if (employmentType === "Contract") return pos.employmentTerm === "Contract";
+          if (employmentType === "Full-Time")
+            return pos.employmentType === "Full-time";
+          if (employmentType === "Part-Time")
+            return pos.employmentType === "Part-time";
+          if (employmentType === "Contract")
+            return pos.employmentTerm === "Contract";
           return true;
         });
       }
 
       if (positionCategory && positionCategory !== "all") {
-        formattedAssignments = formattedAssignments.filter(assignment => {
+        formattedAssignments = formattedAssignments.filter((assignment) => {
           const pos = assignment.position;
           if (!pos) return false;
 
-          if (positionCategory === "AZ") return pos.positionCategory === "Driver" && pos.title?.includes("AZ");
-          if (positionCategory === "DZ") return pos.positionCategory === "Driver" && pos.title?.includes("DZ");
-          if (positionCategory === "Admin") return pos.positionCategory === "Office";
-          if (positionCategory === "General Labour") return pos.positionCategory === "Other";
-          if (positionCategory === "Warehouse") return pos.positionCategory === "Warehouse";
+          if (positionCategory === "AZ")
+            return (
+              pos.positionCategory === "Driver" && pos.title?.includes("AZ")
+            );
+          if (positionCategory === "DZ")
+            return (
+              pos.positionCategory === "Driver" && pos.title?.includes("DZ")
+            );
+          if (positionCategory === "Admin")
+            return pos.positionCategory === "Office";
+          if (positionCategory === "General Labour")
+            return pos.positionCategory === "Other";
+          if (positionCategory === "Warehouse")
+            return pos.positionCategory === "Warehouse";
           return pos.positionCategory === positionCategory;
         });
       }
@@ -2249,13 +2382,15 @@ router.get(
       formattedAssignments.sort((a, b) => {
         // Priority order: active (1), upcoming (2), completed (3)
         const statusPriority = {
-          'active': 1,
-          'upcoming': 2,
-          'completed': 3
+          active: 1,
+          upcoming: 2,
+          completed: 3,
         };
 
-        const aPriority = statusPriority[a.status as keyof typeof statusPriority] || 4;
-        const bPriority = statusPriority[b.status as keyof typeof statusPriority] || 4;
+        const aPriority =
+          statusPriority[a.status as keyof typeof statusPriority] || 4;
+        const bPriority =
+          statusPriority[b.status as keyof typeof statusPriority] || 4;
 
         // First sort by status priority
         if (aPriority !== bPriority) {
@@ -2263,24 +2398,24 @@ router.get(
         }
 
         // For same status, sort by start date
-        if (a.status === 'upcoming' && b.status === 'upcoming') {
+        if (a.status === "upcoming" && b.status === "upcoming") {
           // For upcoming assignments, sort by start date (earliest first)
-          const aDate = new Date(a.startDate || '');
-          const bDate = new Date(b.startDate || '');
+          const aDate = new Date(a.startDate || "");
+          const bDate = new Date(b.startDate || "");
           return aDate.getTime() - bDate.getTime();
         }
 
-        if (a.status === 'active' && b.status === 'active') {
+        if (a.status === "active" && b.status === "active") {
           // For active assignments, sort by start date (most recent first)
-          const aDate = new Date(a.startDate || '');
-          const bDate = new Date(b.startDate || '');
+          const aDate = new Date(a.startDate || "");
+          const bDate = new Date(b.startDate || "");
           return bDate.getTime() - aDate.getTime();
         }
 
-        if (a.status === 'completed' && b.status === 'completed') {
+        if (a.status === "completed" && b.status === "completed") {
           // For completed assignments, sort by end date (most recent first)
-          const aDate = new Date(a.endDate || a.startDate || '');
-          const bDate = new Date(b.endDate || b.startDate || '');
+          const aDate = new Date(a.endDate || a.startDate || "");
+          const bDate = new Date(b.endDate || b.startDate || "");
           return bDate.getTime() - aDate.getTime();
         }
 
@@ -2298,7 +2433,7 @@ router.get(
           id: candidate.id,
           firstName: candidate.first_name,
           lastName: candidate.last_name,
-          email: candidate.email
+          email: candidate.email,
         },
         assignments: formattedAssignments,
         statusCounts: counts,
@@ -2313,9 +2448,10 @@ router.get(
       });
     } catch (error) {
       console.error("Unexpected error fetching candidate assignments:", error);
-      res
-        .status(500)
-        .json({ error: "An unexpected error occurred while fetching candidate assignments" });
+      res.status(500).json({
+        error:
+          "An unexpected error occurred while fetching candidate assignments",
+      });
     }
   }
 );

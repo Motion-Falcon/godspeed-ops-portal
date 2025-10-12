@@ -1,7 +1,7 @@
-import { Request, Response, NextFunction } from 'express';
-import rateLimit from 'express-rate-limit';
-import helmet from 'helmet';
-import { v4 as uuidv4 } from 'uuid';
+import { Request, Response, NextFunction } from "express";
+import rateLimit from "express-rate-limit";
+import helmet from "helmet";
+import { v4 as uuidv4 } from "uuid";
 
 // Rate limiting configuration
 export const apiRateLimiter = rateLimit({
@@ -10,8 +10,8 @@ export const apiRateLimiter = rateLimit({
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
   message: {
-    error: 'Too many requests, please try again later.'
-  }
+    error: "Too many requests, please try again later.",
+  },
 });
 
 // Function to apply more strict limits for sensitive operations
@@ -21,8 +21,8 @@ export const sensitiveRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: {
-    error: 'Too many sensitive operations attempted. Please try again later.'
-  }
+    error: "Too many sensitive operations attempted. Please try again later.",
+  },
 });
 
 // Security headers configuration
@@ -33,94 +33,67 @@ export const configureSecurityHeaders = helmet({
       scriptSrc: ["'self'", "'unsafe-inline'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", "data:"],
-      connectSrc: ["'self'", process.env.SUPABASE_URL || ''],
+      connectSrc: ["'self'", process.env.SUPABASE_URL || ""],
       fontSrc: ["'self'"],
       objectSrc: ["'none'"],
       mediaSrc: ["'self'"],
-      frameSrc: ["'none'"]
-    }
+      frameSrc: ["'none'"],
+    },
   },
   xssFilter: true,
   noSniff: true,
-  referrerPolicy: { policy: 'same-origin' }
+  referrerPolicy: { policy: "same-origin" },
 });
 
 // Force TLS for all connections in production
 export const forceTLS = (req: Request, res: Response, next: NextFunction) => {
   // Implement HSTS (HTTP Strict Transport Security)
-  if (process.env.NODE_ENV === 'production') {
-    if (!req.secure && req.headers['x-forwarded-proto'] !== 'https') {
+  if (process.env.NODE_ENV === "production") {
+    if (!req.secure && req.headers["x-forwarded-proto"] !== "https") {
       // Redirect to HTTPS if accessed via HTTP
       return res.status(301).redirect(`https://${req.headers.host}${req.url}`);
     }
 
-    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+    res.setHeader(
+      "Strict-Transport-Security",
+      "max-age=31536000; includeSubDomains; preload"
+    );
   }
   next();
 };
 
 // Request unique identifier for tracking
-export const requestTracker = (req: Request, res: Response, next: NextFunction) => {
-  const requestId = req.headers['x-request-id'] || uuidv4();
+export const requestTracker = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const requestId = req.headers["x-request-id"] || uuidv4();
   // Use a single string value for the request ID
-  req.headers['x-request-id'] = typeof requestId === 'string' ? requestId : Array.isArray(requestId) ? requestId[0] : uuidv4();
+  req.headers["x-request-id"] =
+    typeof requestId === "string"
+      ? requestId
+      : Array.isArray(requestId)
+      ? requestId[0]
+      : uuidv4();
   // Use a known string for the response header
-  res.setHeader('X-Request-ID', req.headers['x-request-id'] as string);
+  res.setHeader("X-Request-ID", req.headers["x-request-id"] as string);
   next();
 };
 
 // Input sanitization middleware
-export const sanitizeInputs = (req: Request, res: Response, next: NextFunction) => {
-  // Fields that should not have forward slashes sanitized (file paths, URLs, etc.)
-  const pathFields = ['filePath', 'documentPath', 'file_path', 'document_path', 'path', 'url'];
-  
-  // Basic sanitization - should be expanded for specific needs
-  const sanitize = (obj: any, key?: string): any => {
-    if (!obj) return obj;
-    
-    if (typeof obj !== 'object') {
-      // For strings, perform basic sanitization
-      if (typeof obj === 'string') {
-        // Check if this is a path field that should preserve forward slashes
-        const isPathField = key && pathFields.some(field => 
-          key.toLowerCase().includes(field.toLowerCase())
-        );
-        
-        // Replace potentially harmful characters
-        let sanitized = obj
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;')
-          .replace(/"/g, '&quot;')
-          .replace(/'/g, '&#x27;');
-          
-        // Only sanitize forward slashes if it's not a path field
-        if (!isPathField) {
-          sanitized = sanitized.replace(/\//g, '&#x2F;');
-        }
-        
-        return sanitized;
-      }
-      return obj;
-    }
-
-    // For arrays
-    if (Array.isArray(obj)) {
-      return obj.map((item, index) => sanitize(item, key));
-    }
-
-    // For objects
-    const result: any = {};
-    for (const objKey in obj) {
-      if (Object.prototype.hasOwnProperty.call(obj, objKey)) {
-        result[objKey] = sanitize(obj[objKey], objKey);
-      }
-    }
-    return result;
-  };
-
-  if (req.body) req.body = sanitize(req.body);
-  if (req.query) req.query = sanitize(req.query);
-  if (req.params) req.params = sanitize(req.params);
-
+// Note: Input sanitization has been removed in favor of output encoding.
+// React automatically escapes JSX content, preventing XSS attacks at the output layer.
+// SQL injection is prevented by Supabase's parameterized queries.
+// This preserves data integrity and follows modern security best practices.
+export const sanitizeInputs = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  // Pass through without modification - relying on:
+  // 1. React's automatic XSS protection (output encoding)
+  // 2. Supabase's parameterized queries (SQL injection prevention)
+  // 3. Proper output encoding in PDFs and emails where needed
   next();
-}; 
+};

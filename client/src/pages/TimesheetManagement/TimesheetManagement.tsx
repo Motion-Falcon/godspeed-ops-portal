@@ -49,6 +49,7 @@ interface WeeklyTimesheet {
   clientBill: number;
   bonusAmount: number;
   deductionAmount: number;
+  notes: string;
   existingTimesheetId?: string; // Track if this is an existing timesheet
 }
 
@@ -89,6 +90,7 @@ interface ClientPosition {
   overtimePayRate?: string;
   overtimeBillRate?: string;
   markup?: string;
+  positionNumber?: string;
 }
 
 // Interface for existing timesheet data from API
@@ -104,6 +106,7 @@ interface ExistingTimesheetData {
   totalClientBill: number;
   bonusAmount?: number;
   deductionAmount?: number;
+  notes?: string;
   dailyHours: Array<{
     date: string;
     hours: number;
@@ -221,6 +224,7 @@ export function TimesheetManagement() {
           overtimePayRate: pos.overtimePayRate,
           overtimeBillRate: pos.overtimeBillRate,
           markup: pos.markup,
+          positionNumber: pos.positionNumber,
         })
       );
       setPositions(transformedPositions);
@@ -264,6 +268,7 @@ export function TimesheetManagement() {
         totalClientBill: timesheet.totalClientBill,
         bonusAmount: timesheet.bonusAmount,
         deductionAmount: timesheet.deductionAmount,
+        notes: timesheet.notes,
         dailyHours: timesheet.dailyHours,
       }));
 
@@ -278,16 +283,17 @@ export function TimesheetManagement() {
 
   // Convert data to dropdown options
   const jobseekerOptions: DropdownOption[] = jobseekers.map((jobseeker) => {
-    const phoneNumber = (jobseeker as JobSeekerProfile & { phoneNumber?: string }).phoneNumber;
-    const employeeId = (jobseeker as JobSeekerProfile & { employeeId?: string }).employeeId;
+    const phoneNumber = (
+      jobseeker as JobSeekerProfile & { phoneNumber?: string }
+    ).phoneNumber;
+    const employeeId = (jobseeker as JobSeekerProfile & { employeeId?: string })
+      .employeeId;
     return {
       id: jobseeker.id,
       label: jobseeker.name || jobseeker.email || "Unknown",
-      sublabel: [
-        jobseeker.email,
-        phoneNumber,
-        employeeId
-      ].filter(Boolean).join(" - "),
+      sublabel: [jobseeker.email, phoneNumber, employeeId]
+        .filter(Boolean)
+        .join(" - "),
       value: jobseeker,
     };
   });
@@ -441,6 +447,7 @@ export function TimesheetManagement() {
       clientBill: existingTimesheet?.totalClientBill || 0,
       bonusAmount: existingTimesheet?.bonusAmount || 0,
       deductionAmount: existingTimesheet?.deductionAmount || 0,
+      notes: existingTimesheet?.notes || "",
       existingTimesheetId: existingTimesheet?.id,
     };
 
@@ -519,7 +526,11 @@ export function TimesheetManagement() {
           ...timesheet,
           bonusAmount: bonusAmount || 0,
         };
-        const totals = calculateTimesheetTotals(updated.entries, updated.bonusAmount, updated.deductionAmount);
+        const totals = calculateTimesheetTotals(
+          updated.entries,
+          updated.bonusAmount,
+          updated.deductionAmount
+        );
         return {
           ...updated,
           ...totals,
@@ -535,7 +546,11 @@ export function TimesheetManagement() {
           ...timesheet,
           deductionAmount: deductionAmount || 0,
         };
-        const totals = calculateTimesheetTotals(updated.entries, updated.bonusAmount, updated.deductionAmount);
+        const totals = calculateTimesheetTotals(
+          updated.entries,
+          updated.bonusAmount,
+          updated.deductionAmount
+        );
         return {
           ...updated,
           ...totals,
@@ -544,7 +559,20 @@ export function TimesheetManagement() {
     });
   };
 
-  const calculateTimesheetTotals = (entries: TimesheetEntry[], bonusAmount = 0, deductionAmount = 0) => {
+  const updateTimesheetNotes = (notes: string) => {
+    setTimesheets((prev) => {
+      return prev.map((timesheet) => ({
+        ...timesheet,
+        notes: notes || "",
+      }));
+    });
+  };
+
+  const calculateTimesheetTotals = (
+    entries: TimesheetEntry[],
+    bonusAmount = 0,
+    deductionAmount = 0
+  ) => {
     const assignment = positions.find((p) => p.id === selectedPosition?.id);
     if (!assignment) {
       return {
@@ -693,6 +721,7 @@ export function TimesheetManagement() {
           totalClientBill: timesheet.clientBill,
           bonusAmount: timesheet.bonusAmount || 0,
           deductionAmount: timesheet.deductionAmount || 0,
+          notes: timesheet.notes || "",
           overtimeEnabled: selectedPosition.overtimeEnabled || false,
           markup: selectedPosition.markup
             ? parseFloat(selectedPosition.markup)
@@ -741,6 +770,7 @@ export function TimesheetManagement() {
                 total_client_bill: timesheet.clientBill,
                 bonus_amount: timesheet.bonusAmount || 0,
                 deduction_amount: timesheet.deductionAmount || 0,
+                notes: timesheet.notes || "",
                 overtime_enabled: selectedPosition.overtimeEnabled || false,
                 markup: selectedPosition.markup
                   ? parseFloat(selectedPosition.markup)
@@ -820,8 +850,12 @@ export function TimesheetManagement() {
   };
 
   // Helper to calculate base pay (regular + overtime, no bonus/deduction)
-  const getBaseJobseekerPay = (timesheet: WeeklyTimesheet, position: PositionWithOvertime) => {
-    const regularPay = timesheet.totalRegularHours * parseFloat(position.regularPayRate || "0");
+  const getBaseJobseekerPay = (
+    timesheet: WeeklyTimesheet,
+    position: PositionWithOvertime
+  ) => {
+    const regularPay =
+      timesheet.totalRegularHours * parseFloat(position.regularPayRate || "0");
     let overtimePayRate = parseFloat(position.regularPayRate || "0");
     if (position.overtimeEnabled && position.overtimePayRate) {
       overtimePayRate = parseFloat(position.overtimePayRate);
@@ -1040,6 +1074,14 @@ export function TimesheetManagement() {
                                   {selectedPosition.positionCode}
                                 </span>
                               </div>
+                              <div className="timesheet-detail-item">
+                                <span className="timesheet-detail-label">
+                                  Position Number:
+                                </span>
+                                <span className="timesheet-detail-value">
+                                  {selectedPosition.positionNumber}
+                                </span>
+                              </div>
                             </div>
                           </div>
 
@@ -1062,6 +1104,42 @@ export function TimesheetManagement() {
                                 </span>
                                 <span className="timesheet-detail-value">
                                   {selectedJobseeker.email}
+                                </span>
+                              </div>
+                              <div className="timesheet-detail-item">
+                                <span className="timesheet-detail-label">
+                                  Billing Email:
+                                </span>
+                                <span className="timesheet-detail-value">
+                                  {(
+                                    selectedJobseeker as JobSeekerProfile & {
+                                      billingEmail?: string;
+                                    }
+                                  ).billingEmail || "N/A"}
+                                </span>
+                              </div>
+                              <div className="timesheet-detail-item">
+                                <span className="timesheet-detail-label">
+                                  Phone Number:
+                                </span>
+                                <span className="timesheet-detail-value">
+                                  {(
+                                    selectedJobseeker as JobSeekerProfile & {
+                                      phoneNumber?: string;
+                                    }
+                                  ).phoneNumber || "N/A"}
+                                </span>
+                              </div>
+                              <div className="timesheet-detail-item">
+                                <span className="timesheet-detail-label">
+                                  Employee ID:
+                                </span>
+                                <span className="timesheet-detail-value">
+                                  {(
+                                    selectedJobseeker as JobSeekerProfile & {
+                                      employeeId?: string;
+                                    }
+                                  ).employeeId || "N/A"}
                                 </span>
                               </div>
                             </div>
@@ -1126,9 +1204,7 @@ export function TimesheetManagement() {
                                 <input
                                   type="number"
                                   min="0"
-                                  max="99"
-                                  step="0.5"
-                                  value={entry.hours}
+                                  value={entry.hours === 0 ? "" : entry.hours}
                                   onChange={(e) => {
                                     const hours =
                                       parseFloat(e.target.value) || 0;
@@ -1158,8 +1234,11 @@ export function TimesheetManagement() {
                               <input
                                 type="number"
                                 min="0"
-                                step="0.01"
-                                value={timesheet.bonusAmount || ""}
+                                value={
+                                  timesheet.bonusAmount === 0
+                                    ? ""
+                                    : timesheet.bonusAmount
+                                }
                                 onChange={(e) => {
                                   const amount =
                                     parseFloat(e.target.value) || 0;
@@ -1180,8 +1259,11 @@ export function TimesheetManagement() {
                               <input
                                 type="number"
                                 min="0"
-                                step="0.01"
-                                value={timesheet.deductionAmount || ""}
+                                value={
+                                  timesheet.deductionAmount === 0
+                                    ? ""
+                                    : timesheet.deductionAmount
+                                }
                                 onChange={(e) => {
                                   const amount =
                                     parseFloat(e.target.value) || 0;
@@ -1229,6 +1311,20 @@ export function TimesheetManagement() {
                         </div>
                       </div>
 
+                      {/* Notes Section */}
+                      <div className="timesheet-notes-section">
+                        <h4 className="timesheet-notes-title">
+                          Additional Notes
+                        </h4>
+                        <textarea
+                          value={timesheet.notes}
+                          onChange={(e) => updateTimesheetNotes(e.target.value)}
+                          placeholder="Add any additional notes or comments about this timesheet..."
+                          className="timesheet-notes-textarea"
+                          rows={4}
+                        />
+                      </div>
+
                       {/* Invoice Style Summary */}
                       <div className="timesheet-invoice-container">
                         <div className="timesheet-invoice-table">
@@ -1253,7 +1349,7 @@ export function TimesheetManagement() {
                                 </div>
                               </div>
                               <div className="timesheet-col-hours">
-                                {timesheet.totalRegularHours.toFixed(1)}
+                                {timesheet.totalRegularHours.toFixed(2)}
                               </div>
                               <div className="timesheet-col-rate">
                                 ${selectedPosition?.regularPayRate || "0.00"}
@@ -1284,7 +1380,7 @@ export function TimesheetManagement() {
                                   </div>
                                 </div>
                                 <div className="timesheet-col-hours">
-                                  {timesheet.totalOvertimeHours.toFixed(1)}
+                                  {timesheet.totalOvertimeHours.toFixed(2)}
                                 </div>
                                 <div className="timesheet-col-rate">
                                   $
@@ -1354,48 +1450,58 @@ export function TimesheetManagement() {
                               </div>
                             </div>
                             {(() => {
-                              const position = positions.find((p) => p.id === selectedPosition?.id) as PositionWithOvertime;
-                              const basePay = getBaseJobseekerPay(timesheet, position);
+                              const position = positions.find(
+                                (p) => p.id === selectedPosition?.id
+                              ) as PositionWithOvertime;
+                              const basePay = getBaseJobseekerPay(
+                                timesheet,
+                                position
+                              );
                               const subtotal = basePay;
-                              const employeePay = subtotal + (timesheet.bonusAmount || 0) - (timesheet.deductionAmount || 0);
-                              return <>
-                                <div className="timesheet-total-line timesheet-subtotal">
-                                  <div className="timesheet-total-label">
-                                    Subtotal:
-                                  </div>
-                                  <div className="timesheet-total-value">
-                                    ${subtotal.toFixed(2)}
-                                  </div>
-                                </div>
-                                {timesheet.bonusAmount > 0 && (
-                                  <div className="timesheet-total-line">
+                              const employeePay =
+                                subtotal +
+                                (timesheet.bonusAmount || 0) -
+                                (timesheet.deductionAmount || 0);
+                              return (
+                                <>
+                                  <div className="timesheet-total-line timesheet-subtotal">
                                     <div className="timesheet-total-label">
-                                      Bonus:
+                                      Subtotal:
                                     </div>
                                     <div className="timesheet-total-value">
-                                      +${timesheet.bonusAmount.toFixed(2)}
+                                      ${subtotal.toFixed(2)}
                                     </div>
                                   </div>
-                                )}
-                                {timesheet.deductionAmount > 0 && (
-                                  <div className="timesheet-total-line">
+                                  {timesheet.bonusAmount > 0 && (
+                                    <div className="timesheet-total-line">
+                                      <div className="timesheet-total-label">
+                                        Bonus:
+                                      </div>
+                                      <div className="timesheet-total-value">
+                                        +${timesheet.bonusAmount.toFixed(2)}
+                                      </div>
+                                    </div>
+                                  )}
+                                  {timesheet.deductionAmount > 0 && (
+                                    <div className="timesheet-total-line">
+                                      <div className="timesheet-total-label">
+                                        Deduction:
+                                      </div>
+                                      <div className="timesheet-total-value">
+                                        -${timesheet.deductionAmount.toFixed(2)}
+                                      </div>
+                                    </div>
+                                  )}
+                                  <div className="timesheet-total-line timesheet-grand-total">
                                     <div className="timesheet-total-label">
-                                      Deduction:
+                                      Employee Pay:
                                     </div>
                                     <div className="timesheet-total-value">
-                                      -${timesheet.deductionAmount.toFixed(2)}
+                                      ${employeePay.toFixed(2)}
                                     </div>
                                   </div>
-                                )}
-                                <div className="timesheet-total-line timesheet-grand-total">
-                                  <div className="timesheet-total-label">
-                                    Employee Pay:
-                                  </div>
-                                  <div className="timesheet-total-value">
-                                    ${employeePay.toFixed(2)}
-                                  </div>
-                                </div>
-                              </>;
+                                </>
+                              );
                             })()}
                           </div>
                         </div>
@@ -1418,6 +1524,13 @@ export function TimesheetManagement() {
                                 Send timesheet via email to jobseeker
                               </span>
                             </label>
+                            <p
+                              className="field-note"
+                              style={{ marginTop: "8px", marginLeft: "24px" }}
+                            >
+                              Email will be sent to billing email if provided,
+                              otherwise to primary email
+                            </p>
                           </div>
 
                           <button
@@ -1492,34 +1605,73 @@ export function TimesheetManagement() {
               <div className="timesheet-unified-header">
                 <div className="timesheet-header-sections">
                   <div className="timesheet-section timesheet-client-section">
-                    <div className="skeleton-text" style={{ width: "140px", height: "20px", marginBottom: "16px" }}></div>
+                    <div
+                      className="skeleton-text"
+                      style={{
+                        width: "140px",
+                        height: "20px",
+                        marginBottom: "16px",
+                      }}
+                    ></div>
                     <div className="timesheet-section-content">
                       {[1, 2, 3].map((index) => (
                         <div key={index} className="timesheet-detail-item">
-                          <div className="skeleton-text" style={{ width: "80px", height: "14px" }}></div>
-                          <div className="skeleton-text" style={{ width: "120px", height: "14px" }}></div>
+                          <div
+                            className="skeleton-text"
+                            style={{ width: "80px", height: "14px" }}
+                          ></div>
+                          <div
+                            className="skeleton-text"
+                            style={{ width: "120px", height: "14px" }}
+                          ></div>
                         </div>
                       ))}
                     </div>
                   </div>
                   <div className="timesheet-section timesheet-employee-section">
-                    <div className="skeleton-text" style={{ width: "120px", height: "20px", marginBottom: "16px" }}></div>
+                    <div
+                      className="skeleton-text"
+                      style={{
+                        width: "120px",
+                        height: "20px",
+                        marginBottom: "16px",
+                      }}
+                    ></div>
                     <div className="timesheet-section-content">
                       {[1, 2].map((index) => (
                         <div key={index} className="timesheet-detail-item">
-                          <div className="skeleton-text" style={{ width: "60px", height: "14px" }}></div>
-                          <div className="skeleton-text" style={{ width: "140px", height: "14px" }}></div>
+                          <div
+                            className="skeleton-text"
+                            style={{ width: "60px", height: "14px" }}
+                          ></div>
+                          <div
+                            className="skeleton-text"
+                            style={{ width: "140px", height: "14px" }}
+                          ></div>
                         </div>
                       ))}
                     </div>
                   </div>
                   <div className="timesheet-section timesheet-invoice-section">
-                    <div className="skeleton-text" style={{ width: "110px", height: "20px", marginBottom: "16px" }}></div>
+                    <div
+                      className="skeleton-text"
+                      style={{
+                        width: "110px",
+                        height: "20px",
+                        marginBottom: "16px",
+                      }}
+                    ></div>
                     <div className="timesheet-section-content">
                       {[1, 2, 3, 4].map((index) => (
                         <div key={index} className="timesheet-detail-item">
-                          <div className="skeleton-text" style={{ width: "70px", height: "14px" }}></div>
-                          <div className="skeleton-text" style={{ width: "100px", height: "14px" }}></div>
+                          <div
+                            className="skeleton-text"
+                            style={{ width: "70px", height: "14px" }}
+                          ></div>
+                          <div
+                            className="skeleton-text"
+                            style={{ width: "100px", height: "14px" }}
+                          ></div>
                         </div>
                       ))}
                     </div>
@@ -1531,16 +1683,32 @@ export function TimesheetManagement() {
               <div className="timesheet-grid-container timesheet-hours-adjustments-container">
                 <div className="timesheet-week-grid">
                   <div className="timesheet-grid-header">
-                    <div className="skeleton-text" style={{ width: "100px", height: "16px" }}></div>
+                    <div
+                      className="skeleton-text"
+                      style={{ width: "100px", height: "16px" }}
+                    ></div>
                   </div>
                   <div className="timesheet-days-grid">
                     {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((index) => (
                       <div key={index} className="timesheet-day-entry">
                         <div className="timesheet-day-label">
-                          <div className="skeleton-text" style={{ width: "80px", height: "14px", marginBottom: "4px" }}></div>
-                          <div className="skeleton-text" style={{ width: "50px", height: "12px" }}></div>
+                          <div
+                            className="skeleton-text"
+                            style={{
+                              width: "80px",
+                              height: "14px",
+                              marginBottom: "4px",
+                            }}
+                          ></div>
+                          <div
+                            className="skeleton-text"
+                            style={{ width: "50px", height: "12px" }}
+                          ></div>
                         </div>
-                        <div className="skeleton-text" style={{ width: "100%", height: "40px" }}></div>
+                        <div
+                          className="skeleton-text"
+                          style={{ width: "100%", height: "40px" }}
+                        ></div>
                       </div>
                     ))}
                   </div>
@@ -1551,8 +1719,18 @@ export function TimesheetManagement() {
                   <div className="timesheet-pay-info-grid">
                     {[1, 2, 3].map((index) => (
                       <div key={index} className="timesheet-pay-info-item">
-                        <div className="skeleton-text" style={{ width: "90px", height: "14px", marginBottom: "4px" }}></div>
-                        <div className="skeleton-text" style={{ width: "60px", height: "16px" }}></div>
+                        <div
+                          className="skeleton-text"
+                          style={{
+                            width: "90px",
+                            height: "14px",
+                            marginBottom: "4px",
+                          }}
+                        ></div>
+                        <div
+                          className="skeleton-text"
+                          style={{ width: "60px", height: "16px" }}
+                        ></div>
                       </div>
                     ))}
                   </div>
@@ -1565,7 +1743,10 @@ export function TimesheetManagement() {
                   <div className="timesheet-invoice-table-header">
                     {[1, 2, 3, 4].map((index) => (
                       <div key={index} className="timesheet-col">
-                        <div className="skeleton-text" style={{ width: "80px", height: "14px" }}></div>
+                        <div
+                          className="skeleton-text"
+                          style={{ width: "80px", height: "14px" }}
+                        ></div>
                       </div>
                     ))}
                   </div>
@@ -1574,8 +1755,18 @@ export function TimesheetManagement() {
                       <div key={index} className="timesheet-invoice-line-item">
                         {[1, 2, 3, 4].map((colIndex) => (
                           <div key={colIndex} className="timesheet-col">
-                            <div className="skeleton-text" style={{ width: "90%", height: "16px", marginBottom: "4px" }}></div>
-                            <div className="skeleton-text" style={{ width: "70%", height: "12px" }}></div>
+                            <div
+                              className="skeleton-text"
+                              style={{
+                                width: "90%",
+                                height: "16px",
+                                marginBottom: "4px",
+                              }}
+                            ></div>
+                            <div
+                              className="skeleton-text"
+                              style={{ width: "70%", height: "12px" }}
+                            ></div>
                           </div>
                         ))}
                       </div>
@@ -1584,8 +1775,14 @@ export function TimesheetManagement() {
                   <div className="timesheet-invoice-totals">
                     {[1, 2, 3, 4].map((index) => (
                       <div key={index} className="timesheet-total-line">
-                        <div className="skeleton-text" style={{ width: "100px", height: "14px" }}></div>
-                        <div className="skeleton-text" style={{ width: "80px", height: "14px" }}></div>
+                        <div
+                          className="skeleton-text"
+                          style={{ width: "100px", height: "14px" }}
+                        ></div>
+                        <div
+                          className="skeleton-text"
+                          style={{ width: "80px", height: "14px" }}
+                        ></div>
                       </div>
                     ))}
                   </div>
@@ -1594,9 +1791,15 @@ export function TimesheetManagement() {
                 {/* Action Section Skeleton */}
                 <div className="timesheet-action-section">
                   <div className="timesheet-email-option">
-                    <div className="skeleton-text" style={{ width: "200px", height: "16px" }}></div>
+                    <div
+                      className="skeleton-text"
+                      style={{ width: "200px", height: "16px" }}
+                    ></div>
                   </div>
-                  <div className="skeleton-text" style={{ width: "150px", height: "40px" }}></div>
+                  <div
+                    className="skeleton-text"
+                    style={{ width: "150px", height: "40px" }}
+                  ></div>
                 </div>
               </div>
             </div>
