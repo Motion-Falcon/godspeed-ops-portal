@@ -2,17 +2,17 @@
 
 .expiry-status-overview {
   background: radial-gradient(
-    circle at 15% 45%,
-    rgba(120, 120, 180, 0.06) 20%,
-    transparent 45%
-  ),
-  radial-gradient(
-    circle at 85% 55%,
-    rgba(180, 120, 180, 0.06) 20%,
-    transparent 45%
-  ),
-  linear-gradient(135deg, rgba(0, 0, 0, 0.02) 50%, rgba(0, 0, 0, 0.01) 100%),
-  var(--card);
+      circle at 15% 45%,
+      rgba(120, 120, 180, 0.06) 20%,
+      transparent 45%
+    ),
+    radial-gradient(
+      circle at 85% 55%,
+      rgba(180, 120, 180, 0.06) 20%,
+      transparent 45%
+    ),
+    linear-gradient(135deg, rgba(0, 0, 0, 0.02) 50%, rgba(0, 0, 0, 0.01) 100%),
+    var(--card);
   border: 1px solid var(--border);
   border-radius: var(--border-radius);
   padding: var(--spacing-4);
@@ -275,7 +275,6 @@
   opacity: 1;
 }
 
-
 /* Footer */
 .expiry-overview-footer {
   display: flex;
@@ -365,33 +364,33 @@
   .expiry-status-overview {
     padding: var(--spacing-3);
   }
-  
+
   .expiry-overview-title {
     font-size: var(--font-size-body);
   }
-  
+
   .document-type-header {
     flex-direction: column;
     align-items: flex-start;
     gap: var(--spacing-1);
   }
-  
+
   .expiry-status-icon {
     width: 28px;
     height: 28px;
   }
-  
+
   .expiry-status-grid {
     flex-wrap: wrap;
   }
-  
+
   .expiry-status-card {
     min-width: 100px;
   }
 }
 
 /* Skeleton Loading Styles */
-.skeleton-text {
+/* .skeleton-text {
   background: linear-gradient(
     90deg,
     var(--border) 25%,
@@ -424,4 +423,4 @@
   100% {
     background-position: -200% 0;
   }
-}
+} */

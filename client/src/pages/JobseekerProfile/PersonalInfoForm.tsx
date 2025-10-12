@@ -3,7 +3,13 @@ import { useState, useEffect, useRef } from "react";
 import { checkEmailAvailability } from "../../services/api/profile";
 import { useNavigate } from "react-router-dom";
 import { Eye, Pencil } from "lucide-react";
-import { validateSIN, validateDOB, validateUCI, getMaxDobDate, logValidation } from "../../utils/validation";
+import {
+  validateSIN,
+  validateDOB,
+  validateUCI,
+  getMaxDobDate,
+  logValidation,
+} from "../../utils/validation";
 import { useLanguage } from "../../contexts/language/language-provider";
 import { PersonalInfoFormData } from "./profileSchemas";
 
@@ -92,11 +98,11 @@ export function PersonalInfoForm({
     if (!value) {
       setError("sinNumber", {
         type: "manual",
-        message: t('profileCreate.personalInfo.sinNumberRequired'),
+        message: t("profileCreate.personalInfo.sinNumberRequired"),
       });
       return false; // Field is now required
     }
-    
+
     const result = validateSIN(value);
     if (!result.isValid && result.errorMessage) {
       setError("sinNumber", {
@@ -105,7 +111,7 @@ export function PersonalInfoForm({
       });
       return false;
     }
-    
+
     // Clear errors if validation passes
     clearErrors("sinNumber");
     return true;
@@ -116,7 +122,7 @@ export function PersonalInfoForm({
     if (debounceTimeoutRef.current) {
       clearTimeout(debounceTimeoutRef.current);
     }
-    
+
     debounceTimeoutRef.current = setTimeout(() => {
       validateSinNumber(value);
     }, 300); // Only validate after 300ms of inactivity
@@ -128,7 +134,7 @@ export function PersonalInfoForm({
       clearErrors("workPermitUci");
       return true; // Field is optional when not a temporary resident
     }
-    
+
     const result = validateUCI(value);
     if (!result.isValid && result.errorMessage) {
       setError("workPermitUci", {
@@ -137,7 +143,7 @@ export function PersonalInfoForm({
       });
       return false;
     }
-    
+
     // Clear errors if validation passes
     clearErrors("workPermitUci");
     return true;
@@ -148,7 +154,7 @@ export function PersonalInfoForm({
     if (debounceTimeoutRef.current) {
       clearTimeout(debounceTimeoutRef.current);
     }
-    
+
     debounceTimeoutRef.current = setTimeout(() => {
       validateUciNumber(value);
     }, 300); // Only validate after 300ms of inactivity
@@ -284,21 +290,21 @@ export function PersonalInfoForm({
 
   return (
     <div className="form-containerform-step-container">
-      <h2>{t('profileCreate.personalInfo.sectionTitle')}</h2>
+      <h2>{t("profileCreate.personalInfo.sectionTitle")}</h2>
       <p className="form-description">
-        {t('profileCreate.personalInfo.sectionDescription')}
+        {t("profileCreate.personalInfo.sectionDescription")}
       </p>
 
       <div className="form-row name-dob-row">
         <div className="form-group">
           <label htmlFor="firstName" className="form-label" data-required="*">
-            {t('profileCreate.personalInfo.firstName')}
+            {t("profileCreate.personalInfo.firstName")}
           </label>
           <input
             id="firstName"
             type="text"
             className="form-input"
-            placeholder={t('profileCreate.personalInfo.firstNamePlaceholder')}
+            placeholder={t("profileCreate.personalInfo.firstNamePlaceholder")}
             {...register("firstName")}
           />
           {shouldShowError("firstName") && (
@@ -308,13 +314,13 @@ export function PersonalInfoForm({
 
         <div className="form-group">
           <label htmlFor="lastName" className="form-label" data-required="*">
-            {t('profileCreate.personalInfo.lastName')}
+            {t("profileCreate.personalInfo.lastName")}
           </label>
           <input
             id="lastName"
             type="text"
             className="form-input"
-            placeholder={t('profileCreate.personalInfo.lastNamePlaceholder')}
+            placeholder={t("profileCreate.personalInfo.lastNamePlaceholder")}
             {...register("lastName")}
           />
           {shouldShowError("lastName") && (
@@ -324,7 +330,7 @@ export function PersonalInfoForm({
 
         <div className="form-group dob-group">
           <label htmlFor="dob" className="form-label" data-required="*">
-            {t('profileCreate.personalInfo.dob')}
+            {t("profileCreate.personalInfo.dob")}
           </label>
           <div className="date-picker-container">
             <input
@@ -339,7 +345,7 @@ export function PersonalInfoForm({
                   if (e.target.value) {
                     setTimeout(() => validateDobField(e.target.value), 0);
                   }
-                }
+                },
               })}
               onClick={(e) => e.currentTarget.showPicker()}
             />
@@ -347,27 +353,29 @@ export function PersonalInfoForm({
           {shouldShowError("dob") && (
             <p className="error-message">{allErrors.dob?.message}</p>
           )}
-          <p className="field-note">{t('profileCreate.personalInfo.dobNote')}</p>
+          <p className="field-note">
+            {t("profileCreate.personalInfo.dobNote")}
+          </p>
         </div>
       </div>
 
       <div className="form-row">
         <div className="form-group">
           <label htmlFor="email" className="form-label" data-required="*">
-            {t('profileCreate.personalInfo.email')}
+            {t("profileCreate.personalInfo.email")}
           </label>
           <input
             id="email"
             type="email"
             className="form-input"
-            placeholder={t('profileCreate.personalInfo.emailPlaceholder')}
+            placeholder={t("profileCreate.personalInfo.emailPlaceholder")}
             {...register("email")}
             disabled={disableEmail}
             readOnly={disableEmail}
           />
           {disableEmail && (
             <p className="field-note">
-              {t('profileCreate.personalInfo.emailNote')}
+              {t("profileCreate.personalInfo.emailNote")}
             </p>
           )}
           {!disableEmail && emailAvailabilityMessage && (
@@ -409,21 +417,41 @@ export function PersonalInfoForm({
         </div>
 
         <div className="form-group">
+          <label htmlFor="billingEmail" className="form-label">
+            {t("profileCreate.personalInfo.billingEmail")}
+          </label>
+          <input
+            id="billingEmail"
+            type="email"
+            className="form-input"
+            placeholder={t(
+              "profileCreate.personalInfo.billingEmailPlaceholder"
+            )}
+            {...register("billingEmail")}
+          />
+          {shouldShowError("billingEmail") && (
+            <p className="error-message">{allErrors.billingEmail?.message}</p>
+          )}
+          <p className="field-note">
+            {t("profileCreate.personalInfo.billingEmailNote")}
+          </p>
+        </div>
+        <div className="form-group">
           <label htmlFor="mobile" className="form-label" data-required="*">
-            {t('profileCreate.personalInfo.mobile')}
+            {t("profileCreate.personalInfo.mobile")}
           </label>
           <input
             id="mobile"
             type="tel"
             className="form-input"
-            placeholder={t('profileCreate.personalInfo.mobilePlaceholder')}
+            placeholder={t("profileCreate.personalInfo.mobilePlaceholder")}
             {...register("mobile")}
             disabled={disableMobile}
             readOnly={disableMobile}
           />
           {disableMobile && (
             <p className="field-note">
-              {t('profileCreate.personalInfo.mobileNote')}
+              {t("profileCreate.personalInfo.mobileNote")}
             </p>
           )}
           {shouldShowError("mobile") && (
@@ -434,18 +462,20 @@ export function PersonalInfoForm({
 
       <div className="form-row license-row">
         <div className="form-info" data-required="*">
-          <small>{t('profileCreate.personalInfo.atLeastOneId')}</small>
+          <small>{t("profileCreate.personalInfo.atLeastOneId")}</small>
         </div>
         <div className="form-row">
           <div className="form-group">
             <label htmlFor="licenseNumber" className="form-label">
-              {t('profileCreate.personalInfo.licenseNumber')}
+              {t("profileCreate.personalInfo.licenseNumber")}
             </label>
             <input
               id="licenseNumber"
               type="text"
               className="form-input"
-              placeholder={t('profileCreate.personalInfo.licenseNumberPlaceholder')}
+              placeholder={t(
+                "profileCreate.personalInfo.licenseNumberPlaceholder"
+              )}
               {...register("licenseNumber")}
             />
             {shouldShowError("licenseNumber") && (
@@ -457,13 +487,15 @@ export function PersonalInfoForm({
 
           <div className="form-group">
             <label htmlFor="passportNumber" className="form-label">
-              {t('profileCreate.personalInfo.passportNumber')}
+              {t("profileCreate.personalInfo.passportNumber")}
             </label>
             <input
               id="passportNumber"
               type="text"
               className="form-input"
-              placeholder={t('profileCreate.personalInfo.passportNumberPlaceholder')}
+              placeholder={t(
+                "profileCreate.personalInfo.passportNumberPlaceholder"
+              )}
               {...register("passportNumber")}
             />
             {shouldShowError("passportNumber") && (
@@ -476,21 +508,21 @@ export function PersonalInfoForm({
       </div>
 
       <div className="form-section">
-        <h3>{t('profileCreate.personalInfo.additionalInfoTitle')}</h3>
+        <h3>{t("profileCreate.personalInfo.additionalInfoTitle")}</h3>
         <p className="section-description">
-          {t('profileCreate.personalInfo.additionalInfoDescription')}
+          {t("profileCreate.personalInfo.additionalInfoDescription")}
         </p>
 
         <div className="form-row">
           <div className="form-group">
             <label htmlFor="sinNumber" className="form-label" data-required="*">
-              {t('profileCreate.personalInfo.sinNumber')}
+              {t("profileCreate.personalInfo.sinNumber")}
             </label>
             <input
               id="sinNumber"
               type="text"
               className="form-input"
-              placeholder={t('profileCreate.personalInfo.sinNumberPlaceholder')}
+              placeholder={t("profileCreate.personalInfo.sinNumberPlaceholder")}
               maxLength={9}
               pattern="\d*"
               inputMode="numeric"
@@ -499,36 +531,42 @@ export function PersonalInfoForm({
                 onChange: (e) => {
                   // Remove any non-digit characters as the user types
                   const value = e.target.value;
-                  const digitsOnly = value.replace(/\D/g, '');
+                  const digitsOnly = value.replace(/\D/g, "");
                   if (value !== digitsOnly) {
                     e.target.value = digitsOnly;
                   }
                   // Debounced validation on change for immediate feedback
                   debouncedValidateSin(digitsOnly);
-                }
+                },
               })}
             />
             {shouldShowError("sinNumber") && (
               <p className="error-message">{allErrors.sinNumber?.message}</p>
             )}
             <p className="field-note">
-              {t('profileCreate.personalInfo.sinNumberNote')}
+              {t("profileCreate.personalInfo.sinNumberNote")}
             </p>
           </div>
 
           <div className="form-group">
-            <label htmlFor="sinExpiry" className="form-label" data-required={watchedSin && watchedSin.startsWith('9') ? "*" : undefined}>
-              {t('profileCreate.personalInfo.sinExpiry')}
+            <label
+              htmlFor="sinExpiry"
+              className="form-label"
+              data-required={
+                watchedSin && watchedSin.startsWith("9") ? "*" : undefined
+              }
+            >
+              {t("profileCreate.personalInfo.sinExpiry")}
             </label>
             <div className="date-picker-container">
               <input
                 id="sinExpiry"
                 type="date"
                 className="form-input"
-                disabled={!watchedSin || !watchedSin.startsWith('9')}
+                disabled={!watchedSin || !watchedSin.startsWith("9")}
                 {...register("sinExpiry")}
                 onClick={(e) => {
-                  if (watchedSin && watchedSin.startsWith('9')) {
+                  if (watchedSin && watchedSin.startsWith("9")) {
                     e.currentTarget.showPicker();
                   }
                 }}
@@ -537,96 +575,115 @@ export function PersonalInfoForm({
             {shouldShowError("sinExpiry") && (
               <p className="error-message">{allErrors.sinExpiry?.message}</p>
             )}
-            {watchedSin && !watchedSin.startsWith('9') && (
+            {watchedSin && !watchedSin.startsWith("9") && (
               <p className="field-note">
-                SIN expiry is not required for Canadian citizens and permanent residents
+                SIN expiry is not required for Canadian citizens and permanent
+                residents
               </p>
             )}
           </div>
         </div>
-          {/* UCI fields - only show for temporary residents (SIN starting with '9') */}
-          {watchedSin && watchedSin.startsWith('9') && (
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="workPermitUci" className="form-label" data-required="*">
-                  {t('profileCreate.personalInfo.workPermitUci')}
-                </label>
-                <input
-                  id="workPermitUci"
-                  type="text"
-                  className="form-input"
-                  placeholder={t('profileCreate.personalInfo.workPermitUciPlaceholder')}
-                  maxLength={10}
-                  pattern="\d*"
-                  inputMode="numeric"
-                  {...register("workPermitUci", {
-                    validate: validateUciNumber,
-                    onChange: (e) => {
-                      // Remove any non-digit characters as the user types
-                      const value = e.target.value;
-                      const digitsOnly = value.replace(/\D/g, '');
-                      if (value !== digitsOnly) {
-                        e.target.value = digitsOnly;
-                      }
-                      // Debounced validation on change for immediate feedback
-                      debouncedValidateUci(digitsOnly);
+        {/* UCI fields - only show for temporary residents (SIN starting with '9') */}
+        {watchedSin && watchedSin.startsWith("9") && (
+          <div className="form-row">
+            <div className="form-group">
+              <label
+                htmlFor="workPermitUci"
+                className="form-label"
+                data-required="*"
+              >
+                {t("profileCreate.personalInfo.workPermitUci")}
+              </label>
+              <input
+                id="workPermitUci"
+                type="text"
+                className="form-input"
+                placeholder={t(
+                  "profileCreate.personalInfo.workPermitUciPlaceholder"
+                )}
+                maxLength={10}
+                pattern="\d*"
+                inputMode="numeric"
+                {...register("workPermitUci", {
+                  validate: validateUciNumber,
+                  onChange: (e) => {
+                    // Remove any non-digit characters as the user types
+                    const value = e.target.value;
+                    const digitsOnly = value.replace(/\D/g, "");
+                    if (value !== digitsOnly) {
+                      e.target.value = digitsOnly;
                     }
-                  })}
-                />
-                {shouldShowError("workPermitUci") && (
-                  <p className="error-message">{allErrors.workPermitUci?.message}</p>
-                )}
-                <p className="field-note">
-                  {t('profileCreate.personalInfo.workPermitUciNote')}
+                    // Debounced validation on change for immediate feedback
+                    debouncedValidateUci(digitsOnly);
+                  },
+                })}
+              />
+              {shouldShowError("workPermitUci") && (
+                <p className="error-message">
+                  {allErrors.workPermitUci?.message}
                 </p>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="workPermitExpiry" className="form-label" data-required="*">
-                  {t('profileCreate.personalInfo.workPermitExpiry')}
-                </label>
-                <div className="date-picker-container">
-                  <input
-                    id="workPermitExpiry"
-                    type="date"
-                    className="form-input"
-                    {...register("workPermitExpiry")}
-                    onClick={(e) => e.currentTarget.showPicker()}
-                  />
-                </div>
-                {shouldShowError("workPermitExpiry") && (
-                  <p className="error-message">{allErrors.workPermitExpiry?.message}</p>
-                )}
-                <p className="field-note">
-                  {t('profileCreate.personalInfo.workPermitExpiryNote')}
-                </p>
-              </div>
+              )}
+              <p className="field-note">
+                {t("profileCreate.personalInfo.workPermitUciNote")}
+              </p>
             </div>
-          )}
+
+            <div className="form-group">
+              <label
+                htmlFor="workPermitExpiry"
+                className="form-label"
+                data-required="*"
+              >
+                {t("profileCreate.personalInfo.workPermitExpiry")}
+              </label>
+              <div className="date-picker-container">
+                <input
+                  id="workPermitExpiry"
+                  type="date"
+                  className="form-input"
+                  {...register("workPermitExpiry")}
+                  onClick={(e) => e.currentTarget.showPicker()}
+                />
+              </div>
+              {shouldShowError("workPermitExpiry") && (
+                <p className="error-message">
+                  {allErrors.workPermitExpiry?.message}
+                </p>
+              )}
+              <p className="field-note">
+                {t("profileCreate.personalInfo.workPermitExpiryNote")}
+              </p>
+            </div>
+          </div>
+        )}
 
         <div className="form-row">
           <div className="form-group">
             <label htmlFor="businessNumber" className="form-label">
-              {t('profileCreate.personalInfo.businessNumber')}
+              {t("profileCreate.personalInfo.businessNumber")}
             </label>
             <input
               id="businessNumber"
               type="text"
               className="form-input"
-              placeholder={t('profileCreate.personalInfo.businessNumberPlaceholder')}
+              placeholder={t(
+                "profileCreate.personalInfo.businessNumberPlaceholder"
+              )}
               {...register("businessNumber")}
             />
           </div>
 
           <div className="form-group">
             <label htmlFor="corporationName" className="form-label">
-              {t('profileCreate.personalInfo.corporationName')}
+              {t("profileCreate.personalInfo.corporationName")}
             </label>
             <input
               id="corporationName"
               type="text"
               className="form-input"
-              placeholder={t('profileCreate.personalInfo.corporationNamePlaceholder')}
+              placeholder={t(
+                "profileCreate.personalInfo.corporationNamePlaceholder"
+              )}
               {...register("corporationName")}
             />
           </div>

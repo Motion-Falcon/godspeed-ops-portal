@@ -1,67 +1,75 @@
-import React from 'react';
-import { Document, Page, Text, View, StyleSheet, pdf, Image } from '@react-pdf/renderer';
-import canhireLogo from '../assets/logos/canhire-logo-fulllength.png';
+import React from "react";
+import {
+  Document,
+  Page,
+  Text,
+  View,
+  StyleSheet,
+  pdf,
+  Image,
+} from "@react-pdf/renderer";
+import canhireLogo from "../assets/logos/canhire-logo-fulllength.png";
 
 // Color scheme
 const colors = {
-  primary: '#ffd500',
-  secondary: '#002644',
-  text: '#1f2937',
-  border: '#e5e7eb',
-  accent: '#3b82f6',
+  primary: "#ffd500",
+  secondary: "#002644",
+  text: "#1f2937",
+  border: "#e5e7eb",
+  accent: "#3b82f6",
 };
 
 // Styles for the PDF
 const styles = StyleSheet.create({
   page: {
-    flexDirection: 'column',
-    backgroundColor: '#FFFFFF',
+    flexDirection: "column",
+    backgroundColor: "#FFFFFF",
     padding: 30,
     fontSize: 10,
-    fontFamily: 'Helvetica',
+    fontFamily: "Helvetica",
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginBottom: 10,
     paddingBottom: 10,
     borderBottomWidth: 2,
     borderBottomColor: colors.primary,
   },
   logoSection: {
-    flexDirection: 'column',
-    width: '40%',
-    justifyContent: 'center',
+    flexDirection: "column",
+    width: "40%",
+    justifyContent: "center",
   },
   logoPlaceholder: {
     width: 185,
     height: 40,
-    objectFit: 'contain',
+    objectFit: "contain",
   },
   companyInfo: {
-    flexDirection: 'column',
-    width: '55%',
-    alignItems: 'flex-end',
+    flexDirection: "column",
+    width: "55%",
+    alignItems: "flex-end",
   },
   companyDetails: {
     fontSize: 10,
     color: colors.text,
     lineHeight: 1.4,
-    textAlign: 'right',
+    textAlign: "right",
   },
   invoiceInfo: {
-    flexDirection: 'column',
-    alignItems: 'flex-end',
+    flexDirection: "column",
+    alignItems: "flex-end",
   },
   invoiceTitle: {
     fontSize: 28,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: colors.primary,
     marginBottom: 10,
   },
   invoiceNumber: {
     fontSize: 14,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 5,
   },
   invoiceDate: {
@@ -69,31 +77,31 @@ const styles = StyleSheet.create({
     color: colors.secondary,
   },
   billToInvoiceSection: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginBottom: 20,
   },
   clientSection: {
-    width: '48%',
+    width: "48%",
     padding: 10,
-    backgroundColor: '#f8fafc',
+    backgroundColor: "#f8fafc",
     borderRadius: 5,
   },
   invoiceDetailsSection: {
-    width: '48%',
+    width: "48%",
     padding: 10,
-    backgroundColor: '#f8fafc',
+    backgroundColor: "#f8fafc",
     borderRadius: 5,
   },
   sectionTitle: {
     fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: colors.text,
     marginBottom: 10,
   },
   clientName: {
     fontSize: 14,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 5,
   },
   clientDetails: {
@@ -102,75 +110,97 @@ const styles = StyleSheet.create({
     lineHeight: 1.4,
   },
   invoiceDetailItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginBottom: 5,
   },
   invoiceDetailLabel: {
     fontSize: 10,
     color: colors.text,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   invoiceDetailValue: {
     fontSize: 10,
     color: colors.text,
   },
   table: {
-    display: 'flex',
-    width: 'auto',
-    borderStyle: 'solid',
+    display: "flex",
+    width: "auto",
+    borderStyle: "solid",
     borderWidth: 1,
     borderColor: colors.border,
     marginBottom: 20,
   },
   tableRow: {
-    margin: 'auto',
-    flexDirection: 'row',
+    margin: "auto",
+    flexDirection: "row",
   },
   tableHeader: {
     backgroundColor: colors.primary,
-    color: 'white',
-    fontWeight: 'bold',
+    color: "white",
+    fontWeight: "bold",
   },
   tableCol: {
-    width: '20%',
-    borderStyle: 'solid',
+    width: "20%",
+    borderStyle: "solid",
     borderWidth: 1,
     borderColor: colors.border,
     borderTopWidth: 0,
     borderLeftWidth: 0,
   },
   tableCell: {
-    margin: 'auto',
+    margin: "auto",
     marginTop: 5,
     marginBottom: 5,
     fontSize: 9,
     padding: 5,
   },
   tableCellHeader: {
-    margin: 'auto',
+    margin: "auto",
     marginTop: 4,
     marginBottom: 4,
     fontSize: 10,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     padding: 2,
     color: colors.secondary,
   },
   summarySection: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
+    flexDirection: "row",
+    justifyContent: "space-between",
     paddingBottom: 10,
     marginBottom: 10,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
-    width: '100%',
+    width: "100%",
+  },
+  itemSummaryTable: {
+    width: "48%",
+  },
+  itemSummaryTitle: {
+    fontSize: 11,
+    fontWeight: "bold",
+    color: colors.secondary,
+    marginBottom: 8,
+    paddingHorizontal: 10,
+  },
+  itemSummaryRow: {
+    flexDirection: "column",
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  itemSummaryText: {
+    fontSize: 9,
+    color: colors.text,
+    lineHeight: 1.3,
   },
   summaryTable: {
-    width: '40%',
+    width: "48%",
   },
   summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     paddingVertical: 3,
     paddingHorizontal: 10,
     borderBottomWidth: 1,
@@ -182,15 +212,15 @@ const styles = StyleSheet.create({
   },
   summaryValue: {
     fontSize: 10,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   totalRow: {
     backgroundColor: colors.primary,
-    color: 'white',
-    fontWeight: 'bold',
+    color: "white",
+    fontWeight: "bold",
   },
   footer: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 20,
     left: 30,
     right: 30,
@@ -198,29 +228,29 @@ const styles = StyleSheet.create({
     color: colors.secondary,
   },
   footerContent: {
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: 5,
   },
   footerMessage: {
     fontSize: 8,
     color: colors.text,
     marginBottom: 5,
-    textAlign: 'left',
+    textAlign: "left",
   },
   footerTerms: {
     fontSize: 8,
     color: colors.text,
     marginBottom: 5,
-    textAlign: 'left',
+    textAlign: "left",
   },
   pageNumber: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 20,
     left: 30,
     right: 30,
     fontSize: 8,
     color: colors.secondary,
-    textAlign: 'right',
+    textAlign: "right",
   },
   pageNumberText: {
     fontSize: 8,
@@ -230,10 +260,10 @@ const styles = StyleSheet.create({
 
 // Company information
 const COMPANY_INFO = {
-  name: 'CANHIRE SOLUTION O/A 2695049 Ontario Inc',
-  address: '240 Humberline Dr',
-  address2: 'Etobicoke ON, M9W 5X1',
-  gst: 'GST/HST No. 795288877',
+  name: "CANHIRE SOLUTION O/A 2695049 Ontario Inc",
+  address: "240 Humberline Dr",
+  address2: "Etobicoke ON, M9W 5X1",
+  gst: "GST/HST No. 795288877",
 };
 
 // Interfaces
@@ -279,35 +309,50 @@ export interface InvoiceData {
 
 // PDF Document Component
 const InvoicePDFDocument: React.FC<{ data: InvoiceData }> = ({ data }) => {
+  // Calculate item summary (group by position name)
+  const itemSummary = data.lineItems.reduce((acc, item) => {
+    const positionName = item.positionName || "N/A";
+    if (!acc[positionName]) {
+      acc[positionName] = { count: 0, totalHours: 0 };
+    }
+    acc[positionName].count += 1;
+    acc[positionName].totalHours += item.hours;
+    return acc;
+  }, {} as Record<string, { count: number; totalHours: number }>);
+
   // Calculate how many rows can fit on the first page (accounting for header space)
   const FIRST_PAGE_ROWS = 12;
   // Calculate how many rows can fit on continuation pages (more space available)
   const CONTINUATION_PAGE_ROWS = 18;
-  
+
   // Calculate pagination
-  const pages: Array<{ items: typeof data.lineItems; isLastPage: boolean }> = [];
+  const pages: Array<{ items: typeof data.lineItems; isLastPage: boolean }> =
+    [];
   let remainingItems = [...data.lineItems];
   let isFirstPage = true;
-  
+
   while (remainingItems.length > 0) {
-    const rowsForThisPage = isFirstPage ? FIRST_PAGE_ROWS : CONTINUATION_PAGE_ROWS;
+    const rowsForThisPage = isFirstPage
+      ? FIRST_PAGE_ROWS
+      : CONTINUATION_PAGE_ROWS;
     const itemsForThisPage = remainingItems.slice(0, rowsForThisPage);
     remainingItems = remainingItems.slice(rowsForThisPage);
-    
+
     // Check if this should be the last page (if remaining items can fit on next page with summary)
-    const isLastPage = remainingItems.length === 0 || 
-                      (remainingItems.length <= (CONTINUATION_PAGE_ROWS - 8)); // Reserve space for summary
-    
+    const isLastPage =
+      remainingItems.length === 0 ||
+      remainingItems.length <= CONTINUATION_PAGE_ROWS - 8; // Reserve space for summary
+
     pages.push({
       items: itemsForThisPage,
-      isLastPage: isLastPage && remainingItems.length === 0
+      isLastPage: isLastPage && remainingItems.length === 0,
     });
-    
+
     isFirstPage = false;
   }
-  
+
   const totalPages = pages.length;
-  
+
   return (
     <Document>
       {pages.map((page, pageIndex) => (
@@ -317,16 +362,16 @@ const InvoicePDFDocument: React.FC<{ data: InvoiceData }> = ({ data }) => {
             <>
               <View style={styles.header}>
                 <View style={styles.logoSection}>
-                  <Image
-                    src={canhireLogo}
-                    style={styles.logoPlaceholder}
-                  />
+                  <Image src={canhireLogo} style={styles.logoPlaceholder} />
                 </View>
                 <View style={styles.companyInfo}>
                   <Text style={styles.companyDetails}>
-                    {COMPANY_INFO.name}{'\n'}
-                    {COMPANY_INFO.address}{'\n'}
-                    {COMPANY_INFO.address2}{'\n'}
+                    {COMPANY_INFO.name}
+                    {"\n"}
+                    {COMPANY_INFO.address}
+                    {"\n"}
+                    {COMPANY_INFO.address2}
+                    {"\n"}
                     {COMPANY_INFO.gst}
                   </Text>
                 </View>
@@ -336,36 +381,44 @@ const InvoicePDFDocument: React.FC<{ data: InvoiceData }> = ({ data }) => {
               <View style={styles.billToInvoiceSection}>
                 <View style={styles.clientSection}>
                   <Text style={styles.sectionTitle}>Bill To:</Text>
-                  <Text style={styles.clientName}>{data.client.companyName}</Text>
+                  <Text style={styles.clientName}>
+                    {data.client.companyName}
+                  </Text>
                   {data.client.address && (
                     <Text style={styles.clientDetails}>
-                      {data.client.address.join('\n')}
+                      {data.client.address.join("\n")}
                     </Text>
                   )}
                   {data.client.email && (
-                    <Text style={styles.clientDetails}>{data.client.email}</Text>
+                    <Text style={styles.clientDetails}>
+                      {data.client.email}
+                    </Text>
                   )}
                 </View>
-                
+
                 <View style={styles.invoiceDetailsSection}>
                   <Text style={styles.sectionTitle}>Invoice Details:</Text>
                   <View style={styles.invoiceDetailItem}>
                     <Text style={styles.invoiceDetailLabel}>Invoice #:</Text>
-                    <Text style={styles.invoiceDetailValue}>{data.invoiceNumber}</Text>
+                    <Text style={styles.invoiceDetailValue}>
+                      {data.invoiceNumber}
+                    </Text>
                   </View>
                   <View style={styles.invoiceDetailItem}>
                     <Text style={styles.invoiceDetailLabel}>Invoice Date:</Text>
-                    <Text style={styles.invoiceDetailValue}>{new Date(data.invoiceDate).toLocaleDateString()}</Text>
+                    <Text style={styles.invoiceDetailValue}>
+                      {new Date(data.invoiceDate).toLocaleDateString()}
+                    </Text>
                   </View>
                   <View style={styles.invoiceDetailItem}>
                     <Text style={styles.invoiceDetailLabel}>Due Date:</Text>
-                    <Text style={styles.invoiceDetailValue}>{new Date(data.dueDate).toLocaleDateString()}</Text>
+                    <Text style={styles.invoiceDetailValue}>
+                      {new Date(data.dueDate).toLocaleDateString()}
+                    </Text>
                   </View>
                   <View style={styles.invoiceDetailItem}>
                     <Text style={styles.invoiceDetailLabel}>Term:</Text>
-                    <Text style={styles.invoiceDetailValue}>
-                      {data.terms}
-                    </Text>
+                    <Text style={styles.invoiceDetailValue}>{data.terms}</Text>
                   </View>
                 </View>
               </View>
@@ -376,22 +429,22 @@ const InvoicePDFDocument: React.FC<{ data: InvoiceData }> = ({ data }) => {
           <View style={styles.table}>
             {/* Table Header */}
             <View style={[styles.tableRow, styles.tableHeader]}>
-              <View style={[styles.tableCol, { width: '25%' }]}>
+              <View style={[styles.tableCol, { width: "25%" }]}>
                 <Text style={styles.tableCellHeader}>Position Name</Text>
               </View>
-              <View style={[styles.tableCol, { width: '20%' }]}>
+              <View style={[styles.tableCol, { width: "20%" }]}>
                 <Text style={styles.tableCellHeader}>Candidate</Text>
               </View>
-              <View style={[styles.tableCol, { width: '25%' }]}>
+              <View style={[styles.tableCol, { width: "25%" }]}>
                 <Text style={styles.tableCellHeader}>Description</Text>
               </View>
-              <View style={[styles.tableCol, { width: '10%' }]}>
+              <View style={[styles.tableCol, { width: "10%" }]}>
                 <Text style={styles.tableCellHeader}>Hours</Text>
               </View>
-              <View style={[styles.tableCol, { width: '10%' }]}>
+              <View style={[styles.tableCol, { width: "10%" }]}>
                 <Text style={styles.tableCellHeader}>Rate</Text>
               </View>
-              <View style={[styles.tableCol, { width: '10%' }]}>
+              <View style={[styles.tableCol, { width: "10%" }]}>
                 <Text style={styles.tableCellHeader}>Amount</Text>
               </View>
             </View>
@@ -399,29 +452,31 @@ const InvoicePDFDocument: React.FC<{ data: InvoiceData }> = ({ data }) => {
             {/* Table Rows for this page */}
             {page.items.map((item, index) => (
               <View style={styles.tableRow} key={index}>
-                <View style={[styles.tableCol, { width: '25%' }]}>
+                <View style={[styles.tableCol, { width: "25%" }]}>
                   <Text style={styles.tableCell}>
-                    {item.positionName || 'N/A'}
+                    {item.positionName || "N/A"}
                   </Text>
                 </View>
-                <View style={[styles.tableCol, { width: '20%' }]}>
+                <View style={[styles.tableCol, { width: "20%" }]}>
                   <Text style={styles.tableCell}>
-                    {item.candidate || 'N/A'}
+                    {item.candidate || "N/A"}
                   </Text>
                 </View>
-                <View style={[styles.tableCol, { width: '25%' }]}>
+                <View style={[styles.tableCol, { width: "25%" }]}>
                   <Text style={styles.tableCell}>
-                    {item.description || 'N/A'}
+                    {item.description || "N/A"}
                   </Text>
                 </View>
-                <View style={[styles.tableCol, { width: '10%' }]}>
+                <View style={[styles.tableCol, { width: "10%" }]}>
                   <Text style={styles.tableCell}>{item.hours.toFixed(1)}</Text>
                 </View>
-                <View style={[styles.tableCol, { width: '10%' }]}>
+                <View style={[styles.tableCol, { width: "10%" }]}>
                   <Text style={styles.tableCell}>${item.rate.toFixed(2)}</Text>
                 </View>
-                <View style={[styles.tableCol, { width: '10%' }]}>
-                  <Text style={styles.tableCell}>${item.amount.toFixed(2)}</Text>
+                <View style={[styles.tableCol, { width: "10%" }]}>
+                  <Text style={styles.tableCell}>
+                    ${item.amount.toFixed(2)}
+                  </Text>
                 </View>
               </View>
             ))}
@@ -431,50 +486,88 @@ const InvoicePDFDocument: React.FC<{ data: InvoiceData }> = ({ data }) => {
           {page.isLastPage && (
             <View style={styles.footer}>
               <View style={styles.summarySection}>
+                {/* Item Summary - Left Side */}
+                <View style={styles.itemSummaryTable}>
+                  <Text style={styles.itemSummaryTitle}>Item Summary:</Text>
+                  <View style={styles.itemSummaryRow}>
+                    <Text style={styles.itemSummaryText}>
+                      {Object.entries(itemSummary)
+                        .map(
+                          ([positionName, data]) =>
+                            `${positionName} - ${data.count}`
+                        )
+                        .join(", ")}
+                      {", "}Total Hrs: {data.summary.totalHours.toFixed(1)}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Financial Summary - Right Side */}
                 <View style={styles.summaryTable}>
                   <View style={styles.summaryRow}>
                     <Text style={styles.summaryLabel}>Positions:</Text>
-                    <Text style={styles.summaryValue}>{data.lineItems.length}</Text>
+                    <Text style={styles.summaryValue}>
+                      {data.lineItems.length}
+                    </Text>
                   </View>
                   <View style={styles.summaryRow}>
                     <Text style={styles.summaryLabel}>Total Hours:</Text>
-                    <Text style={styles.summaryValue}>{data.summary.totalHours.toFixed(1)}</Text>
+                    <Text style={styles.summaryValue}>
+                      {data.summary.totalHours.toFixed(1)}
+                    </Text>
                   </View>
                   <View style={styles.summaryRow}>
                     <Text style={styles.summaryLabel}>Subtotal:</Text>
-                    <Text style={styles.summaryValue}>${data.summary.subtotal.toFixed(2)}</Text>
+                    <Text style={styles.summaryValue}>
+                      ${data.summary.subtotal.toFixed(2)}
+                    </Text>
                   </View>
                   {data.summary.totalHST > 0 && (
                     <View style={styles.summaryRow}>
                       <Text style={styles.summaryLabel}>
-                        HST @ {data.summary.hstPercentage?.toFixed(2) || '0.00'}%:
+                        HST @ {data.summary.hstPercentage?.toFixed(2) || "0.00"}
+                        %:
                       </Text>
-                      <Text style={styles.summaryValue}>${data.summary.totalHST.toFixed(2)}</Text>
+                      <Text style={styles.summaryValue}>
+                        ${data.summary.totalHST.toFixed(2)}
+                      </Text>
                     </View>
                   )}
                   {data.summary.totalGST > 0 && (
                     <View style={styles.summaryRow}>
                       <Text style={styles.summaryLabel}>
-                        GST @ {data.summary.gstPercentage?.toFixed(2) || '0.00'}%:
+                        GST @ {data.summary.gstPercentage?.toFixed(2) || "0.00"}
+                        %:
                       </Text>
-                      <Text style={styles.summaryValue}>${data.summary.totalGST.toFixed(2)}</Text>
+                      <Text style={styles.summaryValue}>
+                        ${data.summary.totalGST.toFixed(2)}
+                      </Text>
                     </View>
                   )}
                   {data.summary.totalQST > 0 && (
                     <View style={styles.summaryRow}>
                       <Text style={styles.summaryLabel}>
-                        QST @ {data.summary.qstPercentage?.toFixed(2) || '0.00'}%:
+                        QST @ {data.summary.qstPercentage?.toFixed(2) || "0.00"}
+                        %:
                       </Text>
-                      <Text style={styles.summaryValue}>${data.summary.totalQST.toFixed(2)}</Text>
+                      <Text style={styles.summaryValue}>
+                        ${data.summary.totalQST.toFixed(2)}
+                      </Text>
                     </View>
                   )}
                   <View style={styles.summaryRow}>
                     <Text style={styles.summaryLabel}>Total Tax:</Text>
-                    <Text style={styles.summaryValue}>${data.summary.totalTax.toFixed(2)}</Text>
+                    <Text style={styles.summaryValue}>
+                      ${data.summary.totalTax.toFixed(2)}
+                    </Text>
                   </View>
                   <View style={[styles.summaryRow, styles.totalRow]}>
-                    <Text style={[styles.summaryLabel, { color: 'white' }]}>Grand Total:</Text>
-                    <Text style={[styles.summaryValue, { color: 'white' }]}>${data.summary.grandTotal.toFixed(2)}</Text>
+                    <Text style={[styles.summaryLabel, { color: "white" }]}>
+                      Grand Total:
+                    </Text>
+                    <Text style={[styles.summaryValue, { color: "white" }]}>
+                      ${data.summary.grandTotal.toFixed(2)}
+                    </Text>
                   </View>
                 </View>
               </View>
@@ -486,9 +579,7 @@ const InvoicePDFDocument: React.FC<{ data: InvoiceData }> = ({ data }) => {
                 </Text>
               )}
               {data.termsOnInvoice && (
-                <Text style={styles.footerTerms}>
-                  {data.termsOnInvoice}
-                </Text>
+                <Text style={styles.footerTerms}>{data.termsOnInvoice}</Text>
               )}
             </View>
           )}
@@ -512,10 +603,10 @@ export const generateInvoicePDF = async (data: InvoiceData): Promise<Blob> => {
     const pdfBlob = await pdf(doc).toBlob();
     return pdfBlob;
   } catch (error) {
-    console.error('Error generating PDF:', error);
-    throw new Error('Failed to generate PDF');
+    console.error("Error generating PDF:", error);
+    throw new Error("Failed to generate PDF");
   }
 };
 
 // Export for compatibility
-export default generateInvoicePDF; 
+export default generateInvoicePDF;
