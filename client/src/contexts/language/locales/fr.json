@@ -1838,6 +1838,8 @@
     "enterMessageOnInvoice": "Entrez le message à afficher sur la facture...",
     "terms": "Conditions",
     "enterAdditionalTerms": "Entrez les conditions supplémentaires...",
+    "additionalNotes": "Notes supplémentaires",
+    "notesPlaceholder": "Ajoutez des notes ou commentaires supplémentaires sur cette facture...",
     "tax": "Taxe",
     "amount": "Montant",
     "noPositionSelected": "Aucun poste sélectionné",

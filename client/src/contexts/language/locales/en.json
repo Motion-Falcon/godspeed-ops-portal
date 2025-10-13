@@ -1838,6 +1838,8 @@
     "enterMessageOnInvoice": "Enter message to appear on invoice...",
     "terms": "Terms",
     "enterAdditionalTerms": "Enter additional terms and conditions...",
+    "additionalNotes": "Additional Notes",
+    "notesPlaceholder": "Add any additional notes or comments about this invoice...",
     "tax": "Tax",
     "amount": "Amount",
     "noPositionSelected": "No Position Selected",
