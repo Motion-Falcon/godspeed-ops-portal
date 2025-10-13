@@ -26,13 +26,14 @@ export interface InvoiceData {
   documentFileSize?: number;
   documentMimeType?: string;
   documentGeneratedAt?: string;
+  notes?: string; // Additional notes or comments
   invoiceData: Record<string, unknown>; // Complete JSONB object from frontend
   createdAt?: string;
   updatedAt?: string;
   createdByUserId?: string;
   updatedByUserId?: string;
   version?: number;
-  
+
   // Related data from joins
   client?: {
     id: string;
@@ -116,15 +117,30 @@ export const getInvoices = async (
     // Add pagination and filter parameters
     if (params.page) url.searchParams.append("page", params.page.toString());
     if (params.limit) url.searchParams.append("limit", params.limit.toString());
-    if (params.searchTerm) url.searchParams.append("searchTerm", params.searchTerm);
-    if (params.clientFilter) url.searchParams.append("clientFilter", params.clientFilter);
-    if (params.clientEmailFilter) url.searchParams.append("clientEmailFilter", params.clientEmailFilter);
-    if (params.invoiceNumberFilter) url.searchParams.append("invoiceNumberFilter", params.invoiceNumberFilter);
-    if (params.dateRangeStart) url.searchParams.append("dateRangeStart", params.dateRangeStart);
-    if (params.dateRangeEnd) url.searchParams.append("dateRangeEnd", params.dateRangeEnd);
-    if (params.emailSentFilter) url.searchParams.append("emailSentFilter", params.emailSentFilter);
-    if (params.invoiceSentFilter) url.searchParams.append("invoiceSentFilter", params.invoiceSentFilter);
-    if (params.documentGeneratedFilter) url.searchParams.append("documentGeneratedFilter", params.documentGeneratedFilter);
+    if (params.searchTerm)
+      url.searchParams.append("searchTerm", params.searchTerm);
+    if (params.clientFilter)
+      url.searchParams.append("clientFilter", params.clientFilter);
+    if (params.clientEmailFilter)
+      url.searchParams.append("clientEmailFilter", params.clientEmailFilter);
+    if (params.invoiceNumberFilter)
+      url.searchParams.append(
+        "invoiceNumberFilter",
+        params.invoiceNumberFilter
+      );
+    if (params.dateRangeStart)
+      url.searchParams.append("dateRangeStart", params.dateRangeStart);
+    if (params.dateRangeEnd)
+      url.searchParams.append("dateRangeEnd", params.dateRangeEnd);
+    if (params.emailSentFilter)
+      url.searchParams.append("emailSentFilter", params.emailSentFilter);
+    if (params.invoiceSentFilter)
+      url.searchParams.append("invoiceSentFilter", params.invoiceSentFilter);
+    if (params.documentGeneratedFilter)
+      url.searchParams.append(
+        "documentGeneratedFilter",
+        params.documentGeneratedFilter
+      );
 
     const response = await api.get(url.pathname + url.search);
     return response.data;
@@ -140,13 +156,23 @@ export const getInvoices = async (
 /**
  * Create a new invoice
  */
-export const createInvoice = async (invoiceData: Omit<InvoiceData, 'id' | 'createdAt' | 'updatedAt' | 'createdByUserId' | 'updatedByUserId' | 'version'>): Promise<InvoiceResponse> => {
+export const createInvoice = async (
+  invoiceData: Omit<
+    InvoiceData,
+    | "id"
+    | "createdAt"
+    | "updatedAt"
+    | "createdByUserId"
+    | "updatedByUserId"
+    | "version"
+  >
+): Promise<InvoiceResponse> => {
   try {
     const response = await api.post("/api/invoices", invoiceData);
-    
+
     // Clear cache for invoice list
     clearCacheFor("/api/invoices");
-    
+
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
@@ -161,15 +187,26 @@ export const createInvoice = async (invoiceData: Omit<InvoiceData, 'id' | 'creat
  */
 export const updateInvoice = async (
   id: string,
-  invoiceData: Partial<Omit<InvoiceData, 'id' | 'invoiceNumber' | 'createdAt' | 'updatedAt' | 'createdByUserId' | 'updatedByUserId' | 'version'>>
+  invoiceData: Partial<
+    Omit<
+      InvoiceData,
+      | "id"
+      | "invoiceNumber"
+      | "createdAt"
+      | "updatedAt"
+      | "createdByUserId"
+      | "updatedByUserId"
+      | "version"
+    >
+  >
 ): Promise<InvoiceResponse> => {
   try {
     const response = await api.put(`/api/invoices/${id}`, invoiceData);
-    
+
     // Clear cache for invoice list and specific invoice
     clearCacheFor("/api/invoices");
     clearCacheFor(`/api/invoices/${id}`);
-    
+
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
@@ -182,14 +219,16 @@ export const updateInvoice = async (
 /**
  * Delete an invoice (Admin only)
  */
-export const deleteInvoice = async (id: string): Promise<{ success: boolean; message: string; deletedId: string }> => {
+export const deleteInvoice = async (
+  id: string
+): Promise<{ success: boolean; message: string; deletedId: string }> => {
   try {
     const response = await api.delete(`/api/invoices/${id}`);
-    
+
     // Clear cache for invoice list and specific invoice
     clearCacheFor("/api/invoices");
     clearCacheFor(`/api/invoices/${id}`);
-    
+
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
@@ -207,16 +246,21 @@ export const updateInvoiceDocument = async (
   documentData: InvoiceDocumentUpdateData
 ): Promise<InvoiceResponse> => {
   try {
-    const response = await api.patch(`/api/invoices/${id}/document`, documentData);
-    
+    const response = await api.patch(
+      `/api/invoices/${id}/document`,
+      documentData
+    );
+
     // Clear cache for invoice list and specific invoice
     clearCacheFor("/api/invoices");
     clearCacheFor(`/api/invoices/${id}`);
-    
+
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || "Failed to update invoice document");
+      throw new Error(
+        error.response.data.error || "Failed to update invoice document"
+      );
     }
     throw error;
   }
@@ -231,7 +275,9 @@ export const generateInvoiceNumber = async (): Promise<string> => {
     return response.data.invoiceNumber;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || "Failed to generate invoice number");
+      throw new Error(
+        error.response.data.error || "Failed to generate invoice number"
+      );
     }
     throw error;
   }
@@ -240,13 +286,20 @@ export const generateInvoiceNumber = async (): Promise<string> => {
 /**
  * Send invoice email to a recipient
  */
-export const sendInvoiceEmail = async (invoiceId: string, email: string): Promise<{ success: boolean; message: string }> => {
+export const sendInvoiceEmail = async (
+  invoiceId: string,
+  email: string
+): Promise<{ success: boolean; message: string }> => {
   try {
-    const response = await api.post(`/api/invoices/${invoiceId}/send-email`, { email });
+    const response = await api.post(`/api/invoices/${invoiceId}/send-email`, {
+      email,
+    });
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || "Failed to send invoice email");
+      throw new Error(
+        error.response.data.error || "Failed to send invoice email"
+      );
     }
     throw error;
   }
@@ -305,13 +358,18 @@ export const getTimesheetsByClientAndDateRange = async (
   endDate: string
 ): Promise<TimesheetsResponse> => {
   try {
-    const response = await api.get(`/api/invoices/timesheets-by-client/${clientId}`, {
-      params: { startDate, endDate }
-    });
+    const response = await api.get(
+      `/api/invoices/timesheets-by-client/${clientId}`,
+      {
+        params: { startDate, endDate },
+      }
+    );
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error || "Failed to fetch timesheets");
+      throw new Error(
+        error.response.data.error || "Failed to fetch timesheets"
+      );
     }
     throw error;
   }
@@ -321,75 +379,84 @@ export const getTimesheetsByClientAndDateRange = async (
  * Helper function to create invoice data from frontend format
  * This matches the generateInvoiceData function in InvoiceManagement.tsx
  */
-export const createInvoiceFromFrontendData = async (
-  frontendData: {
-    client: {
-      id: string;
-      companyName: string;
-      shortCode: string;
-      emailAddress1: string;
-      city1?: string;
-      province1?: string;
-      postalCode1?: string;
+export const createInvoiceFromFrontendData = async (frontendData: {
+  client: {
+    id: string;
+    companyName: string;
+    shortCode: string;
+    emailAddress1: string;
+    city1?: string;
+    province1?: string;
+    postalCode1?: string;
+  };
+  invoiceNumber?: string;
+  invoiceDate: string;
+  dueDate: string;
+  status?: string;
+  currency?: string;
+  paymentTerms?: string;
+  timesheets: Array<{
+    id: string;
+    invoiceNumber: string;
+    weekStartDate: string;
+    weekEndDate: string;
+    totalRegularHours: number;
+    regularBillRate: number;
+    totalClientBill: number;
+    jobseekerProfile: {
+      firstName: string;
+      lastName: string;
+      email: string;
     };
-    invoiceNumber?: string;
-    invoiceDate: string;
-    dueDate: string;
-    status?: string;
-    currency?: string;
-    paymentTerms?: string;
-    timesheets: Array<{
-      id: string;
-      invoiceNumber: string;
-      weekStartDate: string;
-      weekEndDate: string;
-      totalRegularHours: number;
-      regularBillRate: number;
-      totalClientBill: number;
-      jobseekerProfile: {
-        firstName: string;
-        lastName: string;
-        email: string;
-      };
-      position: {
-        title: string;
-        positionCode: string;
-      };
-    }>;
-    attachments?: Array<{
-      fileName: string;
-      fileSize: number;
-      fileType: string;
-      uploadStatus: string;
-      filePath: string;
-      bucketName: string;
-    }>;
-    supplierPOItems?: Array<{
-      id: string;
-      selectedOption: string;
-      supplierPoNumber: string;
-    }>;
-    subtotal: number;
-    totalTax: number;
-    totalHst?: number;
-    totalGst?: number;
-    totalQst?: number;
-    grandTotal: number;
-    totalHours: number;
-    emailSent?: boolean;
-    emailSentDate?: string;
-    messageOnInvoice?: string;
-    termsOnInvoice?: string;
-  }
-): Promise<InvoiceResponse> => {
+    position: {
+      title: string;
+      positionCode: string;
+    };
+  }>;
+  attachments?: Array<{
+    fileName: string;
+    fileSize: number;
+    fileType: string;
+    uploadStatus: string;
+    filePath: string;
+    bucketName: string;
+  }>;
+  supplierPOItems?: Array<{
+    id: string;
+    selectedOption: string;
+    supplierPoNumber: string;
+  }>;
+  subtotal: number;
+  totalTax: number;
+  totalHst?: number;
+  totalGst?: number;
+  totalQst?: number;
+  grandTotal: number;
+  totalHours: number;
+  emailSent?: boolean;
+  emailSentDate?: string;
+  messageOnInvoice?: string;
+  termsOnInvoice?: string;
+  notes?: string;
+}): Promise<InvoiceResponse> => {
   try {
-    const invoiceData: Omit<InvoiceData, 'id' | 'createdAt' | 'updatedAt' | 'createdByUserId' | 'updatedByUserId' | 'version'> = {
-      ...(frontendData.invoiceNumber && { invoiceNumber: frontendData.invoiceNumber }),
+    const invoiceData: Omit<
+      InvoiceData,
+      | "id"
+      | "createdAt"
+      | "updatedAt"
+      | "createdByUserId"
+      | "updatedByUserId"
+      | "version"
+    > = {
+      ...(frontendData.invoiceNumber && {
+        invoiceNumber: frontendData.invoiceNumber,
+      }),
       clientId: frontendData.client.id,
       invoiceDate: frontendData.invoiceDate,
       dueDate: frontendData.dueDate,
-      status: frontendData.status || 'draft',
-      currency: frontendData.currency || 'CAD',
+      status: frontendData.status || "draft",
+      currency: frontendData.currency || "CAD",
       paymentTerms: frontendData.paymentTerms,
       subtotal: frontendData.subtotal,
       totalTax: frontendData.totalTax,
@@ -400,6 +467,7 @@ export const createInvoiceFromFrontendData = async (
       totalHours: frontendData.totalHours,
       emailSent: frontendData.emailSent || false,
       emailSentDate: frontendData.emailSentDate,
+      notes: frontendData.notes,
       documentGenerated: false, // Will be updated when PDF is generated
       invoiceData: {
         client: frontendData.client,
@@ -414,7 +482,7 @@ export const createInvoiceFromFrontendData = async (
           fileName: null,
           fileSize: null,
           generatedAt: null,
-          bucketName: 'invoices'
+          bucketName: "invoices",
         },
         summary: {
           subtotal: frontendData.subtotal,
@@ -424,11 +492,11 @@ export const createInvoiceFromFrontendData = async (
           totalQst: frontendData.totalQst || 0,
           grandTotal: frontendData.grandTotal,
           totalHours: frontendData.totalHours,
-          currency: frontendData.currency || 'CAD'
-        }
-      }
+          currency: frontendData.currency || "CAD",
+        },
+      },
     };
-    
+
     const result = await createInvoice(invoiceData);
     return result;
   } catch (error) {
@@ -445,12 +513,27 @@ export const formatInvoiceForDisplay = (invoice: InvoiceData) => {
     ...invoice,
     formattedInvoiceDate: new Date(invoice.invoiceDate).toLocaleDateString(),
     formattedDueDate: new Date(invoice.dueDate).toLocaleDateString(),
-    formattedCreatedAt: invoice.createdAt ? new Date(invoice.createdAt).toLocaleDateString() : null,
-    formattedUpdatedAt: invoice.updatedAt ? new Date(invoice.updatedAt).toLocaleDateString() : null,
-    formattedGrandTotal: `$${invoice.grandTotal.toFixed(2)} ${invoice.currency || 'CAD'}`,
-    formattedSubtotal: `$${invoice.subtotal.toFixed(2)} ${invoice.currency || 'CAD'}`,
-    formattedTotalTax: `$${invoice.totalTax.toFixed(2)} ${invoice.currency || 'CAD'}`,
-    clientDisplayName: invoice.client?.companyName || invoice.client?.shortCode || 'Unknown Client',
-    statusDisplayName: (invoice.status?.charAt(0).toUpperCase() || '') + (invoice.status?.slice(1) || '') || 'Draft'
+    formattedCreatedAt: invoice.createdAt
+      ? new Date(invoice.createdAt).toLocaleDateString()
+      : null,
+    formattedUpdatedAt: invoice.updatedAt
+      ? new Date(invoice.updatedAt).toLocaleDateString()
+      : null,
+    formattedGrandTotal: `$${invoice.grandTotal.toFixed(2)} ${
+      invoice.currency || "CAD"
+    }`,
+    formattedSubtotal: `$${invoice.subtotal.toFixed(2)} ${
+      invoice.currency || "CAD"
+    }`,
+    formattedTotalTax: `$${invoice.totalTax.toFixed(2)} ${
+      invoice.currency || "CAD"
+    }`,
+    clientDisplayName:
+      invoice.client?.companyName ||
+      invoice.client?.shortCode ||
+      "Unknown Client",
+    statusDisplayName:
+      (invoice.status?.charAt(0).toUpperCase() || "") +
+        (invoice.status?.slice(1) || "") || "Draft",
   };
 };

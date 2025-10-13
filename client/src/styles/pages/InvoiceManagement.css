@@ -429,6 +429,22 @@
   font-size: 12px;
 }
 
+/* Invoice Notes Section */
+.invoice-notes-section {
+  background: var(--card);
+  border-radius: 6px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  box-shadow: var(--card-shadow);
+  margin-bottom: 16px;
+}
+
+.invoice-notes-textarea {
+  width: 100%;
+  min-height: 100px;
+  resize: vertical;
+}
+
 .invoice-attachments-container {
   box-shadow: var(--card-shadow);
 }
