@@ -256,6 +256,22 @@ const styles = StyleSheet.create({
     fontSize: 8,
     color: colors.secondary,
   },
+  dateRangeSection: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 15,
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    backgroundColor: "#f8fafc",
+    borderRadius: 5,
+  },
+  dateRangeText: {
+    fontSize: 11,
+    fontWeight: "bold",
+    color: colors.secondary,
+    textAlign: "center",
+  },
 });
 
 // Company information
@@ -264,6 +280,31 @@ const COMPANY_INFO = {
   address: "4096 Meadowbrook Drive, Suite 121",
   address2: "London, ON N6L 1G4",
   gst: "HST#: 861715126RT0001",
+};
+
+// Helper function to format date with ordinal suffix
+const formatDateWithOrdinal = (dateString: string): string => {
+  const date = new Date(dateString);
+  const day = date.getDate();
+  const month = date.toLocaleDateString("en-US", { month: "short" });
+  const year = date.getFullYear();
+
+  // Get ordinal suffix
+  const suffix = (day: number) => {
+    if (day > 3 && day < 21) return "th";
+    switch (day % 10) {
+      case 1:
+        return "st";
+      case 2:
+        return "nd";
+      case 3:
+        return "rd";
+      default:
+        return "th";
+    }
+  };
+
+  return `${day}${suffix(day)} ${month} ${year}`;
 };
 
 // Interfaces
@@ -424,6 +465,18 @@ const InvoicePDFDocument: React.FC<{ data: InvoiceData }> = ({ data }) => {
               </View>
             </>
           )}
+
+          {/* Date Range Section - only on first page */}
+          {pageIndex === 0 &&
+            data.dateRange.startDate &&
+            data.dateRange.endDate && (
+              <View style={styles.dateRangeSection}>
+                <Text style={styles.dateRangeText}>
+                  From {formatDateWithOrdinal(data.dateRange.startDate)} to{" "}
+                  {formatDateWithOrdinal(data.dateRange.endDate)}
+                </Text>
+              </View>
+            )}
 
           {/* Line Items Table */}
           <View style={styles.table}>
