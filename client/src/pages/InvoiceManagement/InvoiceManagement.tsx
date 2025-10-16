@@ -1296,8 +1296,8 @@ export function InvoiceManagement() {
               : 0,
         },
         dateRange: {
-          startDate: invoiceDate,
-          endDate: dueDate,
+          startDate: timesheetStartDate || invoiceDate,
+          endDate: timesheetEndDate || dueDate,
         },
         terms: selectedTerms,
         messageOnInvoice: messageOnInvoice,
@@ -2914,7 +2914,10 @@ export function InvoiceManagement() {
           <div className="invoice-success-modal-content">
             <button
               className="invoice-success-modal-close-btn"
-              onClick={() => setShowInvoiceSuccessModal(false)}
+              onClick={() => {
+                setShowInvoiceSuccessModal(false);
+                window.location.reload();
+              }}
             >
               &times;
             </button>
