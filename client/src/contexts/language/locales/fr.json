@@ -2643,10 +2643,13 @@
       "address": "Adresse",
       "preferredPaymentMethod": "Méthode de paiement",
       "paymentCycle": "Cycle de paiement",
-      "emailSent": "Email envoyé",
-      "emailSentDate": "Date d'envoi de l'email"
-    }
-  },
+        "emailSent": "Email envoyé",
+        "emailSentDate": "Date d'envoi de l'email"
+      },
+      "info": {
+        "defaultDateRange": "Plage de dates par défaut : Dernier mois"
+      }
+    },
   "legal": {
     "termsOfService": "Conditions d'utilisation",
     "privacyPolicy": "Politique de confidentialité",

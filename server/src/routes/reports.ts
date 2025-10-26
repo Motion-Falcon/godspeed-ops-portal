@@ -870,8 +870,14 @@ router.post(
         const client = clientInfoMap[invoice.client_id] || {};
         timesheets.forEach((ts: any) => {
           // Filters
-          if (listName && client.list_name !== listName) return;
-          if (payCycle && client.pay_cycle !== payCycle) return;
+          if (listName) {
+            const listNameArray = Array.isArray(listName) ? listName : [listName];
+            if (listNameArray.length > 0 && !listNameArray.includes(client.list_name)) return;
+          }
+          if (payCycle) {
+            const payCycleArray = Array.isArray(payCycle) ? payCycle : [payCycle];
+            if (payCycleArray.length > 0 && !payCycleArray.includes(client.pay_cycle)) return;
+          }
           // Get positionId from nested position object
           const positionId = ts.position && ts.position.positionId;
           const position = positionId ? positionInfoMap[positionId] : {};

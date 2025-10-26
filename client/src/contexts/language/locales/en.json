@@ -2645,6 +2645,9 @@
         "paymentCycle": "Payment Cycle",
         "emailSent": "Email Sent",
         "emailSentDate": "Email Sent Date"
+      },
+      "info": {
+        "defaultDateRange": "Default date range: Last 1 month"
       }
     },
   "legal": {
