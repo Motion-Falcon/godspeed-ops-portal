@@ -299,8 +299,8 @@ export interface EnvelopePrintingReportFilter {
   clientIds: string[];
   startDate: string;
   endDate: string;
-  listName?: string;
-  payCycle?: string;
+  listName?: string | string[];
+  payCycle?: string | string[];
 }
 
 export interface EnvelopePrintingReportRow {
