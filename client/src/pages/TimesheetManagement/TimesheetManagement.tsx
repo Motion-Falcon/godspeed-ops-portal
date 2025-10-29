@@ -308,7 +308,7 @@ export function TimesheetManagement() {
   const positionOptions: DropdownOption[] = positions.map((position) => ({
     id: position.id,
     label: position.title || "Unknown Position",
-    sublabel: position.positionCode || "",
+    sublabel: position.positionNumber || "",
     value: position,
   }));
 
