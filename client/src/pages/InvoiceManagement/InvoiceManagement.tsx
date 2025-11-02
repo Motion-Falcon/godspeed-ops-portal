@@ -61,6 +61,10 @@ interface ClientPosition {
   regularPayRate: string;
   billRate: string;
   markup?: string;
+  overtimeEnabled?: boolean;
+  overtimeHours?: string; // Overtime threshold
+  overtimeBillRate?: string;
+  overtimePayRate?: string;
 }
 
 // Interface for assigned jobseeker data
@@ -88,6 +92,8 @@ interface InvoiceLineItem {
   regularBillRate: string;
   regularPayRate: string;
   salesTax: string;
+  totalRegularHours?: number; // Calculated regular hours
+  totalOvertimeHours?: number; // Calculated overtime hours
 }
 
 // Interface for supplier/PO items
@@ -340,6 +346,10 @@ export function InvoiceManagement() {
           regularPayRate: pos.regularPayRate!,
           billRate: pos.billRate!,
           markup: pos.markup,
+          overtimeEnabled: pos.overtimeEnabled,
+          overtimeHours: pos.overtimeHours,
+          overtimeBillRate: pos.overtimeBillRate,
+          overtimePayRate: pos.overtimePayRate,
         })
       );
       setPositions(transformedPositions);
@@ -349,6 +359,28 @@ export function InvoiceManagement() {
     } finally {
       setPositionLoading(false);
     }
+  };
+
+  // Calculate regular and overtime hours for a line item
+  const calculateLineItemHours = (
+    hours: number,
+    position: ClientPosition | null
+  ): { regularHours: number; overtimeHours: number } => {
+    if (!position || !position.overtimeEnabled) {
+      return {
+        regularHours: hours,
+        overtimeHours: 0,
+      };
+    }
+
+    const overtimeThreshold = position.overtimeHours
+      ? parseFloat(position.overtimeHours)
+      : 40;
+
+    const regularHours = Math.min(hours, overtimeThreshold);
+    const overtimeHours = Math.max(0, hours - overtimeThreshold);
+
+    return { regularHours, overtimeHours };
   };
 
   const fetchPositionAssignments = async (positionId: string) => {
@@ -481,6 +513,9 @@ export function InvoiceManagement() {
               regularPayRate: timesheet.regularPayRate.toString(),
               billRate: timesheet.regularBillRate.toString(),
               markup: "0",
+              overtimeEnabled: timesheet.overtimeEnabled,
+              overtimeBillRate: timesheet.overtimeBillRate.toString(),
+              overtimePayRate: timesheet.overtimePayRate.toString(),
             },
             jobseeker: {
               id: timesheet.jobseekerProfileId,
@@ -506,22 +541,37 @@ export function InvoiceManagement() {
         }
 
         // Aggregate hours
-        groupedData[key].totalHours += timesheet.totalRegularHours;
+        groupedData[key].totalHours +=
+          timesheet.totalRegularHours + timesheet.totalOvertimeHours;
         groupedData[key].timesheetIds.push(timesheet.id);
       });
 
       // Convert grouped data to line items
       const newLineItems: InvoiceLineItem[] = Object.values(groupedData).map(
-        (data, index) => ({
-          id: `timesheet_${Date.now()}_${index}`,
-          position: data.position,
-          jobseeker: data.jobseeker,
-          description: data.description,
-          hours: data.totalHours.toString(),
-          regularBillRate: data.regularBillRate.toString(),
-          regularPayRate: data.regularPayRate.toString(),
-          salesTax: "13.00% [ON]", // Default tax, can be changed by user
-        })
+        (data, index) => {
+          // Find position with overtime data
+          const fullPosition =
+            positions.find((p) => p.id === data.position.id) || data.position;
+
+          // Calculate hours breakdown
+          const { regularHours, overtimeHours } = calculateLineItemHours(
+            data.totalHours,
+            fullPosition
+          );
+
+          return {
+            id: `timesheet_${Date.now()}_${index}`,
+            position: fullPosition,
+            jobseeker: data.jobseeker,
+            description: data.description,
+            hours: data.totalHours.toString(),
+            regularBillRate: data.regularBillRate.toString(),
+            regularPayRate: data.regularPayRate.toString(),
+            salesTax: "13.00% [ON]", // Default tax, can be changed by user
+            totalRegularHours: regularHours,
+            totalOvertimeHours: overtimeHours,
+          };
+        }
       );
 
       // Update positions state with unique positions from timesheets
@@ -545,10 +595,27 @@ export function InvoiceManagement() {
         })
         .filter((p): p is ClientPosition => p !== null);
 
+      // Fetch full position details including overtime for unique positions
+      const positionsWithOvertime: ClientPosition[] = [];
+      for (const positionId of Array.from(
+        new Set(response.timesheets.map((t) => t.position.id))
+      )) {
+        const existingPosition = positions.find((p) => p.id === positionId);
+        if (existingPosition) {
+          positionsWithOvertime.push(existingPosition);
+        } else {
+          // Try to get position details with overtime info
+          const fullPosition = uniquePositions.find((p) => p.id === positionId);
+          if (fullPosition) {
+            positionsWithOvertime.push(fullPosition);
+          }
+        }
+      }
+
       // Update positions if not already present
       setPositions((prevPositions) => {
         const existingIds = new Set(prevPositions.map((p) => p.id));
-        const newPositions = uniquePositions.filter(
+        const newPositions = positionsWithOvertime.filter(
           (p) => p && !existingIds.has(p.id)
         );
         return [...prevPositions, ...newPositions];
@@ -629,7 +696,24 @@ export function InvoiceManagement() {
 
   const updateLineItem = (id: string, updates: Partial<InvoiceLineItem>) => {
     setLineItems((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, ...updates } : item))
+      prev.map((item) => {
+        if (item.id !== id) return item;
+
+        const updated = { ...item, ...updates };
+
+        // Recalculate hours when hours or position changes
+        if (updates.hours !== undefined || updates.position !== undefined) {
+          const hours = parseFloat(updated.hours) || 0;
+          const { regularHours, overtimeHours } = calculateLineItemHours(
+            hours,
+            updated.position
+          );
+          updated.totalRegularHours = regularHours;
+          updated.totalOvertimeHours = overtimeHours;
+        }
+
+        return updated;
+      })
     );
   };
 
@@ -822,11 +906,24 @@ export function InvoiceManagement() {
   ) => {
     if (Array.isArray(option)) return;
     const position = option.value as ClientPosition;
+
+    // Get current hours to recalculate with new position
+    const currentItem = lineItems.find((item) => item.id === lineItemId);
+    const currentHours = parseFloat(currentItem?.hours || "0");
+
+    // Calculate hours breakdown with new position
+    const { regularHours, overtimeHours } = calculateLineItemHours(
+      currentHours,
+      position
+    );
+
     updateLineItem(lineItemId, {
       position,
       jobseeker: null, // Reset jobseeker when position changes
       regularBillRate: position.billRate, // Auto-fill rate from position
       regularPayRate: position.regularPayRate, // Auto-fill rate from position
+      totalRegularHours: regularHours,
+      totalOvertimeHours: overtimeHours,
     });
 
     // Fetch jobseekers for this position if not already fetched
@@ -929,9 +1026,25 @@ export function InvoiceManagement() {
     let totalQST = 0;
 
     const lineItemTotals = lineItems.map((item) => {
-      const hours = parseFloat(item.hours) || 0;
+      const totalHours = parseFloat(item.hours) || 0;
       const regularBillRate = parseFloat(item.regularBillRate) || 0;
-      const lineSubtotal = hours * regularBillRate;
+
+      // Calculate regular and overtime hours
+      const { regularHours, overtimeHours } = calculateLineItemHours(
+        totalHours,
+        item.position
+      );
+
+      // Get overtime bill rate (use regular rate if not specified)
+      const overtimeBillRate =
+        item.position?.overtimeEnabled && item.position?.overtimeBillRate
+          ? parseFloat(item.position.overtimeBillRate)
+          : regularBillRate;
+
+      // Calculate line subtotal with overtime
+      const regularAmount = regularHours * regularBillRate;
+      const overtimeAmount = overtimeHours * overtimeBillRate;
+      const lineSubtotal = regularAmount + overtimeAmount;
 
       const taxInfo = getTaxInfo(item.salesTax);
       const lineTax = (lineSubtotal * taxInfo.totalTaxPercentage) / 100;
@@ -948,6 +1061,12 @@ export function InvoiceManagement() {
 
       return {
         ...item,
+        totalRegularHours: regularHours,
+        totalOvertimeHours: overtimeHours,
+        regularBillRate,
+        overtimeBillRate,
+        regularAmount,
+        overtimeAmount,
         lineSubtotal,
         lineTax,
         lineHST,
@@ -1096,43 +1215,71 @@ export function InvoiceManagement() {
               accountingPerson: selectedClient.accountingPerson,
               salesPerson: selectedClient.salesPerson,
             },
-            timesheets: lineItems.map((item) => ({
-              id: item.id,
-              position: item.position
-                ? {
-                    title: item.position.title,
-                    positionId: item.position.id,
-                    positionCode: item.position.positionCode,
-                    positionCandidateAssignmentsId:
-                      item.jobseeker?.positionCandidateAssignmentsId,
-                    positionNumber: item.position.positionNumber,
-                  }
-                : undefined,
-              salesTax: item.salesTax,
-              description: item.description,
-              weekEndDate: dueDate,
-              invoiceNumber: invoiceNumber,
-              weekStartDate: invoiceDate,
-              regularBillRate: parseFloat(item.regularBillRate) || 0,
-              regularPayRate: parseFloat(item.regularPayRate) || 0,
-              totalClientBill:
-                (parseFloat(item.hours) || 0) *
-                (parseFloat(item.regularBillRate) || 0),
-              totalJobseekerPay:
-                (parseFloat(item.hours) || 0) *
-                (parseFloat(item.regularPayRate) || 0),
-              jobseekerProfile: item.jobseeker
-                ? {
-                    email: item.jobseeker.email,
-                    lastName: item.jobseeker.lastName,
-                    firstName: item.jobseeker.firstName,
-                    jobseekerUserId: item.jobseeker.candidateId,
-                    jobseekerProfileId: item.jobseeker.id,
-                    employeeId: item.jobseeker.employeeId,
-                  }
-                : undefined,
-              totalRegularHours: parseFloat(item.hours) || 0,
-            })),
+            timesheets: lineItems.map((item) => {
+              const totalHours = parseFloat(item.hours) || 0;
+              const { regularHours, overtimeHours } = calculateLineItemHours(
+                totalHours,
+                item.position
+              );
+
+              const regularBillRate = parseFloat(item.regularBillRate) || 0;
+              const overtimeBillRate =
+                item.position?.overtimeEnabled &&
+                item.position?.overtimeBillRate
+                  ? parseFloat(item.position.overtimeBillRate)
+                  : regularBillRate;
+
+              const regularAmount = regularHours * regularBillRate;
+              const overtimeAmount = overtimeHours * overtimeBillRate;
+              const totalClientBill = regularAmount + overtimeAmount;
+
+              const regularPayRate = parseFloat(item.regularPayRate) || 0;
+              const overtimePayRate =
+                item.position?.overtimeEnabled && item.position?.overtimePayRate
+                  ? parseFloat(item.position.overtimePayRate)
+                  : regularPayRate;
+
+              const totalJobseekerPay =
+                regularHours * regularPayRate + overtimeHours * overtimePayRate;
+
+              return {
+                id: item.id,
+                position: item.position
+                  ? {
+                      title: item.position.title,
+                      positionId: item.position.id,
+                      positionCode: item.position.positionCode,
+                      positionCandidateAssignmentsId:
+                        item.jobseeker?.positionCandidateAssignmentsId,
+                      positionNumber: item.position.positionNumber,
+                    }
+                  : undefined,
+                salesTax: item.salesTax,
+                description: item.description,
+                weekEndDate: dueDate,
+                invoiceNumber: invoiceNumber,
+                weekStartDate: invoiceDate,
+                regularBillRate: regularBillRate,
+                overtimeBillRate: overtimeBillRate,
+                regularPayRate: regularPayRate,
+                overtimePayRate: overtimePayRate,
+                totalClientBill: totalClientBill,
+                totalJobseekerPay: totalJobseekerPay,
+                totalRegularHours: regularHours,
+                totalOvertimeHours: overtimeHours,
+                overtimeEnabled: item.position?.overtimeEnabled || false,
+                jobseekerProfile: item.jobseeker
+                  ? {
+                      email: item.jobseeker.email,
+                      lastName: item.jobseeker.lastName,
+                      firstName: item.jobseeker.firstName,
+                      jobseekerUserId: item.jobseeker.candidateId,
+                      jobseekerProfileId: item.jobseeker.id,
+                      employeeId: item.jobseeker.employeeId,
+                    }
+                  : undefined,
+              };
+            }),
             supplierPOItems: supplierPOItems,
             attachments: uploadedAttachments,
             messageOnInvoice: messageOnInvoice,
@@ -1166,50 +1313,70 @@ export function InvoiceManagement() {
           status: "draft" as const,
           currency: selectedClient.currency || "CAD",
           paymentTerms: selectedTerms,
-          timesheets: lineItemTotals.map((item) => ({
-            id: item.id,
-            invoiceNumber: invoiceNumber,
-            weekStartDate: invoiceDate, // Using invoice date as reference
-            weekEndDate: dueDate, // Using due date as reference
-            totalRegularHours: parseFloat(item.hours) || 0,
-            regularBillRate: parseFloat(item.regularBillRate) || 0,
-            regularPayRate: parseFloat(item.regularPayRate) || 0,
-            totalClientBill:
-              (parseFloat(item.hours) || 0) *
-              (parseFloat(item.regularBillRate) || 0),
-            totalJobseekerPay:
-              (parseFloat(item.hours) || 0) *
-              (parseFloat(item.regularPayRate) || 0),
-            description: item.description, // Add description field
-            salesTax: item.salesTax, // Add salesTax field
-            jobseekerProfile: item.jobseeker
-              ? {
-                  firstName: item.jobseeker.firstName,
-                  lastName: item.jobseeker.lastName,
-                  email: item.jobseeker.email,
-                  jobseekerUserId: item.jobseeker.candidateId,
-                  jobseekerProfileId: item.jobseeker.id,
-                  employeeId: item.jobseeker.employeeId,
-                }
-              : {
-                  firstName: "N/A",
-                  lastName: "N/A",
-                  email: "N/A",
-                },
-            position: item.position
-              ? {
-                  title: item.position.title,
-                  positionCode: item.position.positionCode,
-                  positionId: item.position.id,
-                  positionCandidateAssignmentsId:
-                    item.jobseeker?.positionCandidateAssignmentsId,
-                  positionNumber: item.position.positionNumber,
-                }
-              : {
-                  title: item.description || "Custom Line Item",
-                  positionCode: "CUSTOM",
-                },
-          })),
+          timesheets: lineItemTotals.map((item) => {
+            const regularHours = item.totalRegularHours || 0;
+            const overtimeHours = item.totalOvertimeHours || 0;
+            const regularBillRate =
+              typeof item.regularBillRate === "string"
+                ? parseFloat(item.regularBillRate)
+                : item.regularBillRate || 0;
+            const overtimeBillRate = item.overtimeBillRate || regularBillRate;
+            const totalClientBill = item.regularAmount + item.overtimeAmount;
+
+            const regularPayRate = parseFloat(item.regularPayRate) || 0;
+            const overtimePayRateValue =
+              item.position?.overtimeEnabled && item.position?.overtimePayRate
+                ? parseFloat(item.position.overtimePayRate)
+                : regularPayRate;
+            const totalJobseekerPay =
+              regularHours * regularPayRate +
+              overtimeHours * overtimePayRateValue;
+
+            return {
+              id: item.id,
+              invoiceNumber: invoiceNumber,
+              weekStartDate: invoiceDate, // Using invoice date as reference
+              weekEndDate: dueDate, // Using due date as reference
+              totalRegularHours: regularHours,
+              totalOvertimeHours: overtimeHours,
+              regularBillRate: regularBillRate,
+              overtimeBillRate: overtimeBillRate,
+              regularPayRate: regularPayRate,
+              overtimePayRate: overtimePayRateValue,
+              totalClientBill: totalClientBill,
+              totalJobseekerPay: totalJobseekerPay,
+              overtimeEnabled: item.position?.overtimeEnabled || false,
+              description: item.description, // Add description field
+              salesTax: item.salesTax, // Add salesTax field
+              jobseekerProfile: item.jobseeker
+                ? {
+                    firstName: item.jobseeker.firstName,
+                    lastName: item.jobseeker.lastName,
+                    email: item.jobseeker.email,
+                    jobseekerUserId: item.jobseeker.candidateId,
+                    jobseekerProfileId: item.jobseeker.id,
+                    employeeId: item.jobseeker.employeeId,
+                  }
+                : {
+                    firstName: "N/A",
+                    lastName: "N/A",
+                    email: "N/A",
+                  },
+              position: item.position
+                ? {
+                    title: item.position.title,
+                    positionCode: item.position.positionCode,
+                    positionId: item.position.id,
+                    positionCandidateAssignmentsId:
+                      item.jobseeker?.positionCandidateAssignmentsId,
+                    positionNumber: item.position.positionNumber,
+                  }
+                : {
+                    title: item.description || "Custom Line Item",
+                    positionCode: "CUSTOM",
+                  },
+            };
+          }),
           attachments: uploadedAttachments,
           supplierPOItems: supplierPOItems,
           messageOnInvoice: messageOnInvoice,
@@ -1245,6 +1412,8 @@ export function InvoiceManagement() {
       }
 
       // Generate the PDF Blob
+      const { lineItemTotals: pdfLineItemTotals } = calculateLineItemTotals();
+
       const pdfData: PDFInvoiceData = {
         invoiceNumber: pdfInvoiceNumber,
         invoiceDate: invoiceDate,
@@ -1258,19 +1427,39 @@ export function InvoiceManagement() {
           ].filter(Boolean),
           email: selectedClient.emailAddress1,
         },
-        lineItems: lineItems.map((item) => ({
-          positionName: item.position?.title,
-          description: item.description,
-          candidate: item.jobseeker
-            ? `${item.jobseeker.firstName} ${item.jobseeker.lastName}`
-            : undefined,
-          hours: parseFloat(item.hours) || 0,
-          rate: parseFloat(item.regularBillRate) || 0,
-          taxType: item.salesTax,
-          amount:
-            (parseFloat(item.hours) || 0) *
-            (parseFloat(item.regularBillRate) || 0),
-        })),
+        lineItems: pdfLineItemTotals.flatMap((item) => {
+          const hasOvertime = (item.totalOvertimeHours || 0) > 0;
+          const items = [
+            {
+              positionName: item.position?.title,
+              description: `${item.description || ""} - Regular Hours`.trim(),
+              candidate: item.jobseeker
+                ? `${item.jobseeker.firstName} ${item.jobseeker.lastName}`
+                : undefined,
+              hours: item.totalRegularHours || 0,
+              rate: Number(item.regularBillRate) || 0,
+              taxType: item.salesTax,
+              amount: item.regularAmount || 0,
+            },
+          ];
+
+          // Add overtime line item if applicable
+          if (hasOvertime) {
+            items.push({
+              positionName: item.position?.title,
+              description: `${item.description || ""} - Overtime Hours`.trim(),
+              candidate: item.jobseeker
+                ? `${item.jobseeker.firstName} ${item.jobseeker.lastName}`
+                : undefined,
+              hours: item.totalOvertimeHours || 0,
+              rate: Number(item.overtimeBillRate || item.regularBillRate) || 0,
+              taxType: item.salesTax,
+              amount: item.overtimeAmount || 0,
+            });
+          }
+
+          return items;
+        }),
         summary: {
           subtotal: subtotal,
           totalHST: totalHST,
@@ -2394,90 +2583,218 @@ export function InvoiceManagement() {
                   {(() => {
                     const { lineItemTotals } = calculateLineItemTotals();
 
-                    return lineItemTotals.map((item) => (
-                      <div
-                        key={item.id}
-                        className="timesheet-invoice-line-item"
-                      >
-                        <div className="timesheet-col-description">
-                          <div className="timesheet-item-title">
-                            {item.position?.title ||
-                              t("invoiceManagement.noPositionSelected")}
-                          </div>
-                          <div className="timesheet-item-subtitle">
-                            {item.jobseeker
-                              ? `${item.jobseeker.firstName} ${item.jobseeker.lastName}`.trim()
-                              : t("invoiceManagement.noJobseekerSelected")}
-                            {item.description && ` - ${item.description}`}
-                          </div>
-                        </div>
-                        <div className="timesheet-col-hours">
-                          {item.hours || "0"}
-                        </div>
-                        <div className="timesheet-col-rate">
-                          ${item.regularBillRate || "0.00"}
-                        </div>
-                        <div className="timesheet-col-tax">
-                          {item.taxInfo.taxType === "HST" && (
-                            <div className="timesheet-item-subtitle">
-                              HST {item.taxInfo.hstPercentage}% on $
-                              {item.lineSubtotal.toFixed(2)}:
-                            </div>
-                          )}
+                    return lineItemTotals.map((item) => {
+                      const hasOvertime = (item.totalOvertimeHours || 0) > 0;
 
-                          {item.taxInfo.taxType === "GST" && (
-                            <div className="timesheet-item-subtitle">
-                              GST {item.taxInfo.gstPercentage}% on $
-                              {item.lineSubtotal.toFixed(2)}:
-                            </div>
-                          )}
-
-                          {item.taxInfo.taxType === "GST_QST" && (
-                            <div
-                              style={{
-                                display: "flex",
-                                flexDirection: "column",
-                                alignItems: "flex-end",
-                                gap: "0.25rem",
-                              }}
-                            >
+                      return (
+                        <div key={item.id}>
+                          {/* Regular Hours Line Item */}
+                          <div
+                            key={`${item.id}-regular`}
+                            className="timesheet-invoice-line-item"
+                          >
+                            <div className="timesheet-col-description">
+                              <div className="timesheet-item-title">
+                                {item.position?.title ||
+                                  t("invoiceManagement.noPositionSelected")}
+                              </div>
                               <div className="timesheet-item-subtitle">
-                                GST {item.taxInfo.gstPercentage}% on $
-                                {item.lineSubtotal.toFixed(2)}:
-                              </div>
-                              <div
-                                className="timesheet-item-subtitle"
-                                style={{
-                                  textWrap: "nowrap",
-                                }}
-                              >
-                                QST {item.taxInfo.qstPercentage}% on $
-                                {item.lineSubtotal.toFixed(2)}:
+                                Regular Hours
+                                {item.jobseeker
+                                  ? ` - ${item.jobseeker.firstName} ${item.jobseeker.lastName}`.trim()
+                                  : ""}
+                                {item.description && ` - ${item.description}`}
                               </div>
                             </div>
-                          )}
-                          {item.taxInfo.taxType !== "GST_QST" && (
-                            <div className="timesheet-item-title">
-                              ${item.lineTax.toFixed(2)}
+                            <div className="timesheet-col-hours">
+                              {(item.totalRegularHours || 0).toFixed(1)}
                             </div>
-                          )}
+                            <div className="timesheet-col-rate">
+                              ${item.regularBillRate || "0.00"}
+                            </div>
+                            <div className="timesheet-col-tax">
+                              {item.taxInfo.taxType === "HST" && (
+                                <div className="timesheet-item-subtitle">
+                                  HST {item.taxInfo.hstPercentage}% on $
+                                  {(item.regularAmount || 0).toFixed(2)}:
+                                </div>
+                              )}
 
-                          {item.taxInfo.taxType === "GST_QST" && (
-                            <div>
-                              <div className="timesheet-item-title">
-                                ${item.lineGST.toFixed(2)}
+                              {item.taxInfo.taxType === "GST" && (
+                                <div className="timesheet-item-subtitle">
+                                  GST {item.taxInfo.gstPercentage}% on $
+                                  {(item.regularAmount || 0).toFixed(2)}:
+                                </div>
+                              )}
+
+                              {item.taxInfo.taxType === "GST_QST" && (
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    alignItems: "flex-end",
+                                    gap: "0.25rem",
+                                  }}
+                                >
+                                  <div className="timesheet-item-subtitle">
+                                    GST {item.taxInfo.gstPercentage}% on $
+                                    {(item.regularAmount || 0).toFixed(2)}:
+                                  </div>
+                                  <div
+                                    className="timesheet-item-subtitle"
+                                    style={{
+                                      textWrap: "nowrap",
+                                    }}
+                                  >
+                                    QST {item.taxInfo.qstPercentage}% on $
+                                    {(item.regularAmount || 0).toFixed(2)}:
+                                  </div>
+                                </div>
+                              )}
+                              {item.taxInfo.taxType !== "GST_QST" && (
+                                <div className="timesheet-item-title">
+                                  $
+                                  {(
+                                    ((item.regularAmount || 0) *
+                                      item.taxInfo.totalTaxPercentage) /
+                                    100
+                                  ).toFixed(2)}
+                                </div>
+                              )}
+
+                              {item.taxInfo.taxType === "GST_QST" && (
+                                <div>
+                                  <div className="timesheet-item-title">
+                                    $
+                                    {(
+                                      ((item.regularAmount || 0) *
+                                        item.taxInfo.gstPercentage) /
+                                      100
+                                    ).toFixed(2)}
+                                  </div>
+                                  <div className="timesheet-item-title">
+                                    $
+                                    {(
+                                      ((item.regularAmount || 0) *
+                                        item.taxInfo.qstPercentage) /
+                                      100
+                                    ).toFixed(2)}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                            <div className="timesheet-col-amount">
+                              ${(item.regularAmount || 0).toFixed(2)}
+                            </div>
+                          </div>
+
+                          {/* Overtime Hours Line Item (if applicable) */}
+                          {hasOvertime && (
+                            <div
+                              key={`${item.id}-overtime`}
+                              className="timesheet-invoice-line-item"
+                            >
+                              <div className="timesheet-col-description">
+                                <div className="timesheet-item-title">
+                                  {item.position?.title ||
+                                    t("invoiceManagement.noPositionSelected")}
+                                </div>
+                                <div className="timesheet-item-subtitle">
+                                  Overtime Hours
+                                  {item.jobseeker
+                                    ? ` - ${item.jobseeker.firstName} ${item.jobseeker.lastName}`.trim()
+                                    : ""}
+                                  {item.description && ` - ${item.description}`}
+                                </div>
                               </div>
-                              <div className="timesheet-item-title">
-                                ${item.lineQST.toFixed(2)}
+                              <div className="timesheet-col-hours">
+                                {(item.totalOvertimeHours || 0).toFixed(1)}
+                              </div>
+                              <div className="timesheet-col-rate">
+                                $
+                                {item.overtimeBillRate ||
+                                  item.regularBillRate ||
+                                  "0.00"}
+                              </div>
+                              <div className="timesheet-col-tax">
+                                {item.taxInfo.taxType === "HST" && (
+                                  <div className="timesheet-item-subtitle">
+                                    HST {item.taxInfo.hstPercentage}% on $
+                                    {(item.overtimeAmount || 0).toFixed(2)}:
+                                  </div>
+                                )}
+
+                                {item.taxInfo.taxType === "GST" && (
+                                  <div className="timesheet-item-subtitle">
+                                    GST {item.taxInfo.gstPercentage}% on $
+                                    {(item.overtimeAmount || 0).toFixed(2)}:
+                                  </div>
+                                )}
+
+                                {item.taxInfo.taxType === "GST_QST" && (
+                                  <div
+                                    style={{
+                                      display: "flex",
+                                      flexDirection: "column",
+                                      alignItems: "flex-end",
+                                      gap: "0.25rem",
+                                    }}
+                                  >
+                                    <div className="timesheet-item-subtitle">
+                                      GST {item.taxInfo.gstPercentage}% on $
+                                      {(item.overtimeAmount || 0).toFixed(2)}:
+                                    </div>
+                                    <div
+                                      className="timesheet-item-subtitle"
+                                      style={{
+                                        textWrap: "nowrap",
+                                      }}
+                                    >
+                                      QST {item.taxInfo.qstPercentage}% on $
+                                      {(item.overtimeAmount || 0).toFixed(2)}:
+                                    </div>
+                                  </div>
+                                )}
+                                {item.taxInfo.taxType !== "GST_QST" && (
+                                  <div className="timesheet-item-title">
+                                    $
+                                    {(
+                                      ((item.overtimeAmount || 0) *
+                                        item.taxInfo.totalTaxPercentage) /
+                                      100
+                                    ).toFixed(2)}
+                                  </div>
+                                )}
+
+                                {item.taxInfo.taxType === "GST_QST" && (
+                                  <div>
+                                    <div className="timesheet-item-title">
+                                      $
+                                      {(
+                                        ((item.overtimeAmount || 0) *
+                                          item.taxInfo.gstPercentage) /
+                                        100
+                                      ).toFixed(2)}
+                                    </div>
+                                    <div className="timesheet-item-title">
+                                      $
+                                      {(
+                                        ((item.overtimeAmount || 0) *
+                                          item.taxInfo.qstPercentage) /
+                                        100
+                                      ).toFixed(2)}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="timesheet-col-amount">
+                                ${(item.overtimeAmount || 0).toFixed(2)}
                               </div>
                             </div>
                           )}
                         </div>
-                        <div className="timesheet-col-amount">
-                          ${item.lineTotal.toFixed(2)}
-                        </div>
-                      </div>
-                    ));
+                      );
+                    });
                   })()}
                 </div>
 
