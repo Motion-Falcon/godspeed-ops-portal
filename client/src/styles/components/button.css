@@ -65,6 +65,18 @@
   display: none;
 }
 
+.button-outline {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.button-outline:hover:not(:disabled) {
+  background: var(--background-secondary);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
 @keyframes spin {
   to {
     transform: rotate(360deg);

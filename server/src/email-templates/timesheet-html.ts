@@ -1,13 +1,15 @@
 export function timesheetHtmlTemplate(vars: Record<string, any>) {
   const isUpdated = vars.is_updated || false;
-  const titlePrefix = isUpdated ? 'Updated ' : '';
-  
+  const titlePrefix = isUpdated ? "Updated " : "";
+
   return `
 <!DOCTYPE html>
 <html>
   <head>
     <meta charset="UTF-8">
-    <title>${titlePrefix}Timesheet Summary - ${vars.invoice_number || 'Invoice'}</title>
+    <title>${titlePrefix}Timesheet Summary - ${
+    vars.invoice_number || "Invoice"
+  }</title>
     <style>
       body { font-family: Arial, sans-serif; background: #f8f9fa; color: #222; margin: 0; padding: 0; }
       .container { background: #fff; max-width: 700px; margin: 40px auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); padding: 32px 24px; }
@@ -36,8 +38,10 @@ export function timesheetHtmlTemplate(vars: Record<string, any>) {
   <body>
     <div class="container">
       <div class="header">
-        <h2>${titlePrefix}Timesheet Summary ${isUpdated ? '<span class="updated-badge">UPDATED</span>' : ''}</h2>
-        <p><strong>Timesheet #${vars.invoice_number || 'N/A'}</strong></p>
+        <h2>${titlePrefix}Timesheet Summary ${
+    isUpdated ? '<span class="updated-badge">UPDATED</span>' : ""
+  }</h2>
+        <p><strong>Timesheet #${vars.invoice_number || "N/A"}</strong></p>
       </div>
 
       <div class="invoice-info">
@@ -45,13 +49,17 @@ export function timesheetHtmlTemplate(vars: Record<string, any>) {
           <tr>
             <td>
               <strong>Jobseeker:</strong><br>
-              ${vars.jobseeker_name || 'N/A'}<br>
-              ${vars.jobseeker_email || ''}
+              ${vars.jobseeker_name || "N/A"}<br>
+              ${vars.jobseeker_email || ""}
             </td>
             <td class="right">
               <strong>Week Period:</strong><br>
-              ${vars.week_start_date || 'N/A'} to ${vars.week_end_date || 'N/A'}<br>
-              <strong>Generated:</strong> ${vars.generated_date || new Date().toLocaleDateString()}
+              ${vars.week_start_date || "N/A"} to ${
+    vars.week_end_date || "N/A"
+  }<br>
+              <strong>Generated:</strong> ${
+                vars.generated_date || new Date().toLocaleDateString()
+              }
             </td>
           </tr>
         </table>
@@ -62,7 +70,7 @@ export function timesheetHtmlTemplate(vars: Record<string, any>) {
         <table class="summary-table">
           <tr>
             <td class="label">Position:</td>
-            <td>${vars.position_title || 'N/A'}</td>
+            <td>${vars.position_title || "N/A"}</td>
           </tr>
         </table>
       </div>
@@ -76,12 +84,20 @@ export function timesheetHtmlTemplate(vars: Record<string, any>) {
           </tr>
         </thead>
         <tbody>
-          ${vars.daily_hours ? vars.daily_hours.map((day: any) => `
+          ${
+            vars.daily_hours
+              ? vars.daily_hours
+                  .map(
+                    (day: any) => `
             <tr>
               <td class="date">${new Date(day.date).toLocaleDateString()}</td>
               <td class="hours">${day.hours || 0}</td>
             </tr>
-          `).join('') : '<tr><td colspan="2" style="text-align: center;">No daily hours data available</td></tr>'}
+          `
+                  )
+                  .join("")
+              : '<tr><td colspan="2" style="text-align: center;">No daily hours data available</td></tr>'
+          }
         </tbody>
       </table>
 
@@ -93,38 +109,58 @@ export function timesheetHtmlTemplate(vars: Record<string, any>) {
         </tr>
         <tr>
           <td class="label">Regular Pay Rate:</td>
-          <td class="value">$${(vars.regular_pay_rate || 0).toFixed(2)}/hour</td>
+          <td class="value">$${(vars.regular_pay_rate || 0).toFixed(
+            2
+          )}/hour</td>
         </tr>
         <tr>
           <td class="label">Regular Pay:</td>
-          <td class="value">$${((vars.total_regular_hours || 0) * (vars.regular_pay_rate || 0)).toFixed(2)}</td>
+          <td class="value">$${(
+            (vars.total_regular_hours || 0) * (vars.regular_pay_rate || 0)
+          ).toFixed(2)}</td>
         </tr>
-        ${vars.overtime_enabled && vars.total_overtime_hours > 0 ? `
+        ${
+          vars.overtime_enabled && vars.total_overtime_hours > 0
+            ? `
         <tr>
           <td class="label">Overtime Hours:</td>
           <td class="value">${vars.total_overtime_hours || 0} hours</td>
         </tr>
         <tr>
           <td class="label">Overtime Pay Rate:</td>
-          <td class="value">$${(vars.overtime_pay_rate || 0).toFixed(2)}/hour</td>
+          <td class="value">$${(vars.overtime_pay_rate || 0).toFixed(
+            2
+          )}/hour</td>
         </tr>
         <tr>
           <td class="label">Overtime Pay:</td>
-          <td class="value">$${((vars.total_overtime_hours || 0) * (vars.overtime_pay_rate || 0)).toFixed(2)}</td>
+          <td class="value">$${(
+            (vars.total_overtime_hours || 0) * (vars.overtime_pay_rate || 0)
+          ).toFixed(2)}</td>
         </tr>
-        ` : ''}
-        ${vars.bonus_amount && vars.bonus_amount > 0 ? `
+        `
+            : ""
+        }
+        ${
+          vars.bonus_amount && vars.bonus_amount > 0
+            ? `
         <tr>
           <td class="label">Bonus Amount:</td>
           <td class="value">$${(vars.bonus_amount || 0).toFixed(2)}</td>
         </tr>
-        ` : ''}
-        ${vars.deduction_amount && vars.deduction_amount > 0 ? `
+        `
+            : ""
+        }
+        ${
+          vars.deduction_amount && vars.deduction_amount > 0
+            ? `
         <tr>
           <td class="label">Deductions:</td>
           <td class="value">-$${(vars.deduction_amount || 0).toFixed(2)}</td>
         </tr>
-        ` : ''}
+        `
+            : ""
+        }
         <tr class="total-row">
           <td class="label">Total Jobseeker Pay:</td>
           <td class="value">$${(vars.total_jobseeker_pay || 0).toFixed(2)}</td>
@@ -132,7 +168,7 @@ export function timesheetHtmlTemplate(vars: Record<string, any>) {
       </table>
 
       <div class="footer">
-        <p>This is an automated timesheet summary from Godspeed Operations Portal.</p>
+        <p>This is an automated timesheet summary from Motion Falcon Operations Portal.</p>
         <p>If you have any questions about this timesheet, please contact your recruitment team.</p>
         <p>Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}</p>
       </div>
@@ -140,4 +176,4 @@ export function timesheetHtmlTemplate(vars: Record<string, any>) {
   </body>
 </html>
   `;
-} 
+}

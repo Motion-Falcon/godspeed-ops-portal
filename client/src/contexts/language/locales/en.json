@@ -7,8 +7,8 @@
   "recruiter": "Recruiter",
   "jobseeker": "Job Seeker",
   "admin_subtitle": "Oversee platform operations and manage system-wide recruiting analytics",
-  "recruiter_subtitle": "Manage talent acquisition with Godspeed's lightning-fast recruiting tools",
-  "jobseeker_subtitle": "Discover opportunities at Godspeed pace with our intelligent job matching system",
+  "recruiter_subtitle": "Manage talent acquisition with Motion Falcon's lightning-fast recruiting tools",
+  "jobseeker_subtitle": "Discover opportunities at Motion Falcon pace with our intelligent job matching system",
 
   "navigation": {
     "home": "Home",
@@ -53,7 +53,7 @@
     "createConsentDocument": "Create Consent Document",
     "myProfile": "My Profile",
     "myPositions": "My Positions",
-    "aiChat": "Godspeed AI Chat",
+    "aiChat": "Motion Falcon AI Chat",
     "calendar": "Workforce Schedule Dashboard"
   },
 
@@ -235,6 +235,16 @@
     "privacyPolicy": "Privacy Policy"
   },
 
+  "demoLogin": {
+    "title": "Demo Login",
+    "description": "Select a demo account to explore the platform",
+    "startDemo": "Start demo login",
+    "loggingIn": "Logging in...",
+    "error": {
+      "failed": "Failed to login with demo account. Please try again."
+    }
+  },
+
   "roles": {
     "admin": "Administrator",
     "admins": "Admins",
@@ -279,7 +289,7 @@
     "select": "Select",
     "deselect": "Deselect",
     "language": "Language",
-    "godspeedLogo": "Godspeed Logo",
+    "godspeedLogo": "Motion Falcon Logo",
     "user": "User",
     "notAvailable": "N/A",
     "and": "and"
@@ -575,7 +585,7 @@
     "hidePassword": "Hide password",
     "showPassword": "Show password",
     "alreadyHaveAccount": "Already have an account?",
-    "brandDescription": "Elevate your talent management with Godspeed's intelligent workflows and lightning-fast systems designed to connect the right people with the right opportunities."
+    "brandDescription": "Elevate your talent management with Motion Falcon's intelligent workflows and lightning-fast systems designed to connect the right people with the right opportunities."
   },
   "twoFactor": {
     "error": {
@@ -1693,7 +1703,7 @@
     }
   },
   "app": {
-    "name": "Godspeed Ops Portal"
+    "name": "Motion Falcon Ops Portal"
   },
 
   "invoiceManagement": {

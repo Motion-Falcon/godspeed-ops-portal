@@ -1,5 +1,5 @@
 /**
- * Type definitions for the Godspeed Ops Portal
+ * Type definitions for the Motion Falcon Ops Portal
  */
 
 /**
@@ -30,24 +30,24 @@ export interface ProfileData {
   sinExpiry?: string;
   businessNumber?: string;
   corporationName?: string;
-  
+
   // Address fields
   street: string;
   city: string;
   province: string;
   postalCode: string;
-  
+
   // Qualifications fields
   workPreference?: string;
   bio?: string; // Brief professional description (max 100 chars)
   licenseType: string;
   experience: string;
-  manualDriving: 'Yes' | 'No' | 'NA';
-  availability: 'Full-Time' | 'Part-Time';
+  manualDriving: "Yes" | "No" | "NA";
+  availability: "Full-Time" | "Part-Time";
   weekendAvailability: boolean;
-  
+
   // Compensation fields
-  payrateType: 'Hourly' | 'Daily' | 'Monthly';
+  payrateType: "Hourly" | "Daily" | "Monthly";
   billRate: string;
   payRate: string;
   paymentMethod: string;
@@ -57,15 +57,15 @@ export interface ProfileData {
   overtimeHours?: string;
   overtimeBillRate?: string;
   overtimePayRate?: string;
-  
+
   // Employee identification
   employeeId?: string;
-  
+
   // Document fields - now an array of documents
   documents: Document[];
-  
+
   // Meta fields - used internally
-  verificationStatus?: 'pending' | 'verified' | 'rejected';
+  verificationStatus?: "pending" | "verified" | "rejected";
   rejectionReason?: string | null;
   createdAt?: string;
   updatedAt?: string;
@@ -90,13 +90,13 @@ export interface DbJobseekerProfile {
   work_permit_expiry?: string;
   business_number?: string;
   corporation_name?: string;
-  
+
   // Address fields
   street: string;
   city: string;
   province: string;
   postal_code: string;
-  
+
   // Qualifications fields
   work_preference?: string;
   bio?: string; // Brief professional description (max 100 chars)
@@ -105,7 +105,7 @@ export interface DbJobseekerProfile {
   manual_driving: string;
   availability: string;
   weekend_availability: boolean;
-  
+
   // Compensation fields
   payrate_type: string;
   bill_rate: string;
@@ -117,13 +117,13 @@ export interface DbJobseekerProfile {
   overtime_hours?: string;
   overtime_bill_rate?: string;
   overtime_pay_rate?: string;
-  
+
   // Employee identification
   employee_id?: string;
-  
+
   // Document fields - JSONB array in database
   documents: Document[];
-  
+
   // Meta fields
   verification_status: string;
   rejection_reason?: string | null;
@@ -147,10 +147,10 @@ export interface ClientData {
   accountingManager?: string;
   clientRep?: string;
   mergeInvoice: boolean;
-  currency: 'CAD' | 'USD';
+  currency: "CAD" | "USD";
   workProvince: string;
   wsibCode?: string;
-  
+
   // Contact Details
   contactPersonName1: string;
   emailAddress1: string;
@@ -167,8 +167,8 @@ export interface ClientData {
   invoiceCCDispatch: boolean;
   accountsDeptEmail?: string;
   invoiceCCAccounts: boolean;
-  invoiceLanguage: 'English' | 'French';
-  
+  invoiceLanguage: "English" | "French";
+
   // Address Details
   streetAddress1: string;
   city1: string;
@@ -182,14 +182,14 @@ export interface ClientData {
   city3?: string;
   province3?: string;
   postalCode3?: string;
-  
+
   // Payment & Billings
   preferredPaymentMethod: string;
   terms: string;
   payCycle: string;
   creditLimit: string;
   notes?: string;
-  
+
   // Status and meta fields
   isDraft?: boolean;
   lastUpdated?: string;
@@ -200,7 +200,7 @@ export interface ClientData {
  */
 export interface DbClientData {
   id: string;
-  
+
   // Basic Details
   company_name: string;
   billing_name: string;
@@ -216,7 +216,7 @@ export interface DbClientData {
   currency: string;
   work_province: string;
   wsib_code?: string;
-  
+
   // Contact Details
   contact_person_name1: string;
   email_address1: string;
@@ -234,7 +234,7 @@ export interface DbClientData {
   accounts_dept_email?: string;
   invoice_cc_accounts: boolean;
   invoice_language: string;
-  
+
   // Address Details
   street_address1: string;
   city1: string;
@@ -248,14 +248,14 @@ export interface DbClientData {
   city3?: string;
   province3?: string;
   postal_code3?: string;
-  
+
   // Payment & Billings
   preferred_payment_method: string;
   terms: string;
   pay_cycle: string;
   credit_limit: string;
   notes?: string;
-  
+
   // Meta fields
   is_draft: boolean;
   created_at: string;
@@ -267,9 +267,9 @@ export interface DbClientData {
 // Position Data Types
 export interface PositionData {
   id?: string;
-  
+
   // Basic Details
-  client?: string;  // Client ID
+  client?: string; // Client ID
   clientName?: string; // For display only
   title?: string;
   positionCode?: string;
@@ -280,19 +280,19 @@ export interface PositionData {
   salesManager?: string;
   positionNumber?: string;
   description?: string;
-  
+
   // Address Details
   streetAddress?: string;
   city?: string;
   province?: string;
   postalCode?: string;
-  
+
   // Employment Categorization
-  employmentTerm?: string;  // Permanent/Contract/Temporary
-  employmentType?: string;  // Full-Time/Part-Time
-  positionCategory?: string;  // Admin/AZ/etc.
+  employmentTerm?: string; // Permanent/Contract/Temporary
+  employmentType?: string; // Full-Time/Part-Time
+  positionCategory?: string; // Admin/AZ/etc.
   experience?: string;
-  
+
   // Documents Required
   documentsRequired?: {
     license?: boolean;
@@ -306,36 +306,36 @@ export interface PositionData {
     articlesOfIncorporation?: boolean;
     directDeposit?: boolean;
   };
-  
+
   // Position Details
-  payrateType?: string;  // Hourly/Daily/Monthly
+  payrateType?: string; // Hourly/Daily/Monthly
   numberOfPositions?: number;
   regularPayRate?: string;
   markup?: string;
   billRate?: string;
-  
+
   // Overtime
   overtimeEnabled?: boolean;
   overtimeHours?: string;
   overtimeBillRate?: string;
   overtimePayRate?: string;
-  
+
   // Payment & Billings
   preferredPaymentMethod?: string;
   terms?: string;
-  
+
   // Notes & Task
   notes?: string;
   assignedTo?: string;
   projCompDate?: string;
   taskTime?: string;
-  
+
   // Metadata
   isDraft?: boolean;
   createdAt?: string;
   updatedAt?: string;
   lastUpdated?: string;
-  
+
   // Auth metadata
   createdByUserId?: string;
   updatedByUserId?: string;
@@ -344,7 +344,7 @@ export interface PositionData {
 // Database version of position data (snake_case)
 export interface DbPositionData {
   id?: string;
-  
+
   // Basic Details
   client?: string;
   title?: string;
@@ -356,20 +356,20 @@ export interface DbPositionData {
   sales_manager?: string;
   position_number?: string;
   description?: string;
-  
+
   // Address Details
   use_client_address?: boolean;
   street_address?: string;
   city?: string;
   province?: string;
   postal_code?: string;
-  
+
   // Employment Categorization
   employment_term?: string;
   employment_type?: string;
   position_category?: string;
   experience?: string;
-  
+
   // Documents Required
   documents_required?: {
     license?: boolean;
@@ -383,37 +383,37 @@ export interface DbPositionData {
     articles_of_incorporation?: boolean;
     direct_deposit?: boolean;
   };
-  
+
   // Position Details
   payrate_type?: string;
   number_of_positions?: number;
   regular_pay_rate?: string;
   markup?: string;
   bill_rate?: string;
-  
+
   // Overtime
   overtime_enabled?: boolean;
   overtime_hours?: string;
   overtime_bill_rate?: string;
   overtime_pay_rate?: string;
-  
+
   // Payment & Billings
   preferred_payment_method?: string;
   terms?: string;
-  
+
   // Notes & Task
   notes?: string;
   assigned_to?: string;
   proj_comp_date?: string;
   task_time?: string;
-  
+
   // Metadata
   is_draft?: boolean;
   created_at?: string;
   updated_at?: string;
   last_updated?: string;
-  
+
   // Auth metadata
   created_by_user_id?: string;
   updated_by_user_id?: string;
-} 
+}

@@ -1,4 +1,4 @@
-import Handlebars from 'handlebars';
+import Handlebars from "handlebars";
 
 interface ConsentEmailTemplateVars {
   recipientName: string;
@@ -128,7 +128,7 @@ const templateSource = `
   <div class="container">
     <div class="content">
       <div class="header">
-        <div class="logo">Godspeed Ops Portal</div>
+        <div class="logo">Motion Falcon Ops Portal</div>
         <h1 class="title">Digital Consent Request</h1>
       </div>
       
@@ -155,12 +155,12 @@ const templateSource = `
       <p>If you have any questions about this consent request or need assistance, please contact our support team.</p>
       
       <div class="signature">
-        <p>Best regards,<br><span class="company-name">Godspeed Team</span></p>
+        <p>Best regards,<br><span class="company-name">Motion Falcon Team</span></p>
       </div>
     </div>
     
     <div class="footer">
-      <p>This is an automated message from Godspeed Ops Portal.<br>
+      <p>This is an automated message from Motion Falcon Ops Portal.<br>
       Please do not reply to this email.</p>
     </div>
   </div>
@@ -174,7 +174,9 @@ export function consentHtmlTemplate(vars: ConsentEmailTemplateVars): string {
   return compiledTemplate(vars);
 }
 
-export function generateConsentTextTemplate(vars: ConsentEmailTemplateVars): string {
+export function generateConsentTextTemplate(
+  vars: ConsentEmailTemplateVars
+): string {
   return `
 Digital Consent Request
 
@@ -193,9 +195,9 @@ IMPORTANT SECURITY NOTICE: This link is unique to you and should not be shared w
 If you have any questions about this consent request or need assistance, please contact our support team.
 
 Best regards,
-Godspeed Team
+Motion Falcon Team
 
 ---
-This is an automated message from Godspeed Ops Portal. Please do not reply to this email.
+This is an automated message from Motion Falcon Ops Portal. Please do not reply to this email.
   `.trim();
 }

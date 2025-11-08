@@ -7,8 +7,8 @@
   "recruiter": "Recruteur",
   "jobseeker": "Chercheur d'emploi",
   "admin_subtitle": "Supervisez les opérations de la plateforme et gérez les analyses du recrutement à l'échelle du système",
-  "recruiter_subtitle": "Gérez l'acquisition de talents avec les outils de recrutement ultra-rapides de Godspeed",
-  "jobseeker_subtitle": "Découvrez des opportunités à la vitesse Godspeed grâce à notre système intelligent de correspondance d'emploi",
+  "recruiter_subtitle": "Gérez l'acquisition de talents avec les outils de recrutement ultra-rapides de Motion Falcon",
+  "jobseeker_subtitle": "Découvrez des opportunités à la vitesse Motion Falcon grâce à notre système intelligent de correspondance d'emploi",
 
   "navigation": {
     "home": "Accueil",
@@ -53,7 +53,7 @@
     "createConsentDocument": "Créer un document de consentement",
     "myProfile": "Mon profil",
     "myPositions": "Mes postes",
-    "aiChat": "Chat IA Godspeed",
+    "aiChat": "Chat IA Motion Falcon",
     "calendar": "Tableau de Bord des Horaires"
   },
 
@@ -235,6 +235,16 @@
     "privacyPolicy": "Politique de confidentialité"
   },
 
+  "demoLogin": {
+    "title": "Connexion démo",
+    "description": "Sélectionnez un compte démo pour explorer la plateforme",
+    "startDemo": "Démarrer la connexion démo",
+    "loggingIn": "Connexion en cours...",
+    "error": {
+      "failed": "Échec de la connexion avec le compte démo. Veuillez réessayer."
+    }
+  },
+
   "roles": {
     "admin": "Administrateur",
     "admins": "Administrateurs",
@@ -279,7 +289,7 @@
     "select": "Sélectionner",
     "deselect": "Désélectionner",
     "language": "Langue",
-    "godspeedLogo": "Logo Godspeed",
+    "godspeedLogo": "Logo Motion Falcon",
     "user": "Utilisateur",
     "notAvailable": "N/D",
     "and": "et"
@@ -575,7 +585,7 @@
     "hidePassword": "Masquer le mot de passe",
     "showPassword": "Afficher le mot de passe",
     "alreadyHaveAccount": "Vous avez déjà un compte ?",
-    "brandDescription": "Élevez votre gestion des talents avec les workflows intelligents de Godspeed et des systèmes ultra-rapides conçus pour connecter les bonnes personnes aux bonnes opportunités."
+    "brandDescription": "Élevez votre gestion des talents avec les workflows intelligents de Motion Falcon et des systèmes ultra-rapides conçus pour connecter les bonnes personnes aux bonnes opportunités."
   },
   "twoFactor": {
     "error": {
@@ -1693,7 +1703,7 @@
     }
   },
   "app": {
-    "name": "Portail Ops Godspeed"
+    "name": "Portail Ops Motion Falcon"
   },
 
   "invoiceManagement": {

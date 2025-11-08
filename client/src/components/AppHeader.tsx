@@ -1,27 +1,39 @@
-import { ReactNode, useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { RotateCcw, ChevronDown, RefreshCcw } from 'lucide-react';
-import godspeedLogo from '../assets/logos/godspped-logo-fulllength.png';
-import godspeedIconLogo from '../assets/logos/godspped-logo.png';
-import canHireIconLogo from '../assets/logos/canhire-logo.png';
-import allStaffIconLogo from '../assets/logos/allstaff-logo.png';
-import hdGroupIconLogo from '../assets/logos/hdgroup-logo.png';
-import { HamburgerMenu } from './HamburgerMenu';
-import { useLanguage } from '../contexts/language/language-provider';
-import '../styles/components/header.css';
+import { ReactNode, useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import { RotateCcw, ChevronDown, RefreshCcw } from "lucide-react";
+import godspeedLogo from "../assets/logos/motionfalcon-logo-fulllegth.png";
+import godspeedIconLogo from "../assets/logos/godspped-logo.png";
+import canHireIconLogo from "../assets/logos/canhire-logo.png";
+import allStaffIconLogo from "../assets/logos/allstaff-logo.png";
+import hdGroupIconLogo from "../assets/logos/hdgroup-logo.png";
+import { HamburgerMenu } from "./HamburgerMenu";
+import { useLanguage } from "../contexts/language/language-provider";
+import "../styles/components/header.css";
 
 // Company data
 const companies = [
-  { name: 'CanHire Ops', logo: canHireIconLogo, url: 'https://app.canhiresolutions.ca' },
-  { name: 'All Staff Inc. Ops', logo: allStaffIconLogo, url: 'https://app.allstaff.ca' },
-  { name: 'HD Group Ops', logo: hdGroupIconLogo, url: 'https://app.hdgroup.ca' }
+  {
+    name: "CanHire Ops",
+    logo: canHireIconLogo,
+    url: "https://app.canhiresolutions.ca",
+  },
+  {
+    name: "All Staff Inc. Ops",
+    logo: allStaffIconLogo,
+    url: "https://app.allstaff.ca",
+  },
+  {
+    name: "HD Group Ops",
+    logo: hdGroupIconLogo,
+    url: "https://app.hdgroup.ca",
+  },
 ];
 
 interface AppHeaderProps {
   title: string;
   actions?: ReactNode;
   statusMessage?: string | null;
-  statusType?: 'success' | 'error' | 'pending';
+  statusType?: "success" | "error" | "pending";
   hideHamburgerMenu?: boolean;
   showCompanySwitcher?: boolean;
 }
@@ -30,9 +42,9 @@ export function AppHeader({
   title,
   actions,
   statusMessage,
-  statusType = 'success',
+  statusType = "success",
   hideHamburgerMenu = false,
-  showCompanySwitcher = false
+  showCompanySwitcher = false,
 }: AppHeaderProps) {
   const navigate = useNavigate();
   const { t } = useLanguage();
@@ -52,17 +64,20 @@ export function AppHeader({
   // Handle click outside for company switcher
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (companySwitcherRef.current && !companySwitcherRef.current.contains(event.target as Node)) {
+      if (
+        companySwitcherRef.current &&
+        !companySwitcherRef.current.contains(event.target as Node)
+      ) {
         setCompanySwitcherOpen(false);
       }
     };
 
     if (companySwitcherOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside);
     }
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [companySwitcherOpen]);
 
@@ -70,12 +85,12 @@ export function AppHeader({
   useEffect(() => {
     if (statusMessage) {
       setShowStatusMessage(true);
-      
+
       // Clear existing timeout if any
       if (statusTimeoutRef.current) {
         clearTimeout(statusTimeoutRef.current);
       }
-      
+
       // Set timeout to hide message after 3 seconds
       statusTimeoutRef.current = setTimeout(() => {
         setShowStatusMessage(false);
@@ -95,12 +110,12 @@ export function AppHeader({
       }
     };
   }, [statusMessage]);
-  
+
   // Log state changes for debugging
   useEffect(() => {
-    console.log('Menu state changed:', menuOpen);
+    console.log("Menu state changed:", menuOpen);
     menuOpenRef.current = menuOpen;
-    
+
     // Skip checking on initial render
     if (isInitialMount.current) {
       isInitialMount.current = false;
@@ -110,21 +125,21 @@ export function AppHeader({
 
   // Use a stable handler that doesn't capture stale state
   const toggleMenu = () => {
-    console.log('Toggle clicked, current state:', menuOpenRef.current);
-    setMenuOpen(prevState => {
+    console.log("Toggle clicked, current state:", menuOpenRef.current);
+    setMenuOpen((prevState) => {
       const newState = !prevState;
-      console.log('Setting menu state to:', newState);
+      console.log("Setting menu state to:", newState);
       return newState;
     });
   };
 
   const closeMenu = () => {
-    console.log('Close menu called');
+    console.log("Close menu called");
     // Only close if we're not in the initial render
     if (!isInitialMount.current) {
       setMenuOpen(false);
     } else {
-      console.log('Ignoring close menu call during initial render');
+      console.log("Ignoring close menu call during initial render");
     }
   };
 
@@ -134,20 +149,28 @@ export function AppHeader({
 
   const handleCompanySelect = (url: string) => {
     setCompanySwitcherOpen(false);
-    window.open(url, '_blank', 'noopener,noreferrer');
+    window.open(url, "_blank", "noopener,noreferrer");
   };
 
   return (
     <div className="header-wrapper">
-      <header className={`common-header ${hideHamburgerMenu ? "hide-hamburger-menu" : ""}`}>
+      <header
+        className={`common-header ${
+          hideHamburgerMenu ? "hide-hamburger-menu" : ""
+        }`}
+      >
         <div className="header-main">
           <div className="header-left">
-            <div className="logo-container" onClick={() => navigate('/')}>
-              <img src={godspeedLogo} alt={t('common.godspeedLogo')} className="header-logo" />
+            <div className="logo-container" onClick={() => navigate("/")}>
+              <img
+                src={godspeedLogo}
+                alt={t("common.godspeedLogo")}
+                className="header-logo"
+              />
             </div>
           </div>
           <div className="header-actions">
-            {showCompanySwitcher && (
+            {false && (
               <div className="portal-switcher" ref={companySwitcherRef}>
                 <button
                   className="portal-switcher-trigger"
@@ -157,26 +180,28 @@ export function AppHeader({
                 >
                   <div className="trigger-content">
                     <div className="current-portal">
-                      <img 
-                        src={godspeedIconLogo} 
-                        alt="Godspeed Logo"
+                      <img
+                        src={godspeedIconLogo}
+                        alt="Motion Falcon Logo"
                         className="portal-logo"
                       />
                       <div className="portal-info">
                         <span className="portal-label">Portal</span>
-                        <span className="portal-name">Godspeed Ops</span>
+                        <span className="portal-name">Motion Falcon Ops</span>
                       </div>
                     </div>
                     <div className="switcher-actions">
                       <RefreshCcw size={14} className="refresh-icon" />
-                      <ChevronDown 
-                        size={14} 
-                        className={`chevron ${companySwitcherOpen ? 'rotated' : ''}`}
+                      <ChevronDown
+                        size={14}
+                        className={`chevron ${
+                          companySwitcherOpen ? "rotated" : ""
+                        }`}
                       />
                     </div>
                   </div>
                 </button>
-                
+
                 {companySwitcherOpen && (
                   <div className="portal-switcher-dropdown">
                     <div className="dropdown-header">
@@ -190,14 +215,18 @@ export function AppHeader({
                           onClick={() => handleCompanySelect(company.url)}
                         >
                           <div className="option-content">
-                            <img 
-                              src={company.logo} 
+                            <img
+                              src={company.logo}
                               alt={company.name}
                               className="portal-logo"
                             />
                             <div className="option-info">
-                              <span className="option-name">{company.name}</span>
-                              <span className="option-desc">Operations Portal</span>
+                              <span className="option-name">
+                                {company.name}
+                              </span>
+                              <span className="option-desc">
+                                Operations Portal
+                              </span>
                             </div>
                           </div>
                           <RefreshCcw size={12} className="option-action" />
@@ -211,18 +240,20 @@ export function AppHeader({
             {actions}
           </div>
         </div>
-        
+
         {statusMessage && showStatusMessage && (
           <div className="status-update-container">
-            <span className={`status-update-message ${statusType}`}>{statusMessage}</span>
-            {statusType === 'error' && (
-              <button 
+            <span className={`status-update-message ${statusType}`}>
+              {statusMessage}
+            </span>
+            {statusType === "error" && (
+              <button
                 className="refresh-page-btn"
                 onClick={handleRefreshPage}
-                title={t('common.refreshPage')}
+                title={t("common.refreshPage")}
               >
                 <RotateCcw size={16} />
-                {t('common.refresh')}
+                {t("common.refresh")}
               </button>
             )}
           </div>
@@ -231,11 +262,15 @@ export function AppHeader({
       <div className="page-title-container">
         <h1 className="page-title">{title}</h1>
       </div>
-      
+
       {/* Render the hamburger menu outside of the header for proper positioning */}
       {!hideHamburgerMenu && (
-        <HamburgerMenu isOpen={menuOpen} onClose={closeMenu} onOpen={toggleMenu}/>
+        <HamburgerMenu
+          isOpen={menuOpen}
+          onClose={closeMenu}
+          onOpen={toggleMenu}
+        />
       )}
     </div>
   );
-} 
+}

@@ -19,45 +19,59 @@ export function jobseekerAssignmentHtmlTemplate(vars: Record<string, any>) {
   </head>
   <body>
     <div class="container">
-      <h2>Congratulations${vars.jobseeker_first_name ? `, ${vars.jobseeker_first_name}` : ''}!</h2>
+      <h2>Congratulations${
+        vars.jobseeker_first_name ? `, ${vars.jobseeker_first_name}` : ""
+      }!</h2>
       <p>We are excited to inform you that you have been matched to a new position opportunity:</p>
       <table class="details-table">
         <tr>
           <td class="label">Position Title:</td>
-          <td>${vars.title || ''}</td>
+          <td>${vars.title || ""}</td>
         </tr>
         <tr>
           <td class="label">Location:</td>
-          <td>${vars.city || ''}, ${vars.province || ''}</td>
+          <td>${vars.city || ""}, ${vars.province || ""}</td>
         </tr>
         <tr>
           <td class="label">Employment Type:</td>
-          <td>${vars.employment_type || ''} / ${vars.employment_term || ''}</td>
+          <td>${vars.employment_type || ""} / ${vars.employment_term || ""}</td>
         </tr>
         <tr>
           <td class="label">Start Date:</td>
-          <td>${vars.start_date || ''}</td>
+          <td>${vars.start_date || ""}</td>
         </tr>
-        ${vars.end_date ? `
+        ${
+          vars.end_date
+            ? `
         <tr>
           <td class="label">End Date:</td>
           <td>${vars.end_date}</td>
-        </tr>` : ''}
-        ${vars.position_category ? `
+        </tr>`
+            : ""
+        }
+        ${
+          vars.position_category
+            ? `
         <tr>
           <td class="label">Category:</td>
           <td>${vars.position_category}</td>
-        </tr>` : ''}
-        ${vars.experience ? `
+        </tr>`
+            : ""
+        }
+        ${
+          vars.experience
+            ? `
         <tr>
           <td class="label">Experience Required:</td>
           <td>${vars.experience}</td>
-        </tr>` : ''}
+        </tr>`
+            : ""
+        }
       </table>
       
       <div class="handbook-notice">
         <h4>📋 Employee Handbook</h4>
-        <p>Please review the attached <strong>Godspeed Employee Handbook 2024</strong>, which contains important information about our company policies, procedures, and expectations. This handbook will help you understand your rights and responsibilities as a Godspeed employee.</p>
+        <p>Please review the attached <strong>Motion Falcon Employee Handbook 2024</strong>, which contains important information about our company policies, procedures, and expectations. This handbook will help you understand your rights and responsibilities as a Motion Falcon employee.</p>
       </div>
       
       <p>Our team will reach out to you soon with further details and next steps. If you have any questions, feel free to reply to this email.</p>
@@ -70,4 +84,4 @@ export function jobseekerAssignmentHtmlTemplate(vars: Record<string, any>) {
   </body>
 </html>
   `;
-} 
+}

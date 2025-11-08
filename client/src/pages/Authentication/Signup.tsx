@@ -13,7 +13,7 @@ import "../../styles/pages/Login.css";
 import "../../styles/components/form.css";
 import "../../styles/components/button.css";
 import "../../styles/components/phone-input.css";
-import godspeedLogo from "../../assets/logos/godspped-logo.png";
+import godspeedLogo from "../../assets/logos/motionfalcon-logo.avif";
 import motionFalconLogo from "../../assets/logos/motion-falcon-logo.png";
 import PhoneInput from "react-phone-number-input";
 import "react-phone-number-input/style.css";
@@ -59,23 +59,25 @@ export function Signup() {
   // Move signupSchema here so t is available
   const signupSchema = z
     .object({
-      name: z.string().min(2, { message: t('signup.validation.nameLength') }),
-      email: z.string().email({ message: t('signup.validation.email') }),
-      phoneNumber: z.string().min(1, { message: t('signup.validation.phoneRequired') }),
+      name: z.string().min(2, { message: t("signup.validation.nameLength") }),
+      email: z.string().email({ message: t("signup.validation.email") }),
+      phoneNumber: z
+        .string()
+        .min(1, { message: t("signup.validation.phoneRequired") }),
       password: z
         .string()
-        .min(8, { message: t('signup.validation.passwordLength') })
+        .min(8, { message: t("signup.validation.passwordLength") })
         .regex(/[A-Z]/, {
-          message: t('signup.validation.passwordUppercase'),
+          message: t("signup.validation.passwordUppercase"),
         })
         .regex(/[a-z]/, {
-          message: t('signup.validation.passwordLowercase'),
+          message: t("signup.validation.passwordLowercase"),
         })
-        .regex(/[0-9]/, { message: t('signup.validation.passwordNumber') }),
+        .regex(/[0-9]/, { message: t("signup.validation.passwordNumber") }),
       confirmPassword: z.string(),
     })
     .refine((data) => data.password === data.confirmPassword, {
-      message: t('validation.passwordMismatch'),
+      message: t("validation.passwordMismatch"),
       path: ["confirmPassword"],
     });
 
@@ -177,13 +179,16 @@ export function Signup() {
     if (phoneValue) {
       const isValid = isValidPhoneForCountry(phoneValue);
       if (!isValid) {
-        const countryName = selectedCountry === "CA" ? t('signup.validation.canadian') : t('signup.validation.indian');
+        const countryName =
+          selectedCountry === "CA"
+            ? t("signup.validation.canadian")
+            : t("signup.validation.indian");
         setPhoneValidationError(
-          t('signup.validation.phoneValid', { country: countryName })
+          t("signup.validation.phoneValid", { country: countryName })
         );
         setFormError("phoneNumber", {
           type: "manual",
-          message: t('signup.validation.phoneValid', { country: countryName }),
+          message: t("signup.validation.phoneValid", { country: countryName }),
         });
       } else {
         setPhoneValidationError(null);
@@ -204,7 +209,7 @@ export function Signup() {
   // OTP functions
   const sendOtp = useCallback(async () => {
     if (!phoneValue || !isValidPhoneForCountry(phoneValue) || !phoneAvailable) {
-      setError(t('signup.validation.phoneAvailable'));
+      setError(t("signup.validation.phoneAvailable"));
       return;
     }
 
@@ -220,7 +225,7 @@ export function Signup() {
       setError(
         error instanceof Error
           ? error.message
-          : t('signup.error.failedToSendCode')
+          : t("signup.error.failedToSendCode")
       );
     } finally {
       setIsVerifyingPhone(false);
@@ -229,7 +234,7 @@ export function Signup() {
 
   const verifyOtp = useCallback(async () => {
     if (!phoneValue || !otpCode || otpCode.length < 4) {
-      setError(t('signup.validation.otpValid'));
+      setError(t("signup.validation.otpValid"));
       return;
     }
 
@@ -242,7 +247,9 @@ export function Signup() {
       setShowOtpInput(false);
     } catch (error) {
       setError(
-        error instanceof Error ? error.message : t('signup.error.failedToVerifyCode')
+        error instanceof Error
+          ? error.message
+          : t("signup.error.failedToVerifyCode")
       );
     } finally {
       setIsVerifyingPhone(false);
@@ -252,21 +259,17 @@ export function Signup() {
   const onSubmit = async (data: SignupFormData) => {
     // Validation checks
     if (emailAvailable === false) {
-      setError(
-        t('signup.validation.emailRegistered')
-      );
+      setError(t("signup.validation.emailRegistered"));
       return;
     }
 
     if (phoneAvailable === false) {
-      setError(
-        t('signup.validation.phoneRegistered')
-      );
+      setError(t("signup.validation.phoneRegistered"));
       return;
     }
 
     if (phoneValue && !isPhoneVerified) {
-      setError(t('signup.validation.verifyPhoneFirst'));
+      setError(t("signup.validation.verifyPhoneFirst"));
       return;
     }
 
@@ -283,7 +286,7 @@ export function Signup() {
       navigate("/verification-pending", { state: { email: data.email } });
     } catch (error) {
       setError(
-        error instanceof Error ? error.message : t('signup.error.unexpected')
+        error instanceof Error ? error.message : t("signup.error.unexpected")
       );
     } finally {
       setIsLoading(false);
@@ -302,7 +305,7 @@ export function Signup() {
       {/* Signup Form Column */}
       <div className="auth-column">
         <div className="form-container">
-          <h1 className="auth-title">{t('auth.signup')}</h1>
+          <h1 className="auth-title">{t("auth.signup")}</h1>
 
           {error && <div className="error-container">{error}</div>}
 
@@ -312,11 +315,11 @@ export function Signup() {
           >
             <div className="form-group">
               <label htmlFor="name" className="form-label">
-                {t('forms.name')}
+                {t("forms.name")}
               </label>
               <input
                 id="name"
-                placeholder={t('forms.namePlaceholder')}
+                placeholder={t("forms.namePlaceholder")}
                 className="form-input"
                 {...register("name")}
               />
@@ -327,13 +330,13 @@ export function Signup() {
 
             <div className="form-group">
               <label htmlFor="email" className="form-label">
-                {t('forms.email')}
+                {t("forms.email")}
               </label>
               <div className="input-container">
                 <input
                   id="email"
                   type="email"
-                  placeholder={t('forms.emailPlaceholder')}
+                  placeholder={t("forms.emailPlaceholder")}
                   className="form-input"
                   {...register("email")}
                 />
@@ -344,7 +347,9 @@ export function Signup() {
                 )}
               </div>
               {checkingEmail && (
-                <p className="availability-message">{t('signup.checkingEmail')}</p>
+                <p className="availability-message">
+                  {t("signup.checkingEmail")}
+                </p>
               )}
               {errors.email && !checkingEmail && (
                 <p className="error-message">{errors.email.message}</p>
@@ -353,7 +358,7 @@ export function Signup() {
 
             <div className="form-group">
               <label htmlFor="phoneNumber" className="form-label">
-                {t('forms.phone')}
+                {t("forms.phone")}
               </label>
               <div className="input-container">
                 <PhoneInput
@@ -376,7 +381,9 @@ export function Signup() {
                 )}
               </div>
               {checkingPhone && (
-                <p className="availability-message">{t('signup.checkingPhone')}</p>
+                <p className="availability-message">
+                  {t("signup.checkingPhone")}
+                </p>
               )}
               {phoneValidationError && (
                 <p className="error-message">{phoneValidationError}</p>
@@ -395,24 +402,24 @@ export function Signup() {
                   {isVerifyingPhone ? (
                     <span className="loading-spinner-small"></span>
                   ) : (
-                    t('signup.verifyPhone')
+                    t("signup.verifyPhone")
                   )}
                 </button>
               )}
 
               {isPhoneVerified && (
-                <p className="success-message">{t('signup.phoneVerified')}</p>
+                <p className="success-message">{t("signup.phoneVerified")}</p>
               )}
 
               {showOtpInput && (
                 <div className="otp-container">
                   <div className="otp-header">
-                    <p>{t('signup.enterVerificationCode')}</p>
+                    <p>{t("signup.enterVerificationCode")}</p>
                   </div>
                   <input
                     type="text"
                     className="form-input otp-input"
-                    placeholder={t('signup.verificationCodePlaceholder')}
+                    placeholder={t("signup.verificationCodePlaceholder")}
                     value={otpCode}
                     onChange={(e) => setOtpCode(e.target.value)}
                     maxLength={6}
@@ -427,7 +434,7 @@ export function Signup() {
                       {isVerifyingPhone ? (
                         <span className="loading-spinner-small"></span>
                       ) : (
-                        t('signup.verifyCode')
+                        t("signup.verifyCode")
                       )}
                     </button>
                     <button
@@ -437,8 +444,10 @@ export function Signup() {
                       disabled={isVerifyingPhone || resendTimer > 0}
                     >
                       {resendTimer > 0
-                        ? t('signup.resendCodeWithTimer', { seconds: resendTimer })
-                        : t('signup.resendCode')}
+                        ? t("signup.resendCodeWithTimer", {
+                            seconds: resendTimer,
+                          })
+                        : t("signup.resendCode")}
                     </button>
                   </div>
                 </div>
@@ -447,7 +456,7 @@ export function Signup() {
 
             <div className="form-group">
               <label htmlFor="password" className="form-label">
-                {t('forms.password')}
+                {t("forms.password")}
               </label>
               <div className="input-container">
                 <input
@@ -460,7 +469,11 @@ export function Signup() {
                   type="button"
                   className="password-toggle"
                   onClick={() => setShowPassword(!showPassword)}
-                  aria-label={showPassword ? t('signup.hidePassword') : t('signup.showPassword')}
+                  aria-label={
+                    showPassword
+                      ? t("signup.hidePassword")
+                      : t("signup.showPassword")
+                  }
                 >
                   {showPassword ? (
                     <EyeOff className="icon" size={16} />
@@ -476,7 +489,7 @@ export function Signup() {
 
             <div className="form-group">
               <label htmlFor="confirmPassword" className="form-label">
-                {t('forms.confirmPassword')}
+                {t("forms.confirmPassword")}
               </label>
               <div className="input-container">
                 <input
@@ -490,7 +503,9 @@ export function Signup() {
                   className="password-toggle"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   aria-label={
-                    showConfirmPassword ? t('signup.hidePassword') : t('signup.showPassword')
+                    showConfirmPassword
+                      ? t("signup.hidePassword")
+                      : t("signup.showPassword")
                   }
                 >
                   {showConfirmPassword ? (
@@ -515,37 +530,38 @@ export function Signup() {
               {isLoading ? (
                 <span className="loading-spinner"></span>
               ) : (
-                t('auth.signup')
+                t("auth.signup")
               )}
             </button>
           </form>
 
           <div className="auth-footer">
-            <span>{t('signup.alreadyHaveAccount')}</span>
+            <span>{t("signup.alreadyHaveAccount")}</span>
             <Link to="/login" className="auth-link">
-              {t('auth.login')}
+              {t("auth.login")}
             </Link>
           </div>
 
           <div className="terms-privacy-notice">
-            {t('auth.termsPrivacyNotice')}{' '}
-            <a 
-              href="/terms-of-service" 
-              target="_blank" 
-              rel="noopener noreferrer" 
+            {t("auth.termsPrivacyNotice")}{" "}
+            <a
+              href="/terms-of-service"
+              target="_blank"
+              rel="noopener noreferrer"
               className="auth-link"
             >
-              {t('auth.termsOfService')}
+              {t("auth.termsOfService")}
+            </a>{" "}
+            {t("common.and")}{" "}
+            <a
+              href="/privacy-policy"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="auth-link"
+            >
+              {t("auth.privacyPolicy")}
             </a>
-            {' '}{t('common.and')}{' '}
-            <a 
-              href="/privacy-policy" 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              className="auth-link"
-            >
-              {t('auth.privacyPolicy')}
-            </a>.
+            .
           </div>
         </div>
       </div>
@@ -553,32 +569,30 @@ export function Signup() {
       {/* Company Branding Column */}
       <div className="auth-column brand">
         <div className="toggle-container">
-        <LanguageToggle /> <ThemeToggle />
+          <LanguageToggle /> <ThemeToggle />
         </div>
         <div className="brand-content">
           <div className="brand-logo">
             <img
               src={godspeedLogo}
-              alt={t('common.godspeedLogo')}
+              alt={t("common.godspeedLogo")}
               className="godspeed-logo"
             />
           </div>
           <h2 className="brand-title">
-            Godspeed <span className="gradient-text">Operations</span>
+            Motion Falcon <span className="gradient-text">Operations</span>
           </h2>
-          <p className="brand-description">
-            {t('signup.brandDescription')}
-          </p>
+          <p className="brand-description">{t("signup.brandDescription")}</p>
         </div>
       </div>
-      
+
       {/* Motion Falcon Footer - Right Bottom */}
       <div className="motion-falcon-footer right">
         <span>Powered by</span>
-        <img 
-          src={motionFalconLogo} 
-          alt="Motion Falcon" 
-          className="motion-falcon-logo" 
+        <img
+          src={motionFalconLogo}
+          alt="Motion Falcon"
+          className="motion-falcon-logo"
         />
         <span>Motion Falcon</span>
       </div>
