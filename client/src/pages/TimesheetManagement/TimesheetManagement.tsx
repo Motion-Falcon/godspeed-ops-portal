@@ -29,7 +29,6 @@ import {
 } from "../../services/api/timesheet";
 import "../../styles/pages/TimesheetManagement.css";
 import { generateWeekOptions, formatDate } from "../../utils/weekUtils";
-import { useNavigate } from "react-router-dom";
 
 // Types for timesheet
 interface TimesheetEntry {
@@ -154,8 +153,6 @@ export function TimesheetManagement() {
   const [emailPreferences, setEmailPreferences] = useState<
     Record<string, boolean>
   >({});
-
-  const navigate = useNavigate();
 
   useEffect(() => {
     // Fetch jobseekers on component mount
@@ -817,7 +814,8 @@ export function TimesheetManagement() {
 
       setGenerationMessage(message);
 
-      navigate("/bulk-timesheet-management/list");
+      // navigate("/bulk-timesheet-management/list");
+      window.location.reload();
 
       // Refresh existing timesheets to show updated data
       // fetchExistingTimesheets(selectedJobseeker.userId, selectedWeekStart);
