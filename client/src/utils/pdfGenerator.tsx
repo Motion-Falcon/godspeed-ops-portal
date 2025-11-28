@@ -521,7 +521,7 @@ const InvoicePDFDocument: React.FC<{ data: InvoiceData }> = ({ data }) => {
                   </Text>
                 </View>
                 <View style={[styles.tableCol, { width: "10%" }]}>
-                  <Text style={styles.tableCell}>{item.hours.toFixed(1)}</Text>
+                  <Text style={styles.tableCell}>{item.hours.toFixed(2)}</Text>
                 </View>
                 <View style={[styles.tableCol, { width: "10%" }]}>
                   <Text style={styles.tableCell}>${item.rate.toFixed(2)}</Text>
@@ -550,7 +550,7 @@ const InvoicePDFDocument: React.FC<{ data: InvoiceData }> = ({ data }) => {
                             `${positionName} - ${data.count}`
                         )
                         .join(", ")}
-                      {", "}Total Hrs: {data.summary.totalHours.toFixed(1)}
+                      {", "}Total Hrs: {data.summary.totalHours.toFixed(2)}
                     </Text>
                   </View>
                 </View>
@@ -566,7 +566,7 @@ const InvoicePDFDocument: React.FC<{ data: InvoiceData }> = ({ data }) => {
                   <View style={styles.summaryRow}>
                     <Text style={styles.summaryLabel}>Total Hours:</Text>
                     <Text style={styles.summaryValue}>
-                      {data.summary.totalHours.toFixed(1)}
+                      {data.summary.totalHours.toFixed(2)}
                     </Text>
                   </View>
                   <View style={styles.summaryRow}>
