@@ -20,10 +20,11 @@ import { exportToCSV } from "../../utils/csvExport";
 const getTableColumns = (
   t: (key: string) => string
 ): {
-  key: keyof EnvelopePrintingReportRow;
+  key: keyof EnvelopePrintingReportRow | "report_generated_date";
   label: string;
   format?: (val: unknown, row?: EnvelopePrintingReportRow) => string;
 }[] => [
+  { key: "invoice_number", label: t("reports.columns.invoiceNumber") },
   { key: "city", label: t("reports.columns.city") },
   { key: "list_name", label: t("reports.columns.listName") },
   {
@@ -46,6 +47,7 @@ const getTableColumns = (
   { key: "position_category", label: t("reports.columns.positionCategory") },
   { key: "position_name", label: t("reports.columns.positionName") },
   { key: "hours", label: t("reports.columns.hours") },
+  { key: "overtime_hours", label: t("reports.columns.overtimeHours") },
   {
     key: "total_amount",
     label: t("reports.columns.totalAmount"),
@@ -64,13 +66,17 @@ const getTableColumns = (
     format: (val) =>
       val !== undefined && val !== "N/A" ? `$${val}` : String(val ?? ""),
   },
-  { key: "invoice_number", label: t("reports.columns.invoiceNumber") },
   {
     key: "invoice_date",
     label: t("reports.columns.invoiceDate"),
     format: (val) => formatWeekDate(String(val ?? "")),
   },
   { key: "currency", label: t("reports.columns.currency") },
+  {
+    key: "report_generated_date",
+    label: t("reports.columns.reportGeneratedDate") || "Report Generated Date",
+    format: () => new Date().toLocaleDateString(),
+  },
 ];
 
 const getCsvColumns = (tableColumns: ReturnType<typeof getTableColumns>) => [
@@ -351,23 +357,51 @@ export function EnvelopePrintingReport() {
             <button
               className="button"
               onClick={() => {
-                const csvData = reportRows.map((row) => {
-                  const csvRow: Record<string, unknown> = {};
+                const reportGeneratedDate = new Date().toLocaleDateString();
+                const csvData = reportRows.map((row, index) => {
+                  const csvRow: Record<string, unknown> = {
+                    [t("reports.columns.serialNumber") || "S.No."]: index + 1,
+                  };
+                  // Add invoice_number right after serial number
+                  csvRow[t("reports.columns.invoiceNumber")] =
+                    row.invoice_number || "N/A";
+                  // Add all other columns except invoice_number and report_generated_date
                   csvColumns.forEach((col) => {
-                    const val = row[col.key];
+                    if (
+                      col.key === "invoice_number" ||
+                      col.key === "report_generated_date"
+                    ) {
+                      return; // Skip these as they're handled separately
+                    }
+                    const val = row[col.key as keyof EnvelopePrintingReportRow];
                     csvRow[col.label] = col.format
                       ? col.format(val, row)
                       : val !== undefined && val !== null
                       ? String(val)
                       : "N/A";
                   });
+                  // Add report generated date at the end
+                  csvRow[
+                    t("reports.columns.reportGeneratedDate") ||
+                      "Report Generated Date"
+                  ] = reportGeneratedDate;
                   return csvRow;
                 });
-                exportToCSV(
-                  csvData,
-                  "Envelope Printing Report.csv",
-                  csvColumns.map((col) => col.label)
-                );
+                // Build column order: S.No., Invoice #, then other columns, then Report Generated Date
+                const otherColumns = csvColumns
+                  .filter(
+                    (col) =>
+                      col.key !== "invoice_number" &&
+                      col.key !== "report_generated_date"
+                  )
+                  .map((col) => col.label);
+                exportToCSV(csvData, "Envelope Printing Report.csv", [
+                  t("reports.columns.serialNumber") || "S.No.",
+                  t("reports.columns.invoiceNumber"),
+                  ...otherColumns,
+                  t("reports.columns.reportGeneratedDate") ||
+                    "Report Generated Date",
+                ]);
               }}
             >
               {t("reports.states.downloadCSV")}
@@ -397,12 +431,18 @@ export function EnvelopePrintingReport() {
                 {reportRows.map((row, idx) => (
                   <tr key={idx}>
                     {tableColumns.map((col, i) => {
-                      const val = row[col.key];
-                      const displayValue = col.format
-                        ? col.format(val, row)
-                        : val !== undefined && val !== null
-                        ? String(val)
-                        : "N/A";
+                      let displayValue: string;
+                      if (col.key === "report_generated_date") {
+                        displayValue = new Date().toLocaleDateString();
+                      } else {
+                        const val =
+                          row[col.key as keyof EnvelopePrintingReportRow];
+                        displayValue = col.format
+                          ? col.format(val, row)
+                          : val !== undefined && val !== null
+                          ? String(val)
+                          : "N/A";
+                      }
                       return <td key={i}>{displayValue}</td>;
                     })}
                   </tr>
