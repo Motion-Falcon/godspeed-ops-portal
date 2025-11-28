@@ -2285,11 +2285,25 @@ export function InvoiceManagement() {
                           <input
                             type="number"
                             value={lineItem.hours}
-                            onChange={(e) =>
-                              updateLineItem(lineItem.id, {
-                                hours: e.target.value,
-                              })
-                            }
+                            onChange={(e) => {
+                              const rawValue = e.target.value;
+                              // Allow clearing the input
+                              if (rawValue === "") {
+                                updateLineItem(lineItem.id, { hours: "" });
+                                return;
+                              }
+                              // Limit to 2 decimal places
+                              const [intPart, decPart] = rawValue.split(".");
+                              if (decPart && decPart.length > 2) {
+                                updateLineItem(lineItem.id, {
+                                  hours: `${intPart}.${decPart.slice(0, 2)}`,
+                                });
+                              } else {
+                                updateLineItem(lineItem.id, {
+                                  hours: rawValue,
+                                });
+                              }
+                            }}
                             placeholder="0.00"
                             min="0"
                             step="0.25"
@@ -2305,11 +2319,30 @@ export function InvoiceManagement() {
                           <input
                             type="number"
                             value={lineItem.regularBillRate}
-                            onChange={(e) =>
-                              updateLineItem(lineItem.id, {
-                                regularBillRate: e.target.value,
-                              })
-                            }
+                            onChange={(e) => {
+                              const rawValue = e.target.value;
+                              // Allow clearing the input
+                              if (rawValue === "") {
+                                updateLineItem(lineItem.id, {
+                                  regularBillRate: "",
+                                });
+                                return;
+                              }
+                              // Limit to 2 decimal places
+                              const [intPart, decPart] = rawValue.split(".");
+                              if (decPart && decPart.length > 2) {
+                                updateLineItem(lineItem.id, {
+                                  regularBillRate: `${intPart}.${decPart.slice(
+                                    0,
+                                    2
+                                  )}`,
+                                });
+                              } else {
+                                updateLineItem(lineItem.id, {
+                                  regularBillRate: rawValue,
+                                });
+                              }
+                            }}
                             placeholder="0.00"
                             min="0"
                             step="0.01"
@@ -2573,7 +2606,7 @@ export function InvoiceManagement() {
                               </div>
                             </div>
                             <div className="timesheet-col-hours">
-                              {(item.totalRegularHours || 0).toFixed(1)}
+                              {(item.totalRegularHours || 0).toFixed(2)}
                             </div>
                             <div className="timesheet-col-rate">
                               ${item.regularBillRate || "0.00"}
@@ -2674,7 +2707,7 @@ export function InvoiceManagement() {
                                 </div>
                               </div>
                               <div className="timesheet-col-hours">
-                                {(item.totalOvertimeHours || 0).toFixed(1)}
+                                {(item.totalOvertimeHours || 0).toFixed(2)}
                               </div>
                               <div className="timesheet-col-rate">
                                 $
@@ -2788,7 +2821,7 @@ export function InvoiceManagement() {
                                   total + (parseFloat(item.hours) || 0),
                                 0
                               )
-                              .toFixed(1)}
+                              .toFixed(2)}
                           </div>
                         </div>
                         <div className="timesheet-total-line timesheet-subtotal">
@@ -3290,7 +3323,12 @@ export function InvoiceManagement() {
                     {t("invoiceManagement.totalLabel")}
                   </span>
                   <span className="invoice-success-modal-detail-value">
-                    ${createdInvoice.grandTotal}
+                    $
+                    {(
+                      parseFloat(
+                        createdInvoice.grandTotal?.toString() || "0"
+                      ) || 0
+                    ).toFixed(2)}
                   </span>
                 </div>
               </div>

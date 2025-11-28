@@ -197,6 +197,18 @@
   transition: all 0.2s ease;
 }
 
+/* Remove spinner arrows from number inputs */
+.invoice-number-input::-webkit-outer-spin-button,
+.invoice-number-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.invoice-number-input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
 .invoice-text-input:focus,
 .invoice-number-input:focus {
   outline: none;
