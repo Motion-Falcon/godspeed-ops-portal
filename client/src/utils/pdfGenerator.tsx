@@ -362,7 +362,7 @@ const InvoicePDFDocument: React.FC<{ data: InvoiceData }> = ({ data }) => {
   }, {} as Record<string, { count: number; totalHours: number }>);
 
   // Calculate how many rows can fit on the first page (accounting for header space)
-  const FIRST_PAGE_ROWS = 12;
+  const FIRST_PAGE_ROWS = 10;
   // Calculate how many rows can fit on continuation pages (more space available)
   const CONTINUATION_PAGE_ROWS = 18;
 
