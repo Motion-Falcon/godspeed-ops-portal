@@ -287,9 +287,11 @@ export function WeeklyTimesheet() {
             <button
               className="button"
               onClick={() => {
-                // Prepare CSV data to match the table exactly (order: Timesheet #, Week Period, ...)
-                const csvData = reportRows.map(row => {
-                  const csvRow: Record<string, unknown> = {};
+                // Prepare CSV data to match the table exactly (order: S.No., Timesheet #, Week Period, ...)
+                const csvData = reportRows.map((row, index) => {
+                  const csvRow: Record<string, unknown> = {
+                    [t("reports.columns.serialNumber") || "S.No."]: index + 1,
+                  };
                   csvColumns.forEach(col => {
                     if (col.key === 'week_period') {
                       csvRow[col.label] = col.format ? col.format(undefined, row as unknown as Record<string, unknown>) : '';
@@ -303,7 +305,7 @@ export function WeeklyTimesheet() {
                 exportToCSV(
                   csvData,
                   'Weekly Timesheet Report.csv',
-                  csvColumns.map(col => col.label)
+                  [t("reports.columns.serialNumber") || "S.No.", ...csvColumns.map(col => col.label)]
                 );
               }}
             >

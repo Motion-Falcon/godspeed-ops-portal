@@ -262,8 +262,10 @@ export function SalesReport() {
               className="button"
               onClick={() => {
                 // Prepare CSV data to match the table exactly
-                const csvData = reportRows.map(row => {
-                  const csvRow: Record<string, unknown> = {};
+                const csvData = reportRows.map((row, index) => {
+                  const csvRow: Record<string, unknown> = {
+                    [t("reports.columns.serialNumber") || "S.No."]: index + 1,
+                  };
                   csvColumns.forEach(col => {
                     if (col.key === 'from_to_date') {
                       csvRow[col.label] = col.format ? col.format(undefined, row as unknown as Record<string, unknown>) : '';
@@ -277,7 +279,7 @@ export function SalesReport() {
                 exportToCSV(
                   csvData,
                   'Sales Report.csv',
-                  csvColumns.map(col => col.label)
+                  [t("reports.columns.serialNumber") || "S.No.", ...csvColumns.map(col => col.label)]
                 );
               }}
             >
