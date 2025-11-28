@@ -20,11 +20,8 @@ import {
   ClipboardList,
 } from "lucide-react";
 import { getClients, ClientData, getClient } from "../../services/api/client";
-import {
-  getClientPositions,
-  getPositionAssignments,
-  AssignmentRecord,
-} from "../../services/api/position";
+import { getClientPositions } from "../../services/api/position";
+import { getJobseekerProfiles } from "../../services/api/jobseeker";
 import { PAYMENT_TERMS } from "../../constants/formOptions";
 import {
   InvoiceAttachments,
@@ -120,8 +117,12 @@ pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/b
 interface TimesheetData {
   id: string;
   totalRegularHours: number;
+  totalOvertimeHours?: number;
   regularBillRate: number;
   regularPayRate: number;
+  overtimeBillRate?: number;
+  overtimePayRate?: number;
+  overtimeEnabled?: boolean;
   jobseekerProfile?: {
     firstName: string;
     lastName: string;
@@ -179,12 +180,9 @@ export function InvoiceManagement() {
   const [positions, setPositions] = useState<ClientPosition[]>([]);
   const [positionLoading, setPositionLoading] = useState(false);
 
-  // State for jobseeker selection per position
-  const [assignedJobseekersByPosition, setAssignedJobseekersByPosition] =
-    useState<Record<string, AssignedJobseeker[]>>({});
-  const [jobseekerLoadingByPosition, setJobseekerLoadingByPosition] = useState<
-    Record<string, boolean>
-  >({});
+  // State for all jobseekers (no longer position-dependent)
+  const [allJobseekers, setAllJobseekers] = useState<AssignedJobseeker[]>([]);
+  const [jobseekerLoading, setJobseekerLoading] = useState<boolean>(false);
 
   // State for invoice details
   const [selectedTerms, setSelectedTerms] = useState<string>("");
@@ -254,6 +252,9 @@ export function InvoiceManagement() {
   useEffect(() => {
     // Fetch clients on component mount
     fetchClients();
+
+    // Fetch all jobseekers on component mount
+    fetchAllJobseekers();
 
     // Set default invoice date to today (Canadian timezone)
     const today = new Date();
@@ -383,53 +384,47 @@ export function InvoiceManagement() {
     return { regularHours, overtimeHours };
   };
 
-  const fetchPositionAssignments = async (positionId: string) => {
+  // Fetch all jobseekers (no longer position-dependent)
+  const fetchAllJobseekers = async () => {
     try {
-      setJobseekerLoadingByPosition((prev) => ({
-        ...prev,
-        [positionId]: true,
-      }));
-      const response = await getPositionAssignments(positionId);
+      setJobseekerLoading(true);
+      const response = await getJobseekerProfiles({
+        limit: 100000000, // Absurd limit to fetch all
+      });
 
-      if (response.success && response.assignments) {
-        // Transform assignments to match our interface
-        const transformedJobseekers: AssignedJobseeker[] = response.assignments
-          .filter((assignment) => assignment.jobseekerProfile) // Only include assignments with profile data
-          .map((assignment: AssignmentRecord) => ({
-            id: assignment.jobseekerProfile?.id,
-            positionCandidateAssignmentsId: assignment.id,
-            candidateId: assignment.candidate_id,
-            firstName: assignment.jobseekerProfile?.first_name || "",
-            lastName: assignment.jobseekerProfile?.last_name || "",
-            email: assignment.jobseekerProfile?.email || "",
-            mobile: assignment.jobseekerProfile?.mobile,
-            status: assignment.status,
-            startDate: assignment.start_date,
-            endDate: assignment.end_date,
-            employeeId: assignment.jobseekerProfile?.employee_id || "",
-          }));
+      if (response.profiles && response.profiles.length > 0) {
+        // Transform jobseeker profiles to match our interface
+        const transformedJobseekers: AssignedJobseeker[] =
+          response.profiles.map((profile) => {
+            // Parse name into firstName and lastName
+            const nameParts = profile.name?.split(" ") || [];
+            const firstName = nameParts[0] || "";
+            const lastName = nameParts.slice(1).join(" ") || "";
 
-        setAssignedJobseekersByPosition((prev) => ({
-          ...prev,
-          [positionId]: transformedJobseekers,
-        }));
+            return {
+              id: profile.id,
+              candidateId: profile.userId,
+              firstName: firstName,
+              lastName: lastName,
+              email: profile.email || "",
+              mobile: profile.phoneNumber,
+              status: profile.status || "active",
+              startDate: "",
+              endDate: undefined,
+              // employeeId may not be in JobSeekerProfile type but could be in API response
+              employeeId: (profile as { employeeId?: string }).employeeId || "",
+            };
+          });
+
+        setAllJobseekers(transformedJobseekers);
       } else {
-        setAssignedJobseekersByPosition((prev) => ({
-          ...prev,
-          [positionId]: [],
-        }));
+        setAllJobseekers([]);
       }
     } catch (error) {
-      console.error("Error fetching position assignments:", error);
-      setAssignedJobseekersByPosition((prev) => ({
-        ...prev,
-        [positionId]: [],
-      }));
+      console.error("Error fetching all jobseekers:", error);
+      setAllJobseekers([]);
     } finally {
-      setJobseekerLoadingByPosition((prev) => ({
-        ...prev,
-        [positionId]: false,
-      }));
+      setJobseekerLoading(false);
     }
   };
 
@@ -621,37 +616,7 @@ export function InvoiceManagement() {
         return [...prevPositions, ...newPositions];
       });
 
-      // Populate jobseeker data for each position
-      const jobseekersByPosition: Record<string, AssignedJobseeker[]> = {};
-      response.timesheets.forEach((timesheet) => {
-        if (!jobseekersByPosition[timesheet.position.id]) {
-          jobseekersByPosition[timesheet.position.id] = [];
-        }
-
-        // Check if jobseeker already exists for this position
-        const exists = jobseekersByPosition[timesheet.position.id].some(
-          (js) => js.id === timesheet.jobseekerProfileId
-        );
-
-        if (!exists) {
-          jobseekersByPosition[timesheet.position.id].push({
-            id: timesheet.jobseekerProfileId,
-            candidateId: timesheet.jobseekerUserId,
-            firstName: timesheet.jobseekerProfile.firstName,
-            lastName: timesheet.jobseekerProfile.lastName,
-            email: timesheet.jobseekerProfile.email,
-            employeeId: timesheet.jobseekerProfile.employeeId,
-            status: "active",
-            startDate: timesheet.weekStartDate,
-            endDate: timesheet.weekEndDate,
-          });
-        }
-      });
-
-      setAssignedJobseekersByPosition((prev) => ({
-        ...prev,
-        ...jobseekersByPosition,
-      }));
+      // Jobseekers are now fetched globally, no need to populate from timesheets
 
       // Replace existing line items with new ones
       setLineItems(newLineItems);
@@ -757,9 +722,8 @@ export function InvoiceManagement() {
     value: position,
   }));
 
-  const getJobseekerOptions = (positionId: string): DropdownOption[] => {
-    const jobseekers = assignedJobseekersByPosition[positionId] || [];
-    return jobseekers.map((jobseeker) => ({
+  const getJobseekerOptions = (): DropdownOption[] => {
+    return allJobseekers.map((jobseeker) => ({
       id: jobseeker.candidateId,
       label:
         `${jobseeker.firstName} ${jobseeker.lastName}`.trim() ||
@@ -925,11 +889,6 @@ export function InvoiceManagement() {
       totalRegularHours: regularHours,
       totalOvertimeHours: overtimeHours,
     });
-
-    // Fetch jobseekers for this position if not already fetched
-    if (!assignedJobseekersByPosition[position.id]) {
-      fetchPositionAssignments(position.id);
-    }
   };
 
   const handleJobseekerSelect = (
@@ -1029,11 +988,27 @@ export function InvoiceManagement() {
       const totalHours = parseFloat(item.hours) || 0;
       const regularBillRate = parseFloat(item.regularBillRate) || 0;
 
-      // Calculate regular and overtime hours
-      const { regularHours, overtimeHours } = calculateLineItemHours(
-        totalHours,
-        item.position
-      );
+      // Use pre-set values if available (from edit mode), otherwise calculate
+      let regularHours: number;
+      let overtimeHours: number;
+
+      if (
+        item.totalRegularHours !== undefined &&
+        item.totalOvertimeHours !== undefined &&
+        // Only use preserved values if they sum to the total hours (consistency check)
+        Math.abs(
+          item.totalRegularHours + item.totalOvertimeHours - totalHours
+        ) < 0.01
+      ) {
+        // Preserve the original split from loaded invoice data
+        regularHours = item.totalRegularHours;
+        overtimeHours = item.totalOvertimeHours;
+      } else {
+        // Calculate regular and overtime hours for new line items or when values don't match
+        const calculated = calculateLineItemHours(totalHours, item.position);
+        regularHours = calculated.regularHours;
+        overtimeHours = calculated.overtimeHours;
+      }
 
       // Get overtime bill rate (use regular rate if not specified)
       const overtimeBillRate =
@@ -1757,9 +1732,23 @@ export function InvoiceManagement() {
         const mappedLineItems: InvoiceLineItem[] = (
           invoiceData.invoiceData.timesheets as TimesheetData[]
         ).map((timesheet: TimesheetData) => {
-          // Map position data
-          const position: ClientPosition | null = timesheet.position
-            ? {
+          const totalRegularHours = timesheet.totalRegularHours || 0;
+          const totalOvertimeHours = timesheet.totalOvertimeHours || 0;
+          const totalHours = totalRegularHours + totalOvertimeHours;
+
+          // Map position data with overtime information
+          // Try to find the full position data from fetched positions, otherwise use timesheet data
+          let position: ClientPosition | null = null;
+          if (timesheet.position) {
+            const fetchedPosition = positions.find(
+              (p) => p.id === timesheet.position?.positionId
+            );
+            if (fetchedPosition) {
+              // Use fetched position data which has complete overtime information
+              position = fetchedPosition;
+            } else {
+              // Fallback to timesheet position data
+              position = {
                 id: timesheet.position.positionId,
                 positionCode: timesheet.position.positionCode,
                 title: timesheet.position.title,
@@ -1767,8 +1756,12 @@ export function InvoiceManagement() {
                 billRate: timesheet.regularBillRate.toString(),
                 markup: "0",
                 positionNumber: timesheet.position.positionNumber,
-              }
-            : null;
+                overtimeEnabled: timesheet.overtimeEnabled || false,
+                overtimeBillRate: timesheet.overtimeBillRate?.toString(),
+                overtimePayRate: timesheet.overtimePayRate?.toString(),
+              };
+            }
+          }
 
           // Map jobseeker data
           const jobseeker: AssignedJobseeker | null = timesheet.jobseekerProfile
@@ -1795,27 +1788,17 @@ export function InvoiceManagement() {
             position: position,
             jobseeker: jobseeker,
             description: timesheet.description || "",
-            hours: timesheet.totalRegularHours.toString(),
+            hours: totalHours.toString(),
             regularBillRate: timesheet.regularBillRate.toString(),
             regularPayRate: timesheet.regularPayRate.toString(),
             salesTax: timesheet.salesTax || "13.00% [ON]",
+            totalRegularHours: totalRegularHours,
+            totalOvertimeHours: totalOvertimeHours,
           };
         });
         setLineItems(mappedLineItems);
 
-        // Ensure jobseeker dropdowns are populated for each position in loaded line items
-        const uniquePositionIds = [
-          ...new Set(
-            mappedLineItems
-              .map((item) => item.position?.id)
-              .filter((id): id is string => !!id)
-          ),
-        ];
-        uniquePositionIds.forEach((positionId) => {
-          if (positionId && !assignedJobseekersByPosition[positionId]) {
-            fetchPositionAssignments(positionId);
-          }
-        });
+        // All jobseekers are already fetched, no need to fetch per position
       }
 
       // Set supplier PO items from invoiceData.invoiceData
@@ -2238,8 +2221,7 @@ export function InvoiceManagement() {
                             <User size={16} />
                             {t("invoiceManagement.jobSeeker")}
                           </label>
-                          {lineItem.position &&
-                          jobseekerLoadingByPosition[lineItem.position.id] ? (
+                          {jobseekerLoading ? (
                             <div className="invoice-dropdown-skeleton">
                               <div className="skeleton-dropdown-trigger">
                                 <div className="skeleton-icon"></div>
@@ -2249,16 +2231,10 @@ export function InvoiceManagement() {
                             </div>
                           ) : (
                             <CustomDropdown
-                              options={
-                                lineItem.position
-                                  ? getJobseekerOptions(lineItem.position.id)
-                                  : []
-                              }
+                              options={getJobseekerOptions()}
                               selectedOption={
                                 lineItem.jobseeker
-                                  ? getJobseekerOptions(
-                                      lineItem.position?.id || ""
-                                    ).find(
+                                  ? getJobseekerOptions().find(
                                       (opt) =>
                                         opt.id ===
                                         lineItem.jobseeker?.candidateId
@@ -2268,25 +2244,15 @@ export function InvoiceManagement() {
                               onSelect={(option) =>
                                 handleJobseekerSelect(lineItem.id, option)
                               }
-                              placeholder={
-                                lineItem.position
-                                  ? t(
-                                      "invoiceManagement.selectJobseekerPlaceholder"
-                                    )
-                                  : t(
-                                      "invoiceManagement.pleaseSelectPositionFirst"
-                                    )
-                              }
-                              disabled={!lineItem.position}
-                              loading={false}
+                              placeholder={t(
+                                "invoiceManagement.selectJobseekerPlaceholder"
+                              )}
+                              disabled={false}
+                              loading={jobseekerLoading}
                               icon={<User size={16} />}
-                              emptyMessage={
-                                lineItem.position
-                                  ? t("invoiceManagement.noAssignedJobseekers")
-                                  : t(
-                                      "invoiceManagement.pleaseSelectPositionFirst"
-                                    )
-                              }
+                              emptyMessage={t(
+                                "invoiceManagement.noJobseekersFound"
+                              )}
                             />
                           )}
                         </div>
