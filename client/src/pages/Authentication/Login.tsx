@@ -105,10 +105,7 @@ export function Login() {
     }
   };
 
-  const handleDemoLogin = async (
-    email: string,
-    userType: "admin" | "recruiter" | "jobseeker"
-  ) => {
+  const handleDemoLogin = async (email: string) => {
     setIsDemoLoading(true);
     setError(null);
 
@@ -146,7 +143,7 @@ export function Login() {
     email: string;
     userType: "admin" | "recruiter" | "jobseeker";
   }) => {
-    handleDemoLogin(user.email, user.userType);
+    handleDemoLogin(user.email);
   };
 
   return (
