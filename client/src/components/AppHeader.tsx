@@ -44,7 +44,6 @@ export function AppHeader({
   statusMessage,
   statusType = "success",
   hideHamburgerMenu = false,
-  showCompanySwitcher = false,
 }: AppHeaderProps) {
   const navigate = useNavigate();
   const { t } = useLanguage();
