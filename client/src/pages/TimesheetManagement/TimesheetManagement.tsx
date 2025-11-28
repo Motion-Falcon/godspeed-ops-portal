@@ -1209,11 +1209,22 @@ export function TimesheetManagement() {
                                   min="0"
                                   value={entry.hours === 0 ? "" : entry.hours}
                                   onChange={(e) => {
-                                    const hours =
-                                      parseFloat(e.target.value) || 0;
+                                    const rawValue = e.target.value;
+                                    // Allow clearing the input
+                                    if (rawValue === "") {
+                                      updateTimesheetEntry(entry.date, 0);
+                                      return;
+                                    }
+                                    // Limit to 2 decimal places
+                                    const [intPart, decPart] = rawValue.split(".");
+                                    let limitedValue = rawValue;
+                                    if (decPart && decPart.length > 2) {
+                                      limitedValue = `${intPart}.${decPart.slice(0, 2)}`;
+                                    }
+                                    const hours = parseFloat(limitedValue) || 0;
                                     updateTimesheetEntry(entry.date, hours);
                                   }}
-                                  placeholder="0.0"
+                                  placeholder="0.00"
                                   className="timesheet-hours-input"
                                 />
                               </div>
@@ -1243,8 +1254,19 @@ export function TimesheetManagement() {
                                     : timesheet.bonusAmount
                                 }
                                 onChange={(e) => {
-                                  const amount =
-                                    parseFloat(e.target.value) || 0;
+                                  const rawValue = e.target.value;
+                                  // Allow clearing the input
+                                  if (rawValue === "") {
+                                    updateTimesheetBonus(0);
+                                    return;
+                                  }
+                                  // Limit to 2 decimal places
+                                  const [intPart, decPart] = rawValue.split(".");
+                                  let limitedValue = rawValue;
+                                  if (decPart && decPart.length > 2) {
+                                    limitedValue = `${intPart}.${decPart.slice(0, 2)}`;
+                                  }
+                                  const amount = parseFloat(limitedValue) || 0;
                                   updateTimesheetBonus(amount);
                                 }}
                                 placeholder="0.00"
@@ -1268,8 +1290,19 @@ export function TimesheetManagement() {
                                     : timesheet.deductionAmount
                                 }
                                 onChange={(e) => {
-                                  const amount =
-                                    parseFloat(e.target.value) || 0;
+                                  const rawValue = e.target.value;
+                                  // Allow clearing the input
+                                  if (rawValue === "") {
+                                    updateTimesheetDeduction(0);
+                                    return;
+                                  }
+                                  // Limit to 2 decimal places
+                                  const [intPart, decPart] = rawValue.split(".");
+                                  let limitedValue = rawValue;
+                                  if (decPart && decPart.length > 2) {
+                                    limitedValue = `${intPart}.${decPart.slice(0, 2)}`;
+                                  }
+                                  const amount = parseFloat(limitedValue) || 0;
                                   updateTimesheetDeduction(amount);
                                 }}
                                 placeholder="0.00"

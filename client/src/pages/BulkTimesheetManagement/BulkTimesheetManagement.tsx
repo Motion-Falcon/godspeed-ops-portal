@@ -1024,10 +1024,22 @@ export function BulkTimesheetManagement() {
                               step="0.5"
                               value={entry.hours === 0 ? "" : entry.hours}
                               onChange={(e) => {
-                                const hours = parseFloat(e.target.value) || 0;
+                                const rawValue = e.target.value;
+                                // Allow clearing the input
+                                if (rawValue === "") {
+                                  updateEntry(ts.jobseeker.id, entry.date, 0);
+                                  return;
+                                }
+                                // Limit to 2 decimal places
+                                const [intPart, decPart] = rawValue.split(".");
+                                let limitedValue = rawValue;
+                                if (decPart && decPart.length > 2) {
+                                  limitedValue = `${intPart}.${decPart.slice(0, 2)}`;
+                                }
+                                const hours = parseFloat(limitedValue) || 0;
                                 updateEntry(ts.jobseeker.id, entry.date, hours);
                               }}
-                              placeholder="0.0"
+                              placeholder="0.00"
                               className="timesheet-hours-input"
                             />
                           </div>
@@ -1054,7 +1066,19 @@ export function BulkTimesheetManagement() {
                             step="0.01"
                             value={ts.bonusAmount === 0 ? "" : ts.bonusAmount}
                             onChange={(e) => {
-                              const amount = parseFloat(e.target.value) || 0;
+                              const rawValue = e.target.value;
+                              // Allow clearing the input
+                              if (rawValue === "") {
+                                updateBonus(ts.jobseeker.id, 0);
+                                return;
+                              }
+                              // Limit to 2 decimal places
+                              const [intPart, decPart] = rawValue.split(".");
+                              let limitedValue = rawValue;
+                              if (decPart && decPart.length > 2) {
+                                limitedValue = `${intPart}.${decPart.slice(0, 2)}`;
+                              }
+                              const amount = parseFloat(limitedValue) || 0;
                               updateBonus(ts.jobseeker.id, amount);
                             }}
                             placeholder="0.00"
@@ -1078,7 +1102,19 @@ export function BulkTimesheetManagement() {
                               ts.deductionAmount === 0 ? "" : ts.deductionAmount
                             }
                             onChange={(e) => {
-                              const amount = parseFloat(e.target.value) || 0;
+                              const rawValue = e.target.value;
+                              // Allow clearing the input
+                              if (rawValue === "") {
+                                updateDeduction(ts.jobseeker.id, 0);
+                                return;
+                              }
+                              // Limit to 2 decimal places
+                              const [intPart, decPart] = rawValue.split(".");
+                              let limitedValue = rawValue;
+                              if (decPart && decPart.length > 2) {
+                                limitedValue = `${intPart}.${decPart.slice(0, 2)}`;
+                              }
+                              const amount = parseFloat(limitedValue) || 0;
                               updateDeduction(ts.jobseeker.id, amount);
                             }}
                             placeholder="0.00"
