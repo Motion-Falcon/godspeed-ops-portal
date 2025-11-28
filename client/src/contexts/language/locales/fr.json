@@ -2576,6 +2576,7 @@
       "invoiceDate": "date de facture"
     },
     "columns": {
+      "serialNumber": "N°",
       "weekPeriod": "Période de la semaine",
       "jobseekerNumber": "N° demandeur d'emploi",
       "positionNumber": "N° poste",
@@ -2654,7 +2655,8 @@
       "preferredPaymentMethod": "Méthode de paiement",
       "paymentCycle": "Cycle de paiement",
         "emailSent": "Email envoyé",
-        "emailSentDate": "Date d'envoi de l'email"
+        "emailSentDate": "Date d'envoi de l'email",
+        "reportGeneratedDate": "Date de génération du rapport"
       },
       "info": {
         "defaultDateRange": "Plage de dates par défaut : Dernier mois"

@@ -881,10 +881,14 @@ router.post(
           // Get positionId from nested position object
           const positionId = ts.position && ts.position.positionId;
           const position = positionId ? positionInfoMap[positionId] : {};
+          // Skip if jobseekerProfile is missing
+          if (!ts.jobseekerProfile || !ts.jobseekerProfile.jobseekerProfileId) {
+            return;
+          }
           // Get jobseeker_id (employeeId)
-          const jobseeker_employee_id = ts.jobseekerProfile && ts.jobseekerProfile.employeeId ? ts.jobseekerProfile.employeeId : '';
+          const jobseeker_employee_id = ts.jobseekerProfile.employeeId || '';
           // Get jobseeker info from jobseekerInfoMap
-          const jobseekerInfo = jobseekerInfoMap[ts.jobseekerProfile.jobseekerProfileId];
+          const jobseekerInfo = jobseekerInfoMap[ts.jobseekerProfile.jobseekerProfileId] || {};
           // Compose row
           envelopeData.push({
             city: client.city1 || '',
@@ -905,6 +909,7 @@ router.post(
             position_category: position.position_category || '',
             position_name: position.title ? `${position.title} [${position.position_number || ''}]` : '',
             hours: (Number(ts.totalRegularHours || ts.regularHours) || 0).toString(),
+            overtime_hours: (Number(ts.totalOvertimeHours || ts.overtimeHours) || 0).toString(),
             total_amount: (Number(ts.totalClientBill) || 0).toFixed(2),
             tax_rate: (() => {
               if (typeof ts.salesTax === 'string') {

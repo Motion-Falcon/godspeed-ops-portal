@@ -189,8 +189,10 @@ export function ClientsReport() {
             <button
               className="button"
               onClick={() => {
-                const csvData = reportRows.map(row => {
-                  const csvRow: Record<string, unknown> = {};
+                const csvData = reportRows.map((row, index) => {
+                  const csvRow: Record<string, unknown> = {
+                    [t("reports.columns.serialNumber") || "S.No."]: index + 1,
+                  };
                   csvColumns.forEach(col => {
                     const val = row[col.key as keyof typeof row];
                     csvRow[col.label] = col.format ? col.format(val) : (val !== undefined && val !== null ? String(val) : 'N/A');
@@ -200,7 +202,7 @@ export function ClientsReport() {
                 exportToCSV(
                   csvData,
                   'Clients Report.csv',
-                  csvColumns.map(col => col.label)
+                  [t("reports.columns.serialNumber") || "S.No.", ...csvColumns.map(col => col.label)]
                 );
               }}
             >

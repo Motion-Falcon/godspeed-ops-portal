@@ -2576,6 +2576,7 @@
         "invoiceDate": "invoice date"
       },
       "columns": {
+        "serialNumber": "S.No.",
         "weekPeriod": "Week Period",
         "jobseekerNumber": "Jobseeker #",
         "positionNumber": "Position #",
@@ -2654,7 +2655,8 @@
         "preferredPaymentMethod": "Payment Method",
         "paymentCycle": "Payment Cycle",
         "emailSent": "Email Sent",
-        "emailSentDate": "Email Sent Date"
+        "emailSentDate": "Email Sent Date",
+        "reportGeneratedDate": "Report Generated Date"
       },
       "info": {
         "defaultDateRange": "Default date range: Last 1 month"
