@@ -322,6 +322,7 @@ export interface EnvelopePrintingReportRow {
   position_category: string;
   position_name: string;
   hours: string;
+  overtime_hours: string;
   total_amount: string;
   tax_rate: string;
   hst_gst: string;
