@@ -1,7 +1,5 @@
 ---
-description: Activity logging implementation patterns for Express routes and UI components
-globs: server/src/routes/*.ts, server/src/middleware/activityLogger.ts, client/src/components/dashboard/RecentActivities.tsx
-alwaysApply: true
+alwaysApply: false
 ---
 
 # **Activity Logging System Rules**
@@ -11,21 +9,23 @@ alwaysApply: true
 ## **Core Pattern**
 
 ```typescript
-import activityLogger from '../middleware/activityLogger.js';
+import activityLogger from "../middleware/activityLogger.js";
 
-router.post('/route',
+router.post(
+  "/route",
   authenticateToken,
   activityLogger({
     onSuccess: (req, res) => ({
-      actionType: 'action_name', // Must exist in ActivityData interface
-      actionVerb: 'created/updated/deleted',
-      primaryEntityType: 'entity_type',
+      actionType: "action_name", // Must exist in ActivityData interface
+      actionVerb: "created/updated/deleted",
+      primaryEntityType: "entity_type",
       primaryEntityId: res.locals.entity?.id,
       primaryEntityName: res.locals.entity?.name || req.body.name,
       displayMessage: `${actorName} ${verb} ${entityName}`,
-      category: 'user_management|client_management|candidate_management|position_management|financial',
-      priority: 'normal'
-    })
+      category:
+        "user_management|client_management|candidate_management|position_management|financial",
+      priority: "normal",
+    }),
   }),
   async (req, res) => {
     // Handler logic
@@ -38,16 +38,19 @@ router.post('/route',
 ## **When Adding New Activity Types**
 
 1. **Add to interface** in `activityLogger.ts`:
+
    ```typescript
-   actionType: "existing_types" | "new_action_type"
+   actionType: "existing_types" | "new_action_type";
    ```
 
 2. **Update UI component** in `RecentActivities.tsx`:
+
    ```typescript
-   action_type: "existing_types" | "new_action_type"
+   action_type: "existing_types" | "new_action_type";
    ```
 
 3. **Add status icon**:
+
    ```typescript
    case "new_action_type":
      return <Icon size={12} className="status-success" />;
@@ -62,18 +65,20 @@ router.post('/route',
 ## **Special Cases**
 
 ### **No Authentication (Registration)**
+
 ```typescript
 // Create system user context
 if (!req.user) {
   req.user = {
-    id: '00000000-0000-0000-0000-000000000000',
-    email: 'system@godspeedxp.com',
-    user_metadata: { name: 'System', user_type: 'admin' }
+    id: "00000000-0000-0000-0000-000000000000",
+    email: "system@godspeedxp.com",
+    user_metadata: { name: "System", user_type: "admin" },
   } as any;
 }
 ```
 
 ### **Multiple Entity Relationships**
+
 ```typescript
 // Primary: Main subject of action
 primaryEntityType: 'jobseeker',
@@ -81,7 +86,7 @@ primaryEntityId: candidateId,
 primaryEntityName: 'John Doe',
 
 // Secondary: Related entity or actor
-secondaryEntityType: 'position', 
+secondaryEntityType: 'position',
 secondaryEntityId: positionId,
 secondaryEntityName: 'Senior Developer',
 
@@ -94,12 +99,13 @@ tertiaryEntityName: 'ACME Corp'
 ```
 
 ### **Entity Relationship Examples**
+
 ```typescript
 // User Management: Admin assigns manager to user
 primaryEntity: 'user' (target user)
 secondaryEntity: 'manager' (assigned manager)
 
-// Invoicing: Create invoice for client 
+// Invoicing: Create invoice for client
 primaryEntity: 'invoice' (invoice number)
 secondaryEntity: 'client' (billing target)
 
@@ -112,7 +118,7 @@ tertiaryEntity: 'client' (company)
 ## **Don't Do This**
 
 - ❌ Skip activity logging for significant operations
-- ❌ Use `logActivityDirect()` - not used in this codebase 
+- ❌ Use `logActivityDirect()` - not used in this codebase
 - ❌ Hardcode display messages - use dynamic context
 - ❌ Forget to store data in `res.locals` for logger access
 - ❌ Use invalid categories - stick to defined enum values
@@ -120,7 +126,7 @@ tertiaryEntity: 'client' (company)
 ## **Categories**
 
 - `user_management` - Registration, onboarding, roles
-- `candidate_management` - Jobseeker operations  
+- `candidate_management` - Jobseeker operations
 - `position_management` - Position CRUD, assignments
 - `client_management` - Client operations, drafts
 - `financial` - Invoices, timesheets
