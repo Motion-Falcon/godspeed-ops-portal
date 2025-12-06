@@ -1855,7 +1855,11 @@ export function InvoiceManagement() {
   return (
     <div className="invoice-page-container">
       <AppHeader
-        title={t("navigation.invoiceManagement")}
+        title={
+          isEditMode
+            ? t("navigation.editClientInvoice")
+            : t("navigation.invoiceManagement")
+        }
         hideHamburgerMenu={false}
         statusMessage={
           generationMessage || generationError || timesheetFetchMessage

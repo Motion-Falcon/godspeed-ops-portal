@@ -1,7 +1,7 @@
-import { Router, Request, Response } from 'express';
-import { authenticateToken, authorizeRoles } from '../middleware/auth.js';
-import { createClient } from '@supabase/supabase-js';
-import dotenv from 'dotenv';
+import { Router, Request, Response } from "express";
+import { authenticateToken, authorizeRoles } from "../middleware/auth.js";
+import { createClient } from "@supabase/supabase-js";
+import dotenv from "dotenv";
 
 dotenv.config();
 
@@ -11,7 +11,7 @@ const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
-  console.error('Missing Supabase credentials');
+  console.error("Missing Supabase credentials");
   process.exit(1);
 }
 
@@ -19,14 +19,21 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 // POST /api/reports/timesheet
 router.post(
-  '/timesheet',
+  "/timesheet",
   authenticateToken,
-  authorizeRoles(['admin', 'recruiter']),
+  authorizeRoles(["admin", "recruiter"]),
   async (req: Request, res: Response) => {
     try {
-      const { jobseekerId, clientIds, weekPeriods, payCycle, listName } = req.body || {};
-      if (!jobseekerId || !Array.isArray(weekPeriods) || weekPeriods.length === 0) {
-        return res.status(400).json({ error: 'jobseekerId and at least one week period are required.' });
+      const { jobseekerId, clientIds, weekPeriods, payCycle, listName } =
+        req.body || {};
+      if (
+        !jobseekerId ||
+        !Array.isArray(weekPeriods) ||
+        weekPeriods.length === 0
+      ) {
+        return res.status(400).json({
+          error: "jobseekerId and at least one week period are required.",
+        });
       }
 
       // Build week period filter (OR for each period)
@@ -35,17 +42,23 @@ router.post(
       let paramIdx = 2;
       weekPeriods.forEach((wp: any) => {
         if (wp && wp.start && wp.end) {
-          weekClauses.push(`(t.week_start_date >= $${paramIdx} AND t.week_end_date <= $${paramIdx + 1})`);
+          weekClauses.push(
+            `(t.week_start_date >= $${paramIdx} AND t.week_end_date <= $${
+              paramIdx + 1
+            })`
+          );
           params.push(wp.start, wp.end);
           paramIdx += 2;
         }
       });
       if (weekClauses.length === 0) {
-        return res.status(400).json({ error: 'At least one valid week period is required.' });
+        return res
+          .status(400)
+          .json({ error: "At least one valid week period is required." });
       }
 
       // Additional filters
-      let filterSql = '';
+      let filterSql = "";
       if (clientIds && Array.isArray(clientIds) && clientIds.length > 0) {
         filterSql += ` AND c.id = ANY($${paramIdx}::uuid[])`;
         params.push(clientIds);
@@ -62,13 +75,13 @@ router.post(
         paramIdx++;
       }
 
-
       // Use Supabase RPC to run raw SQL (if enabled), otherwise use supabase-js query builder (less flexible for OR logic)
       // For now, use supabase-js query builder for compatibility
       // Fallback: Use supabase-js for most filters, then filter week periods in JS
       const { data, error } = await supabase
-        .from('timesheets')
-        .select(`
+        .from("timesheets")
+        .select(
+          `
           jobseeker_profiles:jobseeker_profile_id (
             employee_id, license_number, passport_number, first_name, last_name, mobile, email, hst_gst, payment_method
           ),
@@ -76,13 +89,16 @@ router.post(
             title, position_code, position_category, client_manager, notes, client
           ),
           week_start_date, week_end_date, total_regular_hours, total_overtime_hours, regular_pay_rate, overtime_pay_rate, total_jobseeker_pay, bonus_amount, deduction_amount, created_at, invoice_number, position_id
-        `)
-        .in('jobseeker_profile_id', [jobseekerId])
-        .order('week_start_date', { ascending: true });
+        `
+        )
+        .in("jobseeker_profile_id", [jobseekerId])
+        .order("week_start_date", { ascending: true });
 
       if (error) {
-        console.error('Error fetching timesheet report:', error);
-        return res.status(500).json({ error: 'Failed to fetch timesheet report.' });
+        console.error("Error fetching timesheet report:", error);
+        return res
+          .status(500)
+          .json({ error: "Failed to fetch timesheet report." });
       }
 
       // Filter in JS for week periods and other filters
@@ -90,11 +106,14 @@ router.post(
         // Week period match
         const ws = row.week_start_date;
         const we = row.week_end_date;
-        const weekMatch = weekPeriods.some((wp: any) => ws >= wp.start && we <= wp.end);
+        const weekMatch = weekPeriods.some(
+          (wp: any) => ws >= wp.start && we <= wp.end
+        );
         if (!weekMatch) return false;
         // Client filter
         if (clientIds && clientIds.length > 0) {
-          if (!row.positions || !clientIds.includes(row.positions.client)) return false;
+          if (!row.positions || !clientIds.includes(row.positions.client))
+            return false;
         }
         // Pay cycle
         if (payCycle && row.positions && row.positions.client_manager) {
@@ -113,7 +132,7 @@ router.post(
           employee_id: jp.employee_id,
           license_number: jp.license_number,
           passport_number: jp.passport_number,
-          name: (jp.first_name || '') + ' ' + (jp.last_name || ''),
+          name: (jp.first_name || "") + " " + (jp.last_name || ""),
           mobile: jp.mobile,
           email: jp.email,
           company_name: undefined, // will fill below
@@ -138,18 +157,20 @@ router.post(
           notes: p.notes,
           timesheet_created_at: row.created_at,
           invoice_number: row.invoice_number,
-          client_id: p.client // <-- add client_id for later lookup
+          client_id: p.client, // <-- add client_id for later lookup
         };
       });
 
       // To fill company_name, list_name, currency, pay_cycle, need to fetch client info for all unique client ids
-      const clientIdsSet = new Set(result.map((row: any) => row.client_id).filter(Boolean));
+      const clientIdsSet = new Set(
+        result.map((row: any) => row.client_id).filter(Boolean)
+      );
       let clientInfoMap: Record<string, any> = {};
       if (clientIdsSet.size > 0) {
         const { data: clientsData, error: clientsError } = await supabase
-          .from('clients')
-          .select('id, company_name, list_name, currency, pay_cycle')
-          .in('id', Array.from(clientIdsSet));
+          .from("clients")
+          .select("id, company_name, list_name, currency, pay_cycle")
+          .in("id", Array.from(clientIdsSet));
         if (!clientsError && clientsData) {
           clientsData.forEach((c: any) => {
             clientInfoMap[c.id] = c;
@@ -177,29 +198,32 @@ router.post(
 
       res.json(finalFiltered);
     } catch (error) {
-      console.error('Unexpected error in timesheet report:', error);
-      return res.status(500).json({ error: 'An unexpected error occurred.' });
+      console.error("Unexpected error in timesheet report:", error);
+      return res.status(500).json({ error: "An unexpected error occurred." });
     }
   }
 );
 
 // POST /api/reports/margin
 router.post(
-  '/margin',
+  "/margin",
   authenticateToken,
-  authorizeRoles(['admin', 'recruiter']),
+  authorizeRoles(["admin", "recruiter"]),
   async (req: Request, res: Response) => {
     try {
       const { startDate, endDate } = req.body || {};
-      
+
       if (!startDate || !endDate) {
-        return res.status(400).json({ error: 'Start date and end date are required.' });
+        return res
+          .status(400)
+          .json({ error: "Start date and end date are required." });
       }
 
       // Query invoices between the date range
       const { data: invoices, error } = await supabase
-        .from('invoices')
-        .select(`
+        .from("invoices")
+        .select(
+          `
           id,
           invoice_number,
           invoice_date,
@@ -207,14 +231,17 @@ router.post(
           subtotal,
           grand_total,
           invoice_data
-        `)
-        .gte('invoice_date', startDate)
-        .lte('invoice_date', endDate)
-        .order('invoice_date', { ascending: false });
+        `
+        )
+        .gte("invoice_date", startDate)
+        .lte("invoice_date", endDate)
+        .order("invoice_date", { ascending: false });
 
       if (error) {
-        console.error('Error fetching margin report:', error);
-        return res.status(500).json({ error: 'Failed to fetch margin report.' });
+        console.error("Error fetching margin report:", error);
+        return res
+          .status(500)
+          .json({ error: "Failed to fetch margin report." });
       }
 
       // Transform the data for the frontend
@@ -222,7 +249,7 @@ router.post(
         const invoiceData = invoice.invoice_data || {};
         const client = invoiceData.client || {};
         const timesheets = invoiceData.timesheets || [];
-        
+
         // Calculate total jobseeker pay from timesheets
         const totalJobseekerPay = timesheets.reduce((sum: number, ts: any) => {
           return sum + (Number(ts.totalJobseekerPay) || 0);
@@ -232,45 +259,51 @@ router.post(
         const totalBilledAmount = Number(invoice.subtotal) || 0;
         const paidAmount = totalJobseekerPay;
         const marginAmount = totalBilledAmount - paidAmount;
-        const marginPercentage = totalBilledAmount > 0 ? ((marginAmount / totalBilledAmount) * 100).toFixed(2) : '0.00';
+        const marginPercentage =
+          totalBilledAmount > 0
+            ? ((marginAmount / totalBilledAmount) * 100).toFixed(2)
+            : "0.00";
 
         return {
           invoice_number: invoice.invoice_number,
-          client_name: client.companyName || 'N/A',
-          accounting_person: client.accountingPerson || 'N/A',
+          client_name: client.companyName || "N/A",
+          accounting_person: client.accountingPerson || "N/A",
           total_billed_amount: totalBilledAmount.toFixed(2),
           paid_amount: paidAmount.toFixed(2),
           margin_amount: marginAmount.toFixed(2),
-          margin_percentage: marginPercentage + '%',
-          invoice_date: invoice.invoice_date
+          margin_percentage: marginPercentage + "%",
+          invoice_date: invoice.invoice_date,
         };
       });
 
       res.json(marginData);
     } catch (error) {
-      console.error('Unexpected error in margin report:', error);
-      return res.status(500).json({ error: 'An unexpected error occurred.' });
+      console.error("Unexpected error in margin report:", error);
+      return res.status(500).json({ error: "An unexpected error occurred." });
     }
   }
 );
 
 // POST /api/reports/invoice
 router.post(
-  '/invoice',
+  "/invoice",
   authenticateToken,
-  authorizeRoles(['admin', 'recruiter']),
+  authorizeRoles(["admin", "recruiter"]),
   async (req: Request, res: Response) => {
     try {
       const { startDate, endDate, clientIds } = req.body || {};
-      
+
       if (!startDate || !endDate) {
-        return res.status(400).json({ error: 'Start date and end date are required.' });
+        return res
+          .status(400)
+          .json({ error: "Start date and end date are required." });
       }
 
       // Build query with date range filter
       let query = supabase
-        .from('invoices')
-        .select(`
+        .from("invoices")
+        .select(
+          `
           id,
           invoice_number,
           invoice_date,
@@ -281,34 +314,41 @@ router.post(
           email_sent,
           email_sent_date,
           invoice_data
-        `)
-        .gte('invoice_date', startDate)
-        .lte('invoice_date', endDate);
+        `
+        )
+        .gte("invoice_date", startDate)
+        .lte("invoice_date", endDate);
 
       // Apply client filter if provided
       if (clientIds && Array.isArray(clientIds) && clientIds.length > 0) {
-        query = query.in('client_id', clientIds);
+        query = query.in("client_id", clientIds);
       }
 
-      query = query.order('invoice_date', { ascending: false });
+      query = query.order("invoice_date", { ascending: false });
 
       const { data: invoices, error } = await query;
 
       if (error) {
-        console.error('Error fetching invoice report:', error);
-        return res.status(500).json({ error: 'Failed to fetch invoice report.' });
+        console.error("Error fetching invoice report:", error);
+        return res
+          .status(500)
+          .json({ error: "Failed to fetch invoice report." });
       }
 
       // Get unique client IDs to fetch client information
-      const clientIdsSet = new Set((invoices || []).map((invoice: any) => invoice.client_id).filter(Boolean));
+      const clientIdsSet = new Set(
+        (invoices || [])
+          .map((invoice: any) => invoice.client_id)
+          .filter(Boolean)
+      );
       let clientInfoMap: Record<string, any> = {};
-      
+
       if (clientIdsSet.size > 0) {
         const { data: clientsData, error: clientsError } = await supabase
-          .from('clients')
-          .select('id, company_name, contact_person_name1, terms')
-          .in('id', Array.from(clientIdsSet));
-        
+          .from("clients")
+          .select("id, company_name, contact_person_name1, terms")
+          .in("id", Array.from(clientIdsSet));
+
         if (!clientsError && clientsData) {
           clientsData.forEach((client: any) => {
             clientInfoMap[client.id] = client;
@@ -324,43 +364,50 @@ router.post(
 
         return {
           invoice_number: invoice.invoice_number,
-          client_name: clientFromDB.company_name || clientFromInvoice.companyName || 'N/A',
-          contact_person: clientFromDB.contact_person_name1 || clientFromInvoice.contactPersonName1 || 'N/A',
-          terms: clientFromDB.terms || invoiceData.paymentTerms || 'N/A',
+          client_name:
+            clientFromDB.company_name || clientFromInvoice.companyName || "N/A",
+          contact_person:
+            clientFromDB.contact_person_name1 ||
+            clientFromInvoice.contactPersonName1 ||
+            "N/A",
+          terms: clientFromDB.terms || invoiceData.paymentTerms || "N/A",
           invoice_date: invoice.invoice_date,
           due_date: invoice.due_date,
           total_amount: (Number(invoice.grand_total) || 0).toFixed(2),
-          currency: invoice.currency || 'N/A',
-          email_sent: invoice.email_sent ? 'Yes' : 'No',
-          email_sent_date: invoice.email_sent_date || 'N/A'
+          currency: invoice.currency || "N/A",
+          email_sent: invoice.email_sent ? "Yes" : "No",
+          email_sent_date: invoice.email_sent_date || "N/A",
         };
       });
 
       res.json(invoiceData);
     } catch (error) {
-      console.error('Unexpected error in invoice report:', error);
-      return res.status(500).json({ error: 'An unexpected error occurred.' });
+      console.error("Unexpected error in invoice report:", error);
+      return res.status(500).json({ error: "An unexpected error occurred." });
     }
   }
 );
 
 // POST /api/reports/deduction
 router.post(
-  '/deduction',
+  "/deduction",
   authenticateToken,
-  authorizeRoles(['admin', 'recruiter']),
+  authorizeRoles(["admin", "recruiter"]),
   async (req: Request, res: Response) => {
     try {
       const { startDate, endDate } = req.body || {};
-      
+
       if (!startDate || !endDate) {
-        return res.status(400).json({ error: 'Start date and end date are required.' });
+        return res
+          .status(400)
+          .json({ error: "Start date and end date are required." });
       }
 
       // Query invoices between the date range
       const { data: invoices, error } = await supabase
-        .from('invoices')
-        .select(`
+        .from("invoices")
+        .select(
+          `
           id,
           invoice_number,
           invoice_date,
@@ -368,14 +415,17 @@ router.post(
           subtotal,
           grand_total,
           invoice_data
-        `)
-        .gte('invoice_date', startDate)
-        .lte('invoice_date', endDate)
-        .order('invoice_date', { ascending: false });
+        `
+        )
+        .gte("invoice_date", startDate)
+        .lte("invoice_date", endDate)
+        .order("invoice_date", { ascending: false });
 
       if (error) {
-        console.error('Error fetching deduction report:', error);
-        return res.status(500).json({ error: 'Failed to fetch deduction report.' });
+        console.error("Error fetching deduction report:", error);
+        return res
+          .status(500)
+          .json({ error: "Failed to fetch deduction report." });
       }
 
       // Filter invoices that have deductions (negative bill rates) and transform the data
@@ -384,7 +434,7 @@ router.post(
           const invoiceData = invoice.invoice_data || {};
           const client = invoiceData.client || {};
           const timesheets = invoiceData.timesheets || [];
-          
+
           // Find timesheets with negative bill rates (deductions)
           const deductionTimesheets = timesheets.filter((ts: any) => {
             const billRate = Number(ts.regularBillRate) || 0;
@@ -402,10 +452,15 @@ router.post(
           deductionTimesheets.forEach((ts: any) => {
             const deductionAmount = Math.abs(Number(ts.regularBillRate) || 0);
             totalDeductions += deductionAmount;
-            
+
             const jobseekerProfile = ts.jobseekerProfile || {};
-            const jobseekerName = `${jobseekerProfile.firstName || ''} ${jobseekerProfile.lastName || ''}`.trim() || 'N/A';
-            jobseekerDeductions.push(`${jobseekerName} (-$${deductionAmount.toFixed(2)})`);
+            const jobseekerName =
+              `${jobseekerProfile.firstName || ""} ${
+                jobseekerProfile.lastName || ""
+              }`.trim() || "N/A";
+            jobseekerDeductions.push(
+              `${jobseekerName} (-$${deductionAmount.toFixed(2)})`
+            );
           });
 
           // Calculate total amount (could be different from subtotal due to mixed positive/negative rates)
@@ -415,37 +470,38 @@ router.post(
 
           return {
             invoice_number: invoice.invoice_number,
-            client_name: client.companyName || 'N/A',
-            accounting_person: client.accountingPerson || 'N/A',
+            client_name: client.companyName || "N/A",
+            accounting_person: client.accountingPerson || "N/A",
             total_amount: totalAmount.toFixed(2),
-            jobseeker_deductions: jobseekerDeductions.join(', '),
+            jobseeker_deductions: jobseekerDeductions.join(", "),
             total_deductions_amount: totalDeductions.toFixed(2),
-            invoice_date: invoice.invoice_date
+            invoice_date: invoice.invoice_date,
           };
         })
         .filter(Boolean); // Remove null entries (invoices without deductions)
 
       res.json(deductionData);
     } catch (error) {
-      console.error('Unexpected error in deduction report:', error);
-      return res.status(500).json({ error: 'An unexpected error occurred.' });
+      console.error("Unexpected error in deduction report:", error);
+      return res.status(500).json({ error: "An unexpected error occurred." });
     }
   }
 );
 
 // POST /api/reports/rate-list
 router.post(
-  '/rate-list',
+  "/rate-list",
   authenticateToken,
-  authorizeRoles(['admin', 'recruiter']),
+  authorizeRoles(["admin", "recruiter"]),
   async (req: Request, res: Response) => {
     try {
       const { clientIds } = req.body || {};
-      
+
       // Build query with optional client filter
       let query = supabase
-        .from('positions')
-        .select(`
+        .from("positions")
+        .select(
+          `
           id,
           title,
           position_code,
@@ -461,78 +517,93 @@ router.post(
             id,
             company_name
           )
-        `)
-        .eq('is_draft', false);
+        `
+        )
+        .eq("is_draft", false);
 
       // Apply client filter if provided
       if (clientIds && Array.isArray(clientIds) && clientIds.length > 0) {
-        query = query.in('client', clientIds);
+        query = query.in("client", clientIds);
       }
 
-      const { data: positions, error } = await query.order('client_name', { ascending: true });
+      const { data: positions, error } = await query.order("client_name", {
+        ascending: true,
+      });
 
       if (error) {
-        console.error('Error fetching rate list:', error);
-        return res.status(500).json({ error: 'Failed to fetch rate list.' });
+        console.error("Error fetching rate list:", error);
+        return res.status(500).json({ error: "Failed to fetch rate list." });
       }
 
       // Transform the data for the frontend
       const rateListData = (positions || []).map((position: any) => {
         const client = position.client || {};
-        
+
         return {
-          client_name: position.client_name || client.company_name || 'N/A',
-          position_details: `${position.title || 'N/A'} [${position.position_code || 'N/A'} - ${position.position_number || 'N/A'}]`,
-          position_category: position.position_category || 'N/A',
-          bill_rate: position.bill_rate || 'N/A',
-          pay_rate: position.regular_pay_rate || 'N/A',
-          overtime_hours: position.overtime_hours || 'N/A',
-          overtime_bill_rate: position.overtime_bill_rate || 'N/A',
-          overtime_pay_rate: position.overtime_pay_rate || 'N/A'
+          client_name: position.client_name || client.company_name || "N/A",
+          position_details: `${position.title || "N/A"} [${
+            position.position_code || "N/A"
+          } - ${position.position_number || "N/A"}]`,
+          position_category: position.position_category || "N/A",
+          bill_rate: position.bill_rate || "N/A",
+          pay_rate: position.regular_pay_rate || "N/A",
+          overtime_hours: position.overtime_hours || "N/A",
+          overtime_bill_rate: position.overtime_bill_rate || "N/A",
+          overtime_pay_rate: position.overtime_pay_rate || "N/A",
         };
       });
 
       res.json(rateListData);
     } catch (error) {
-      console.error('Unexpected error in rate list:', error);
-      return res.status(500).json({ error: 'An unexpected error occurred.' });
+      console.error("Unexpected error in rate list:", error);
+      return res.status(500).json({ error: "An unexpected error occurred." });
     }
   }
 );
 
 // POST /api/reports/clients
 router.post(
-  '/clients',
+  "/clients",
   authenticateToken,
-  authorizeRoles(['admin', 'recruiter']),
+  authorizeRoles(["admin", "recruiter"]),
   async (req: Request, res: Response) => {
     try {
       const { clientManagerIds, paymentMethods, terms } = req.body || {};
-      
+
       let query = supabase
-        .from('clients')
-        .select('*')
-        .eq('is_draft', false)
-        .order('company_name', { ascending: true });
+        .from("clients")
+        .select("*")
+        .eq("is_draft", false)
+        .order("company_name", { ascending: true });
 
       // Apply filters
-      if (clientManagerIds && Array.isArray(clientManagerIds) && clientManagerIds.length > 0) {
-        query = query.in('client_manager', clientManagerIds);
+      if (
+        clientManagerIds &&
+        Array.isArray(clientManagerIds) &&
+        clientManagerIds.length > 0
+      ) {
+        query = query.in("client_manager", clientManagerIds);
       }
-      
-      if (paymentMethods && Array.isArray(paymentMethods) && paymentMethods.length > 0) {
-        query = query.in('preferred_payment_method', paymentMethods);
+
+      if (
+        paymentMethods &&
+        Array.isArray(paymentMethods) &&
+        paymentMethods.length > 0
+      ) {
+        query = query.in("preferred_payment_method", paymentMethods);
       }
-      
+
       if (terms && Array.isArray(terms) && terms.length > 0) {
-        query = query.in('terms', terms);
+        query = query.in("terms", terms);
       }
 
       const { data, error } = await query;
 
       if (error) {
-        console.error('Error fetching clients report:', error);
-        return res.status(500).json({ error: 'Failed to fetch clients report.' });
+        console.error("Error fetching clients report:", error);
+        return res
+          .status(500)
+          .json({ error: "Failed to fetch clients report." });
       }
 
       // Map to response format and combine address fields
@@ -542,7 +613,7 @@ router.post(
           row.street_address1,
           row.city1,
           row.province1,
-          row.postal_code1
+          row.postal_code1,
         ].filter(Boolean);
 
         if (row.street_address2) {
@@ -559,48 +630,50 @@ router.post(
           if (row.postal_code3) addressParts.push(row.postal_code3);
         }
 
-        const address = addressParts.join(', ');
+        const address = addressParts.join(", ");
 
         return {
-          company_name: row.company_name || '',
-          billing_name: row.billing_name || '',
-          short_code: row.short_code || '',
-          list_name: row.list_name || '',
-          accounting_person: row.accounting_person || '',
-          sales_person: row.sales_person || '',
-          client_manager: row.client_manager || '',
-          contact_person_name1: row.contact_person_name1 || '',
-          email_address1: row.email_address1 || '',
-          mobile1: row.mobile1 || '',
+          company_name: row.company_name || "",
+          billing_name: row.billing_name || "",
+          short_code: row.short_code || "",
+          list_name: row.list_name || "",
+          accounting_person: row.accounting_person || "",
+          sales_person: row.sales_person || "",
+          client_manager: row.client_manager || "",
+          contact_person_name1: row.contact_person_name1 || "",
+          email_address1: row.email_address1 || "",
+          mobile1: row.mobile1 || "",
           address: address,
-          preferred_payment_method: row.preferred_payment_method || '',
-          pay_cycle: row.pay_cycle || '',
-          terms: row.terms || '',
-          notes: row.notes || '',
+          preferred_payment_method: row.preferred_payment_method || "",
+          pay_cycle: row.pay_cycle || "",
+          terms: row.terms || "",
+          notes: row.notes || "",
         };
       });
 
       res.json(result);
     } catch (error) {
-      console.error('Unexpected error in clients report:', error);
-      return res.status(500).json({ error: 'An unexpected error occurred.' });
+      console.error("Unexpected error in clients report:", error);
+      return res.status(500).json({ error: "An unexpected error occurred." });
     }
   }
 );
 
 // POST /api/reports/sales
 router.post(
-  '/sales',
+  "/sales",
   authenticateToken,
-  authorizeRoles(['admin', 'recruiter']),
+  authorizeRoles(["admin", "recruiter"]),
   async (req: Request, res: Response) => {
     try {
-      const { clientIds, startDate, endDate, jobseekerIds, salesPersons } = req.body || {};
+      const { clientIds, startDate, endDate, jobseekerIds, salesPersons } =
+        req.body || {};
 
       // Query invoices for selected clients and optional date range
       let query = supabase
-        .from('invoices')
-        .select(`
+        .from("invoices")
+        .select(
+          `
           id,
           invoice_number,
           invoice_date,
@@ -610,32 +683,33 @@ router.post(
           grand_total,
           currency,
           invoice_data
-        `)
-        .in('client_id', clientIds);
+        `
+        )
+        .in("client_id", clientIds);
       if (startDate) {
-        query = query.gte('invoice_date', startDate);
+        query = query.gte("invoice_date", startDate);
       }
       if (endDate) {
-        query = query.lte('invoice_date', endDate);
+        query = query.lte("invoice_date", endDate);
       }
-      query = query.order('invoice_date', { ascending: false });
+      query = query.order("invoice_date", { ascending: false });
 
       const { data: invoices, error } = await query;
 
       if (error) {
-        console.error('Error fetching sales report:', error);
-        return res.status(500).json({ error: 'Failed to fetch sales report.' });
+        console.error("Error fetching sales report:", error);
+        return res.status(500).json({ error: "Failed to fetch sales report." });
       }
 
       // Get client information and position details
       const { data: clientsData, error: clientsError } = await supabase
-        .from('clients')
-        .select('id, company_name, contact_person_name1, sales_person, terms')
-        .in('id', clientIds);
+        .from("clients")
+        .select("id, company_name, contact_person_name1, sales_person, terms")
+        .in("id", clientIds);
 
       if (clientsError) {
-        console.error('Error fetching clients:', clientsError);
-        return res.status(500).json({ error: 'Failed to fetch clients.' });
+        console.error("Error fetching clients:", clientsError);
+        return res.status(500).json({ error: "Failed to fetch clients." });
       }
 
       const clientInfoMap: Record<string, any> = {};
@@ -656,13 +730,15 @@ router.post(
       });
       // Fetch position details for start/end dates
       const { data: positionsData, error: positionsError } = await supabase
-        .from('positions')
-        .select('id, title, position_code, position_number, position_category, start_date, end_date, notes')
-        .in('id', Array.from(positionIds));
+        .from("positions")
+        .select(
+          "id, title, position_code, position_number, position_category, start_date, end_date, notes"
+        )
+        .in("id", Array.from(positionIds));
 
       if (positionsError) {
-        console.error('Error fetching positions:', positionsError);
-        return res.status(500).json({ error: 'Failed to fetch positions.' });
+        console.error("Error fetching positions:", positionsError);
+        return res.status(500).json({ error: "Failed to fetch positions." });
       }
 
       const positionInfoMap: Record<string, any> = {};
@@ -676,33 +752,41 @@ router.post(
       let afterWeekFilter = 0;
       let afterJobseekerFilter = 0;
       let afterSalesPersonFilter = 0;
-      
+
       (invoices || []).forEach((invoice: any) => {
         const invoiceData = invoice.invoice_data || {};
         const timesheets = invoiceData.timesheets || [];
         const client = clientInfoMap[invoice.client_id] || {};
         totalTimesheets += timesheets.length;
-        
+
         timesheets.forEach((ts: any) => {
           // Get positionId from nested position object
           const positionId = ts.position && ts.position.positionId;
           const position = positionId ? positionInfoMap[positionId] : {};
 
           // Apply jobseeker filter
-          if (jobseekerIds && Array.isArray(jobseekerIds) && jobseekerIds.length > 0) {
+          if (
+            jobseekerIds &&
+            Array.isArray(jobseekerIds) &&
+            jobseekerIds.length > 0
+          ) {
             if (!jobseekerIds.includes(ts.jobseekerProfileId)) return;
           }
           afterJobseekerFilter++;
 
           // Apply sales person filter
-          if (salesPersons && Array.isArray(salesPersons) && salesPersons.length > 0) {
+          if (
+            salesPersons &&
+            Array.isArray(salesPersons) &&
+            salesPersons.length > 0
+          ) {
             if (!salesPersons.includes(client.sales_person)) return;
           }
           afterSalesPersonFilter++;
 
           // Parse tax rate from salesTax string
           let taxRate = 0;
-          if (typeof ts.salesTax === 'string') {
+          if (typeof ts.salesTax === "string") {
             const match = ts.salesTax.match(/^([\d.]+)%/);
             if (match) {
               taxRate = parseFloat(match[1]);
@@ -712,38 +796,51 @@ router.post(
           const gstHst = (amount * taxRate) / 100;
 
           // Calculate values
-          const hours = (Number(ts.totalRegularHours || ts.regularHours) || 0);
+          const hours = Number(ts.totalRegularHours || ts.regularHours) || 0;
           const billRate = Number(ts.regularBillRate) || 0;
           const discount = Number(ts.discount) || 0;
           const total = amount + gstHst - discount;
 
           // Use position fields from timesheet.position if available, else fallback to positions table
-          const itemPosition = ts.position && ts.position.title
-            ? `${ts.position.title} [${ts.position.positionNumber || ts.position.position_number || ''}]` : 'N/A';
-          const positionCategory = ts.position && (ts.position.positionCategory || ts.position.position_category)
-            ? (ts.position.positionCategory || ts.position.position_category)
-            : (position.position_category || 'N/A');
+          const itemPosition =
+            ts.position && ts.position.title
+              ? `${ts.position.title} [${
+                  ts.position.positionNumber ||
+                  ts.position.position_number ||
+                  ""
+                }]`
+              : "N/A";
+          const positionCategory =
+            ts.position &&
+            (ts.position.positionCategory || ts.position.position_category)
+              ? ts.position.positionCategory || ts.position.position_category
+              : position.position_category || "N/A";
 
           // Always use employeeId from invoice data
-          const employeeId = ts.jobseekerProfile && ts.jobseekerProfile.employeeId
-            ? ts.jobseekerProfile.employeeId
-            : 'N/A';
+          const employeeId =
+            ts.jobseekerProfile && ts.jobseekerProfile.employeeId
+              ? ts.jobseekerProfile.employeeId
+              : "N/A";
 
           salesData.push({
-            client_name: client.company_name || 'N/A',
-            contact_person_name: client.contact_person_name1 || 'N/A',
-            sales_person: client.sales_person || 'N/A',
-            invoice_number: invoice.invoice_number || 'N/A',
-            from_date: position.start_date || 'N/A',
-            to_date: position.end_date || 'N/A',
-            invoice_date: invoice.invoice_date || 'N/A',
-            due_date: invoice.due_date || 'N/A',
-            terms: client.terms || 'N/A',
+            client_name: client.company_name || "N/A",
+            contact_person_name: client.contact_person_name1 || "N/A",
+            sales_person: client.sales_person || "N/A",
+            invoice_number: invoice.invoice_number || "N/A",
+            from_date: position.start_date || "N/A",
+            to_date: position.end_date || "N/A",
+            invoice_date: invoice.invoice_date || "N/A",
+            due_date: invoice.due_date || "N/A",
+            terms: client.terms || "N/A",
             item_position: itemPosition,
             position_category: positionCategory,
-            jobseeker_number: employeeId || 'N/A',
-            jobseeker_name: ts.jobseekerProfile ? `${ts.jobseekerProfile.firstName || ''} ${ts.jobseekerProfile.lastName || ''}`.trim() || 'N/A' : 'N/A',
-            description: ts.description || position.notes || 'N/A',
+            jobseeker_number: employeeId || "N/A",
+            jobseeker_name: ts.jobseekerProfile
+              ? `${ts.jobseekerProfile.firstName || ""} ${
+                  ts.jobseekerProfile.lastName || ""
+                }`.trim() || "N/A"
+              : "N/A",
+            description: ts.description || position.notes || "N/A",
             hours: hours.toString(),
             bill_rate: billRate.toFixed(2),
             amount: amount.toFixed(2),
@@ -751,29 +848,31 @@ router.post(
             tax_rate: taxRate.toFixed(2),
             gst_hst: gstHst.toFixed(2),
             total: total.toFixed(2),
-            currency: invoice.currency || 'N/A'
+            currency: invoice.currency || "N/A",
           });
         });
       });
       res.json(salesData);
     } catch (error) {
-      console.error('Unexpected error in sales report:', error);
-      return res.status(500).json({ error: 'An unexpected error occurred.' });
+      console.error("Unexpected error in sales report:", error);
+      return res.status(500).json({ error: "An unexpected error occurred." });
     }
   }
 );
 
 // POST /api/reports/envelope-printing-position
 router.post(
-  '/envelope-printing-position',
+  "/envelope-printing-position",
   authenticateToken,
-  authorizeRoles(['admin', 'recruiter']),
+  authorizeRoles(["admin", "recruiter"]),
   async (req: Request, res: Response) => {
     try {
-      const { clientIds, startDate, endDate, listName, payCycle } = req.body || {};
+      const { clientIds, startDate, endDate, listName, payCycle } =
+        req.body || {};
       let query = supabase
-        .from('invoices')
-        .select(`
+        .from("invoices")
+        .select(
+          `
           id,
           invoice_number,
           invoice_date,
@@ -783,30 +882,35 @@ router.post(
           grand_total,
           currency,
           invoice_data
-        `)
-        .in('client_id', clientIds);
+        `
+        )
+        .in("client_id", clientIds);
       if (startDate) {
-        query = query.gte('invoice_date', startDate);
+        query = query.gte("invoice_date", startDate);
       }
       if (endDate) {
-        query = query.lte('invoice_date', endDate);
+        query = query.lte("invoice_date", endDate);
       }
-      query = query.order('invoice_date', { ascending: false });
+      query = query.order("invoice_date", { ascending: false });
       const { data: invoices, error } = await query;
       if (error) {
-        console.error('Error fetching envelope printing report:', error);
-        return res.status(500).json({ error: 'Failed to fetch envelope printing report.' });
+        console.error("Error fetching envelope printing report:", error);
+        return res
+          .status(500)
+          .json({ error: "Failed to fetch envelope printing report." });
       }
-      
+
       // Get client info
       const { data: clientsData, error: clientsError } = await supabase
-        .from('clients')
-        .select('id, company_name, short_code, list_name, city1, province1, pay_cycle, sales_person')
-        .in('id', clientIds);
-     
+        .from("clients")
+        .select(
+          "id, company_name, short_code, list_name, city1, province1, pay_cycle, sales_person"
+        )
+        .in("id", clientIds);
+
       if (clientsError) {
-        console.error('Error fetching clients:', clientsError);
-        return res.status(500).json({ error: 'Failed to fetch clients.' });
+        console.error("Error fetching clients:", clientsError);
+        return res.status(500).json({ error: "Failed to fetch clients." });
       }
       const clientInfoMap: Record<string, any> = {};
       (clientsData || []).forEach((client: any) => {
@@ -824,13 +928,15 @@ router.post(
         });
       });
       const { data: positionsData, error: positionsError } = await supabase
-        .from('positions')
-        .select('id, title, position_code, position_number, position_category, preferred_payment_method')
-        .in('id', Array.from(positionIds));
-      
+        .from("positions")
+        .select(
+          "id, title, position_code, position_number, position_category, preferred_payment_method"
+        )
+        .in("id", Array.from(positionIds));
+
       if (positionsError) {
-        console.error('Error fetching positions:', positionsError);
-        return res.status(500).json({ error: 'Failed to fetch positions.' });
+        console.error("Error fetching positions:", positionsError);
+        return res.status(500).json({ error: "Failed to fetch positions." });
       }
       const positionInfoMap: Record<string, any> = {};
       (positionsData || []).forEach((position: any) => {
@@ -842,26 +948,29 @@ router.post(
         const invoiceData = invoice.invoice_data || {};
         const timesheets = invoiceData.timesheets || [];
         timesheets.forEach((ts: any) => {
-          const jobseekerProfileId = ts.jobseekerProfile && ts.jobseekerProfile.jobseekerProfileId;
+          const jobseekerProfileId =
+            ts.jobseekerProfile && ts.jobseekerProfile.jobseekerProfileId;
           if (jobseekerProfileId) jobseekerIdsSet.add(jobseekerProfileId);
         });
       });
       // Query jobseeker_profiles for license_number, passport_number, phone_number by id (UUID)
       let jobseekerInfoMap: Record<string, any> = {};
-    
+
       if (jobseekerIdsSet.size > 0) {
         const { data: jobseekersData, error: jobseekersError } = await supabase
-          .from('jobseeker_profiles')
-          .select('id, employee_id, license_number, passport_number, mobile')
-          .in('id', Array.from(jobseekerIdsSet));
-       
+          .from("jobseeker_profiles")
+          .select(
+            "id, employee_id, license_number, passport_number, mobile, payment_method"
+          )
+          .in("id", Array.from(jobseekerIdsSet));
+
         if (!jobseekersError && jobseekersData) {
           jobseekersData.forEach((js: any) => {
             jobseekerInfoMap[js.id] = js;
           });
         }
       }
-     
+
       // Process invoices and extract timesheets
       const envelopeData: any[] = [];
       (invoices || []).forEach((invoice: any) => {
@@ -871,12 +980,24 @@ router.post(
         timesheets.forEach((ts: any) => {
           // Filters
           if (listName) {
-            const listNameArray = Array.isArray(listName) ? listName : [listName];
-            if (listNameArray.length > 0 && !listNameArray.includes(client.list_name)) return;
+            const listNameArray = Array.isArray(listName)
+              ? listName
+              : [listName];
+            if (
+              listNameArray.length > 0 &&
+              !listNameArray.includes(client.list_name)
+            )
+              return;
           }
           if (payCycle) {
-            const payCycleArray = Array.isArray(payCycle) ? payCycle : [payCycle];
-            if (payCycleArray.length > 0 && !payCycleArray.includes(client.pay_cycle)) return;
+            const payCycleArray = Array.isArray(payCycle)
+              ? payCycle
+              : [payCycle];
+            if (
+              payCycleArray.length > 0 &&
+              !payCycleArray.includes(client.pay_cycle)
+            )
+              return;
           }
           // Get positionId from nested position object
           const positionId = ts.position && ts.position.positionId;
@@ -886,59 +1007,61 @@ router.post(
             return;
           }
           // Get jobseeker_id (employeeId)
-          const jobseeker_employee_id = ts.jobseekerProfile.employeeId || '';
+          const jobseeker_employee_id = ts.jobseekerProfile.employeeId || "";
           // Get jobseeker info from jobseekerInfoMap
-          const jobseekerInfo = jobseekerInfoMap[ts.jobseekerProfile.jobseekerProfileId] || {};
+          const jobseekerInfo =
+            jobseekerInfoMap[ts.jobseekerProfile.jobseekerProfileId] || {};
           // Compose row
           envelopeData.push({
-            city: client.city1 || '',
-            list_name: client.list_name || '',
-            week_ending: invoice.due_date || '',
-            client_name: client.company_name || '',
-            sales_person: client.sales_person || '',
-            short_code: client.short_code || '',
-            work_province: client.province1 || '',
-            pay_cycle: client.pay_cycle || '',
+            city: client.city1 || "",
+            list_name: client.list_name || "",
+            week_ending: invoice.due_date || "",
+            client_name: client.company_name || "",
+            sales_person: client.sales_person || "",
+            short_code: client.short_code || "",
+            work_province: client.province1 || "",
+            pay_cycle: client.pay_cycle || "",
             jobseeker_id: jobseeker_employee_id,
-            license_number: (jobseekerInfo && jobseekerInfo.license_number) || '',
-            passport_number: (jobseekerInfo && jobseekerInfo.passport_number) || '',
-            jobseeker_name: ts.jobseekerProfile ? `${ts.jobseekerProfile.firstName || ''} ${ts.jobseekerProfile.lastName || ''}`.trim() : '',
-            phone_number: (jobseekerInfo && jobseekerInfo.mobile) || '',
-            email_id: ts.jobseekerProfile && ts.jobseekerProfile.email ? ts.jobseekerProfile.email : '',
-            pay_method: position.preferred_payment_method || '',
-            position_category: position.position_category || '',
-            position_name: position.title ? `${position.title} [${position.position_number || ''}]` : '',
-            hours: (Number(ts.totalRegularHours || ts.regularHours) || 0).toString(),
-            overtime_hours: (Number(ts.totalOvertimeHours || ts.overtimeHours) || 0).toString(),
-            total_amount: (Number(ts.totalClientBill) || 0).toFixed(2),
-            tax_rate: (() => {
-              if (typeof ts.salesTax === 'string') {
-                const match = ts.salesTax.match(/^([\d.]+)%/);
-                if (match) return match[1];
-              }
-              return '';
-            })(),
-            hst_gst: (() => {
-              const amount = Number(ts.totalClientBill) || 0;
-              let taxRate = 0;
-              if (typeof ts.salesTax === 'string') {
-                const match = ts.salesTax.match(/^([\d.]+)%/);
-                if (match) taxRate = parseFloat(match[1]);
-              }
-              return ((amount * taxRate) / 100).toFixed(2);
-            })(),
-            invoice_number: invoice.invoice_number || '',
-            invoice_date: invoice.invoice_date || '',
-            currency: invoice.currency || '',
+            license_number:
+              (jobseekerInfo && jobseekerInfo.license_number) || "",
+            passport_number:
+              (jobseekerInfo && jobseekerInfo.passport_number) || "",
+            jobseeker_name: ts.jobseekerProfile
+              ? `${ts.jobseekerProfile.firstName || ""} ${
+                  ts.jobseekerProfile.lastName || ""
+                }`.trim()
+              : "",
+            phone_number: (jobseekerInfo && jobseekerInfo.mobile) || "",
+            email_id:
+              ts.jobseekerProfile && ts.jobseekerProfile.email
+                ? ts.jobseekerProfile.email
+                : "",
+            pay_method: (jobseekerInfo && jobseekerInfo.payment_method) || "",
+            position_category: position.position_category || "",
+            position_name: position.title
+              ? `${position.title} [${position.position_number || ""}]`
+              : "",
+            hours: (
+              Number(ts.totalRegularHours || ts.regularHours) || 0
+            ).toString(),
+            overtime_hours: (
+              Number(ts.totalOvertimeHours || ts.overtimeHours) || 0
+            ).toString(),
+            total_amount: (Number(ts.totalJobseekerPay) || 0).toFixed(2),
+            tax_rate: "0",
+            hst_gst: "0.00",
+            invoice_number: invoice.invoice_number || "",
+            invoice_date: invoice.invoice_date || "",
+            currency: invoice.currency || "",
           });
         });
       });
       res.json(envelopeData);
     } catch (error) {
-      console.error('Unexpected error in envelope printing report:', error);
-      return res.status(500).json({ error: 'An unexpected error occurred.' });
+      console.error("Unexpected error in envelope printing report:", error);
+      return res.status(500).json({ error: "An unexpected error occurred." });
     }
   }
 );
 
-export default router; 
+export default router;
