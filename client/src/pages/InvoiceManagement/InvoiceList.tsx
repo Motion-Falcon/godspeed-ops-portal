@@ -1,18 +1,26 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useLocation } from 'react-router-dom';
-import { Eye, Trash2, Plus, Search, ChevronLeft, ChevronRight, Mail } from 'lucide-react';
+import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
+import {
+  Pencil,
+  Trash2,
+  Plus,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  Mail,
+} from "lucide-react";
 import {
   getInvoices,
   deleteInvoice,
   InvoiceData,
   formatInvoiceForDisplay,
   sendInvoiceEmail,
-} from '../../services/api/invoice';
-import { AppHeader } from '../../components/AppHeader';
-import { ConfirmationModal } from '../../components/ConfirmationModal';
-import { useLanguage } from '../../contexts/language/language-provider';
-import '../../styles/pages/InvoiceManagement.css';
+} from "../../services/api/invoice";
+import { AppHeader } from "../../components/AppHeader";
+import { ConfirmationModal } from "../../components/ConfirmationModal";
+import { useLanguage } from "../../contexts/language/language-provider";
+import "../../styles/pages/InvoiceManagement.css";
 
 interface PaginationInfo {
   page: number;
@@ -24,25 +32,26 @@ interface PaginationInfo {
   hasPrevPage: boolean;
 }
 
-function getClientDisplayName(client: Record<string, unknown> | undefined, t: (key: string) => string): string {
-  return (
-    String(
-      client?.companyName ||
+function getClientDisplayName(
+  client: Record<string, unknown> | undefined,
+  t: (key: string) => string
+): string {
+  return String(
+    client?.companyName ||
       client?.company_name ||
       client?.shortCode ||
       client?.short_code ||
-      t('invoiceManagement.unknownClient')
-    )
+      t("invoiceManagement.unknownClient")
   );
 }
 
 function getClientEmail(client: Record<string, unknown> | undefined): string {
-  return String(client?.emailAddress1 || client?.email_address1 || '');
+  return String(client?.emailAddress1 || client?.email_address1 || "");
 }
 
 export function InvoiceList() {
   const { t } = useLanguage();
-  
+
   // State management
   const [invoices, setInvoices] = useState<InvoiceData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,17 +61,17 @@ export function InvoiceList() {
   const location = useLocation();
 
   // Filter states
-  const [searchTerm, setSearchTerm] = useState('');
-  const [invoiceNumberFilter, setInvoiceNumberFilter] = useState('');
-  const [clientFilter, setClientFilter] = useState('');
-  const [clientEmailFilter, setClientEmailFilter] = useState('');
-  const [dateRangeStart, setDateRangeStart] = useState('');
-  const [dateRangeEnd, setDateRangeEnd] = useState('');
-  const [dueDateStart, setDueDateStart] = useState('');
-  const [dueDateEnd, setDueDateEnd] = useState('');
-  const [emailSentFilter, setEmailSentFilter] = useState('');
-  const [invoiceSentFilter, setInvoiceSentFilter] = useState('');
-  const [documentGeneratedFilter, setDocumentGeneratedFilter] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [invoiceNumberFilter, setInvoiceNumberFilter] = useState("");
+  const [clientFilter, setClientFilter] = useState("");
+  const [clientEmailFilter, setClientEmailFilter] = useState("");
+  const [dateRangeStart, setDateRangeStart] = useState("");
+  const [dateRangeEnd, setDateRangeEnd] = useState("");
+  const [dueDateStart, setDueDateStart] = useState("");
+  const [dueDateEnd, setDueDateEnd] = useState("");
+  const [emailSentFilter, setEmailSentFilter] = useState("");
+  const [invoiceSentFilter, setInvoiceSentFilter] = useState("");
+  const [documentGeneratedFilter, setDocumentGeneratedFilter] = useState("");
 
   // Pagination state
   const [pagination, setPagination] = useState<PaginationInfo>({
@@ -76,49 +85,55 @@ export function InvoiceList() {
   });
 
   // Delete confirmation state
-  const [invoiceToDelete, setInvoiceToDelete] = useState<InvoiceData | null>(null);
+  const [invoiceToDelete, setInvoiceToDelete] = useState<InvoiceData | null>(
+    null
+  );
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // Send email state
-  const [sendingEmailInvoiceId, setSendingEmailInvoiceId] = useState<string | null>(null);
-  const [sendEmailStatus, setSendEmailStatus] = useState<'success' | 'error' | null>(null);
+  const [sendingEmailInvoiceId, setSendingEmailInvoiceId] = useState<
+    string | null
+  >(null);
+  const [sendEmailStatus, setSendEmailStatus] = useState<
+    "success" | "error" | null
+  >(null);
   const [sendEmailMessage, setSendEmailMessage] = useState<string | null>(null);
 
   // Utility functions
   const resetFilters = () => {
-    setSearchTerm('');
-    setInvoiceNumberFilter('');
-    setClientFilter('');
-    setClientEmailFilter('');
-    setDateRangeStart('');
-    setDateRangeEnd('');
-    setDueDateStart('');
-    setDueDateEnd('');
-    setEmailSentFilter('');
-    setInvoiceSentFilter('');
-    setDocumentGeneratedFilter('');
-    setPagination(prev => ({ ...prev, page: 1 }));
+    setSearchTerm("");
+    setInvoiceNumberFilter("");
+    setClientFilter("");
+    setClientEmailFilter("");
+    setDateRangeStart("");
+    setDateRangeEnd("");
+    setDueDateStart("");
+    setDueDateEnd("");
+    setEmailSentFilter("");
+    setInvoiceSentFilter("");
+    setDocumentGeneratedFilter("");
+    setPagination((prev) => ({ ...prev, page: 1 }));
   };
 
   const handlePageChange = (newPage: number) => {
-    setPagination(prev => ({ ...prev, page: newPage }));
+    setPagination((prev) => ({ ...prev, page: newPage }));
   };
 
   const handleLimitChange = (newLimit: number) => {
-    setPagination(prev => ({ ...prev, limit: newLimit, page: 1 }));
+    setPagination((prev) => ({ ...prev, limit: newLimit, page: 1 }));
   };
 
   const handlePreviousPage = () => {
     if (pagination.hasPrevPage) {
-      setPagination(prev => ({ ...prev, page: prev.page - 1 }));
+      setPagination((prev) => ({ ...prev, page: prev.page - 1 }));
     }
   };
 
   const handleNextPage = () => {
     if (pagination.hasNextPage) {
-      setPagination(prev => ({ ...prev, page: prev.page + 1 }));
+      setPagination((prev) => ({ ...prev, page: prev.page + 1 }));
     }
   };
 
@@ -146,7 +161,7 @@ export function InvoiceList() {
       setInvoices(response.invoices);
       setPagination(response.pagination);
     } catch (err) {
-      setError(t('invoiceManagement.list.fetchFailed'));
+      setError(t("invoiceManagement.list.fetchFailed"));
     } finally {
       setLoading(false);
     }
@@ -177,7 +192,7 @@ export function InvoiceList() {
   // Reset to first page when filters change
   useEffect(() => {
     if (pagination.page !== 1) {
-      setPagination(prev => ({ ...prev, page: 1 }));
+      setPagination((prev) => ({ ...prev, page: 1 }));
     }
   }, [
     searchTerm,
@@ -196,17 +211,17 @@ export function InvoiceList() {
   // --- New: Initialize filters from query params on mount ---
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    setSearchTerm(params.get('searchTerm') || '');
-    setInvoiceNumberFilter(params.get('invoiceNumber') || '');
-    setClientFilter(params.get('client') || '');
-    setClientEmailFilter(params.get('clientEmail') || '');
-    setDateRangeStart(params.get('dateRangeStart') || '');
-    setDateRangeEnd(params.get('dateRangeEnd') || '');
-    setDueDateStart(params.get('dueDateStart') || '');
-    setDueDateEnd(params.get('dueDateEnd') || '');
-    setEmailSentFilter(params.get('emailSent') || '');
-    setInvoiceSentFilter(params.get('invoiceSent') || '');
-    setDocumentGeneratedFilter(params.get('documentGenerated') || '');
+    setSearchTerm(params.get("searchTerm") || "");
+    setInvoiceNumberFilter(params.get("invoiceNumber") || "");
+    setClientFilter(params.get("client") || "");
+    setClientEmailFilter(params.get("clientEmail") || "");
+    setDateRangeStart(params.get("dateRangeStart") || "");
+    setDateRangeEnd(params.get("dateRangeEnd") || "");
+    setDueDateStart(params.get("dueDateStart") || "");
+    setDueDateEnd(params.get("dueDateEnd") || "");
+    setEmailSentFilter(params.get("emailSent") || "");
+    setInvoiceSentFilter(params.get("invoiceSent") || "");
+    setDocumentGeneratedFilter(params.get("documentGenerated") || "");
     // Example: How to use filter params in the URL
     //
     //   /invoice-management/list?searchTerm=Acme&invoiceNumber=INV-123&client=Acme%20Corp&clientEmail=acme%40email.com&dateRangeStart=2024-07-01&dateRangeEnd=2024-07-31&dueDateStart=2024-08-01&dueDateEnd=2024-08-31&emailSent=true&invoiceSent=true&documentGenerated=true
@@ -217,7 +232,7 @@ export function InvoiceList() {
 
   // Event handlers
   const handleCreateInvoice = () => {
-    navigate('/invoice-management/create');
+    navigate("/invoice-management/create");
   };
 
   const handleViewInvoice = (id: string) => {
@@ -236,19 +251,27 @@ export function InvoiceList() {
       setIsDeleting(true);
       setDeleteError(null);
       await deleteInvoice(invoiceToDelete.id as string);
-      setInvoices(invoices.filter(i => i.id !== invoiceToDelete.id));
-      setMessage(t('invoiceManagement.list.deleteSuccess', { invoiceNumber: invoiceToDelete.invoiceNumber || t('invoiceManagement.unknown') }));
-      
+      setInvoices(invoices.filter((i) => i.id !== invoiceToDelete.id));
+      setMessage(
+        t("invoiceManagement.list.deleteSuccess", {
+          invoiceNumber:
+            invoiceToDelete.invoiceNumber || t("invoiceManagement.unknown"),
+        })
+      );
+
       // Close modal and reset state after successful deletion
       setIsDeleteModalOpen(false);
       setInvoiceToDelete(null);
       setDeleteError(null);
-      
+
       setTimeout(() => {
         setMessage(null);
       }, 3000);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : t('invoiceManagement.list.deleteFailed');
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : t("invoiceManagement.list.deleteFailed");
       setDeleteError(errorMessage);
     } finally {
       setIsDeleting(false);
@@ -264,15 +287,16 @@ export function InvoiceList() {
   // Function to send invoice to client (robust, like InvoiceManagement)
   const sendInvoiceToClient = async (invoice: InvoiceData) => {
     if (!invoice.id) {
-      setSendEmailMessage(t('invoiceManagement.missingEmailForSend'));
-      setSendEmailStatus('error');
+      setSendEmailMessage(t("invoiceManagement.missingEmailForSend"));
+      setSendEmailStatus("error");
       return;
     }
 
-    const emailToSend = invoice.invoice_sent_to || getClientEmail(invoice.client) || '';
+    const emailToSend =
+      invoice.invoice_sent_to || getClientEmail(invoice.client) || "";
     if (!emailToSend) {
-      setSendEmailMessage(t('invoiceManagement.noEmailAddress'));
-      setSendEmailStatus('error');
+      setSendEmailMessage(t("invoiceManagement.noEmailAddress"));
+      setSendEmailStatus("error");
       return;
     }
 
@@ -282,24 +306,36 @@ export function InvoiceList() {
     try {
       const response = await sendInvoiceEmail(invoice.id, emailToSend);
       if (response.success) {
-        setSendEmailMessage(t('invoiceManagement.list.sendSuccess', { email: emailToSend }));
-        setSendEmailStatus('success');
+        setSendEmailMessage(
+          t("invoiceManagement.list.sendSuccess", { email: emailToSend })
+        );
+        setSendEmailStatus("success");
         // Optionally update local invoice state
-        setInvoices(prevInvoices =>
-          prevInvoices.map(inv =>
+        setInvoices((prevInvoices) =>
+          prevInvoices.map((inv) =>
             inv.id === invoice.id
-              ? { ...inv, emailSent: true, emailSentDate: new Date().toISOString(), invoice_sent_to: emailToSend }
+              ? {
+                  ...inv,
+                  emailSent: true,
+                  emailSentDate: new Date().toISOString(),
+                  invoice_sent_to: emailToSend,
+                }
               : inv
           )
         );
       } else {
-        setSendEmailMessage(response.message || t('invoiceManagement.sendInvoiceFailed'));
-        setSendEmailStatus('error');
+        setSendEmailMessage(
+          response.message || t("invoiceManagement.sendInvoiceFailed")
+        );
+        setSendEmailStatus("error");
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : t('invoiceManagement.sendInvoiceFailed');
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : t("invoiceManagement.sendInvoiceFailed");
       setSendEmailMessage(errorMessage);
-      setSendEmailStatus('error');
+      setSendEmailStatus("error");
     } finally {
       setSendingEmailInvoiceId(null);
       setTimeout(() => {
@@ -312,7 +348,7 @@ export function InvoiceList() {
   return (
     <div className="page-container">
       <AppHeader
-        title={t('invoiceManagement.list.title')}
+        title={t("invoiceManagement.list.title")}
         actions={
           <>
             <button
@@ -320,23 +356,33 @@ export function InvoiceList() {
               onClick={handleCreateInvoice}
             >
               <Plus size={16} />
-              <span>{t('invoiceManagement.list.newInvoice')}</span>
+              <span>{t("invoiceManagement.list.newInvoice")}</span>
             </button>
           </>
         }
         statusMessage={sendEmailMessage || message || error}
-        statusType={sendEmailStatus === 'error' ? 'error' : sendEmailStatus === 'success' ? 'success' : error ? 'error' : 'success'}
+        statusType={
+          sendEmailStatus === "error"
+            ? "error"
+            : sendEmailStatus === "success"
+            ? "success"
+            : error
+            ? "error"
+            : "success"
+        }
       />
       <div className="content-container">
         <div className="card">
           <div className="card-header">
-            <h2>{t('invoiceManagement.list.invoiceListTitle')}</h2>
+            <h2>{t("invoiceManagement.list.invoiceListTitle")}</h2>
             <div className="filter-container">
               <div className="search-box">
                 <Search size={14} className="search-icon" />
                 <input
                   type="text"
-                  placeholder={t('invoiceManagement.list.globalSearchPlaceholder')}
+                  placeholder={t(
+                    "invoiceManagement.list.globalSearchPlaceholder"
+                  )}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="search-input"
@@ -345,7 +391,7 @@ export function InvoiceList() {
                   className="button secondary button-icon reset-filters-btn"
                   onClick={resetFilters}
                 >
-                  <span>{t('invoiceManagement.resetFilters')}</span>
+                  <span>{t("invoiceManagement.resetFilters")}</span>
                 </button>
               </div>
             </div>
@@ -354,18 +400,31 @@ export function InvoiceList() {
           <div className="pagination-controls top">
             <div className="pagination-info">
               <span className="pagination-text">
-                {t('invoiceManagement.list.pagination.showing', {
-                  start: Math.min((pagination.page - 1) * pagination.limit + 1, pagination.total),
-                  end: Math.min(pagination.page * pagination.limit, pagination.total),
-                  total: pagination.total
+                {t("invoiceManagement.list.pagination.showing", {
+                  start: Math.min(
+                    (pagination.page - 1) * pagination.limit + 1,
+                    pagination.total
+                  ),
+                  end: Math.min(
+                    pagination.page * pagination.limit,
+                    pagination.total
+                  ),
+                  total: pagination.total,
                 })}
                 {pagination.totalFiltered !== pagination.total && (
-                  <span className="filtered-info"> {t('invoiceManagement.list.pagination.filteredFrom', { total: pagination.total })}</span>
+                  <span className="filtered-info">
+                    {" "}
+                    {t("invoiceManagement.list.pagination.filteredFrom", {
+                      total: pagination.total,
+                    })}
+                  </span>
                 )}
               </span>
             </div>
             <div className="pagination-size-selector">
-              <label htmlFor="pageSize" className="page-size-label">{t('invoiceManagement.list.pagination.show')}</label>
+              <label htmlFor="pageSize" className="page-size-label">
+                {t("invoiceManagement.list.pagination.show")}
+              </label>
               <select
                 id="pageSize"
                 value={pagination.limit}
@@ -377,7 +436,9 @@ export function InvoiceList() {
                 <option value={50}>50</option>
                 <option value={100}>100</option>
               </select>
-              <span className="page-size-label">{t('invoiceManagement.list.pagination.perPage')}</span>
+              <span className="page-size-label">
+                {t("invoiceManagement.list.pagination.perPage")}
+              </span>
             </div>
           </div>
           <div className="table-container">
@@ -386,13 +447,19 @@ export function InvoiceList() {
                 <tr>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">{t('invoiceManagement.list.invoiceHash')}</div>
+                      <div className="column-title">
+                        {t("invoiceManagement.list.invoiceHash")}
+                      </div>
                       <div className="column-search">
                         <input
                           type="text"
-                          placeholder={t('invoiceManagement.list.searchInvoiceNumberPlaceholder')}
+                          placeholder={t(
+                            "invoiceManagement.list.searchInvoiceNumberPlaceholder"
+                          )}
                           value={invoiceNumberFilter}
-                          onChange={(e) => setInvoiceNumberFilter(e.target.value)}
+                          onChange={(e) =>
+                            setInvoiceNumberFilter(e.target.value)
+                          }
                           className="column-search-input"
                         />
                       </div>
@@ -400,11 +467,15 @@ export function InvoiceList() {
                   </th>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">{t('invoiceManagement.client')}</div>
+                      <div className="column-title">
+                        {t("invoiceManagement.client")}
+                      </div>
                       <div className="column-search">
                         <input
                           type="text"
-                          placeholder={t('invoiceManagement.list.searchClientPlaceholder')}
+                          placeholder={t(
+                            "invoiceManagement.list.searchClientPlaceholder"
+                          )}
                           value={clientFilter}
                           onChange={(e) => setClientFilter(e.target.value)}
                           className="column-search-input"
@@ -414,11 +485,15 @@ export function InvoiceList() {
                   </th>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">{t('invoiceManagement.clientEmail')}</div>
+                      <div className="column-title">
+                        {t("invoiceManagement.clientEmail")}
+                      </div>
                       <div className="column-search">
                         <input
                           type="text"
-                          placeholder={t('invoiceManagement.list.searchEmailPlaceholder')}
+                          placeholder={t(
+                            "invoiceManagement.list.searchEmailPlaceholder"
+                          )}
                           value={clientEmailFilter}
                           onChange={(e) => setClientEmailFilter(e.target.value)}
                           className="column-search-input"
@@ -427,9 +502,22 @@ export function InvoiceList() {
                     </div>
                   </th>
                   <th>
-                    <div className="column-filter" style={{alignItems: 'center' }}>
-                      <div className="column-title">{t('invoiceManagement.invoiceDate')}</div>
-                      <div className="column-search" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '4px' }}>
+                    <div
+                      className="column-filter"
+                      style={{ alignItems: "center" }}
+                    >
+                      <div className="column-title">
+                        {t("invoiceManagement.invoiceDate")}
+                      </div>
+                      <div
+                        className="column-search"
+                        style={{
+                          display: "flex",
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: "4px",
+                        }}
+                      >
                         <div className="date-picker-wrapper">
                           <input
                             type="date"
@@ -439,7 +527,9 @@ export function InvoiceList() {
                             onClick={(e) => e.currentTarget.showPicker()}
                           />
                         </div>
-                        <span style={{ margin: '0 4px' }}>{t('invoiceManagement.list.dateTo')}</span>
+                        <span style={{ margin: "0 4px" }}>
+                          {t("invoiceManagement.list.dateTo")}
+                        </span>
                         <div className="date-picker-wrapper">
                           <input
                             type="date"
@@ -453,53 +543,85 @@ export function InvoiceList() {
                     </div>
                   </th>
                   <th>
-                    <div className="column-filter" >
-                      <div className="column-title">{t('invoiceManagement.list.invoiceEmailed')}</div>
+                    <div className="column-filter">
+                      <div className="column-title">
+                        {t("invoiceManagement.list.invoiceEmailed")}
+                      </div>
                       <div className="column-search">
                         <select
                           value={invoiceSentFilter}
                           onChange={(e) => setInvoiceSentFilter(e.target.value)}
                           className="column-search-input"
                         >
-                          <option value="">{t('invoiceManagement.filters.all')}</option>
-                          <option value="true">{t('invoiceManagement.filters.yes')}</option>
-                          <option value="false">{t('invoiceManagement.filters.no')}</option>
+                          <option value="">
+                            {t("invoiceManagement.filters.all")}
+                          </option>
+                          <option value="true">
+                            {t("invoiceManagement.filters.yes")}
+                          </option>
+                          <option value="false">
+                            {t("invoiceManagement.filters.no")}
+                          </option>
                         </select>
                       </div>
                     </div>
                   </th>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">{t('invoiceManagement.list.invoicePdfGenerated')}</div>
+                      <div className="column-title">
+                        {t("invoiceManagement.list.invoicePdfGenerated")}
+                      </div>
                       <div className="column-search">
                         <select
                           value={documentGeneratedFilter}
-                          onChange={(e) => setDocumentGeneratedFilter(e.target.value)}
+                          onChange={(e) =>
+                            setDocumentGeneratedFilter(e.target.value)
+                          }
                           className="column-search-input"
                         >
-                          <option value="">{t('invoiceManagement.filters.all')}</option>
-                          <option value="true">{t('invoiceManagement.filters.yes')}</option>
-                          <option value="false">{t('invoiceManagement.filters.no')}</option>
+                          <option value="">
+                            {t("invoiceManagement.filters.all")}
+                          </option>
+                          <option value="true">
+                            {t("invoiceManagement.filters.yes")}
+                          </option>
+                          <option value="false">
+                            {t("invoiceManagement.filters.no")}
+                          </option>
                         </select>
                       </div>
                     </div>
                   </th>
                   <th>
-                    <div className="column-filter" style={{alignItems: 'center' }}>
-                      <div className="column-title">{t('invoiceManagement.list.sendEmailColumn')}</div>
+                    <div
+                      className="column-filter"
+                      style={{ alignItems: "center" }}
+                    >
+                      <div className="column-title">
+                        {t("invoiceManagement.list.sendEmailColumn")}
+                      </div>
                       <div className="column-search">
                         <div className="actions-info">
-                          <span className="actions-help-text">{t('invoiceManagement.list.sendEmailAction')}</span>
+                          <span className="actions-help-text">
+                            {t("invoiceManagement.list.sendEmailAction")}
+                          </span>
                         </div>
                       </div>
                     </div>
                   </th>
                   <th>
-                    <div className="column-filter" style={{alignItems: 'flex-end', marginRight: '10px' }}>
-                      <div className="column-title">{t('invoiceManagement.actions')}</div>
+                    <div
+                      className="column-filter"
+                      style={{ alignItems: "flex-end", marginRight: "10px" }}
+                    >
+                      <div className="column-title">
+                        {t("invoiceManagement.actions")}
+                      </div>
                       <div className="column-search">
                         <div className="actions-info">
-                          <span className="actions-help-text">{t('invoiceManagement.list.viewDeleteAction')}</span>
+                          <span className="actions-help-text">
+                            {t("invoiceManagement.list.viewDeleteAction")}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -510,90 +632,127 @@ export function InvoiceList() {
                 {loading ? (
                   // Skeleton loading rows
                   <>
-                    {Array.from({ length: pagination.limit || 10 }, (_, index) => (
-                      <tr key={`skeleton-${index}`} className="skeleton-row">
-                        {/* Regular columns - using generic skeleton-text */}
-                        <td className="skeleton-cell">
-                          <div className="skeleton-text"></div>
-                        </td>
-                        <td className="skeleton-cell">
-                          <div className="skeleton-text"></div>
-                        </td>
-                        <td className="skeleton-cell">
-                          <div className="skeleton-text"></div>
-                        </td>
-                        <td className="skeleton-cell">
-                          <div className="skeleton-text"></div>
-                        </td>
-                        <td className="skeleton-cell">
-                          <div className="skeleton-text"></div>
-                        </td>
-                        <td className="skeleton-cell">
-                          <div className="skeleton-text"></div>
-                        </td>
-                        <td className="skeleton-cell">
-                          <div className="skeleton-text"></div>
-                        </td>
-                        
-                        {/* Actions skeleton - needs special styling */}
-                        <td className="skeleton-cell">
-                          <div className="skeleton-actions">
-                            <div className="skeleton-icon skeleton-action-btn"></div>
-                            <div className="skeleton-icon skeleton-action-btn"></div>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                    {Array.from(
+                      { length: pagination.limit || 10 },
+                      (_, index) => (
+                        <tr key={`skeleton-${index}`} className="skeleton-row">
+                          {/* Regular columns - using generic skeleton-text */}
+                          <td className="skeleton-cell">
+                            <div className="skeleton-text"></div>
+                          </td>
+                          <td className="skeleton-cell">
+                            <div className="skeleton-text"></div>
+                          </td>
+                          <td className="skeleton-cell">
+                            <div className="skeleton-text"></div>
+                          </td>
+                          <td className="skeleton-cell">
+                            <div className="skeleton-text"></div>
+                          </td>
+                          <td className="skeleton-cell">
+                            <div className="skeleton-text"></div>
+                          </td>
+                          <td className="skeleton-cell">
+                            <div className="skeleton-text"></div>
+                          </td>
+                          <td className="skeleton-cell">
+                            <div className="skeleton-text"></div>
+                          </td>
+
+                          {/* Actions skeleton - needs special styling */}
+                          <td className="skeleton-cell">
+                            <div className="skeleton-actions">
+                              <div className="skeleton-icon skeleton-action-btn"></div>
+                              <div className="skeleton-icon skeleton-action-btn"></div>
+                            </div>
+                          </td>
+                        </tr>
+                      )
+                    )}
                   </>
                 ) : invoices.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="empty-state-cell">
                       <div className="empty-state">
-                        <p>{t('invoiceManagement.list.noInvoicesMatch')}</p>
+                        <p>{t("invoiceManagement.list.noInvoicesMatch")}</p>
                       </div>
                     </td>
                   </tr>
                 ) : (
-                  invoices.map(invoice => {
+                  invoices.map((invoice) => {
                     const formatted = formatInvoiceForDisplay(invoice);
-                    const clientEmail = invoice.invoice_sent_to || getClientEmail(invoice.client);
-                    const isCurrentlySending = sendingEmailInvoiceId === invoice.id;
+                    const clientEmail =
+                      invoice.invoice_sent_to || getClientEmail(invoice.client);
+                    const isCurrentlySending =
+                      sendingEmailInvoiceId === invoice.id;
                     const hasEmail = !!clientEmail;
-                    
+
                     return (
                       <tr key={String(invoice.id)}>
-                        <td className="invoice-number-cell"># {invoice.invoiceNumber}</td>
-                        <td className="client-cell">{getClientDisplayName(invoice.client, t)}</td>
-                        <td className="client-email-cell">{getClientEmail(invoice.client)}</td>
-                        <td className="date-cell" style={{textAlign: 'center'}}>{formatted.formattedInvoiceDate}</td>
-                        <td className="email-sent-cell">{invoice.emailSent ? t('invoiceManagement.filters.yes') : t('invoiceManagement.filters.no')}</td>
-                        <td className="pdf-generated-cell">{invoice.documentGenerated ? t('invoiceManagement.filters.yes') : t('invoiceManagement.filters.no')}</td>
+                        <td className="invoice-number-cell">
+                          # {invoice.invoiceNumber}
+                        </td>
+                        <td className="client-cell">
+                          {getClientDisplayName(invoice.client, t)}
+                        </td>
+                        <td className="client-email-cell">
+                          {getClientEmail(invoice.client)}
+                        </td>
+                        <td
+                          className="date-cell"
+                          style={{ textAlign: "center" }}
+                        >
+                          {formatted.formattedInvoiceDate}
+                        </td>
+                        <td className="email-sent-cell">
+                          {invoice.emailSent
+                            ? t("invoiceManagement.filters.yes")
+                            : t("invoiceManagement.filters.no")}
+                        </td>
+                        <td className="pdf-generated-cell">
+                          {invoice.documentGenerated
+                            ? t("invoiceManagement.filters.yes")
+                            : t("invoiceManagement.filters.no")}
+                        </td>
                         <td className="send-email-cell">
                           <button
-                            className={`button button-xs send-email-cell ${invoice.emailSent ? 'resend-email' : 'send-email'}`}
+                            className={`button button-xs send-email-cell ${
+                              invoice.emailSent ? "resend-email" : "send-email"
+                            }`}
                             onClick={() => sendInvoiceToClient(invoice)}
-                            disabled={isCurrentlySending || !hasEmail || !invoice.documentGenerated}
+                            disabled={
+                              isCurrentlySending ||
+                              !hasEmail ||
+                              !invoice.documentGenerated
+                            }
                             title={
-                              !hasEmail 
-                                ? t('invoiceManagement.noEmailAddress') 
-                                : !invoice.documentGenerated 
-                                  ? t('invoiceManagement.pdfNotGenerated')
-                                  : invoice.emailSent 
-                                    ? t('invoiceManagement.list.sendAgainTo', { email: clientEmail })
-                                    : t('invoiceManagement.list.sendTo', { email: clientEmail })
+                              !hasEmail
+                                ? t("invoiceManagement.noEmailAddress")
+                                : !invoice.documentGenerated
+                                ? t("invoiceManagement.pdfNotGenerated")
+                                : invoice.emailSent
+                                ? t("invoiceManagement.list.sendAgainTo", {
+                                    email: clientEmail,
+                                  })
+                                : t("invoiceManagement.list.sendTo", {
+                                    email: clientEmail,
+                                  })
                             }
                           >
                             {isCurrentlySending ? (
                               <>
-                                <Mail size={14} className="mail-icon" /> {t('invoiceManagement.sending')}
+                                <Mail size={14} className="mail-icon" />{" "}
+                                {t("invoiceManagement.sending")}
                               </>
                             ) : invoice.emailSent ? (
                               <>
-                                <Mail size={14} className="mail-icon" /> {t('invoiceManagement.list.resend')}
+                                <Mail size={14} className="mail-icon" />{" "}
+                                {t("invoiceManagement.list.resend")}
                               </>
                             ) : (
                               <>
-                                <Mail size={14} className="mail-icon" /> {t('invoiceManagement.list.sendEmail')}
+                                <Mail size={14} className="mail-icon" />{" "}
+                                {t("invoiceManagement.list.sendEmail")}
                               </>
                             )}
                           </button>
@@ -601,18 +760,20 @@ export function InvoiceList() {
                         <td className="actions-cell">
                           <div className="action-buttons">
                             <button
-                              className="action-icon-btn view-btn"
-                              onClick={() => handleViewInvoice(String(invoice.id))}
-                              title={t('invoiceManagement.viewInvoiceDetails')}
-                              aria-label={t('invoiceManagement.viewInvoice')}
+                              className="action-icon-btn edit-btn"
+                              onClick={() =>
+                                handleViewInvoice(String(invoice.id))
+                              }
+                              title={t("invoiceManagement.editInvoiceDetails")}
+                              aria-label={t("invoiceManagement.editInvoice")}
                             >
-                              <Eye size={16} />
+                              <Pencil size={16} />
                             </button>
                             <button
                               className="action-icon-btn delete-btn"
                               onClick={() => handleDeleteClick(invoice)}
-                              title={t('invoiceManagement.deleteInvoice')}
-                              aria-label={t('invoiceManagement.deleteInvoice')}
+                              title={t("invoiceManagement.deleteInvoice")}
+                              aria-label={t("invoiceManagement.deleteInvoice")}
                             >
                               <Trash2 size={16} />
                             </button>
@@ -630,7 +791,10 @@ export function InvoiceList() {
             <div className="pagination-controls bottom">
               <div className="pagination-info">
                 <span className="pagination-text">
-                  {t('invoiceManagement.list.pagination.pageOf', { current: pagination.page, total: pagination.totalPages })}
+                  {t("invoiceManagement.list.pagination.pageOf", {
+                    current: pagination.page,
+                    total: pagination.totalPages,
+                  })}
                 </span>
               </div>
               <div className="pagination-buttons">
@@ -638,45 +802,53 @@ export function InvoiceList() {
                   className="pagination-btn prev"
                   onClick={handlePreviousPage}
                   disabled={!pagination.hasPrevPage}
-                  title={t('invoiceManagement.previousPage')}
-                  aria-label={t('invoiceManagement.previousPage')}
+                  title={t("invoiceManagement.previousPage")}
+                  aria-label={t("invoiceManagement.previousPage")}
                 >
                   <ChevronLeft size={16} />
-                  <span>{t('common.previous')}</span>
+                  <span>{t("common.previous")}</span>
                 </button>
                 {/* Page numbers */}
                 <div className="page-numbers">
-                  {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
-                    let pageNum;
-                    if (pagination.totalPages <= 5) {
-                      pageNum = i + 1;
-                    } else if (pagination.page <= 3) {
-                      pageNum = i + 1;
-                    } else if (pagination.page >= pagination.totalPages - 2) {
-                      pageNum = pagination.totalPages - 4 + i;
-                    } else {
-                      pageNum = pagination.page - 2 + i;
+                  {Array.from(
+                    { length: Math.min(5, pagination.totalPages) },
+                    (_, i) => {
+                      let pageNum;
+                      if (pagination.totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (pagination.page <= 3) {
+                        pageNum = i + 1;
+                      } else if (pagination.page >= pagination.totalPages - 2) {
+                        pageNum = pagination.totalPages - 4 + i;
+                      } else {
+                        pageNum = pagination.page - 2 + i;
+                      }
+                      return (
+                        <button
+                          key={pageNum}
+                          className={`page-number-btn ${
+                            pageNum === pagination.page ? "active" : ""
+                          }`}
+                          onClick={() => handlePageChange(pageNum)}
+                          aria-label={t(
+                            "invoiceManagement.list.pagination.goToPage",
+                            { page: pageNum }
+                          )}
+                        >
+                          {pageNum}
+                        </button>
+                      );
                     }
-                    return (
-                      <button
-                        key={pageNum}
-                        className={`page-number-btn ${pageNum === pagination.page ? 'active' : ''}`}
-                        onClick={() => handlePageChange(pageNum)}
-                        aria-label={t('invoiceManagement.list.pagination.goToPage', { page: pageNum })}
-                      >
-                        {pageNum}
-                      </button>
-                    );
-                  })}
+                  )}
                 </div>
                 <button
                   className="pagination-btn next"
                   onClick={handleNextPage}
                   disabled={!pagination.hasNextPage}
-                  title={t('invoiceManagement.nextPage')}
-                  aria-label={t('invoiceManagement.nextPage')}
+                  title={t("invoiceManagement.nextPage")}
+                  aria-label={t("invoiceManagement.nextPage")}
                 >
-                  <span>{t('common.next')}</span>
+                  <span>{t("common.next")}</span>
                   <ChevronRight size={16} />
                 </button>
               </div>
@@ -687,14 +859,25 @@ export function InvoiceList() {
       {/* Delete Confirmation Modal */}
       <ConfirmationModal
         isOpen={isDeleteModalOpen}
-        title={t('invoiceManagement.deleteInvoice')}
-        message={`${t('invoiceManagement.deleteInvoiceConfirm').replace('this invoice', `"${invoiceToDelete ? invoiceToDelete.invoiceNumber : t('invoiceManagement.unknown')}"`)}${deleteError ? `\n\nError: ${deleteError}` : ''}`}
-        confirmText={isDeleting ? t('buttons.deleting') : t('invoiceManagement.deleteInvoice')}
-        cancelText={t('buttons.cancel')}
+        title={t("invoiceManagement.deleteInvoice")}
+        message={`${t("invoiceManagement.deleteInvoiceConfirm").replace(
+          "this invoice",
+          `"${
+            invoiceToDelete
+              ? invoiceToDelete.invoiceNumber
+              : t("invoiceManagement.unknown")
+          }"`
+        )}${deleteError ? `\n\nError: ${deleteError}` : ""}`}
+        confirmText={
+          isDeleting
+            ? t("buttons.deleting")
+            : t("invoiceManagement.deleteInvoice")
+        }
+        cancelText={t("buttons.cancel")}
         confirmButtonClass="danger"
         onConfirm={handleConfirmDelete}
         onCancel={handleCancelDelete}
       />
     </div>
   );
-} 
+}
