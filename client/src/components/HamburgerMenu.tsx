@@ -329,17 +329,20 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
       if (user?.id && isJobSeeker) {
         try {
           const { data, error } = await supabase
-            .from("jobseekers")
+            .from("jobseeker_profiles")
             .select("id")
             .eq("user_id", user.id)
-            .single();
+            .maybeSingle();
 
           if (error) {
             console.error("Error fetching jobseeker profile:", error);
             return;
           }
 
-          setJobseekerProfileId(data.id);
+          // Only set profile ID if data exists (user has a profile)
+          if (data) {
+            setJobseekerProfileId(data.id);
+          }
         } catch (error) {
           console.error("Error fetching jobseeker profile:", error);
         }
