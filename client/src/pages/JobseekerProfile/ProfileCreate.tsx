@@ -14,6 +14,7 @@ import {
   saveDraft as saveDraftAPI,
   checkEmailAvailability,
   updateProfile,
+  getDraft,
 } from "../../services/api/profile";
 import {
   getJobseekerProfile,
@@ -340,6 +341,10 @@ export function ProfileCreate({
             if (savedStep) {
               setCurrentStep(savedStep);
             }
+            // Set the draft ID so we can update it later
+            if (draft.id && typeof draft.id === 'string') {
+              setCreatedDraftId(draft.id);
+            }
           }
         } catch (error: unknown) {
           console.error("Error fetching draft by ID:", error);
@@ -370,6 +375,34 @@ export function ProfileCreate({
       };
 
       fetchDraftById();
+    } else if (!isEditMode && !isDraftEditMode && isJobSeeker && !shouldStartWithNewForm) {
+      // For jobseekers creating a new profile, check if they have an existing draft
+      const checkExistingDraft = async () => {
+        try {
+          setLoading("formLoading", true);
+          const draftResponse = await getDraft();
+          
+          if (draftResponse.draft && draftResponse.draft.id && typeof draftResponse.draft.id === 'string') {
+            // User has an existing draft, load it automatically
+            console.log("Found existing draft, loading it automatically");
+            methods.reset(draftResponse.draft);
+            if (draftResponse.currentStep) {
+              setCurrentStep(draftResponse.currentStep);
+            }
+            // Set the draft ID so we can update it later
+            setCreatedDraftId(draftResponse.draft.id);
+            // Note: We stay on the same route but load the draft data
+            // The component will handle saving to the existing draft
+          }
+        } catch (error) {
+          // If no draft exists or error fetching, that's fine - just continue with new form
+          console.log("No existing draft found or error fetching draft:", error);
+        } finally {
+          setLoading("formLoading", false);
+        }
+      };
+
+      checkExistingDraft();
     } else {
       // When creating a new form, ensure loading state is turned off
       setLoading("formLoading", false);
@@ -382,6 +415,7 @@ export function ProfileCreate({
     methods,
     isJobSeeker,
     user,
+    navigate,
   ]);
 
   // Reset email availability state when moving away from step 1
@@ -792,8 +826,40 @@ export function ProfileCreate({
       // Save the potentially modified draft data (with documentPaths)
       let response;
 
-      // If we already created a draft in this session, use that ID
-      if (createdDraftId) {
+      // For jobseekers, always use the profile draft API which handles existing drafts correctly
+      if (isJobSeeker) {
+        // If we already have a draft ID (from existing draft or created in this session), update it
+        if (createdDraftId) {
+          console.log(`Updating existing draft with ID: ${createdDraftId}`);
+          // Use the jobseeker draft API to update
+          response = await saveJobseekerDraft({
+            ...draftData,
+            id: createdDraftId,
+            currentStep,
+            email,
+          });
+        } else {
+          // For jobseekers, use the profile draft API which checks for existing drafts by user_id
+          // This will update existing draft or create new one
+          response = await saveDraftAPI({
+            ...draftData,
+            currentStep,
+            email,
+          });
+          // If a new draft was created, get its ID from the response
+          // Note: saveDraftAPI doesn't return the draft ID, so we need to fetch it
+          // But since jobseekers can only have one draft, we can fetch it after saving
+          try {
+            const draftResponse = await getDraft();
+            if (draftResponse.draft && draftResponse.draft.id && typeof draftResponse.draft.id === 'string') {
+              setCreatedDraftId(draftResponse.draft.id);
+            }
+          } catch (err) {
+            console.log("Could not fetch draft ID after save:", err);
+          }
+        }
+      } else if (createdDraftId) {
+        // For recruiters/admins, if we already created a draft in this session, use that ID
         console.log(`Updating existing draft with ID: ${createdDraftId}`);
         response = await saveJobseekerDraft({
           ...draftData,
