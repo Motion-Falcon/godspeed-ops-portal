@@ -1891,7 +1891,103 @@ router.post("/drafts", async (req, res) => {
       email = draftData.form_data.email;
     }
 
-    // If an email is provided, check if it already exists in jobseeker_profiles
+    // Check if user already has a draft (by user_id)
+    const { data: existingUserDraft, error: userDraftCheckError } =
+      await supabaseAdmin
+        .from("jobseeker_profile_drafts")
+        .select("id, email")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+    if (userDraftCheckError) {
+      console.error("Error checking for user's existing draft:", userDraftCheckError);
+      return res.status(500).json({ error: "Failed to check draft status" });
+    }
+
+    // If user already has a draft, update it instead of creating a new one
+    if (existingUserDraft) {
+      const now = new Date().toISOString();
+
+      // If email has changed, check if it exists in profiles or other drafts
+      if (email && email !== existingUserDraft.email) {
+        // Check profiles
+        const { data: emailExists, error: emailCheckError } = await supabaseAdmin
+          .from("jobseeker_profiles")
+          .select("id")
+          .eq("email", email)
+          .maybeSingle();
+
+        if (emailCheckError) {
+          console.error(
+            "Error checking email existence in profiles:",
+            emailCheckError
+          );
+        } else if (emailExists) {
+          return res.status(409).json({
+            error:
+              "A jobseeker profile already exists with this email. Please use a different email.",
+            existingProfileId: emailExists.id,
+          });
+        }
+
+        // Check other drafts (excluding current user's draft)
+        const { data: draftEmailExists, error: draftEmailCheckError } =
+          await supabaseAdmin
+            .from("jobseeker_profile_drafts")
+            .select("id")
+            .eq("email", email)
+            .neq("id", existingUserDraft.id)
+            .maybeSingle();
+
+        if (draftEmailCheckError) {
+          console.error(
+            "Error checking email existence in drafts:",
+            draftEmailCheckError
+          );
+        } else if (draftEmailExists) {
+          return res.status(409).json({
+            error: "A draft with this email already exists.",
+            existingDraftId: draftEmailExists.id,
+          });
+        }
+      }
+
+      // Update existing draft
+      const { data: updatedDraft, error: updateError } = await supabaseAdmin
+        .from("jobseeker_profile_drafts")
+        .update({
+          form_data: draftData,
+          last_updated: now,
+          current_step: currentStep,
+          email: email,
+          updated_at: now,
+          updated_by_user_id: userId,
+        })
+        .eq("id", existingUserDraft.id)
+        .select()
+        .single();
+
+      if (updateError) {
+        console.error("Error updating draft:", updateError);
+        return res.status(500).json({ error: "Failed to update draft" });
+      }
+
+      return res.status(200).json({
+        message: "Draft updated successfully",
+        draft: {
+          id: updatedDraft.id,
+          lastUpdated: updatedDraft.last_updated,
+          currentStep: updatedDraft.current_step,
+          email: updatedDraft.email,
+          createdAt: updatedDraft.created_at,
+          createdByUserId: updatedDraft.created_by_user_id,
+          updatedAt: updatedDraft.updated_at,
+          updatedByUserId: updatedDraft.updated_by_user_id,
+        },
+      });
+    }
+
+    // If no existing draft, check if email exists in profiles or other drafts
     if (email) {
       const { data: emailExists, error: emailCheckError } = await supabaseAdmin
         .from("jobseeker_profiles")
@@ -1912,7 +2008,7 @@ router.post("/drafts", async (req, res) => {
         });
       }
 
-      // Also check if the email exists in another draft
+      // Check if the email exists in another draft (not the current user's)
       const { data: draftEmailExists, error: draftEmailCheckError } =
         await supabaseAdmin
           .from("jobseeker_profile_drafts")
