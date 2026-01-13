@@ -65,7 +65,7 @@ export function TrainingModules() {
       duration: "5 min",
       completed: false,
       icon: <Video className="module-icon video" />,
-      youtubeId: "IZY5r7_f6eE"
+      youtubeId: "H8pKkyP9FvY"
     },
     {
       id: "tm-004",
@@ -75,7 +75,7 @@ export function TrainingModules() {
       duration: "6 min",
       completed: false,
       icon: <Video className="module-icon video" />,
-      youtubeId: "mzKdX6NeRGo"
+      youtubeId: "cuZ8xNY4TWo"
     },
     {
       id: "tm-005",
