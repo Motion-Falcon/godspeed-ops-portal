@@ -8,7 +8,7 @@ import {
   pdf,
   Image,
 } from "@react-pdf/renderer";
-import godspeedLogo from "../assets/logos/HdGroupLogo.png";
+import godspeedLogo from "../assets/logos/hdgroup-logo.png";
 
 // Color scheme
 const colors = {
