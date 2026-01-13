@@ -191,9 +191,13 @@ export const loginUser = async (
 // New function: Validate credentials for 2FA flow
 export const validateCredentials = async (email: string, password: string) => {
   const result = await validateCredentialsAPI(email, password);
-
+  
+  // Check if email is verified from the response
+  const isEmailVerified = result.emailVerified !== false && 
+                         result.user?.email_confirmed_at;
+  
   // Only set session if email is verified
-  if (!result.requiresTwoFactor && result.user?.user_metadata?.email_verified) {
+  if (!result.requiresTwoFactor && isEmailVerified) {
     // For non-recruiters with verified email, we get a session back - set it in Supabase
     if (result.session) {
       await supabase.auth.setSession({

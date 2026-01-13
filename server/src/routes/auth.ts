@@ -380,6 +380,23 @@ router.post("/validate-credentials", async (req, res) => {
       });
 
       if (error) {
+        // Check if the error is due to unconfirmed email
+        if (error.message === 'Email not confirmed' || error.status === 400) {
+          // Get user by email to return user data even if email is not confirmed
+          const { data: { users }, error: listError } = await supabase.auth.admin.listUsers();
+          if (!listError && users) {
+            const user = users.find(u => u.email === email);
+            if (user) {
+              return res.status(200).json({
+                message: 'Email not confirmed',
+                requiresTwoFactor: false,
+                emailVerified: false,
+                user: user,
+                email: email,
+              });
+            }
+          }
+        }
         return res.status(401).json({ error: error.message });
       }
 
@@ -402,6 +419,23 @@ router.post("/validate-credentials", async (req, res) => {
     });
 
     if (error) {
+      // Check if the error is due to unconfirmed email
+      if (error.message === 'Email not confirmed' || error.status === 400) {
+        // Get user by email to return user data even if email is not confirmed
+        const { data: { users }, error: listError } = await supabase.auth.admin.listUsers();
+        if (!listError && users) {
+          const user = users.find(u => u.email === email);
+          if (user) {
+            return res.status(200).json({
+              message: 'Email not confirmed',
+              requiresTwoFactor: false,
+              emailVerified: false,
+              user: user,
+              email: email,
+            });
+          }
+        }
+      }
       return res.status(401).json({ error: error.message });
     }
 

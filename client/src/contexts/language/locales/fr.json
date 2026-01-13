@@ -651,6 +651,8 @@
     "title": "Vérification de l'email",
     "checkEmailTitle": "Vérifiez votre email",
     "instructions": "Nous avons envoyé un email de vérification à {{email}}. Cliquez sur le lien dans l'email pour vérifier votre compte.",
+    "emailNotVerified": "Votre email <strong>{{email}}</strong> n'est pas vérifié. Veuillez cliquer sur le bouton ci-dessous pour renvoyer l'email de confirmation.",
+    "clickToResend": "Veuillez cliquer sur le bouton ci-dessous pour renvoyer l'email de confirmation afin de vérifier votre compte.",
     "resendError": "Une erreur s'est produite lors de la réexpédition de l'email de vérification.",
     "emailSent": "Un nouvel email de vérification a été envoyé.",
     "notReceived": "Vous n'avez pas reçu d'email ? Vérifiez votre dossier spam ou demandez un nouveau lien de vérification.",

@@ -51,7 +51,7 @@ export function VerificationPending() {
   };
 
   return (
-    <div className="page-container hide-hamburger-menu">
+    <div className="page-container">
       <AppHeader title={t('verificationPending.title')} />
       <div className="centered-container">
         <div className="centered-card">
@@ -61,45 +61,91 @@ export function VerificationPending() {
 
           <h1 className="auth-card-title">{t('verificationPending.checkEmailTitle')}</h1>
 
-          <p dangerouslySetInnerHTML={{ __html: t('verificationPending.instructions', { email }) }} />
+          {fromLogin ? (
+            <>
+              <p dangerouslySetInnerHTML={{ __html: t('verificationPending.emailNotVerified', { email }) }} />
+              
+              <div className="card-actions">
+                {error && <div className="error-container">{error}</div>}
 
-          <div className="card-actions">
-            {error && <div className="error-container">{error}</div>}
+                {resendSuccess ? (
+                  <div className="success-message">
+                    <CheckCircle size={16} style={{ marginRight: "8px" }} />{t('verificationPending.emailSent')}
+                  </div>
+                ) : (
+                  <p className="text-muted">
+                    {t('verificationPending.clickToResend')}
+                  </p>
+                )}
 
-            {resendSuccess ? (
-              <div className="success-message">
-                <CheckCircle size={16} style={{ marginRight: "8px" }} />{t('verificationPending.emailSent')}
+                <button
+                  className="button outline"
+                  onClick={handleResendVerification}
+                  disabled={isResending || resendSuccess}
+                >
+                  {isResending ? (
+                    <span className="loading-spinner"></span>
+                  ) : resendSuccess ? (
+                    t('verificationPending.emailSentButton')
+                  ) : (
+                    t('verificationPending.resendButton')
+                  )}
+                </button>
+
+                <div>
+                  <Link
+                    to="/login"
+                    className="auth-link"
+                    onClick={handleBackToLogin}
+                  >
+                    {t('verificationPending.backToLogin')}
+                  </Link>
+                </div>
               </div>
-            ) : (
-              <p className="text-muted">
-                {t('verificationPending.notReceived')}
-              </p>
-            )}
+            </>
+          ) : (
+            <>
+              <p dangerouslySetInnerHTML={{ __html: t('verificationPending.instructions', { email }) }} />
 
-            <button
-              className="button outline"
-              onClick={handleResendVerification}
-              disabled={isResending || resendSuccess}
-            >
-              {isResending ? (
-                <span className="loading-spinner"></span>
-              ) : resendSuccess ? (
-                t('verificationPending.emailSentButton')
-              ) : (
-                t('verificationPending.resendButton')
-              )}
-            </button>
+              <div className="card-actions">
+                {error && <div className="error-container">{error}</div>}
 
-            <div>
-              <Link
-                to="/login"
-                className="auth-link"
-                onClick={handleBackToLogin}
-              >
-                {t('verificationPending.backToLogin')}
-              </Link>
-            </div>
-          </div>
+                {resendSuccess ? (
+                  <div className="success-message">
+                    <CheckCircle size={16} style={{ marginRight: "8px" }} />{t('verificationPending.emailSent')}
+                  </div>
+                ) : (
+                  <p className="text-muted">
+                    {t('verificationPending.notReceived')}
+                  </p>
+                )}
+
+                <button
+                  className="button outline"
+                  onClick={handleResendVerification}
+                  disabled={isResending || resendSuccess}
+                >
+                  {isResending ? (
+                    <span className="loading-spinner"></span>
+                  ) : resendSuccess ? (
+                    t('verificationPending.emailSentButton')
+                  ) : (
+                    t('verificationPending.resendButton')
+                  )}
+                </button>
+
+                <div>
+                  <Link
+                    to="/login"
+                    className="auth-link"
+                    onClick={handleBackToLogin}
+                  >
+                    {t('verificationPending.backToLogin')}
+                  </Link>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
