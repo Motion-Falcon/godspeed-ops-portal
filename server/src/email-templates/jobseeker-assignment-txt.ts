@@ -14,7 +14,7 @@ ${vars.end_date ? `End Date: ${vars.end_date}\n` : ''}${vars.position_category ?
 Congratulations again, and we look forward to supporting you in this new opportunity!
 
 Best regards,
-The Recruitment Team
+The CanHire Team
 
 ---
 
