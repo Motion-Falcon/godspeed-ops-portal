@@ -49,12 +49,16 @@ export function Login() {
       // Use the new secure credential validation
       const result = await validateCredentials(data.email, data.password);
       
-      // Check if email is verified
-      if (!result.user.user_metadata.email_verified && result.user.email) {
+      // Check if email is verified - check both emailVerified flag and user metadata
+      const isEmailVerified = result.emailVerified !== false && 
+                            result.user?.email_confirmed_at && 
+                            result.user.user_metadata?.email_verified !== false;
+      
+      if (!isEmailVerified) {
         // If not verified, redirect to verification pending page
         navigate('/verification-pending', { 
           state: { 
-            email: result.email,
+            email: result.email || data.email,
             fromLogin: true 
           } 
         });
