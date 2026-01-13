@@ -59,7 +59,7 @@ export function jobseekerRemovalHtmlTemplate(vars: Record<string, any>) {
         </tr>` : ''}
       </table>
       <p>If you have any questions or would like to discuss other opportunities, please reply to this email. We are here to support you in your job search.</p>
-      <p>Best regards,<br><b>The Recruitment Team</b></p>
+      <p>Best regards,<br><b>The Godspeed Team</b></p>
     </div>
   </body>
 </html>

@@ -18,7 +18,7 @@ If you have any questions, feel free to reply to this email.
 Congratulations again, and we look forward to supporting you in this new opportunity!
 
 Best regards,
-The Recruitment Team
+The Godspeed Team
 
 ---
 
