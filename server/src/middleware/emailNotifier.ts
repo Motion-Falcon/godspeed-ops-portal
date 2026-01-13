@@ -24,6 +24,22 @@ interface EmailData {
   }>;
 }
 
+/**
+ * Formats an email address with a display name
+ * @param email - The email address
+ * @param displayName - Optional display name (defaults to PORTAL_NAME env var or "HDGroup")
+ * @returns Formatted email string like "HDGroup <email@example.com>"
+ */
+export function formatFromEmail(email: string, displayName?: string): string {
+  // If email already contains a display name, return as is
+  if (email.includes('<') && email.includes('>')) {
+    return email;
+  }
+  // Use provided displayName, or fall back to environment variable, or default to "HDGroup"
+  const brandName = displayName || process.env.PORTAL_NAME || '';
+  return `${brandName} Ops Portal <${email}>`;
+}
+
 interface EmailNotifierOptions {
   onSuccessEmail?: (req: Request, res: Response) => EmailData | EmailData[] | null | Promise<EmailData | EmailData[] | null>;
 }
@@ -43,17 +59,13 @@ export const emailNotifier = (options: EmailNotifierOptions = {}) => {
             for (const email of emails) {
               // Ensure 'text' is always a string (required by SendGrid)
               const text = email.text ?? '';
+              const fromEmail = formatFromEmail(process.env.DEFAULT_FROM_EMAIL as string);
               console.log('[EmailNotifier] Sending email:', {
                 to: email.to,
                 subject: email.subject,
-                from: process.env.DEFAULT_FROM_EMAIL || 'godspeed@aimotion.com',
-                attachments: email.attachments?.length || 0,
+                from: fromEmail,
               });
-              await sgMail.send({ 
-                from: process.env.DEFAULT_FROM_EMAIL || 'godspeed@aimotion.com', 
-                ...email, 
-                text 
-              });
+              await sgMail.send({ from: fromEmail, ...email, text });
               console.log('[EmailNotifier] Email sent successfully to', email.to);
             }
           } else {
