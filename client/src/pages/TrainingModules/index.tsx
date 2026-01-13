@@ -43,7 +43,7 @@ export function TrainingModules() {
       duration: "2 min",
       completed: false,
       icon: <Video className="module-icon video" />,
-      youtubeId: "rqEDI7hM4is",
+      youtubeId: "zdFdugluVMA",
       mandatory: true
     },
     {
@@ -54,7 +54,7 @@ export function TrainingModules() {
       duration: "2 min",
       completed: false,
       icon: <Video className="module-icon video" />,
-      youtubeId: "W9klYbrmkGk",
+      youtubeId: "YD53S0giENI",
       mandatory: true
     },
     {
