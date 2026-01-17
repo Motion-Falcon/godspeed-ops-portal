@@ -18,6 +18,7 @@ import {
 } from "../../services/api/client";
 import { AppHeader } from "../../components/AppHeader";
 import { ConfirmationModal } from "../../components/ConfirmationModal";
+import { getClickableRowProps } from "../../hooks/useClickableTableRow";
 import "../../styles/components/CommonTable.css";
 import "../../styles/pages/ClientManagement.css";
 
@@ -568,7 +569,10 @@ export function ClientManagement() {
                   </tr>
                 ) : (
                   clients.map((client) => (
-                    <tr key={String(client.id)}>
+                    <tr 
+                      key={String(client.id)}
+                      {...getClickableRowProps(() => handleViewClient(String(client.id)))}
+                    >
                       <td className="name-cell">
                         {getFieldValue(client, "companyName")}
                       </td>
@@ -597,7 +601,10 @@ export function ClientManagement() {
                         <div className="action-buttons">
                           <button
                             className="action-icon-btn view-btn"
-                            onClick={() => handleViewClient(String(client.id))}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleViewClient(String(client.id));
+                            }}
                             title="View client details"
                             aria-label="View client"
                           >

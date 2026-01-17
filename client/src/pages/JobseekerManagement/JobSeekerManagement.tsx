@@ -24,6 +24,7 @@ import { ConfirmationModal } from "../../components/ConfirmationModal";
 import { AppHeader } from "../../components/AppHeader";
 import { EXPERIENCE_LEVELS } from "../../constants/formOptions";
 import { useLanguage } from "../../contexts/language/language-provider";
+import { getClickableRowProps } from "../../hooks/useClickableTableRow";
 import "../../styles/pages/JobSeekerManagement.css";
 import "../../styles/components/header.css";
 import "../../styles/components/CommonTable.css";
@@ -718,7 +719,10 @@ export function JobSeekerManagement() {
                   profiles.map((profile) => {
                     const effectiveStatus = getEffectiveStatus(profile);
                     return (
-                      <tr key={profile.id}>
+                      <tr 
+                        key={profile.id}
+                        {...getClickableRowProps(() => handleViewProfile(profile.id))}
+                      >
                         <td className="name-cell">{profile.name}</td>
                         <td className="email-cell">{profile.email}</td>
                         <td className="phone-cell">
@@ -748,7 +752,10 @@ export function JobSeekerManagement() {
                           <div className="action-buttons">
                             <button
                               className="action-icon-btn view-btn"
-                              onClick={() => handleViewProfile(profile.id)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleViewProfile(profile.id);
+                              }}
                               title={t(
                                 "jobseekerManagement.actions.viewProfile"
                               )}

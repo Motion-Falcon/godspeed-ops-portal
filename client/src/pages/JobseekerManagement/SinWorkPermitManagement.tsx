@@ -16,6 +16,7 @@ import {
 import { JobSeekerProfile } from "../../types/jobseeker";
 import { AppHeader } from "../../components/AppHeader";
 import { useLanguage } from "../../contexts/language/language-provider";
+import { getClickableRowProps } from "../../hooks/useClickableTableRow";
 import "../../styles/pages/JobSeekerManagement.css";
 import "../../styles/components/header.css";
 import "../../styles/components/CommonTable.css";
@@ -568,7 +569,10 @@ export function SinWorkPermitManagement() {
                     const workPermitExpiryStatus = getExpiryStatus(profile.workPermitExpiry, t);
                     
                     return (
-                      <tr key={profile.id}>
+                      <tr 
+                        key={profile.id}
+                        {...getClickableRowProps(() => handleViewProfile(profile.id))}
+                      >
                         <td className="name-cell">{profile.name}</td>
                         <td className="email-cell">{profile.email}</td>
                         <td className="phone-cell">
@@ -610,7 +614,10 @@ export function SinWorkPermitManagement() {
                           <div className="action-buttons">
                             <button
                               className="action-icon-btn view-btn"
-                              onClick={() => handleViewProfile(profile.id)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleViewProfile(profile.id);
+                              }}
                               title={t('sinWorkPermitManagement.actions.viewProfile')}
                               aria-label={t('sinWorkPermitManagement.actions.viewProfile')}
                             >

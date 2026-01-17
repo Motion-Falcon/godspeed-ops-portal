@@ -607,6 +607,28 @@
   flex-shrink: 0;
 }
 
+/* Clickable row styling - automatically applied to rows with view buttons */
+.common-table tbody tr.clickable-row {
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.common-table tbody tr.clickable-row:hover {
+  background-color: rgba(217, 119, 6, 0.08) !important;
+}
+
+.dark .common-table tbody tr.clickable-row:hover {
+  background-color: rgba(251, 191, 36, 0.1) !important;
+}
+
+.common-table tbody tr.clickable-row:active {
+  background-color: rgba(217, 119, 6, 0.12) !important;
+}
+
+.dark .common-table tbody tr.clickable-row:active {
+  background-color: rgba(251, 191, 36, 0.15) !important;
+}
+
 /* Dark mode skeleton adjustments */
 .dark .skeleton-text,
 .dark .skeleton-badge {

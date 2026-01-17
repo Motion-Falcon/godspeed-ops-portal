@@ -337,9 +337,6 @@ export function ConsentDetailPage() {
       />
 
       <div className="content-container">
-        {error && !message && <div className="error-message">{error}</div>}
-        {message && <div className="success-message">{message}</div>}
-
         {/* Document info card */}
         {loading ? (
           <div className="modern-document-card">
@@ -456,15 +453,28 @@ export function ConsentDetailPage() {
               <thead>
                 <tr>
                   <th className="checkbox-column">
-                    <input
-                      type="checkbox"
-                      checked={isAllSelected}
-                      ref={(el) => {
-                        if (el) el.indeterminate = isIndeterminate;
-                      }}
-                      onChange={(e) => handleSelectAll(e.target.checked)}
-                      className="checkbox-input"
-                    />
+                    <div className="column-filter">
+                      <div className="column-title">
+                        <span className="select-all-tooltip-text">{t("consent.detail.table.selectAllTooltip")}</span>
+                      </div>
+                      <div className="column-search">
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                          <input
+                            type="checkbox"
+                            checked={isAllSelected}
+                            ref={(el) => {
+                              if (el) el.indeterminate = isIndeterminate;
+                            }}
+                            onChange={(e) => handleSelectAll(e.target.checked)}
+                            className="checkbox-input"
+                            title={t("consent.detail.table.selectAllTooltip")}
+                          />
+                          <span style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>
+                            {t("consent.detail.table.selectAll")}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   </th>
                   <th>
                     <div className="column-filter">
