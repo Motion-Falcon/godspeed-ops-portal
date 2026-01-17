@@ -19,6 +19,7 @@ import {
 import { ConfirmationModal } from "../../components/ConfirmationModal";
 import { AppHeader } from "../../components/AppHeader";
 import { useLanguage } from "../../contexts/language/language-provider";
+import { getClickableRowProps } from "../../hooks/useClickableTableRow";
 import "../../styles/pages/PositionManagement.css";
 import "../../styles/components/header.css";
 import "../../styles/components/CommonTable.css";
@@ -727,7 +728,10 @@ export function PositionManagement() {
                   </tr>
                 ) : (
                   positions.map((position) => (
-                    <tr key={position.id}>
+                    <tr 
+                      key={position.id}
+                      {...getClickableRowProps(() => handleViewPosition(position.id as string))}
+                    >
                       <td className="position-id-cell">
                         {position.positionCode || t("positionManagement.nA")}
                       </td>
@@ -770,9 +774,10 @@ export function PositionManagement() {
                         <div className="action-buttons">
                           <button
                             className="action-icon-btn view-btn"
-                            onClick={() =>
-                              handleViewPosition(position.id as string)
-                            }
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleViewPosition(position.id as string);
+                            }}
                             title={t("positionManagement.actions.viewPosition")}
                             aria-label={t(
                               "positionManagement.actions.viewPosition"

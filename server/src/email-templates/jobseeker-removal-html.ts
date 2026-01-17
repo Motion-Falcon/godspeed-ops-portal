@@ -59,7 +59,7 @@ export function jobseekerRemovalHtmlTemplate(vars: Record<string, any>) {
         </tr>` : ''}
       </table>
       <p>If you have any questions or would like to discuss other opportunities, please reply to this email. We are here to support you in your job search.</p>
-      <p>Best regards,<br><b>The CanHire Team</b></p>
+      <p>Best regards,<br><b>The ${process.env.PORTAL_NAME || 'HDGroup'} Team</b></p>
     </div>
   </body>
 </html>
