@@ -241,17 +241,26 @@
 
 /* Detail Page Table Enhancements */
 .checkbox-column {
-  width: 40px;
+  width: 140px;
 }
 
 .checkbox-cell {
-  text-align: center;
+  text-align: left;
   padding: var(--spacing-3);
 }
 
 .checkbox-input {
   cursor: pointer;
   transform: scale(1.1);
+}
+
+.select-all-tooltip-text {
+  display: block;
+  max-width: 140px;
+  line-height: 1.2;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .status-icon {
@@ -398,6 +407,12 @@
   display: flex;
   gap: var(--spacing-2);
   justify-content: start;
+}
+
+/* Center align action buttons in consent list page */
+.actions-cell .action-buttons {
+  justify-content: center;
+  padding-right: 0;
 }
 
 /* Animations */

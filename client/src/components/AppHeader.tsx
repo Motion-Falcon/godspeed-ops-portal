@@ -1,12 +1,13 @@
 import { ReactNode, useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { RotateCcw, ChevronDown, RefreshCcw } from 'lucide-react';
+import { ChevronDown, RefreshCcw } from 'lucide-react';
 import godspeedLogo from '../assets/logos/hdgroup-logo-with-bg.png';
 import godspeedIconLogo from '../assets/logos/godspped-logo.png';
 import canHireIconLogo from '../assets/logos/canhire-logo.png';
 import allStaffIconLogo from '../assets/logos/allstaff-logo.png';
 import hdGroupIconLogo from '../assets/logos/hdgroup-logo.png';
 import { HamburgerMenu } from './HamburgerMenu';
+import { Toast } from './Toast';
 import { useLanguage } from '../contexts/language/language-provider';
 import '../styles/components/header.css';
 
@@ -37,11 +38,10 @@ export function AppHeader({
   const navigate = useNavigate();
   const { t } = useLanguage();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [showStatusMessage, setShowStatusMessage] = useState(false);
+  const [showToast, setShowToast] = useState(false);
   const [companySwitcherOpen, setCompanySwitcherOpen] = useState(false);
   const menuOpenRef = useRef(true); // Keep track of menu state with a ref as well
   const isInitialMount = useRef(true);
-  const statusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const companySwitcherRef = useRef<HTMLDivElement>(null);
 
   // Scroll to top when component mounts (page loads)
@@ -66,34 +66,13 @@ export function AppHeader({
     };
   }, [companySwitcherOpen]);
 
-  // Handle status message visibility and timeout
+  // Handle toast visibility
   useEffect(() => {
     if (statusMessage) {
-      setShowStatusMessage(true);
-      
-      // Clear existing timeout if any
-      if (statusTimeoutRef.current) {
-        clearTimeout(statusTimeoutRef.current);
-      }
-      
-      // Set timeout to hide message after 3 seconds
-      statusTimeoutRef.current = setTimeout(() => {
-        setShowStatusMessage(false);
-      }, 6000);
+      setShowToast(true);
     } else {
-      setShowStatusMessage(false);
-      // Clear timeout if statusMessage becomes null/undefined
-      if (statusTimeoutRef.current) {
-        clearTimeout(statusTimeoutRef.current);
-      }
+      setShowToast(false);
     }
-
-    // Cleanup timeout on unmount
-    return () => {
-      if (statusTimeoutRef.current) {
-        clearTimeout(statusTimeoutRef.current);
-      }
-    };
   }, [statusMessage]);
   
   // Log state changes for debugging
@@ -211,23 +190,16 @@ export function AppHeader({
             {actions}
           </div>
         </div>
-        
-        {statusMessage && showStatusMessage && (
-          <div className="status-update-container">
-            <span className={`status-update-message ${statusType}`}>{statusMessage}</span>
-            {statusType === 'error' && (
-              <button 
-                className="refresh-page-btn"
-                onClick={handleRefreshPage}
-                title={t('common.refreshPage')}
-              >
-                <RotateCcw size={16} />
-                {t('common.refresh')}
-              </button>
-            )}
-          </div>
-        )}
       </header>
+      
+      <Toast
+        message={statusMessage || ''}
+        type={statusType}
+        isVisible={showToast && !!statusMessage}
+        onClose={() => setShowToast(false)}
+        onRefresh={statusType === 'error' ? handleRefreshPage : undefined}
+        duration={6000}
+      />
       <div className="page-title-container">
         <h1 className="page-title">{title}</h1>
       </div>

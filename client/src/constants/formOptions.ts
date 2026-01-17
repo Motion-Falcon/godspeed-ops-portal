@@ -277,6 +277,125 @@ export const STAFF_MEMBERS = [
   "Rajneet Kaur",
 ] as const;
 
+export const CLIENT_MANAGERS = [
+  "Mansha Malik",
+  "Amandeep Kaur",
+  "Sumanpreet Kaur",
+  "Mandeep Kaur",
+  "Rishi Dhaliwal",
+  "Yashpal Kaur",
+  "Morgan Drouin",
+  "Ajay",
+  "Rahul Singh Rawat",
+  "Vinayak",
+  "Kirandeep Kaur",
+  "Komal",
+  "Vani Sreeram",
+  "Hiral",
+  "Rahul Sharma",
+  "Samuel Jacob",
+  "Sharmili",
+  "Rajneet Kaur",
+] as const;
+
+export const CLIENT_REPRESENTATIVES = [
+  "Mansha Malik",
+  "Amandeep Kaur",
+  "Sumanpreet Kaur",
+  "Mandeep Kaur",
+  "Rishi Dhaliwal",
+  "Yashpal Kaur",
+  "Morgan Drouin",
+  "Ajay",
+  "Rahul Singh Rawat",
+  "Vinayak",
+  "Kirandeep Kaur",
+  "Komal",
+  "Vani Sreeram",
+  "Hiral",
+  "Rahul Sharma",
+  "Samuel Jacob",
+  "Sharmili",
+  "Rajneet Kaur",
+] as const;
+
+export const SALES_PERSONS = [
+  "Mansha Malik",
+  "Amandeep Kaur",
+  "Sumanpreet Kaur",
+  "Mandeep Kaur",
+  "Rishi Dhaliwal",
+  "Yashpal Kaur",
+  "Morgan Drouin",
+  "Ajay",
+  "Rahul Singh Rawat",
+  "Vinayak",
+  "Kirandeep Kaur",
+  "Komal",
+  "Vani Sreeram",
+  "Hiral",
+  "Rahul Sharma",
+  "Samuel Jacob",
+  "Sharmili",
+  "Rajneet Kaur",
+  "Ashish Tandon",
+  "Bill Henderson",
+  "John Mageau",
+  "Karen Elsdon",
+  "Iman Thanvi",
+  "In-House",
+  "Jules LeRiche",
+  "Abrar Syed",
+  "Nick Pereira",
+  "Josh Poulin",
+] as const;
+
+export const ACCOUNTING_PERSONS = [
+  "Mansha Malik",
+  "Amandeep Kaur",
+  "Sumanpreet Kaur",
+  "Mandeep Kaur",
+  "Rishi Dhaliwal",
+  "Yashpal Kaur",
+  "Morgan Drouin",
+  "Ajay",
+  "Rahul Singh Rawat",
+  "Vinayak",
+  "Kirandeep Kaur",
+  "Komal",
+  "Vani Sreeram",
+  "Hiral",
+  "Rahul Sharma",
+  "Samuel Jacob",
+  "Sharmili",
+  "Rajneet Kaur",
+  "Ankit",
+  "Rajita",
+  "Shruti",
+] as const;
+
+export const ACCOUNTING_MANAGERS = [
+  "Mansha Malik",
+  "Amandeep Kaur",
+  "Sumanpreet Kaur",
+  "Mandeep Kaur",
+  "Rishi Dhaliwal",
+  "Yashpal Kaur",
+  "Morgan Drouin",
+  "Ajay",
+  "Rahul Singh Rawat",
+  "Vinayak",
+  "Kirandeep Kaur",
+  "Komal",
+  "Vani Sreeram",
+  "Hiral",
+  "Rahul Sharma",
+  "Samuel Jacob",
+  "Sharmili",
+  "Rajneet Kaur",
+  "Hiral Patel",
+] as const;
+
 export const CANADIAN_PROVINCES = [
   { code: "AB", name: "Alberta" },
   { code: "BC", name: "British Columbia" },
@@ -295,4 +414,9 @@ export const CANADIAN_PROVINCES = [
 
 export type UserRole = (typeof USER_ROLES)[number];
 export type StaffMember = (typeof STAFF_MEMBERS)[number];
+export type ClientManager = (typeof CLIENT_MANAGERS)[number];
+export type ClientRepresentative = (typeof CLIENT_REPRESENTATIVES)[number];
+export type SalesPerson = (typeof SALES_PERSONS)[number];
+export type AccountingPerson = (typeof ACCOUNTING_PERSONS)[number];
+export type AccountingManager = (typeof ACCOUNTING_MANAGERS)[number];
 export type CanadianProvince = (typeof CANADIAN_PROVINCES)[number];

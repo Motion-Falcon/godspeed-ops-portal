@@ -4,6 +4,7 @@ import { Eye, Plus, Search, ChevronLeft, ChevronRight, FileText, Calendar, User,
 import { getConsentDocuments, ConsentDocument } from '../../services/api/consent';
 import { AppHeader } from '../../components/AppHeader';
 import { useLanguage } from '../../contexts/language/language-provider';
+import { getClickableRowProps } from '../../hooks/useClickableTableRow';
 import '../../styles/components/CommonTable.css';
 import '../../styles/pages/ConsentListAndDetailPage.css';
 
@@ -416,7 +417,10 @@ export function ConsentListPage() {
                   </tr>
                 ) : (
                   documents.map(document => (
-                    <tr key={document.id}>
+                    <tr 
+                      key={document.id}
+                      {...getClickableRowProps(() => handleViewDocument(document.id))}
+                    >
                       <td className="name-cell">
                         <div className="file-info">
                           <FileText size={16} className="file-icon" />
@@ -459,7 +463,10 @@ export function ConsentListPage() {
                         <div className="action-buttons">
                           <button 
                             className="action-icon-btn view-btn"
-                            onClick={() => handleViewDocument(document.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleViewDocument(document.id);
+                            }}
                                                          title={t('consent.common.viewConsentDetails')}
                              aria-label={t('consent.common.viewConsentDetails')}
                           >

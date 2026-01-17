@@ -155,6 +155,20 @@
     "rejected": "Rejected"
   },
 
+  "pagination": {
+    "showing": "Showing {{start}} to {{end}} of {{total}} entries",
+    "filteredFrom": "(filtered from {{total}} total entries)",
+    "filteredFromTotal": "(filtered from {{total}} total entries)",
+    "show": "Show:",
+    "perPage": "per page",
+    "pageOf": "Page {{page}} of {{totalPages}}",
+    "previous": "Previous",
+    "next": "Next",
+    "previousPage": "Previous page",
+    "nextPage": "Next page",
+    "goToPage": "Go to page {{page}}"
+  },
+
   "dashboard": {
     "welcome": "Welcome to Dashboard",
     "overview": "Overview",
@@ -1598,6 +1612,8 @@
         "cancel": "Cancel"
       },
       "table": {
+        "selectAll": "Select All",
+        "selectAllTooltip": "Select all recipients to resend consent emails",
         "recipientName": "Recipient Name",
         "email": "Email",
         "type": "Type",
@@ -1637,7 +1653,8 @@
       "description": "Create a new consent request to send to your clients or jobseekers",
       "steps": {
         "chooseType": "Choose Type",
-        "uploadSend": "Upload & Send"
+        "selectDocument": "Select Document",
+        "selectRecipients": "Select Recipients"
       },
       "step1": {
         "title": "Choose Recipient Type",
@@ -1648,18 +1665,31 @@
         "jobseekerDescription": "Send consent requests to jobseeker profiles"
       },
       "step2": {
-        "title": "Upload Document & Select Recipients",
-        "description": "Upload the consent document and choose specific recipients",
-        "selectedRecipients": "Selected Recipients",
-        "addMoreRecipients": "Add More Recipients",
-        "selectRecipients": "Select Recipients",
-        "removeRecipient": "Remove recipient",
+        "title": "Select Document",
+        "description": "Upload a new document or choose from your existing documents",
         "uploadDocument": "Upload Consent Document",
+        "uploadNew": "Upload New",
+        "useExisting": "Use Existing",
+        "searchDocuments": "Search documents...",
+        "loadingDocuments": "Loading documents...",
+        "noDocumentsMatch": "No documents match your search",
+        "noDocumentsFound": "No documents found. Upload a new document to get started.",
         "documentPreview": "Document Preview",
+        "selectDocumentToPreview": "Select or upload a document to preview",
         "viewFullDocument": "View Full Document",
         "clickToUpload": "Click to upload document",
         "clickToReplace": "Click to replace document",
         "pdfOnly": "PDF files only",
+        "next": "Next"
+      },
+      "step3": {
+        "title": "Select Recipients",
+        "description": "Choose who will receive the consent requests",
+        "selectedRecipients": "Selected Recipients",
+        "addMoreRecipients": "Add More Recipients",
+        "selectRecipients": "Select Recipients",
+        "removeRecipient": "Remove recipient",
+        "noRecipientsSelected": "No recipients selected yet",
         "creating": "Creating...",
         "createRequest": "Create Consent Request"
       },
@@ -1677,8 +1707,9 @@
       },
       "messages": {
         "failedToFetchRecipients": "Failed to fetch recipients. Please try again.",
+        "failedToFetchDocuments": "Failed to fetch existing documents. Please try again.",
         "pdfOnly": "Please select a PDF file only",
-        "selectDocument": "Please select a document to upload",
+        "selectDocument": "Please select a document to upload or choose an existing document",
         "selectRecipients": "Please select at least one recipient",
         "invalidRecipientType": "Invalid recipient type",
         "authenticationRequired": "Authentication required",
