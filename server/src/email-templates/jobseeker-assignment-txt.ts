@@ -1,4 +1,5 @@
 export function jobseekerAssignmentTextTemplate(vars: Record<string, any>) {
+  const portalName = process.env.PORTAL_NAME || 'HDGroup';
   return `Subject: Congratulations! You've Been Matched to a New Position Opportunity
 
 Hi ${vars.jobseeker_first_name || ''},
@@ -14,7 +15,7 @@ ${vars.end_date ? `End Date: ${vars.end_date}\n` : ''}${vars.position_category ?
 Congratulations again, and we look forward to supporting you in this new opportunity!
 
 Best regards,
-The AllStaff Team
+The ${portalName} Team
 
 ---
 

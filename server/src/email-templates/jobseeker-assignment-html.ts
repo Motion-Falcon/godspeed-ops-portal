@@ -1,4 +1,5 @@
 export function jobseekerAssignmentHtmlTemplate(vars: Record<string, any>) {
+  const portalName = process.env.PORTAL_NAME || 'HDGroup';
   return `
 <!DOCTYPE html>
 <html>
@@ -54,7 +55,7 @@ export function jobseekerAssignmentHtmlTemplate(vars: Record<string, any>) {
       </table>
       <p>Our team will reach out to you soon with further details and next steps. If you have any questions, feel free to reply to this email.</p>
       <p>Congratulations again, and we look forward to supporting you in this new opportunity!</p>
-      <p>Best regards,<br><b>The AllStaff Team</b></p>
+      <p>Best regards,<br><b>The ${portalName} Team</b></p>
       <div class="footer">
         If you believe this message was sent in error or you are no longer interested in this opportunity, please let us know by replying to this email.
       </div>

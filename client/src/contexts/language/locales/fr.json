@@ -155,6 +155,20 @@
     "rejected": "Rejeté"
   },
 
+  "pagination": {
+    "showing": "Affichage de {{start}} à {{end}} sur {{total}} entrées",
+    "filteredFrom": "(filtré à partir de {{total}} entrées totales)",
+    "filteredFromTotal": "(filtré à partir de {{total}} entrées totales)",
+    "show": "Afficher :",
+    "perPage": "par page",
+    "pageOf": "Page {{page}} sur {{totalPages}}",
+    "previous": "Précédent",
+    "next": "Suivant",
+    "previousPage": "Page précédente",
+    "nextPage": "Page suivante",
+    "goToPage": "Aller à la page {{page}}"
+  },
+
   "dashboard": {
     "welcome": "Bienvenue sur le tableau de bord",
     "overview": "Aperçu",
@@ -1598,6 +1612,8 @@
         "cancel": "Annuler"
       },
       "table": {
+        "selectAll": "Tout sélectionner",
+        "selectAllTooltip": "Sélectionner tous les destinataires pour renvoyer les emails de consentement",
         "recipientName": "Nom du destinataire",
         "email": "Email",
         "type": "Type",
@@ -1636,7 +1652,8 @@
       "description": "Créer une nouvelle demande de consentement à envoyer à vos clients ou demandeurs d'emploi",
       "steps": {
         "chooseType": "Choisir le type",
-        "uploadSend": "Télécharger et envoyer"
+        "selectDocument": "Sélectionner le document",
+        "selectRecipients": "Sélectionner les destinataires"
       },
       "step1": {
         "title": "Choisir le type de destinataire",
@@ -1647,18 +1664,31 @@
         "jobseekerDescription": "Envoyer des demandes de consentement aux profils de demandeurs d'emploi"
       },
       "step2": {
-        "title": "Télécharger le document et sélectionner les destinataires",
-        "description": "Télécharger le document de consentement et choisir des destinataires spécifiques",
-        "selectedRecipients": "Destinataires sélectionnés",
-        "addMoreRecipients": "Ajouter plus de destinataires",
-        "selectRecipients": "Sélectionner les destinataires",
-        "removeRecipient": "Supprimer le destinataire",
+        "title": "Sélectionner le document",
+        "description": "Télécharger un nouveau document ou choisir parmi vos documents existants",
         "uploadDocument": "Télécharger le document de consentement",
+        "uploadNew": "Télécharger nouveau",
+        "useExisting": "Utiliser existant",
+        "searchDocuments": "Rechercher des documents...",
+        "loadingDocuments": "Chargement des documents...",
+        "noDocumentsMatch": "Aucun document ne correspond à votre recherche",
+        "noDocumentsFound": "Aucun document trouvé. Téléchargez un nouveau document pour commencer.",
         "documentPreview": "Aperçu du document",
+        "selectDocumentToPreview": "Sélectionner ou télécharger un document pour l'aperçu",
         "viewFullDocument": "Voir le document complet",
         "clickToUpload": "Cliquer pour télécharger le document",
         "clickToReplace": "Cliquer pour remplacer le document",
         "pdfOnly": "Fichiers PDF uniquement",
+        "next": "Suivant"
+      },
+      "step3": {
+        "title": "Sélectionner les destinataires",
+        "description": "Choisir qui recevra les demandes de consentement",
+        "selectedRecipients": "Destinataires sélectionnés",
+        "addMoreRecipients": "Ajouter plus de destinataires",
+        "selectRecipients": "Sélectionner les destinataires",
+        "removeRecipient": "Supprimer le destinataire",
+        "noRecipientsSelected": "Aucun destinataire sélectionné pour le moment",
         "creating": "Création...",
         "createRequest": "Créer la demande de consentement"
       },
@@ -1676,8 +1706,9 @@
       },
       "messages": {
         "failedToFetchRecipients": "Échec de la récupération des destinataires. Veuillez réessayer.",
+        "failedToFetchDocuments": "Échec de la récupération des documents existants. Veuillez réessayer.",
         "pdfOnly": "Veuillez sélectionner un fichier PDF uniquement",
-        "selectDocument": "Veuillez sélectionner un document à télécharger",
+        "selectDocument": "Veuillez sélectionner un document à télécharger ou choisir un document existant",
         "selectRecipients": "Veuillez sélectionner au moins un destinataire",
         "invalidRecipientType": "Type de destinataire invalide",
         "authenticationRequired": "Authentification requise",
