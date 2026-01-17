@@ -16,7 +16,7 @@ import { ConfirmationModal } from '../../components/ConfirmationModal';
 import { AppHeader } from '../../components/AppHeader';
 import { CustomDropdown, DropdownOption } from '../../components/CustomDropdown';
 import { ArrowLeft, Save } from 'lucide-react';
-import { PAYMENT_METHODS, PAYMENT_TERMS, PAY_CYCLES, LIST_NAMES, STAFF_MEMBERS, CANADIAN_PROVINCES } from '../../constants/formOptions';
+import { PAYMENT_METHODS, PAYMENT_TERMS, PAY_CYCLES, LIST_NAMES, CLIENT_MANAGERS, CLIENT_REPRESENTATIVES, SALES_PERSONS, ACCOUNTING_PERSONS, ACCOUNTING_MANAGERS, CANADIAN_PROVINCES } from '../../constants/formOptions';
 import '../../styles/pages/ClientManagement.css';
 import '../../styles/components/form.css';
 import '../../styles/components/header.css';
@@ -92,9 +92,45 @@ interface ClientCreateProps {
   isEditDraftMode?: boolean;
 }
 
-// Helper function to convert staff members to dropdown options
-const createStaffOptions = (): DropdownOption[] => {
-  return STAFF_MEMBERS.map((member) => ({
+// Helper function to convert client managers to dropdown options
+const createClientManagerOptions = (): DropdownOption[] => {
+  return CLIENT_MANAGERS.map((member) => ({
+    id: member,
+    label: member,
+    value: member,
+  }));
+};
+
+// Helper function to convert client representatives to dropdown options
+const createClientRepresentativeOptions = (): DropdownOption[] => {
+  return CLIENT_REPRESENTATIVES.map((member) => ({
+    id: member,
+    label: member,
+    value: member,
+  }));
+};
+
+// Helper function to convert sales persons to dropdown options
+const createSalesPersonOptions = (): DropdownOption[] => {
+  return SALES_PERSONS.map((member) => ({
+    id: member,
+    label: member,
+    value: member,
+  }));
+};
+
+// Helper function to convert accounting persons to dropdown options
+const createAccountingPersonOptions = (): DropdownOption[] => {
+  return ACCOUNTING_PERSONS.map((member) => ({
+    id: member,
+    label: member,
+    value: member,
+  }));
+};
+
+// Helper function to convert accounting managers to dropdown options
+const createAccountingManagerOptions = (): DropdownOption[] => {
+  return ACCOUNTING_MANAGERS.map((member) => ({
     id: member,
     label: member,
     value: member,
@@ -202,7 +238,11 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
   const { isDirty } = formState;
 
   // Create all dropdown options
-  const staffOptions = createStaffOptions();
+  const clientManagerOptions = createClientManagerOptions();
+  const clientRepresentativeOptions = createClientRepresentativeOptions();
+  const salesPersonOptions = createSalesPersonOptions();
+  const accountingPersonOptions = createAccountingPersonOptions();
+  const accountingManagerOptions = createAccountingManagerOptions();
   const provinceOptions = createProvinceOptions();
   const listNameOptions = createListNameOptions();
   const currencyOptions = createCurrencyOptions();
@@ -591,8 +631,8 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
                       Client Manager
                     </label>
                     <CustomDropdown
-                      options={staffOptions}
-                      selectedOption={staffOptions.find(option => option.value === getValues('clientManager')) || null}
+                      options={clientManagerOptions}
+                      selectedOption={clientManagerOptions.find(option => option.value === getValues('clientManager')) || null}
                       onSelect={(option) => {
                         setValue('clientManager', (option as DropdownOption).value as string, { shouldValidate: true });
                       }}
@@ -611,8 +651,8 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
                       Client Representative
                     </label>
                     <CustomDropdown
-                      options={staffOptions}
-                      selectedOption={staffOptions.find(option => option.value === getValues('clientRep')) || null}
+                      options={clientRepresentativeOptions}
+                      selectedOption={clientRepresentativeOptions.find(option => option.value === getValues('clientRep')) || null}
                       onSelect={(option) => {
                         setValue('clientRep', (option as DropdownOption).value as string, { shouldValidate: true });
                       }}
@@ -631,8 +671,8 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
                       Sales Person
                     </label>
                     <CustomDropdown
-                      options={staffOptions}
-                      selectedOption={staffOptions.find(option => option.value === getValues('salesPerson')) || null}
+                      options={salesPersonOptions}
+                      selectedOption={salesPersonOptions.find(option => option.value === getValues('salesPerson')) || null}
                       onSelect={(option) => {
                         setValue('salesPerson', (option as DropdownOption).value as string, { shouldValidate: true });
                       }}
@@ -651,8 +691,8 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
                       Accounting Person
                     </label>
                     <CustomDropdown
-                      options={staffOptions}
-                      selectedOption={staffOptions.find(option => option.value === getValues('accountingPerson')) || null}
+                      options={accountingPersonOptions}
+                      selectedOption={accountingPersonOptions.find(option => option.value === getValues('accountingPerson')) || null}
                       onSelect={(option) => {
                         setValue('accountingPerson', (option as DropdownOption).value as string, { shouldValidate: true });
                       }}
@@ -671,8 +711,8 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
                       Accounting Manager
                     </label>
                     <CustomDropdown
-                      options={staffOptions}
-                      selectedOption={staffOptions.find(option => option.value === getValues('accountingManager')) || null}
+                      options={accountingManagerOptions}
+                      selectedOption={accountingManagerOptions.find(option => option.value === getValues('accountingManager')) || null}
                       onSelect={(option) => {
                         setValue('accountingManager', (option as DropdownOption).value as string, { shouldValidate: true });
                       }}
