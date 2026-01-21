@@ -107,9 +107,9 @@ function App() {
                 <Route path="/training-modules" element={<TrainingModules />} />
                 <Route path="/ai-chat" element={<GodspeedAIChat />} />
                 <Route path="/metric-examples" element={<MetricExamplePage />} />
-                <Route path="/reports" element={<Reports />} />
 
                 <Route element={<RecruiterRoute />}>
+                  <Route path="/reports" element={<Reports />} />
                   <Route path="/jobseekers/profile/account-created" element={<ProfileAccountCreated />} />
                   <Route path="/jobseekers/profile/success" element={<ProfileSuccess />} />
                   <Route path="/jobseeker-management" element={<JobSeekerManagement />} />
