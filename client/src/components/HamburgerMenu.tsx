@@ -599,7 +599,7 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
       label: t("navigation.reportsAnalytics"),
       icon: <BarChart3 size={16} />,
       requiresAuth: true,
-      roles: ["admin", "recruiter", "jobseeker"],
+      roles: ["admin", "recruiter"],
       submenu: [
         {
           label: t("navigation.reports"),
