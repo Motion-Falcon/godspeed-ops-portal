@@ -256,31 +256,10 @@ export const USER_ROLES = [
   "accountant",
 ] as const;
 
-export const STAFF_MEMBERS = [
-  "Mansha Malik",
-  "Amandeep Kaur",
-  "Sumanpreet Kaur",
-  "Mandeep Kaur",
-  "Rishi Dhaliwal",
-  "Yashpal Kaur",
-  "Morgan Drouin",
-  "Ajay",
-  "Rahul Singh Rawat",
-  "Vinayak",
-  "Kirandeep Kaur",
-  "Komal",
-  "Vani Sreeram",
-  "Hiral",
-  "Rahul Sharma",
-  "Samuel Jacob",
-  "Sharmili",
-  "Rajneet Kaur",
-] as const;
-
 export const CLIENT_MANAGERS = [
   "Mansha Malik",
   "Amandeep Kaur",
-  "Sumanpreet Kaur",
+  "Sumandeep Kaur",
   "Mandeep Kaur",
   "Rishi Dhaliwal",
   "Yashpal Kaur",
@@ -301,7 +280,7 @@ export const CLIENT_MANAGERS = [
 export const CLIENT_REPRESENTATIVES = [
   "Mansha Malik",
   "Amandeep Kaur",
-  "Sumanpreet Kaur",
+  "Sumandeep Kaur",
   "Mandeep Kaur",
   "Rishi Dhaliwal",
   "Yashpal Kaur",
@@ -359,7 +338,6 @@ export const CANADIAN_PROVINCES = [
 ] as const;
 
 export type UserRole = (typeof USER_ROLES)[number];
-export type StaffMember = (typeof STAFF_MEMBERS)[number];
 export type ClientManager = (typeof CLIENT_MANAGERS)[number];
 export type ClientRepresentative = (typeof CLIENT_REPRESENTATIVES)[number];
 export type SalesPerson = (typeof SALES_PERSONS)[number];
