@@ -62,6 +62,7 @@ type JobseekerProfileFormData = {
   // Add other fields from ProfileCreate.tsx if needed for context,
   // but documents is the primary one needed here.
   documents: DocumentItemData[];
+  sinNumber?: string;
   // ... other fields like firstName, lastName etc.
 };
 
@@ -87,6 +88,7 @@ interface DocumentItemProps {
   onFileChange: (file: File) => void;
   isEditMode?: boolean;
   disableSubmit?: boolean;
+  requiresWorkPermit?: boolean;
 }
 
 // Helper function to decode HTML entities for slashes and handle URL encoding issues
@@ -193,6 +195,7 @@ function DocumentItem({
   isLoading,
   onFileChange,
   disableSubmit = false,
+  requiresWorkPermit = false,
 }: DocumentItemProps) {
   const { t } = useLanguage();
 
@@ -242,8 +245,10 @@ function DocumentItem({
   // Check if we have a field error for the file
   const hasFileError = !!getDocumentFieldError(index, "documentFile");
 
-  // Check if this is a mandatory document (first 2 documents)
-  const isMandatoryDocument = index < 2;
+  // Check if this is a mandatory document
+  // SIN (index 0) is always mandatory
+  // Work permit (index 1) is only mandatory if SIN starts with 9
+  const isMandatoryDocument = index === 0 || (index === 1 && requiresWorkPermit && documentType === "work_permit");
 
   // Add conditional text/behavior based on edit mode and mandatory status
   const documentLabel = isMandatoryDocument
@@ -465,7 +470,9 @@ function DocumentItem({
                 <div className="mandatory-reason">
                   {index === 0
                     ? t("profileCreate.documents.sinMandatoryReason")
-                    : t("profileCreate.documents.workPermitMandatoryReason")}
+                    : documentType === "work_permit" && requiresWorkPermit
+                    ? t("profileCreate.documents.workPermitMandatoryReason")
+                    : ""}
                 </div>
               </div>
             ) : (
@@ -667,7 +674,8 @@ function DocumentItem({
         )}
 
         <div className="remove-document-container">
-          {index > 1 && (
+          {/* Don't allow removing SIN (index 0) or work permit (index 1) if it's mandatory */}
+          {index > 1 || (index === 1 && (!requiresWorkPermit || documentType !== "work_permit")) ? (
             <button
               type="button"
               className="button attachment-upload-button"
@@ -679,7 +687,7 @@ function DocumentItem({
                 documentLabel
               )}
             </button>
-          )}
+          ) : null}
         </div>
       </div>
     </div>
@@ -725,11 +733,19 @@ export function DocumentUploadForm({
     name: "documents",
   });
 
+  // Watch SIN number to determine if work permit is required
+  // Access sinNumber from form values since it's part of the full form schema
+  const formValues = useWatch({ control }) as { sinNumber?: string };
+  const sinNumber = formValues?.sinNumber;
+
+  // Check if SIN starts with 9 (temporary residents need work permit)
+  const requiresWorkPermit: boolean = !!(sinNumber && typeof sinNumber === "string" && sinNumber.trim() !== "" && sinNumber.trim().startsWith("9"));
+
   // Initialize mandatory documents if not already present
   useEffect(() => {
     // Case 1: No documents exist - create mandatory documents
     if (!mandatoryDocsInitialized && fields.length === 0) {
-      // Add SIN document (mandatory)
+      // Add SIN document (mandatory for everyone)
       const sinDoc = {
         documentType: "sin",
         documentTitle: "",
@@ -737,86 +753,131 @@ export function DocumentUploadForm({
         id: crypto.randomUUID(),
       } as DocumentItemData;
 
-      const workPermitDoc = {
-        documentType: "work_permit",
-        documentTitle: "",
-        documentNotes: "",
-        id: crypto.randomUUID(),
-      } as DocumentItemData;
-
       append(sinDoc);
-      append(workPermitDoc);
+
+      // Only add work permit document if SIN starts with 9
+      if (requiresWorkPermit) {
+        const workPermitDoc = {
+          documentType: "work_permit",
+          documentTitle: "",
+          documentNotes: "",
+          id: crypto.randomUUID(),
+        } as DocumentItemData;
+        append(workPermitDoc);
+      }
 
       setMandatoryDocsInitialized(true);
     }
-    // Case 2: Documents exist but first two don't have mandatory types (edit mode)
+    // Case 2: Documents exist but first document doesn't have mandatory type (edit mode)
     else if (!mandatoryDocsInitialized && fields.length > 0) {
-      const needsFixing =
-        fields.length >= 2 &&
-        (fields[0].documentType !== "sin" ||
-          fields[1].documentType !== "work_permit");
+      // Ensure first document is SIN
+      if (fields[0].documentType !== "sin") {
+        setValue("documents.0.documentType", "sin");
+      }
 
-      if (needsFixing) {
-        // Set first document to SIN if it's not already
-        if (fields[0].documentType !== "sin") {
-          setValue("documents.0.documentType", "sin");
-        }
+      // Check if work permit document exists
+      const hasWorkPermitDoc = fields.some(
+        (doc) => doc.documentType === "work_permit"
+      );
+      const workPermitIndex = fields.findIndex(
+        (doc) => doc.documentType === "work_permit"
+      );
 
-        // Set second document to Work Permit if it's not already
-        if (fields[1].documentType !== "work_permit") {
-          setValue("documents.1.documentType", "work_permit");
-        }
-
-        // Trigger validation after fixing the types
-        setTimeout(() => {
-          trigger("documents");
-        }, 100);
-      } else if (fields.length < 2) {
-        // If we have less than 2 documents, we need to add them
-        const documentsToAdd = [];
-
-        if (fields.length === 0) {
-          documentsToAdd.push({
-            documentType: "sin",
-            documentTitle: "",
-            documentNotes: "",
-            id: crypto.randomUUID(),
-          });
-        } else if (fields[0].documentType !== "sin") {
-          setValue("documents.0.documentType", "sin");
-        }
-
-        if (fields.length <= 1) {
-          documentsToAdd.push({
+      if (requiresWorkPermit) {
+        // SIN starts with 9 - work permit is required
+        if (!hasWorkPermitDoc) {
+          // Add work permit document if it doesn't exist
+          const workPermitDoc = {
             documentType: "work_permit",
             documentTitle: "",
             documentNotes: "",
             id: crypto.randomUUID(),
+          } as DocumentItemData;
+          append(workPermitDoc);
+        } else if (workPermitIndex !== 1) {
+          // Work permit exists but not in position 1, move it to position 1
+          // First, remove it from current position
+          remove(workPermitIndex);
+          // Then add it at position 1
+          const workPermitDoc = {
+            documentType: "work_permit",
+            documentTitle: "",
+            documentNotes: "",
+            id: crypto.randomUUID(),
+          } as DocumentItemData;
+          // Insert at position 1
+          const currentFields = getValues("documents");
+          const newFields = [
+            currentFields[0],
+            workPermitDoc,
+            ...currentFields.slice(1),
+          ];
+          // Clear and rebuild
+          currentFields.forEach((_, idx) => {
+            if (idx > 0) remove(1);
           });
+          newFields.slice(1).forEach((doc) => append(doc));
         }
-
-        documentsToAdd.forEach((doc) => {
-          append(doc);
-        });
-
-        // Trigger validation after adding documents
-        if (documentsToAdd.length > 0) {
-          setTimeout(() => {
-            trigger("documents");
-          }, 100);
+      } else {
+        // SIN doesn't start with 9 - work permit is NOT required
+        // Remove work permit document if it exists
+        if (hasWorkPermitDoc && workPermitIndex !== -1) {
+          remove(workPermitIndex);
         }
       }
+
+      // Trigger validation after fixing the types
+      setTimeout(() => {
+        trigger("documents");
+      }, 100);
 
       setMandatoryDocsInitialized(true);
     }
   }, [
     fields.length,
     append,
+    remove,
     mandatoryDocsInitialized,
     isEditMode,
     setValue,
     fields,
+    requiresWorkPermit,
+    trigger,
+    getValues,
   ]);
+
+  // Effect to handle SIN changes - add/remove work permit document dynamically
+  useEffect(() => {
+    // Skip if mandatory docs haven't been initialized yet
+    if (!mandatoryDocsInitialized) return;
+
+    const hasWorkPermitDoc = fields.some(
+      (doc) => doc.documentType === "work_permit"
+    );
+    const workPermitIndex = fields.findIndex(
+      (doc) => doc.documentType === "work_permit"
+    );
+
+    if (requiresWorkPermit) {
+      // SIN starts with 9 - work permit is required
+      if (!hasWorkPermitDoc) {
+        // Add work permit document
+        const workPermitDoc = {
+          documentType: "work_permit",
+          documentTitle: "",
+          documentNotes: "",
+          id: crypto.randomUUID(),
+        } as DocumentItemData;
+        append(workPermitDoc);
+      }
+    } else {
+      // SIN doesn't start with 9 - work permit is NOT required
+      // Remove work permit document if it exists
+      if (hasWorkPermitDoc && workPermitIndex !== -1) {
+        remove(workPermitIndex);
+      }
+    }
+  }, [sinNumber, requiresWorkPermit, mandatoryDocsInitialized, fields, append, remove, getValues]);
 
   // Add a specific effect to handle initial load in edit mode
   useEffect(() => {
@@ -1127,17 +1188,19 @@ export function DocumentUploadForm({
               <p>{t("profileCreate.documents.sinMandatoryReason")}</p>
             </div>
           </div>
-          <div className="mandatory-requirement">
-            <div className="requirement-icon">
-              <FileText size={16} />
+          {requiresWorkPermit && (
+            <div className="mandatory-requirement">
+              <div className="requirement-icon">
+                <FileText size={16} />
+              </div>
+              <div className="requirement-content">
+                <strong>
+                  {t("profileCreate.documents.documentTypes.work_permit")}
+                </strong>
+                <p>{t("profileCreate.documents.workPermitMandatoryReason")}</p>
+              </div>
             </div>
-            <div className="requirement-content">
-              <strong>
-                {t("profileCreate.documents.documentTypes.work_permit")}
-              </strong>
-              <p>{t("profileCreate.documents.workPermitMandatoryReason")}</p>
-            </div>
-          </div>
+          )}
         </div>
       </div>
 
@@ -1176,6 +1239,7 @@ export function DocumentUploadForm({
             onFileChange={(file) => handleFileChange(index, file)}
             isEditMode={isEditMode}
             disableSubmit={disableSubmit}
+            requiresWorkPermit={requiresWorkPermit}
           />
         ))}
       </div>
