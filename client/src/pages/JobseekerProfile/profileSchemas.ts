@@ -248,6 +248,46 @@ export const createFormSchema = (messages: Record<string, string>) => {
     })
     .refine(
       (data) => {
+        // Check if SIN document exists
+        const hasSinDoc = data.documents.some(
+          (doc) => doc.documentType === "sin" && (doc.documentFile || doc.documentPath)
+        );
+        if (!hasSinDoc) {
+          return false;
+        }
+        return true;
+      },
+      {
+        message: messages.documentFileRequired || "SIN document is required",
+        path: ["documents"],
+      }
+    )
+    .refine(
+      (data) => {
+        // Only require work permit document for temporary residents (SIN starting with '9')
+        if (
+          data.sinNumber &&
+          data.sinNumber.trim() !== "" &&
+          data.sinNumber.trim().startsWith("9")
+        ) {
+          const hasWorkPermitDoc = data.documents.some(
+            (doc) =>
+              doc.documentType === "work_permit" &&
+              (doc.documentFile || doc.documentPath)
+          );
+          if (!hasWorkPermitDoc) {
+            return false;
+          }
+        }
+        return true;
+      },
+      {
+        message: messages.workPermitUciRequired || "Work permit document is required for temporary residents",
+        path: ["documents"],
+      }
+    )
+    .refine(
+      (data) => {
         // Only require SIN expiry for temporary residents (SIN starting with '9')
         if (
           data.sinNumber &&
