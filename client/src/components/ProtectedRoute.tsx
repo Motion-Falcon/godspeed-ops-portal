@@ -74,7 +74,7 @@ export const ProtectedRoute = () => {
         return <Navigate to="/profile-verification-pending" replace />;
       }
     }
-    // Case 3: Has profile but verification rejected - only allow rejected page and utility routes
+    // Case 3: Has profile but verification rejected - only allow rejected page, profile edit, and utility routes
     else if (profileVerificationStatus === "rejected") {
       // Allow access to utility routes even when rejected
       const utilityRoutes = [
@@ -82,7 +82,11 @@ export const ProtectedRoute = () => {
         "/training-modules"
       ];
       
-      if (utilityRoutes.includes(currentPath)) {
+      // Allow access to profile edit route so they can update their rejected profile
+      const profileEditPattern = /^\/jobseekers\/[^/]+\/edit$/;
+      const isProfileEditRoute = profileEditPattern.test(currentPath);
+      
+      if (utilityRoutes.includes(currentPath) || isProfileEditRoute) {
         return <Outlet />;
       }
       

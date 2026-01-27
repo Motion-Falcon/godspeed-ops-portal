@@ -1018,10 +1018,9 @@ export function JobSeekerProfile() {
   };
 
   const renderRejectionReason = () => {
-    if (
-      profile?.verificationStatus !== "rejected" ||
-      !profile?.rejectionReason
-    ) {
+    // Show rejection reason if it exists, regardless of current status
+    // This allows recruiters to see why a profile was previously rejected, even if it's now pending
+    if (!profile?.rejectionReason) {
       return null;
     }
 
@@ -1031,7 +1030,11 @@ export function JobSeekerProfile() {
       <div className="profile-rejection-reason">
         <div className="rejection-reason-header">
           <AlertCircle size={16} className="rejection-reason-icon" />
-          <span className="rejection-reason-title">Rejection Reason</span>
+          <span className="rejection-reason-title">
+            {profile.verificationStatus === "rejected" 
+              ? t("jobSeekerProfile.rejectionReason")
+              : t("jobSeekerProfile.previousRejectionReason")}
+          </span>
         </div>
         <div
           className={`rejection-reason-content ${
