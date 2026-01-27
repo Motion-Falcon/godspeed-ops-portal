@@ -1022,13 +1022,17 @@ router.put(
         }
       }
 
-      // Only set rejection_reason when status is rejected
+      // Handle rejection_reason based on status
       if (status === "rejected") {
+        // Set rejection_reason when rejecting
         updateData.rejection_reason = rejectionReason;
-      } else {
-        // Clear rejection_reason if status is not rejected
+      } else if (status === "verified") {
+        // Clear rejection_reason when verifying (profile is approved)
         updateData.rejection_reason = null;
       }
+      // Note: When status is "pending", we DON'T touch rejection_reason
+      // This preserves the rejection reason from a previous rejection
+      // so recruiters can see why it was rejected before
 
       // Use the admin client to bypass RLS for the update
       const { data, error } = await supabaseAdmin
@@ -1209,10 +1213,10 @@ router.put(
         }
       }
 
-      // Get current profile documents to compare with updated documents
+      // Get current profile documents and verification status to compare with updated documents
       const { data: currentProfile, error: docFetchError } = await supabaseAdmin
         .from("jobseeker_profiles")
-        .select("documents")
+        .select("documents, verification_status")
         .eq("id", id)
         .single();
 
@@ -1348,6 +1352,17 @@ router.put(
       // Handle documents array if present
       if (profileData.documents) {
         updateData.documents = profileData.documents;
+      }
+
+      // Check if this is a rejected profile being updated
+      // If so, automatically change status to pending for re-review
+      // IMPORTANT: We preserve the rejection_reason so recruiters can see why it was initially rejected
+      if (currentProfile?.verification_status === "rejected") {
+        updateData.verification_status = "pending";
+        console.log(
+          `Profile ${id} status changed from rejected to pending due to profile update. Rejection reason preserved.`
+        );
+        // Note: rejection_reason is NOT cleared - it remains in the database for recruiter reference
       }
 
       // Always update the updated_at timestamp

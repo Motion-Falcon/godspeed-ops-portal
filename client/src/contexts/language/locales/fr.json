@@ -7,9 +7,8 @@
   "recruiter": "Recruteur",
   "jobseeker": "Chercheur d'emploi",
   "admin_subtitle": "Supervisez les opérations de la plateforme et gérez les analyses du recrutement à l'échelle du système",
-  "recruiter_subtitle": "Gérez l'acquisition de talents avec les outils de recrutement ultra-rapides de AllStaff",
-  "jobseeker_subtitle": "Découvrez des opportunités à la vitesse AllStaff grâce à notre système intelligent de correspondance d'emploi",
-
+  "recruiter_subtitle": "Gérez l'acquisition de talents avec les outils de recrutement ultra-rapides de HD Group",
+  "jobseeker_subtitle": "Découvrez des opportunités à la vitesse HD Group grâce à notre système intelligent de correspondance d'emploi",
   "navigation": {
     "home": "Accueil",
     "about": "À propos",
@@ -18,7 +17,7 @@
     "menu": "Menu",
     "dashboard": "Tableau de bord",
     "profile": "Profil",
-    "training": "Formation", 
+    "training": "Formation",
     "logout": "Se déconnecter",
     "myAccount": "Mon compte",
     "userManagement": "Gestion des utilisateurs",
@@ -57,7 +56,6 @@
     "aiChat": "Chat IA AllStaff",
     "calendar": "Tableau de Bord des Horaires"
   },
-
   "buttons": {
     "submit": "Soumettre",
     "cancel": "Annuler",
@@ -88,7 +86,6 @@
     "submitting": "Soumission...",
     "deleting": "Suppression..."
   },
-
   "forms": {
     "name": "Nom",
     "email": "Email",
@@ -112,7 +109,6 @@
     "fullNamePlaceholder": "Entrez votre nom légal complet",
     "title": "Titre"
   },
-
   "messages": {
     "success": "Succès !",
     "error": "Une erreur s'est produite",
@@ -135,7 +131,6 @@
     "rejectionReasonRequired": "Veuillez fournir une raison du rejet",
     "failedToFetchPositions": "Échec de la récupération des postes"
   },
-
   "validation": {
     "emailInvalid": "Veuillez entrer un email valide",
     "passwordLength": "Le mot de passe doit contenir au moins 8 caractères",
@@ -143,7 +138,6 @@
     "passwordMismatch": "Les mots de passe ne correspondent pas",
     "invalidInput": "Entrée invalide"
   },
-
   "status": {
     "active": "Actif",
     "inactive": "Inactif",
@@ -154,7 +148,6 @@
     "approved": "Approuvé",
     "rejected": "Rejeté"
   },
-
   "pagination": {
     "showing": "Affichage de {{start}} à {{end}} sur {{total}} entrées",
     "filteredFrom": "(filtré à partir de {{total}} entrées totales)",
@@ -168,7 +161,6 @@
     "nextPage": "Page suivante",
     "goToPage": "Aller à la page {{page}}"
   },
-
   "dashboard": {
     "welcome": "Bienvenue sur le tableau de bord",
     "overview": "Aperçu",
@@ -214,7 +206,6 @@
       "errorTitle": "Impossible de charger les données d'expiration"
     }
   },
-
   "profile": {
     "title": "Profil",
     "edit": "Modifier le profil",
@@ -224,7 +215,6 @@
     "changePassword": "Changer le mot de passe",
     "preferences": "Préférences"
   },
-
   "auth": {
     "login": "Se connecter",
     "signup": "S'inscrire",
@@ -249,7 +239,6 @@
     "termsOfService": "Conditions d'utilisation",
     "privacyPolicy": "Politique de confidentialité"
   },
-
   "roles": {
     "admin": "Administrateur",
     "admins": "Administrateurs",
@@ -260,7 +249,6 @@
     "jobseeker": "Chercheur d'emploi",
     "client": "Client"
   },
-
   "common": {
     "search": "Rechercher",
     "filter": "Filtrer",
@@ -299,7 +287,6 @@
     "notAvailable": "N/D",
     "and": "et"
   },
-
   "training": {
     "title": "Modules de formation",
     "subtitle": "Formation et développement",
@@ -376,7 +363,6 @@
       }
     }
   },
-
   "recruiterManagement": {
     "inviteRecruiter": "Inviter un recruteur",
     "sendInvitationTitle": "Envoyer une invitation à un nouveau recruteur pour qu'il rejoigne l'équipe",
@@ -387,7 +373,6 @@
     "failedToSendInvitation": "Échec de l'envoi de l'invitation",
     "emailAndNameRequired": "L'email et le nom sont requis"
   },
-
   "completeSignup": {
     "title": "Terminer votre inscription",
     "subtitle": "Veuillez remplir les informations requises pour terminer la configuration de votre compte.",
@@ -415,7 +400,6 @@
     "indian": "indien",
     "validPhoneRequired": "Veuillez entrer un numéro de téléphone {{country}} valide"
   },
-
   "userManagement": {
     "title": "Gestion de tous les utilisateurs",
     "recruiterHierarchy": "Hiérarchie des recruteurs",
@@ -475,7 +459,6 @@
       "goToPage": "Aller à la page"
     }
   },
-
   "profileVerification": {
     "title": "Vérification du profil",
     "pending": {
@@ -500,7 +483,6 @@
       "updateProfile": "Mettre à jour le profil"
     }
   },
-
   "jobSeekerPositions": {
     "title": "Mes postes",
     "backToDashboard": "Retour au tableau de bord",
@@ -819,6 +801,7 @@
     "rejectionReason": "Raison du rejet",
     "rejectionReasonRequired": "Veuillez fournir une raison du rejet",
     "rejectionReasonNote": "Cette raison sera enregistrée avec le profil et pourra être affichée à l'utilisateur",
+    "previousRejectionReason": "Raison du rejet précédent",
     "showLess": "Afficher moins",
     "showFullReason": "Afficher la raison complète",
     "sinExpired": "Le NAS a expiré il y a {{days}} jour(s)",
@@ -1279,7 +1262,6 @@
       "cancelText": "Annuler"
     }
   },
-
   "bulkTimesheetManagement": {
     "title": "Créer une feuille de temps en lot",
     "listTitle": "Toutes les listes de feuilles de temps",
@@ -1588,18 +1570,18 @@
       "notCompleted": "Non terminé",
       "unknownCompany": "Entreprise inconnue"
     },
-      "pagination": {
-    "show": "Afficher :",
-    "perPage": "par page",
-    "previous": "Précédent",
-    "next": "Suivant",
-    "showing": "Affichage de {{start}} à {{end}} sur {{total}} entrées",
-    "filteredFromTotal": "filtré à partir de {{total}} entrées totales",
-    "pageOf": "Page {{page}} sur {{totalPages}}",
-    "previousPage": "Page précédente",
-    "nextPage": "Page suivante",
-    "goToPage": "Aller à la page {{page}}"
-  },
+    "pagination": {
+      "show": "Afficher :",
+      "perPage": "par page",
+      "previous": "Précédent",
+      "next": "Suivant",
+      "showing": "Affichage de {{start}} à {{end}} sur {{total}} entrées",
+      "filteredFromTotal": "filtré à partir de {{total}} entrées totales",
+      "pageOf": "Page {{page}} sur {{totalPages}}",
+      "previousPage": "Page précédente",
+      "nextPage": "Page suivante",
+      "goToPage": "Aller à la page {{page}}"
+    },
     "detail": {
       "title": "Détails du consentement",
       "resendEmails": "Renvoyer les emails",
@@ -1729,7 +1711,6 @@
   "app": {
     "name": "Portail Ops AllStaff"
   },
-
   "invoiceManagement": {
     "title": "Gestion des factures",
     "listTitle": "Liste des factures",
@@ -1953,7 +1934,6 @@
       }
     }
   },
-
   "positionManagement": {
     "title": "Gestion des postes",
     "viewDrafts": "Voir les brouillons",
@@ -2178,7 +2158,6 @@
       }
     }
   },
-
   "positionMatching": {
     "title": "Correspondance de postes",
     "bestMatchJobseekers": "Meilleurs candidats correspondants",
@@ -2282,7 +2261,6 @@
     "unknownCity": "Ville inconnue",
     "unknownProvince": "Province inconnue"
   },
-
   "positionDrafts": {
     "title": "Brouillons de postes",
     "backToPositionManagement": "Retour à la gestion des postes",
@@ -2333,7 +2311,6 @@
       "draftDeletedSuccess": "Brouillon supprimé avec succès"
     }
   },
-
   "positionCreate": {
     "createPosition": "Créer un poste",
     "editPosition": "Modifier le poste",
@@ -2680,14 +2657,14 @@
       "address": "Adresse",
       "preferredPaymentMethod": "Méthode de paiement",
       "paymentCycle": "Cycle de paiement",
-        "emailSent": "Email envoyé",
-        "emailSentDate": "Date d'envoi de l'email",
-        "reportGeneratedDate": "Date de génération du rapport"
-      },
-      "info": {
-        "defaultDateRange": "Plage de dates par défaut : Dernier mois"
-      }
+      "emailSent": "Email envoyé",
+      "emailSentDate": "Date d'envoi de l'email",
+      "reportGeneratedDate": "Date de génération du rapport"
     },
+    "info": {
+      "defaultDateRange": "Plage de dates par défaut : Dernier mois"
+    }
+  },
   "legal": {
     "termsOfService": "Conditions d'utilisation",
     "privacyPolicy": "Politique de confidentialité",
@@ -2695,4 +2672,4 @@
     "company": "Entreprise",
     "goBack": "Retour"
   }
-} 
+}

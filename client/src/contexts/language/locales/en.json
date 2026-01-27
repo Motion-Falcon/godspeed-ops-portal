@@ -7,9 +7,8 @@
   "recruiter": "Recruiter",
   "jobseeker": "Job Seeker",
   "admin_subtitle": "Oversee platform operations and manage system-wide recruiting analytics",
-  "recruiter_subtitle": "Manage talent acquisition with AllStaff's lightning-fast recruiting tools",
-  "jobseeker_subtitle": "Discover opportunities at AllStaff pace with our intelligent job matching system",
-
+  "recruiter_subtitle": "Manage talent acquisition with HD Group's lightning-fast recruiting tools",
+  "jobseeker_subtitle": "Discover opportunities at HD Group pace with our intelligent job matching system",
   "navigation": {
     "home": "Home",
     "about": "About",
@@ -17,7 +16,7 @@
     "contact": "Contact",
     "menu": "Menu",
     "dashboard": "Dashboard",
-    "profile": "Profile", 
+    "profile": "Profile",
     "training": "Training",
     "logout": "Logout",
     "myAccount": "My Account",
@@ -57,7 +56,6 @@
     "aiChat": "AllStaff AI Chat",
     "calendar": "Workforce Schedule Dashboard"
   },
-
   "buttons": {
     "submit": "Submit",
     "cancel": "Cancel",
@@ -88,7 +86,6 @@
     "submitting": "Submitting...",
     "deleting": "Deleting..."
   },
-
   "forms": {
     "name": "Name",
     "email": "Email",
@@ -112,7 +109,6 @@
     "fullNamePlaceholder": "Enter your full legal name",
     "title": "Title"
   },
-
   "messages": {
     "success": "Success!",
     "error": "An error occurred",
@@ -135,7 +131,6 @@
     "rejectionReasonRequired": "Please provide a reason for rejection",
     "failedToFetchPositions": "Failed to fetch positions"
   },
-
   "validation": {
     "emailInvalid": "Please enter a valid email",
     "passwordLength": "Password must be at least 8 characters",
@@ -143,7 +138,6 @@
     "passwordMismatch": "Passwords do not match",
     "invalidInput": "Invalid input"
   },
-
   "status": {
     "active": "Active",
     "inactive": "Inactive",
@@ -154,7 +148,6 @@
     "approved": "Approved",
     "rejected": "Rejected"
   },
-
   "pagination": {
     "showing": "Showing {{start}} to {{end}} of {{total}} entries",
     "filteredFrom": "(filtered from {{total}} total entries)",
@@ -168,7 +161,6 @@
     "nextPage": "Next page",
     "goToPage": "Go to page {{page}}"
   },
-
   "dashboard": {
     "welcome": "Welcome to Dashboard",
     "overview": "Overview",
@@ -214,7 +206,6 @@
       "errorTitle": "Unable to load expiry data"
     }
   },
-
   "profile": {
     "title": "Profile",
     "edit": "Edit Profile",
@@ -224,7 +215,6 @@
     "changePassword": "Change Password",
     "preferences": "Preferences"
   },
-
   "auth": {
     "login": "Login",
     "signup": "Sign Up",
@@ -249,7 +239,6 @@
     "termsOfService": "Terms of Service",
     "privacyPolicy": "Privacy Policy"
   },
-
   "roles": {
     "admin": "Administrator",
     "admins": "Admins",
@@ -260,7 +249,6 @@
     "jobseeker": "Job Seeker",
     "client": "Client"
   },
-
   "common": {
     "search": "Search",
     "filter": "Filter",
@@ -299,7 +287,6 @@
     "notAvailable": "N/A",
     "and": "and"
   },
-
   "training": {
     "title": "Training Modules",
     "subtitle": "Training & Development",
@@ -376,7 +363,6 @@
       }
     }
   },
-
   "recruiterManagement": {
     "inviteRecruiter": "Invite Recruiter",
     "sendInvitationTitle": "Send an invitation to a new recruiter to join the team",
@@ -387,12 +373,11 @@
     "failedToSendInvitation": "Failed to send invitation",
     "emailAndNameRequired": "Email and name are required"
   },
-
   "completeSignup": {
     "title": "Complete Your Signup",
     "subtitle": "Please fill in the required information to complete your account setup.",
     "mobileNumber": "Mobile Number",
-    "setPassword": "Set Password", 
+    "setPassword": "Set Password",
     "confirmPassword": "Confirm Password",
     "enterStrongPassword": "Enter a strong password",
     "confirmYourPassword": "Confirm your password",
@@ -415,7 +400,6 @@
     "indian": "Indian",
     "validPhoneRequired": "Please enter a valid {{country}} phone number"
   },
-
   "userManagement": {
     "title": "All Users Management",
     "recruiterHierarchy": "Recruiter Hierarchy",
@@ -475,7 +459,6 @@
       "goToPage": "Go to page"
     }
   },
-
   "profileVerification": {
     "title": "Profile Verification",
     "pending": {
@@ -500,7 +483,6 @@
       "updateProfile": "Update Profile"
     }
   },
-
   "jobSeekerPositions": {
     "title": "My Positions",
     "backToDashboard": "Back to Dashboard",
@@ -818,8 +800,9 @@
     "rejectionReason": "Rejection Reason",
     "rejectionReasonRequired": "Please provide a reason for rejection",
     "rejectionReasonNote": "This reason will be stored with the profile and may be shown to the user",
-    "showLess": "Show less",
-    "showFullReason": "Show full reason",
+    "previousRejectionReason": "Previous Rejection Reason",
+    "showLess": "Show Less",
+    "showFullReason": "Show Full Reason",
     "sinExpired": "SIN has expired {{days}} day(s) ago",
     "sinExpiresIn": "SIN expires in {{days}} day(s)",
     "sinExpiry": "SIN Expiry: {{date}}",
@@ -1279,7 +1262,6 @@
       "cancelText": "Cancel"
     }
   },
-
   "bulkTimesheetManagement": {
     "title": "Create Bulk Timesheet",
     "listTitle": "All Timesheet Lists",
@@ -1500,7 +1482,7 @@
     "completed": "Completed",
     "cancelled": "Cancelled",
     "next": "Next",
-    "previous": "Previous", 
+    "previous": "Previous",
     "today": "Today",
     "month": "Month",
     "week": "Week",
@@ -1588,18 +1570,18 @@
       "notCompleted": "Not completed",
       "unknownCompany": "Unknown Company"
     },
-      "pagination": {
-    "show": "Show:",
-    "perPage": "per page",
-    "previous": "Previous",
-    "next": "Next",
-    "showing": "Showing {{start}} to {{end}} of {{total}} entries",
-    "filteredFromTotal": "filtered from {{total}} total entries",
-    "pageOf": "Page {{page}} of {{totalPages}}",
-    "previousPage": "Previous page",
-    "nextPage": "Next page",
-    "goToPage": "Go to page {{page}}"
-  },
+    "pagination": {
+      "show": "Show:",
+      "perPage": "per page",
+      "previous": "Previous",
+      "next": "Next",
+      "showing": "Showing {{start}} to {{end}} of {{total}} entries",
+      "filteredFromTotal": "filtered from {{total}} total entries",
+      "pageOf": "Page {{page}} of {{totalPages}}",
+      "previousPage": "Previous page",
+      "nextPage": "Next page",
+      "goToPage": "Go to page {{page}}"
+    },
     "detail": {
       "title": "Consent Details",
       "resendEmails": "Resend Emails",
@@ -1729,7 +1711,6 @@
   "app": {
     "name": "AllStaff Ops Portal"
   },
-
   "invoiceManagement": {
     "title": "Invoice Management",
     "listTitle": "Invoice List",
@@ -1819,7 +1800,7 @@
       "yes": "Yes",
       "no": "No",
       "invoiceNumber": "Invoice Number",
-      "clientName": "Client Name", 
+      "clientName": "Client Name",
       "clientEmail": "Client Email",
       "dateRange": "Date Range",
       "dueDateRange": "Due Date Range",
@@ -1953,7 +1934,6 @@
       }
     }
   },
-
   "positionManagement": {
     "title": "Position Management",
     "viewDrafts": "View Drafts",
@@ -2178,7 +2158,6 @@
       }
     }
   },
-
   "positionMatching": {
     "title": "Position Matching",
     "bestMatchJobseekers": "Best Match Jobseekers",
@@ -2282,7 +2261,6 @@
     "unknownCity": "Unknown City",
     "unknownProvince": "Unknown Province"
   },
-
   "positionDrafts": {
     "title": "Position Drafts",
     "backToPositionManagement": "Back to Position Management",
@@ -2333,7 +2311,6 @@
       "draftDeletedSuccess": "Draft deleted successfully"
     }
   },
-
   "positionCreate": {
     "createPosition": "Create Position",
     "editPosition": "Edit Position",
@@ -2504,190 +2481,190 @@
       "unsavedChangesMessage": "You have unsaved changes. Do you want to save your draft before leaving?"
     }
   },
-    "reports": {
-      "title": "Reports",
-      "subtitle": "Access and generate various reports to gain insights into your organization. Select a report type below to get started.",
-      "portal": "Reports Portal",
-      "categories": {
-        "timesheetsPayroll": "Timesheets & Payroll",
-        "salesInvoices": "Sales & Invoices",
-        "printingClients": "Printing & Clients"
+  "reports": {
+    "title": "Reports",
+    "subtitle": "Access and generate various reports to gain insights into your organization. Select a report type below to get started.",
+    "portal": "Reports Portal",
+    "categories": {
+      "timesheetsPayroll": "Timesheets & Payroll",
+      "salesInvoices": "Sales & Invoices",
+      "printingClients": "Printing & Clients"
+    },
+    "types": {
+      "weeklyTimesheet": {
+        "title": "Weekly Timesheet",
+        "description": "View and export weekly timesheet summaries for all users."
       },
-      "types": {
-        "weeklyTimesheet": {
-          "title": "Weekly Timesheet",
-          "description": "View and export weekly timesheet summaries for all users."
-        },
-        "deductionReport": {
-          "title": "Deduction Report", 
-          "description": "Review and export deduction details for payroll and compliance."
-        },
-        "invoiceReport": {
-          "title": "Invoice Report",
-          "description": "Generate and review invoice reports for clients and jobseekers."
-        },
-        "salesReport": {
-          "title": "Sales Report",
-          "description": "Analyze sales data and trends across your organization."
-        },
-        "rateList": {
-          "title": "Rate List",
-          "description": "View and export the current rate list for all services and positions."
-        },
-        "marginReport": {
-          "title": "Margin Report",
-          "description": "Review margin analysis and profitability across clients and services."
-        },
-        "envelopePrinting": {
-          "title": "Envelope Printing (Position Details)",
-          "description": "Print envelopes with detailed position information for selected users."
-        },
-        "clients": {
-          "title": "Clients",
-          "description": "View and export client lists and details."
-        }
+      "deductionReport": {
+        "title": "Deduction Report",
+        "description": "Review and export deduction details for payroll and compliance."
       },
-      "filters": {
-        "jobSeeker": "Job Seeker",
-        "clients": "Clients",
-        "weekPeriods": "Week Periods",
-        "payCycle": "Pay Cycle",
-        "listName": "List Name",
-        "clientManager": "Client Manager",
-        "paymentMethod": "Payment Method",
-        "terms": "Terms",
-        "jobseekers": "Jobseekers",
-        "salesPerson": "Sales Person",
-        "startDate": "Start Date",
-        "endDate": "End Date"
+      "invoiceReport": {
+        "title": "Invoice Report",
+        "description": "Generate and review invoice reports for clients and jobseekers."
       },
-      "placeholders": {
-        "selectJobSeeker": "Select job seeker...",
-        "selectClients": "Select clients...",
-        "selectWeekPeriods": "Select week periods...",
-        "selectPayCycle": "Select pay cycle...",
-        "selectListName": "Select list name...",
-        "selectClientManagers": "Select client managers...",
-        "selectPaymentMethods": "Select payment methods...",
-        "selectTerms": "Select terms...",
-        "selectJobseekers": "Select jobseekers (default: Select All)...",
-        "selectSalesPersons": "Select sales persons (default: Select All)...",
-        "selectClientsOptional": "Select clients (optional)...",
-        "selectNone": "Select (None)"
+      "salesReport": {
+        "title": "Sales Report",
+        "description": "Analyze sales data and trends across your organization."
       },
-      "emptyMessages": {
-        "noJobSeekers": "No job seekers found",
-        "noClients": "No clients found",
-        "noJobseekers": "No jobseekers found",
-        "noSalesPersons": "No sales persons found",
-        "noClientManagers": "No client managers found",
-        "noPaymentMethods": "No payment methods found",
-        "noTerms": "No terms found",
-        "noListNames": "No list names found",
-        "noPayCycles": "No pay cycles found"
+      "rateList": {
+        "title": "Rate List",
+        "description": "View and export the current rate list for all services and positions."
       },
-      "states": {
-        "loading": "Loading...",
-        "downloadCSV": "Download CSV",
-        "noDataFound": "No data found for selected filters.",
-        "noRateData": "No rate data found for selected filters.",
-        "noInvoiceData": "No invoice data found for selected date range.",
-        "noMarginData": "No margin data found for selected date range.",
-        "noDeductionData": "No deduction data found for selected date range.",
-        "noClientsData": "No clients data found for selected filters."
+      "marginReport": {
+        "title": "Margin Report",
+        "description": "Review margin analysis and profitability across clients and services."
       },
-      "notes": {
-        "autoGenerate": "Report will auto-generate as soon as you select a client and date range. Additional filters will further refine the results.",
-        "dateFilter": "The date filter is applied on the",
-        "invoiceDate": "invoice date"
+      "envelopePrinting": {
+        "title": "Envelope Printing (Position Details)",
+        "description": "Print envelopes with detailed position information for selected users."
       },
-      "columns": {
-        "serialNumber": "S.No.",
-        "weekPeriod": "Week Period",
-        "jobseekerNumber": "Jobseeker #",
-        "positionNumber": "Position #",
-        "positionDetail": "Position Detail",
-        "regularHours": "Reg. Hrs",
-        "overtimeHours": "OT. Hrs",
-        "regularPay": "Reg. Pay",
-        "overtimePay": "OT Pay",
-        "totalPay": "Total Pay",
-        "bonus": "Bonus",
-        "deduction": "Deduction",
-        "companyName": "Company Name",
-        "listName": "List Name",
-        "name": "Name",
-        "mobile": "Mobile",
-        "email": "Email",
-        "positionCategory": "Position Category",
-        "clientManager": "Client Manager",
-        "regularBillRate": "Reg. Bill Rate",
-        "overtimeBillRate": "OT Bill Rate",
-        "currency": "Currency",
-        "paymentMethod": "Payment Method",
-        "payCycle": "Pay Cycle",
-        "notes": "Notes",
-        "createdAt": "Created At",
-        "timesheetNumber": "Timesheet #",
-        "clientName": "Client Name",
-        "positionDetails": "Position Details",
-        "billRate": "Bill Rate",
-        "payRate": "Pay Rate",
-        "overtimeAfterHours": "Overtime after how many hours",
-        "overtimeBillRateCol": "Overtime Bill Rate",
-        "overtimePayRate": "Overtime Pay Rate",
-        "contactPerson": "Contact Person",
-        "salesPersonCol": "Sales Person",
-        "invoiceNumber": "Invoice #",
-        "fromToDate": "From & To (date)",
-        "invoiceDate": "Invoice Date",
-        "dueDate": "Due Date",
-        "terms": "Terms",
-        "itemPosition": "Item/Position",
-        "jobseekerNumberCol": "Jobseeker #",
-        "nameOfJobseeker": "Name of jobseeker",
-        "description": "Description",
-        "hours": "Hours",
-        "amount": "Amount",
-        "discount": "Discount",
-        "taxRate": "Tax Rate (%)",
-        "gstHst": "GST/HST",
-        "total": "Total",
-        "city": "City",
-        "weekEnding": "Week Ending",
-        "shortCode": "Short Code",
-        "workProvince": "Work Province",
-        "jobseekerId": "Jobseeker ID",
-        "licenseNumber": "License No.",
-        "passportNumber": "Passport No.",
-        "jobseekerName": "Jobseeker Name",
-        "phoneNumber": "Phone Number",
-        "emailId": "Email ID",
-        "payMethod": "Pay Method",
-        "positionName": "Position Name",
-        "totalAmount": "Total Amount",
-        "hstGst": "HST/GST",
-        "totalBilledAmount": "Total Billed Amount",
-        "paidAmount": "Paid Amount",
-        "marginAmount": "Margin Amount",
-        "marginPercentage": "Margin %",
-        "accountingPerson": "Accounting Person",
-        "jobseekerDeductions": "Jobseeker(s) & Deducted Amount",
-        "totalDeductionsAmount": "Total Deductions Amount",
-        "billingName": "Billing Name",
-        "contactPersonName": "Contact Person",
-        "emailAddress": "Email Address",
-        "address": "Address",
-        "preferredPaymentMethod": "Payment Method",
-        "paymentCycle": "Payment Cycle",
-        "emailSent": "Email Sent",
-        "emailSentDate": "Email Sent Date",
-        "reportGeneratedDate": "Report Generated Date"
-      },
-      "info": {
-        "defaultDateRange": "Default date range: Last 1 month"
+      "clients": {
+        "title": "Clients",
+        "description": "View and export client lists and details."
       }
     },
+    "filters": {
+      "jobSeeker": "Job Seeker",
+      "clients": "Clients",
+      "weekPeriods": "Week Periods",
+      "payCycle": "Pay Cycle",
+      "listName": "List Name",
+      "clientManager": "Client Manager",
+      "paymentMethod": "Payment Method",
+      "terms": "Terms",
+      "jobseekers": "Jobseekers",
+      "salesPerson": "Sales Person",
+      "startDate": "Start Date",
+      "endDate": "End Date"
+    },
+    "placeholders": {
+      "selectJobSeeker": "Select job seeker...",
+      "selectClients": "Select clients...",
+      "selectWeekPeriods": "Select week periods...",
+      "selectPayCycle": "Select pay cycle...",
+      "selectListName": "Select list name...",
+      "selectClientManagers": "Select client managers...",
+      "selectPaymentMethods": "Select payment methods...",
+      "selectTerms": "Select terms...",
+      "selectJobseekers": "Select jobseekers (default: Select All)...",
+      "selectSalesPersons": "Select sales persons (default: Select All)...",
+      "selectClientsOptional": "Select clients (optional)...",
+      "selectNone": "Select (None)"
+    },
+    "emptyMessages": {
+      "noJobSeekers": "No job seekers found",
+      "noClients": "No clients found",
+      "noJobseekers": "No jobseekers found",
+      "noSalesPersons": "No sales persons found",
+      "noClientManagers": "No client managers found",
+      "noPaymentMethods": "No payment methods found",
+      "noTerms": "No terms found",
+      "noListNames": "No list names found",
+      "noPayCycles": "No pay cycles found"
+    },
+    "states": {
+      "loading": "Loading...",
+      "downloadCSV": "Download CSV",
+      "noDataFound": "No data found for selected filters.",
+      "noRateData": "No rate data found for selected filters.",
+      "noInvoiceData": "No invoice data found for selected date range.",
+      "noMarginData": "No margin data found for selected date range.",
+      "noDeductionData": "No deduction data found for selected date range.",
+      "noClientsData": "No clients data found for selected filters."
+    },
+    "notes": {
+      "autoGenerate": "Report will auto-generate as soon as you select a client and date range. Additional filters will further refine the results.",
+      "dateFilter": "The date filter is applied on the",
+      "invoiceDate": "invoice date"
+    },
+    "columns": {
+      "serialNumber": "S.No.",
+      "weekPeriod": "Week Period",
+      "jobseekerNumber": "Jobseeker #",
+      "positionNumber": "Position #",
+      "positionDetail": "Position Detail",
+      "regularHours": "Reg. Hrs",
+      "overtimeHours": "OT. Hrs",
+      "regularPay": "Reg. Pay",
+      "overtimePay": "OT Pay",
+      "totalPay": "Total Pay",
+      "bonus": "Bonus",
+      "deduction": "Deduction",
+      "companyName": "Company Name",
+      "listName": "List Name",
+      "name": "Name",
+      "mobile": "Mobile",
+      "email": "Email",
+      "positionCategory": "Position Category",
+      "clientManager": "Client Manager",
+      "regularBillRate": "Reg. Bill Rate",
+      "overtimeBillRate": "OT Bill Rate",
+      "currency": "Currency",
+      "paymentMethod": "Payment Method",
+      "payCycle": "Pay Cycle",
+      "notes": "Notes",
+      "createdAt": "Created At",
+      "timesheetNumber": "Timesheet #",
+      "clientName": "Client Name",
+      "positionDetails": "Position Details",
+      "billRate": "Bill Rate",
+      "payRate": "Pay Rate",
+      "overtimeAfterHours": "Overtime after how many hours",
+      "overtimeBillRateCol": "Overtime Bill Rate",
+      "overtimePayRate": "Overtime Pay Rate",
+      "contactPerson": "Contact Person",
+      "salesPersonCol": "Sales Person",
+      "invoiceNumber": "Invoice #",
+      "fromToDate": "From & To (date)",
+      "invoiceDate": "Invoice Date",
+      "dueDate": "Due Date",
+      "terms": "Terms",
+      "itemPosition": "Item/Position",
+      "jobseekerNumberCol": "Jobseeker #",
+      "nameOfJobseeker": "Name of jobseeker",
+      "description": "Description",
+      "hours": "Hours",
+      "amount": "Amount",
+      "discount": "Discount",
+      "taxRate": "Tax Rate (%)",
+      "gstHst": "GST/HST",
+      "total": "Total",
+      "city": "City",
+      "weekEnding": "Week Ending",
+      "shortCode": "Short Code",
+      "workProvince": "Work Province",
+      "jobseekerId": "Jobseeker ID",
+      "licenseNumber": "License No.",
+      "passportNumber": "Passport No.",
+      "jobseekerName": "Jobseeker Name",
+      "phoneNumber": "Phone Number",
+      "emailId": "Email ID",
+      "payMethod": "Pay Method",
+      "positionName": "Position Name",
+      "totalAmount": "Total Amount",
+      "hstGst": "HST/GST",
+      "totalBilledAmount": "Total Billed Amount",
+      "paidAmount": "Paid Amount",
+      "marginAmount": "Margin Amount",
+      "marginPercentage": "Margin %",
+      "accountingPerson": "Accounting Person",
+      "jobseekerDeductions": "Jobseeker(s) & Deducted Amount",
+      "totalDeductionsAmount": "Total Deductions Amount",
+      "billingName": "Billing Name",
+      "contactPersonName": "Contact Person",
+      "emailAddress": "Email Address",
+      "address": "Address",
+      "preferredPaymentMethod": "Payment Method",
+      "paymentCycle": "Payment Cycle",
+      "emailSent": "Email Sent",
+      "emailSentDate": "Email Sent Date",
+      "reportGeneratedDate": "Report Generated Date"
+    },
+    "info": {
+      "defaultDateRange": "Default date range: Last 1 month"
+    }
+  },
   "legal": {
     "termsOfService": "Terms of Service",
     "privacyPolicy": "Privacy Policy",
@@ -2695,4 +2672,4 @@
     "company": "Company",
     "goBack": "Go Back"
   }
-} 
+}
