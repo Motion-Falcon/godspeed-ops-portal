@@ -1,5 +1,6 @@
 export function timesheetHtmlTemplate(vars: Record<string, any>) {
   const isUpdated = vars.is_updated || false;
+  const portalName = process.env.PORTAL_NAME || 'Ops Portal';
   const titlePrefix = isUpdated ? 'Updated ' : '';
   
   return `
@@ -132,7 +133,7 @@ export function timesheetHtmlTemplate(vars: Record<string, any>) {
       </table>
 
       <div class="footer">
-        <p>This is an automated timesheet summary from AllStaff Operations Portal.</p>
+        <p>This is an automated timesheet summary from ${portalName}.</p>
         <p>If you have any questions about this timesheet, please contact your recruitment team.</p>
         <p>Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}</p>
       </div>

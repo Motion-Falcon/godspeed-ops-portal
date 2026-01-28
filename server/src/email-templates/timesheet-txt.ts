@@ -1,5 +1,6 @@
 export function timesheetTextTemplate(vars: Record<string, any>) {
   const isUpdated = vars.is_updated || false;
+  const portalName = process.env.PORTAL_NAME || 'Ops Portal';
   const titlePrefix = isUpdated ? 'Updated ' : '';
   
   return `Subject: ${titlePrefix}Timesheet Summary - Timesheet #${vars.invoice_number || 'N/A'}
@@ -46,7 +47,7 @@ Deductions: -$${(vars.deduction_amount || 0).toFixed(2)}` : ''}
 TOTAL JOBSEEKER PAY: $${(vars.total_jobseeker_pay || 0).toFixed(2)}
 
 ---
-This is an automated timesheet summary from AllStaff Operations Portal.
+This is an automated timesheet summary from ${portalName}.
 If you have any questions about this timesheet, please contact your recruitment team.
 Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}`;
 } 
