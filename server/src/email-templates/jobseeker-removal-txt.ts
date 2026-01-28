@@ -1,5 +1,5 @@
 export function jobseekerRemovalTextTemplate(vars: Record<string, any>) {
-  const portalName = process.env.PORTAL_NAME || 'HDGroup';
+  const portalName = process.env.PORTAL_NAME || 'Ops Portal';
   return `Subject: Update Regarding Your Position Assignment
 
 Hi ${vars.jobseeker_first_name || ''},

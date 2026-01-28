@@ -1,10 +1,9 @@
 export function timesheetTextTemplate(vars: Record<string, any>) {
   const isUpdated = vars.is_updated || false;
-  const titlePrefix = isUpdated ? "Updated " : "";
-
-  return `Subject: ${titlePrefix}Timesheet Summary - Timesheet #${
-    vars.invoice_number || "N/A"
-  }
+  const portalName = process.env.PORTAL_NAME || 'Ops Portal';
+  const titlePrefix = isUpdated ? 'Updated ' : '';
+  
+  return `Subject: ${titlePrefix}Timesheet Summary - Timesheet #${vars.invoice_number || 'N/A'}
 
 ${titlePrefix.toUpperCase()}TIMESHEET SUMMARY
 ${"=".repeat(titlePrefix.length + 16)}
@@ -70,7 +69,11 @@ Deductions: -$${(vars.deduction_amount || 0).toFixed(2)}`
 TOTAL JOBSEEKER PAY: $${(vars.total_jobseeker_pay || 0).toFixed(2)}
 
 ---
+<<<<<<< HEAD
 This is an automated timesheet summary from Motion Falcon Operations Portal.
+=======
+This is an automated timesheet summary from ${portalName}.
+>>>>>>> cfb1580 (Update email templates to standardize portal name and enhance content)
 If you have any questions about this timesheet, please contact your recruitment team.
 Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}`;
 }

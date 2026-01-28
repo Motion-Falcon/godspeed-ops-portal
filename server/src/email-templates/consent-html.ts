@@ -57,7 +57,7 @@ const templateSource = `
 const compiledTemplate = Handlebars.compile(templateSource);
 
 export function consentHtmlTemplate(vars: ConsentEmailTemplateVars): string {
-  const portalName = process.env.PORTAL_NAME || 'Godspeed Ops Portal';
+  const portalName = process.env.PORTAL_NAME || 'Ops Portal';
   return compiledTemplate({
     ...vars,
     portalName
@@ -65,7 +65,7 @@ export function consentHtmlTemplate(vars: ConsentEmailTemplateVars): string {
 }
 
 export function generateConsentTextTemplate(vars: ConsentEmailTemplateVars): string {
-  const portalName = process.env.PORTAL_NAME || 'Godspeed Ops Portal';
+  const portalName = process.env.PORTAL_NAME || 'Ops Portal';
   return `
 Digital Consent Request
 
