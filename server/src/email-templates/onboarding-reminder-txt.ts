@@ -1,4 +1,5 @@
 export function onboardingReminderTextTemplate(vars: Record<string, any>) {
+  const portalName = process.env.PORTAL_NAME || 'Ops Portal';
   return `
 Complete Your Account Setup${vars.name ? `, ${vars.name}` : ''}
 
@@ -12,7 +13,7 @@ ${vars.onboarding_url}
 If you have any questions or need assistance, please don't hesitate to reach out to our support team.
 
 Best regards,
-The CanHire Team
+The ${portalName} Team
 
 ---
 This email was sent because you have an incomplete account setup. If you believe this message was sent in error, please contact our support team.
