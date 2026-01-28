@@ -1420,14 +1420,20 @@ router.post(
       const templateVars = {
         jobseeker_first_name: candidateName?.split(" ")[0] || "Candidate",
         title: res.locals.position?.title || "",
+        client_name: res.locals.position?.client_name || "",
+        street_address: res.locals.position?.street_address || "",
         city: res.locals.position?.city || "",
         province: res.locals.position?.province || "",
+        postal_code: res.locals.position?.postal_code || "",
         employment_type: res.locals.position?.employment_type || "",
         employment_term: res.locals.position?.employment_term || "",
         start_date: res.locals.position?.start_date || "",
         end_date: res.locals.position?.end_date || "",
         position_category: res.locals.position?.position_category || "",
         experience: res.locals.position?.experience || "",
+        payrate_type: res.locals.position?.payrate_type || "",
+        regular_pay_rate: res.locals.position?.regular_pay_rate || "",
+        task_time: res.locals.position?.task_time || "",
       };
       console.log("[EmailNotifier] templateVars:", templateVars);
       // Use template functions
@@ -1482,16 +1488,22 @@ router.post(
           `
           id,
           client,
+          client_name,
           title,
           position_code,
           start_date,
           end_date,
+          street_address,
           city,
           province,
+          postal_code,
           employment_term,
           employment_type,
           position_category,
           experience,
+          payrate_type,
+          regular_pay_rate,
+          task_time,
           assigned_jobseekers,
           number_of_positions
         `
