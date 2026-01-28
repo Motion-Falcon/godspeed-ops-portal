@@ -1,5 +1,5 @@
 export function jobseekerAssignmentHtmlTemplate(vars: Record<string, any>) {
-  const portalName = process.env.PORTAL_NAME || 'HDGroup';
+  const portalName = process.env.PORTAL_NAME || 'Ops Portal';
   return `
 <!DOCTYPE html>
 <html>
@@ -25,14 +25,34 @@ export function jobseekerAssignmentHtmlTemplate(vars: Record<string, any>) {
           <td class="label">Position Title:</td>
           <td>${vars.title || ''}</td>
         </tr>
+        ${vars.client_name ? `
+        <tr>
+          <td class="label">Client:</td>
+          <td>${vars.client_name}</td>
+        </tr>` : ''}
         <tr>
           <td class="label">Location:</td>
           <td>${vars.city || ''}, ${vars.province || ''}</td>
         </tr>
+        ${(vars.street_address || vars.postal_code) ? `
+        <tr>
+          <td class="label">Address:</td>
+          <td>${[vars.street_address, vars.city, vars.province, vars.postal_code].filter(Boolean).join(', ')}</td>
+        </tr>` : ''}
         <tr>
           <td class="label">Employment Type:</td>
           <td>${vars.employment_type || ''} / ${vars.employment_term || ''}</td>
         </tr>
+        ${(vars.task_time || '').trim() ? `
+        <tr>
+          <td class="label">Shift Time:</td>
+          <td>${vars.task_time}</td>
+        </tr>` : ''}
+        ${(vars.regular_pay_rate || vars.payrate_type) ? `
+        <tr>
+          <td class="label">Pay:</td>
+          <td>${vars.regular_pay_rate ? `$${vars.regular_pay_rate}` : ''}${vars.payrate_type ? ` (${vars.payrate_type})` : ''}</td>
+        </tr>` : ''}
         <tr>
           <td class="label">Start Date:</td>
           <td>${vars.start_date || ''}</td>
