@@ -16,6 +16,7 @@ export const getPersonalInfoSchema = (messages: Record<string, string>) =>
       mobile: z.string().min(1, { message: messages.mobileRequired }),
       licenseNumber: z.string().optional(),
       passportNumber: z.string().optional(),
+      governmentIdType: z.string().optional(),
       sinNumber: z.string().min(1, { message: messages.sinNumberRequired }),
       sinExpiry: z.string().optional(),
       workPermitUci: z.string().optional(),
@@ -198,6 +199,7 @@ export const createFormSchema = (messages: Record<string, string>) => {
       mobile: z.string().min(1, { message: messages.mobileRequired }),
       licenseNumber: z.string().optional(),
       passportNumber: z.string().optional(),
+      governmentIdType: z.string().optional(),
       sinNumber: z.string().min(1, { message: messages.sinNumberRequired }),
       sinExpiry: z.string().optional(),
       workPermitUci: z.string().optional(),
@@ -259,6 +261,22 @@ export const createFormSchema = (messages: Record<string, string>) => {
       },
       {
         message: messages.documentFileRequired || "SIN document is required",
+        path: ["documents"],
+      }
+    )
+    .refine(
+      (data) => {
+        // Check if government ID document exists
+        const hasGovernmentIdDoc = data.documents.some(
+          (doc) => doc.documentType === "government_id" && (doc.documentFile || doc.documentPath)
+        );
+        if (!hasGovernmentIdDoc) {
+          return false;
+        }
+        return true;
+      },
+      {
+        message: messages.documentFileRequired || "Government ID document is required",
         path: ["documents"],
       }
     )
