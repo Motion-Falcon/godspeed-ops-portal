@@ -1116,6 +1116,7 @@
         "drivers_license": "Driver's License",
         "passport": "Passport",
         "sin": "SIN Document",
+        "government_id": "Government ID",
         "work_permit": "Work Permit",
         "void_cheque": "Void Cheque",
         "hst_registration": "HST Registration",
@@ -1145,7 +1146,8 @@
       "onlyPdfFiles": "Only PDF, JPG, JPEG, and PNG files are accepted.",
       "documentTypeRequired": "Document type is required",
       "mandatoryDocument": "Mandatory Document",
-      "cannotChangeType": "Type cannot be changed for mandatory documents"
+      "cannotChangeType": "Type cannot be changed for mandatory documents",
+      "governmentIdMandatoryReason": "Government ID is required for all job seekers for identity verification purposes."
     }
   },
   "profileAccountCreated": {
