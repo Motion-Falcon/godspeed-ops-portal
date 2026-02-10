@@ -20,7 +20,7 @@ import {
   ClipboardList,
 } from "lucide-react";
 import { getClients, ClientData, getClient } from "../../services/api/client";
-import { getClientPositions } from "../../services/api/position";
+import { getClientPositions, PositionData } from "../../services/api/position";
 import { getJobseekerProfiles } from "../../services/api/jobseeker";
 import { PAYMENT_TERMS } from "../../constants/formOptions";
 import {
@@ -49,21 +49,6 @@ import {
 } from "../../utils/pdfGenerator.tsx";
 import { Document, Page, pdfjs } from "react-pdf";
 
-// Interface for position data
-interface ClientPosition {
-  id: string;
-  positionCode: string;
-  positionNumber: string;
-  title: string;
-  regularPayRate: string;
-  billRate: string;
-  markup?: string;
-  overtimeEnabled?: boolean;
-  overtimeHours?: string; // Overtime threshold
-  overtimeBillRate?: string;
-  overtimePayRate?: string;
-}
-
 // Interface for assigned jobseeker data
 interface AssignedJobseeker {
   id?: string;
@@ -82,7 +67,7 @@ interface AssignedJobseeker {
 // Interface for invoice line items
 interface InvoiceLineItem {
   id: string;
-  position: ClientPosition | null;
+  position: PositionData | null;
   jobseeker: AssignedJobseeker | null;
   description: string;
   hours: string;
@@ -177,7 +162,7 @@ export function InvoiceManagement() {
   const [invoiceNumberLoading, setInvoiceNumberLoading] = useState(false);
 
   // State for position selection
-  const [positions, setPositions] = useState<ClientPosition[]>([]);
+  const [positions, setPositions] = useState<PositionData[]>([]);
   const [positionLoading, setPositionLoading] = useState(false);
 
   // State for all jobseekers (no longer position-dependent)
@@ -337,23 +322,8 @@ export function InvoiceManagement() {
     try {
       setPositionLoading(true);
       const response = await getClientPositions(clientId, { limit: 10000000 });
-      // Transform positions to match our interface
-      const transformedPositions: ClientPosition[] = response.positions.map(
-        (pos) => ({
-          id: pos.id!,
-          positionCode: pos.positionCode!,
-          title: pos.title!,
-          positionNumber: pos.positionNumber!,
-          regularPayRate: pos.regularPayRate!,
-          billRate: pos.billRate!,
-          markup: pos.markup,
-          overtimeEnabled: pos.overtimeEnabled,
-          overtimeHours: pos.overtimeHours,
-          overtimeBillRate: pos.overtimeBillRate,
-          overtimePayRate: pos.overtimePayRate,
-        })
-      );
-      setPositions(transformedPositions);
+
+      setPositions(response.positions);
     } catch (error) {
       console.error("Error fetching client positions:", error);
       setPositions([]);
@@ -365,7 +335,7 @@ export function InvoiceManagement() {
   // Calculate regular and overtime hours for a line item
   const calculateLineItemHours = (
     hours: number,
-    position: ClientPosition | null
+    position: PositionData | null
   ): { regularHours: number; overtimeHours: number } => {
     if (!position || !position.overtimeEnabled) {
       return {
@@ -484,7 +454,7 @@ export function InvoiceManagement() {
       const groupedData: Record<
         string,
         {
-          position: ClientPosition;
+          position: PositionData;
           jobseeker: AssignedJobseeker;
           totalHours: number;
           regularBillRate: number;
@@ -570,7 +540,7 @@ export function InvoiceManagement() {
       );
 
       // Update positions state with unique positions from timesheets
-      const uniquePositions: ClientPosition[] = Array.from(
+      const uniquePositions: PositionData[] = Array.from(
         new Set(response.timesheets.map((t) => t.position.id))
       )
         .map((positionId) => {
@@ -586,12 +556,12 @@ export function InvoiceManagement() {
             regularPayRate: timesheet.regularPayRate.toString(),
             billRate: timesheet.regularBillRate.toString(),
             markup: "0",
-          } as ClientPosition;
+          } as PositionData;
         })
-        .filter((p): p is ClientPosition => p !== null);
+        .filter((p): p is PositionData => p !== null);
 
       // Fetch full position details including overtime for unique positions
-      const positionsWithOvertime: ClientPosition[] = [];
+      const positionsWithOvertime: PositionData[] = [];
       for (const positionId of Array.from(
         new Set(response.timesheets.map((t) => t.position.id))
       )) {
@@ -716,9 +686,9 @@ export function InvoiceManagement() {
   }));
 
   const positionOptions: DropdownOption[] = positions.map((position) => ({
-    id: position.id,
-    label: position.title || t("invoiceManagement.unknownPosition"),
-    sublabel: position.positionCode || "",
+    id: position.id || "",
+    label: `${position.title || t("invoiceManagement.unknownPosition")} - ${position.positionNumber || ""}`,
+    sublabel: `${position.positionCode || ""} | ${position.positionCategory || ""} | ${position.city || ""} | ${position.province || ""}`,
     value: position,
   }));
 
@@ -869,7 +839,7 @@ export function InvoiceManagement() {
     option: DropdownOption | DropdownOption[]
   ) => {
     if (Array.isArray(option)) return;
-    const position = option.value as ClientPosition;
+    const position = option.value as PositionData;
 
     // Get current hours to recalculate with new position
     const currentItem = lineItems.find((item) => item.id === lineItemId);
@@ -1339,8 +1309,8 @@ export function InvoiceManagement() {
                   },
               position: item.position
                 ? {
-                    title: item.position.title,
-                    positionCode: item.position.positionCode,
+                    title: item.position.title ?? "",
+                    positionCode: item.position.positionCode ?? "",
                     positionId: item.position.id,
                     positionCandidateAssignmentsId:
                       item.jobseeker?.positionCandidateAssignmentsId,
@@ -1738,7 +1708,7 @@ export function InvoiceManagement() {
 
           // Map position data with overtime information
           // Try to find the full position data from fetched positions, otherwise use timesheet data
-          let position: ClientPosition | null = null;
+          let position: PositionData | null = null;
           if (timesheet.position) {
             const fetchedPosition = positions.find(
               (p) => p.id === timesheet.position?.positionId

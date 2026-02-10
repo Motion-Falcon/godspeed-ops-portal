@@ -419,7 +419,9 @@ router.get(
           overtime_enabled,
           overtime_hours,
           overtime_bill_rate,
-          overtime_pay_rate
+          overtime_pay_rate,
+          city,
+          province
         `
         )
         .eq("client", clientId);
