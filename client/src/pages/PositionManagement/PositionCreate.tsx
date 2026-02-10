@@ -552,7 +552,7 @@ export function PositionCreate({
 
   // Save draft periodically (only if not in position edit mode)
   useEffect(() => {
-    let saveDraftInterval: NodeJS.Timeout;
+    let saveDraftInterval: ReturnType<typeof setInterval>;
 
     if (hasUnsavedChanges && !isEditMode) {
       saveDraftInterval = setInterval(() => {
