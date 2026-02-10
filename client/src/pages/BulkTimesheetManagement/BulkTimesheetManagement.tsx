@@ -432,8 +432,8 @@ export function BulkTimesheetManagement() {
   const positionOptions: DropdownOption[] = positions.map((position) => ({
     id: position.id || "",
     label:
-      position.title || t("bulkTimesheetManagement.constants.unknownPosition"),
-    sublabel: position.positionCode || "",
+      `${position.title || t("bulkTimesheetManagement.constants.unknownPosition")} - ${position.positionNumber || ""}`,
+    sublabel: `${position.positionCode || ""} | ${position.positionCategory || ""} | ${position.city || ""} | ${position.province || ""}`,
     value: position,
   }));
   const weekDropdownOptions: DropdownOption[] = weekOptions.map((week) => ({
