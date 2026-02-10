@@ -119,8 +119,8 @@ export function PositionMatching() {
     positions.map((position) => ({
       id: position.id || '',
       value: position.id || '',
-      label: `${position.clientName || t("positionMatching.unknownClient")} - ${position.title}`,
-      sublabel: `${position.positionCategory} • ${position.city || t("positionMatching.unknownCity")}, ${position.province || t("positionMatching.unknownProvince")}`
+      label: `${position.clientName || t("positionMatching.unknownClient")} - ${position.title || t("positionMatching.notSpecified")}`,
+      sublabel: `${position.positionCategory || t("positionMatching.notSpecified")} | ${position.city || t("positionMatching.unknownCity")}, ${position.province || t("positionMatching.unknownProvince")} | ${position.positionNumber || t("positionMatching.notSpecified")} | ${position.positionCode || t("positionMatching.notSpecified")}`
     })), [positions, t]
   );
 
@@ -842,8 +842,8 @@ export function PositionMatching() {
                     options={positionOptions}
                     selectedOption={selectedPosition ? {
                       id: selectedPosition.id || '',
-                      label: `${selectedPosition.clientName || t("positionMatching.unknownClient")} - ${selectedPosition.title}`,
-                      sublabel: `${selectedPosition.clientName || t("positionMatching.unknownClient")} - ${selectedPosition.city || t("positionMatching.unknownCity")}, ${selectedPosition.province || t("positionMatching.unknownProvince")}`,
+                      label: `${selectedPosition.clientName || t("positionMatching.unknownClient")} - ${selectedPosition.title || t("positionMatching.notSpecified")} - ${selectedPosition.positionCode || t("positionMatching.notSpecified")}`,
+                      sublabel: `${selectedPosition.positionCategory || t("positionMatching.notSpecified")} | ${selectedPosition.city || t("positionMatching.unknownCity")}, ${selectedPosition.province || t("positionMatching.unknownProvince")} | ${selectedPosition.positionNumber || t("positionMatching.notSpecified")} | ${selectedPosition.positionCode || t("positionMatching.notSpecified")}`,
                       value: selectedPosition
                     } : null}
                     onSelect={(option) => { if (Array.isArray(option)) return; handlePositionSelectDropdown(option); }}
@@ -1094,3 +1094,4 @@ export function PositionMatching() {
 }
 
 export default PositionMatching;
+
