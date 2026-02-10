@@ -381,7 +381,7 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
 
   // Save draft periodically (only if not in client edit mode)
   useEffect(() => {
-    let saveDraftInterval: NodeJS.Timeout;
+    let saveDraftInterval: ReturnType<typeof setInterval>;
     
     if (hasUnsavedChanges && !isEditMode) {
       saveDraftInterval = setInterval(() => {
