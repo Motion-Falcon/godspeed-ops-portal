@@ -46,11 +46,11 @@ export function PersonalInfoForm({
 
   // Watch the email field for changes
   const watchedEmail = watch("email");
-  const emailTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const emailTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Add a ref to track the latest request
   const latestRequestRef = useRef<number>(0);
   // Add debounce timeout ref for validation
-  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const debounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const watchedSin = watch("sinNumber");
 
