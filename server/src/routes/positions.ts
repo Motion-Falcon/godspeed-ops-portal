@@ -177,7 +177,10 @@ router.get(
           created_at,
           client_name,
           assigned_jobseekers,
-          number_of_positions
+          number_of_positions,
+          payrate_type,
+          regular_pay_rate,
+          bill_rate
         `);
 
       // Apply all filters at database level
