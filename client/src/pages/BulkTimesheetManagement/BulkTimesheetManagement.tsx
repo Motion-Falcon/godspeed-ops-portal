@@ -433,7 +433,9 @@ export function BulkTimesheetManagement() {
     id: position.id || "",
     label:
       `${position.title || t("bulkTimesheetManagement.constants.unknownPosition")} - ${position.positionNumber || ""}`,
-    sublabel: `${position.positionCode || ""} | ${position.positionCategory || ""} | ${position.city || ""} | ${position.province || ""}`,
+    sublabel: `Pay Rate: $${
+      (Number.parseFloat(position.regularPayRate || "0") || 0).toFixed(2)
+    } | ${position.positionNumber || ""} | ${position.positionCategory || ""} | ${position.city || ""}, ${position.province || ""}`,
     value: position,
   }));
   const weekDropdownOptions: DropdownOption[] = weekOptions.map((week) => ({
