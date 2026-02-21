@@ -81,6 +81,35 @@
   animation: slideInFromRight 0.3s ease-out;
 }
 
+.position-badge-details {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  background: var(--primary);
+  color: var(--card);
+  padding: var(--spacing-1) var(--spacing-3);
+  border-radius: 20px;
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-medium);
+  animation: slideInFromRight 0.3s ease-out;
+  flex-wrap: wrap;
+}
+
+.position-badge-title {
+  font-weight: var(--font-weight-semibold);
+}
+
+.position-badge-separator {
+  opacity: 0.6;
+  font-weight: var(--font-weight-light);
+}
+
+.position-badge-number,
+.position-badge-category,
+.position-badge-location {
+  opacity: 0.9;
+}
+
 /* Candidates Panel Styles */
 .candidates-filters {
   padding-top: 10px;
@@ -150,6 +179,21 @@
 .filter-select:focus {
   outline: none;
   border-color: var(--primary);
+}
+
+.filter-dropdown-wrapper {
+  min-width: 160px;
+  flex-shrink: 0;
+}
+
+.filter-dropdown-wrapper .custom-dropdown-container {
+  width: 100%;
+}
+
+.filter-dropdown-wrapper .custom-dropdown-trigger {
+  padding: var(--spacing-2) var(--spacing-3);
+  font-size: var(--font-size-small);
+  min-height: auto;
 }
 
 .checkbox-filter {
@@ -1010,8 +1054,13 @@
   }
 
   .filter-select,
-  .checkbox-filter {
+  .checkbox-filter,
+  .filter-dropdown-wrapper {
     width: 100%;
+  }
+
+  .filter-dropdown-wrapper {
+    min-width: unset;
   }
 
   .candidate-header {
@@ -1047,6 +1096,22 @@
   .position-badge {
     font-size: 12px;
     padding: 2px var(--spacing-2);
+  }
+
+  .position-badge-details {
+    font-size: 11px;
+    padding: 4px var(--spacing-2);
+    gap: var(--spacing-1);
+  }
+
+  .position-badge-separator {
+    display: none;
+  }
+
+  .position-badge-details {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
   }
 
   .assign-btn,

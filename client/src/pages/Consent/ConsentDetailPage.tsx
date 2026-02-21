@@ -22,6 +22,7 @@ import {
 import { AppHeader } from "../../components/AppHeader";
 import { ConfirmationModal } from "../../components/ConfirmationModal";
 import PDFViewerModal from "../../components/PDFViewerModal";
+import { ConsentRecordDetailModal } from "./ConsentRecordDetailModal";
 import { supabase } from "../../lib/supabaseClient";
 import { useLanguage } from "../../contexts/language/language-provider";
 import "../../styles/components/CommonTable.css";
@@ -78,6 +79,10 @@ export function ConsentDetailPage() {
   const [showPdfModal, setShowPdfModal] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [loadingPdf, setLoadingPdf] = useState(false);
+
+  // Record details state
+  const [isRecordDetailModalOpen, setIsRecordDetailModalOpen] = useState(false);
+  const [selectedRecordForDetail, setSelectedRecordForDetail] = useState<ConsentRecord | null>(null);
 
   const formatDate = (dateString?: string): string => {
     if (!dateString) return t("consent.common.notAvailable");
@@ -320,7 +325,7 @@ export function ConsentDetailPage() {
                 disabled={isResending}
               >
                 <Send size={16} />
-                                 <span>{t("consent.detail.resendEmails")} ({selectedRecords.size})</span>
+                <span>{t("consent.detail.resendEmails")} ({selectedRecords.size})</span>
               </button>
             )}
             <button
@@ -328,7 +333,7 @@ export function ConsentDetailPage() {
               onClick={handleBack}
             >
               <ArrowLeft size={16} />
-                             <span>{t("consent.detail.backToList")}</span>
+              <span>{t("consent.detail.backToList")}</span>
             </button>
           </>
         }
@@ -360,15 +365,14 @@ export function ConsentDetailPage() {
                   <h3 className="modern-doc-title">{document.fileName}</h3>
                   <div className="modern-doc-meta">
                     <span className="modern-doc-date">
-                                             {t("consent.detail.created")} {formatDate(document.createdAt)}
+                      {t("consent.detail.created")} {formatDate(document.createdAt)}
                     </span>
                     <span className="modern-doc-divider">•</span>
                     <span
-                      className={`modern-doc-status ${
-                        document.isActive ? "active" : "inactive"
-                      }`}
+                      className={`modern-doc-status ${document.isActive ? "active" : "inactive"
+                        }`}
                     >
-                                             {document.isActive ? t("consent.filters.active") : t("consent.filters.inactive")}
+                      {document.isActive ? t("consent.filters.active") : t("consent.filters.inactive")}
                     </span>
                   </div>
                 </div>
@@ -376,10 +380,10 @@ export function ConsentDetailPage() {
                   className="modern-doc-preview-btn"
                   onClick={handlePreviewDocument}
                   disabled={loadingPdf}
-                                     title={t("consent.detail.previewDocument")}
+                  title={t("consent.detail.previewDocument")}
                 >
                   <Eye size={16} />
-                                     <span>{loadingPdf ? t("consent.detail.loading") : t("consent.detail.preview")}</span>
+                  <span>{loadingPdf ? t("consent.detail.loading") : t("consent.detail.preview")}</span>
                 </button>
               </div>
             </div>
@@ -388,13 +392,13 @@ export function ConsentDetailPage() {
 
         <div className="card">
           <div className="card-header">
-                         <h2>{t("consent.detail.recipients")}</h2>
+            <h2>{t("consent.detail.recipients")}</h2>
             <div className="card-actions">
               <div className="search-box">
                 <Search size={14} className="search-icon" />
                 <input
                   type="text"
-                                     placeholder={t("consent.management.globalSearch")}
+                  placeholder={t("consent.management.globalSearch")}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="search-input"
@@ -403,7 +407,7 @@ export function ConsentDetailPage() {
                   className="button secondary button-icon"
                   onClick={resetFilters}
                 >
-                                     <span>{t("consent.management.resetFilters")}</span>
+                  <span>{t("consent.management.resetFilters")}</span>
                 </button>
               </div>
             </div>
@@ -413,25 +417,25 @@ export function ConsentDetailPage() {
           <div className="pagination-controls top">
             <div className="pagination-info">
               <span className="pagination-text">
-                                 {t("pagination.showing", {
-                   start: Math.min(
-                     (pagination.page - 1) * pagination.limit + 1,
-                     pagination.total
-                   ),
-                   end: Math.min(pagination.page * pagination.limit, pagination.total),
-                   total: pagination.total,
-                 })}
+                {t("pagination.showing", {
+                  start: Math.min(
+                    (pagination.page - 1) * pagination.limit + 1,
+                    pagination.total
+                  ),
+                  end: Math.min(pagination.page * pagination.limit, pagination.total),
+                  total: pagination.total,
+                })}
                 {pagination.totalFiltered !== pagination.total && (
                   <span className="filtered-info">
                     {" "}
-                                         ({t("pagination.filteredFromTotal", { total: pagination.total })}
+                    ({t("pagination.filteredFromTotal", { total: pagination.total })}
                   </span>
                 )}
               </span>
             </div>
             <div className="pagination-size-selector">
               <label htmlFor="pageSize" className="page-size-label">
-                                 {t("consent.pagination.show")}
+                {t("consent.pagination.show")}
               </label>
               <select
                 id="pageSize"
@@ -444,7 +448,7 @@ export function ConsentDetailPage() {
                 <option value={50}>50</option>
                 <option value={100}>100</option>
               </select>
-                             <span className="page-size-label">{t("consent.pagination.perPage")}</span>
+              <span className="page-size-label">{t("consent.pagination.perPage")}</span>
             </div>
           </div>
 
@@ -479,12 +483,12 @@ export function ConsentDetailPage() {
                   <th>
                     <div className="column-filter">
                       <div className="column-title">
-                                                 <span>{t("consent.detail.table.recipientName")}</span>
+                        <span>{t("consent.detail.table.recipientName")}</span>
                       </div>
                       <div className="column-search">
                         <input
                           type="text"
-                                                     placeholder={t("consent.detail.table.searchName")}
+                          placeholder={t("consent.detail.table.searchName")}
                           value={nameFilter}
                           onChange={(e) => setNameFilter(e.target.value)}
                           className="column-search-input"
@@ -494,41 +498,41 @@ export function ConsentDetailPage() {
                   </th>
                   <th>
                     <div className="column-filter">
-                                             <div className="column-title">{t("consent.detail.table.email")}</div>
+                      <div className="column-title">{t("consent.detail.table.email")}</div>
                       <div className="column-search">
-                                                 <span className="column-info">{t("consent.detail.table.contactInfo")}</span>
+                        <span className="column-info">{t("consent.detail.table.contactInfo")}</span>
                       </div>
                     </div>
                   </th>
                   <th>
                     <div className="column-filter">
-                                             <div className="column-title">{t("consent.detail.table.type")}</div>
+                      <div className="column-title">{t("consent.detail.table.type")}</div>
                       <div className="column-search">
                         <select
                           value={typeFilter}
                           onChange={(e) => setTypeFilter(e.target.value)}
                           className="column-filter-select"
                         >
-                                                     <option value="">{t("consent.filters.all")}</option>
-                           <option value="client">{t("consent.filters.client")}</option>
-                           <option value="jobseeker_profile">{t("consent.filters.jobseeker")}</option>
+                          <option value="">{t("consent.filters.all")}</option>
+                          <option value="client">{t("consent.filters.client")}</option>
+                          <option value="jobseeker_profile">{t("consent.filters.jobseeker")}</option>
                         </select>
                       </div>
                     </div>
                   </th>
                   <th>
                     <div className="column-filter">
-                                             <div className="column-title">{t("consent.detail.table.status")}</div>
+                      <div className="column-title">{t("consent.detail.table.status")}</div>
                       <div className="column-search">
                         <select
                           value={statusFilter}
                           onChange={(e) => setStatusFilter(e.target.value)}
                           className="column-filter-select"
                         >
-                                                     <option value="">{t("consent.filters.all")}</option>
-                           <option value="pending">{t("consent.detail.status.pending")}</option>
-                           <option value="completed">{t("consent.detail.status.completed")}</option>
-                           <option value="expired">{t("consent.detail.status.expired")}</option>
+                          <option value="">{t("consent.filters.all")}</option>
+                          <option value="pending">{t("consent.detail.status.pending")}</option>
+                          <option value="completed">{t("consent.detail.status.completed")}</option>
+                          <option value="expired">{t("consent.detail.status.expired")}</option>
                         </select>
                       </div>
                     </div>
@@ -536,7 +540,7 @@ export function ConsentDetailPage() {
                   <th>
                     <div className="column-filter">
                       <div className="column-title">
-                                                 <span>{t("consent.detail.table.sentDate")}</span>
+                        <span>{t("consent.detail.table.sentDate")}</span>
                       </div>
                       <div className="column-search">
                         <input
@@ -550,10 +554,10 @@ export function ConsentDetailPage() {
                   </th>
                   <th>
                     <div className="column-filter">
-                                             <div className="column-title">{t("consent.detail.table.completedDate")}</div>
+                      <div className="column-title">{t("consent.detail.table.completedDate")}</div>
                       <div className="column-search">
                         <span className="column-info">
-                                                     {t("consent.detail.table.whenConsentGiven")}
+                          {t("consent.detail.table.whenConsentGiven")}
                         </span>
                       </div>
                     </div>
@@ -597,14 +601,22 @@ export function ConsentDetailPage() {
                   <tr>
                     <td colSpan={7} className="empty-state-cell">
                       <div className="empty-state">
-                                                 <p>{t("consent.detail.emptyState")}</p>
+                        <p>{t("consent.detail.emptyState")}</p>
                       </div>
                     </td>
                   </tr>
                 ) : (
                   records.map((record) => (
-                    <tr key={record.id}>
-                      <td className="checkbox-cell">
+                    <tr
+                      key={record.id}
+                      onClick={() => {
+                        setSelectedRecordForDetail(record);
+                        setIsRecordDetailModalOpen(true);
+                      }}
+                      className="clickable-row"
+                      style={{ cursor: "pointer" }}
+                    >
+                      <td className="checkbox-cell" onClick={(e) => e.stopPropagation()}>
                         <input
                           type="checkbox"
                           checked={selectedRecords.has(record.id)}
@@ -617,10 +629,10 @@ export function ConsentDetailPage() {
                       <td>
                         <div className="user-with-icon">
                           <User size={16} className="entity-icon" />
-                                                     <span>{record.entityName || t("consent.common.unknown")}</span>
+                          <span>{record.entityName || t("consent.common.unknown")}</span>
                         </div>
                       </td>
-                                             <td>{record.entityEmail || t("consent.common.notAvailable")}</td>
+                      <td>{record.entityEmail || t("consent.common.notAvailable")}</td>
                       <td>
                         <span
                           className={`type-badge ${record.consentableType}`}
@@ -633,9 +645,9 @@ export function ConsentDetailPage() {
                           {getStatusIcon(record.status)}
                           <span className={`status-text ${record.status}`}>
                             {record.status === 'completed' ? t("consent.detail.status.completed") :
-                             record.status === 'pending' ? t("consent.detail.status.pending") :
-                             record.status === 'expired' ? t("consent.detail.status.expired") :
-                             record.status}
+                              record.status === 'pending' ? t("consent.detail.status.pending") :
+                                record.status === 'expired' ? t("consent.detail.status.expired") :
+                                  record.status}
                           </span>
                         </div>
                       </td>
@@ -648,7 +660,7 @@ export function ConsentDetailPage() {
                       <td>
                         {record.completedAt
                           ? formatDate(record.completedAt)
-                                                     : t("consent.detail.notCompleted")}
+                          : t("consent.detail.notCompleted")}
                       </td>
                     </tr>
                   ))
@@ -662,7 +674,7 @@ export function ConsentDetailPage() {
             <div className="pagination-controls bottom">
               <div className="pagination-info">
                 <span className="pagination-text">
-                                     {t("pagination.pageOf", { page: pagination.page, totalPages: pagination.totalPages })}
+                  {t("pagination.pageOf", { page: pagination.page, totalPages: pagination.totalPages })}
                 </span>
               </div>
               <div className="pagination-buttons">
@@ -696,9 +708,8 @@ export function ConsentDetailPage() {
                       return (
                         <button
                           key={pageNum}
-                          className={`page-number-btn ${
-                            pageNum === pagination.page ? "active" : ""
-                          }`}
+                          className={`page-number-btn ${pageNum === pagination.page ? "active" : ""
+                            }`}
                           onClick={() => handlePageChange(pageNum)}
                           aria-label={t("pagination.goToPage", { page: pageNum })}
                         >
@@ -728,10 +739,10 @@ export function ConsentDetailPage() {
       {/* Resend Confirmation Modal */}
       <ConfirmationModal
         isOpen={isResendModalOpen}
-                 title={t("consent.detail.resendEmailsModal.title")}
-                 message={t("consent.detail.resendEmailsModal.message", { count: selectedRecords.size })}
-                 confirmText={isResending ? t("consent.detail.loading") : t("consent.detail.resendEmails")}
-                 cancelText={t("consent.detail.resendEmailsModal.cancel")}
+        title={t("consent.detail.resendEmailsModal.title")}
+        message={t("consent.detail.resendEmailsModal.message", { count: selectedRecords.size })}
+        confirmText={isResending ? t("consent.detail.loading") : t("consent.detail.resendEmails")}
+        cancelText={t("consent.detail.resendEmailsModal.cancel")}
         confirmButtonClass="primary"
         onConfirm={handleResendEmails}
         onCancel={() => setIsResendModalOpen(false)}
@@ -749,6 +760,19 @@ export function ConsentDetailPage() {
           }}
         />
       )}
+
+      {/* Record Detail Modal */}
+      <ConsentRecordDetailModal
+        isOpen={isRecordDetailModalOpen}
+        record={selectedRecordForDetail}
+        onClose={() => {
+          setIsRecordDetailModalOpen(false);
+          setSelectedRecordForDetail(null);
+        }}
+        formatDate={formatDate}
+        getStatusIcon={getStatusIcon}
+        getTypeDisplay={getTypeDisplay}
+      />
     </div>
   );
 }
