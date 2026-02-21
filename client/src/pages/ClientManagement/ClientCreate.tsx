@@ -16,7 +16,8 @@ import { ConfirmationModal } from '../../components/ConfirmationModal';
 import { AppHeader } from '../../components/AppHeader';
 import { CustomDropdown, DropdownOption } from '../../components/CustomDropdown';
 import { ArrowLeft, Save } from 'lucide-react';
-import { PAYMENT_METHODS, PAYMENT_TERMS, PAY_CYCLES, LIST_NAMES, CLIENT_MANAGERS, CLIENT_REPRESENTATIVES, SALES_PERSONS, ACCOUNTING_PERSONS, ACCOUNTING_MANAGERS, CANADIAN_PROVINCES } from '../../constants/formOptions';
+import { PAYMENT_METHODS, PAYMENT_TERMS, PAY_CYCLES, LIST_NAMES, CANADIAN_PROVINCES } from '../../constants/formOptions';
+import { getDropdownOptions, type DropdownListType } from '../../services/api/dropdownOptions';
 import '../../styles/pages/ClientManagement.css';
 import '../../styles/components/form.css';
 import '../../styles/components/header.css';
@@ -92,50 +93,13 @@ interface ClientCreateProps {
   isEditDraftMode?: boolean;
 }
 
-// Helper function to convert client managers to dropdown options
-const createClientManagerOptions = (): DropdownOption[] => {
-  return CLIENT_MANAGERS.map((member) => ({
-    id: member,
-    label: member,
-    value: member,
+// Helper to convert dropdown API data to DropdownOption[]
+const toDropdownOptions = (items: { name: string }[]): DropdownOption[] =>
+  items.map((item) => ({
+    id: item.name,
+    label: item.name,
+    value: item.name,
   }));
-};
-
-// Helper function to convert client representatives to dropdown options
-const createClientRepresentativeOptions = (): DropdownOption[] => {
-  return CLIENT_REPRESENTATIVES.map((member) => ({
-    id: member,
-    label: member,
-    value: member,
-  }));
-};
-
-// Helper function to convert sales persons to dropdown options
-const createSalesPersonOptions = (): DropdownOption[] => {
-  return SALES_PERSONS.map((member) => ({
-    id: member,
-    label: member,
-    value: member,
-  }));
-};
-
-// Helper function to convert accounting persons to dropdown options
-const createAccountingPersonOptions = (): DropdownOption[] => {
-  return ACCOUNTING_PERSONS.map((member) => ({
-    id: member,
-    label: member,
-    value: member,
-  }));
-};
-
-// Helper function to convert accounting managers to dropdown options
-const createAccountingManagerOptions = (): DropdownOption[] => {
-  return ACCOUNTING_MANAGERS.map((member) => ({
-    id: member,
-    label: member,
-    value: member,
-  }));
-};
 
 // Helper function to convert provinces to dropdown options
 const createProvinceOptions = (): DropdownOption[] => {
@@ -212,6 +176,11 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
   const [clientId, setClientId] = useState<string | null>(null);
   const [lastSaved, setLastSaved] = useState<string | null>(null);
   const [pageTitle, setPageTitle] = useState('Create Client');
+  const [clientManagerOptions, setClientManagerOptions] = useState<DropdownOption[]>([]);
+  const [clientRepresentativeOptions, setClientRepresentativeOptions] = useState<DropdownOption[]>([]);
+  const [salesPersonOptions, setSalesPersonOptions] = useState<DropdownOption[]>([]);
+  const [accountingPersonOptions, setAccountingPersonOptions] = useState<DropdownOption[]>([]);
+  const [accountingManagerOptions, setAccountingManagerOptions] = useState<DropdownOption[]>([]);
 
   // Get ID from URL params or location state
   const idFromParams = params.id;
@@ -237,12 +206,26 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
   const { handleSubmit, reset, formState, watch, setValue, getValues } = methods;
   const { isDirty } = formState;
 
-  // Create all dropdown options
-  const clientManagerOptions = createClientManagerOptions();
-  const clientRepresentativeOptions = createClientRepresentativeOptions();
-  const salesPersonOptions = createSalesPersonOptions();
-  const accountingPersonOptions = createAccountingPersonOptions();
-  const accountingManagerOptions = createAccountingManagerOptions();
+  // Fetch dynamic dropdown options from API
+  useEffect(() => {
+    const loadOptions = async () => {
+      try {
+        const all = await getDropdownOptions();
+        const byType = (type: DropdownListType) =>
+          toDropdownOptions(all.filter((o) => o.listType === type));
+        setClientManagerOptions(byType('client_manager'));
+        setClientRepresentativeOptions(byType('client_representative'));
+        setSalesPersonOptions(byType('salesperson'));
+        setAccountingPersonOptions(byType('accounting_person'));
+        setAccountingManagerOptions(byType('accounting_manager'));
+      } catch (err) {
+        console.error('Failed to load dropdown options:', err);
+      }
+    };
+    loadOptions();
+  }, []);
+
+  // Create static dropdown options
   const provinceOptions = createProvinceOptions();
   const listNameOptions = createListNameOptions();
   const currencyOptions = createCurrencyOptions();
