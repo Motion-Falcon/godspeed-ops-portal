@@ -71,7 +71,7 @@ import { PrivacyPolicy } from './pages/Legal/PrivacyPolicy';
 function App() {
   return (
     <LanguageProvider>
-      <ThemeProvider defaultTheme="system" storageKey="godspeed-theme">
+      <ThemeProvider defaultTheme="light" storageKey="godspeed-theme">
         <AuthProvider>
           <Router>
             <GeometricShapes />

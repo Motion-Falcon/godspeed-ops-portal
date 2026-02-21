@@ -1586,6 +1586,8 @@
     },
     "detail": {
       "title": "Détails du consentement",
+      "recipientDetails": "Détails du destinataire",
+      "consentedName": "Nom du consentent",
       "resendEmails": "Renvoyer les emails",
       "backToList": "Retour à la liste",
       "recipients": "Destinataires du consentement",
@@ -2205,6 +2207,11 @@
       "pageOf": "Page {{current}} sur {{total}}"
     },
     "positionAssignment": "Attribution de poste",
+    "selectClient": "Sélectionner un client",
+    "loadingClients": "Chargement des clients...",
+    "selectClientPlaceholder": "Sélectionner un client...",
+    "noClientsAvailable": "Aucun client disponible",
+    "selectClientFirst": "Veuillez d'abord sélectionner un client",
     "selectPosition": "Sélectionner un poste",
     "loadingPositions": "Chargement des postes...",
     "selectPositionPlaceholder": "Sélectionner un poste...",

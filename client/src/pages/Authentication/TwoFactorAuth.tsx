@@ -142,6 +142,11 @@ export function TwoFactorAuth() {
                 placeholder={t('twoFactor.verificationCodePlaceholder')}
                 value={otpCode}
                 onChange={(e) => setOtpCode(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !isVerifying && otpCode.length >= 4) {
+                    verifyOtp();
+                  }
+                }}
                 maxLength={6}
                 autoFocus
               />
