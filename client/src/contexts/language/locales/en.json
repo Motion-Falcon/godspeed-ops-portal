@@ -25,6 +25,7 @@
     "recruiterHierarchy": "Recruiter Hierarchy",
     "allAdmins": "All Admins",
     "allRecruiters": "All Recruiters",
+    "dropdownOptions": "Client Dropdown Options",
     "allJobseekers": "All Jobseekers",
     "jobseekerManagement": "Jobseeker Management",
     "createJobseeker": "Create Jobseeker",
@@ -372,6 +373,19 @@
     "invitationSentSuccess": "Invitation sent successfully.",
     "failedToSendInvitation": "Failed to send invitation",
     "emailAndNameRequired": "Email and name are required"
+  },
+  "dropdownOptions": {
+    "title": "Client Dropdown Options",
+    "subtitle": "Manage dropdown values for Client Manager, Client Representative, Sales Person, Accounting Person, and Accounting Manager used in the Create Client form.",
+    "addNew": "Add new {{list}}",
+    "addButton": "Add",
+    "namePlaceholder": "Enter name",
+    "currentList": "Current {{list}} list",
+    "empty": "No options yet. Add your first option above.",
+    "added": "Option added successfully",
+    "updated": "Option updated successfully",
+    "deleted": "Option deleted successfully",
+    "confirmDelete": "Are you sure you want to delete \"{{name}}\"? This may affect existing client records that use this value."
   },
   "completeSignup": {
     "title": "Complete Your Signup",
