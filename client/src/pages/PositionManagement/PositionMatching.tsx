@@ -23,7 +23,7 @@ import {
   Eye,
 } from "lucide-react";
 import {
-  getPositions,
+  getClientPositions,
   getPositionCandidates,
   PositionCandidate,
   assignCandidateToPosition,
@@ -31,6 +31,7 @@ import {
   PositionData,
   getPositionAssignments,
 } from "../../services/api/position";
+import { getClients, ClientData } from "../../services/api/client";
 import { AppHeader } from "../../components/AppHeader";
 import { CustomDropdown, DropdownOption } from "../../components/CustomDropdown";
 import "../../styles/pages/PositionMatching.css";
@@ -68,6 +69,12 @@ const loadingMessageKeys = [
 ];
 
 export function PositionMatching() {
+  // Client selection state
+  const [clients, setClients] = useState<ClientData[]>([]);
+  const [selectedClient, setSelectedClient] = useState<ClientData | null>(null);
+  const [clientLoading, setClientLoading] = useState(false);
+
+  // Position selection state
   const [positions, setPositions] = useState<PositionData[]>([]);
   const [selectedPosition, setSelectedPosition] = useState<PositionData | null>(
     null
@@ -96,7 +103,7 @@ export function PositionMatching() {
   const [searchTerm, setSearchTerm] = useState("");
   const [experienceFilter, setExperienceFilter] = useState("all");
   const [availabilityFilter, setAvailabilityFilter] = useState("all");
-  const [onlyAvailable, setOnlyAvailable] = useState(true);
+  const [onlyAvailable] = useState(true);
   const [weekendAvailabilityOnly, setWeekendAvailabilityOnly] = useState(false);
 
   // Status message state for AppHeader
@@ -114,6 +121,20 @@ export function PositionMatching() {
 
   // Memoized values
   const isAuthorized = useMemo(() => isAdmin || isRecruiter, [isAdmin, isRecruiter]);
+
+  const clientOptions = useMemo((): DropdownOption[] =>
+    clients.map((client) => ({
+      id: client.id || '',
+      value: client.id || '',
+      label: client.companyName || t("positionMatching.unknownClient"),
+      sublabel: client.shortCode || '',
+    })), [clients, t]
+  );
+
+  const selectedClientOption = useMemo(() => 
+    selectedClient ? clientOptions.find((opt) => opt.id === selectedClient.id) : null,
+    [selectedClient, clientOptions]
+  );
   
   const positionOptions = useMemo((): DropdownOption[] => 
     positions.map((position) => ({
@@ -126,6 +147,35 @@ export function PositionMatching() {
         position.positionCategory || t("positionMatching.notSpecified")
       } | ${position.city || t("positionMatching.unknownCity")}, ${position.province || t("positionMatching.unknownProvince")}`
     })), [positions, t]
+  );
+
+  // Experience filter options
+  const experienceOptions = useMemo((): DropdownOption[] => [
+    { id: 'all', value: 'all', label: t("positionMatching.filters.allExperience") },
+    { id: '0-6 Months', value: '0-6 Months', label: t("positionMatching.filters.experience06Months") },
+    { id: '6-12 Months', value: '6-12 Months', label: t("positionMatching.filters.experience612Months") },
+    { id: '1-2 Years', value: '1-2 Years', label: t("positionMatching.filters.experience12Years") },
+    { id: '2-3 Years', value: '2-3 Years', label: t("positionMatching.filters.experience23Years") },
+    { id: '3-4 Years', value: '3-4 Years', label: t("positionMatching.filters.experience34Years") },
+    { id: '4-5 Years', value: '4-5 Years', label: t("positionMatching.filters.experience45Years") },
+    { id: '5+ Years', value: '5+ Years', label: t("positionMatching.filters.experience5Plus") },
+  ], [t]);
+
+  const selectedExperienceOption = useMemo(() => 
+    experienceOptions.find((opt) => opt.id === experienceFilter) || experienceOptions[0],
+    [experienceFilter, experienceOptions]
+  );
+
+  // Availability filter options
+  const availabilityOptions = useMemo((): DropdownOption[] => [
+    { id: 'all', value: 'all', label: t("positionMatching.filters.allAvailability") },
+    { id: 'Full-Time', value: 'Full-Time', label: t("positionMatching.filters.fullTime") },
+    { id: 'Part-Time', value: 'Part-Time', label: t("positionMatching.filters.partTime") },
+  ], [t]);
+
+  const selectedAvailabilityOption = useMemo(() => 
+    availabilityOptions.find((opt) => opt.id === availabilityFilter) || availabilityOptions[0],
+    [availabilityFilter, availabilityOptions]
   );
 
   const vacantSlotsCount = useMemo(() => {
@@ -167,18 +217,28 @@ export function PositionMatching() {
     return () => clearInterval(interval);
   }, [candidatesLoading, loadingMessageIndex]);
 
-  // Fetch all positions for dropdown
-  const fetchPositions = useCallback(async () => {
+  // Fetch all clients for dropdown
+  const fetchClients = useCallback(async () => {
+    try {
+      setClientLoading(true);
+      const response = await getClients({ limit: 100000000 });
+      setClients(response.clients);
+    } catch (err) {
+      console.error("Error fetching clients:", err);
+    } finally {
+      setClientLoading(false);
+    }
+  }, []);
+
+  // Fetch positions for selected client
+  const fetchClientPositions = useCallback(async (clientId: string) => {
     try {
       setPositionsLoading(true);
-      const data = await getPositions({
-        page: 1,
-        limit: 100000000,
-        search: "",
-      });
-      setPositions(data.positions);
+      const response = await getClientPositions(clientId, { limit: 100000000 });
+      setPositions(response.positions);
     } catch (err) {
-      console.error("Error fetching positions:", err);
+      console.error("Error fetching client positions:", err);
+      setPositions([]);
     } finally {
       setPositionsLoading(false);
     }
@@ -253,25 +313,48 @@ export function PositionMatching() {
     }
   }, [t]);
 
-  // Initialize component
+  // Initialize component - fetch clients
   useEffect(() => {
     if (!isAuthorized) {
       navigate("/dashboard");
       return;
     }
-    fetchPositions();
-  }, [isAuthorized, navigate, fetchPositions]);
+    fetchClients();
+  }, [isAuthorized, navigate, fetchClients]);
 
-  // Auto-select position from URL parameter after positions are loaded
+  // Fetch positions when client is selected
   useEffect(() => {
+    if (selectedClient?.id) {
+      setPositionsLoading(true);
+      fetchClientPositions(selectedClient.id);
+      setSelectedPosition(null);
+      setPositions([]);
+      setCandidates([]);
+      setAssignedJobseekers([]);
+    }
+  }, [selectedClient?.id, fetchClientPositions]);
+
+  // Auto-select client and position from URL parameters after clients are loaded
+  useEffect(() => {
+    const clientIdFromUrl = searchParams.get('clientId');
     const positionIdFromUrl = searchParams.get('positionId');
-    if (positionIdFromUrl && positions.length > 0 && !selectedPosition) {
+    
+    // Auto-select client if specified in URL
+    if (clientIdFromUrl && clients.length > 0 && !selectedClient) {
+      const matchingClient = clients.find(c => c.id === clientIdFromUrl);
+      if (matchingClient) {
+        setSelectedClient(matchingClient);
+      }
+    }
+    
+    // Auto-select position if specified in URL (only after positions are loaded)
+    if (positionIdFromUrl && positions.length > 0 && !selectedPosition && selectedClient) {
       const matchingPosition = positions.find(p => p.id === positionIdFromUrl);
       if (matchingPosition) {
         handlePositionSelect(positionIdFromUrl);
       }
     }
-  }, [positions, selectedPosition, searchParams]);
+  }, [clients, positions, selectedClient, selectedPosition, searchParams]);
 
   // Fetch candidates when position or filters change
   useEffect(() => {
@@ -404,6 +487,22 @@ export function PositionMatching() {
     handlePositionSelect(option.value as string);
   }, [handlePositionSelect]);
 
+  const handleClientSelect = useCallback((option: DropdownOption | DropdownOption[]) => {
+    if (Array.isArray(option)) return;
+    const client = clients.find(c => c.id === option.id);
+    setSelectedClient(client || null);
+  }, [clients]);
+
+  const handleExperienceFilterSelect = useCallback((option: DropdownOption | DropdownOption[]) => {
+    if (Array.isArray(option)) return;
+    setExperienceFilter(option.value as string);
+  }, []);
+
+  const handleAvailabilityFilterSelect = useCallback((option: DropdownOption | DropdownOption[]) => {
+    if (Array.isArray(option)) return;
+    setAvailabilityFilter(option.value as string);
+  }, []);
+
   // Confirmation modal state
   const [confirmationModal, setConfirmationModal] = useState<{
     isOpen: boolean;
@@ -492,9 +591,23 @@ export function PositionMatching() {
                 <Users className="header-icon" size={20} />
                 <h2>{t("positionMatching.bestMatchJobseekers")}</h2>
                 {selectedPosition && (
-                  <span className="position-badge">
-                    {selectedPosition.title}
-                  </span>
+                  <div className="position-badge-details">
+                    <span className="position-badge-title">
+                      {selectedPosition.title || t("positionMatching.notSpecified")}
+                    </span>
+                    <span className="position-badge-separator">|</span>
+                    <span className="position-badge-number">
+                      {selectedPosition.positionNumber || t("positionMatching.notSpecified")}
+                    </span>
+                    <span className="position-badge-separator">|</span>
+                    <span className="position-badge-category">
+                      {selectedPosition.positionCategory || t("positionMatching.notSpecified")}
+                    </span>
+                    <span className="position-badge-separator">|</span>
+                    <span className="position-badge-location">
+                      {selectedPosition.city || t("positionMatching.unknownCity")}, {selectedPosition.province || t("positionMatching.unknownProvince")}
+                    </span>
+                  </div>
                 )}
               </div>
 
@@ -514,30 +627,25 @@ export function PositionMatching() {
                   </div>
 
                   <div className="filter-row">
-                    <select
-                      value={experienceFilter}
-                      onChange={(e) => setExperienceFilter(e.target.value)}
-                      className="filter-select"
-                    >
-                      <option value="all">{t("positionMatching.filters.allExperience")}</option>
-                      <option value="0-6 Months">{t("positionMatching.filters.experience06Months")}</option>
-                      <option value="6-12 Months">{t("positionMatching.filters.experience612Months")}</option>
-                      <option value="1-2 Years">{t("positionMatching.filters.experience12Years")}</option>
-                      <option value="2-3 Years">{t("positionMatching.filters.experience23Years")}</option>
-                      <option value="3-4 Years">{t("positionMatching.filters.experience34Years")}</option>
-                      <option value="4-5 Years">{t("positionMatching.filters.experience45Years")}</option>
-                      <option value="5+ Years">{t("positionMatching.filters.experience5Plus")}</option>
-                    </select>
+                    <div className="filter-dropdown-wrapper">
+                      <CustomDropdown
+                        options={experienceOptions}
+                        selectedOption={selectedExperienceOption}
+                        onSelect={handleExperienceFilterSelect}
+                        placeholder={t("positionMatching.filters.allExperience")}
+                        searchable={false}
+                      />
+                    </div>
 
-                    <select
-                      value={availabilityFilter}
-                      onChange={(e) => setAvailabilityFilter(e.target.value)}
-                      className="filter-select"
-                    >
-                      <option value="all">{t("positionMatching.filters.allAvailability")}</option>
-                      <option value="Full-Time">{t("positionMatching.filters.fullTime")}</option>
-                      <option value="Part-Time">{t("positionMatching.filters.partTime")}</option>
-                    </select>
+                    <div className="filter-dropdown-wrapper">
+                      <CustomDropdown
+                        options={availabilityOptions}
+                        selectedOption={selectedAvailabilityOption}
+                        onSelect={handleAvailabilityFilterSelect}
+                        placeholder={t("positionMatching.filters.allAvailability")}
+                        searchable={false}
+                      />
+                    </div>
 
                     <div className="container-form">
                       <input
@@ -557,6 +665,7 @@ export function PositionMatching() {
                       </label>
                     </div>
 
+                    {/* Available Only checkbox - hidden for now
                     <label className="checkbox-filter">
                       <input
                         type="checkbox"
@@ -565,6 +674,7 @@ export function PositionMatching() {
                       />
                       {t("positionMatching.filters.availableOnly")}
                     </label>
+                    */}
                   </div>
                 </div>
               )}
@@ -833,6 +943,27 @@ export function PositionMatching() {
             </div>
 
             <div className="position-content">
+              {/* Client Selector */}
+              <div className="position-selector">
+                <label htmlFor="client-select">{t("positionMatching.selectClient")}:</label>
+                {clientLoading ? (
+                  <div className="position-loading">
+                    <div className="loading-spinner"></div>
+                    <span>{t("positionMatching.loadingClients")}</span>
+                  </div>
+                ) : (
+                  <CustomDropdown
+                    options={clientOptions}
+                    selectedOption={selectedClientOption || null}
+                    onSelect={handleClientSelect}
+                    placeholder={t("positionMatching.selectClientPlaceholder")}
+                    searchable={true}
+                    loading={clientLoading}
+                    emptyMessage={t("positionMatching.noClientsAvailable")}
+                  />
+                )}
+              </div>
+
               {/* Position Selector */}
               <div className="position-selector">
                 <label htmlFor="position-select">{t("positionMatching.selectPosition")}:</label>
@@ -855,10 +986,19 @@ export function PositionMatching() {
                       value: selectedPosition
                     } : null}
                     onSelect={(option) => { if (Array.isArray(option)) return; handlePositionSelectDropdown(option); }}
-                    placeholder={t("positionMatching.selectPositionPlaceholder")}
+                    placeholder={
+                      selectedClient
+                        ? t("positionMatching.selectPositionPlaceholder")
+                        : t("positionMatching.selectClientFirst")
+                    }
                     searchable={true}
                     loading={positionsLoading}
-                    emptyMessage={t("positionMatching.noPositionsAvailable")}
+                    disabled={!selectedClient}
+                    emptyMessage={
+                      selectedClient
+                        ? t("positionMatching.noPositionsAvailable")
+                        : t("positionMatching.selectClientFirst")
+                    }
                   />
                 )}
               </div>

@@ -2424,7 +2424,8 @@ router.get(
           status: candidate.is_available ? "available" : "unavailable",
         }));
 
-      // Apply client-side filters for computed/formatted fields (minimum 3 characters for performance)
+      // Apply server-side (in-memory) filters for search fields (minimum 3 characters for performance)
+      // Note: These filters run on all candidates before pagination, ensuring search works across all pages
       if (search && search.length >= 3) {
         formattedCandidates = formattedCandidates.filter(
           (candidate) =>
