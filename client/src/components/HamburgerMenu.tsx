@@ -430,6 +430,13 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
           roles: ["admin"],
         },
         {
+          label: t("navigation.dropdownOptions"),
+          path: "/admin/dropdown-options",
+          icon: <ClipboardList size={16} />,
+          exact: true,
+          roles: ["admin"],
+        },
+        {
           label: t("navigation.allAdmins"),
           path: "/all-users-management?userType=admin",
           icon: <Users size={16} />,
@@ -502,6 +509,13 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
           path: "/client-management/drafts",
           icon: <FileText size={16} />,
           exact: true,
+        },
+        {
+          label: t("navigation.dropdownOptions"),
+          path: "/admin/dropdown-options",
+          icon: <ClipboardList size={16} />,
+          exact: true,
+          roles: ["admin"],
         },
       ],
     },

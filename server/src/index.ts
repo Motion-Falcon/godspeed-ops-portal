@@ -19,6 +19,7 @@ import invoiceMetricsRoutes from "./routes/invoiceMetrics.js";
 import reportsRoutes from "./routes/reports.js";
 import calendarRoutes from "./routes/calendar.js";
 import consentRoutes from "./routes/consent.js";
+import dropdownOptionsRoutes from "./routes/dropdownOptions.js";
 import {
   configureSecurityHeaders,
   forceTLS,
@@ -135,6 +136,9 @@ app.use("/api/calendar", calendarRoutes);
 
 // Consent routes
 app.use("/api/consent", consentRoutes);
+
+// Dropdown options routes (client form dropdowns)
+app.use("/api/dropdown-options", dropdownOptionsRoutes);
 
 // Error handling middleware
 app.use(
