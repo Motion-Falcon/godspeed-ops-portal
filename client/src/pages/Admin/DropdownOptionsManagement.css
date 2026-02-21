@@ -32,7 +32,8 @@
   transition: all 0.15s ease;
 }
 
-.dropdown-options-management .dopts-tab-btn:hover {
+/* Hover only for inactive tabs - active tab stays unchanged on hover */
+.dropdown-options-management .dopts-tab-btn:not(.dopts-tab-btn--active):hover {
   background: var(--accent, #f3f4f6);
 }
 
@@ -203,7 +204,7 @@
   color: var(--text);
 }
 
-.dark .dropdown-options-management .dopts-tab-btn:hover {
+.dark .dropdown-options-management .dopts-tab-btn:not(.dopts-tab-btn--active):hover {
   background: var(--accent);
 }
 
