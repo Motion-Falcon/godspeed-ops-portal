@@ -25,6 +25,7 @@
     "recruiterHierarchy": "Hiérarchie des recruteurs",
     "allAdmins": "Tous les administrateurs",
     "allRecruiters": "Tous les recruteurs",
+    "dropdownOptions": "Options des listes déroulantes clients",
     "allJobseekers": "Tous les demandeurs d'emploi",
     "jobseekerManagement": "Gestion des demandeurs d'emploi",
     "createJobseeker": "Créer un demandeur d'emploi",
@@ -383,6 +384,19 @@
     "invitationSentSuccess": "Invitation envoyée avec succès.",
     "failedToSendInvitation": "Échec de l'envoi de l'invitation",
     "emailAndNameRequired": "L'email et le nom sont requis"
+  },
+  "dropdownOptions": {
+    "title": "Options des listes déroulantes clients",
+    "subtitle": "Gérer les valeurs des listes déroulantes (Gestionnaire client, Représentant client, Personne des ventes, Personne comptable, Gestionnaire comptable) utilisées dans le formulaire Créer un client.",
+    "addNew": "Ajouter un nouveau {{list}}",
+    "addButton": "Ajouter",
+    "namePlaceholder": "Entrez le nom",
+    "currentList": "Liste actuelle {{list}}",
+    "empty": "Aucune option pour le moment. Ajoutez votre première option ci-dessus.",
+    "added": "Option ajoutée avec succès",
+    "updated": "Option mise à jour avec succès",
+    "deleted": "Option supprimée avec succès",
+    "confirmDelete": "Êtes-vous sûr de vouloir supprimer \"{{name}}\" ? Cela peut affecter les enregistrements clients existants qui utilisent cette valeur."
   },
   "completeSignup": {
     "title": "Terminer votre inscription",
