@@ -1,0 +1,219 @@
+/* Dropdown Options Management - Scoped under .dropdown-options-management */
+
+.dropdown-options-management .card.dopts-card {
+  width: 100%;
+  max-width: 100%;
+  padding: 0;
+  overflow: visible;
+  background: var(--card);
+  border-radius: var(--border-radius, 12px);
+  box-shadow: var(--card-shadow, 0 1px 3px rgba(0, 0, 0, 0.08));
+  border: 1px solid var(--border);
+}
+
+.dropdown-options-management .dopts-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--muted, #f9fafb);
+}
+
+.dropdown-options-management .dopts-tab-btn {
+  padding: 8px 16px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  transition: all 0.15s ease;
+}
+
+.dropdown-options-management .dopts-tab-btn:hover {
+  background: var(--accent, #f3f4f6);
+}
+
+.dropdown-options-management .dopts-tab-btn--active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+.dropdown-options-management .dopts-card-body {
+  padding: 24px;
+}
+
+.dropdown-options-management .dopts-section-title {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.dropdown-options-management .dopts-add-section,
+.dropdown-options-management .dopts-list-section {
+  margin-bottom: 24px;
+}
+
+.dropdown-options-management .dopts-list-section:last-child {
+  margin-bottom: 0;
+}
+
+/* Add form: input and button in a row, button compact */
+.dropdown-options-management .dopts-add-form {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+}
+
+.dropdown-options-management .dopts-add-form .dopts-form-group {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin-bottom: 0;
+  max-width: 100%;
+}
+
+.dropdown-options-management .dopts-add-form .form-input {
+  width: 100%;
+  min-width: 180px;
+  max-width: 100%;
+}
+
+/* Override .button width: 100% - keep add button compact */
+.dropdown-options-management .dopts-btn-add {
+  flex-shrink: 0;
+  width: auto !important;
+  min-width: 100px;
+  white-space: nowrap;
+}
+
+.dropdown-options-management .dopts-add-error {
+  margin-top: 8px;
+  margin-bottom: 0;
+}
+
+.dropdown-options-management .dopts-loading,
+.dropdown-options-management .dopts-empty {
+  padding: 24px;
+  text-align: center;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.dropdown-options-management .dopts-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* List: full width, prevent overflow, actions always visible */
+.dropdown-options-management .dopts-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow-x: auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.dropdown-options-management .dopts-list-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  gap: 16px;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.dropdown-options-management .dopts-list-item:last-child {
+  border-bottom: none;
+}
+
+/* Name: flexible, truncate if long */
+.dropdown-options-management .dopts-list-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 14px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Actions: always visible, never shrink */
+.dropdown-options-management .dopts-list-actions {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  flex-shrink: 0;
+  flex-grow: 0;
+}
+
+/* Override .button width for icon buttons */
+.dropdown-options-management .dopts-btn-icon {
+  padding: 8px 10px;
+  width: auto !important;
+  min-width: 36px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dropdown-options-management .dopts-list-edit {
+  display: flex;
+  flex: 1 1 auto;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+  width: 100%;
+}
+
+.dropdown-options-management .dopts-list-edit .dopts-edit-input {
+  flex: 1;
+  min-width: 120px;
+}
+
+/* Override .button width for edit-mode save/cancel */
+.dropdown-options-management .dopts-list-edit .dopts-btn-icon {
+  width: auto !important;
+}
+
+.dropdown-options-management .dopts-btn-icon--danger:hover {
+  background: var(--destructive, #fef2f2);
+  color: var(--destructive-foreground, #dc2626);
+}
+
+/* Dark mode */
+.dark .dropdown-options-management .dopts-tab-btn {
+  background: var(--card);
+  border-color: var(--border);
+  color: var(--text);
+}
+
+.dark .dropdown-options-management .dopts-tab-btn:hover {
+  background: var(--accent);
+}
+
+.dark .dropdown-options-management .dopts-tab-btn--active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+.dark .dropdown-options-management .dopts-btn-icon--danger:hover {
+  background: rgba(220, 38, 38, 0.15);
+  color: #f87171;
+}

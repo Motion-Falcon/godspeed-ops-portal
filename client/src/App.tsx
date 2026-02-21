@@ -60,6 +60,7 @@ import { BulkTimesheetList } from './pages/BulkTimesheetManagement/BulkTimesheet
 import { GodspeedAIChat } from './pages/GodspeedAIChat';
 import { RecruiterHierarchy } from './pages/RecruiterHierarchy';
 import { InviteRecruiter } from './pages/RecruiterManagement/InviteRecruiter';
+import { DropdownOptionsManagement } from './pages/Admin/DropdownOptionsManagement';
 import { CalendarPage } from './pages/Calendar/CalendarPage';
 import { ConsentListPage } from './pages/Consent/ConsentListPage';
 import { CreateConsentPage } from './pages/Consent/CreateConsentPage';
@@ -154,6 +155,7 @@ function App() {
 
                 <Route element={<AdminRoute />}>
                   <Route path="/invite-recruiter" element={<InviteRecruiter />} />
+                  <Route path="/admin/dropdown-options" element={<DropdownOptionsManagement />} />
                 </Route>
                 
                 <Route element={<JobSeekerRoute />}>
