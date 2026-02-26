@@ -276,6 +276,7 @@ export interface PositionData {
   startDate?: string;
   endDate?: string;
   showOnJobPortal?: boolean;
+  stat?: boolean;
   clientManager?: string;
   salesManager?: string;
   positionNumber?: string;
@@ -352,6 +353,7 @@ export interface DbPositionData {
   start_date?: string;
   end_date?: string;
   show_on_job_portal?: boolean;
+  stat?: boolean;
   client_manager?: string;
   sales_manager?: string;
   position_number?: string;
