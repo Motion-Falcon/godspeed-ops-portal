@@ -445,6 +445,7 @@ export function PositionView() {
                   : t("positionManagement.noEndDate")
               )}
               {renderDetailItem(t("positionManagement.showOnJobPortal"), position.showOnJobPortal)}
+              {renderDetailItem(t("positionManagement.stat"), position.stat)}
               {renderDetailItem(t("positionManagement.clientManager"), position.clientManager)}
               {renderDetailItem(t("positionManagement.salesManager"), position.salesManager)}
               {renderDetailItem(t("positionManagement.positionCode"), position.positionNumber)}
