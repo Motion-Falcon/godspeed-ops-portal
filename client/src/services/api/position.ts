@@ -12,6 +12,7 @@ export interface PositionData {
   startDate?: string;
   endDate?: string;
   showOnJobPortal?: boolean;
+  stat?: boolean;
   clientManager?: string;
   salesManager?: string;
   positionNumber?: string;
