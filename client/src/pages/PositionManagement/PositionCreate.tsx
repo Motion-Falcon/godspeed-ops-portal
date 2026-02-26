@@ -64,6 +64,7 @@ const createPositionFormSchema = (t: (key: string) => string) =>
         .string()
         .min(1, { message: t("positionCreate.errors.endDateRequired") }),
       showOnJobPortal: z.boolean().default(false),
+      stat: z.boolean().default(false),
       clientManager: z.string().optional(),
       salesManager: z.string().optional(),
       positionNumber: z.string().optional(),
@@ -307,6 +308,7 @@ export function PositionCreate({
     resolver: zodResolver(createPositionFormSchema(t)),
     defaultValues: {
       showOnJobPortal: false,
+      stat: false,
       documentsRequired: {
         license: false,
         driverAbstract: false,
@@ -1104,20 +1106,6 @@ export function PositionCreate({
 
                 <div className="form-row">
                   <div className="form-group">
-                    <div className="container-form">
-                      <input
-                        type="checkbox"
-                        id="showOnJobPortal"
-                        className="toggle-form"
-                        {...methods.register("showOnJobPortal")}
-                      />
-                      <label htmlFor="showOnJobPortal" className="label-form">
-                        {t("positionCreate.fields.showOnJobPortal")}
-                      </label>
-                    </div>
-                  </div>
-
-                  <div className="form-group">
                     <label htmlFor="clientManager" className="form-label">
                       {t("positionCreate.fields.clientManager")}
                     </label>
@@ -1143,6 +1131,34 @@ export function PositionCreate({
                       disabled
                       {...methods.register("salesManager")}
                     />
+                  </div>
+
+                  <div className="form-group">
+                    <div className="container-form">
+                      <input
+                        type="checkbox"
+                        id="showOnJobPortal"
+                        className="toggle-form"
+                        {...methods.register("showOnJobPortal")}
+                      />
+                      <label htmlFor="showOnJobPortal" className="label-form">
+                        {t("positionCreate.fields.showOnJobPortal")}
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <div className="container-form">
+                      <input
+                        type="checkbox"
+                        id="stat"
+                        className="toggle-form"
+                        {...methods.register("stat")}
+                      />
+                      <label htmlFor="stat" className="label-form">
+                        {t("positionCreate.fields.stat")}
+                      </label>
+                    </div>
                   </div>
                 </div>
 
