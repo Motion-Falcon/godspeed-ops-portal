@@ -7,6 +7,9 @@ import {
   sanitizeInputs,
 } from "../middleware/security.js";
 import { activityLogger } from "../middleware/activityLogger.js";
+import { emailNotifier } from "../middleware/emailNotifier.js";
+import { jobseekerWelcomeHtmlTemplate } from "../email-templates/jobseeker-welcome-html.js";
+import { jobseekerWelcomeTextTemplate } from "../email-templates/jobseeker-welcome-txt.js";
 import dotenv from "dotenv";
 import { ProfileData, Document, DbJobseekerProfile } from "../types.js";
 
@@ -58,6 +61,94 @@ router.post(
         accountCreated: res.locals.accountCreated || false,
       },
     }),
+  }),
+  emailNotifier({
+    onSuccessEmail: async (req: Request, res: Response) => {
+      const createdProfile = res.locals.newProfile;
+      const email = createdProfile?.email || req.body?.email;
+      if (!email) return null;
+
+      const firstName = createdProfile?.first_name || req.body?.firstName;
+      const clientUrl = process.env.CLIENT_URL || "";
+      const portalUrl = clientUrl.endsWith("/")
+        ? clientUrl.slice(0, -1)
+        : clientUrl;
+
+      const welcomeDocsBucket = "default-documents";
+      const welcomeDocsFolder = "jobseekerWelcomeDocs";
+      const welcomeDocAttachments: Array<{
+        content: string;
+        filename: string;
+        type: string;
+        disposition: string;
+      }> = [];
+
+      try {
+        const { data: welcomeDocs, error: listError } = await supabase.storage
+          .from(welcomeDocsBucket)
+          .list(welcomeDocsFolder, {
+            limit: 100,
+            sortBy: { column: "name", order: "asc" },
+          });
+
+        if (listError) {
+          console.error(
+            "[EmailNotifier] Failed to list welcome docs from storage:",
+            listError
+          );
+        } else if (welcomeDocs && welcomeDocs.length > 0) {
+          for (const doc of welcomeDocs) {
+            if (!doc.name) continue;
+
+            const documentPath = `${welcomeDocsFolder}/${doc.name}`;
+            const { data: docData, error: docDownloadError } =
+              await supabase.storage
+                .from(welcomeDocsBucket)
+                .download(documentPath);
+
+            if (docDownloadError || !docData) {
+              console.error(
+                `[EmailNotifier] Failed to download welcome doc: ${documentPath}`,
+                docDownloadError
+              );
+              continue;
+            }
+
+            const fileBuffer = Buffer.from(await docData.arrayBuffer());
+            welcomeDocAttachments.push({
+              content: fileBuffer.toString("base64"),
+              filename: doc.name,
+              type: doc.metadata?.mimetype || "application/pdf",
+              disposition: "attachment",
+            });
+          }
+        }
+      } catch (attachmentError) {
+        console.error(
+          "[EmailNotifier] Error while preparing welcome email attachments:",
+          attachmentError
+        );
+      }
+
+      const templateVars = {
+        first_name: firstName || "there",
+        portal_url: portalUrl,
+      };
+
+      const html = jobseekerWelcomeHtmlTemplate(templateVars);
+      const text = jobseekerWelcomeTextTemplate(templateVars);
+      const [subjectLine, ...bodyLines] = text.split("\n");
+      const subject = subjectLine.replace("Subject:", "").trim();
+
+      return {
+        to: email,
+        subject,
+        text: bodyLines.join("\n").trim(),
+        html,
+        attachments:
+          welcomeDocAttachments.length > 0 ? welcomeDocAttachments : undefined,
+      };
+    },
   }),
   async (req: Request, res: Response) => {
     try {

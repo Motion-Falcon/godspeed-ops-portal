@@ -2461,6 +2461,19 @@
       "billRateAutoCalc": "Se calcule automatiquement lorsque la majoration ou le taux de salaire change",
       "markupAutoCalc": "Se calcule automatiquement lorsque le taux de facturation ou le taux de salaire change"
     },
+    "copyFrom": {
+      "sectionTitle": "Copier à partir d'un poste existant",
+      "filterByClient": "Filtrer par client",
+      "copyExistingPosition": "Copier un poste existant",
+      "selectClientPlaceholder": "Sélectionner un client...",
+      "selectClientFirst": "Veuillez d'abord sélectionner un client",
+      "selectPositionPlaceholder": "Sélectionner un poste à copier...",
+      "noClientsAvailable": "Aucun client disponible",
+      "noPositionsAvailable": "Aucun poste disponible",
+      "notSpecified": "—",
+      "formFilledHint": "Le formulaire a été rempli avec le poste sélectionné. Modifiez selon vos besoins et cliquez sur Créer le poste pour enregistrer.",
+      "errorLoadingPosition": "Échec du chargement du poste"
+    },
     "emptyMessages": {
       "noJobTitles": "Aucun titre d'emploi trouvé"
     },
