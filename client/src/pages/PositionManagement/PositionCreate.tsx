@@ -13,6 +13,7 @@ import {
   getPosition,
   updatePosition,
   generatePositionCode,
+  getClientPositions,
 } from "../../services/api/position";
 import { getClients, getClient } from "../../services/api/client";
 import { ConfirmationModal } from "../../components/ConfirmationModal";
@@ -227,10 +228,19 @@ export function PositionCreate({
     t("positionCreate.createPosition")
   );
   const [clients, setClients] = useState<
-    Array<{ id: string; companyName: string }>
+    Array<{ id: string; companyName: string; shortCode?: string }>
   >([]);
   const [minEndDate, setMinEndDate] = useState<string>(getTodayFormatted());
   const [clientLoading, setClientLoading] = useState(false);
+
+  // Copy from existing position (create mode only)
+  const [copyFromClientId, setCopyFromClientId] = useState<string | null>(null);
+  const [copyFromPositions, setCopyFromPositions] = useState<PositionData[]>([]);
+  const [copyFromSelectedPosition, setCopyFromSelectedPosition] =
+    useState<PositionData | null>(null);
+  const [copyFromPositionsLoading, setCopyFromPositionsLoading] =
+    useState(false);
+  const [copyFromPositionLoading, setCopyFromPositionLoading] = useState(false);
 
   // Job title options
   const titleOptions: DropdownOption[] = JOB_TITLES.map((title) => ({
@@ -366,6 +376,7 @@ export function PositionCreate({
           .map((client) => ({
             id: client.id || "",
             companyName: client.companyName || "",
+            shortCode: client.shortCode || "",
           }))
           .filter((client) => client.id && client.companyName); // Filter after mapping to see what we get
 
@@ -662,6 +673,115 @@ export function PositionCreate({
     label: client.companyName,
   }));
 
+  // Copy-from client filter options (same as main client dropdown; sublabel = shortCode like Position Matching)
+  const copyFromClientOptions: DropdownOption[] = clients.map((client) => ({
+    id: client.id,
+    value: client.id,
+    label: client.companyName,
+    sublabel: client.shortCode || "",
+  }));
+
+  // Copy-from position options: label = title - positionNumber, sublabel = Period | category | location (like Position Matching)
+  const copyFromPositionOptions: DropdownOption[] = copyFromPositions.map(
+    (position) => {
+      const start = position.startDate
+        ? new Date(position.startDate).toLocaleDateString(undefined, {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+          })
+        : "";
+      const end = position.endDate
+        ? new Date(position.endDate).toLocaleDateString(undefined, {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+          })
+        : "";
+      const period = start && end ? `${start} – ${end}` : start || end || "—";
+      return {
+        id: position.id || "",
+        value: position.id || "",
+        label: `${position.title || t("positionCreate.copyFrom.notSpecified")} - ${position.positionNumber || t("positionCreate.copyFrom.notSpecified")}`,
+        sublabel: `${period} | ${position.positionCategory || t("positionCreate.copyFrom.notSpecified")} | ${position.city || ""}, ${position.province || ""}`.trim(),
+      };
+    }
+  );
+
+  // Fetch positions when copy-from client changes
+  useEffect(() => {
+    if (!copyFromClientId) {
+      setCopyFromPositions([]);
+      setCopyFromSelectedPosition(null);
+      return;
+    }
+    const fetchCopyFromPositions = async () => {
+      setCopyFromPositionsLoading(true);
+      try {
+        const response = await getClientPositions(copyFromClientId, {
+          limit: 1000,
+        });
+        setCopyFromPositions(response.positions || []);
+        setCopyFromSelectedPosition(null);
+      } catch (err) {
+        console.error("Error fetching positions for copy:", err);
+        setCopyFromPositions([]);
+        setCopyFromSelectedPosition(null);
+      } finally {
+        setCopyFromPositionsLoading(false);
+      }
+    };
+    fetchCopyFromPositions();
+  }, [copyFromClientId]);
+
+  // Handle copy-from position select: load full position and fill form
+  const handleCopyFromPositionSelect = async (
+    option: DropdownOption | DropdownOption[]
+  ) => {
+    if (Array.isArray(option)) return;
+    const positionId = option.value as string;
+    if (!positionId) {
+      setCopyFromSelectedPosition(null);
+      return;
+    }
+    setCopyFromPositionLoading(true);
+    try {
+      const position = await getPosition(positionId);
+      if (!position) return;
+      const formatted = convertToCamelCase(position);
+      // Omit id so we create a new position; clear positionCode/positionNumber so they can be regenerated
+      const { id: _id, ...formData } = formatted as PositionFormData & {
+        id?: string;
+      };
+      (formData as PositionFormData).positionCode = "";
+      (formData as PositionFormData).positionNumber = "";
+      reset(formData as PositionFormData);
+      setCopyFromSelectedPosition(position);
+      setHasUnsavedChanges(true);
+      // Optionally regenerate position code if client is set
+      const clientId = (formData as PositionFormData).client;
+      if (clientId) {
+        try {
+          const result = await generatePositionCode(clientId);
+          methods.setValue("positionCode", result.positionCode);
+        } catch {
+          // ignore
+        }
+      }
+    } catch (err) {
+      console.error("Error loading position for copy:", err);
+      setCopyFromSelectedPosition(null);
+      setError(
+        err instanceof Error
+          ? err.message
+          : t("positionCreate.copyFrom.errorLoadingPosition")
+      );
+      setTimeout(() => setError(null), 3000);
+    } finally {
+      setCopyFromPositionLoading(false);
+    }
+  };
+
   // Handle client selection for CustomDropdown
   const handleClientSelect = async (
     option: DropdownOption | DropdownOption[]
@@ -895,6 +1015,103 @@ export function PositionCreate({
             {t("positionCreate.info.lastSaved", {
               date: new Date(lastSaved).toLocaleString(),
             })}
+          </div>
+        )}
+
+        {/* Copy from existing position - separate card at top (create mode only) */}
+        {!isEditMode && !isEditDraftMode && (
+          <div className="card copy-from-card">
+            <div className="copy-from-row">
+              <h2 className="copy-from-title">
+                {t("positionCreate.copyFrom.sectionTitle")}
+              </h2>
+              <div className="form-group">
+                <label htmlFor="copy-from-client" className="form-label">
+                  {t("positionCreate.copyFrom.filterByClient")}
+                </label>
+                <CustomDropdown
+                  options={copyFromClientOptions}
+                  selectedOption={
+                    copyFromClientId
+                      ? copyFromClientOptions.find(
+                          (o) => o.id === copyFromClientId
+                        ) || null
+                      : null
+                  }
+                  onSelect={(option) => {
+                    if (Array.isArray(option)) return;
+                    setCopyFromClientId((option?.value as string) || null);
+                    setCopyFromSelectedPosition(null);
+                  }}
+                  placeholder={t(
+                    "positionCreate.copyFrom.selectClientPlaceholder"
+                  )}
+                  searchable={true}
+                  clearable={true}
+                  onClear={() => {
+                    setCopyFromClientId(null);
+                    setCopyFromPositions([]);
+                    setCopyFromSelectedPosition(null);
+                  }}
+                  emptyMessage={t(
+                    "positionCreate.copyFrom.noClientsAvailable"
+                  )}
+                />
+              </div>
+              <div className="form-group">
+                <label
+                  htmlFor="copy-from-position"
+                  className="form-label"
+                >
+                  {t("positionCreate.copyFrom.copyExistingPosition")}
+                </label>
+                {copyFromPositionsLoading ? (
+                  <div className="invoice-dropdown-skeleton">
+                    <div className="skeleton-dropdown-trigger">
+                      <div className="skeleton-icon"></div>
+                      <div className="skeleton-text skeleton-dropdown-text"></div>
+                      <div className="skeleton-icon skeleton-chevron"></div>
+                    </div>
+                  </div>
+                ) : (
+                  <CustomDropdown
+                    options={copyFromPositionOptions}
+                    selectedOption={
+                      copyFromSelectedPosition
+                        ? {
+                            id: copyFromSelectedPosition.id || "",
+                            label: `${copyFromSelectedPosition.title || t("positionCreate.copyFrom.notSpecified")} - ${copyFromSelectedPosition.positionNumber || t("positionCreate.copyFrom.notSpecified")}`,
+                            sublabel: `${copyFromSelectedPosition.startDate || ""} – ${copyFromSelectedPosition.endDate || ""} | ${copyFromSelectedPosition.positionCategory || ""} | ${copyFromSelectedPosition.city || ""}, ${copyFromSelectedPosition.province || ""}`,
+                            value:
+                              copyFromSelectedPosition.id || "",
+                          }
+                        : null
+                    }
+                    onSelect={handleCopyFromPositionSelect}
+                    placeholder={
+                      copyFromClientId
+                        ? t(
+                            "positionCreate.copyFrom.selectPositionPlaceholder"
+                          )
+                        : t("positionCreate.copyFrom.selectClientFirst")
+                    }
+                    searchable={true}
+                    clearable={true}
+                    disabled={!copyFromClientId}
+                    loading={copyFromPositionLoading}
+                    onClear={() => setCopyFromSelectedPosition(null)}
+                    emptyMessage={t(
+                      "positionCreate.copyFrom.noPositionsAvailable"
+                    )}
+                  />
+                )}
+              </div>
+            </div>
+            {copyFromSelectedPosition && (
+              <p className="form-hint copy-from-hint">
+                {t("positionCreate.copyFrom.formFilledHint")}
+              </p>
+            )}
           </div>
         )}
 
