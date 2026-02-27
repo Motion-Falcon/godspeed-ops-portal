@@ -4,6 +4,40 @@
   margin-bottom: 2rem;
 }
 
+/* Copy from existing position - separate card at top */
+.copy-from-card {
+  margin-bottom: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto 2rem auto;
+}
+
+.copy-from-card .copy-from-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem 1.5rem;
+}
+
+.copy-from-card .copy-from-title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text);
+  flex: 0 0 auto;
+  padding-right: 0.5rem;
+}
+
+.copy-from-card .copy-from-row .form-group {
+  flex: 1 1 220px;
+  min-width: 180px;
+  margin-bottom: 0;
+}
+
+.copy-from-card .copy-from-hint {
+  margin-top: 0.75rem;
+  margin-bottom: 0;
+}
+
 .card {
   background: var(--card);
   padding: 1.5rem;
