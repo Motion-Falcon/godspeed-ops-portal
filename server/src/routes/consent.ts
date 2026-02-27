@@ -24,13 +24,6 @@ if (!supabaseUrl || !supabaseKey) {
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 /**
- * Convert camelCase to snake_case
- */
-function camelToSnakeCase(str: string): string {
-  return str.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
-}
-
-/**
  * Convert snake_case to camelCase
  */
 function snakeToCamelCase(str: string): string {

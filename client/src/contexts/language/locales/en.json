@@ -2450,6 +2450,19 @@
       "billRateAutoCalc": "Auto-calculates when markup or pay rate changes",
       "markupAutoCalc": "Auto-calculates when bill rate or pay rate changes"
     },
+    "copyFrom": {
+      "sectionTitle": "Copy from existing position",
+      "filterByClient": "Filter by client",
+      "copyExistingPosition": "Copy existing position",
+      "selectClientPlaceholder": "Select a client...",
+      "selectClientFirst": "Please select a client first",
+      "selectPositionPlaceholder": "Select a position to copy...",
+      "noClientsAvailable": "No clients available",
+      "noPositionsAvailable": "No positions available",
+      "notSpecified": "—",
+      "formFilledHint": "Form has been filled with the selected position. Edit as needed and click Create Position to save.",
+      "errorLoadingPosition": "Failed to load position"
+    },
     "emptyMessages": {
       "noJobTitles": "No job titles found"
     },
