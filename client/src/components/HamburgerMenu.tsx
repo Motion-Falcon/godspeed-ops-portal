@@ -507,10 +507,9 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
         },
         {
           label: t("navigation.dropdownOptions"),
-          path: "/admin/dropdown-options",
+          path: "/client/dropdown-options",
           icon: <ClipboardList size={16} />,
           exact: true,
-          roles: ["admin"],
         },
       ],
     },
