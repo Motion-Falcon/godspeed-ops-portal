@@ -157,13 +157,13 @@ function App() {
                   <Route path="/calendar" element={<CalendarPage />} />
                   <Route path="/consent-dashboard" element={<ConsentListPage />} />
                   <Route path="/consent-dashboard/:documentId" element={<ConsentDetailPage />} />
+                  <Route path="/consent-dashboard/new" element={<CreateConsentPage />} />
+                  <Route path="/client/dropdown-options" element={<DropdownOptionsManagement />} />
                   {/* Add more recruiter-specific routes here */}
                 </Route>
 
                 <Route element={<AdminRoute />}>
                   <Route path="/invite-recruiter" element={<InviteRecruiter />} />
-                  <Route path="/admin/dropdown-options" element={<DropdownOptionsManagement />} />
-                  <Route path="/consent-dashboard/new" element={<CreateConsentPage />} />
                 </Route>
 
                 <Route element={<SuperAdminRoute />}>
