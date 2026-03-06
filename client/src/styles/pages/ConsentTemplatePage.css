@@ -1,0 +1,179 @@
+.consent-template-form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--spacing-3);
+  margin-top: var(--spacing-3);
+}
+
+.consent-template-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.consent-template-input-group span {
+  font-size: var(--font-size-small);
+  color: var(--text-muted);
+  font-weight: var(--font-weight-medium);
+}
+
+.consent-template-input-group input,
+.consent-template-input-group textarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-2) var(--spacing-3);
+  background: var(--card);
+  color: var(--text);
+}
+
+.consent-template-input-group textarea {
+  resize: vertical;
+}
+
+.consent-template-field-actions {
+  display: flex;
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-3);
+}
+
+.consent-template-field-actions .button {
+  width: fit-content;
+}
+
+.consent-template-delete-field {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  padding: 4px;
+}
+
+.consent-template-delete-field:hover {
+  color: #c62828;
+  background: rgba(198, 40, 40, 0.08);
+}
+
+.template-field-preview-input {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: var(--spacing-2);
+}
+
+.template-field-preview-input label {
+  font-size: var(--font-size-tiny);
+  color: var(--text-muted);
+}
+
+.template-field-preview-input input {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--card);
+  color: var(--text);
+}
+
+.template-canvas.inactive {
+  cursor: default;
+}
+
+.consent-template-existing-card {
+  margin-top: var(--spacing-5);
+}
+
+.template-existing-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.template-existing-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-3);
+  padding: var(--spacing-3);
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius);
+  background: var(--card);
+}
+
+.template-existing-item .button {
+  width: fit-content;
+  margin-left: auto;
+  align-self: flex-end;
+  flex: 0 0 auto;
+}
+
+.template-existing-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.template-existing-name {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.template-existing-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+  font-size: var(--font-size-small);
+  color: var(--text-muted);
+}
+
+/* Override base marker style for live output preview */
+.template-field-marker {
+  z-index: 2;
+  background: transparent;
+  color: #101010;
+  border-radius: 0;
+  padding: 0;
+  max-width: 85%;
+  white-space: nowrap;
+  text-shadow: 0 0 2px rgba(255, 255, 255, 0.95), 0 0 4px rgba(255, 255, 255, 0.95);
+}
+
+.template-field-marker.active {
+  outline: 1px dashed rgba(0, 153, 0, 0.6);
+  outline-offset: 2px;
+  background: transparent;
+}
+
+.dark .template-field-marker {
+  background: transparent;
+  color: #f3f3f3;
+  text-shadow: 0 0 2px rgba(0, 0, 0, 0.95), 0 0 4px rgba(0, 0, 0, 0.95);
+}
+
+.dark .template-field-marker.active {
+  background: transparent;
+}
+
+@media (max-width: 768px) {
+  .consent-template-field-actions {
+    flex-direction: column;
+  }
+
+  .consent-template-field-actions .button {
+    width: 100%;
+  }
+
+  .template-existing-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

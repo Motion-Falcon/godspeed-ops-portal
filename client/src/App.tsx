@@ -1,7 +1,14 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './components/theme-provider';
 import { AuthProvider } from './contexts/AuthContext';
-import { ProtectedRoute, PublicRoute, JobSeekerRoute, RecruiterRoute, AdminRoute } from './components/ProtectedRoute';
+import {
+  ProtectedRoute,
+  PublicRoute,
+  JobSeekerRoute,
+  RecruiterRoute,
+  AdminRoute,
+  SuperAdminRoute,
+} from './components/ProtectedRoute';
 import { Signup } from './pages/Authentication/Signup';
 import { Login } from './pages/Authentication/Login';
 import { VerificationPending } from './pages/Authentication/VerificationPending';
@@ -65,6 +72,7 @@ import { CalendarPage } from './pages/Calendar/CalendarPage';
 import { ConsentListPage } from './pages/Consent/ConsentListPage';
 import { CreateConsentPage } from './pages/Consent/CreateConsentPage';
 import { ConsentDetailPage } from './pages/Consent/ConsentDetailPage';
+import { ConsentTemplatePage } from './pages/Consent/ConsentTemplatePage';
 import { ConsentPage } from './pages/Consent/ConsentPage';
 import { TermsOfService } from './pages/Legal/TermsOfService';
 import { PrivacyPolicy } from './pages/Legal/PrivacyPolicy';
@@ -148,7 +156,6 @@ function App() {
                   <Route path="/recruiter-hierarchy" element={<RecruiterHierarchy />} />
                   <Route path="/calendar" element={<CalendarPage />} />
                   <Route path="/consent-dashboard" element={<ConsentListPage />} />
-                  <Route path="/consent-dashboard/new" element={<CreateConsentPage />} />
                   <Route path="/consent-dashboard/:documentId" element={<ConsentDetailPage />} />
                   {/* Add more recruiter-specific routes here */}
                 </Route>
@@ -156,6 +163,11 @@ function App() {
                 <Route element={<AdminRoute />}>
                   <Route path="/invite-recruiter" element={<InviteRecruiter />} />
                   <Route path="/admin/dropdown-options" element={<DropdownOptionsManagement />} />
+                  <Route path="/consent-dashboard/new" element={<CreateConsentPage />} />
+                </Route>
+
+                <Route element={<SuperAdminRoute />}>
+                  <Route path="/consent-dashboard/templates" element={<ConsentTemplatePage />} />
                 </Route>
                 
                 <Route element={<JobSeekerRoute />}>

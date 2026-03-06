@@ -1,11 +1,45 @@
 import axios from "axios";
 import { api, API_URL, clearCacheFor } from "./index";
 
+export type ConsentMode = "standard" | "autofill";
+export type ConsentAutofillFieldKey = "consentedName" | "consentDate";
+
+export interface ConsentAutofillField {
+  id?: string;
+  key?: ConsentAutofillFieldKey;
+  fieldType?: ConsentAutofillFieldKey;
+  label?: string;
+  page: number;
+  xPct: number;
+  yPct: number;
+  size?: number;
+}
+
+export interface ConsentTemplate {
+  id: string;
+  templateName: string;
+  templateDescription?: string | null;
+  fileName: string;
+  filePath: string;
+  fieldMappings: ConsentAutofillField[];
+  isActive: boolean;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Consent Document Interface
 export interface ConsentDocument {
   id: string;
   fileName: string;
   filePath: string;
+  consentMode: ConsentMode;
+  autofillFields?: ConsentAutofillField[];
+  templateId?: string | null;
+  consentTemplate?: {
+    id: string;
+    templateName: string;
+  } | null;
   uploadedBy: string;
   createdAt: string;
   updatedAt: string;
@@ -37,6 +71,8 @@ export interface ConsentRecord {
   updatedAt: string;
   entityName?: string;
   entityEmail?: string;
+  filledDocumentFilePath?: string | null;
+  filledDocumentFileName?: string | null;
 }
 
 // Removed ClientOption and JobseekerOption interfaces - now defined in components where needed
@@ -47,6 +83,23 @@ export interface CreateConsentRequestData {
   filePath: string;
   recipientIds: string[];
   recipientType: 'client' | 'jobseeker_profile';
+  consentMode?: ConsentMode;
+  templateId?: string;
+  autofillFields?: ConsentAutofillField[];
+}
+
+export interface ConsentTemplateParams {
+  search?: string;
+  includeInactive?: boolean;
+}
+
+export interface CreateConsentTemplateData {
+  templateName: string;
+  templateDescription?: string;
+  fileName: string;
+  filePath: string;
+  fieldMappings: ConsentAutofillField[];
+  isActive?: boolean;
 }
 
 export interface ConsentDocumentPaginationParams {
@@ -105,6 +158,22 @@ export interface ConsentRequestResponse {
   message: string;
   document: ConsentDocument;
   recordCount: number;
+}
+
+export interface ConsentTemplateListResponse {
+  templates: ConsentTemplate[];
+}
+
+export interface ConsentTemplateCreateResponse {
+  success: boolean;
+  message: string;
+  template: ConsentTemplate;
+}
+
+export interface ConsentTemplateDeleteResponse {
+  success: boolean;
+  message: string;
+  deletedId: string;
 }
 
 export interface ResendConsentResponse {
@@ -198,6 +267,59 @@ export const createConsentRequest = async (
 };
 
 /**
+ * Get consent autofill templates
+ */
+export const getConsentTemplates = async (
+  params: ConsentTemplateParams = {}
+): Promise<ConsentTemplateListResponse> => {
+  try {
+    const url = new URL("/api/consent/templates", API_URL);
+    if (params.search) url.searchParams.append("search", params.search);
+    if (params.includeInactive) url.searchParams.append("includeInactive", "true");
+
+    const response = await api.get(url.pathname + url.search);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching consent templates:", error);
+    throw error;
+  }
+};
+
+/**
+ * Create consent autofill template
+ */
+export const createConsentTemplate = async (
+  requestData: CreateConsentTemplateData
+): Promise<ConsentTemplateCreateResponse> => {
+  try {
+    const response = await api.post("/api/consent/templates", requestData);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(error.response.data.error || "Failed to create consent template");
+    }
+    throw error;
+  }
+};
+
+/**
+ * Delete consent autofill template
+ */
+export const deleteConsentTemplate = async (
+  templateId: string
+): Promise<ConsentTemplateDeleteResponse> => {
+  try {
+    const response = await api.delete(`/api/consent/templates/${templateId}`);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(error.response.data.error || "Failed to delete consent template");
+    }
+    throw error;
+  }
+};
+
+/**
  * Resend consent emails
  */
 export const resendConsentEmails = async (
@@ -265,6 +387,9 @@ export interface ConsentRecordWithDocument {
     id: string;
     file_name: string;
     file_path: string;
+    consent_mode: ConsentMode;
+    autofill_fields?: ConsentAutofillField[];
+    template_id?: string | null;
     uploaded_by: string;
     created_at: string;
     updated_at: string;
