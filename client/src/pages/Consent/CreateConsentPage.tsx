@@ -499,25 +499,6 @@ export function CreateConsentPage() {
     }));
   };
 
-  // Filter recipients based on search term
-  const filteredRecipients = availableRecipients.filter((recipient) => {
-    if (!recipientSearch) return true;
-
-    const searchLower = recipientSearch.toLowerCase();
-    const name = getRecipientDisplayName(recipient).toLowerCase();
-    const email = getRecipientDisplayEmail(recipient).toLowerCase();
-
-    return name.includes(searchLower) || email.includes(searchLower);
-  });
-
-  const areAllSelected =
-    filteredRecipients.length > 0 &&
-    filteredRecipients.every((recipient) =>
-      step3Data.selectedRecipients.some(
-        (selected) => selected.id === recipient.id
-      )
-    );
-
   const getRecipientDisplayName = (
     recipient: ClientOption | JobseekerOption
   ): string => {
@@ -537,6 +518,25 @@ export function CreateConsentPage() {
       return recipient.email;
     }
   };
+
+  // Filter recipients based on search term
+  const filteredRecipients = availableRecipients.filter((recipient) => {
+    if (!recipientSearch) return true;
+
+    const searchLower = recipientSearch.toLowerCase();
+    const name = getRecipientDisplayName(recipient).toLowerCase();
+    const email = getRecipientDisplayEmail(recipient).toLowerCase();
+
+    return name.includes(searchLower) || email.includes(searchLower);
+  });
+
+  const areAllSelected =
+    filteredRecipients.length > 0 &&
+    filteredRecipients.every((recipient) =>
+      step3Data.selectedRecipients.some(
+        (selected) => selected.id === recipient.id
+      )
+    );
 
   const handleSubmit = async () => {
     if (step3Data.selectedRecipients.length === 0) {
