@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, Plus, Search, ChevronLeft, ChevronRight, FileText, Calendar, User, Building2, UserCircle } from 'lucide-react';
-import { getConsentDocuments, ConsentDocument } from '../../services/api/consent';
+import { getConsentDocuments, ConsentDocument, type ConsentMode } from '../../services/api/consent';
 import { AppHeader } from '../../components/AppHeader';
+import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/language/language-provider';
 import { getClickableRowProps } from '../../hooks/useClickableTableRow';
 import '../../styles/components/CommonTable.css';
@@ -20,6 +21,7 @@ interface PaginationInfo {
 
 export function ConsentListPage() {
   const { t } = useLanguage();
+  const { isSuperAdmin } = useAuth();
   // State management
   const [documents, setDocuments] = useState<ConsentDocument[]>([]);
   const [loading, setLoading] = useState(true);
@@ -87,6 +89,12 @@ export function ConsentListPage() {
       default:
         return { text: 'Unknown', icon: <User size={14} /> };
     }
+  };
+
+  const getConsentModeDisplay = (document: ConsentDocument): string => {
+    return document.consentMode === "autofill"
+      ? t("consent.mode.autofill")
+      : t("consent.mode.standard");
   };
 
   // Utility functions
@@ -187,15 +195,17 @@ export function ConsentListPage() {
     navigate('/consent-dashboard/new');
   };
 
-  const handleViewDocument = (id: string) => {
-    navigate(`/consent-dashboard/${id}`);
+  const handleViewDocument = (id: string, consentMode: ConsentMode) => {
+    navigate(`/consent-dashboard/${id}`, {
+      state: { consentMode },
+    });
   };
 
   return (
     <div className="page-container">
       <AppHeader
         title="Consent Management"
-        actions={
+        actions={isSuperAdmin ? (
           <button 
             className="button primary button-icon" 
             onClick={handleCreateConsent}
@@ -203,7 +213,7 @@ export function ConsentListPage() {
             <Plus size={16} />
             <span>{t('consent.management.newRequest')}</span>
           </button>
-        }
+        ) : undefined}
         statusMessage={message || error}
         statusType={error ? 'error' : 'success'}
       />
@@ -320,6 +330,16 @@ export function ConsentListPage() {
                   </th>
                   <th>
                     <div className="column-filter">
+                      <div className="column-title">{t("consent.table.consentType")}</div>
+                      <div className="column-search">
+                        <div className="actions-info">
+                          <span className="actions-help-text">{t("consent.table.viewDetails")}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </th>
+                  <th>
+                    <div className="column-filter">
                                              <div className="column-title">{t('consent.table.status')}</div>
                       <div className="column-search">
                         <select
@@ -394,6 +414,9 @@ export function ConsentListPage() {
                           <div className="skeleton-text"></div>
                         </td>
                         <td className="skeleton-cell">
+                          <div className="skeleton-text"></div>
+                        </td>
+                        <td className="skeleton-cell">
                           <div className="skeleton-actions">
                             <div className="skeleton-icon skeleton-action-btn"></div>
                           </div>
@@ -403,15 +426,17 @@ export function ConsentListPage() {
                   </>
                 ) : documents.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="empty-state-cell">
+                    <td colSpan={8} className="empty-state-cell">
                       <div className="empty-state">
                                                  <p>{t('consent.management.noDocumentsMatch')}</p>
-                        <button 
-                          className="button primary"
-                          onClick={handleCreateConsent}
-                        >
-                                                     {t('consent.management.createFirstRequest')}
-                        </button>
+                        {isSuperAdmin && (
+                          <button 
+                            className="button primary"
+                            onClick={handleCreateConsent}
+                          >
+                                                       {t('consent.management.createFirstRequest')}
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -419,7 +444,7 @@ export function ConsentListPage() {
                   documents.map(document => (
                     <tr 
                       key={document.id}
-                      {...getClickableRowProps(() => handleViewDocument(document.id))}
+                      {...getClickableRowProps(() => handleViewDocument(document.id, document.consentMode))}
                     >
                       <td className="name-cell">
                         <div className="file-info">
@@ -438,6 +463,13 @@ export function ConsentListPage() {
                           <span className={`recipient-type-badge ${document.recipientType}`}>
                             {getRecipientTypeDisplay(document).icon}
                             {getRecipientTypeDisplay(document).text}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="recipient-type-cell">
+                        <div className="recipient-type-info">
+                          <span className={`recipient-type-badge ${document.consentMode}`}>
+                            {getConsentModeDisplay(document)}
                           </span>
                         </div>
                       </td>
@@ -465,7 +497,7 @@ export function ConsentListPage() {
                             className="action-icon-btn view-btn"
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleViewDocument(document.id);
+                              handleViewDocument(document.id, document.consentMode);
                             }}
                                                          title={t('consent.common.viewConsentDetails')}
                              aria-label={t('consent.common.viewConsentDetails')}

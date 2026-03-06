@@ -301,6 +301,26 @@
   gap: var(--spacing-2);
 }
 
+.recipient-document-pending {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #f59e0b;
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-tiny);
+}
+
+.recipient-document-pending .status-icon.pending {
+  width: 14px;
+  height: 14px;
+}
+
+.recipient-signed-consent-btn {
+  white-space: nowrap;
+  padding: 4px 10px;
+  font-size: var(--font-size-tiny);
+}
+
 .user-with-icon {
   display: flex;
   align-items: center;
@@ -364,7 +384,17 @@
   color: #22c55e;
 }
 
-.recipient-type-badge:not(.client):not(.jobseeker_profile) {
+.recipient-type-badge.standard {
+  background: rgba(107, 114, 128, 0.12);
+  color: #4b5563;
+}
+
+.recipient-type-badge.autofill {
+  background: rgba(14, 165, 233, 0.14);
+  color: #0369a1;
+}
+
+.recipient-type-badge:not(.client):not(.jobseeker_profile):not(.standard):not(.autofill) {
   background: rgba(0, 0, 0, 0.05);
   color: var(--text-muted);
 }

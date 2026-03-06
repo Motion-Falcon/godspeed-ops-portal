@@ -13,6 +13,7 @@ import {
   logoutUser,
   UserRole,
   getUserType,
+  isSuperAdmin,
   isAdmin,
   isRecruiter,
   isJobSeeker,
@@ -34,6 +35,7 @@ type AuthContextType = {
   isLoading: boolean;
   isAuthenticated: boolean;
   userType: UserRole;
+  isSuperAdmin: boolean;
   isAdmin: boolean;
   isRecruiter: boolean;
   isJobSeeker: boolean;
@@ -48,6 +50,7 @@ const AuthContext = createContext<AuthContextType>({
   isLoading: true,
   isAuthenticated: false,
   userType: "jobseeker",
+  isSuperAdmin: false,
   isAdmin: false,
   isRecruiter: false,
   isJobSeeker: true,
@@ -72,6 +75,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Compute user type and role flags with memoization to prevent unnecessary re-renders
   const userType = useMemo(() => getUserType(user), [user]);
+  const isUserSuperAdmin = useMemo(() => isSuperAdmin(user), [user]);
   const isUserAdmin = useMemo(() => isAdmin(user), [user]);
   const isUserRecruiter = useMemo(() => isRecruiter(user), [user]);
   const isUserJobSeeker = useMemo(() => isJobSeeker(user), [user]);
@@ -220,6 +224,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         isLoading,
         isAuthenticated: !!user,
         userType,
+        isSuperAdmin: isUserSuperAdmin,
         isAdmin: isUserAdmin,
         isRecruiter: isUserRecruiter,
         isJobSeeker: isUserJobSeeker,
