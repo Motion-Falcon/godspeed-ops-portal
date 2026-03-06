@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
   ArrowLeft,
   Send,
@@ -42,6 +42,7 @@ export function ConsentDetailPage() {
   const { t } = useLanguage();
   const { documentId } = useParams<{ documentId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
 
   // State management
   const [document, setDocument] = useState<ConsentDocument | null>(null);
@@ -79,6 +80,7 @@ export function ConsentDetailPage() {
   const [showPdfModal, setShowPdfModal] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [loadingPdf, setLoadingPdf] = useState(false);
+  const [pdfDocumentName, setPdfDocumentName] = useState<string>("");
 
   // Record details state
   const [isRecordDetailModalOpen, setIsRecordDetailModalOpen] = useState(false);
@@ -157,10 +159,46 @@ export function ConsentDetailPage() {
       const signedUrl = await getSignedUrl(document.filePath);
       if (signedUrl) {
         setPdfUrl(signedUrl);
+        setPdfDocumentName(document.fileName);
         setShowPdfModal(true);
       } else {
         setError(t("consent.detail.failedToGeneratePreview"));
       }
+    } catch (err) {
+      setError(t("consent.detail.failedToLoadPreview"));
+    } finally {
+      setLoadingPdf(false);
+    }
+  };
+
+  const handlePreviewRecipientDocument = async (
+    record: ConsentRecord,
+    event: React.MouseEvent<HTMLButtonElement>
+  ) => {
+    event.stopPropagation();
+
+    if (!record.filledDocumentFilePath) {
+      setMessage(t("consent.detail.recipientDocumentNotReady"));
+      setTimeout(() => setMessage(null), 3000);
+      return;
+    }
+
+    setLoadingPdf(true);
+    setError(null);
+
+    try {
+      const signedUrl = await getSignedUrl(record.filledDocumentFilePath);
+      if (!signedUrl) {
+        setError(t("consent.detail.failedToGeneratePreview"));
+        return;
+      }
+
+      setPdfUrl(signedUrl);
+      setPdfDocumentName(
+        record.filledDocumentFileName ||
+          `${record.entityName || t("consent.common.unknown")} - ${document?.fileName || "Consent"}`
+      );
+      setShowPdfModal(true);
     } catch (err) {
       setError(t("consent.detail.failedToLoadPreview"));
     } finally {
@@ -222,6 +260,14 @@ export function ConsentDetailPage() {
     records.length > 0 && selectedRecords.size === records.length;
   const isIndeterminate =
     selectedRecords.size > 0 && selectedRecords.size < records.length;
+  const consentModeFromNavigation =
+    (location.state as { consentMode?: string } | null)?.consentMode;
+  const isAutofillConsent = document
+    ? document.consentMode === "autofill"
+    : consentModeFromNavigation === "autofill";
+  const hasPendingRecipientDocument =
+    isAutofillConsent &&
+    records.some((record) => !record.filledDocumentFilePath);
 
   // Fetch consent records with filters
   const fetchRecords = useCallback(async () => {
@@ -504,6 +550,22 @@ export function ConsentDetailPage() {
                       </div>
                     </div>
                   </th>
+                  {isAutofillConsent && (
+                    <th>
+                      <div className="column-filter">
+                        <div className="column-title">
+                          {t("consent.detail.table.recipientDocument")}
+                        </div>
+                        <div className="column-search">
+                          {hasPendingRecipientDocument && (
+                            <span className="column-info">
+                              {t("consent.detail.recipientDocumentNotReady")}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </th>
+                  )}
                   <th>
                     <div className="column-filter">
                       <div className="column-title">{t("consent.detail.table.type")}</div>
@@ -581,6 +643,11 @@ export function ConsentDetailPage() {
                           <td className="skeleton-cell">
                             <div className="skeleton-text"></div>
                           </td>
+                          {isAutofillConsent && (
+                            <td className="skeleton-cell">
+                              <div className="skeleton-text"></div>
+                            </td>
+                          )}
                           <td className="skeleton-cell">
                             <div className="skeleton-text"></div>
                           </td>
@@ -599,7 +666,10 @@ export function ConsentDetailPage() {
                   </>
                 ) : records.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="empty-state-cell">
+                    <td
+                      colSpan={isAutofillConsent ? 8 : 7}
+                      className="empty-state-cell"
+                    >
                       <div className="empty-state">
                         <p>{t("consent.detail.emptyState")}</p>
                       </div>
@@ -633,6 +703,28 @@ export function ConsentDetailPage() {
                         </div>
                       </td>
                       <td>{record.entityEmail || t("consent.common.notAvailable")}</td>
+                      {isAutofillConsent && (
+                        <td onClick={(e) => e.stopPropagation()}>
+                          {record.filledDocumentFilePath ? (
+                            <button
+                              type="button"
+                              className="button secondary recipient-signed-consent-btn"
+                              onClick={(event) =>
+                                handlePreviewRecipientDocument(record, event)
+                              }
+                              title={t("consent.detail.viewSignedConsent")}
+                              aria-label={t("consent.detail.viewSignedConsent")}
+                            >
+                              {t("consent.detail.viewSignedConsent")}
+                            </button>
+                          ) : (
+                            <span className="recipient-document-pending">
+                              <Clock size={14} className="status-icon pending" />
+                              <span>{t("consent.detail.recipientDocumentNotReady")}</span>
+                            </span>
+                          )}
+                        </td>
+                      )}
                       <td>
                         <span
                           className={`type-badge ${record.consentableType}`}
@@ -752,11 +844,12 @@ export function ConsentDetailPage() {
       {showPdfModal && document && pdfUrl && (
         <PDFViewerModal
           pdfUrl={pdfUrl}
-          documentName={document.fileName}
+          documentName={pdfDocumentName || document.fileName}
           isOpen={showPdfModal}
           onClose={() => {
             setShowPdfModal(false);
             setPdfUrl(null);
+            setPdfDocumentName("");
           }}
         />
       )}

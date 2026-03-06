@@ -39,6 +39,27 @@ export function hasRole(user: User | null, role: UserRole): boolean {
   return getUserType(user) === role;
 }
 
+// Get metadata role array from user.user_metadata.user_role
+export function getUserRoles(user: User | null): string[] {
+  if (!user) return [];
+
+  const metadata = user.user_metadata || {};
+  const rawRoles = (metadata as Record<string, unknown>).user_role;
+  if (!Array.isArray(rawRoles)) return [];
+
+  return rawRoles.filter((role): role is string => typeof role === "string");
+}
+
+// Check if user has a metadata role from user_role[]
+export function hasUserRole(user: User | null, role: string): boolean {
+  return getUserRoles(user).includes(role);
+}
+
+// Check if user is super admin from user_role[]
+export function isSuperAdmin(user: User | null): boolean {
+  return hasUserRole(user, "superadmin");
+}
+
 // Check if user is admin
 export function isAdmin(user: User | null): boolean {
   return getUserType(user) === 'admin';

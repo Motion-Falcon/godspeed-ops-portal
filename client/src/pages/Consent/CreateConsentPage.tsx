@@ -13,7 +13,14 @@ import {
   Clock,
   ArrowRight,
 } from "lucide-react";
-import { createConsentRequest, getConsentDocuments } from "../../services/api/consent";
+import {
+  createConsentRequest,
+  getConsentDocuments,
+  getConsentTemplates,
+  type ConsentTemplate,
+  type ConsentMode,
+  type CreateConsentRequestData,
+} from "../../services/api/consent";
 import { getClients } from "../../services/api/client";
 import { getJobseekerProfiles } from "../../services/api/jobseeker";
 import { AppHeader } from "../../components/AppHeader";
@@ -65,6 +72,10 @@ interface ExistingDocument {
   signedUrl?: string | null;
 }
 
+interface ExistingTemplate extends ConsentTemplate {
+  signedUrl?: string | null;
+}
+
 export function CreateConsentPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -109,8 +120,14 @@ export function CreateConsentPage() {
   const [showRecipientModal, setShowRecipientModal] = useState(false);
 
   // PDF preview state
-  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [standardPdfUrl, setStandardPdfUrl] = useState<string | null>(null);
+  const [templatePdfUrl, setTemplatePdfUrl] = useState<string | null>(null);
   const [showPdfModal, setShowPdfModal] = useState(false);
+  const [consentMode, setConsentMode] = useState<ConsentMode>("standard");
+  const [existingTemplates, setExistingTemplates] = useState<ExistingTemplate[]>([]);
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
+  const [templateSearch, setTemplateSearch] = useState("");
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
 
   // Reset form when component mounts
   useEffect(() => {
@@ -128,16 +145,25 @@ export function CreateConsentPage() {
     setError(null);
     setMessage(null);
     setDocumentSource("existing");
+    setConsentMode("standard");
+    setStandardPdfUrl(null);
+    setTemplatePdfUrl(null);
+    setExistingTemplates([]);
+    setTemplateSearch("");
+    setSelectedTemplateId(null);
   }, []);
 
   // Cleanup PDF URL when component unmounts
   useEffect(() => {
     return () => {
-      if (pdfUrl && pdfUrl.startsWith("blob:")) {
-        URL.revokeObjectURL(pdfUrl);
+      if (standardPdfUrl && standardPdfUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(standardPdfUrl);
+      }
+      if (templatePdfUrl && templatePdfUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(templatePdfUrl);
       }
     };
-  }, [pdfUrl]);
+  }, [standardPdfUrl, templatePdfUrl]);
 
   // Fetch existing consent documents uploaded by current user
   const fetchExistingDocuments = useCallback(async () => {
@@ -196,11 +222,37 @@ export function CreateConsentPage() {
     }
   }, [user?.id, t]);
 
+  const fetchExistingTemplates = useCallback(async () => {
+    setLoadingTemplates(true);
+    try {
+      const response = await getConsentTemplates();
+      setExistingTemplates(response.templates);
+    } catch (err) {
+      console.error("Error fetching consent templates:", err);
+      setError(t("consent.templates.messages.failedToFetchTemplates"));
+    } finally {
+      setLoadingTemplates(false);
+    }
+  }, [t]);
+
   // Filter existing documents based on search
   const filteredDocuments = existingDocuments.filter((doc) => {
     if (!documentSearch) return true;
     const searchLower = documentSearch.toLowerCase();
     return doc.fileName.toLowerCase().includes(searchLower);
+  });
+
+  const selectedTemplate =
+    existingTemplates.find((template) => template.id === selectedTemplateId) || null;
+  const hasSelectedTemplate = !!selectedTemplate;
+
+  const filteredTemplates = existingTemplates.filter((template) => {
+    if (!templateSearch) return true;
+    const searchLower = templateSearch.toLowerCase();
+    return (
+      template.templateName.toLowerCase().includes(searchLower) ||
+      template.fileName.toLowerCase().includes(searchLower)
+    );
   });
 
   const fetchRecipients = useCallback(async () => {
@@ -275,10 +327,23 @@ export function CreateConsentPage() {
 
   // Fetch existing documents when user is available and on step 2
   useEffect(() => {
-    if (user?.id && currentStep === 2) {
+    if (currentStep !== 2) return;
+
+    if (consentMode === "autofill") {
+      fetchExistingTemplates();
+      return;
+    }
+
+    if (user?.id) {
       fetchExistingDocuments();
     }
-  }, [user?.id, currentStep, fetchExistingDocuments]);
+  }, [
+    user?.id,
+    currentStep,
+    consentMode,
+    fetchExistingDocuments,
+    fetchExistingTemplates,
+  ]);
 
   // Fetch recipients when on step 3
   useEffect(() => {
@@ -315,7 +380,7 @@ export function CreateConsentPage() {
 
       // Create URL for PDF preview
       const url = URL.createObjectURL(file);
-      setPdfUrl(url);
+      setStandardPdfUrl(url);
 
       setStep2Data((prev) => ({
         ...prev,
@@ -324,6 +389,8 @@ export function CreateConsentPage() {
         selectedDocumentId: null,
         selectedDocumentPath: null,
       }));
+      setSelectedTemplateId(null);
+      setTemplatePdfUrl(null);
       setDocumentSource("new");
     }
   };
@@ -345,7 +412,7 @@ export function CreateConsentPage() {
       }
     }
 
-    setPdfUrl(previewUrl || null);
+    setStandardPdfUrl(previewUrl || null);
     setStep2Data((prev) => ({
       ...prev,
       file: null,
@@ -353,7 +420,35 @@ export function CreateConsentPage() {
       selectedDocumentId: document.id,
       selectedDocumentPath: document.filePath,
     }));
+    setSelectedTemplateId(null);
+    setTemplatePdfUrl(null);
     setDocumentSource("existing");
+  };
+
+  const handleSelectTemplate = async (template: ExistingTemplate) => {
+    setError(null);
+
+    let previewUrl = template.signedUrl;
+    if (!previewUrl) {
+      try {
+        const decodedPath = template.filePath.replace(/&#x2F;/g, "/");
+        const { data: signedUrlData } = await supabase.storage
+          .from("consent-documents")
+          .createSignedUrl(decodedPath, 300);
+        previewUrl = signedUrlData?.signedUrl || null;
+      } catch (err) {
+        console.error("Error getting signed URL for template:", err);
+      }
+    }
+
+    setExistingTemplates((prev) =>
+      prev.map((item) =>
+        item.id === template.id ? { ...item, signedUrl: previewUrl } : item
+      )
+    );
+
+    setSelectedTemplateId(template.id);
+    setTemplatePdfUrl(previewUrl || null);
   };
 
   const handleRecipientSelect = (recipient: ClientOption | JobseekerOption) => {
@@ -444,17 +539,6 @@ export function CreateConsentPage() {
   };
 
   const handleSubmit = async () => {
-    // Validate document selection
-    if (documentSource === "new" && !step2Data.file) {
-      setError(t("consent.create.messages.selectDocument"));
-      return;
-    }
-
-    if (documentSource === "existing" && !step2Data.selectedDocumentPath) {
-      setError(t("consent.create.messages.selectDocument"));
-      return;
-    }
-
     if (step3Data.selectedRecipients.length === 0) {
       setError(t("consent.create.messages.selectRecipients"));
       return;
@@ -463,6 +547,23 @@ export function CreateConsentPage() {
     if (!step1Data.recipientType) {
       setError(t("consent.create.messages.invalidRecipientType"));
       return;
+    }
+
+    if (consentMode === "autofill" && !hasSelectedTemplate) {
+      setError(t("consent.templates.messages.selectTemplate"));
+      return;
+    }
+
+    if (consentMode === "standard") {
+      if (documentSource === "new" && !step2Data.file) {
+        setError(t("consent.create.messages.selectDocument"));
+        return;
+      }
+
+      if (documentSource === "existing" && !step2Data.selectedDocumentPath) {
+        setError(t("consent.create.messages.selectDocument"));
+        return;
+      }
     }
 
     if (!user?.id) {
@@ -475,37 +576,46 @@ export function CreateConsentPage() {
 
     try {
       let filePath: string;
+      let fileName: string;
 
-      if (documentSource === "existing" && step2Data.selectedDocumentPath) {
-        // Use existing document path
-        filePath = step2Data.selectedDocumentPath;
-      } else if (step2Data.file) {
-        // Upload new file to Supabase storage
-        const fileToUpload = step2Data.file;
-        const fileExt = fileToUpload.name.split(".").pop();
-        const uniqueFileName = `${crypto.randomUUID()}.${fileExt}`;
-        const uploadPath = `${user.id}/${Date.now()}/${uniqueFileName}`;
-
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from("consent-documents")
-          .upload(uploadPath, fileToUpload);
-
-        if (uploadError) {
-          console.error("Supabase upload error:", uploadError);
-          throw new Error(`Failed to upload document: ${uploadError.message}`);
-        }
-
-        filePath = uploadData?.path || uploadPath;
+      if (consentMode === "autofill" && selectedTemplate) {
+        filePath = selectedTemplate.filePath;
+        fileName = selectedTemplate.fileName;
       } else {
-        throw new Error(t("consent.create.messages.selectDocument"));
+        if (documentSource === "existing" && step2Data.selectedDocumentPath) {
+          // Use existing document path
+          filePath = step2Data.selectedDocumentPath;
+        } else if (step2Data.file) {
+          // Upload new file to Supabase storage
+          const fileToUpload = step2Data.file;
+          const fileExt = fileToUpload.name.split(".").pop();
+          const uniqueFileName = `${crypto.randomUUID()}.${fileExt}`;
+          const uploadPath = `${user.id}/${Date.now()}/${uniqueFileName}`;
+
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from("consent-documents")
+            .upload(uploadPath, fileToUpload);
+
+          if (uploadError) {
+            console.error("Supabase upload error:", uploadError);
+            throw new Error(`Failed to upload document: ${uploadError.message}`);
+          }
+
+          filePath = uploadData?.path || uploadPath;
+        } else {
+          throw new Error(t("consent.create.messages.selectDocument"));
+        }
+        fileName = step2Data.fileName;
       }
 
       // Create the consent request with the file path
-      const requestData = {
-        fileName: step2Data.fileName,
+      const requestData: CreateConsentRequestData = {
+        fileName,
         filePath: filePath,
         recipientIds: step3Data.selectedRecipients.map((r) => r.id),
         recipientType: step1Data.recipientType,
+        consentMode,
+        templateId: consentMode === "autofill" ? selectedTemplate?.id : undefined,
       };
 
       await createConsentRequest(requestData);
@@ -539,20 +649,39 @@ export function CreateConsentPage() {
   };
 
   const handleStep2Next = () => {
-    // Validate document selection before moving to step 3
-    if (documentSource === "new" && !step2Data.file) {
-      setError(t("consent.create.messages.selectDocument"));
-      return;
-    }
+    if (consentMode === "autofill") {
+      if (!hasSelectedTemplate) {
+        setError(t("consent.templates.messages.selectTemplate"));
+        return;
+      }
+    } else {
+      // Validate document selection before moving to step 3
+      if (documentSource === "new" && !step2Data.file) {
+        setError(t("consent.create.messages.selectDocument"));
+        return;
+      }
 
-    if (documentSource === "existing" && !step2Data.selectedDocumentPath) {
-      setError(t("consent.create.messages.selectDocument"));
-      return;
+      if (documentSource === "existing" && !step2Data.selectedDocumentPath) {
+        setError(t("consent.create.messages.selectDocument"));
+        return;
+      }
     }
 
     setError(null);
     setCurrentStep(3);
   };
+
+  const isStep2Ready =
+    consentMode === "autofill"
+      ? hasSelectedTemplate
+      : (documentSource === "new" && !!step2Data.file) ||
+        (documentSource === "existing" && !!step2Data.selectedDocumentPath);
+
+  const previewUrl = consentMode === "autofill" ? templatePdfUrl : standardPdfUrl;
+  const previewDocumentName =
+    consentMode === "autofill"
+      ? selectedTemplate?.fileName || t("consent.create.defaultDocumentName")
+      : step2Data.fileName || t("consent.create.defaultDocumentName");
 
   return (
     <div className="page-container">
@@ -674,14 +803,11 @@ export function CreateConsentPage() {
                        {t("consent.create.step2.description")}
                      </p>
                    </div>
-                   <button
-                     className="button primary button-icon"
-                     onClick={handleStep2Next}
-                     disabled={
-                       (documentSource === "new" && !step2Data.file) ||
-                       (documentSource === "existing" && !step2Data.selectedDocumentPath)
-                     }
-                   >
+                    <button
+                      className="button primary button-icon"
+                      onClick={handleStep2Next}
+                      disabled={!isStep2Ready}
+                    >
                      <span>{t("consent.create.step2.next")}</span>
                      <ArrowRight size={16} />
                    </button>
@@ -694,93 +820,225 @@ export function CreateConsentPage() {
                         <label className="form-label">
                           <Upload size={16} />
                           <span>
-                            {t("consent.create.step2.uploadDocument")}
+                            {consentMode === "autofill"
+                              ? t("consent.create.step2.selectTemplateLabel")
+                              : t("consent.create.step2.uploadDocument")}
                           </span>
                         </label>
 
-                        {/* Document Source Selection */}
-                        <div className="document-source-selection">
-                          <button
-                            type="button"
-                            className={`source-toggle-btn ${documentSource === "new" ? "active" : ""}`}
-                            onClick={() => {
-                              setDocumentSource("new");
-                              setStep2Data((prev) => ({
-                                ...prev,
-                                selectedDocumentId: null,
-                                selectedDocumentPath: null,
-                                file: null,
-                                fileName: "",
-                              }));
-                              setPdfUrl(null);
-                              setError(null);
-                            }}
-                          >
-                            <Upload size={16} />
-                            <span>{t("consent.create.step2.uploadNew")}</span>
-                          </button>
-                          <button
-                            type="button"
-                            className={`source-toggle-btn ${documentSource === "existing" ? "active" : ""}`}
-                            onClick={() => {
-                              setDocumentSource("existing");
-                              setStep2Data((prev) => ({
-                                ...prev,
-                                file: null,
-                                fileName: "",
-                              }));
-                              setPdfUrl(null);
-                              setError(null);
-                            }}
-                          >
-                            <History size={16} />
-                            <span>{t("consent.create.step2.useExisting")}</span>
-                          </button>
+                        <div className="consent-mode-selection">
+                          <div className="consent-mode-label">
+                            {t("consent.create.step2.consentTypeLabel")}
+                          </div>
+                          <div className="consent-mode-options">
+                            <button
+                              type="button"
+                              className={`consent-mode-card ${
+                                consentMode === "standard" ? "active" : ""
+                              }`}
+                              onClick={() => {
+                                setConsentMode("standard");
+                                setError(null);
+                              }}
+                            >
+                              <span className="consent-mode-title">
+                                {t("consent.create.step2.modeStandardTitle")}
+                              </span>
+                              <span className="consent-mode-description">
+                                {t("consent.create.step2.modeStandardDescription")}
+                              </span>
+                            </button>
+                            <button
+                              type="button"
+                              className={`consent-mode-card ${
+                                consentMode === "autofill" ? "active" : ""
+                              }`}
+                              onClick={() => {
+                                setConsentMode("autofill");
+                                setError(null);
+                              }}
+                            >
+                              <span className="consent-mode-title">
+                                {t("consent.create.step2.modeAutofillTitle")}
+                              </span>
+                              <span className="consent-mode-description">
+                                {t("consent.create.step2.modeAutofillDescription")}
+                              </span>
+                            </button>
+                          </div>
                         </div>
 
-                        {/* Existing Documents Selection */}
-                        {documentSource === "existing" && (
+                        {consentMode === "standard" ? (
+                          <>
+                            {/* Document Source Selection */}
+                            <div className="document-source-selection">
+                              <button
+                                type="button"
+                                className={`source-toggle-btn ${documentSource === "new" ? "active" : ""}`}
+                                onClick={() => {
+                                  setDocumentSource("new");
+                                  setStep2Data((prev) => ({
+                                    ...prev,
+                                    selectedDocumentId: null,
+                                    selectedDocumentPath: null,
+                                    file: null,
+                                    fileName: "",
+                                  }));
+                                  setStandardPdfUrl(null);
+                                  setError(null);
+                                }}
+                              >
+                                <Upload size={16} />
+                                <span>{t("consent.create.step2.uploadNew")}</span>
+                              </button>
+                              <button
+                                type="button"
+                                className={`source-toggle-btn ${documentSource === "existing" ? "active" : ""}`}
+                                onClick={() => {
+                                  setDocumentSource("existing");
+                                  setStep2Data((prev) => ({
+                                    ...prev,
+                                    file: null,
+                                    fileName: "",
+                                  }));
+                                  setStandardPdfUrl(null);
+                                  setError(null);
+                                }}
+                              >
+                                <History size={16} />
+                                <span>{t("consent.create.step2.useExisting")}</span>
+                              </button>
+                            </div>
+
+                            {/* Existing Documents Selection */}
+                            {documentSource === "existing" && (
+                              <div className="existing-documents-section">
+                                <div className="search-box">
+                                  <Search size={16} className="search-icon" />
+                                  <input
+                                    type="text"
+                                    placeholder={t("consent.create.step2.searchDocuments")}
+                                    value={documentSearch}
+                                    onChange={(e) => setDocumentSearch(e.target.value)}
+                                    className="search-input"
+                                  />
+                                </div>
+                                {loadingDocuments ? (
+                                  <div className="loading-state">
+                                    {t("consent.create.step2.loadingDocuments")}
+                                  </div>
+                                ) : filteredDocuments.length === 0 ? (
+                                  <div className="empty-state">
+                                    {documentSearch
+                                      ? t("consent.create.step2.noDocumentsMatch")
+                                      : t("consent.create.step2.noDocumentsFound")}
+                                  </div>
+                                ) : (
+                                  <div className="existing-documents-list">
+                                    {filteredDocuments.map((doc) => {
+                                      const isSelected = step2Data.selectedDocumentId === doc.id;
+                                      return (
+                                        <div
+                                          key={doc.id}
+                                          className={`existing-document-item ${isSelected ? "selected" : ""}`}
+                                          onClick={() => handleSelectExistingDocument(doc)}
+                                        >
+                                          <div className="document-item-icon">
+                                            <FileText size={20} />
+                                          </div>
+                                          <div className="document-item-info">
+                                            <div className="document-item-name">{doc.fileName}</div>
+                                            <div className="document-item-date">
+                                              <Clock size={12} />
+                                              <span>
+                                                {new Date(doc.createdAt).toLocaleDateString()}
+                                              </span>
+                                            </div>
+                                          </div>
+                                          {isSelected && (
+                                            <div className="selected-indicator">
+                                              <FileCheck size={20} />
+                                            </div>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {/* New File Upload */}
+                            {documentSource === "new" && (
+                              <div className="file-upload-area">
+                                <input
+                                  type="file"
+                                  id="document-upload"
+                                  accept=".pdf"
+                                  onChange={handleFileChange}
+                                  className="file-input"
+                                />
+                                <label
+                                  htmlFor="document-upload"
+                                  className="file-upload-label"
+                                >
+                                  <Upload size={24} />
+                                  <div className="upload-text">
+                                    <span className="primary-text">
+                                      {step2Data.file
+                                        ? step2Data.file.name
+                                        : t("consent.create.step2.clickToUpload")}
+                                    </span>
+                                    <span className="secondary-text">
+                                      {step2Data.file
+                                        ? t("consent.create.step2.clickToReplace")
+                                        : t("consent.create.step2.pdfOnly")}
+                                    </span>
+                                  </div>
+                                </label>
+                              </div>
+                            )}
+                          </>
+                        ) : (
                           <div className="existing-documents-section">
                             <div className="search-box">
                               <Search size={16} className="search-icon" />
                               <input
                                 type="text"
-                                placeholder={t("consent.create.step2.searchDocuments")}
-                                value={documentSearch}
-                                onChange={(e) => setDocumentSearch(e.target.value)}
+                                placeholder={t("consent.templates.searchTemplates")}
+                                value={templateSearch}
+                                onChange={(e) => setTemplateSearch(e.target.value)}
                                 className="search-input"
                               />
                             </div>
-                            {loadingDocuments ? (
+                            {loadingTemplates ? (
                               <div className="loading-state">
-                                {t("consent.create.step2.loadingDocuments")}
+                                {t("consent.templates.loadingTemplates")}
                               </div>
-                            ) : filteredDocuments.length === 0 ? (
+                            ) : filteredTemplates.length === 0 ? (
                               <div className="empty-state">
-                                {documentSearch
-                                  ? t("consent.create.step2.noDocumentsMatch")
-                                  : t("consent.create.step2.noDocumentsFound")}
+                                {t("consent.templates.noTemplatesFound")}
                               </div>
                             ) : (
                               <div className="existing-documents-list">
-                                {filteredDocuments.map((doc) => {
-                                  const isSelected = step2Data.selectedDocumentId === doc.id;
+                                {filteredTemplates.map((template) => {
+                                  const isSelected = selectedTemplateId === template.id;
                                   return (
                                     <div
-                                      key={doc.id}
+                                      key={template.id}
                                       className={`existing-document-item ${isSelected ? "selected" : ""}`}
-                                      onClick={() => handleSelectExistingDocument(doc)}
+                                      onClick={() => handleSelectTemplate(template)}
                                     >
                                       <div className="document-item-icon">
                                         <FileText size={20} />
                                       </div>
                                       <div className="document-item-info">
-                                        <div className="document-item-name">{doc.fileName}</div>
+                                        <div className="document-item-name">
+                                          {template.templateName}
+                                        </div>
                                         <div className="document-item-date">
                                           <Clock size={12} />
-                                          <span>
-                                            {new Date(doc.createdAt).toLocaleDateString()}
-                                          </span>
+                                          <span>{template.fileName}</span>
                                         </div>
                                       </div>
                                       {isSelected && (
@@ -795,37 +1053,6 @@ export function CreateConsentPage() {
                             )}
                           </div>
                         )}
-
-                        {/* New File Upload */}
-                        {documentSource === "new" && (
-                          <div className="file-upload-area">
-                            <input
-                              type="file"
-                              id="document-upload"
-                              accept=".pdf"
-                              onChange={handleFileChange}
-                              className="file-input"
-                            />
-                            <label
-                              htmlFor="document-upload"
-                              className="file-upload-label"
-                            >
-                              <Upload size={24} />
-                              <div className="upload-text">
-                                <span className="primary-text">
-                                  {step2Data.file
-                                    ? step2Data.file.name
-                                    : t("consent.create.step2.clickToUpload")}
-                                </span>
-                                <span className="secondary-text">
-                                  {step2Data.file
-                                    ? t("consent.create.step2.clickToReplace")
-                                    : t("consent.create.step2.pdfOnly")}
-                                </span>
-                              </div>
-                            </label>
-                          </div>
-                        )}
                       </div>
                     </div>
 
@@ -835,13 +1062,22 @@ export function CreateConsentPage() {
                         <label className="form-label">
                           <FileText size={16} />
                           <span>
-                            {t("consent.create.step2.documentPreview")}
+                            {consentMode === "autofill"
+                              ? t("consent.create.step2.templateSelectionTitle")
+                              : t("consent.create.step2.documentPreview")}
                           </span>
                         </label>
-                        {(step2Data.file || step2Data.selectedDocumentPath) && pdfUrl ? (
+                        {previewUrl ? (
                           <div className="pdf-preview-container-large">
+                            {consentMode === "autofill" && selectedTemplate && (
+                              <div className="template-mapper-hint">
+                                {t("consent.create.step2.templateSelectedHint", {
+                                  template: selectedTemplate.templateName,
+                                })}
+                              </div>
+                            )}
                             <PDFThumbnail
-                              pdfUrl={pdfUrl}
+                              pdfUrl={previewUrl}
                               onClick={() => setShowPdfModal(true)}
                             />
                             <div className="preview-actions">
@@ -858,7 +1094,11 @@ export function CreateConsentPage() {
                         ) : (
                           <div className="preview-placeholder">
                             <FileText size={48} />
-                            <p>{t("consent.create.step2.selectDocumentToPreview")}</p>
+                            <p>
+                              {consentMode === "autofill"
+                                ? t("consent.create.step2.selectTemplateToPreview")
+                                : t("consent.create.step2.selectDocumentToPreview")}
+                            </p>
                           </div>
                         )}
                       </div>
@@ -871,10 +1111,7 @@ export function CreateConsentPage() {
                     <button
                       className="button primary button-icon"
                       onClick={handleStep2Next}
-                      disabled={
-                        (documentSource === "new" && !step2Data.file) ||
-                        (documentSource === "existing" && !step2Data.selectedDocumentPath)
-                      }
+                      disabled={!isStep2Ready}
                     >
                       <span>{t("consent.create.step2.next")}</span>
                     </button>
@@ -1113,10 +1350,10 @@ export function CreateConsentPage() {
           )}
 
           {/* PDF Viewer Modal */}
-          {showPdfModal && pdfUrl && (
+          {showPdfModal && previewUrl && (
             <PDFViewerModal
-              pdfUrl={pdfUrl}
-              documentName={step2Data.fileName || t("consent.create.defaultDocumentName")}
+              pdfUrl={previewUrl}
+              documentName={previewDocumentName}
               isOpen={showPdfModal}
               onClose={() => setShowPdfModal(false)}
             />

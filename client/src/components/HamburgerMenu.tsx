@@ -44,6 +44,7 @@ interface MenuItem {
   icon?: JSX.Element;
   submenu?: MenuItem[];
   roles?: ("admin" | "recruiter" | "jobseeker")[];
+  requiresSuperAdmin?: boolean;
   requiresAuth?: boolean;
   onClick?: () => void;
   exact?: boolean; // Whether the path should match exactly
@@ -258,6 +259,7 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
   const {
     user,
     isAuthenticated,
+    isSuperAdmin,
     isAdmin,
     isRecruiter,
     isJobSeeker,
@@ -562,6 +564,14 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
           icon: <FilePlus size={16} />,
           exact: true,
         },
+        {
+          label: t("navigation.consentTemplates"),
+          path: "/consent-dashboard/templates",
+          icon: <ClipboardList size={16} />,
+          exact: true,
+          roles: ["admin"],
+          requiresSuperAdmin: true,
+        },
       ],
     },
     {
@@ -640,6 +650,10 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
   // Filter menu items based on authentication status and user role
   const getFilteredMenuItems = (): MenuItem[] => {
     return allMenuItems.filter((item) => {
+      if (item.requiresSuperAdmin && !isSuperAdmin) {
+        return false;
+      }
+
       // Handle authentication requirement
       if (isAuthenticated) {
         if (item.requiresAuth === false) return false; // Don't show login/signup when authenticated
@@ -666,6 +680,10 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
       // Filter submenu items based on user role
       if (item.submenu && item.submenu.length > 0) {
         const filteredSubmenu = item.submenu.filter((subItem) => {
+          if (subItem.requiresSuperAdmin && !isSuperAdmin) {
+            return false;
+          }
+
           // If submenu item has no role restrictions, show it
           if (!subItem.roles || subItem.roles.length === 0) return true;
 

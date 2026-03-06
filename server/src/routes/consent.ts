@@ -1,4 +1,4 @@
-import { Router, Request, Response } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { createClient } from '@supabase/supabase-js';
 import { authenticateToken, authorizeRoles } from '../middleware/auth.js';
 import { sanitizeInputs, apiRateLimiter } from '../middleware/security.js';
@@ -7,6 +7,8 @@ import { emailNotifier } from '../middleware/emailNotifier.js';
 import { consentHtmlTemplate, generateConsentTextTemplate } from '../email-templates/consent-html.js';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
+import { decode } from 'html-entities';
+import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 
 dotenv.config();
 
@@ -22,6 +24,30 @@ if (!supabaseUrl || !supabaseKey) {
 }
 
 const supabase = createClient(supabaseUrl, supabaseKey);
+
+function hasUserMetadataRole(user: Request['user'] | undefined, role: string): boolean {
+  const rawRoles = (user?.user_metadata as Record<string, unknown> | undefined)?.user_role;
+  if (!Array.isArray(rawRoles)) {
+    return false;
+  }
+
+  return rawRoles.some((userRole) => typeof userRole === 'string' && userRole === role);
+}
+
+function requireSuperAdmin(req: Request, res: Response, next: NextFunction) {
+  if (!req.user) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+
+  if (!hasUserMetadataRole(req.user, 'super_admin')) {
+    return res.status(403).json({
+      error: 'Access denied',
+      message: 'Only super admins can create consent requests'
+    });
+  }
+
+  return next();
+}
 
 /**
  * Convert snake_case to camelCase
@@ -75,6 +101,223 @@ function generateConsentEmail(recipientName: string, documentName: string, conse
     subject: `Digital Consent Request: ${documentName}`,
     html: consentHtmlTemplate(templateVars),
     text: generateConsentTextTemplate(templateVars)
+  };
+}
+
+type ConsentMode = 'standard' | 'autofill';
+type ConsentAutofillFieldType = 'consentedName' | 'consentDate';
+
+interface ConsentAutofillField {
+  id?: string;
+  key?: ConsentAutofillFieldType;
+  fieldType?: ConsentAutofillFieldType;
+  label?: string;
+  page: number;
+  xPct: number;
+  yPct: number;
+  size?: number;
+}
+
+interface NormalizedConsentAutofillField {
+  id: string;
+  fieldType: ConsentAutofillFieldType;
+  label?: string;
+  page: number;
+  xPct: number;
+  yPct: number;
+  size: number;
+}
+
+function decodeStoragePath(filePath: string): string {
+  return decode(filePath)
+    .replace(/&#x2F;/g, '/')
+    .replace(/&#x5C;/g, '\\');
+}
+
+function sanitizeFileBaseName(fileName: string): string {
+  const withoutExtension = fileName.replace(/\.[^/.]+$/, '');
+  const sanitized = withoutExtension
+    .replace(/[^a-zA-Z0-9_-]+/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_+|_+$/g, '');
+
+  return sanitized || 'consent_document';
+}
+
+function formatConsentDateForTemplate(dateIso: string): string {
+  const date = new Date(dateIso);
+  if (Number.isNaN(date.getTime())) {
+    return dateIso;
+  }
+
+  return date.toISOString().slice(0, 10);
+}
+
+function parseConsentMode(value: unknown): ConsentMode {
+  if (value === undefined || value === null || value === '') {
+    return 'standard';
+  }
+
+  if (value === 'standard' || value === 'autofill') {
+    return value;
+  }
+
+  throw new Error('Invalid consent mode. Expected "standard" or "autofill".');
+}
+
+function parseAutofillFieldType(value: unknown): ConsentAutofillFieldType {
+  if (value === 'consentedName' || value === 'consentDate') {
+    return value;
+  }
+
+  throw new Error('Template fields must include only Full Name and Consent Date.');
+}
+
+function parseAutofillFields(
+  rawFields: unknown,
+  options?: { requireBothTypes?: boolean }
+): NormalizedConsentAutofillField[] {
+  const requireBothTypes = options?.requireBothTypes ?? true;
+
+  if (!Array.isArray(rawFields)) {
+    throw new Error('Auto-fill mode requires template field setup.');
+  }
+
+  if (rawFields.length === 0) {
+    throw new Error('Template setup must include at least one field.');
+  }
+
+  const normalizedFields: NormalizedConsentAutofillField[] = [];
+
+  rawFields.forEach((rawField, index) => {
+    if (!rawField || typeof rawField !== 'object') {
+      throw new Error('Template fields are invalid.');
+    }
+
+    const field = rawField as ConsentAutofillField;
+
+    const fieldType = parseAutofillFieldType(field.fieldType ?? field.key);
+
+    const page = Number(field.page);
+    const xPct = Number(field.xPct);
+    const yPct = Number(field.yPct);
+    const size = field.size === undefined ? 14 : Number(field.size);
+
+    const isInvalidPage = !Number.isInteger(page) || page < 1;
+    const isInvalidX = !Number.isFinite(xPct) || xPct < 0 || xPct > 1;
+    const isInvalidY = !Number.isFinite(yPct) || yPct < 0 || yPct > 1;
+    const isInvalidSize = !Number.isFinite(size) || size < 6 || size > 72;
+
+    if (isInvalidPage || isInvalidX || isInvalidY || isInvalidSize) {
+      throw new Error('Template field coordinates are invalid.');
+    }
+
+    normalizedFields.push({
+      id:
+        typeof field.id === 'string' && field.id.trim().length > 0
+          ? field.id.trim()
+          : `field_${index + 1}`,
+      fieldType,
+      label: typeof field.label === 'string' ? field.label : undefined,
+      page,
+      xPct,
+      yPct,
+      size
+    });
+  });
+
+  const hasNameField = normalizedFields.some((field) => field.fieldType === 'consentedName');
+  const hasDateField = normalizedFields.some((field) => field.fieldType === 'consentDate');
+
+  if (requireBothTypes && (!hasNameField || !hasDateField)) {
+    throw new Error('Template setup must include both Full Name and Consent Date fields.');
+  }
+
+  return normalizedFields;
+}
+
+async function generateFilledConsentPdf(params: {
+  templateFilePath: string;
+  originalFileName: string;
+  recordId: string;
+  consentedName: string;
+  completedAt: string;
+  autofillFields: NormalizedConsentAutofillField[];
+}): Promise<{ filePath: string; fileName: string }> {
+  const {
+    templateFilePath,
+    originalFileName,
+    recordId,
+    consentedName,
+    completedAt,
+    autofillFields
+  } = params;
+
+  const decodedTemplatePath = decodeStoragePath(templateFilePath);
+
+  const { data: sourceFile, error: downloadError } = await supabase.storage
+    .from('consent-documents')
+    .download(decodedTemplatePath);
+
+  if (downloadError || !sourceFile) {
+    throw new Error(`Failed to read template document: ${downloadError?.message || 'Unknown error'}`);
+  }
+
+  const templateBytes = new Uint8Array(await sourceFile.arrayBuffer());
+  const pdfDoc = await PDFDocument.load(templateBytes);
+  const pages = pdfDoc.getPages();
+  const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+
+  const autofillValues: Record<ConsentAutofillFieldType, string> = {
+    consentedName: consentedName.trim(),
+    consentDate: formatConsentDateForTemplate(completedAt)
+  };
+
+  autofillFields.forEach((field) => {
+    const pageIndex = field.page - 1;
+    const page = pages[pageIndex];
+
+    if (!page) {
+      throw new Error(`Template field "${field.fieldType}" references missing page ${field.page}.`);
+    }
+
+    const value = autofillValues[field.fieldType];
+    if (!value) {
+      return;
+    }
+
+    const { width, height } = page.getSize();
+    const drawX = field.xPct * width;
+    const drawY = height - (field.yPct * height);
+
+    page.drawText(value, {
+      x: drawX,
+      y: drawY,
+      size: field.size,
+      font,
+      color: rgb(0, 0, 0)
+    });
+  });
+
+  const outputBytes = await pdfDoc.save();
+  const safeBaseName = sanitizeFileBaseName(originalFileName);
+  const outputFileName = `${safeBaseName}_consent_${recordId.slice(0, 8)}.pdf`;
+  const outputPath = `filled-consents/${recordId}/${Date.now()}_${outputFileName}`;
+
+  const { data: uploadedFile, error: uploadError } = await supabase.storage
+    .from('consent-documents')
+    .upload(outputPath, outputBytes, {
+      contentType: 'application/pdf',
+      upsert: false
+    });
+
+  if (uploadError) {
+    throw new Error(`Failed to store generated consent PDF: ${uploadError.message}`);
+  }
+
+  return {
+    filePath: uploadedFile?.path || outputPath,
+    fileName: outputFileName
   };
 }
 
@@ -176,6 +419,194 @@ function applyConsentRecordFilters(query: any, filters: {
 
   return query;
 }
+
+/**
+ * Get consent autofill templates
+ * GET /api/consent/templates
+ * @access Private (Admin, Recruiter)
+ */
+router.get('/templates',
+  authenticateToken,
+  authorizeRoles(['admin', 'recruiter']),
+  async (req: Request, res: Response) => {
+    try {
+      const {
+        search = '',
+        includeInactive = 'false'
+      } = req.query as {
+        search?: string;
+        includeInactive?: string;
+      };
+
+      let query = supabase
+        .from('consent_document_templates')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (search.trim().length > 0) {
+        const searchTerm = search.trim();
+        query = query.or(
+          `template_name.ilike.%${searchTerm}%,template_description.ilike.%${searchTerm}%,file_name.ilike.%${searchTerm}%`
+        );
+      }
+
+      const shouldIncludeInactive =
+        includeInactive === 'true' && req.user?.user_metadata?.user_type === 'admin';
+      if (!shouldIncludeInactive) {
+        query = query.eq('is_active', true);
+      }
+
+      const { data: templates, error } = await query;
+
+      if (error) {
+        console.error('Error fetching consent templates:', error);
+        return res.status(500).json({ error: 'Failed to fetch consent templates' });
+      }
+
+      return res.status(200).json({
+        templates: convertObjectToCamelCase(templates || [])
+      });
+    } catch (error) {
+      console.error('Unexpected error fetching consent templates:', error);
+      return res.status(500).json({ error: 'An unexpected error occurred' });
+    }
+  }
+);
+
+/**
+ * Create consent autofill template
+ * POST /api/consent/templates
+ * @access Private (Admin)
+ */
+router.post('/templates',
+  authenticateToken,
+  authorizeRoles(['admin']),
+  sanitizeInputs,
+  async (req: Request, res: Response) => {
+    try {
+      if (!req.user?.id) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      const {
+        templateName,
+        templateDescription,
+        fileName,
+        filePath,
+        fieldMappings,
+        isActive
+      } = req.body;
+
+      if (!templateName || typeof templateName !== 'string' || templateName.trim().length < 2) {
+        return res.status(400).json({
+          error: 'Template name must be at least 2 characters'
+        });
+      }
+
+      if (!fileName || typeof fileName !== 'string' || !filePath || typeof filePath !== 'string') {
+        return res.status(400).json({ error: 'Template document file name and path are required' });
+      }
+
+      if (!fileName.toLowerCase().endsWith('.pdf')) {
+        return res.status(400).json({ error: 'Consent templates support PDF documents only' });
+      }
+
+      let parsedFieldMappings: NormalizedConsentAutofillField[];
+      try {
+        parsedFieldMappings = parseAutofillFields(fieldMappings);
+      } catch (error) {
+        return res.status(400).json({
+          error: error instanceof Error ? error.message : 'Invalid template field setup'
+        });
+      }
+
+      const { data: createdTemplate, error: insertError } = await supabase
+        .from('consent_document_templates')
+        .insert({
+          template_name: templateName.trim(),
+          template_description:
+            typeof templateDescription === 'string' && templateDescription.trim().length > 0
+              ? templateDescription.trim()
+              : null,
+          file_name: fileName,
+          file_path: filePath,
+          field_mappings: parsedFieldMappings,
+          is_active: isActive === false ? false : true,
+          created_by: req.user.id
+        })
+        .select()
+        .single();
+
+      if (insertError || !createdTemplate) {
+        console.error('Error creating consent template:', insertError);
+        return res.status(500).json({ error: 'Failed to create consent template' });
+      }
+
+      return res.status(201).json({
+        success: true,
+        message: 'Consent template created successfully',
+        template: convertObjectToCamelCase(createdTemplate)
+      });
+    } catch (error) {
+      console.error('Unexpected error creating consent template:', error);
+      return res.status(500).json({ error: 'An unexpected error occurred' });
+    }
+  }
+);
+
+/**
+ * Delete consent autofill template
+ * DELETE /api/consent/templates/:templateId
+ * @access Private (Admin)
+ */
+router.delete('/templates/:templateId',
+  authenticateToken,
+  authorizeRoles(['admin']),
+  sanitizeInputs,
+  async (req: Request, res: Response) => {
+    try {
+      const { templateId } = req.params;
+
+      if (!templateId || templateId.trim().length === 0) {
+        return res.status(400).json({ error: 'Template ID is required' });
+      }
+
+      const { data: existingTemplate, error: fetchError } = await supabase
+        .from('consent_document_templates')
+        .select('id, template_name')
+        .eq('id', templateId.trim())
+        .maybeSingle();
+
+      if (fetchError) {
+        console.error('Error validating consent template before delete:', fetchError);
+        return res.status(500).json({ error: 'Failed to validate consent template' });
+      }
+
+      if (!existingTemplate) {
+        return res.status(404).json({ error: 'Consent template not found' });
+      }
+
+      const { error: deleteError } = await supabase
+        .from('consent_document_templates')
+        .delete()
+        .eq('id', templateId.trim());
+
+      if (deleteError) {
+        console.error('Error deleting consent template:', deleteError);
+        return res.status(500).json({ error: 'Failed to delete consent template' });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: 'Consent template deleted successfully',
+        deletedId: templateId.trim()
+      });
+    } catch (error) {
+      console.error('Unexpected error deleting consent template:', error);
+      return res.status(500).json({ error: 'An unexpected error occurred' });
+    }
+  }
+);
 
 /**
  * Get all consent documents with pagination and filtering
@@ -334,6 +765,7 @@ router.get('/documents',
         documents.map(async (doc) => {
           let uploaderName = 'Unknown';
           let uploaderEmail = '';
+          let consentTemplate: { id: string; template_name: string } | null = null;
           
           try {
             const { data: user } = await supabase.auth.admin.getUserById(doc.uploaded_by);
@@ -345,6 +777,20 @@ router.get('/documents',
             }
           } catch (error) {
             console.error('Error fetching uploader details:', error);
+          }
+
+          if (doc.template_id) {
+            const { data: templateData, error: templateError } = await supabase
+              .from('consent_document_templates')
+              .select('id, template_name')
+              .eq('id', doc.template_id)
+              .maybeSingle();
+
+            if (templateError) {
+              console.error('Error fetching consent template summary:', templateError);
+            } else if (templateData) {
+              consentTemplate = templateData;
+            }
           }
 
           // Get recipient statistics and type for this document
@@ -373,7 +819,8 @@ router.get('/documents',
               id: doc.uploaded_by,
               email: uploaderEmail,
               name: uploaderName
-            }
+            },
+            consent_template: consentTemplate
           };
         })
       );
@@ -459,6 +906,24 @@ router.get('/records/:documentId',
 
       if (docError || !document) {
         return res.status(404).json({ error: 'Consent document not found' });
+      }
+
+      let documentWithTemplate: Record<string, unknown> = { ...document };
+      if (document.template_id) {
+        const { data: templateData, error: templateError } = await supabase
+          .from('consent_document_templates')
+          .select('id, template_name')
+          .eq('id', document.template_id)
+          .maybeSingle();
+
+        if (templateError) {
+          console.error('Error fetching consent template for document:', templateError);
+        } else if (templateData) {
+          documentWithTemplate = {
+            ...documentWithTemplate,
+            consent_template: templateData
+          };
+        }
       }
 
       // Build the base query
@@ -570,7 +1035,7 @@ router.get('/records/:documentId',
       const formattedRecords = recordsWithDetails.map(record => convertObjectToCamelCase(record));
 
       return res.status(200).json({
-        document: convertObjectToCamelCase(document),
+        document: convertObjectToCamelCase(documentWithTemplate),
         records: formattedRecords,
         pagination: {
           page: pageNum,
@@ -592,11 +1057,11 @@ router.get('/records/:documentId',
 /**
  * Create a new consent request
  * POST /api/consent/request
- * @access Private (Admin, Recruiter)
+ * @access Private (Super Admin only)
  */
 router.post('/request',
   authenticateToken,
-  authorizeRoles(['admin', 'recruiter']),
+  requireSuperAdmin,
   sanitizeInputs,
   emailNotifier({
     onSuccessEmail: async (req, res) => {
@@ -661,14 +1126,16 @@ router.post('/request',
       actionVerb: 'created',
       primaryEntityType: 'consent_document',
       primaryEntityId: res.locals.consentDocument?.id,
-      primaryEntityName: req.body.fileName,
-      displayMessage: `Created consent request "${req.body.fileName}" for ${res.locals.recipientCount || 0} recipients`,
+      primaryEntityName: res.locals.consentDocument?.file_name || req.body.fileName || 'Consent Document',
+      displayMessage: `Created consent request "${res.locals.consentDocument?.file_name || req.body.fileName || 'Consent Document'}" for ${res.locals.recipientCount || 0} recipients`,
       category: 'consent_management',
       priority: 'normal',
       metadata: {
-        fileName: req.body.fileName,
+        fileName: res.locals.consentDocument?.file_name || req.body.fileName,
         recipientCount: res.locals.recipientCount,
-        recipientType: req.body.recipientType
+        recipientType: req.body.recipientType,
+        consentMode: req.body.consentMode || 'standard',
+        templateId: req.body.templateId || null
       }
     })
   }),
@@ -679,10 +1146,18 @@ router.post('/request',
       }
 
       const userId = req.user.id;
-      const { fileName, filePath, recipientIds, recipientType } = req.body;
+      const {
+        fileName: rawFileName,
+        filePath: rawFilePath,
+        recipientIds,
+        recipientType,
+        consentMode: rawConsentMode,
+        templateId: rawTemplateId,
+        autofillFields: rawAutofillFields
+      } = req.body;
 
       // Validate required fields
-      if (!fileName || !filePath || !recipientIds || !recipientType) {
+      if (!recipientIds || !recipientType) {
         return res.status(400).json({ error: 'Missing required fields' });
       }
 
@@ -694,12 +1169,88 @@ router.post('/request',
         return res.status(400).json({ error: 'Invalid recipient type' });
       }
 
+      let consentMode: ConsentMode;
+      try {
+        consentMode = parseConsentMode(rawConsentMode);
+      } catch (error) {
+        return res.status(400).json({
+          error: error instanceof Error ? error.message : 'Invalid consent mode'
+        });
+      }
+
+      let fileName = typeof rawFileName === 'string' ? rawFileName : '';
+      let filePath = typeof rawFilePath === 'string' ? rawFilePath : '';
+      let templateId: string | null = null;
+      let autofillFields: NormalizedConsentAutofillField[] = [];
+      if (consentMode === 'standard') {
+        if (!fileName || !filePath) {
+          return res.status(400).json({ error: 'Missing required fields' });
+        }
+      } else {
+        if (typeof rawTemplateId === 'string' && rawTemplateId.trim().length > 0) {
+          templateId = rawTemplateId.trim();
+
+          const { data: selectedTemplate, error: templateError } = await supabase
+            .from('consent_document_templates')
+            .select('id, file_name, file_path, field_mappings, is_active')
+            .eq('id', templateId)
+            .maybeSingle();
+
+          if (templateError) {
+            console.error('Error validating consent template:', templateError);
+            return res.status(500).json({ error: 'Failed to validate consent template' });
+          }
+
+          if (!selectedTemplate) {
+            return res.status(400).json({ error: 'Selected consent template was not found' });
+          }
+
+          if (!selectedTemplate.is_active) {
+            return res.status(400).json({ error: 'Selected consent template is inactive' });
+          }
+
+          fileName = selectedTemplate.file_name;
+          filePath = selectedTemplate.file_path;
+
+          try {
+            autofillFields = parseAutofillFields(selectedTemplate.field_mappings);
+          } catch (error) {
+            return res.status(400).json({
+              error: error instanceof Error ? error.message : 'Invalid template field setup'
+            });
+          }
+        } else {
+          if (!fileName || !filePath) {
+            return res.status(400).json({
+              error: 'Auto-fill mode requires a selected template'
+            });
+          }
+
+          try {
+            autofillFields = parseAutofillFields(rawAutofillFields);
+          } catch (error) {
+            return res.status(400).json({
+              error: error instanceof Error ? error.message : 'Invalid template field setup'
+            });
+          }
+        }
+
+        if (!fileName.toLowerCase().endsWith('.pdf')) {
+          return res.status(400).json({
+            error: 'Auto-fill mode supports PDF documents only'
+          });
+        }
+      }
+
       // Create consent document
       const { data: consentDocument, error: docError } = await supabase
         .from('consent_documents')
         .insert({
           file_name: fileName,
           file_path: filePath,
+          consent_mode: consentMode,
+          autofill_fields: autofillFields,
+          template_id: templateId,
           uploaded_by: userId,
           is_active: true
         })
@@ -831,6 +1382,9 @@ router.post('/resend',
             id,
             file_name,
             file_path,
+            consent_mode,
+            autofill_fields,
+            template_id,
             version,
             created_at,
             is_active
@@ -954,6 +1508,9 @@ router.get('/view', // apiRateLimiter,
           id,
           file_name,
           file_path,
+          consent_mode,
+          autofill_fields,
+          template_id,
           version,
           created_at,
           is_active
@@ -1012,6 +1569,14 @@ router.get('/view', // apiRateLimiter,
       console.error('Error fetching entity details:', error);
     }
 
+    const shouldUseFilledDocument = record.status === 'completed' && !!record.filled_document_file_path;
+    const viewFilePath = shouldUseFilledDocument
+      ? record.filled_document_file_path
+      : record.consent_documents.file_path;
+    const viewFileName = shouldUseFilledDocument
+      ? (record.filled_document_file_name || record.consent_documents.file_name)
+      : record.consent_documents.file_name;
+
     return res.status(200).json({
       success: true,
       data: {
@@ -1021,8 +1586,13 @@ router.get('/view', // apiRateLimiter,
         consentedName: record.consented_name,
         document: {
           id: record.consent_documents.id,
-          fileName: record.consent_documents.file_name,
-          filePath: record.consent_documents.file_path,
+          fileName: viewFileName,
+          filePath: viewFilePath,
+          templateFilePath: record.consent_documents.file_path,
+          filledFilePath: record.filled_document_file_path,
+          consentMode: record.consent_documents.consent_mode,
+          autofillFields: record.consent_documents.autofill_fields,
+          templateId: record.consent_documents.template_id,
           version: record.consent_documents.version,
           createdAt: record.consent_documents.created_at
         },
@@ -1106,6 +1676,9 @@ router.post('/submit',
             id,
             file_name,
             file_path,
+            consent_mode,
+            autofill_fields,
+            template_id,
             version,
             created_at,
             is_active
@@ -1200,16 +1773,55 @@ router.post('/submit',
       };
 
       const clientIP = getClientIP(req);
+      const completedAt = new Date().toISOString();
+      let filledDocumentFilePath: string | null = null;
+      let filledDocumentFileName: string | null = null;
+
+      if (record.consent_documents.consent_mode === 'autofill') {
+        let autofillFields: NormalizedConsentAutofillField[];
+
+        try {
+          autofillFields = parseAutofillFields(record.consent_documents.autofill_fields);
+        } catch (error) {
+          console.error('Invalid template field setup on consent document:', error);
+          return res.status(500).json({
+            error: 'Consent template setup is invalid. Please contact the recruiter.'
+          });
+        }
+
+        try {
+          const generatedPdf = await generateFilledConsentPdf({
+            templateFilePath: record.consent_documents.file_path,
+            originalFileName: record.consent_documents.file_name,
+            recordId: record.id,
+            consentedName: consentedName.trim(),
+            completedAt,
+            autofillFields
+          });
+
+          filledDocumentFilePath = generatedPdf.filePath;
+          filledDocumentFileName = generatedPdf.fileName;
+        } catch (error) {
+          console.error('Failed to generate recipient-specific consent PDF:', error);
+          return res.status(500).json({
+            error: 'Failed to generate the completed consent document'
+          });
+        }
+      }
+
+      const updatePayload: Record<string, unknown> = {
+        status: 'completed',
+        completed_at: completedAt,
+        consented_name: consentedName.trim(),
+        ip_address: clientIP,
+        filled_document_file_path: filledDocumentFilePath,
+        filled_document_file_name: filledDocumentFileName
+      };
 
       // Update the consent record
       const { data: updatedRecord, error: updateError } = await supabase
         .from('consent_records')
-        .update({
-          status: 'completed',
-          completed_at: new Date().toISOString(),
-          consented_name: consentedName.trim(),
-          ip_address: clientIP
-        })
+        .update(updatePayload)
         .eq('id', record.id)
         .select()
         .single();
@@ -1224,7 +1836,7 @@ router.post('/submit',
       console.log(`📧 Entity: ${entityName} (${entityEmail})`);
       console.log(`📄 Document: ${record.consent_documents?.file_name || 'Unknown'}`);
       console.log(`✏️ Consented Name: "${consentedName.trim()}"`);
-      console.log(`📅 Completed At: ${new Date().toISOString()}`);
+      console.log(`📅 Completed At: ${completedAt}`);
       console.log(`🌐 IP Address: ${clientIP}\n`);
 
       // Store data for activity logging
@@ -1240,7 +1852,13 @@ router.post('/submit',
         data: {
           recordId: updatedRecord.id,
           completedAt: updatedRecord.completed_at,
-          consentedName: updatedRecord.consented_name
+          consentedName: updatedRecord.consented_name,
+          consentMode: record.consent_documents.consent_mode,
+          templateId: record.consent_documents.template_id,
+          filledDocument: filledDocumentFilePath ? {
+            filePath: filledDocumentFilePath,
+            fileName: filledDocumentFileName
+          } : null
         }
       });
     } catch (error) {
@@ -1276,6 +1894,9 @@ router.get(
             id,
             file_name,
             file_path,
+            consent_mode,
+            autofill_fields,
+            template_id,
             uploaded_by,
             created_at,
             updated_at,
