@@ -39,7 +39,7 @@ function requireSuperAdmin(req: Request, res: Response, next: NextFunction) {
     return res.status(401).json({ error: 'Authentication required' });
   }
 
-  if (!hasUserMetadataRole(req.user, 'super_admin')) {
+  if (!hasUserMetadataRole(req.user, 'superadmin')) {
     return res.status(403).json({
       error: 'Access denied',
       message: 'Only super admins can create consent requests'
