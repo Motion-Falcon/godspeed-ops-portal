@@ -230,7 +230,9 @@ router.post(
 
         if (userLookupError) {
           console.error("Error looking up user by email:", userLookupError);
-          // Continue with profile creation using creator's ID
+          return res.status(500).json({
+            error: "Failed to verify user account. Please try again.",
+          });
         } else if (userByEmail && userByEmail !== null) {
           // If a user with the provided email exists, use their ID
           profileUserId = userByEmail;
@@ -303,7 +305,11 @@ router.post(
 
           if (signupError) {
             console.error("Error creating user account:", signupError);
-            profileUserId = userId; // Fallback to creator's ID
+            return res.status(400).json({
+              error:
+                signupError.message ||
+                "Failed to create user account. Please try again or use a different email.",
+            });
           } else if (newUser?.user) {
             profileUserId = newUser.user.id;
             existingUserMetadata = newUser.user.user_metadata || {};
@@ -318,19 +324,23 @@ router.post(
             res.locals.accountCreated = true;
           } else {
             console.error("User creation returned no user");
-            profileUserId = userId; // Fallback to creator's ID
+            return res.status(400).json({
+              error:
+                "Failed to create user account. This email may already exist. Please try again.",
+            });
           }
         }
       } catch (userLookupError) {
         console.error("Error looking up user by email:", userLookupError);
-        // Continue with profile creation using creator's ID
-        profileUserId = userId;
+        return res.status(500).json({
+          error: "Failed to verify user account. Please try again.",
+        });
       }
 
-      // If no user ID is set, use creator's ID as fallback
       if (!profileUserId) {
-        profileUserId = userId;
-        console.log(`Using creator's ID as fallback: ${profileUserId}`);
+        return res.status(400).json({
+          error: "Could not determine user account for this profile. Please try again.",
+        });
       }
 
       // Prepare final profile data with proper field names
