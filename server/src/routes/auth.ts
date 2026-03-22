@@ -223,6 +223,7 @@ router.post('/register',
       email.includes("@godspeedxp") ||
       email.includes("@motionfalcon") ||
       email.includes("@canhiresolutions") ||
+      email.includes("@hiresolutions") ||
       email.includes("@allstaff") ||
       email.includes("@hdgroup")
     ) {
@@ -344,6 +345,7 @@ router.post('/validate-credentials', async (req, res) => {
       email.includes("@godspeedxp") ||
       email.includes("@motionfalcon") ||
       email.includes("@canhiresolutions") ||
+      email.includes("@hiresolutions.ca") ||
       email.includes("@allstaff") ||
       email.includes("@hdgroup")
     ); // Add your admin email domain(s) here

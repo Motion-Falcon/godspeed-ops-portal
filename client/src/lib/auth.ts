@@ -390,6 +390,7 @@ export const isRecruiterEmail = (email: string): boolean => {
     email.includes("@godspeedxp") ||
     email.includes("@motionfalcon") ||
     email.includes("@canhiresolutions") ||
+    email.includes("@hiresolutions") ||
     email.includes("@allstaff") ||
     email.includes("@hdgroup")
   );
