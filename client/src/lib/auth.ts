@@ -386,5 +386,12 @@ export const onAuthStateChange = (callback: (user: User | null) => void) => {
 
 // Helper function to check if user is a recruiter based on email
 export const isRecruiterEmail = (email: string): boolean => {
-  return email.includes('@godspeedxp') || email.includes('@motionfalcon');
+  return (
+    email.includes("@godspeedxp") ||
+    email.includes("@motionfalcon") ||
+    email.includes("@canhiresolutions") ||
+    email.includes("@hiresolutions") ||
+    email.includes("@allstaff") ||
+    email.includes("@hdgroup")
+  );
 };

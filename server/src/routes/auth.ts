@@ -219,7 +219,13 @@ router.post('/register',
     let userType = 'jobseeker'; // Default type
     
     // Check for recruiter email pattern
-    if (email.includes('@godspeedxp') || email.includes('@motionfalcon')) {
+    if (
+      email.includes("@godspeedxp") ||
+      email.includes("@motionfalcon") ||
+      email.includes("@canhiresolutions") ||
+      email.includes("@allstaff") ||
+      email.includes("@hdgroup")
+    ) {
       userType = 'recruiter';
     }
     
@@ -334,7 +340,13 @@ router.post('/validate-credentials', async (req, res) => {
     }
 
     // Determine if user is a recruiter or admin based on email
-    const isRecruiterOrAdmin = email.includes('@godspeedxp') || email.includes('@motionfalcon') || email.includes('@godspeed'); // Add your admin email domain(s) here
+    const isRecruiterOrAdmin = (
+      email.includes("@godspeedxp") ||
+      email.includes("@motionfalcon") ||
+      email.includes("@canhiresolutions") ||
+      email.includes("@allstaff") ||
+      email.includes("@hdgroup")
+    ); // Add your admin email domain(s) here
 
     // For recruiters or admins, we validate credentials without creating a session
     if (isRecruiterOrAdmin) {
