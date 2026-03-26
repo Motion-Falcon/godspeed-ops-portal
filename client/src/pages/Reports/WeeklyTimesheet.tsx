@@ -141,6 +141,7 @@ export function WeeklyTimesheet() {
         employeeId
       ].filter(Boolean).join(" - "),
       value: j,
+      isInactive: j.isInactive,
     };
   });
   const clientOptions: DropdownOption[] = clients.map((c) => ({
@@ -148,6 +149,7 @@ export function WeeklyTimesheet() {
     label: c.companyName || "Unknown",
     sublabel: c.shortCode || "",
     value: c,
+    isInactive: c.isInactive,
   }));
   const weekDropdownOptions: DropdownOption[] = weekOptions.map((w) => {
     const start = w.value;
@@ -288,10 +290,14 @@ export function WeeklyTimesheet() {
               className="button"
               onClick={() => {
                 // Prepare CSV data to match the table exactly (order: S.No., Timesheet #, Week Period, ...)
+                const statusLabel = t('reports.columns.status');
                 const csvData = reportRows.map((row, index) => {
                   const csvRow: Record<string, unknown> = {
                     [t("reports.columns.serialNumber") || "S.No."]: index + 1,
                   };
+                  const clientStatus = row.client_is_inactive ? 'Client Inactive' : 'Client Active';
+                  const jsStatus = row.jobseeker_is_inactive ? 'JS Inactive' : 'JS Active';
+                  csvRow[statusLabel] = `${clientStatus} / ${jsStatus}`;
                   csvColumns.forEach(col => {
                     if (col.key === 'week_period') {
                       csvRow[col.label] = col.format ? col.format(undefined, row as unknown as Record<string, unknown>) : '';
@@ -305,7 +311,7 @@ export function WeeklyTimesheet() {
                 exportToCSV(
                   csvData,
                   'Weekly Timesheet Report.csv',
-                  [t("reports.columns.serialNumber") || "S.No.", ...csvColumns.map(col => col.label)]
+                  [t("reports.columns.serialNumber") || "S.No.", statusLabel, ...csvColumns.map(col => col.label)]
                 );
               }}
             >
@@ -324,6 +330,7 @@ export function WeeklyTimesheet() {
             <table className="common-table">
               <thead>
                 <tr>
+                  <th>{t('reports.columns.status')}</th>
                   {/* UI table: Timesheet #, Week Period, then the rest */}
                   <th>{t('reports.columns.timesheetNumber')}</th>
                   <th>{t('reports.columns.weekPeriod')}</th>
@@ -334,7 +341,17 @@ export function WeeklyTimesheet() {
               </thead>
               <tbody>
                 {reportRows.map((row, idx) => (
-                  <tr key={idx}>
+                  <tr key={idx} className={(row.client_is_inactive || row.jobseeker_is_inactive) ? 'inactive-row' : ''}>
+                    <td className="status-cell">
+                      {row.client_is_inactive
+                        ? <span className="inactive-badge inactive-badge-sm">Client Inactive</span>
+                        : <span className="active-badge">Client Active</span>
+                      }
+                      {row.jobseeker_is_inactive
+                        ? <span className="inactive-badge inactive-badge-sm">JS Inactive</span>
+                        : <span className="active-badge">JS Active</span>
+                      }
+                    </td>
                     <td>{row.invoice_number ? String(row.invoice_number) : ''}</td>
                     <td>{tableColumns[0].format ? tableColumns[0].format(undefined, row as unknown as Record<string, unknown>) : ''}</td>
                     {tableColumns.filter(col => col.key !== 'week_period' && col.key !== 'invoice_number').map((col, i) => {

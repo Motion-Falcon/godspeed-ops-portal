@@ -163,6 +163,7 @@ export function EnvelopePrintingReport() {
     label: c.companyName || "Unknown",
     sublabel: c.shortCode || "",
     value: c,
+    isInactive: c.isInactive,
   }));
 
   const listNameOptions: DropdownOption[] = LIST_NAMES.map((ln) => ({
@@ -358,11 +359,16 @@ export function EnvelopePrintingReport() {
               className="button"
               onClick={() => {
                 const reportGeneratedDate = new Date().toLocaleDateString();
+                const statusLabel = t('reports.columns.status');
                 const csvData = reportRows.map((row, index) => {
                   const csvRow: Record<string, unknown> = {
                     [t("reports.columns.serialNumber") || "S.No."]: index + 1,
                   };
-                  // Add invoice_number right after serial number
+                  // Add status right after serial number
+                  const clientStatus = row.client_is_inactive ? 'Client Inactive' : 'Client Active';
+                  const jsStatus = row.jobseeker_is_inactive ? 'JS Inactive' : 'JS Active';
+                  csvRow[statusLabel] = `${clientStatus} / ${jsStatus}`;
+                  // Add invoice_number after status
                   csvRow[t("reports.columns.invoiceNumber")] =
                     row.invoice_number || "N/A";
                   // Add all other columns except invoice_number and report_generated_date
@@ -397,6 +403,7 @@ export function EnvelopePrintingReport() {
                   .map((col) => col.label);
                 exportToCSV(csvData, "Envelope Printing Report.csv", [
                   t("reports.columns.serialNumber") || "S.No.",
+                  statusLabel,
                   t("reports.columns.invoiceNumber"),
                   ...otherColumns,
                   t("reports.columns.reportGeneratedDate") ||
@@ -422,6 +429,7 @@ export function EnvelopePrintingReport() {
             <table className="common-table">
               <thead>
                 <tr>
+                  <th>{t('reports.columns.status')}</th>
                   {tableColumns.map((col) => (
                     <th key={col.key}>{col.label}</th>
                   ))}
@@ -429,7 +437,17 @@ export function EnvelopePrintingReport() {
               </thead>
               <tbody>
                 {reportRows.map((row, idx) => (
-                  <tr key={idx}>
+                  <tr key={idx} className={(row.client_is_inactive || row.jobseeker_is_inactive) ? 'inactive-row' : ''}>
+                    <td className="status-cell">
+                      {row.client_is_inactive
+                        ? <span className="inactive-badge inactive-badge-sm">Client Inactive</span>
+                        : <span className="active-badge">Client Active</span>
+                      }
+                      {row.jobseeker_is_inactive
+                        ? <span className="inactive-badge inactive-badge-sm">JS Inactive</span>
+                        : <span className="active-badge">JS Active</span>
+                      }
+                    </td>
                     {tableColumns.map((col, i) => {
                       let displayValue: string;
                       if (col.key === "report_generated_date") {

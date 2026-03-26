@@ -7,6 +7,7 @@ export interface DropdownOption {
   label: string;
   sublabel?: string;
   value: unknown;
+  isInactive?: boolean;
 }
 
 interface CustomDropdownProps {
@@ -252,7 +253,7 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
                 return (
                   <div
                     key={option.id}
-                    className={`custom-dropdown-option ${isSelected ? 'selected' : ''}`}
+                    className={`custom-dropdown-option ${isSelected ? 'selected' : ''} ${option.isInactive ? 'inactive-dropdown-option' : ''}`}
                     onClick={() => handleSelect(option)}
                   >
                     {multiSelect && (
@@ -261,6 +262,9 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
                     <div className="custom-dropdown-option-content">
                       <div className="custom-dropdown-option-label">
                         {option.label}
+                        {option.isInactive && (
+                          <span className="inactive-badge inactive-badge-sm">Inactive</span>
+                        )}
                       </div>
                       {option.sublabel && (
                         <div className="custom-dropdown-option-sublabel">

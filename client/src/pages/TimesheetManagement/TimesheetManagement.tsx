@@ -295,6 +295,7 @@ export function TimesheetManagement() {
         .filter(Boolean)
         .join(" - "),
       value: jobseeker,
+      isInactive: jobseeker.isInactive,
     };
   });
 
@@ -303,6 +304,7 @@ export function TimesheetManagement() {
     label: client.companyName || "Unknown Client",
     sublabel: client.shortCode || "",
     value: client,
+    isInactive: client.isInactive,
   }));
 
   const positionOptions: DropdownOption[] = positions.map((position) => ({

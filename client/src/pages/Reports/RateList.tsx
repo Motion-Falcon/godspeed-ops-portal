@@ -87,6 +87,7 @@ export function RateList() {
     label: c.companyName || "Unknown",
     sublabel: c.shortCode || "",
     value: c,
+    isInactive: c.isInactive,
   }));
 
   return (
@@ -131,10 +132,12 @@ export function RateList() {
             <button
               className="button"
               onClick={() => {
+                const statusLabel = t('reports.columns.status');
                 const csvData = reportRows.map((row, index) => {
                   const csvRow: Record<string, unknown> = {
                     [t("reports.columns.serialNumber") || "S.No."]: index + 1,
                   };
+                  csvRow[statusLabel] = row.client_is_inactive ? 'Inactive' : 'Active';
                   csvColumns.forEach(col => {
                     const val = row[col.key as keyof typeof row];
                     csvRow[col.label] = col.format ? col.format(val) : (val !== undefined && val !== null ? String(val) : 'N/A');
@@ -144,7 +147,7 @@ export function RateList() {
                 exportToCSV(
                   csvData,
                   'Rate List.csv',
-                  [t("reports.columns.serialNumber") || "S.No.", ...csvColumns.map(col => col.label)]
+                  [t("reports.columns.serialNumber") || "S.No.", statusLabel, ...csvColumns.map(col => col.label)]
                 );
               }}
             >
@@ -164,6 +167,7 @@ export function RateList() {
             <table className="common-table">
               <thead>
                 <tr>
+                  <th>{t('reports.columns.status')}</th>
                   {tableColumns.map(col => (
                     <th key={col.key}>{col.label}</th>
                   ))}
@@ -171,7 +175,13 @@ export function RateList() {
               </thead>
               <tbody>
                 {reportRows.map((row, idx) => (
-                  <tr key={idx}>
+                  <tr key={idx} className={row.client_is_inactive ? 'inactive-row' : ''}>
+                    <td className="status-cell">
+                      {row.client_is_inactive
+                        ? <span className="inactive-badge inactive-badge-sm">Inactive</span>
+                        : <span className="active-badge">Active</span>
+                      }
+                    </td>
                     {tableColumns.map((col, i) => {
                       const val = row[col.key as keyof typeof row];
                       const displayValue = col.format ? col.format(val) : (val !== undefined && val !== null ? String(val) : 'N/A');

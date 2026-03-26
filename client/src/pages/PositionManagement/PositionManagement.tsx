@@ -739,7 +739,10 @@ export function PositionManagement() {
                         {position.positionNumber || t("positionManagement.nA")}
                       </td>
                       <td className="title-cell">{position.title}</td>
-                      <td className="client-cell">{position.clientName}</td>
+                      <td className="client-cell">
+                        {position.clientName}
+                        {Boolean(position.clientIsInactive) && <span className="inactive-badge inactive-badge-sm">Inactive</span>}
+                      </td>
                       <td className="date-cell">
                         <div className="date-display">
                           {formatDate(position.startDate)}
