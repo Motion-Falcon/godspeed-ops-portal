@@ -297,6 +297,7 @@
     "language": "Language",
     "godspeedLogo": "Motion Falcon Logo",
     "user": "User",
+    "client": "Client",
     "notAvailable": "N/A",
     "and": "and"
   },
@@ -686,6 +687,7 @@
       "location": "Location",
       "employeeId": "Employee ID",
       "experience": "Experience",
+      "activityStatus": "Status",
       "status": "Status",
       "joinedDate": "Joined Date",
       "actions": "Actions"
@@ -760,6 +762,7 @@
       "workPermitExpiry": "Work Permit Expiry",
       "sinExpiryStatus": "SIN Status",
       "workPermitExpiryStatus": "Work Permit Status",
+      "activityStatus": "Status",
       "sinExpiryStatusHelp": "Days until SIN expiry",
       "workPermitExpiryStatusHelp": "Days until work permit expiry",
       "actions": "Actions"
@@ -2784,7 +2787,8 @@
       "paymentCycle": "Payment Cycle",
       "emailSent": "Email Sent",
       "emailSentDate": "Email Sent Date",
-      "reportGeneratedDate": "Report Generated Date"
+      "reportGeneratedDate": "Report Generated Date",
+      "status": "Status"
     },
     "info": {
       "defaultDateRange": "Default date range: Last 1 month"

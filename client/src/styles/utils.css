@@ -29,3 +29,85 @@
 .page-container.hide-hamburger-menu {
   margin: auto;
 }
+
+/* ============================================================================
+   Inactivity Monitor Styles
+   - .inactive-row: Grey background tint for table rows of inactive entities
+   - .inactive-badge: Grey pill badge displaying "Inactive"
+   - .inactive-badge-sm: Smaller variant for inline/dropdown use
+   - .inactive-dropdown-option: Grey background for dropdown items
+   ============================================================================ */
+
+.inactive-row {
+  background-color: var(--pending-bg) !important;
+}
+
+.inactive-row td {
+  color: var(--text-muted) !important;
+}
+
+.inactive-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: var(--font-size-tiny);
+  font-weight: var(--font-weight-semibold);
+  background-color: var(--pending-bg);
+  color: var(--pending);
+  border: 1px solid var(--border);
+  margin-left: 8px;
+  white-space: nowrap;
+  vertical-align: middle;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+}
+
+.active-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: var(--font-size-tiny);
+  font-weight: var(--font-weight-semibold);
+  background-color: var(--success-bg);
+  color: var(--success);
+  border: 1px solid var(--success);
+  white-space: nowrap;
+  vertical-align: middle;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+}
+
+/* Status cell in tables — center the badge */
+td.status-cell {
+  text-align: center;
+  vertical-align: middle;
+}
+
+td.status-cell .inactive-badge,
+td.status-cell .active-badge {
+  margin-left: 0;
+}
+
+.inactive-badge-sm {
+  padding: 1px 6px;
+  font-size: 9px;
+  margin-left: 6px;
+}
+
+.inactive-dropdown-option {
+  background-color: var(--pending-bg) !important;
+}
+
+.inactive-dropdown-option .custom-dropdown-option-label,
+.inactive-dropdown-option .custom-dropdown-option-sublabel {
+  color: var(--text-muted);
+}
+
+/* Profile / detail view header inactive badge - slightly larger */
+.inactive-badge-lg {
+  padding: 3px 12px;
+  font-size: var(--font-size-small);
+  margin-left: 12px;
+}

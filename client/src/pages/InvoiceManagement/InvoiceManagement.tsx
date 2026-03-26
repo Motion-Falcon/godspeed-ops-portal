@@ -683,6 +683,7 @@ export function InvoiceManagement() {
     label: client.companyName || t("invoiceManagement.unknownClient"),
     sublabel: client.shortCode || "",
     value: client,
+    isInactive: client.isInactive,
   }));
 
   const positionOptions: DropdownOption[] = positions.map((position) => ({
