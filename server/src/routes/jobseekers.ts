@@ -142,6 +142,7 @@ interface DbJobseekerProfileListView {
   work_permit_uci?: string;
   work_permit_expiry?: string;
   billing_email?: string;
+  last_activity_at?: string;
 }
 
 // Interface for the simplified JobSeekerProfile list view (matches frontend expectation)
@@ -162,6 +163,8 @@ interface JobSeekerProfile {
   workPermitUci?: string;
   workPermitExpiry?: string;
   billingEmail?: string;
+  isInactive?: boolean;
+  lastActivityAt?: string;
 }
 
 // Interface for the detailed JobSeekerProfile view (matches frontend expectation)
@@ -315,7 +318,8 @@ router.get("/", isAdminOrRecruiter, async (req, res) => {
         sin_expiry,
         work_permit_uci,
         work_permit_expiry,
-        billing_email
+        billing_email,
+        last_activity_at
       `);
 
     // Apply all filters at database level
@@ -416,8 +420,11 @@ router.get("/", isAdminOrRecruiter, async (req, res) => {
     }
 
     // Transform database records to frontend format (no client-side filtering)
+    const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000);
     const formattedProfiles: JobSeekerProfile[] = dbProfiles.map(
-      (profile: DbJobseekerProfileListView) => ({
+      (profile: DbJobseekerProfileListView) => {
+        const lastActivity = profile.last_activity_at ? new Date(profile.last_activity_at) : new Date(profile.created_at);
+        return {
         id: profile.id,
         userId: profile.user_id,
         name: formatName(profile),
@@ -433,7 +440,10 @@ router.get("/", isAdminOrRecruiter, async (req, res) => {
         workPermitUci: profile.work_permit_uci,
         workPermitExpiry: profile.work_permit_expiry,
         billingEmail: profile.billing_email,
-      })
+        lastActivityAt: profile.last_activity_at,
+        isInactive: lastActivity < sixtyDaysAgo,
+      };
+      }
     );
 
     // Calculate pagination metadata
@@ -849,6 +859,13 @@ router.get("/profile/:id", async (req, res) => {
         // Don't fail the whole request if updater details can't be fetched
       }
     }
+
+    // Compute inactivity status (60 days threshold for jobseekers)
+    const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000);
+    const lastActivity = formattedProfile.lastActivityAt
+      ? new Date(formattedProfile.lastActivityAt)
+      : new Date(formattedProfile.createdAt || profile.created_at);
+    formattedProfile.isInactive = lastActivity < sixtyDaysAgo;
 
     res.json(formattedProfile);
   } catch (error) {

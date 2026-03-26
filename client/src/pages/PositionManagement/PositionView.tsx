@@ -35,6 +35,7 @@ export function PositionView() {
     name: string;
     email: string;
     mobile?: string;
+    isInactive?: boolean;
   }[]>([]);
   const [assignedJobseekersLoading, setAssignedJobseekersLoading] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -78,6 +79,7 @@ export function PositionView() {
                 : "Unknown",
               email: assignment.jobseekerProfile?.email || "N/A",
               mobile: assignment.jobseekerProfile?.mobile || undefined,
+              isInactive: assignment.jobseekerProfile?.is_inactive || false,
             }));
             setAssignedJobseekers(assigned);
           } else {
@@ -396,9 +398,12 @@ export function PositionView() {
                   ) : (
                     <div className="jobseekers-list">
                       {assignedJobseekers.map((jobseeker) => (
-                        <div key={jobseeker.id} className="jobseeker-card">
+                        <div key={jobseeker.id} className={`jobseeker-card ${jobseeker.isInactive ? 'inactive-row' : ''}`}>
                           <div className="jobseeker-details">
-                            <p className="jobseeker-name">{jobseeker.name}</p>
+                            <p className="jobseeker-name">
+                              {jobseeker.name}
+                              {jobseeker.isInactive && <span className="inactive-badge inactive-badge-sm">Inactive</span>}
+                            </p>
                             <div className="jobseeker-contact">
                               <span className="contact-item">
                                 <Mail size={12} />

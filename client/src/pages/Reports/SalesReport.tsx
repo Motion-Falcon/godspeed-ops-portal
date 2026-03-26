@@ -115,6 +115,7 @@ export function SalesReport() {
     label: c.companyName || "Unknown",
     sublabel: c.shortCode || "",
     value: c,
+    isInactive: c.isInactive,
   }));
 
   const jobseekerOptions: DropdownOption[] = jobseekers.map((j) => {
@@ -129,6 +130,7 @@ export function SalesReport() {
         employeeId
       ].filter(Boolean).join(" - "),
       value: j,
+      isInactive: j.isInactive,
     };
   });
 
@@ -262,10 +264,14 @@ export function SalesReport() {
               className="button"
               onClick={() => {
                 // Prepare CSV data to match the table exactly
+                const statusLabel = t('reports.columns.status');
                 const csvData = reportRows.map((row, index) => {
                   const csvRow: Record<string, unknown> = {
                     [t("reports.columns.serialNumber") || "S.No."]: index + 1,
                   };
+                  const clientStatus = row.client_is_inactive ? 'Client Inactive' : 'Client Active';
+                  const jsStatus = row.jobseeker_is_inactive ? 'JS Inactive' : 'JS Active';
+                  csvRow[statusLabel] = `${clientStatus} / ${jsStatus}`;
                   csvColumns.forEach(col => {
                     if (col.key === 'from_to_date') {
                       csvRow[col.label] = col.format ? col.format(undefined, row as unknown as Record<string, unknown>) : '';
@@ -279,7 +285,7 @@ export function SalesReport() {
                 exportToCSV(
                   csvData,
                   'Sales Report.csv',
-                  [t("reports.columns.serialNumber") || "S.No.", ...csvColumns.map(col => col.label)]
+                  [t("reports.columns.serialNumber") || "S.No.", statusLabel, ...csvColumns.map(col => col.label)]
                 );
               }}
             >
@@ -298,6 +304,7 @@ export function SalesReport() {
             <table className="common-table">
               <thead>
                 <tr>
+                  <th>{t('reports.columns.status')}</th>
                   {tableColumns.map(col => (
                     <th key={col.key}>{col.label}</th>
                   ))}
@@ -305,7 +312,17 @@ export function SalesReport() {
               </thead>
               <tbody>
                 {reportRows.map((row, idx) => (
-                  <tr key={idx}>
+                  <tr key={idx} className={(row.client_is_inactive || row.jobseeker_is_inactive) ? 'inactive-row' : ''}>
+                    <td className="status-cell">
+                      {row.client_is_inactive
+                        ? <span className="inactive-badge inactive-badge-sm">Client Inactive</span>
+                        : <span className="active-badge">Client Active</span>
+                      }
+                      {row.jobseeker_is_inactive
+                        ? <span className="inactive-badge inactive-badge-sm">JS Inactive</span>
+                        : <span className="active-badge">JS Active</span>
+                      }
+                    </td>
                     {tableColumns.map((col, i) => {
                       if (col.key === 'from_to_date') {
                         const displayValue = col.format ? col.format(undefined, row as unknown as Record<string, unknown>) : '';
