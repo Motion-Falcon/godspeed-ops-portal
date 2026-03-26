@@ -218,8 +218,14 @@ router.get('/',
       const hasNextPage = pageNum < totalPages;
       const hasPrevPage = pageNum > 1;
 
-      // Convert snake_case to camelCase for frontend
-      const formattedClients = clients.map(client => convertObjectToCamelCase(client));
+      // Convert snake_case to camelCase for frontend and compute inactivity
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      const formattedClients = clients.map(client => {
+        const converted = convertObjectToCamelCase(client);
+        const lastActivity = converted.lastActivityAt ? new Date(converted.lastActivityAt) : new Date(converted.createdAt);
+        converted.isInactive = lastActivity < thirtyDaysAgo;
+        return converted;
+      });
 
       return res.status(200).json({
         clients: formattedClients,
@@ -565,7 +571,11 @@ router.get('/:id',
         return res.status(404).json({ error: 'Client not found' });
       }
 
-      return res.status(200).json(convertObjectToCamelCase(client));
+      const converted = convertObjectToCamelCase(client);
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      const lastActivity = converted.lastActivityAt ? new Date(converted.lastActivityAt) : new Date(converted.createdAt);
+      converted.isInactive = lastActivity < thirtyDaysAgo;
+      return res.status(200).json(converted);
     } catch (error) {
       console.error('Unexpected error fetching client:', error);
       return res.status(500).json({ error: 'An unexpected error occurred' });

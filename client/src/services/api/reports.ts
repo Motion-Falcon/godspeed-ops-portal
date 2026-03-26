@@ -38,6 +38,8 @@ export interface TimesheetReportRow {
   notes: string;
   timesheet_created_at: string;
   invoice_number: string;
+  client_is_inactive?: boolean;
+  jobseeker_is_inactive?: boolean;
 }
 
 /**
@@ -111,6 +113,7 @@ export interface InvoiceReportRow {
   currency: string;
   email_sent: string;
   email_sent_date: string;
+  client_is_inactive?: boolean;
 }
 
 /**
@@ -179,6 +182,7 @@ export interface RateListRow {
   overtime_hours: string;
   overtime_bill_rate: string;
   overtime_pay_rate: string;
+  client_is_inactive?: boolean;
 }
 
 /**
@@ -222,6 +226,7 @@ export interface ClientsReportRow {
   pay_cycle: string;
   terms: string;
   notes: string;
+  client_is_inactive?: boolean;
 }
 
 /**
@@ -274,6 +279,8 @@ export interface SalesReportRow {
   gst_hst: string;
   total: string;
   currency: string;
+  client_is_inactive?: boolean;
+  jobseeker_is_inactive?: boolean;
 }
 
 /**
@@ -329,6 +336,8 @@ export interface EnvelopePrintingReportRow {
   invoice_number: string;
   invoice_date: string;
   currency: string;
+  client_is_inactive?: boolean;
+  jobseeker_is_inactive?: boolean;
 }
 
 export const getEnvelopePrintingReport = async (

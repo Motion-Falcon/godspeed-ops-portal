@@ -366,7 +366,10 @@ export function ClientView() {
               <Building size={40} />
             </div>
             <div className="client-info-header">
-              <h1 className="client-name">{companyName}</h1>
+              <h1 className="client-name">
+                {companyName}
+                {client?.isInactive && <span className="inactive-badge inactive-badge-lg">Inactive</span>}
+              </h1>
               {renderDetailItem('Billing Name', getFieldValue(client, 'billingName'))}
               {renderDetailItem('Short Code', getFieldValue(client, 'shortCode'))}
               {renderDetailItem('Created', formatDate(getFieldValue(client, 'createdAt')))}

@@ -428,6 +428,7 @@ export function BulkTimesheetManagement() {
       t("bulkTimesheetManagement.constants.unknownClient"),
     sublabel: client.shortCode || "",
     value: client,
+    isInactive: client.isInactive,
   }));
   const positionOptions: DropdownOption[] = positions.map((position) => ({
     id: position.id || "",

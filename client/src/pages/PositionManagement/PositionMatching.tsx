@@ -128,6 +128,7 @@ export function PositionMatching() {
       value: client.id || '',
       label: client.companyName || t("positionMatching.unknownClient"),
       sublabel: client.shortCode || '',
+      isInactive: client.isInactive,
     })), [clients, t]
   );
 

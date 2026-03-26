@@ -481,6 +481,13 @@ export function JobSeekerManagement() {
             <table className="common-table">
               <thead>
                 <tr>
+                  <th className="status-th">
+                    <div className="column-filter">
+                      <div className="column-title">
+                        {t("jobseekerManagement.columns.activityStatus")}
+                      </div>
+                    </div>
+                  </th>
                   <th>
                     <div className="column-filter">
                       <div className="column-title">
@@ -664,6 +671,13 @@ export function JobSeekerManagement() {
                   <>
                     {Array.from({ length: pagination.limit }, (_, index) => (
                       <tr key={`skeleton-${index}`} className="skeleton-row">
+                        {/* Status skeleton - needs special styling */}
+                        <td className="skeleton-cell">
+                          <div className="skeleton-status">
+                            <div className="skeleton-badge skeleton-status-text"></div>
+                          </div>
+                        </td>
+
                         {/* Regular columns - using generic skeleton-text */}
                         <td className="skeleton-cell">
                           <div className="skeleton-text"></div>
@@ -709,7 +723,7 @@ export function JobSeekerManagement() {
                   </>
                 ) : profiles.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="empty-state-cell">
+                    <td colSpan={10} className="empty-state-cell">
                       <div className="empty-state">
                         <p>{t("jobseekerManagement.emptyState.noProfiles")}</p>
                       </div>
@@ -722,8 +736,17 @@ export function JobSeekerManagement() {
                       <tr 
                         key={profile.id}
                         {...getClickableRowProps(() => handleViewProfile(profile.id))}
+                        className={profile.isInactive ? 'inactive-row' : ''}
                       >
-                        <td className="name-cell">{profile.name}</td>
+                        <td className="status-cell">
+                          {profile.isInactive
+                            ? <span className="inactive-badge">Inactive</span>
+                            : <span className="active-badge">Active</span>
+                          }
+                        </td>
+                        <td className="name-cell">
+                          {profile.name}
+                        </td>
                         <td className="email-cell">{profile.email}</td>
                         <td className="phone-cell">
                           {profile.phoneNumber || t("jobseekerManagement.na")}

@@ -37,6 +37,8 @@ export interface JobSeekerProfile {
   sinExpiry?: string;
   workPermitUci?: string;
   workPermitExpiry?: string;
+  lastActivityAt?: string;
+  isInactive?: boolean;
 }
 
 export interface JobSeekerDetailedProfile extends JobSeekerProfile {

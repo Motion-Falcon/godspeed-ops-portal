@@ -176,6 +176,7 @@ router.get(
           show_on_job_portal,
           stat,
           created_at,
+          client,
           client_name,
           assigned_jobseekers,
           number_of_positions,
@@ -268,6 +269,23 @@ router.get(
       }
 
       // Transform the response to include clientName and convert snake_case to camelCase
+      // Batch fetch client last_activity_at for inactivity check
+      const clientIds = [...new Set(positions.map((p: any) => p.client).filter(Boolean))];
+      const clientInactiveMap = new Map<string, boolean>();
+      if (clientIds.length > 0) {
+        const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+        const { data: clientActivities } = await supabase
+          .from('clients')
+          .select('id, last_activity_at, created_at')
+          .in('id', clientIds as string[]);
+        if (clientActivities) {
+          clientActivities.forEach((c: any) => {
+            const lastActivity = c.last_activity_at ? new Date(c.last_activity_at) : new Date(c.created_at);
+            clientInactiveMap.set(c.id, lastActivity < thirtyDaysAgo);
+          });
+        }
+      }
+
       const formattedPositions = await Promise.all(
         positions.map(async (position: any) => {
           // Since we're only selecting specific fields, handle the clients data properly
@@ -298,7 +316,7 @@ router.get(
               acc[camelKey] = value;
               return acc;
             },
-            { clientName } as Record<string, any>
+            { clientName, clientIsInactive: clientInactiveMap.get(position.client) || false } as Record<string, any>
           );
 
           return formattedPosition;
@@ -385,7 +403,7 @@ router.get(
       const { data: client, error: clientError } = await supabase
         .from("clients")
         .select(
-          "id, company_name, client_manager, accounting_person, sales_person"
+          "id, company_name, client_manager, accounting_person, sales_person, last_activity_at, created_at"
         )
         .eq("id", clientId)
         .single();
@@ -524,6 +542,10 @@ router.get(
       }
 
       // Transform the response to include clientName and convert snake_case to camelCase
+      const thirtyDaysAgoClient = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      const clientLastActivity = client.last_activity_at ? new Date(client.last_activity_at) : new Date(client.created_at);
+      const isClientInactive = clientLastActivity < thirtyDaysAgoClient;
+
       const formattedPositions = await Promise.all(
         positions.map(async (position: any) => {
           // Since we're only selecting specific fields, handle the clients data properly
@@ -554,7 +576,7 @@ router.get(
               acc[camelKey] = value;
               return acc;
             },
-            { clientName } as Record<string, any>
+            { clientName, clientIsInactive: isClientInactive } as Record<string, any>
           );
 
           return formattedPosition;
@@ -2039,7 +2061,7 @@ router.get(
       const { data: jobseekerProfiles, error: profilesError } = await supabase
         .from("jobseeker_profiles")
         .select(
-          "id, user_id, first_name, last_name, email, mobile, employee_id, billing_email"
+          "id, user_id, first_name, last_name, email, mobile, employee_id, billing_email, last_activity_at, created_at"
         )
         .in("user_id", candidateIds);
 
@@ -2059,8 +2081,10 @@ router.get(
       }
 
       // Combine assignments with jobseeker profile data
+      const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000);
       const enrichedAssignments = assignments.map((assignment) => {
         const profile = profilesMap.get(assignment.candidate_id);
+        const lastActivity = profile?.last_activity_at ? new Date(profile.last_activity_at) : (profile?.created_at ? new Date(profile.created_at) : new Date());
         return {
           ...assignment,
           jobseekerProfile: profile
@@ -2069,6 +2093,7 @@ router.get(
                 jobseeker_profile_id: profile.id,
                 employee_id: profile.employee_id,
                 billing_email: profile.billing_email,
+                is_inactive: lastActivity < sixtyDaysAgo,
               }
             : null,
         };

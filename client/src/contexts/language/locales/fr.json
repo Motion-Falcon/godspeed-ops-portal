@@ -286,6 +286,7 @@
     "language": "Langue",
     "godspeedLogo": "Logo Godspeed",
     "user": "Utilisateur",
+    "client": "Client",
     "notAvailable": "N/D",
     "and": "et"
   },
@@ -675,6 +676,7 @@
       "location": "Lieu",
       "employeeId": "ID Employé",
       "experience": "Expérience",
+      "activityStatus": "Statut",
       "status": "Statut",
       "joinedDate": "Date d'inscription",
       "actions": "Actions"
@@ -749,6 +751,7 @@
       "workPermitExpiry": "Expiration Permis de Travail",
       "sinExpiryStatus": "Statut NAS",
       "workPermitExpiryStatus": "Statut Permis de Travail",
+      "activityStatus": "Statut",
       "sinExpiryStatusHelp": "Jours jusqu'à l'expiration du NAS",
       "workPermitExpiryStatusHelp": "Jours jusqu'à l'expiration du permis de travail",
       "actions": "Actions"
@@ -2775,7 +2778,8 @@
       "paymentCycle": "Cycle de paiement",
       "emailSent": "Email envoyé",
       "emailSentDate": "Date d'envoi de l'email",
-      "reportGeneratedDate": "Date de génération du rapport"
+      "reportGeneratedDate": "Date de génération du rapport",
+      "status": "Statut"
     },
     "info": {
       "defaultDateRange": "Plage de dates par défaut : Dernier mois"

@@ -1609,7 +1609,10 @@ export function JobSeekerProfile() {
               <div className="profile-avatar">
                 <User size={40} />
               </div>
-              <h1 className="profile-name">{displayName}</h1>
+              <h1 className="profile-name">
+                {displayName}
+                {profile.isInactive && <span className="inactive-badge inactive-badge-lg">Inactive</span>}
+              </h1>
             </div>
             <div className="profile-info-header">
               <div className="profile-info-details">

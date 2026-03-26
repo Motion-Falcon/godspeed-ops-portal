@@ -660,6 +660,7 @@ export interface AssignmentRecord {
     email: string;
     mobile?: string;
     billing_email?: string;
+    is_inactive?: boolean;
   };
 }
 export const getPositionAssignments = async (
