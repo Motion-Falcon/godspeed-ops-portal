@@ -63,6 +63,8 @@ export interface ClientData {
   createdAt?: string;
   updatedAt?: string;
   lastUpdated?: string;
+  lastActivityAt?: string;
+  isInactive?: boolean;
   createdByUserId?: string;
   updatedByUserId?: string;
   creatorDetails?: {

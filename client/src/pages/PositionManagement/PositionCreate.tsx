@@ -228,7 +228,7 @@ export function PositionCreate({
     t("positionCreate.createPosition")
   );
   const [clients, setClients] = useState<
-    Array<{ id: string; companyName: string; shortCode?: string }>
+    Array<{ id: string; companyName: string; shortCode?: string; isInactive?: boolean }>
   >([]);
   const [minEndDate, setMinEndDate] = useState<string>(getTodayFormatted());
   const [clientLoading, setClientLoading] = useState(false);
@@ -377,6 +377,7 @@ export function PositionCreate({
             id: client.id || "",
             companyName: client.companyName || "",
             shortCode: client.shortCode || "",
+            isInactive: client.isInactive,
           }))
           .filter((client) => client.id && client.companyName); // Filter after mapping to see what we get
 
@@ -671,6 +672,7 @@ export function PositionCreate({
     id: client.id,
     value: client.id,
     label: client.companyName,
+    isInactive: client.isInactive,
   }));
 
   // Copy-from client filter options (same as main client dropdown; sublabel = shortCode like Position Matching)
@@ -679,6 +681,7 @@ export function PositionCreate({
     value: client.id,
     label: client.companyName,
     sublabel: client.shortCode || "",
+    isInactive: client.isInactive,
   }));
 
   // Copy-from position options: label = title - positionNumber, sublabel = Period | category | location (like Position Matching)

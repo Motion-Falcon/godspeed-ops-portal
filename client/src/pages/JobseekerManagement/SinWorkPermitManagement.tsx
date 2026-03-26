@@ -387,6 +387,11 @@ export function SinWorkPermitManagement() {
             <table className="common-table">
               <thead>
                 <tr>
+                  <th className="status-th">
+                    <div className="column-filter">
+                      <div className="column-title">{t('sinWorkPermitManagement.columns.activityStatus')}</div>
+                    </div>
+                  </th>
                   <th>
                     <div className="column-filter">
                       <div className="column-title">{t('sinWorkPermitManagement.columns.name')}</div>
@@ -547,7 +552,7 @@ export function SinWorkPermitManagement() {
                   <>
                     {Array.from({ length: pagination.limit }, (_, index) => (
                       <tr key={`skeleton-${index}`} className="skeleton-row">
-                        {Array.from({ length: 10 }, (_, colIndex) => (
+                        {Array.from({ length: 11 }, (_, colIndex) => (
                           <td key={colIndex} className="skeleton-cell">
                             <div className="skeleton-text"></div>
                           </td>
@@ -557,7 +562,7 @@ export function SinWorkPermitManagement() {
                   </>
                 ) : profiles.length === 0 ? (
                   <tr>
-                    <td colSpan={10} className="empty-state-cell">
+                    <td colSpan={11} className="empty-state-cell">
                       <div className="empty-state">
                         <p>{t('sinWorkPermitManagement.emptyState.noProfiles')}</p>
                       </div>
@@ -572,8 +577,17 @@ export function SinWorkPermitManagement() {
                       <tr 
                         key={profile.id}
                         {...getClickableRowProps(() => handleViewProfile(profile.id))}
+                        className={profile.isInactive ? 'inactive-row' : ''}
                       >
-                        <td className="name-cell">{profile.name}</td>
+                        <td className="status-cell">
+                          {profile.isInactive
+                            ? <span className="inactive-badge">Inactive</span>
+                            : <span className="active-badge">Active</span>
+                          }
+                        </td>
+                        <td className="name-cell">
+                          {profile.name}
+                        </td>
                         <td className="email-cell">{profile.email}</td>
                         <td className="phone-cell">
                           {profile.phoneNumber || t('sinWorkPermitManagement.na')}

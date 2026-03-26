@@ -17,6 +17,20 @@ if (!supabaseUrl || !supabaseKey) {
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+function checkClientInactive(lastActivityAt: string | null, createdAt: string | null): boolean {
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const lastActivity = lastActivityAt ? new Date(lastActivityAt) : (createdAt ? new Date(createdAt) : new Date());
+  return lastActivity < thirtyDaysAgo;
+}
+
+function checkJobseekerInactive(lastActivityAt: string | null, createdAt: string | null): boolean {
+  const sixtyDaysAgo = new Date();
+  sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+  const lastActivity = lastActivityAt ? new Date(lastActivityAt) : (createdAt ? new Date(createdAt) : new Date());
+  return lastActivity < sixtyDaysAgo;
+}
+
 // POST /api/reports/timesheet
 router.post(
   "/timesheet",
@@ -83,7 +97,7 @@ router.post(
         .select(
           `
           jobseeker_profiles:jobseeker_profile_id (
-            employee_id, license_number, passport_number, first_name, last_name, mobile, email, hst_gst, payment_method
+            employee_id, license_number, passport_number, first_name, last_name, mobile, email, hst_gst, payment_method, last_activity_at, created_at
           ),
           positions:position_id (
             title, position_code, position_category, client_manager, notes, client
@@ -158,6 +172,7 @@ router.post(
           timesheet_created_at: row.created_at,
           invoice_number: row.invoice_number,
           client_id: p.client, // <-- add client_id for later lookup
+          jobseeker_is_inactive: checkJobseekerInactive(jp.last_activity_at, jp.created_at),
         };
       });
 
@@ -169,7 +184,7 @@ router.post(
       if (clientIdsSet.size > 0) {
         const { data: clientsData, error: clientsError } = await supabase
           .from("clients")
-          .select("id, company_name, list_name, currency, pay_cycle")
+          .select("id, company_name, list_name, currency, pay_cycle, last_activity_at, created_at")
           .in("id", Array.from(clientIdsSet));
         if (!clientsError && clientsData) {
           clientsData.forEach((c: any) => {
@@ -185,6 +200,7 @@ router.post(
           row.list_name = client.list_name;
           row.currency = client.currency;
           row.pay_cycle = client.pay_cycle;
+          row.client_is_inactive = checkClientInactive(client.last_activity_at, client.created_at);
         }
         delete row.client_id; // remove from final output
       });
@@ -346,7 +362,7 @@ router.post(
       if (clientIdsSet.size > 0) {
         const { data: clientsData, error: clientsError } = await supabase
           .from("clients")
-          .select("id, company_name, contact_person_name1, terms")
+          .select("id, company_name, contact_person_name1, terms, last_activity_at, created_at")
           .in("id", Array.from(clientIdsSet));
 
         if (!clientsError && clientsData) {
@@ -377,6 +393,7 @@ router.post(
           currency: invoice.currency || "N/A",
           email_sent: invoice.email_sent ? "Yes" : "No",
           email_sent_date: invoice.email_sent_date || "N/A",
+          client_is_inactive: checkClientInactive(clientFromDB.last_activity_at, clientFromDB.created_at),
         };
       });
 
@@ -515,7 +532,9 @@ router.post(
           client_name,
           client:clients (
             id,
-            company_name
+            company_name,
+            last_activity_at,
+            created_at
           )
         `
         )
@@ -550,6 +569,7 @@ router.post(
           overtime_hours: position.overtime_hours || "N/A",
           overtime_bill_rate: position.overtime_bill_rate || "N/A",
           overtime_pay_rate: position.overtime_pay_rate || "N/A",
+          client_is_inactive: checkClientInactive(client.last_activity_at, client.created_at),
         };
       });
 
@@ -648,6 +668,7 @@ router.post(
           pay_cycle: row.pay_cycle || "",
           terms: row.terms || "",
           notes: row.notes || "",
+          client_is_inactive: checkClientInactive(row.last_activity_at, row.created_at),
         };
       });
 
@@ -704,7 +725,7 @@ router.post(
       // Get client information and position details
       const { data: clientsData, error: clientsError } = await supabase
         .from("clients")
-        .select("id, company_name, contact_person_name1, sales_person, terms")
+        .select("id, company_name, contact_person_name1, sales_person, terms, last_activity_at, created_at")
         .in("id", clientIds);
 
       if (clientsError) {
@@ -745,6 +766,26 @@ router.post(
       (positionsData || []).forEach((position: any) => {
         positionInfoMap[position.id] = position;
       });
+
+      // Collect all unique jobseeker IDs from invoice timesheets for inactive check
+      const salesJobseekerIds = new Set<string>();
+      (invoices || []).forEach((invoice: any) => {
+        const invoiceData = invoice.invoice_data || {};
+        const timesheets = invoiceData.timesheets || [];
+        timesheets.forEach((ts: any) => {
+          if (ts.jobseekerProfileId) salesJobseekerIds.add(ts.jobseekerProfileId);
+        });
+      });
+      let salesJobseekerInfoMap: Record<string, any> = {};
+      if (salesJobseekerIds.size > 0) {
+        const { data: jsData } = await supabase
+          .from("jobseeker_profiles")
+          .select("id, last_activity_at, created_at")
+          .in("id", Array.from(salesJobseekerIds));
+        if (jsData) {
+          jsData.forEach((js: any) => { salesJobseekerInfoMap[js.id] = js; });
+        }
+      }
 
       // Process invoices and extract timesheets
       const salesData: any[] = [];
@@ -849,6 +890,13 @@ router.post(
             gst_hst: gstHst.toFixed(2),
             total: total.toFixed(2),
             currency: invoice.currency || "N/A",
+            client_is_inactive: checkClientInactive(client.last_activity_at, client.created_at),
+            jobseeker_is_inactive: ts.jobseekerProfileId
+              ? checkJobseekerInactive(
+                  (salesJobseekerInfoMap[ts.jobseekerProfileId] || {}).last_activity_at,
+                  (salesJobseekerInfoMap[ts.jobseekerProfileId] || {}).created_at
+                )
+              : false,
           });
         });
       });
@@ -904,7 +952,7 @@ router.post(
       const { data: clientsData, error: clientsError } = await supabase
         .from("clients")
         .select(
-          "id, company_name, short_code, list_name, city1, province1, pay_cycle, sales_person"
+          "id, company_name, short_code, list_name, city1, province1, pay_cycle, sales_person, last_activity_at, created_at"
         )
         .in("id", clientIds);
 
@@ -960,7 +1008,7 @@ router.post(
         const { data: jobseekersData, error: jobseekersError } = await supabase
           .from("jobseeker_profiles")
           .select(
-            "id, employee_id, license_number, passport_number, mobile, payment_method"
+            "id, employee_id, license_number, passport_number, mobile, payment_method, last_activity_at, created_at"
           )
           .in("id", Array.from(jobseekerIdsSet));
 
@@ -1053,6 +1101,8 @@ router.post(
             invoice_number: invoice.invoice_number || "",
             invoice_date: invoice.invoice_date || "",
             currency: invoice.currency || "",
+            client_is_inactive: checkClientInactive(client.last_activity_at, client.created_at),
+            jobseeker_is_inactive: checkJobseekerInactive(jobseekerInfo.last_activity_at, jobseekerInfo.created_at),
           });
         });
       });

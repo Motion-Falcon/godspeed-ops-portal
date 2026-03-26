@@ -386,6 +386,11 @@ export function ClientManagement() {
             <table className="common-table">
               <thead>
                 <tr>
+                  <th className="status-th">
+                    <div className="column-filter">
+                      <div className="column-title">Status</div>
+                    </div>
+                  </th>
                   <th>
                     <div className="column-filter">
                       <div className="column-title">Company Name</div>
@@ -522,6 +527,11 @@ export function ClientManagement() {
                       { length: pagination.limit || 10 },
                       (_, index) => (
                         <tr key={`skeleton-${index}`} className="skeleton-row">
+                          <td className="skeleton-cell">
+                            <div className="skeleton-status">
+                              <div className="skeleton-badge skeleton-status-text"></div>
+                            </div>
+                          </td>
                           {/* Regular columns - using generic skeleton-text */}
                           <td className="skeleton-cell">
                             <div className="skeleton-text"></div>
@@ -561,7 +571,7 @@ export function ClientManagement() {
                   </>
                 ) : clients.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="empty-state-cell">
+                    <td colSpan={10} className="empty-state-cell">
                       <div className="empty-state">
                         <p>No clients match your search criteria.</p>
                       </div>
@@ -572,7 +582,14 @@ export function ClientManagement() {
                     <tr 
                       key={String(client.id)}
                       {...getClickableRowProps(() => handleViewClient(String(client.id)))}
+                      className={client.isInactive ? 'inactive-row' : ''}
                     >
+                      <td className="status-cell">
+                        {client.isInactive
+                          ? <span className="inactive-badge">Inactive</span>
+                          : <span className="active-badge">Active</span>
+                        }
+                      </td>
                       <td className="name-cell">
                         {getFieldValue(client, "companyName")}
                       </td>
