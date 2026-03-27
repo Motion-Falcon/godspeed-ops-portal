@@ -118,6 +118,7 @@ CREATE OR REPLACE FUNCTION update_jobseeker_last_activity()
 RETURNS TRIGGER AS $$
 DECLARE
   target_jobseeker_id UUID;
+  ts_element JSONB;
 BEGIN
   -- Determine the jobseeker profile ID based on the source table
   CASE TG_TABLE_NAME
@@ -130,8 +131,28 @@ BEGIN
       target_jobseeker_id := NEW.jobseeker_profile_id;
 
     WHEN 'position_candidate_assignments' THEN
-      -- Jobseeker assigned to a position
-      target_jobseeker_id := NEW.candidate_id;
+      -- Jobseeker assigned to a position (candidate_id is auth.users.id, not jobseeker_profiles.id)
+      IF NEW.candidate_id IS NOT NULL THEN
+        UPDATE public.jobseeker_profiles
+        SET last_activity_at = NOW()
+        WHERE user_id = NEW.candidate_id;
+      END IF;
+      RETURN NEW;
+
+    WHEN 'invoices' THEN
+      -- Invoice created/updated → extract all jobseeker IDs from JSONB timesheets array
+      IF NEW.invoice_data IS NOT NULL AND NEW.invoice_data -> 'timesheets' IS NOT NULL THEN
+        FOR ts_element IN SELECT jsonb_array_elements(NEW.invoice_data -> 'timesheets')
+        LOOP
+          IF ts_element -> 'jobseekerProfile' ->> 'jobseekerProfileId' IS NOT NULL THEN
+            UPDATE public.jobseeker_profiles
+            SET last_activity_at = NOW()
+            WHERE id = (ts_element -> 'jobseekerProfile' ->> 'jobseekerProfileId')::UUID;
+          END IF;
+        END LOOP;
+      END IF;
+      -- Already handled all jobseekers in the loop, skip the single-update below
+      RETURN NEW;
   END CASE;
 
   -- Update the jobseeker's last_activity_at if we found a valid ID
@@ -208,5 +229,12 @@ CREATE TRIGGER trg_jobseeker_activity_on_timesheet
 DROP TRIGGER IF EXISTS trg_jobseeker_activity_on_assignment ON public.position_candidate_assignments;
 CREATE TRIGGER trg_jobseeker_activity_on_assignment
   AFTER INSERT ON public.position_candidate_assignments
+  FOR EACH ROW
+  EXECUTE FUNCTION update_jobseeker_last_activity();
+
+-- Trigger on invoices table for jobseeker activity (INSERT and UPDATE)
+DROP TRIGGER IF EXISTS trg_jobseeker_activity_on_invoice ON public.invoices;
+CREATE TRIGGER trg_jobseeker_activity_on_invoice
+  AFTER INSERT OR UPDATE ON public.invoices
   FOR EACH ROW
   EXECUTE FUNCTION update_jobseeker_last_activity();
