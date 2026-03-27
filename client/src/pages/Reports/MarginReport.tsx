@@ -19,6 +19,12 @@ const getTableColumns = (t: (key: string) => string): { key: string; label: stri
   { key: 'accounting_person', label: t('reports.columns.accountingPerson'), format: (val) => String(val ?? '') },
   { key: 'total_billed_amount', label: t('reports.columns.totalBilledAmount'), format: (val) => val ? `$${val}` : 'N/A' },
   { key: 'paid_amount', label: t('reports.columns.paidAmount'), format: (val) => val ? `$${val}` : 'N/A' },
+  { key: 'paid_amount_cash', label: t('reports.columns.cashAmount'), format: (val) => `$${val ?? '0.00'}` },
+  { key: 'paid_amount_corporation_cheque', label: t('reports.columns.corporationChequeAmount'), format: (val) => `$${val ?? '0.00'}` },
+  { key: 'paid_amount_corporation_direct_deposit', label: t('reports.columns.corporationDirectDepositAmount'), format: (val) => `$${val ?? '0.00'}` },
+  { key: 'paid_amount_e_transfer', label: t('reports.columns.eTransferAmount'), format: (val) => `$${val ?? '0.00'}` },
+  { key: 'paid_amount_direct_deposit', label: t('reports.columns.directDepositAmount'), format: (val) => `$${val ?? '0.00'}` },
+  { key: 'paid_amount_cheque', label: t('reports.columns.chequeAmount'), format: (val) => `$${val ?? '0.00'}` },
   { key: 'margin_amount', label: t('reports.columns.marginAmount'), format: (val) => val ? `$${val}` : 'N/A' },
   { key: 'margin_percentage', label: t('reports.columns.marginPercentage'), format: (val) => String(val ?? '') },
   { key: 'invoice_date', label: t('reports.columns.invoiceDate'), format: (val) => formatDate(String(val ?? '')) },
@@ -31,8 +37,13 @@ const getCsvColumns = (tableColumns: ReturnType<typeof getTableColumns>) => tabl
     if (col.key === 'invoice_date') {
       return formatDate(String(val ?? ''));
     }
-    if (col.key === 'total_billed_amount' || col.key === 'paid_amount' || col.key === 'margin_amount') {
-      return val ? `$${val}` : 'N/A';
+    if (
+      col.key === 'total_billed_amount' ||
+      col.key === 'paid_amount' ||
+      col.key === 'margin_amount' ||
+      col.key.startsWith('paid_amount_')
+    ) {
+      return `$${val ?? '0.00'}`;
     }
     return String(val ?? '');
   }
