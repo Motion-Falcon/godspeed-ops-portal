@@ -72,6 +72,12 @@ export interface MarginReportRow {
   accounting_person: string;
   total_billed_amount: string;
   paid_amount: string;
+  paid_amount_cash: string;
+  paid_amount_corporation_cheque: string;
+  paid_amount_corporation_direct_deposit: string;
+  paid_amount_e_transfer: string;
+  paid_amount_direct_deposit: string;
+  paid_amount_cheque: string;
   margin_amount: string;
   margin_percentage: string;
   invoice_date: string;
