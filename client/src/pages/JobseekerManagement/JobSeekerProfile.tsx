@@ -114,6 +114,7 @@ interface FullJobseekerProfile {
   } | null; // New field for updater details
   rejectionReason?: string | null;
   employeeId?: string | null;
+  isInactive?: boolean;
   // Add any other potential fields from the DB
 }
 
