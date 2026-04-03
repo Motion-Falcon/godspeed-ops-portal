@@ -32,6 +32,7 @@ const getTableColumns = (t: (key: string) => string): { key: string; label: stri
   { key: 'total_regular_hours', label: t('reports.columns.regularHours'), format: (val) => String(val ?? '') },
   { key: 'total_overtime_hours', label: t('reports.columns.overtimeHours'), format: (val) => String(val ?? '') },
   { key: 'regular_pay_rate', label: t('reports.columns.regularPay'), format: (val) => val !== undefined && val !== 'N/A' ? `$${val}` : String(val ?? '') },
+  { key: 'premium_pay_rate', label: t('reports.columns.premiumPayRate'), format: (val) => val !== undefined && val !== 'N/A' && val !== '0' && val !== '0.00' ? `$${val}` : '' },
   { key: 'overtime_pay_rate', label: t('reports.columns.overtimePay'), format: (val) => val !== undefined && val !== 'N/A' ? `$${val}` : String(val ?? '') },
   { key: 'total_jobseeker_pay', label: t('reports.columns.totalPay'), format: (val) => val !== undefined && val !== 'N/A' ? `$${val}` : String(val ?? '') },
   { key: 'bonus_amount', label: t('reports.columns.bonus'), format: (val) => val !== undefined && val !== 'N/A' ? `+$${val}` : String(val ?? '') },

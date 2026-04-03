@@ -36,6 +36,7 @@ interface TimesheetData {
   totalRegularHours: number;
   totalOvertimeHours: number;
   regularPayRate: number;
+  premiumPayRate?: number;
   overtimePayRate: number;
   regularBillRate: number;
   overtimeBillRate: number;
@@ -89,6 +90,7 @@ interface DbTimesheetData {
   total_regular_hours: number;
   total_overtime_hours: number;
   regular_pay_rate: number;
+  premium_pay_rate: number;
   overtime_pay_rate: number;
   regular_bill_rate: number;
   overtime_bill_rate: number;
@@ -133,6 +135,7 @@ function transformToDbFormat(
     total_regular_hours: data.totalRegularHours,
     total_overtime_hours: data.totalOvertimeHours,
     regular_pay_rate: data.regularPayRate,
+    premium_pay_rate: data.premiumPayRate || 0,
     overtime_pay_rate: data.overtimePayRate,
     regular_bill_rate: data.regularBillRate,
     overtime_bill_rate: data.overtimeBillRate,
@@ -652,6 +655,7 @@ router.post(
         total_regular_hours: timesheet.total_regular_hours,
         total_overtime_hours: timesheet.total_overtime_hours,
         regular_pay_rate: timesheet.regular_pay_rate,
+        premium_pay_rate: timesheet.premium_pay_rate,
         overtime_pay_rate: timesheet.overtime_pay_rate,
         total_jobseeker_pay: timesheet.total_jobseeker_pay,
         overtime_enabled:
@@ -918,6 +922,7 @@ router.post(
         total_regular_hours: timesheetData.totalRegularHours,
         total_overtime_hours: timesheetData.totalOvertimeHours,
         regular_pay_rate: timesheetData.regularPayRate,
+        premium_pay_rate: timesheetData.premiumPayRate || 0,
         overtime_pay_rate: timesheetData.overtimePayRate,
         total_jobseeker_pay: timesheetData.totalJobseekerPay,
         overtime_enabled: timesheetData.overtimeEnabled,
@@ -1209,6 +1214,7 @@ router.put(
         total_regular_hours: timesheetData.totalRegularHours,
         total_overtime_hours: timesheetData.totalOvertimeHours,
         regular_pay_rate: timesheetData.regularPayRate,
+        premium_pay_rate: timesheetData.premiumPayRate || 0,
         overtime_pay_rate: timesheetData.overtimePayRate,
         total_jobseeker_pay: timesheetData.totalJobseekerPay,
         overtime_enabled: timesheetData.overtimeEnabled,
