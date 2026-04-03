@@ -158,7 +158,7 @@ function App() {
                   <Route path="/consent-dashboard" element={<ConsentListPage />} />
                   <Route path="/consent-dashboard/:documentId" element={<ConsentDetailPage />} />
                   <Route path="/consent-dashboard/new" element={<CreateConsentPage />} />
-                  <Route path="/client/dropdown-options" element={<DropdownOptionsManagement />} />
+                  <Route path="/admin/dropdown-options" element={<DropdownOptionsManagement />} />
                   {/* Add more recruiter-specific routes here */}
                 </Route>
 

@@ -27,7 +27,6 @@ import {
   DropdownOption,
 } from "../../components/CustomDropdown";
 import {
-  JOB_TITLES,
   EMPLOYMENT_TERMS,
   EMPLOYMENT_TYPES,
   POSITION_CATEGORIES,
@@ -36,6 +35,7 @@ import {
   PAYMENT_METHODS,
   PAYMENT_TERMS,
 } from "../../constants/formOptions";
+import { getDropdownOptionsByType } from "../../services/api/dropdownOptions";
 
 // Helper function for date formatting and validation
 const formatDateForInput = (date: Date): string => {
@@ -242,8 +242,20 @@ export function PositionCreate({
     useState(false);
   const [copyFromPositionLoading, setCopyFromPositionLoading] = useState(false);
 
-  // Job title options
-  const titleOptions: DropdownOption[] = JOB_TITLES.map((title) => ({
+  // Dynamic job title options from API
+  const [dynamicTitles, setDynamicTitles] = useState<string[]>([]);
+  useEffect(() => {
+    getDropdownOptionsByType("position_title")
+      .then((opts) => {
+        setDynamicTitles(opts.map((o) => o.name));
+      })
+      .catch(() => {
+        // If API fails, titles list will be empty
+      });
+  }, []);
+
+  // Job title options from API
+  const titleOptions: DropdownOption[] = dynamicTitles.map((title) => ({
     id: title,
     value: title,
     label: title,
