@@ -17,12 +17,16 @@ import "../../styles/pages/RecruiterHierarchy.css";
 import "../../styles/pages/ClientManagement.css";
 import "./DropdownOptionsManagement.css";
 
-const LIST_TYPES: DropdownListType[] = [
+const CLIENT_LIST_TYPES: DropdownListType[] = [
   "client_manager",
   "client_representative",
   "salesperson",
   "accounting_person",
   "accounting_manager",
+];
+
+const POSITION_LIST_TYPES: DropdownListType[] = [
+  "position_title",
 ];
 
 export function DropdownOptionsManagement() {
@@ -149,16 +153,36 @@ export function DropdownOptionsManagement() {
 
         <div className="card dopts-card">
           <div className="dopts-tabs" role="tablist">
-            {LIST_TYPES.map((type) => (
-              <button
-                key={type}
-                type="button"
-                className={`dopts-tab-btn ${selectedListType === type ? "dopts-tab-btn--active" : ""}`}
-                onClick={() => setSelectedListType(type)}
-              >
-                {LIST_TYPE_LABELS[type]}
-              </button>
-            ))}
+            <div className="dopts-tab-group">
+              <span className="dopts-tab-group-label">{t("dropdownOptions.clientOptions")}</span>
+              <div className="dopts-tab-group-buttons">
+                {CLIENT_LIST_TYPES.map((type) => (
+                  <button
+                    key={type}
+                    type="button"
+                    className={`dopts-tab-btn ${selectedListType === type ? "dopts-tab-btn--active" : ""}`}
+                    onClick={() => setSelectedListType(type)}
+                  >
+                    {LIST_TYPE_LABELS[type]}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="dopts-tab-group">
+              <span className="dopts-tab-group-label">{t("dropdownOptions.positionOptions")}</span>
+              <div className="dopts-tab-group-buttons">
+                {POSITION_LIST_TYPES.map((type) => (
+                  <button
+                    key={type}
+                    type="button"
+                    className={`dopts-tab-btn ${selectedListType === type ? "dopts-tab-btn--active" : ""}`}
+                    onClick={() => setSelectedListType(type)}
+                  >
+                    {LIST_TYPE_LABELS[type]}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
           <div className="card-body dopts-card-body">

@@ -25,7 +25,7 @@
     "recruiterHierarchy": "Recruiter Hierarchy",
     "allAdmins": "All Admins",
     "allRecruiters": "All Recruiters",
-    "dropdownOptions": "Client Dropdown Options",
+    "dropdownOptions": "Dropdown Options",
     "allJobseekers": "All Jobseekers",
     "jobseekerManagement": "Jobseeker Management",
     "createJobseeker": "Create Jobseeker",
@@ -377,8 +377,10 @@
     "emailAndNameRequired": "Email and name are required"
   },
   "dropdownOptions": {
-    "title": "Client Dropdown Options",
-    "subtitle": "Manage dropdown values for Client Manager, Client Representative, Sales Person, Accounting Person, and Accounting Manager used in the Create Client form.",
+    "title": "Dropdown Options Management",
+    "subtitle": "Manage dropdown values used across forms — client personnel options (Manager, Representative, Sales Person, Accounting) and position options (Title).",
+    "clientOptions": "Client Options",
+    "positionOptions": "Position Options",
     "addNew": "Add new {{list}}",
     "addButton": "Add",
     "namePlaceholder": "Enter name",
