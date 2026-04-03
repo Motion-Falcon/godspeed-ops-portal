@@ -13,11 +13,31 @@
 
 .dropdown-options-management .dopts-tabs {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  flex-direction: column;
+  gap: 12px;
   padding: 16px;
   border-bottom: 1px solid var(--border);
   background: var(--muted, #f9fafb);
+}
+
+.dropdown-options-management .dopts-tab-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dropdown-options-management .dopts-tab-group-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted, #6b7280);
+}
+
+.dropdown-options-management .dopts-tab-group-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .dropdown-options-management .dopts-tab-btn {
