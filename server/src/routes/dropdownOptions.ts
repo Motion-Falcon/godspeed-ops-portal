@@ -23,6 +23,7 @@ export const DROPDOWN_LIST_TYPES = [
   'salesperson',
   'accounting_person',
   'accounting_manager',
+  'position_title',
 ] as const;
 
 export type DropdownListType = (typeof DROPDOWN_LIST_TYPES)[number];

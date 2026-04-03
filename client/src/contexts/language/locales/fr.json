@@ -25,7 +25,7 @@
     "recruiterHierarchy": "Hiérarchie des recruteurs",
     "allAdmins": "Tous les administrateurs",
     "allRecruiters": "Tous les recruteurs",
-    "dropdownOptions": "Options des listes déroulantes clients",
+    "dropdownOptions": "Options des listes déroulantes",
     "allJobseekers": "Tous les demandeurs d'emploi",
     "jobseekerManagement": "Gestion des demandeurs d'emploi",
     "createJobseeker": "Créer un demandeur d'emploi",
@@ -377,8 +377,10 @@
     "emailAndNameRequired": "L'email et le nom sont requis"
   },
   "dropdownOptions": {
-    "title": "Options des listes déroulantes clients",
-    "subtitle": "Gérer les valeurs des listes déroulantes (Gestionnaire client, Représentant client, Personne des ventes, Personne comptable, Gestionnaire comptable) utilisées dans le formulaire Créer un client.",
+    "title": "Gestion des options de listes déroulantes",
+    "subtitle": "Gérer les valeurs des listes déroulantes utilisées dans les formulaires — options du personnel client (Gestionnaire, Représentant, Vendeur, Comptable) et options de postes (Titre).",
+    "clientOptions": "Options client",
+    "positionOptions": "Options de poste",
     "addNew": "Ajouter un nouveau {{list}}",
     "addButton": "Ajouter",
     "namePlaceholder": "Entrez le nom",
