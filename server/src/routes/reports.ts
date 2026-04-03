@@ -102,7 +102,7 @@ router.post(
           positions:position_id (
             title, position_code, position_category, client_manager, notes, client
           ),
-          week_start_date, week_end_date, total_regular_hours, total_overtime_hours, regular_pay_rate, overtime_pay_rate, total_jobseeker_pay, bonus_amount, deduction_amount, created_at, invoice_number, position_id
+          week_start_date, week_end_date, total_regular_hours, total_overtime_hours, regular_pay_rate, premium_pay_rate, overtime_pay_rate, total_jobseeker_pay, bonus_amount, deduction_amount, created_at, invoice_number, position_id
         `
         )
         .in("jobseeker_profile_id", [jobseekerId])
@@ -160,6 +160,7 @@ router.post(
           total_regular_hours: row.total_regular_hours,
           total_overtime_hours: row.total_overtime_hours,
           regular_pay_rate: row.regular_pay_rate,
+          premium_pay_rate: row.premium_pay_rate,
           overtime_pay_rate: row.overtime_pay_rate,
           total_jobseeker_pay: row.total_jobseeker_pay,
           bonus_amount: row.bonus_amount,
@@ -588,6 +589,7 @@ router.post(
           position_number,
           position_category,
           regular_pay_rate,
+          premium_pay_rate,
           bill_rate,
           overtime_hours,
           overtime_pay_rate,
@@ -629,6 +631,7 @@ router.post(
           position_category: position.position_category || "N/A",
           bill_rate: position.bill_rate || "N/A",
           pay_rate: position.regular_pay_rate || "N/A",
+          premium_pay_rate: position.premium_pay_rate || "N/A",
           overtime_hours: position.overtime_hours || "N/A",
           overtime_bill_rate: position.overtime_bill_rate || "N/A",
           overtime_pay_rate: position.overtime_pay_rate || "N/A",

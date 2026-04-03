@@ -182,6 +182,7 @@ router.get(
           number_of_positions,
           payrate_type,
           regular_pay_rate,
+          premium_pay_rate,
           bill_rate
         `);
 
@@ -435,6 +436,7 @@ router.get(
           number_of_positions,
           payrate_type,
           regular_pay_rate,
+          premium_pay_rate,
           bill_rate,
           preferred_payment_method,
           terms,
@@ -1211,6 +1213,7 @@ router.put(
           payrate_type,
           number_of_positions,
           regular_pay_rate,
+          premium_pay_rate,
           markup,
           bill_rate,
           overtime_enabled,
@@ -1462,6 +1465,7 @@ router.post(
         experience: res.locals.position?.experience || "",
         payrate_type: res.locals.position?.payrate_type || "",
         regular_pay_rate: res.locals.position?.regular_pay_rate || "",
+        premium_pay_rate: res.locals.position?.premium_pay_rate || "",
         task_time: res.locals.position?.task_time || "",
       };
       console.log("[EmailNotifier] templateVars:", templateVars);
@@ -1532,6 +1536,7 @@ router.post(
           experience,
           payrate_type,
           regular_pay_rate,
+          premium_pay_rate,
           task_time,
           assigned_jobseekers,
           number_of_positions
@@ -1693,6 +1698,7 @@ router.post(
           payrate_type,
           number_of_positions,
           regular_pay_rate,
+          premium_pay_rate,
           markup,
           bill_rate,
           overtime_enabled,
@@ -1965,6 +1971,7 @@ router.delete(
           number_of_positions,
           regular_pay_rate,
           markup,
+          premium_pay_rate,
           bill_rate,
           overtime_enabled,
           overtime_hours,
@@ -2238,6 +2245,7 @@ router.get(
             payrate_type,
             number_of_positions,
             regular_pay_rate,
+            premium_pay_rate,
             bill_rate,
             preferred_payment_method,
             terms,
@@ -2353,6 +2361,7 @@ router.get(
                 startDate: position.start_date,
                 endDate: position.end_date,
                 regularPayRate: position.regular_pay_rate,
+                premiumPayRate: position.premium_pay_rate,
                 billRate: position.bill_rate,
                 numberOfPositions: position.number_of_positions,
                 markup: position.markup,

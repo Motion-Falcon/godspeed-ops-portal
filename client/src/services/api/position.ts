@@ -48,6 +48,7 @@ export interface PositionData {
   payrateType?: string; // Hourly/Daily/Monthly
   numberOfPositions?: number;
   regularPayRate?: string;
+  premiumPayRate?: string;
   markup?: string;
   billRate?: string;
 
