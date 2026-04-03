@@ -15,6 +15,7 @@ const getTableColumns = (t: (key: string) => string): { key: string; label: stri
   { key: 'position_category', label: t('reports.columns.positionCategory'), format: (val) => String(val ?? '') },
   { key: 'bill_rate', label: t('reports.columns.billRate'), format: (val) => val !== undefined && val !== 'N/A' ? `$${val}` : String(val ?? '') },
   { key: 'pay_rate', label: t('reports.columns.payRate'), format: (val) => val !== undefined && val !== 'N/A' ? `$${val}` : String(val ?? '') },
+  { key: 'premium_pay_rate', label: t('reports.columns.premiumPayRate'), format: (val) => val !== undefined && val !== 'N/A' ? `$${val}` : String(val ?? '') },
   { key: 'overtime_hours', label: t('reports.columns.overtimeAfterHours'), format: (val) => val !== undefined && val !== 'N/A' ? `${val} hrs` : String(val ?? '') },
   { key: 'overtime_bill_rate', label: t('reports.columns.overtimeBillRateCol'), format: (val) => val !== undefined && val !== 'N/A' ? `$${val}` : String(val ?? '') },
   { key: 'overtime_pay_rate', label: t('reports.columns.overtimePayRate'), format: (val) => val !== undefined && val !== 'N/A' ? `$${val}` : String(val ?? '') },
@@ -24,7 +25,7 @@ const getTableColumns = (t: (key: string) => string): { key: string; label: stri
 const getCsvColumns = (tableColumns: ReturnType<typeof getTableColumns>) => tableColumns.map(col => ({
   ...col,
   format: (val: unknown) => {
-    if (col.key === 'bill_rate' || col.key === 'pay_rate' || col.key === 'overtime_bill_rate' || col.key === 'overtime_pay_rate') {
+    if (col.key === 'bill_rate' || col.key === 'pay_rate' || col.key === 'premium_pay_rate' || col.key === 'overtime_bill_rate' || col.key === 'overtime_pay_rate') {
       return val !== undefined && val !== 'N/A' ? `$${val}` : String(val ?? '');
     }
     if (col.key === 'overtime_hours') {

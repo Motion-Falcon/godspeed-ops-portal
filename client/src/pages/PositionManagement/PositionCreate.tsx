@@ -138,6 +138,7 @@ const createPositionFormSchema = (t: (key: string) => string) =>
       regularPayRate: z
         .string()
         .min(1, { message: t("positionCreate.errors.regularPayRateRequired") }),
+      premiumPayRate: z.string().optional(),
       markup: z.string().optional(),
       billRate: z
         .string()
@@ -1928,6 +1929,23 @@ export function PositionCreate({
                         {methods.formState.errors.regularPayRate.message}
                       </p>
                     )}
+                  </div>
+                  <div className="form-group">
+                    <label
+                      htmlFor="premiumPayRate"
+                      className="form-label"
+                    >
+                      {t("positionCreate.fields.premiumPayRate")}
+                    </label>
+                    <input
+                      type="text"
+                      id="premiumPayRate"
+                      className="form-input"
+                      placeholder={t(
+                        "positionCreate.placeholders.premiumPayRate"
+                      )}
+                      {...methods.register("premiumPayRate")}
+                    />
                   </div>
                   <div className="form-group">
                     <label

@@ -73,6 +73,7 @@ interface InvoiceLineItem {
   hours: string;
   regularBillRate: string;
   regularPayRate: string;
+  premiumPayRate?: string;
   salesTax: string;
   totalRegularHours?: number; // Calculated regular hours
   totalOvertimeHours?: number; // Calculated overtime hours
@@ -105,6 +106,7 @@ interface TimesheetData {
   totalOvertimeHours?: number;
   regularBillRate: number;
   regularPayRate: number;
+  premiumPayRate?: number;
   overtimeBillRate?: number;
   overtimePayRate?: number;
   overtimeEnabled?: boolean;
@@ -459,6 +461,7 @@ export function InvoiceManagement() {
           totalHours: number;
           regularBillRate: number;
           regularPayRate: number;
+          premiumPayRate: number;
           timesheetIds: string[];
           description: string;
         }
@@ -476,6 +479,7 @@ export function InvoiceManagement() {
               positionNumber: timesheet.position.positionNumber,
               title: timesheet.position.title,
               regularPayRate: timesheet.regularPayRate.toString(),
+              premiumPayRate: (timesheet.premiumPayRate || 0).toString(),
               billRate: timesheet.regularBillRate.toString(),
               markup: "0",
               overtimeEnabled: timesheet.overtimeEnabled,
@@ -496,6 +500,7 @@ export function InvoiceManagement() {
             totalHours: 0,
             regularBillRate: timesheet.regularBillRate,
             regularPayRate: timesheet.regularPayRate,
+            premiumPayRate: timesheet.premiumPayRate || 0,
             timesheetIds: [],
             description: `Work period: ${new Date(
               timesheet.weekStartDate
@@ -532,6 +537,7 @@ export function InvoiceManagement() {
             hours: data.totalHours.toString(),
             regularBillRate: data.regularBillRate.toString(),
             regularPayRate: data.regularPayRate.toString(),
+            premiumPayRate: data.premiumPayRate.toString(),
             salesTax: "13.00% [ON]", // Default tax, can be changed by user
             totalRegularHours: regularHours,
             totalOvertimeHours: overtimeHours,
@@ -554,6 +560,7 @@ export function InvoiceManagement() {
             positionNumber: timesheet.position.positionNumber,
             title: timesheet.position.title,
             regularPayRate: timesheet.regularPayRate.toString(),
+            premiumPayRate: (timesheet.premiumPayRate || 0).toString(),
             billRate: timesheet.regularBillRate.toString(),
             markup: "0",
           } as PositionData;
@@ -618,6 +625,7 @@ export function InvoiceManagement() {
       hours: "",
       regularBillRate: "",
       regularPayRate: "",
+      premiumPayRate: "0",
       salesTax: "13.00% [ON]", // Default to Ontario
     };
     setLineItems((prev) => [...prev, newLineItem]);
@@ -1182,13 +1190,15 @@ export function InvoiceManagement() {
               const totalClientBill = regularAmount + overtimeAmount;
 
               const regularPayRate = parseFloat(item.regularPayRate) || 0;
+              const premiumPayRate = parseFloat(item.position?.premiumPayRate || "0") || 0;
+              const effectivePayRate = regularPayRate + premiumPayRate;
               const overtimePayRate =
                 item.position?.overtimeEnabled && item.position?.overtimePayRate
                   ? parseFloat(item.position.overtimePayRate)
-                  : regularPayRate;
+                  : effectivePayRate;
 
               const totalJobseekerPay =
-                regularHours * regularPayRate + overtimeHours * overtimePayRate;
+                regularHours * effectivePayRate + overtimeHours * overtimePayRate;
 
               return {
                 id: item.id,
@@ -1272,12 +1282,14 @@ export function InvoiceManagement() {
             const totalClientBill = item.regularAmount + item.overtimeAmount;
 
             const regularPayRate = parseFloat(item.regularPayRate) || 0;
+            const premiumPayRate = parseFloat(item.position?.premiumPayRate || item.premiumPayRate || "0") || 0;
+            const effectivePayRate = regularPayRate + premiumPayRate;
             const overtimePayRateValue =
               item.position?.overtimeEnabled && item.position?.overtimePayRate
                 ? parseFloat(item.position.overtimePayRate)
-                : regularPayRate;
+                : effectivePayRate;
             const totalJobseekerPay =
-              regularHours * regularPayRate +
+              regularHours * effectivePayRate +
               overtimeHours * overtimePayRateValue;
 
             return {
@@ -1726,6 +1738,7 @@ export function InvoiceManagement() {
                 positionCode: timesheet.position.positionCode,
                 title: timesheet.position.title,
                 regularPayRate: timesheet.regularPayRate.toString(),
+                premiumPayRate: (timesheet.premiumPayRate || 0).toString(),
                 billRate: timesheet.regularBillRate.toString(),
                 markup: "0",
                 positionNumber: timesheet.position.positionNumber,
@@ -1764,6 +1777,7 @@ export function InvoiceManagement() {
             hours: totalHours.toString(),
             regularBillRate: timesheet.regularBillRate.toString(),
             regularPayRate: timesheet.regularPayRate.toString(),
+            premiumPayRate: (timesheet.premiumPayRate || 0).toString(),
             salesTax: timesheet.salesTax || "13.00% [ON]",
             totalRegularHours: totalRegularHours,
             totalOvertimeHours: totalOvertimeHours,

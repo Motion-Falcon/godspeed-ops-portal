@@ -497,6 +497,7 @@ export function PositionView() {
                 position.numberOfPositions
               )}
               {renderDetailItem(t("positionManagement.regularPayRate"), position.regularPayRate)}
+              {position.premiumPayRate && parseFloat(position.premiumPayRate) > 0 && renderDetailItem(t("positionManagement.premiumPayRate"), position.premiumPayRate)}
               {renderDetailItem(t("positionManagement.markup"), position.markup)}
               {renderDetailItem(t("positionManagement.billRate"), position.billRate)}
             </div>
