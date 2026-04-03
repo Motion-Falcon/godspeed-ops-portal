@@ -432,20 +432,11 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
           roles: ["admin"],
         },
         {
-          label: t("navigation.allAdmins"),
-          path: "/all-users-management?userType=admin",
-          icon: <Users size={16} />,
+          label: t("navigation.dropdownOptions"),
+          path: "/admin/dropdown-options",
+          icon: <ClipboardList size={16} />,
           exact: true,
-          roles: ["admin"],
-          activePaths: ["/all-users-management?userType=admin"]
-        },
-        {
-          label: t("navigation.allRecruiters"),
-          path: "/all-users-management?userType=recruiter",
-          icon: <Users size={16} />,
-          exact: true,
-          roles: ["admin"],
-          activePaths: ["/all-users-management?userType=recruiter"]
+          roles: ["admin", "recruiter"],
         },
       ],
     },
@@ -503,12 +494,6 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
           label: t("navigation.draftClients"),
           path: "/client-management/drafts",
           icon: <FileText size={16} />,
-          exact: true,
-        },
-        {
-          label: t("navigation.dropdownOptions"),
-          path: "/client/dropdown-options",
-          icon: <ClipboardList size={16} />,
           exact: true,
         },
       ],
