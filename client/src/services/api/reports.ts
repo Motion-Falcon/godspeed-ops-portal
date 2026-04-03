@@ -27,6 +27,7 @@ export interface TimesheetReportRow {
   total_regular_hours: string;
   total_overtime_hours: string;
   regular_pay_rate: string;
+  premium_pay_rate: string;
   overtime_pay_rate: string;
   total_jobseeker_pay: string;
   bonus_amount: string;
@@ -185,6 +186,7 @@ export interface RateListRow {
   position_category: string;
   bill_rate: string;
   pay_rate: string;
+  premium_pay_rate: string;
   overtime_hours: string;
   overtime_bill_rate: string;
   overtime_pay_rate: string;

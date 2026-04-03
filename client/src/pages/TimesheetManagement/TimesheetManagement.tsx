@@ -69,6 +69,7 @@ export interface PositionWithOvertime {
   startDate: string;
   endDate?: string;
   regularPayRate: string;
+  premiumPayRate?: string;
   billRate: string;
   numberOfPositions: number;
   overtimeEnabled?: boolean;
@@ -84,6 +85,7 @@ interface ClientPosition {
   positionCode: string;
   title: string;
   regularPayRate: string;
+  premiumPayRate?: string;
   billRate: string;
   overtimeEnabled?: boolean;
   overtimeHours?: string;
@@ -218,6 +220,7 @@ export function TimesheetManagement() {
           positionCode: pos.positionCode!,
           title: pos.title!,
           regularPayRate: pos.regularPayRate!,
+          premiumPayRate: pos.premiumPayRate,
           billRate: pos.billRate!,
           overtimeEnabled: pos.overtimeEnabled,
           overtimeHours: pos.overtimeHours,
@@ -614,9 +617,11 @@ export function TimesheetManagement() {
 
     // Calculate pay rates
     const regularPayRate = parseFloat(position.regularPayRate || "0");
+    const premiumPayRate = parseFloat(position.premiumPayRate || "0");
+    const effectivePayRate = regularPayRate + premiumPayRate;
     const regularBillRate = parseFloat(position.billRate || "0");
 
-    let overtimePayRate = regularPayRate;
+    let overtimePayRate = effectivePayRate;
     let overtimeBillRate = regularBillRate;
 
     if (
@@ -628,9 +633,9 @@ export function TimesheetManagement() {
       overtimeBillRate = parseFloat(position.overtimeBillRate);
     }
 
-    // Calculate base pay
+    // Calculate base pay (using effective pay rate = regular + premium)
     const baseJobseekerPay =
-      weeklyRegularHours * regularPayRate +
+      weeklyRegularHours * effectivePayRate +
       weeklyOvertimeHours * overtimePayRate;
 
     const totalJobseekerPay = baseJobseekerPay + bonusAmount - deductionAmount;
@@ -712,6 +717,7 @@ export function TimesheetManagement() {
           totalRegularHours: timesheet.totalRegularHours,
           totalOvertimeHours: timesheet.totalOvertimeHours,
           regularPayRate: parseFloat(selectedPosition.regularPayRate || "0"),
+          premiumPayRate: parseFloat(selectedPosition.premiumPayRate || "0"),
           overtimePayRate: selectedPosition.overtimePayRate
             ? parseFloat(selectedPosition.overtimePayRate)
             : parseFloat(selectedPosition.regularPayRate || "0"),
@@ -859,9 +865,11 @@ export function TimesheetManagement() {
     timesheet: WeeklyTimesheet,
     position: PositionWithOvertime
   ) => {
-    const regularPay =
-      timesheet.totalRegularHours * parseFloat(position.regularPayRate || "0");
-    let overtimePayRate = parseFloat(position.regularPayRate || "0");
+    const effectivePayRate =
+      parseFloat(position.regularPayRate || "0") +
+      parseFloat(position.premiumPayRate || "0");
+    const regularPay = timesheet.totalRegularHours * effectivePayRate;
+    let overtimePayRate = effectivePayRate;
     if (position.overtimeEnabled && position.overtimePayRate) {
       overtimePayRate = parseFloat(position.overtimePayRate);
     }
@@ -1324,6 +1332,16 @@ export function TimesheetManagement() {
                                 ${selectedPosition?.regularPayRate || "N/A"}/h
                               </span>
                             </div>
+                            {parseFloat(selectedPosition?.premiumPayRate || "0") > 0 && (
+                              <div className="timesheet-pay-info-item">
+                                <span className="timesheet-pay-label">
+                                  Premium Pay Rate
+                                </span>
+                                <span className="timesheet-pay-value">
+                                  ${selectedPosition?.premiumPayRate}/h
+                                </span>
+                              </div>
+                            )}
                             {selectedPosition?.overtimeEnabled && (
                               <div className="timesheet-pay-info-item">
                                 <span className="timesheet-pay-label">
@@ -1383,22 +1401,24 @@ export function TimesheetManagement() {
                                   Regular Hours
                                 </div>
                                 <div className="timesheet-item-subtitle">
-                                  Standard work hours
+                                  Standard work hours{parseFloat(selectedPosition?.premiumPayRate || "0") > 0 ? ` (incl. premium $${selectedPosition?.premiumPayRate}/h)` : ""}
                                 </div>
                               </div>
                               <div className="timesheet-col-hours">
                                 {timesheet.totalRegularHours.toFixed(2)}
                               </div>
                               <div className="timesheet-col-rate">
-                                ${selectedPosition?.regularPayRate || "0.00"}
+                                ${(parseFloat(selectedPosition?.regularPayRate || "0") + parseFloat(selectedPosition?.premiumPayRate || "0")).toFixed(2)}
                               </div>
                               <div className="timesheet-col-amount">
                                 $
                                 {(
                                   timesheet.totalRegularHours *
-                                  parseFloat(
+                                  (parseFloat(
                                     selectedPosition?.regularPayRate || "0"
-                                  )
+                                  ) + parseFloat(
+                                    selectedPosition?.premiumPayRate || "0"
+                                  ))
                                 ).toFixed(2)}
                               </div>
                             </div>

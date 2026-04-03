@@ -318,6 +318,7 @@ export interface TimesheetFromAPI {
   totalRegularHours: number;
   totalOvertimeHours: number;
   regularPayRate: number;
+  premiumPayRate?: number;
   regularBillRate: number;
   overtimePayRate: number;
   overtimeBillRate: number;

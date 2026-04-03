@@ -246,9 +246,11 @@ export function BulkTimesheetManagement() {
 
     // Calculate pay rates
     const regularPayRate = parseFloat(position.regularPayRate || "0");
+    const premiumPayRate = parseFloat(position.premiumPayRate || "0");
+    const effectivePayRate = regularPayRate + premiumPayRate;
     const regularBillRate = parseFloat(position.billRate || "0");
 
-    let overtimePayRate = regularPayRate;
+    let overtimePayRate = effectivePayRate;
     let overtimeBillRate = regularBillRate;
 
     if (
@@ -260,9 +262,9 @@ export function BulkTimesheetManagement() {
       overtimeBillRate = parseFloat(position.overtimeBillRate);
     }
 
-    // Calculate base pay
+    // Calculate base pay (using effective pay rate = regular + premium)
     const baseJobseekerPay =
-      weeklyRegularHours * regularPayRate +
+      weeklyRegularHours * effectivePayRate +
       weeklyOvertimeHours * overtimePayRate;
 
     const totalJobseekerPay = baseJobseekerPay + bonusAmount - deductionAmount;
@@ -285,14 +287,14 @@ export function BulkTimesheetManagement() {
     timesheet: JobseekerTimesheet,
     position: PositionWithOvertime
   ) => {
-    const regularPay =
-      timesheet.totalRegularHours * parseFloat(position.regularPayRate || "0");
-    let overtimePayRate = parseFloat(position.regularPayRate || "0");
+    const effectivePay =
+      timesheet.totalRegularHours * (parseFloat(position.regularPayRate || "0") + parseFloat(position.premiumPayRate || "0"));
+    let overtimePayRate = parseFloat(position.regularPayRate || "0") + parseFloat(position.premiumPayRate || "0");
     if (position.overtimeEnabled && position.overtimePayRate) {
       overtimePayRate = parseFloat(position.overtimePayRate);
     }
     const overtimePay = timesheet.totalOvertimeHours * overtimePayRate;
-    return regularPay + overtimePay;
+    return effectivePay + overtimePay;
   };
 
   // Handlers for input changes
@@ -568,6 +570,7 @@ export function BulkTimesheetManagement() {
             totalRegularHours: ts.totalRegularHours,
             totalOvertimeHours: ts.totalOvertimeHours,
             regularPayRate: parseFloat(position.regularPayRate || "0"),
+            premiumPayRate: parseFloat(position.premiumPayRate || "0"),
             overtimePayRate:
               position.overtimeEnabled && position.overtimePayRate
                 ? parseFloat(position.overtimePayRate)

@@ -14,6 +14,7 @@ export interface TimesheetData {
   totalRegularHours: number;
   totalOvertimeHours: number;
   regularPayRate: number;
+  premiumPayRate?: number;
   overtimePayRate: number;
   regularBillRate: number;
   overtimeBillRate: number;
@@ -314,6 +315,7 @@ export const createTimesheetFromFrontendData = async (frontendData: {
     total_regular_hours: number;
     total_overtime_hours: number;
     regular_pay_rate: number;
+    premium_pay_rate?: number;
     overtime_pay_rate: number;
     regular_bill_rate: number;
     overtime_bill_rate: number;
@@ -348,6 +350,7 @@ export const createTimesheetFromFrontendData = async (frontendData: {
         totalRegularHours: assignment.total_regular_hours,
         totalOvertimeHours: assignment.total_overtime_hours,
         regularPayRate: assignment.regular_pay_rate,
+        premiumPayRate: assignment.premium_pay_rate || 0,
         overtimePayRate: assignment.overtime_pay_rate,
         regularBillRate: assignment.regular_bill_rate,
         overtimeBillRate: assignment.overtime_bill_rate,
