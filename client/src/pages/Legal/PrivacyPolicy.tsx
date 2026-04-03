@@ -26,13 +26,13 @@ export function PrivacyPolicy() {
             {t('legal.effectiveDate')}: 09.09.2025
           </p>
           <p className="legal-page-company">
-            {t('legal.company')}: CanHire Solutions ("Company," "we," "our," "us")
+            {t('legal.company')}: Hire Solutions ("Company," "we," "our," "us")
           </p>
         </div>
 
         <div className="legal-page-body">
           <p>
-            CanHire Solutions is committed to protecting the privacy and personal information of all 
+            Hire Solutions is committed to protecting the privacy and personal information of all 
             individuals who use our website and Services. This Privacy Policy explains how we 
             collect, use, disclose, and safeguard personal information in compliance with the 
             Personal Information Protection and Electronic Documents Act (PIPEDA) and other 
@@ -150,9 +150,9 @@ export function PrivacyPolicy() {
             <h3>10. Contact Us</h3>
             <div className="legal-page-contact-info">
               <p>For privacy-related inquiries, corrections, or withdrawal of consent, please contact:</p>
-              <p><strong>CanHire Solutions</strong></p>
+              <p><strong>Hire Solutions</strong></p>
               <p>240 Humberline Dr, Etobicoke ON, M9W 5X1</p>
-              <p>info@canhiresolutions.ca</p>
+              <p>accounts@hiresolutions.ca</p>
               <p>
                 We will respond within a reasonable timeframe, in accordance with Canadian privacy 
                 legislation.

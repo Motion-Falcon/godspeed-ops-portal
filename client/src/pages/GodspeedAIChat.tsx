@@ -43,7 +43,7 @@ export function GodspeedAIChat() {
   return (
     <div className="godspeed-ai-chat-container">
       <AppHeader 
-        title="CanHire AI Chat" 
+        title="Hire Solutions AI Chat" 
         hideHamburgerMenu={false}
       />
       
@@ -51,7 +51,7 @@ export function GodspeedAIChat() {
         <div className="ai-chat-content">
           <IframeViewer
             url={AI_CHAT_URL}
-            title="CanHire AI Chat"
+            title="Hire Solutions AI Chat"
             allowedUserTypes={ALLOWED_USER_TYPES}
             currentUserType={currentUserType}
             onAccessDenied={handleAccessDenied}

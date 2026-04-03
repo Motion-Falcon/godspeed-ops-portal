@@ -138,12 +138,12 @@ export function AppHeader({
                     <div className="current-portal">
                       <img 
                         src={canHireIconLogo} 
-                        alt="CanHire Logo"
+                        alt="Hire Solutions Logo"
                         className="portal-logo"
                       />
                       <div className="portal-info">
                         <span className="portal-label">Portal</span>
-                        <span className="portal-name">CanHire Ops</span>
+                        <span className="portal-name">Hire Solutions Ops</span>
                       </div>
                     </div>
                     <div className="switcher-actions">

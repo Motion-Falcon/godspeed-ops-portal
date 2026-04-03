@@ -11,7 +11,7 @@ import '../../styles/variables.css';
 import '../../styles/pages/Login.css';
 import '../../styles/components/form.css';
 import '../../styles/components/button.css';
-import canhireLogo from '../../assets/logos/canhire-logo.png';
+import canhireLogo from '../../assets/logos/canhire-logo-fulllength.png';
 import motionFalconLogo from '../../assets/logos/motion-falcon-logo.png';
 import { LanguageToggle } from '../../components/LanguageToggle';
 

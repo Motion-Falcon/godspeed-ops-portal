@@ -7,8 +7,8 @@
   "recruiter": "Recruiter",
   "jobseeker": "Job Seeker",
   "admin_subtitle": "Oversee platform operations and manage system-wide recruiting analytics",
-  "recruiter_subtitle": "Manage talent acquisition with HD Group's lightning-fast recruiting tools",
-  "jobseeker_subtitle": "Discover opportunities at HD Group pace with our intelligent job matching system",
+  "recruiter_subtitle": "Manage talent acquisition with Hire Solutions's lightning-fast recruiting tools",
+  "jobseeker_subtitle": "Discover opportunities at Hire Solutions pace with our intelligent job matching system",
   "navigation": {
     "home": "Home",
     "about": "About",
@@ -55,7 +55,7 @@
     "consentTemplates": "Consent Templates",
     "myProfile": "My Profile",
     "myPositions": "My Positions",
-    "aiChat": "CanHire AI Chat",
+    "aiChat": "Hire Solutions AI Chat",
     "calendar": "Workforce Schedule Dashboard"
   },
   "buttons": {
@@ -284,7 +284,7 @@
     "select": "Select",
     "deselect": "Deselect",
     "language": "Language",
-    "godspeedLogo": "CanHire Logo",
+    "godspeedLogo": "Hire Solutions Logo",
     "user": "User",
     "client": "Client",
     "notAvailable": "N/A",
@@ -590,7 +590,7 @@
     "hidePassword": "Hide password",
     "showPassword": "Show password",
     "alreadyHaveAccount": "Already have an account?",
-    "brandDescription": "Elevate your talent management with CanHire's intelligent workflows and lightning-fast systems designed to connect the right people with the right opportunities."
+    "brandDescription": "Elevate your talent management with Hire Solutions's intelligent workflows and lightning-fast systems designed to connect the right people with the right opportunities."
   },
   "twoFactor": {
     "error": {
@@ -1808,7 +1808,7 @@
     }
   },
   "app": {
-    "name": "CanHire Ops Portal"
+    "name": "Hire Solutions Ops Portal"
   },
   "invoiceManagement": {
     "title": "Invoice Management",
