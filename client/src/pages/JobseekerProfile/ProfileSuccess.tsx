@@ -242,11 +242,11 @@ export function ProfileSuccess() {
               <h2 className="section-title">{t('jobSeekerProfile.compensation')}</h2>
               <div className="detail-group">
                 {renderDetailItem(t('jobSeekerProfile.payrateType'), profile.payrate_type)}
-                {renderDetailItem(t('jobSeekerProfile.billRate'), profile.bill_rate)}
                 {renderDetailItem(t('jobSeekerProfile.payRate'), profile.pay_rate)}
                 {renderDetailItem(t('jobSeekerProfile.paymentMethod'), profile.payment_method)}
                 {renderDetailItem(t('jobSeekerProfile.hstGst'), profile.hst_gst)}
-                {renderDetailItem(t('jobSeekerProfile.cashDeduction'), profile.cash_deduction)}
+                {(profile.payment_method === "Cash" || profile.payment_method === "e-Transfer") &&
+                  renderDetailItem(t('jobSeekerProfile.cashDeduction'), profile.cash_deduction)}
                 {renderDetailItem(t('jobSeekerProfile.overtimeEnabled'), profile.overtime_enabled)}
                 {profile.overtime_enabled && (
                   <>

@@ -11,11 +11,22 @@ interface CompensationFormProps {
 }
 
 export function CompensationForm({ allFields }: CompensationFormProps) {
-  const { register, watch, formState, trigger } =
+  const { register, watch, formState, trigger, setValue } =
     useFormContext<CompensationFormData>();
   const { errors: allErrors } = formState;
   const { isJobSeeker } = useAuth();
   const { t } = useLanguage();
+
+  // Watch payment method to conditionally show cash deduction field
+  const paymentMethod = watch("paymentMethod");
+  const isCashOrEtransfer = paymentMethod === "Cash" || paymentMethod === "e-Transfer";
+
+  // Reset cash deduction to "0" when payment method changes to non-cash/e-transfer
+  useEffect(() => {
+    if (paymentMethod && !isCashOrEtransfer) {
+      setValue("cashDeduction", "0");
+    }
+  }, [paymentMethod, isCashOrEtransfer, setValue]);
 
   // Function to check if we should show an error for a specific field
   const shouldShowError = (fieldName: string) => {
@@ -83,28 +94,7 @@ export function CompensationForm({ allFields }: CompensationFormProps) {
         </div>
 
         <div className="form-group">
-          <label
-            htmlFor="billRate"
-            className="form-label"
-            data-required={isJobSeeker ? "" : "*"}
-          >
-            {t('profileCreate.compensation.billRate')}
-          </label>
-          <input
-            id="billRate"
-            type="number"
-            min="0"
-            step="0.01"
-            className="form-input"
-            placeholder={t('profileCreate.compensation.billRatePlaceholder')}
-            {...register("billRate")}
-          />
-          {shouldShowError("billRate") && (
-            <p className="error-message">{allErrors.billRate?.message}</p>
-          )}
-        </div>
-
-        <div className="form-group">
+          <input type="hidden" {...register("billRate")} value="0" />
           <label
             htmlFor="payRate"
             className="form-label"
@@ -167,26 +157,28 @@ export function CompensationForm({ allFields }: CompensationFormProps) {
           )}
         </div>
 
-        <div className="form-group">
-          <label htmlFor="cashDeduction" className="form-label">
-            {t('profileCreate.compensation.cashDeduction')}
-          </label>
-          <select
-            id="cashDeduction"
-            className="form-input"
-            {...register("cashDeduction")}
-          >
-            <option value="0">0%</option>
-            <option value="1">1%</option>
-            <option value="2">2%</option>
-            <option value="3">3%</option>
-            <option value="4">4%</option>
-            <option value="5">5%</option>
-          </select>
-          {shouldShowError("cashDeduction") && (
-            <p className="error-message">{allErrors.cashDeduction?.message}</p>
-          )}
-        </div>
+        {isCashOrEtransfer && (
+          <div className="form-group">
+            <label htmlFor="cashDeduction" className="form-label">
+              {t('profileCreate.compensation.cashDeduction')}
+            </label>
+            <select
+              id="cashDeduction"
+              className="form-input"
+              {...register("cashDeduction")}
+            >
+              <option value="0">0%</option>
+              <option value="1">1%</option>
+              <option value="2">2%</option>
+              <option value="3">3%</option>
+              <option value="4">4%</option>
+              <option value="5">5%</option>
+            </select>
+            {shouldShowError("cashDeduction") && (
+              <p className="error-message">{allErrors.cashDeduction?.message}</p>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="form-section">

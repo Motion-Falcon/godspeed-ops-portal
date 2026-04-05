@@ -39,6 +39,8 @@ export interface JobSeekerProfile {
   workPermitExpiry?: string;
   lastActivityAt?: string;
   isInactive?: boolean;
+  paymentMethod?: string;
+  cashDeduction?: string;
 }
 
 export interface JobSeekerDetailedProfile extends JobSeekerProfile {
