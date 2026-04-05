@@ -206,7 +206,9 @@ export function BulkTimesheetManagement() {
   const calculateTimesheetTotals = (
     entries: TimesheetEntry[],
     bonusAmount = 0,
-    deductionAmount = 0
+    deductionAmount = 0,
+    jobseekerPaymentMethod?: string,
+    jobseekerCashDeduction?: string
   ) => {
     if (!selectedPosition) {
       return {
@@ -267,7 +269,16 @@ export function BulkTimesheetManagement() {
       weeklyRegularHours * effectivePayRate +
       weeklyOvertimeHours * overtimePayRate;
 
-    const totalJobseekerPay = baseJobseekerPay + bonusAmount - deductionAmount;
+    // Apply cash deduction percentage if payment method is Cash or e-Transfer
+    let cashDeductionAmount = 0;
+    if (jobseekerPaymentMethod === "Cash" || jobseekerPaymentMethod === "e-Transfer") {
+      const cashDeductionPct = parseFloat(jobseekerCashDeduction || "0");
+      if (cashDeductionPct > 0) {
+        cashDeductionAmount = baseJobseekerPay * (cashDeductionPct / 100);
+      }
+    }
+
+    const totalJobseekerPay = baseJobseekerPay - cashDeductionAmount + bonusAmount - deductionAmount;
 
     // Calculate totals
     const clientBill =
@@ -317,7 +328,9 @@ export function BulkTimesheetManagement() {
         const totals = calculateTimesheetTotals(
           updatedEntries,
           ts.bonusAmount,
-          ts.deductionAmount
+          ts.deductionAmount,
+          ts.jobseeker.jobseekerProfile?.payment_method,
+          ts.jobseeker.jobseekerProfile?.cash_deduction
         );
 
         // Get the position to check if overtime is enabled
@@ -369,7 +382,9 @@ export function BulkTimesheetManagement() {
         const totals = calculateTimesheetTotals(
           ts.entries,
           bonus,
-          ts.deductionAmount
+          ts.deductionAmount,
+          ts.jobseeker.jobseekerProfile?.payment_method,
+          ts.jobseeker.jobseekerProfile?.cash_deduction
         );
         return { ...ts, bonusAmount: bonus, ...totals };
       })
@@ -383,7 +398,9 @@ export function BulkTimesheetManagement() {
         const totals = calculateTimesheetTotals(
           ts.entries,
           ts.bonusAmount,
-          deduction
+          deduction,
+          ts.jobseeker.jobseekerProfile?.payment_method,
+          ts.jobseeker.jobseekerProfile?.cash_deduction
         );
         return { ...ts, deductionAmount: deduction, ...totals };
       })
@@ -1143,6 +1160,16 @@ export function BulkTimesheetManagement() {
                             /h
                           </span>
                         </div>
+                        {parseFloat((selectedPosition as PositionWithOvertime)?.premiumPayRate || "0") > 0 && (
+                          <div className="timesheet-pay-info-item">
+                            <span className="timesheet-pay-label">
+                              Premium Pay Rate
+                            </span>
+                            <span className="timesheet-pay-value">
+                              ${(selectedPosition as PositionWithOvertime)?.premiumPayRate}/h
+                            </span>
+                          </div>
+                        )}
                         {selectedPosition?.overtimeEnabled && (
                           <div className="timesheet-pay-info-item">
                             <span className="timesheet-pay-label">
@@ -1245,22 +1272,24 @@ export function BulkTimesheetManagement() {
                             <div className="timesheet-item-subtitle">
                               {t(
                                 "bulkTimesheetManagement.form.standardWorkHours"
-                              )}
+                              )}{parseFloat((selectedPosition as PositionWithOvertime)?.premiumPayRate || "0") > 0 ? ` (incl. premium $${(selectedPosition as PositionWithOvertime)?.premiumPayRate}/h)` : ""}
                             </div>
                           </div>
                           <div className="timesheet-col-hours">
                             {ts.totalRegularHours.toFixed(2)}
                           </div>
                           <div className="timesheet-col-rate">
-                            ${selectedPosition?.regularPayRate || "0.00"}
+                            ${(parseFloat(selectedPosition?.regularPayRate || "0") + parseFloat((selectedPosition as PositionWithOvertime)?.premiumPayRate || "0")).toFixed(2)}
                           </div>
                           <div className="timesheet-col-amount">
                             $
                             {(
                               ts.totalRegularHours *
-                              parseFloat(
+                              (parseFloat(
                                 selectedPosition?.regularPayRate || "0"
-                              )
+                              ) + parseFloat(
+                                (selectedPosition as PositionWithOvertime)?.premiumPayRate || "0"
+                              ))
                             ).toFixed(2)}
                           </div>
                         </div>
@@ -1357,8 +1386,16 @@ export function BulkTimesheetManagement() {
                             selectedPosition as PositionWithOvertime;
                           const basePay = getBaseJobseekerPay(ts, position);
                           const subtotal = basePay;
+                          // Calculate cash deduction for display
+                          let cashDeductionDisplay = 0;
+                          const jsPaymentMethod = ts.jobseeker.jobseekerProfile?.payment_method;
+                          const jsCashDeductionPct = parseFloat(ts.jobseeker.jobseekerProfile?.cash_deduction || "0");
+                          if ((jsPaymentMethod === "Cash" || jsPaymentMethod === "e-Transfer") && jsCashDeductionPct > 0) {
+                            cashDeductionDisplay = subtotal * (jsCashDeductionPct / 100);
+                          }
                           const employeePay =
-                            subtotal +
+                            subtotal -
+                            cashDeductionDisplay +
                             (ts.bonusAmount || 0) -
                             (ts.deductionAmount || 0);
                           return (
@@ -1371,6 +1408,16 @@ export function BulkTimesheetManagement() {
                                   ${subtotal.toFixed(2)}
                                 </div>
                               </div>
+                              {cashDeductionDisplay > 0 && (
+                                <div className="timesheet-total-line">
+                                  <div className="timesheet-total-label">
+                                    Cash Deduction ({jsCashDeductionPct}%):
+                                  </div>
+                                  <div className="timesheet-total-value">
+                                    -${cashDeductionDisplay.toFixed(2)}
+                                  </div>
+                                </div>
+                              )}
                               {ts.bonusAmount > 0 && (
                                 <div className="timesheet-total-line">
                                   <div className="timesheet-total-label">
@@ -1436,13 +1483,13 @@ export function BulkTimesheetManagement() {
                         {grandTotalRegularHours.toFixed(2)}
                       </div>
                       <div className="timesheet-col-rate">
-                        ${selectedPosition?.regularPayRate || "0.00"}
+                        ${(parseFloat(selectedPosition?.regularPayRate || "0") + parseFloat((selectedPosition as PositionWithOvertime)?.premiumPayRate || "0")).toFixed(2)}
                       </div>
                       <div className="timesheet-col-amount">
                         $
                         {(
                           grandTotalRegularHours *
-                          parseFloat(selectedPosition?.regularPayRate || "0")
+                          (parseFloat(selectedPosition?.regularPayRate || "0") + parseFloat((selectedPosition as PositionWithOvertime)?.premiumPayRate || "0"))
                         ).toFixed(2)}
                       </div>
                     </div>
