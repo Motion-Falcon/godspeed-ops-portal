@@ -207,7 +207,7 @@ export function ProfileCreate({
 
       // Compensation defaults
       payrateType: "Hourly",
-      billRate: "",
+      billRate: "0",
       payRate: "",
       paymentMethod: "",
       hstGst: "",
@@ -294,7 +294,9 @@ export function ProfileCreate({
             payRate: profileData.payRate || "",
             paymentMethod: profileData.paymentMethod || "",
             hstGst: profileData.hstGst || "",
-            cashDeduction: profileData.cashDeduction || "0",
+            cashDeduction: (profileData.paymentMethod === "Cash" || profileData.paymentMethod === "e-Transfer")
+              ? (profileData.cashDeduction || "0")
+              : "0",
             overtimeEnabled: profileData.overtimeEnabled || false,
             overtimeHours: profileData.overtimeHours || "",
             overtimeBillRate: profileData.overtimeBillRate || "",

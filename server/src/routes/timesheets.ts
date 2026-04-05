@@ -6,6 +6,10 @@ import { activityLogger } from "../middleware/activityLogger.js";
 import { emailNotifier, formatFromEmail } from "../middleware/emailNotifier.js";
 import { timesheetHtmlTemplate } from "../email-templates/timesheet-html.js";
 import { timesheetTextTemplate } from "../email-templates/timesheet-txt.js";
+import {
+  effectivePremiumPayRate,
+  toNum,
+} from "../email-templates/timesheet-email-numeric.js";
 import sgMail from "@sendgrid/mail";
 sgMail.setApiKey(process.env.SENDGRID_API_KEY!);
 import dotenv from "dotenv";
@@ -605,13 +609,16 @@ router.post(
             first_name,
             last_name,
             email,
-            billing_email
+            billing_email,
+            payment_method,
+            cash_deduction
           ),
           positions!inner(
             title,
             client_name,
             city,
-            province
+            province,
+            premium_pay_rate
           )
         `
         )
@@ -624,6 +631,10 @@ router.post(
 
       const jobseekerProfile = timesheet.jobseeker_profiles;
       const position = timesheet.positions;
+      const premiumPayRate = effectivePremiumPayRate(
+        timesheet.premium_pay_rate,
+        position?.premium_pay_rate
+      );
 
       if (!jobseekerProfile?.email) {
         return res.status(400).json({ error: "Jobseeker email not found" });
@@ -655,13 +666,29 @@ router.post(
         total_regular_hours: timesheet.total_regular_hours,
         total_overtime_hours: timesheet.total_overtime_hours,
         regular_pay_rate: timesheet.regular_pay_rate,
-        premium_pay_rate: timesheet.premium_pay_rate,
+        premium_pay_rate: premiumPayRate,
         overtime_pay_rate: timesheet.overtime_pay_rate,
         total_jobseeker_pay: timesheet.total_jobseeker_pay,
         overtime_enabled:
           timesheet.overtime_enabled || timesheet.total_overtime_hours > 0,
         bonus_amount: timesheet.bonus_amount,
         deduction_amount: timesheet.deduction_amount,
+        cash_deduction_percentage: (jobseekerProfile.payment_method === "Cash" || jobseekerProfile.payment_method === "e-Transfer")
+          ? parseFloat(jobseekerProfile.cash_deduction || "0")
+          : 0,
+        cash_deduction_amount: (() => {
+          const pm = jobseekerProfile.payment_method;
+          const pct = parseFloat(jobseekerProfile.cash_deduction || "0");
+          if ((pm === "Cash" || pm === "e-Transfer") && pct > 0) {
+            const basePay =
+              toNum(timesheet.total_regular_hours) *
+                (toNum(timesheet.regular_pay_rate) + premiumPayRate) +
+              toNum(timesheet.total_overtime_hours) *
+                toNum(timesheet.overtime_pay_rate);
+            return basePay * (pct / 100);
+          }
+          return 0;
+        })(),
         generated_date: new Date().toLocaleDateString(),
       };
 
@@ -685,6 +712,10 @@ router.post(
         const fromEmail = process.env.DEFAULT_FROM_EMAIL || "godspeed@aimotion.com";
         await sgMail.send({
           to: emailTo,
+          cc: (process.env.INVOICE_CC_EMAILS || "")
+            .split(",")
+            .map((e) => e.trim())
+            .filter(Boolean),
           from: formatFromEmail(fromEmail),
           subject,
           text: bodyLines.join("\n").trim(),
@@ -888,7 +919,7 @@ router.post(
       // Get jobseeker profile information
       const { data: jobseekerProfile } = await supabase
         .from("jobseeker_profiles")
-        .select("first_name, last_name, email, billing_email")
+        .select("first_name, last_name, email, billing_email, payment_method, cash_deduction")
         .eq("id", timesheetData.jobseekerProfileId)
         .single();
 
@@ -905,9 +936,14 @@ router.post(
       // Get position information
       const { data: position } = await supabase
         .from("positions")
-        .select("title, client_name, city, province")
+        .select("title, client_name, city, province, premium_pay_rate")
         .eq("id", timesheetData.positionId)
         .single();
+
+      const premiumPayRate = effectivePremiumPayRate(
+        timesheetData.premiumPayRate,
+        position?.premium_pay_rate
+      );
 
       // Prepare variables for template
       const templateVars = {
@@ -922,12 +958,28 @@ router.post(
         total_regular_hours: timesheetData.totalRegularHours,
         total_overtime_hours: timesheetData.totalOvertimeHours,
         regular_pay_rate: timesheetData.regularPayRate,
-        premium_pay_rate: timesheetData.premiumPayRate || 0,
+        premium_pay_rate: premiumPayRate,
         overtime_pay_rate: timesheetData.overtimePayRate,
         total_jobseeker_pay: timesheetData.totalJobseekerPay,
         overtime_enabled: timesheetData.overtimeEnabled,
         bonus_amount: timesheetData.bonusAmount,
         deduction_amount: timesheetData.deductionAmount,
+        cash_deduction_percentage: (jobseekerProfile.payment_method === "Cash" || jobseekerProfile.payment_method === "e-Transfer")
+          ? parseFloat(jobseekerProfile.cash_deduction || "0")
+          : 0,
+        cash_deduction_amount: (() => {
+          const pm = jobseekerProfile.payment_method;
+          const pct = parseFloat(jobseekerProfile.cash_deduction || "0");
+          if ((pm === "Cash" || pm === "e-Transfer") && pct > 0) {
+            const basePay =
+              toNum(timesheetData.totalRegularHours) *
+                (toNum(timesheetData.regularPayRate) + premiumPayRate) +
+              toNum(timesheetData.totalOvertimeHours) *
+                toNum(timesheetData.overtimePayRate);
+            return basePay * (pct / 100);
+          }
+          return 0;
+        })(),
         generated_date: new Date().toLocaleDateString(),
       };
 
@@ -948,6 +1000,10 @@ router.post(
 
       return {
         to: emailTo,
+        cc: (process.env.INVOICE_CC_EMAILS || "")
+          .split(",")
+          .map((e) => e.trim())
+          .filter(Boolean),
         subject,
         text: bodyLines.join("\n").trim(),
         html,
@@ -1167,7 +1223,7 @@ router.put(
       // Get jobseeker profile information
       const { data: jobseekerProfile } = await supabase
         .from("jobseeker_profiles")
-        .select("first_name, last_name, email, billing_email")
+        .select("first_name, last_name, email, billing_email, payment_method, cash_deduction")
         .eq("id", timesheetData.jobseekerProfileId)
         .single();
 
@@ -1184,7 +1240,7 @@ router.put(
       // Get position information
       const { data: position } = await supabase
         .from("positions")
-        .select("title, client_name, city, province")
+        .select("title, client_name, city, province, premium_pay_rate")
         .eq("id", timesheetData.positionId)
         .single();
 
@@ -1201,6 +1257,11 @@ router.put(
         }
       }
 
+      const premiumPayRate = effectivePremiumPayRate(
+        timesheetData.premiumPayRate,
+        position?.premium_pay_rate
+      );
+
       // Prepare variables for template
       const templateVars = {
         invoice_number:
@@ -1214,12 +1275,28 @@ router.put(
         total_regular_hours: timesheetData.totalRegularHours,
         total_overtime_hours: timesheetData.totalOvertimeHours,
         regular_pay_rate: timesheetData.regularPayRate,
-        premium_pay_rate: timesheetData.premiumPayRate || 0,
+        premium_pay_rate: premiumPayRate,
         overtime_pay_rate: timesheetData.overtimePayRate,
         total_jobseeker_pay: timesheetData.totalJobseekerPay,
         overtime_enabled: timesheetData.overtimeEnabled,
         bonus_amount: timesheetData.bonusAmount,
         deduction_amount: timesheetData.deductionAmount,
+        cash_deduction_percentage: (jobseekerProfile.payment_method === "Cash" || jobseekerProfile.payment_method === "e-Transfer")
+          ? parseFloat(jobseekerProfile.cash_deduction || "0")
+          : 0,
+        cash_deduction_amount: (() => {
+          const pm = jobseekerProfile.payment_method;
+          const pct = parseFloat(jobseekerProfile.cash_deduction || "0");
+          if ((pm === "Cash" || pm === "e-Transfer") && pct > 0) {
+            const basePay =
+              toNum(timesheetData.totalRegularHours) *
+                (toNum(timesheetData.regularPayRate) + premiumPayRate) +
+              toNum(timesheetData.totalOvertimeHours) *
+                toNum(timesheetData.overtimePayRate);
+            return basePay * (pct / 100);
+          }
+          return 0;
+        })(),
         generated_date: new Date().toLocaleDateString(),
         is_updated: true,
       };
@@ -1241,6 +1318,10 @@ router.put(
 
       return {
         to: emailTo,
+        cc: (process.env.INVOICE_CC_EMAILS || "")
+          .split(",")
+          .map((e) => e.trim())
+          .filter(Boolean),
         subject,
         text: bodyLines.join("\n").trim(),
         html,

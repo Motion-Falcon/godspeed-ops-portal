@@ -638,7 +638,17 @@ export function TimesheetManagement() {
       weeklyRegularHours * effectivePayRate +
       weeklyOvertimeHours * overtimePayRate;
 
-    const totalJobseekerPay = baseJobseekerPay + bonusAmount - deductionAmount;
+    // Apply cash deduction percentage if payment method is Cash or e-Transfer
+    let cashDeductionAmount = 0;
+    const paymentMethod = selectedJobseeker?.paymentMethod;
+    if (paymentMethod === "Cash" || paymentMethod === "e-Transfer") {
+      const cashDeductionPct = parseFloat(selectedJobseeker?.cashDeduction || "0");
+      if (cashDeductionPct > 0) {
+        cashDeductionAmount = baseJobseekerPay * (cashDeductionPct / 100);
+      }
+    }
+
+    const totalJobseekerPay = baseJobseekerPay - cashDeductionAmount + bonusAmount - deductionAmount;
 
     // Calculate totals
     const clientBill =
@@ -766,6 +776,9 @@ export function TimesheetManagement() {
                 total_overtime_hours: timesheet.totalOvertimeHours,
                 regular_pay_rate: parseFloat(
                   selectedPosition.regularPayRate || "0"
+                ),
+                premium_pay_rate: parseFloat(
+                  selectedPosition.premiumPayRate || "0"
                 ),
                 overtime_pay_rate: selectedPosition.overtimePayRate
                   ? parseFloat(selectedPosition.overtimePayRate)
@@ -1516,8 +1529,16 @@ export function TimesheetManagement() {
                                 position
                               );
                               const subtotal = basePay;
+                              // Calculate cash deduction for display
+                              let cashDeductionDisplay = 0;
+                              const paymentMethod = selectedJobseeker?.paymentMethod;
+                              const cashDeductionPct = parseFloat(selectedJobseeker?.cashDeduction || "0");
+                              if ((paymentMethod === "Cash" || paymentMethod === "e-Transfer") && cashDeductionPct > 0) {
+                                cashDeductionDisplay = subtotal * (cashDeductionPct / 100);
+                              }
                               const employeePay =
-                                subtotal +
+                                subtotal -
+                                cashDeductionDisplay +
                                 (timesheet.bonusAmount || 0) -
                                 (timesheet.deductionAmount || 0);
                               return (
@@ -1530,6 +1551,16 @@ export function TimesheetManagement() {
                                       ${subtotal.toFixed(2)}
                                     </div>
                                   </div>
+                                  {cashDeductionDisplay > 0 && (
+                                    <div className="timesheet-total-line">
+                                      <div className="timesheet-total-label">
+                                        Cash Deduction ({cashDeductionPct}%):
+                                      </div>
+                                      <div className="timesheet-total-value">
+                                        -${cashDeductionDisplay.toFixed(2)}
+                                      </div>
+                                    </div>
+                                  )}
                                   {timesheet.bonusAmount > 0 && (
                                     <div className="timesheet-total-line">
                                       <div className="timesheet-total-label">

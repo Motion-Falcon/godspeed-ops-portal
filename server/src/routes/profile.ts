@@ -379,7 +379,9 @@ router.post(
         pay_rate: profileData.payRate,
         payment_method: profileData.paymentMethod,
         hst_gst: profileData.hstGst,
-        cash_deduction: profileData.cashDeduction,
+        cash_deduction: (profileData.paymentMethod === "Cash" || profileData.paymentMethod === "e-Transfer")
+          ? profileData.cashDeduction
+          : "0",
         overtime_enabled: profileData.overtimeEnabled,
         overtime_hours: profileData.overtimeHours,
         overtime_bill_rate: profileData.overtimeBillRate,

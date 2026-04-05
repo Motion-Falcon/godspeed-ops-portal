@@ -2071,10 +2071,6 @@ export function JobSeekerProfile() {
                   profile.payrateType
                 )}
                 {renderDetailItem(
-                  t("jobSeekerProfile.billRate"),
-                  profile.billRate
-                )}
-                {renderDetailItem(
                   t("jobSeekerProfile.payRate"),
                   profile.payRate
                 )}
@@ -2083,10 +2079,11 @@ export function JobSeekerProfile() {
                   profile.paymentMethod
                 )}
                 {renderDetailItem(t("jobSeekerProfile.hstGst"), profile.hstGst)}
-                {renderDetailItem(
-                  t("jobSeekerProfile.cashDeduction"),
-                  profile.cashDeduction
-                )}
+                {(profile.paymentMethod === "Cash" || profile.paymentMethod === "e-Transfer") &&
+                  renderDetailItem(
+                    t("jobSeekerProfile.cashDeduction"),
+                    profile.cashDeduction
+                  )}
                 {renderDetailItem(
                   t("jobSeekerProfile.overtimeEnabled"),
                   profile.overtimeEnabled

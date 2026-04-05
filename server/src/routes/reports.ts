@@ -1161,6 +1161,9 @@ router.post(
             overtime_hours: (
               Number(ts.totalOvertimeHours || ts.overtimeHours) || 0
             ).toString(),
+            regular_pay_rate: (Number(ts.regularPayRate) || 0).toFixed(2),
+            premium_pay_rate: (Number(ts.premiumPayRate) || 0).toFixed(2),
+            overtime_pay_rate: (Number(ts.overtimePayRate) || 0).toFixed(2),
             total_amount: (Number(ts.totalJobseekerPay) || 0).toFixed(2),
             tax_rate: "0",
             hst_gst: "0.00",

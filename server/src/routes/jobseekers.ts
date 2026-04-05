@@ -143,6 +143,8 @@ interface DbJobseekerProfileListView {
   work_permit_expiry?: string;
   billing_email?: string;
   last_activity_at?: string;
+  payment_method?: string;
+  cash_deduction?: string;
 }
 
 // Interface for the simplified JobSeekerProfile list view (matches frontend expectation)
@@ -165,6 +167,8 @@ interface JobSeekerProfile {
   billingEmail?: string;
   isInactive?: boolean;
   lastActivityAt?: string;
+  paymentMethod?: string;
+  cashDeduction?: string;
 }
 
 // Interface for the detailed JobSeekerProfile view (matches frontend expectation)
@@ -319,7 +323,9 @@ router.get("/", isAdminOrRecruiter, async (req, res) => {
         work_permit_uci,
         work_permit_expiry,
         billing_email,
-        last_activity_at
+        last_activity_at,
+        payment_method,
+        cash_deduction
       `);
 
     // Apply all filters at database level
@@ -442,6 +448,8 @@ router.get("/", isAdminOrRecruiter, async (req, res) => {
         billingEmail: profile.billing_email,
         lastActivityAt: profile.last_activity_at,
         isInactive: lastActivity < sixtyDaysAgo,
+        paymentMethod: profile.payment_method,
+        cashDeduction: profile.cash_deduction,
       };
       }
     );
@@ -1355,6 +1363,10 @@ router.put(
       if (profileData.hstGst) updateData.hst_gst = profileData.hstGst;
       if (profileData.cashDeduction)
         updateData.cash_deduction = profileData.cashDeduction;
+      // Ensure cash_deduction is reset when payment method is not Cash or e-Transfer
+      if (profileData.paymentMethod && profileData.paymentMethod !== "Cash" && profileData.paymentMethod !== "e-Transfer") {
+        updateData.cash_deduction = "0";
+      }
       if (profileData.overtimeEnabled !== undefined)
         updateData.overtime_enabled = profileData.overtimeEnabled;
       if (profileData.overtimeHours)
