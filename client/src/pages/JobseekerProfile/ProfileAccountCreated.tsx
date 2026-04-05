@@ -337,7 +337,8 @@ export function ProfileAccountCreated() {
                     {renderDetailItem(t('profileAccountCreated.payRate'), state.profile.pay_rate)}
                     {renderDetailItem(t('profileAccountCreated.paymentMethod'), state.profile.payment_method)}
                     {renderDetailItem(t('profileAccountCreated.hstGst'), state.profile.hst_gst)}
-                    {renderDetailItem(t('profileAccountCreated.cashDeduction'), state.profile.cash_deduction)}
+                    {(state.profile.payment_method === "Cash" || state.profile.payment_method === "e-Transfer") &&
+                      renderDetailItem(t('profileAccountCreated.cashDeduction'), state.profile.cash_deduction)}
                     {renderDetailItem(t('profileAccountCreated.overtimeEnabled'), state.profile.overtime_enabled)}
                     {state.profile.overtime_enabled && (
                       <>

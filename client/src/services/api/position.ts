@@ -662,6 +662,8 @@ export interface AssignmentRecord {
     mobile?: string;
     billing_email?: string;
     is_inactive?: boolean;
+    payment_method?: string;
+    cash_deduction?: string;
   };
 }
 export const getPositionAssignments = async (
