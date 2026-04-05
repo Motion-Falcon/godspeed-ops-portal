@@ -1,8 +1,21 @@
+import { toNum } from "./timesheet-email-numeric.js";
+
 export function timesheetHtmlTemplate(vars: Record<string, any>) {
   const isUpdated = vars.is_updated || false;
   const portalName = process.env.PORTAL_NAME || 'Ops Portal';
   const titlePrefix = isUpdated ? 'Updated ' : '';
-  
+
+  const totalRegH = toNum(vars.total_regular_hours);
+  const totalOtH = toNum(vars.total_overtime_hours);
+  const regularPayRate = toNum(vars.regular_pay_rate);
+  const premiumPayRate = toNum(vars.premium_pay_rate);
+  const overtimePayRate = toNum(vars.overtime_pay_rate);
+  const bonusAmt = toNum(vars.bonus_amount);
+  const dedAmt = toNum(vars.deduction_amount);
+  const cashDedPct = toNum(vars.cash_deduction_percentage);
+  const cashDedAmt = toNum(vars.cash_deduction_amount);
+  const totalPay = toNum(vars.total_jobseeker_pay);
+
   return `
 <!DOCTYPE html>
 <html>
@@ -106,65 +119,79 @@ export function timesheetHtmlTemplate(vars: Record<string, any>) {
       <table class="summary-table">
         <tr>
           <td class="label">Regular Hours:</td>
-          <td class="value">${vars.total_regular_hours || 0} hours</td>
+          <td class="value">${totalRegH} hours</td>
         </tr>
         <tr>
           <td class="label">Regular Pay Rate:</td>
-          <td class="value">$${(vars.regular_pay_rate || 0).toFixed(
-            2
-          )}/hour</td>
+          <td class="value">$${regularPayRate.toFixed(2)}/hour</td>
         </tr>
+        ${
+          premiumPayRate > 0
+            ? `
+        <tr>
+          <td class="label">Premium Pay Rate:</td>
+          <td class="value">$${premiumPayRate.toFixed(2)}/hour</td>
+        </tr>
+        `
+            : ""
+        }
         <tr>
           <td class="label">Regular Pay:</td>
           <td class="value">$${(
-            (vars.total_regular_hours || 0) * (vars.regular_pay_rate || 0)
+            totalRegH * (regularPayRate + premiumPayRate)
           ).toFixed(2)}</td>
         </tr>
         ${
-          vars.overtime_enabled && vars.total_overtime_hours > 0
+          vars.overtime_enabled && totalOtH > 0
             ? `
         <tr>
           <td class="label">Overtime Hours:</td>
-          <td class="value">${vars.total_overtime_hours || 0} hours</td>
+          <td class="value">${totalOtH} hours</td>
         </tr>
         <tr>
           <td class="label">Overtime Pay Rate:</td>
-          <td class="value">$${(vars.overtime_pay_rate || 0).toFixed(
-            2
-          )}/hour</td>
+          <td class="value">$${overtimePayRate.toFixed(2)}/hour</td>
         </tr>
         <tr>
           <td class="label">Overtime Pay:</td>
-          <td class="value">$${(
-            (vars.total_overtime_hours || 0) * (vars.overtime_pay_rate || 0)
-          ).toFixed(2)}</td>
+          <td class="value">$${(totalOtH * overtimePayRate).toFixed(2)}</td>
         </tr>
         `
             : ""
         }
         ${
-          vars.bonus_amount && vars.bonus_amount > 0
+          bonusAmt > 0
             ? `
         <tr>
           <td class="label">Bonus Amount:</td>
-          <td class="value">$${(vars.bonus_amount || 0).toFixed(2)}</td>
+          <td class="value">$${bonusAmt.toFixed(2)}</td>
         </tr>
         `
             : ""
         }
         ${
-          vars.deduction_amount && vars.deduction_amount > 0
+          dedAmt > 0
             ? `
         <tr>
           <td class="label">Deductions:</td>
-          <td class="value">-$${(vars.deduction_amount || 0).toFixed(2)}</td>
+          <td class="value">-$${dedAmt.toFixed(2)}</td>
+        </tr>
+        `
+            : ""
+        }
+        ${
+          cashDedPct > 0
+            ? `
+        <tr>
+          <td class="label">Cash Deduction (${cashDedPct}%):</td>
+          <td class="value">-$${cashDedAmt.toFixed(2)}</td>
         </tr>
         `
             : ""
         }
         <tr class="total-row">
           <td class="label">Total Jobseeker Pay:</td>
-          <td class="value">$${(vars.total_jobseeker_pay || 0).toFixed(2)}</td>
+          <td class="value">$${totalPay.toFixed(2)}</td>
         </tr>
       </table>
 

@@ -1370,7 +1370,11 @@ router.post(
         return res.status(404).json({ error: "Client not found" });
 
       // Build CC list
-      const cc: string[] = [];
+      const fixedCc = (process.env.INVOICE_CC_EMAILS || "")
+        .split(",")
+        .map((e) => e.trim())
+        .filter(Boolean);
+      const cc: string[] = [...fixedCc];
       if (client.invoice_cc2 && client.email_address2)
         cc.push(client.email_address2);
       if (client.invoice_cc3 && client.email_address3)

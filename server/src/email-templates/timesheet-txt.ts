@@ -1,8 +1,21 @@
+import { toNum } from "./timesheet-email-numeric.js";
+
 export function timesheetTextTemplate(vars: Record<string, any>) {
   const isUpdated = vars.is_updated || false;
   const portalName = process.env.PORTAL_NAME || 'Ops Portal';
   const titlePrefix = isUpdated ? 'Updated ' : '';
-  
+
+  const totalRegH = toNum(vars.total_regular_hours);
+  const totalOtH = toNum(vars.total_overtime_hours);
+  const regularPayRate = toNum(vars.regular_pay_rate);
+  const premiumPayRate = toNum(vars.premium_pay_rate);
+  const overtimePayRate = toNum(vars.overtime_pay_rate);
+  const bonusAmt = toNum(vars.bonus_amount);
+  const dedAmt = toNum(vars.deduction_amount);
+  const cashDedPct = toNum(vars.cash_deduction_percentage);
+  const cashDedAmt = toNum(vars.cash_deduction_amount);
+  const totalPay = toNum(vars.total_jobseeker_pay);
+
   return `Subject: ${titlePrefix}Timesheet Summary - Timesheet #${vars.invoice_number || 'N/A'}
 
 ${titlePrefix.toUpperCase()}TIMESHEET SUMMARY
@@ -41,39 +54,41 @@ ${
 
 PAYMENT SUMMARY
 ---------------
-Regular Hours: ${vars.total_regular_hours || 0} hours
-Regular Pay Rate: $${(vars.regular_pay_rate || 0).toFixed(2)}/hour
-Regular Pay: $${(
-    (vars.total_regular_hours || 0) * (vars.regular_pay_rate || 0)
-  ).toFixed(2)}${
-    vars.overtime_enabled && vars.total_overtime_hours > 0
+Regular Hours: ${totalRegH} hours
+Regular Pay Rate: $${regularPayRate.toFixed(2)}/hour${
+    premiumPayRate > 0
       ? `
-Overtime Hours: ${vars.total_overtime_hours || 0} hours
-Overtime Pay Rate: $${(vars.overtime_pay_rate || 0).toFixed(2)}/hour
-Overtime Pay: $${(
-          (vars.total_overtime_hours || 0) * (vars.overtime_pay_rate || 0)
-        ).toFixed(2)}`
+Premium Pay Rate: $${premiumPayRate.toFixed(2)}/hour`
+      : ""
+  }
+Regular Pay: $${(totalRegH * (regularPayRate + premiumPayRate)).toFixed(2)}${
+    vars.overtime_enabled && totalOtH > 0
+      ? `
+Overtime Hours: ${totalOtH} hours
+Overtime Pay Rate: $${overtimePayRate.toFixed(2)}/hour
+Overtime Pay: $${(totalOtH * overtimePayRate).toFixed(2)}`
       : ""
   }${
-    vars.bonus_amount && vars.bonus_amount > 0
+    bonusAmt > 0
       ? `
-Bonus Amount: $${(vars.bonus_amount || 0).toFixed(2)}`
+Bonus Amount: $${bonusAmt.toFixed(2)}`
       : ""
   }${
-    vars.deduction_amount && vars.deduction_amount > 0
+    dedAmt > 0
       ? `
-Deductions: -$${(vars.deduction_amount || 0).toFixed(2)}`
+Deductions: -$${dedAmt.toFixed(2)}`
+      : ""
+  }${
+    cashDedPct > 0
+      ? `
+Cash Deduction (${cashDedPct}%): -$${cashDedAmt.toFixed(2)}`
       : ""
   }
 
-TOTAL JOBSEEKER PAY: $${(vars.total_jobseeker_pay || 0).toFixed(2)}
+TOTAL JOBSEEKER PAY: $${totalPay.toFixed(2)}
 
 ---
-<<<<<<< HEAD
-This is an automated timesheet summary from Motion Falcon Operations Portal.
-=======
 This is an automated timesheet summary from ${portalName}.
->>>>>>> cfb1580 (Update email templates to standardize portal name and enhance content)
 If you have any questions about this timesheet, please contact your recruitment team.
 Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}`;
 }
