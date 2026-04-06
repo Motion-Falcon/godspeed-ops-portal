@@ -14,6 +14,46 @@ if (!supabaseUrl || !supabaseKey) {
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+type UserType = 'jobseeker' | 'recruiter' | 'admin';
+export type AccessRole = UserType | 'manager' | 'accountant';
+
+const ROLE_DISPLAY_ORDER: AccessRole[] = [
+  'admin',
+  'manager',
+  'accountant',
+  'recruiter',
+  'jobseeker',
+];
+
+const RECRUITER_ACCESS_ROLES: AccessRole[] = ['recruiter', 'manager', 'accountant'];
+
+function normalizeUserType(userType: unknown): UserType {
+  if (userType === 'admin' || userType === 'recruiter') {
+    return userType;
+  }
+
+  return 'jobseeker';
+}
+
+function normalizeAccessRole(role: unknown): AccessRole | null {
+  if (
+    role === 'jobseeker' ||
+    role === 'recruiter' ||
+    role === 'admin' ||
+    role === 'manager' ||
+    role === 'accountant'
+  ) {
+    return role;
+  }
+
+  return null;
+}
+
+function sortRoles(roles: Iterable<AccessRole>): AccessRole[] {
+  const roleSet = new Set(roles);
+  return ROLE_DISPLAY_ORDER.filter((role) => roleSet.has(role));
+}
+
 // Define user type within Express namespace
 declare global {
   namespace Express {
@@ -23,7 +63,8 @@ declare global {
         email?: string;
         user_metadata?: {
           name?: string;
-          user_type?: 'jobseeker' | 'recruiter' | 'admin';
+          user_type?: UserType;
+          user_role?: unknown;
           [key: string]: unknown;
         }
         [key: string]: unknown;
@@ -58,6 +99,56 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
   }
 };
 
+function getRawUserRoles(user: Express.Request['user'] | undefined): string[] {
+  const rawRoles = user?.user_metadata?.user_role;
+  if (!Array.isArray(rawRoles)) {
+    return [];
+  }
+
+  return rawRoles.filter((role): role is string => typeof role === 'string');
+}
+
+export function getResolvedUserRoles(user: Express.Request['user'] | undefined): AccessRole[] {
+  const userType = normalizeUserType(user?.user_metadata?.user_type);
+
+  if (userType === 'jobseeker') {
+    return ['jobseeker'];
+  }
+
+  if (userType === 'admin') {
+    return ['admin'];
+  }
+
+  const resolvedRoles = getRawUserRoles(user)
+    .map((role) => normalizeAccessRole(role))
+    .filter((role): role is AccessRole => role !== null);
+
+  if (resolvedRoles.length === 0) {
+    return ['recruiter'];
+  }
+
+  return sortRoles(resolvedRoles);
+}
+
+export function hasAccessRole(
+  user: Express.Request['user'] | undefined,
+  role: AccessRole | string
+): boolean {
+  const normalizedRole = normalizeAccessRole(role);
+  if (!normalizedRole) {
+    return false;
+  }
+
+  const resolvedRoles = getResolvedUserRoles(user);
+  if (normalizedRole === 'recruiter') {
+    return resolvedRoles.some((resolvedRole) =>
+      RECRUITER_ACCESS_ROLES.includes(resolvedRole)
+    );
+  }
+
+  return resolvedRoles.includes(normalizedRole);
+}
+
 /**
  * Middleware to check if the user is an admin or recruiter
  */
@@ -66,9 +157,7 @@ export const isAdminOrRecruiter = (req: Request, res: Response, next: NextFuncti
     return res.status(401).json({ error: 'Authentication required' });
   }
 
-  const userType = req.user.user_metadata?.user_type;
-  
-  if (userType === 'admin' || userType === 'recruiter') {
+  if (hasAccessRole(req.user, 'admin') || hasAccessRole(req.user, 'recruiter')) {
     next();
   } else {
     return res.status(403).json({ 
@@ -88,9 +177,7 @@ export const authorizeRoles = (allowedRoles: string[]) => {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    const userType = req.user.user_metadata?.user_type;
-    
-    if (userType && allowedRoles.includes(userType)) {
+    if (allowedRoles.some((role) => hasAccessRole(req.user, role))) {
       next();
     } else {
       return res.status(403).json({ 
