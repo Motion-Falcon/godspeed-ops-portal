@@ -5,8 +5,40 @@ import { complete2FAAPI, registerUserAPI, resendVerificationEmailAPI, updatePass
 import { getAuthUserByIdAPI } from '../services/api/user';
 import type { AllAuthUserListItem } from '../types/auth';
 
-// User role types
+// Core account types stored in user_metadata.user_type
 export type UserRole = 'jobseeker' | 'recruiter' | 'admin';
+
+// Effective access roles used for feature access and UI display
+export type AccessRole = UserRole | 'manager' | 'accountant';
+
+const ROLE_DISPLAY_ORDER: AccessRole[] = [
+  'admin',
+  'manager',
+  'accountant',
+  'recruiter',
+  'jobseeker',
+];
+
+const RECRUITER_ACCESS_ROLES: AccessRole[] = ['recruiter', 'manager', 'accountant'];
+
+function normalizeAccessRole(role: unknown): AccessRole | null {
+  if (
+    role === 'jobseeker' ||
+    role === 'recruiter' ||
+    role === 'admin' ||
+    role === 'manager' ||
+    role === 'accountant'
+  ) {
+    return role;
+  }
+
+  return null;
+}
+
+function sortAccessRoles(roles: Iterable<AccessRole>): AccessRole[] {
+  const roleSet = new Set(roles);
+  return ROLE_DISPLAY_ORDER.filter((role) => roleSet.has(role));
+}
 
 // Extended user with our custom fields
 export interface AppUser extends User {
@@ -50,6 +82,69 @@ export function getUserRoles(user: User | null): string[] {
   return rawRoles.filter((role): role is string => typeof role === "string");
 }
 
+function resolveUserRoles(userType: UserRole, rawRoles: string[]): AccessRole[] {
+  if (userType === 'jobseeker') {
+    return ['jobseeker'];
+  }
+
+  if (userType === 'admin') {
+    return ['admin'];
+  }
+
+  const resolvedRoles = rawRoles
+    .map((role) => normalizeAccessRole(role))
+    .filter((role): role is AccessRole => role !== null);
+
+  if (resolvedRoles.length === 0) {
+    return ['recruiter'];
+  }
+
+  return sortAccessRoles(resolvedRoles);
+}
+
+// Get the effective roles that drive UI and access decisions
+export function getResolvedUserRoles(user: User | null): AccessRole[] {
+  return resolveUserRoles(getUserType(user), getUserRoles(user));
+}
+
+// Resolve effective roles from a raw user object returned by the API
+export function getResolvedUserRolesFromRaw(raw: unknown): AccessRole[] {
+  if (!raw || typeof raw !== 'object') {
+    return [];
+  }
+
+  const root = raw as Record<string, unknown>;
+  const meta = root['user_metadata'] ?? root['raw_user_meta_data'];
+  if (!meta || typeof meta !== 'object') {
+    return [];
+  }
+
+  const metaObj = meta as Record<string, unknown>;
+  const rawUserType = metaObj['user_type'];
+  const userType: UserRole =
+    rawUserType === 'admin' || rawUserType === 'recruiter' ? rawUserType : 'jobseeker';
+  const roles = getUserRolesFromRaw(raw);
+
+  return resolveUserRoles(userType, roles);
+}
+
+// Check if a user has a given effective access role
+export function hasAccessRole(user: User | null, role: AccessRole): boolean {
+  const resolvedRoles = getResolvedUserRoles(user);
+
+  if (role === 'recruiter') {
+    return resolvedRoles.some((resolvedRole) =>
+      RECRUITER_ACCESS_ROLES.includes(resolvedRole)
+    );
+  }
+
+  return resolvedRoles.includes(role);
+}
+
+export function hasAnyAccessRole(user: User | null, roles: AccessRole[]): boolean {
+  return roles.some((role) => hasAccessRole(user, role));
+}
+
 // Check if user has a metadata role from user_role[]
 export function hasUserRole(user: User | null, role: string): boolean {
   return getUserRoles(user).includes(role);
@@ -62,17 +157,17 @@ export function isSuperAdmin(user: User | null): boolean {
 
 // Check if user is admin
 export function isAdmin(user: User | null): boolean {
-  return getUserType(user) === 'admin';
+  return hasAccessRole(user, 'admin');
 }
 
 // Check if user is recruiter
 export function isRecruiter(user: User | null): boolean {
-  return getUserType(user) === 'recruiter';
+  return hasAccessRole(user, 'recruiter');
 }
 
 // Check if user is jobseeker
 export function isJobSeeker(user: User | null): boolean {
-  return getUserType(user) === 'jobseeker';
+  return hasAccessRole(user, 'jobseeker');
 }
 
 // Check if jobseeker has created a profile
@@ -109,7 +204,7 @@ export async function getJobseekerVerificationStatus(userId: string | undefined)
 export function getUserRolesFromRaw(raw: unknown): string[] {
   if (!raw || typeof raw !== 'object') return [];
   const root = raw as Record<string, unknown>;
-  const meta = root['user_metadata'];
+  const meta = root['user_metadata'] ?? root['raw_user_meta_data'];
   if (!meta || typeof meta !== 'object') return [];
   const metaObj = meta as Record<string, unknown>;
   const roles = metaObj['user_role'];

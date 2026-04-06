@@ -1,6 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { createClient } from '@supabase/supabase-js';
-import { authenticateToken, authorizeRoles } from '../middleware/auth.js';
+import { authenticateToken, authorizeRoles, hasAccessRole } from '../middleware/auth.js';
 import { sanitizeInputs, apiRateLimiter } from '../middleware/security.js';
 import { activityLogger } from '../middleware/activityLogger.js';
 import { emailNotifier } from '../middleware/emailNotifier.js';
@@ -451,7 +451,7 @@ router.get('/templates',
       }
 
       const shouldIncludeInactive =
-        includeInactive === 'true' && req.user?.user_metadata?.user_type === 'admin';
+        includeInactive === 'true' && hasAccessRole(req.user, 'admin');
       if (!shouldIncludeInactive) {
         query = query.eq('is_active', true);
       }
