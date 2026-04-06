@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../contexts/AuthContext";
-import { getUserRolesFromRaw } from "../lib/auth";
+import { getResolvedUserRolesFromRaw, getUserRolesFromRaw } from "../lib/auth";
 import { AllAuthUserListItem, AllAuthUserListResponse } from "../types/auth";
 import { AppHeader } from "../components/AppHeader";
 import { useLanguage } from "../contexts/language/language-provider";
@@ -40,6 +40,7 @@ const getUserTypeBadgeClass = (userType: string | undefined): string => {
 export function AllUsersManagement() {
   const { t } = useLanguage();
   const location = useLocation();
+  const roleFilterOptions = ["jobseeker", "admin", ...USER_ROLES.filter((role) => role !== "admin")];
   const [users, setUsers] = useState<AllAuthUserListItem[]>([]);
   const [pagination, setPagination] = useState<PaginationInfo>({
     page: 1,
@@ -56,7 +57,6 @@ export function AllUsersManagement() {
   const [nameFilter, setNameFilter] = useState("");
   const [emailFilter, setEmailFilter] = useState("");
   const [mobileFilter, setMobileFilter] = useState("");
-  const [userTypeFilter, setUserTypeFilter] = useState("");
   const [emailVerifiedFilter, setEmailVerifiedFilter] = useState("");
   const [userRoleFilter, setUserRoleFilter] = useState("");
   const [managerIdFilter, setManagerIdFilter] = useState("");
@@ -98,7 +98,6 @@ export function AllUsersManagement() {
     setNameFilter(params.get("name") || "");
     setEmailFilter(params.get("email") || "");
     setMobileFilter(params.get("phone") || "");
-    setUserTypeFilter(params.get("userType") || "");
     setEmailVerifiedFilter(params.get("emailVerified") || "");
     setUserRoleFilter(params.get("userRole") || "");
     setManagerIdFilter(params.get("managerId") || "");
@@ -125,7 +124,6 @@ export function AllUsersManagement() {
         nameFilter,
         emailFilter,
         mobileFilter,
-        userTypeFilter,
         emailVerifiedFilter,
         userRoleFilter,
         managerIdFilter,
@@ -139,7 +137,7 @@ export function AllUsersManagement() {
     } finally {
       setLoading(false);
     }
-  }, [pagination.page, pagination.limit, searchTerm, nameFilter, emailFilter, mobileFilter, userTypeFilter, emailVerifiedFilter, userRoleFilter, managerIdFilter, t]);
+  }, [pagination.page, pagination.limit, searchTerm, nameFilter, emailFilter, mobileFilter, emailVerifiedFilter, userRoleFilter, managerIdFilter, t]);
 
   useEffect(() => {
     if (!isAdmin && !isRecruiter) return;
@@ -151,7 +149,7 @@ export function AllUsersManagement() {
     if (pagination.page !== 1) {
       setPagination((prev) => ({ ...prev, page: 1 }));
     }
-  }, [searchTerm, nameFilter, emailFilter, mobileFilter, userTypeFilter, emailVerifiedFilter, userRoleFilter, managerIdFilter]);
+  }, [searchTerm, nameFilter, emailFilter, mobileFilter, emailVerifiedFilter, userRoleFilter, managerIdFilter]);
 
   // Pagination handlers
   const handlePageChange = (newPage: number) => {
@@ -175,7 +173,6 @@ export function AllUsersManagement() {
     setNameFilter("");
     setEmailFilter("");
     setMobileFilter("");
-    setUserTypeFilter("");
     setEmailVerifiedFilter("");
     setUserRoleFilter("");
     setManagerIdFilter("");
@@ -266,8 +263,8 @@ export function AllUsersManagement() {
   };
 
   const openRolesModal = (user: AllAuthUserListItem) => {
-    // Prevent editing roles for admin users
-    if (user.userType && user.userType.toLowerCase() === 'admin') {
+    // Only recruiter-type accounts should have editable roles.
+    if (user.userType?.toLowerCase() !== 'recruiter') {
       pushStatus(t('messages.error'), 3000, 'error');
       return;
     }
@@ -498,23 +495,6 @@ export function AllUsersManagement() {
                   </th>
                   <th>
                     <div className="column-filter">
-                      <div className="column-title">{t('userManagement.columns.userType')}</div>
-                      <div className="column-search">
-                        <select
-                          value={userTypeFilter}
-                          onChange={(e) => setUserTypeFilter(e.target.value)}
-                          className="column-filter-select"
-                        >
-                          <option value="">{t('userManagement.filters.allUserTypes')}</option>
-                          <option value="admin">{t('roles.admin')}</option>
-                          <option value="recruiter">{t('roles.recruiter')}</option>
-                          <option value="jobseeker">{t('roles.jobseeker')}</option>
-                        </select>
-                      </div>
-                    </div>
-                  </th>
-                  <th>
-                    <div className="column-filter">
                       <div className="column-title">{t('userManagement.columns.userRole')}</div>
                       <div className="column-search">
                         <select
@@ -523,7 +503,7 @@ export function AllUsersManagement() {
                           className="column-filter-select"
                         >
                           <option value="">{t('userManagement.filters.allUserRoles')}</option>
-                          {USER_ROLES.map((role) => (
+                          {roleFilterOptions.map((role) => (
                             <option key={role} value={role}>
                               {t(`roles.${role}`)}
                             </option>
@@ -592,9 +572,6 @@ export function AllUsersManagement() {
                       <td className="phone-cell skeleton-cell">
                         <div className="skeleton-text"></div>
                       </td>
-                      <td className="user-type-cell skeleton-cell">
-                        <div className="skeleton-text"></div>
-                      </td>
                       <td className="user-role-cell skeleton-cell">
                         <div className="skeleton-text"></div>
                       </td>
@@ -625,7 +602,9 @@ export function AllUsersManagement() {
                   </tr>
                 ) : (
                   users.map((user) => {
-                    const rolesArr = getUserRolesFromRaw(user.raw);
+                    const resolvedRoles = getResolvedUserRolesFromRaw(user.raw);
+                    const displayRole = resolvedRoles[0] || 'recruiter';
+                    const displayRoleLabel = resolvedRoles.map((role) => t(`roles.${role}`)).join(', ');
                     const managerId = getUsersManagerFromRaw(user.raw as Record<string, unknown>);
                     const manager = managerId ? users.find(u => u.id === managerId) : null;
                     const managerOption = managerId ? managerOptions.find(o => o.id === managerId) : null;
@@ -644,27 +623,19 @@ export function AllUsersManagement() {
                         </td>
                         <td className="email-cell">{user.email}</td>
                         <td className="phone-cell">{user.phoneNumber || t('userManagement.status.na')}</td>
-                        <td className="user-type-cell">
-                          {user.userType ? (
-                            <span className={`user-type-badge ${getUserTypeBadgeClass(user.userType)}`}>
-                              {t(`roles.${user.userType}`)}
+                        <td className="user-role-cell">
+                          {user.userType?.toLowerCase() === 'jobseeker' || user.userType?.toLowerCase() === 'admin' ? (
+                            <span className={`user-type-badge ${getUserTypeBadgeClass(displayRole)}`}>
+                              {t(`roles.${displayRole}`)}
                             </span>
                           ) : (
-                            <span className="user-type-badge default">{t('userManagement.status.na')}</span>
-                          )}
-                        </td>
-                        <td className="user-role-cell">
-                          {user.userType && user.userType.toLowerCase() !== 'recruiter' ? (
-                            <span className="muted">{t('roles.admin')}</span>
-                          ) : (
                             <button
-                              className="user-role-badge"
+                              className={`user-role-badge ${getUserTypeBadgeClass(displayRole)}`}
                               onClick={() => openRolesModal(user)}
-                              disabled={user.userType?.toLowerCase() === 'admin'}
                               title={t('userManagement.setRoles')}
                               aria-label={t('userManagement.setRoles')}
                             >
-                              {rolesArr.join(', ')} <Edit size={14} className="edit-icon" />
+                              {displayRoleLabel || t('roles.recruiter')} <Edit size={14} className="edit-icon" />
                             </button>
                           )}
                         </td>
