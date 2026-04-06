@@ -1,7 +1,7 @@
 import express from 'express';
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
-import { authenticateToken, isAdminOrRecruiter, authorizeRoles } from '../middleware/auth.js';
+import { authenticateToken, isAdminOrRecruiter, authorizeRoles, getResolvedUserRoles } from '../middleware/auth.js';
 import activityLogger from '../middleware/activityLogger.js';
 import sgMail from '@sendgrid/mail';
 import { onboardingReminderHtmlTemplate } from '../email-templates/onboarding-reminder-html.js';
@@ -97,6 +97,7 @@ router.get('/', authenticateToken, isAdminOrRecruiter, async (req, res) => {
       const roles = Array.isArray(rolesSource)
         ? rolesSource.filter((r: unknown): r is string => typeof r === 'string')
         : [];
+      const resolvedRoles = getResolvedUserRoles({ id: user.id, user_metadata: meta } as any);
       return {
         id: user.id,
         email: user.email,
@@ -107,6 +108,7 @@ router.get('/', authenticateToken, isAdminOrRecruiter, async (req, res) => {
         createdAt: user.created_at,
         lastSignInAt: user.last_sign_in_at,
         roles,
+        resolvedRoles,
         raw: user // full raw user JSON
       };
     });
@@ -122,6 +124,7 @@ router.get('/', authenticateToken, isAdminOrRecruiter, async (req, res) => {
       createdAt: string;
       lastSignInAt: string | null;
       roles: string[];
+      resolvedRoles: string[];
       raw: ListAuthUser;
     };
     if (search && search.trim().length > 0) {
@@ -154,7 +157,7 @@ router.get('/', authenticateToken, isAdminOrRecruiter, async (req, res) => {
     }
     if (userRoleFilter) {
       formattedUsers = formattedUsers.filter((u: FormattedUser) => 
-        u.roles.some(role => role === userRoleFilter)
+        u.resolvedRoles.some((role) => role === userRoleFilter)
       );
     }
     // Filter by manager id present in metadata.hierarchy.manager_id
@@ -240,6 +243,7 @@ router.get('/:id', authenticateToken, isAdminOrRecruiter, async (req, res) => {
     const roles = Array.isArray(rolesSource)
       ? rolesSource.filter((r: unknown): r is string => typeof r === 'string')
       : [];
+    const resolvedRoles = getResolvedUserRoles({ id: match.id, user_metadata: meta } as any);
 
     const formatted = {
       id: match.id,
@@ -251,6 +255,7 @@ router.get('/:id', authenticateToken, isAdminOrRecruiter, async (req, res) => {
       createdAt: match.created_at,
       lastSignInAt: match.last_sign_in_at,
       roles,
+      resolvedRoles,
       raw: match
     };
 
