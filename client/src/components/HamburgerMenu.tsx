@@ -33,7 +33,7 @@ import {
 } from "lucide-react";
 import { ThemeToggle } from "./theme-toggle";
 import { LanguageToggle } from "./LanguageToggle";
-import { logoutUser } from "../lib/auth";
+import { getResolvedUserRoles, logoutUser, type AccessRole } from "../lib/auth";
 import "../styles/components/hamburgerMenu.css";
 import { supabase } from "../lib/supabaseClient";
 
@@ -43,7 +43,7 @@ interface MenuItem {
   path?: string;
   icon?: JSX.Element;
   submenu?: MenuItem[];
-  roles?: ("admin" | "recruiter" | "jobseeker")[];
+  roles?: AccessRole[];
   requiresSuperAdmin?: boolean;
   requiresAuth?: boolean;
   onClick?: () => void;
@@ -735,10 +735,19 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
   }, [isOpen]);
 
   const getUserTypeDisplay = () => {
-    if (isAdmin) return t("roles.admin");
-    if (isRecruiter) return t("roles.recruiter");
-    if (isJobSeeker) return t("roles.jobseeker");
-    return t("common.user");
+    if (!user) {
+      return t("common.user");
+    }
+
+    const resolvedRoles = getResolvedUserRoles(user);
+    if (resolvedRoles.length === 0) {
+      if (isJobSeeker) return t("roles.jobseeker");
+      if (isAdmin) return t("roles.admin");
+      if (isRecruiter) return t("roles.recruiter");
+      return t("common.user");
+    }
+
+    return resolvedRoles.map((role) => t(`roles.${role}`)).join(", ");
   };
 
   // Get user display name

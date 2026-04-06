@@ -158,6 +158,16 @@
   border-color: #3b82f6;
 }
 
+.all-users-management .user-type-badge.manager,
+.all-users-management .user-type-badge.accountant,
+.all-users-management .user-role-badge.recruiter,
+.all-users-management .user-role-badge.manager,
+.all-users-management .user-role-badge.accountant {
+  background-color: #dbeafe;
+  color: #1e40af;
+  border-color: #3b82f6;
+}
+
 .all-users-management .user-type-badge.jobseeker {
   background-color: #d1fae5;
   color: #065f46;
@@ -222,6 +232,16 @@
 .dark .all-users-management .user-type-badge.recruiter {
   background-color: #1e3a8a; /* Darker blue background */
   color: #60a5fa; /* Brighter blue text */
+  border-color: #3b82f6;
+}
+
+.dark .all-users-management .user-type-badge.manager,
+.dark .all-users-management .user-type-badge.accountant,
+.dark .all-users-management .user-role-badge.recruiter,
+.dark .all-users-management .user-role-badge.manager,
+.dark .all-users-management .user-role-badge.accountant {
+  background-color: #1e3a8a;
+  color: #60a5fa;
   border-color: #3b82f6;
 }
 
@@ -319,12 +339,12 @@
 }
 
 /* Ensure consistent column widths */
-.all-users-management .common-table th:nth-child(6) { /* Created At */
+.all-users-management .common-table th:nth-child(7) { /* Created At */
   width: 120px;
   min-width: 120px;
 }
 
-.all-users-management .common-table th:nth-child(7) { /* Last Sign In */
+.all-users-management .common-table th:nth-child(8) { /* Last Sign In */
   width: 120px;
   min-width: 120px;
 } 
