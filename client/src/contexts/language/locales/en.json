@@ -2727,6 +2727,8 @@
     },
     "columns": {
       "serialNumber": "S.No.",
+      "sequenceNumber": "#",
+      "srNo": "SR. NO.",
       "weekPeriod": "Week Period",
       "jobseekerNumber": "Jobseeker #",
       "positionNumber": "Position #",
@@ -2792,6 +2794,7 @@
       "positionName": "Position Name",
       "totalAmount": "Total Amount",
       "hstGst": "HST/GST",
+      "lineAmount": "Line Amount",
       "totalBilledAmount": "Total Billed Amount",
       "paidAmount": "Paid Amount",
       "cashAmount": "Cash",

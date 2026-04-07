@@ -17,6 +17,48 @@ import { PAY_CYCLES } from "../../constants/formOptions";
 import { exportToCSV } from "../../utils/csvExport";
 import { getDropdownOptions } from "../../services/api/dropdownOptions";
 
+const formatCurrency = (value: unknown): string => {
+  if (value === undefined || value === null || value === "" || value === "N/A") {
+    return "N/A";
+  }
+
+  const numericValue =
+    typeof value === "number" ? value : Number.parseFloat(String(value));
+
+  if (Number.isNaN(numericValue)) {
+    return String(value);
+  }
+
+  return `$${numericValue.toFixed(2)}`;
+};
+
+const formatPhoneNumber = (value: unknown): string => {
+  const phone = String(value ?? "").trim();
+  if (!phone) return "";
+
+  const digits = phone.replace(/\D/g, "");
+
+  if (digits.length === 11 && digits.startsWith("1")) {
+    return `+1 (${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(
+      7,
+      11
+    )}`;
+  }
+
+  if (digits.length === 10) {
+    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(
+      6,
+      10
+    )}`;
+  }
+
+  if (digits.length === 7) {
+    return `${digits.slice(0, 3)}-${digits.slice(3, 7)}`;
+  }
+
+  return phone;
+};
+
 const getTableColumns = (
   t: (key: string) => string
 ): {
@@ -24,6 +66,8 @@ const getTableColumns = (
   label: string;
   format?: (val: unknown, row?: EnvelopePrintingReportRow) => string;
 }[] => [
+  { key: "sequence_number", label: t("reports.columns.sequenceNumber") || "#" },
+  { key: "sr_no", label: t("reports.columns.srNo") || "SR. NO." },
   { key: "invoice_number", label: t("reports.columns.invoiceNumber") },
   { key: "city", label: t("reports.columns.city") },
   { key: "list_name", label: t("reports.columns.listName") },
@@ -41,7 +85,11 @@ const getTableColumns = (
   { key: "license_number", label: t("reports.columns.licenseNumber") },
   { key: "passport_number", label: t("reports.columns.passportNumber") },
   { key: "jobseeker_name", label: t("reports.columns.jobseekerName") },
-  { key: "phone_number", label: t("reports.columns.phoneNumber") },
+  {
+    key: "phone_number",
+    label: t("reports.columns.phoneNumber"),
+    format: (val) => formatPhoneNumber(val),
+  },
   { key: "email_id", label: t("reports.columns.emailId") },
   { key: "pay_method", label: t("reports.columns.payMethod") },
   { key: "position_category", label: t("reports.columns.positionCategory") },
@@ -51,38 +99,40 @@ const getTableColumns = (
   {
     key: "regular_pay_rate",
     label: t("reports.columns.regularPay"),
-    format: (val) =>
-      val !== undefined && val !== "N/A" ? `$${val}` : String(val ?? ""),
+    format: (val) => formatCurrency(val),
   },
   {
     key: "premium_pay_rate",
     label: t("reports.columns.premiumPayRate"),
-    format: (val) =>
-      val !== undefined && val !== "N/A" ? `$${val}` : String(val ?? ""),
+    format: (val) => formatCurrency(val),
   },
   {
     key: "overtime_pay_rate",
     label: t("reports.columns.overtimePayRate"),
-    format: (val) =>
-      val !== undefined && val !== "N/A" ? `$${val}` : String(val ?? ""),
+    format: (val) => formatCurrency(val),
   },
   {
     key: "total_amount",
     label: t("reports.columns.totalAmount"),
-    format: (val) =>
-      val !== undefined && val !== "N/A" ? `$${val}` : String(val ?? ""),
+    format: (val) => formatCurrency(val),
   },
   {
     key: "tax_rate",
     label: t("reports.columns.taxRate"),
     format: (val) =>
-      val !== undefined && val !== "N/A" ? `${val}%` : String(val ?? ""),
+      val !== undefined && val !== null && val !== "" && val !== "N/A"
+        ? `${Number.parseFloat(String(val)).toFixed(2)}%`
+        : String(val ?? ""),
   },
   {
     key: "hst_gst",
     label: t("reports.columns.hstGst"),
-    format: (val) =>
-      val !== undefined && val !== "N/A" ? `$${val}` : String(val ?? ""),
+    format: (val) => formatCurrency(val),
+  },
+  {
+    key: "line_amount",
+    label: t("reports.columns.lineAmount") || "Line Amount",
+    format: (val) => formatCurrency(val),
   },
   {
     key: "invoice_date",
@@ -386,26 +436,10 @@ export function EnvelopePrintingReport() {
               className="button"
               onClick={() => {
                 const reportGeneratedDate = new Date().toLocaleDateString();
-                const statusLabel = t('reports.columns.status');
-                const csvData = reportRows.map((row, index) => {
-                  const csvRow: Record<string, unknown> = {
-                    [t("reports.columns.serialNumber") || "S.No."]: index + 1,
-                  };
-                  // Add status right after serial number
-                  const clientStatus = row.client_is_inactive ? 'Client Inactive' : 'Client Active';
-                  const jsStatus = row.jobseeker_is_inactive ? 'JS Inactive' : 'JS Active';
-                  csvRow[statusLabel] = `${clientStatus} / ${jsStatus}`;
-                  // Add invoice_number after status
-                  csvRow[t("reports.columns.invoiceNumber")] =
-                    row.invoice_number || "N/A";
-                  // Add all other columns except invoice_number and report_generated_date
+                const csvData = reportRows.map((row) => {
+                  const csvRow: Record<string, unknown> = {};
                   csvColumns.forEach((col) => {
-                    if (
-                      col.key === "invoice_number" ||
-                      col.key === "report_generated_date"
-                    ) {
-                      return; // Skip these as they're handled separately
-                    }
+                    if (col.key === "report_generated_date") return;
                     const val = row[col.key as keyof EnvelopePrintingReportRow];
                     csvRow[col.label] = col.format
                       ? col.format(val, row)
@@ -420,19 +454,10 @@ export function EnvelopePrintingReport() {
                   ] = reportGeneratedDate;
                   return csvRow;
                 });
-                // Build column order: S.No., Invoice #, then other columns, then Report Generated Date
-                const otherColumns = csvColumns
-                  .filter(
-                    (col) =>
-                      col.key !== "invoice_number" &&
-                      col.key !== "report_generated_date"
-                  )
-                  .map((col) => col.label);
                 exportToCSV(csvData, "Envelope Printing Report.csv", [
-                  t("reports.columns.serialNumber") || "S.No.",
-                  statusLabel,
-                  t("reports.columns.invoiceNumber"),
-                  ...otherColumns,
+                  ...csvColumns
+                    .filter((col) => col.key !== "report_generated_date")
+                    .map((col) => col.label),
                   t("reports.columns.reportGeneratedDate") ||
                     "Report Generated Date",
                 ]);
@@ -456,7 +481,6 @@ export function EnvelopePrintingReport() {
             <table className="common-table">
               <thead>
                 <tr>
-                  <th>{t('reports.columns.status')}</th>
                   {tableColumns.map((col) => (
                     <th key={col.key}>{col.label}</th>
                   ))}
@@ -465,16 +489,6 @@ export function EnvelopePrintingReport() {
               <tbody>
                 {reportRows.map((row, idx) => (
                   <tr key={idx} className={(row.client_is_inactive || row.jobseeker_is_inactive) ? 'inactive-row' : ''}>
-                    <td className="status-cell">
-                      {row.client_is_inactive
-                        ? <span className="inactive-badge inactive-badge-sm">Client Inactive</span>
-                        : <span className="active-badge">Client Active</span>
-                      }
-                      {row.jobseeker_is_inactive
-                        ? <span className="inactive-badge inactive-badge-sm">JS Inactive</span>
-                        : <span className="active-badge">JS Active</span>
-                      }
-                    </td>
                     {tableColumns.map((col, i) => {
                       let displayValue: string;
                       if (col.key === "report_generated_date") {

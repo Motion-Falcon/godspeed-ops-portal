@@ -319,6 +319,8 @@ export interface EnvelopePrintingReportFilter {
 }
 
 export interface EnvelopePrintingReportRow {
+  sequence_number: number;
+  sr_no: string;
   city: string;
   list_name: string;
   week_ending: string;
@@ -344,6 +346,7 @@ export interface EnvelopePrintingReportRow {
   total_amount: string;
   tax_rate: string;
   hst_gst: string;
+  line_amount: string;
   invoice_number: string;
   invoice_date: string;
   currency: string;
