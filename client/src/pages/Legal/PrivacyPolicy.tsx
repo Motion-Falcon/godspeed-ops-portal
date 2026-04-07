@@ -146,7 +146,7 @@ export function PrivacyPolicy() {
             standards of data protection.
           </p>
 
-          <div className="legal-page-contact-section">
+          {/* <div className="legal-page-contact-section">
             <h3>10. Contact Us</h3>
             <div className="legal-page-contact-info">
               <p>For privacy-related inquiries, corrections, or withdrawal of consent, please contact:</p>
@@ -158,7 +158,7 @@ export function PrivacyPolicy() {
                 legislation.
               </p>
             </div>
-          </div>
+          </div> */}
 
           <h2>11. Updates to Privacy Policy</h2>
           <p>

@@ -223,7 +223,7 @@ export function TermsOfService() {
             revised Terms.
           </p>
 
-          <div className="legal-page-contact-section">
+          {/* <div className="legal-page-contact-section">
             <h3>17. Contact Information</h3>
             <div className="legal-page-contact-info">
               <p>For any questions or concerns regarding these Terms, please contact:</p>
@@ -231,7 +231,7 @@ export function TermsOfService() {
               <p>240 Humberline Dr, Etobicoke ON, M9W 5X1</p>
               <p>accounts@hiresolutions.ca</p>
             </div>
-          </div>
+          </div> */}
         </div>
       </div>
     </div>

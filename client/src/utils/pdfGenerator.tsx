@@ -276,9 +276,9 @@ const styles = StyleSheet.create({
 
 // Company information
 const COMPANY_INFO = {
-  name: "Hire SOLUTION O/A 2695049 Ontario Inc",
-  address: "240 Humberline Dr",
-  address2: "Etobicoke ON, M9W 5X1",
+  name: "Hire Solutions O/A 17417292 Canada Inc",
+  address: "Unit-140 1315",
+  address2: "Bishop St Cambridge Ontario",
   gst: "GST/HST No. 72724 0764 RT0001",
 };
 
