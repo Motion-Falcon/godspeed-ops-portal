@@ -428,6 +428,18 @@ export function PositionManagement() {
                   <th>
                     <div className="column-filter">
                       <div className="column-title">
+                        {t("positionManagement.columns.positionType")}
+                      </div>
+                      <div className="column-search">
+                        <div className="actions-info">
+                          <span className="actions-help-text">&nbsp;</span>
+                        </div>
+                      </div>
+                    </div>
+                  </th>
+                  <th>
+                    <div className="column-filter">
+                      <div className="column-title">
                         {t("positionManagement.columns.positionId")}
                       </div>
                       <div className="column-search">
@@ -708,6 +720,10 @@ export function PositionManagement() {
                           <div className="skeleton-text"></div>
                         </td> */}
 
+                        <td className="skeleton-cell">
+                          <div className="skeleton-text"></div>
+                        </td>
+
                         {/* Actions skeleton - needs special styling */}
                         <td className="skeleton-cell">
                           <div className="skeleton-actions">
@@ -732,6 +748,12 @@ export function PositionManagement() {
                       key={position.id}
                       {...getClickableRowProps(() => handleViewPosition(position.id as string))}
                     >
+                      <td className="status-cell position-type-cell">
+                        {position.isSubcategory
+                          ? <span className="position-type-badge position-type-subcategory">{t("positionManagement.positionTypeBadgeSubcategory")}</span>
+                          : <span className="position-type-badge position-type-normal">{t("positionManagement.positionTypeBadgeNormal")}</span>
+                        }
+                      </td>
                       <td className="position-id-cell">
                         {position.positionCode || t("positionManagement.nA")}
                       </td>

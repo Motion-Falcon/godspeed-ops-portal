@@ -23,6 +23,7 @@ const CLIENT_LIST_TYPES: DropdownListType[] = [
   "salesperson",
   "accounting_person",
   "accounting_manager",
+  "list_name",
 ];
 
 const POSITION_LIST_TYPES: DropdownListType[] = [

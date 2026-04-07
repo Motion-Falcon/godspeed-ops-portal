@@ -38,6 +38,7 @@
     "positionManagement": "Position Management",
     "allPositions": "All Positions",
     "createPosition": "Create Position",
+    "createPositionSubcategory": "Create Position Subcategory",
     "draftPositions": "Draft Positions",
     "positionMatching": "Position Matching",
     "financial": "Financial",
@@ -1286,6 +1287,7 @@
   },
   "bulkTimesheetManagement": {
     "title": "Create Bulk Timesheet",
+    "subcategoryBanner": "This is a subcategory position (invoicing only). It has no assigned jobseekers. Use the individual timesheet creation to create timesheets for this position.",
     "listTitle": "All Timesheet Lists",
     "newBulkTimesheet": "New Bulk Timesheet",
     "globalSearch": "Global search...",
@@ -2108,6 +2110,9 @@
     "noEndDate": "No end date (ongoing)",
     "none": "None",
     "nA": "N/A",
+    "subcategoryBadge": "SUB",
+    "positionTypeBadgeSubcategory": "Subcategory",
+    "positionTypeBadgeNormal": "Regular",
     "yes": "Yes",
     "no": "No",
     "editPositionConfirm": "Are you sure you want to edit this position?",
@@ -2125,6 +2130,7 @@
       "numberOfPositions": "# Positions",
       "showOnPortal": "Show on Portal",
       "startDate": "Start Date",
+      "positionType": "Position Type",
       "actions": "Actions"
     },
     "placeholders": {
@@ -2420,8 +2426,23 @@
   },
   "positionCreate": {
     "createPosition": "Create Position",
+    "createPositionSubcategory": "Create Position Subcategory",
     "editPosition": "Edit Position",
+    "editPositionSubcategory": "Edit Position Subcategory",
     "editPositionDraft": "Edit Position Draft",
+    "subcategory": {
+      "sectionTitle": "Create a Position Subcategory",
+      "bannerTitle": "You are creating a Position Subcategory",
+      "sectionSubtitle": "Subcategory positions are used exclusively for invoicing purposes — they will not appear in Position Matching and no jobseekers can be assigned to them.",
+      "toggleLabel": "Mark as Position Subcategory",
+      "hint": "Enable to make this an invoicing-only position. Jobseekers cannot be assigned and it won't appear in Position Matching.",
+      "confirmTitle": "Change Position Type",
+      "confirmEnableMessage": "Marking this position as a subcategory will exclude it from Position Matching. Jobseekers will not be assignable to this position. Do you want to continue?",
+      "confirmDisableMessage": "Changing this to a regular position will make it available in Position Matching and allow jobseeker assignments. Do you want to continue?",
+      "confirmButton": "Confirm",
+      "cancelButton": "Cancel",
+      "portalDisabledHint": "Subcategory positions cannot be shown on the job portal."
+    },
     "sections": {
       "basicDetails": "Basic Details",
       "addressDetails": "Address Details",
@@ -2536,9 +2557,12 @@
       "markupAutoCalc": "Auto-calculates when bill rate or pay rate changes"
     },
     "copyFrom": {
-      "sectionTitle": "Copy from existing position",
-      "filterByClient": "Filter by client",
-      "copyExistingPosition": "Copy existing position",
+      "sectionTitle": "Copy from Existing Position",
+      "sectionSubtitle": "Speed up position creation by pre-filling this form with details from an existing position. Select a client, then choose a position to copy.",
+      "filterByClient": "Filter by Client",
+      "filterByClientSubtitle": "Select a client to load their existing positions.",
+      "copyExistingPosition": "Select Position to Copy",
+      "copyExistingPositionSubtitle": "Choose a position to pre-fill the form with its details.",
       "selectClientPlaceholder": "Select a client...",
       "selectClientFirst": "Please select a client first",
       "selectPositionPlaceholder": "Select a position to copy...",

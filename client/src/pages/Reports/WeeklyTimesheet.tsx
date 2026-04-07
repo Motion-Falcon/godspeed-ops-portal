@@ -8,9 +8,10 @@ import { useLanguage } from "../../contexts/language/language-provider";
 import { Loader2, Calendar, User, Building } from "lucide-react";
 import { JobSeekerProfile } from "../../types/jobseeker";
 import { generateWeekOptions, formatDate as formatWeekDate } from "../../utils/weekUtils";
-import { PAY_CYCLES, LIST_NAMES } from "../../constants/formOptions";
+import { PAY_CYCLES } from "../../constants/formOptions";
 import "../../styles/pages/CommonReportsStyles.css";
 import { exportToCSV } from '../../utils/csvExport';
+import { getDropdownOptions } from '../../services/api/dropdownOptions';
 
 // Format date utility function (similar to ClientDrafts)
 const formatDate = (dateString: string | undefined) => {
@@ -79,6 +80,7 @@ export function WeeklyTimesheet() {
   const [selectedWeeks, setSelectedWeeks] = useState<Array<{ start: string; end: string }>>([]);
   const [payCycle, setPayCycle] = useState<string>("");
   const [listName, setListName] = useState<string>("");
+  const [availableListNames, setAvailableListNames] = useState<string[]>([]);
 
   // Data state
   const [jobseekerLoading, setJobseekerLoading] = useState(false);
@@ -106,6 +108,13 @@ export function WeeklyTimesheet() {
   // Set week options on mount
   useEffect(() => {
     setWeekOptions(generateWeekOptions());
+  }, []);
+
+  // Fetch list names from DB on mount
+  useEffect(() => {
+    getDropdownOptions('list_name')
+      .then((opts) => setAvailableListNames(opts.map((o) => o.name)))
+      .catch(() => setAvailableListNames([]));
   }, []);
 
   // Fetch report when filters change
@@ -171,7 +180,7 @@ export function WeeklyTimesheet() {
   ];
   const listNameOptions: DropdownOption[] = [
     { id: '', label: t('reports.placeholders.selectNone'), value: '' },
-    ...LIST_NAMES.map((ln) => ({ id: ln, label: ln, value: ln }))
+    ...availableListNames.map((ln) => ({ id: ln, label: ln, value: ln }))
   ];
 
   return (

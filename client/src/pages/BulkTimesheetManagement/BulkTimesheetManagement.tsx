@@ -982,6 +982,14 @@ export function BulkTimesheetManagement() {
           </div>
         )}
 
+        {/* Subcategory position info banner */}
+        {selectedPosition?.isSubcategory && (
+          <div className="info-banner" style={{ margin: "16px 0", padding: "12px 16px", backgroundColor: "#ede9fe", border: "1px solid #c4b5fd", borderRadius: "8px", color: "#5b21b6", display: "flex", alignItems: "center", gap: "8px" }}>
+            <span style={{ fontWeight: 600 }}>ℹ</span>
+            <span>{t("bulkTimesheetManagement.subcategoryBanner")}</span>
+          </div>
+        )}
+
         {/* Timesheet input for each jobseeker */}
         {selectedClient &&
           selectedPosition &&

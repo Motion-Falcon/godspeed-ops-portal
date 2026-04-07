@@ -102,18 +102,6 @@ export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 export type PaymentTerm = (typeof PAYMENT_TERMS)[number];
 export type PayCycle = (typeof PAY_CYCLES)[number];
 
-export const LIST_NAMES = [
-  "AA",
-  "AB",
-  "CANHIRE BRAMPTON",
-  "CANHIRE LONDON",
-  "KITCHENER",
-  "PRONTO PRO",
-  "SA",
-  "SB",
-  "SCARBOROUGH",
-] as const;
-
 export const USER_ROLES = [
   "admin",
   "recruiter",
