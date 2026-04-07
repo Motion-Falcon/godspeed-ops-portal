@@ -267,6 +267,7 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
   } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const location = useLocation();
   const menuRef = useRef<HTMLElement>(null);
   const [tooltip, setTooltip] = useState<{
     text: string;
@@ -517,6 +518,12 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
           exact: true,
         },
         {
+          label: t("navigation.createPositionSubcategory"),
+          path: "/position-management/create-subcategory",
+          icon: <PlusCircle size={16} />,
+          exact: true,
+        },
+        {
           label: t("navigation.draftPositions"),
           path: "/position-management/drafts",
           icon: <FileEdit size={16} />,
@@ -733,6 +740,11 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
       setTimeout(scrollToActiveItem, 100);
     }
   }, [isOpen]);
+
+  // Scroll sidebar to show the active item whenever navigation happens
+  useEffect(() => {
+    setTimeout(scrollToActiveItem, 100);
+  }, [location.pathname]);
 
   const getUserTypeDisplay = () => {
     if (!user) {

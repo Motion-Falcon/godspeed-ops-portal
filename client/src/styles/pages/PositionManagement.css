@@ -4,38 +4,82 @@
   margin-bottom: 2rem;
 }
 
-/* Copy from existing position - separate card at top */
-.copy-from-card {
-  margin-bottom: 1.5rem;
+/* ===== SUBCATEGORY BANNER CARD — pastel yellow, compact ===== */
+.subcategory-banner-card {
+  margin: 0 auto 1rem auto;
   max-width: 1200px;
-  margin: 0 auto 2rem auto;
+  padding: 0.75rem 1.25rem !important;
+  background-color: #fefce8 !important;
+  border-color: #fde047 !important;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 
-.copy-from-card .copy-from-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 1rem 1.5rem;
+[data-theme="dark"] .subcategory-banner-card {
+  background-color: #2d2a0a !important;
+  border-color: #a16207 !important;
+}
+
+.subcategory-banner-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #92400e;
+  display: block;
+}
+
+[data-theme="dark"] .subcategory-banner-title {
+  color: #fde68a;
+}
+
+.subcategory-banner-subtitle {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #78350f;
+  line-height: 1.4;
+}
+
+[data-theme="dark"] .subcategory-banner-subtitle {
+  color: #fcd34d;
+}
+
+/* ===== COPY FROM CARD — compact layout ===== */
+.copy-from-card {
+  margin: 0 auto 1rem auto;
+  max-width: 1200px;
+  padding: 0.875rem 1.25rem !important;
 }
 
 .copy-from-card .copy-from-title {
-  margin: 0;
-  font-size: 1.5rem;
+  margin: 0 0 0.25rem 0 !important;
+  font-size: 1rem !important;
   font-weight: 600;
   color: var(--text);
-  flex: 0 0 auto;
-  padding-right: 0.5rem;
 }
 
-.copy-from-card .copy-from-row .form-group {
-  flex: 1 1 220px;
-  min-width: 180px;
+.copy-from-card .copy-from-subtitle {
+  margin: 0 0 0.875rem 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.copy-from-dropdowns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+}
+
+.copy-from-dropdowns .form-group {
+  flex: 1 1 260px;
+  min-width: 220px;
   margin-bottom: 0;
 }
 
 .copy-from-card .copy-from-hint {
-  margin-top: 0.75rem;
+  margin-top: 0.5rem;
   margin-bottom: 0;
+  font-size: 0.8rem;
 }
 
 .card {
