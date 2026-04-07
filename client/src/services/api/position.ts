@@ -71,6 +71,9 @@ export interface PositionData {
   // Assignment Management
   assignedJobseekers?: string[];
 
+  // Subcategory flag – invoicing-only positions excluded from matching
+  isSubcategory?: boolean;
+
   // Metadata
   isDraft?: boolean;
   createdAt?: string;
@@ -279,6 +282,10 @@ export const getPositions = async (
             showOnPortalFilter: params.showOnPortalFilter,
           }),
         ...(params.dateFilter && { dateFilter: params.dateFilter }),
+        ...(params.isSubcategoryFilter &&
+          params.isSubcategoryFilter !== "all" && {
+            isSubcategoryFilter: params.isSubcategoryFilter,
+          }),
       },
     };
 

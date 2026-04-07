@@ -111,3 +111,58 @@ td.status-cell .active-badge {
   font-size: var(--font-size-small);
   margin-left: 12px;
 }
+
+/* Subcategory badge — purple pill for invoicing-only positions */
+.subcategory-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: 9999px;
+  font-size: 9px;
+  font-weight: var(--font-weight-semibold);
+  background-color: #ede9fe;
+  color: #7c3aed;
+  border: 1px solid #c4b5fd;
+  margin-left: 6px;
+  white-space: nowrap;
+  vertical-align: middle;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+}
+
+[data-theme="dark"] .subcategory-badge {
+  background-color: #2e1065;
+  color: #c4b5fd;
+  border-color: #6d28d9;
+}
+
+/* Position type badges — used in the Position Management table type column */
+.position-type-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 9999px;
+  font-size: var(--font-size-tiny);
+  font-weight: var(--font-weight-semibold);
+  white-space: nowrap;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+}
+
+.position-type-subcategory {
+  background-color: #ede9fe;
+  color: #7c3aed;
+  border: 1px solid #c4b5fd;
+}
+
+.position-type-normal {
+  background-color: var(--success-bg);
+  color: var(--success);
+  border: 1px solid var(--success);
+}
+
+[data-theme="dark"] .position-type-subcategory {
+  background-color: #2e1065;
+  color: #c4b5fd;
+  border-color: #6d28d9;
+}

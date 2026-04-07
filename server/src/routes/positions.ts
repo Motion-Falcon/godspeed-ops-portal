@@ -138,6 +138,7 @@ router.get(
         experienceFilter = "",
         showOnPortalFilter = "",
         dateFilter = "",
+        isSubcategoryFilter = "",
       } = req.query as {
         page?: string;
         limit?: string;
@@ -153,6 +154,7 @@ router.get(
         experienceFilter?: string;
         showOnPortalFilter?: string;
         dateFilter?: string;
+        isSubcategoryFilter?: string;
       };
 
       const pageNum = parseInt(page);
@@ -183,7 +185,8 @@ router.get(
           payrate_type,
           regular_pay_rate,
           premium_pay_rate,
-          bill_rate
+          bill_rate,
+          is_subcategory
         `);
 
       // Apply all filters at database level
@@ -200,6 +203,7 @@ router.get(
         experienceFilter,
         showOnPortalFilter,
         dateFilter,
+        isSubcategoryFilter,
       });
 
       // Get total count (unfiltered)
@@ -232,6 +236,7 @@ router.get(
         experienceFilter,
         showOnPortalFilter,
         dateFilter,
+        isSubcategoryFilter,
       });
 
       const { count: filteredCount, error: filteredCountError } =
@@ -380,6 +385,7 @@ router.get(
         experienceFilter = "",
         showOnPortalFilter = "",
         dateFilter = "",
+        isSubcategoryFilter = "",
       } = req.query as {
         page?: string;
         limit?: string;
@@ -394,6 +400,7 @@ router.get(
         experienceFilter?: string;
         showOnPortalFilter?: string;
         dateFilter?: string;
+        isSubcategoryFilter?: string;
       };
 
       const pageNum = parseInt(page);
@@ -446,7 +453,8 @@ router.get(
           overtime_bill_rate,
           overtime_pay_rate,
           city,
-          province
+          province,
+          is_subcategory
         `
         )
         .eq("client", clientId);
@@ -464,6 +472,7 @@ router.get(
         experienceFilter,
         showOnPortalFilter,
         dateFilter,
+        isSubcategoryFilter,
       });
 
       // Get total count for this client (unfiltered)
@@ -497,6 +506,7 @@ router.get(
         experienceFilter,
         showOnPortalFilter,
         dateFilter,
+        isSubcategoryFilter,
       });
 
       const { count: filteredCount, error: filteredCountError } =
@@ -637,6 +647,7 @@ function applyPositionFilters(
     experienceFilter?: string;
     showOnPortalFilter?: string;
     dateFilter?: string;
+    isSubcategoryFilter?: string;
   }
 ) {
   const {
@@ -652,6 +663,7 @@ function applyPositionFilters(
     experienceFilter,
     showOnPortalFilter,
     dateFilter,
+    isSubcategoryFilter,
   } = filters;
 
   // Global search across multiple fields
@@ -715,6 +727,11 @@ function applyPositionFilters(
 
   if (clientFilter && clientFilter.trim().length > 0) {
     query = query.ilike("client_name", `%${clientFilter.trim()}%`);
+  }
+
+  if (isSubcategoryFilter && isSubcategoryFilter !== "all") {
+    const isSubcategory = isSubcategoryFilter === "true";
+    query = query.eq("is_subcategory", isSubcategory);
   }
 
   return query;
@@ -1468,7 +1485,8 @@ router.post(
           premium_pay_rate,
           task_time,
           assigned_jobseekers,
-          number_of_positions
+          number_of_positions,
+          is_subcategory
         `
         )
         .eq("id", positionId)
@@ -1476,6 +1494,13 @@ router.post(
 
       if (positionError || !position) {
         return res.status(404).json({ error: "Position not found" });
+      }
+
+      // Block assignment for subcategory positions
+      if (position.is_subcategory) {
+        return res.status(400).json({
+          error: "Cannot assign jobseekers to subcategory positions. Subcategory positions are for invoicing purposes only.",
+        });
       }
 
       // Set full position object for email templates
