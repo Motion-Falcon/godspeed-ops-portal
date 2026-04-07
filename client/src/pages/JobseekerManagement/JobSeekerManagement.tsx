@@ -481,6 +481,36 @@ export function JobSeekerManagement() {
             <table className="common-table">
               <thead>
                 <tr>
+                  <th>
+                    <div className="column-filter">
+                      <div className="column-title">
+                        {t("jobseekerManagement.columns.status")}
+                      </div>
+                      <div className="column-search">
+                        <select
+                          value={statusFilter}
+                          onChange={(e) => setStatusFilter(e.target.value)}
+                          className="column-filter-select"
+                        >
+                          <option value="all">
+                            {t("jobseekerManagement.filters.allStatuses")}
+                          </option>
+                          <option value="pending">
+                            {t("jobseekerManagement.status.pending")}
+                          </option>
+                          <option value="verified">
+                            {t("jobseekerManagement.status.verified")}
+                          </option>
+                          <option value="rejected">
+                            {t("jobseekerManagement.status.rejected")}
+                          </option>
+                          <option value="need-attention">
+                            {t("jobseekerManagement.status.needsAttention")}
+                          </option>
+                        </select>
+                      </div>
+                    </div>
+                  </th>
                   <th className="status-th">
                     <div className="column-filter">
                       <div className="column-title">
@@ -604,36 +634,6 @@ export function JobSeekerManagement() {
                   <th>
                     <div className="column-filter">
                       <div className="column-title">
-                        {t("jobseekerManagement.columns.status")}
-                      </div>
-                      <div className="column-search">
-                        <select
-                          value={statusFilter}
-                          onChange={(e) => setStatusFilter(e.target.value)}
-                          className="column-filter-select"
-                        >
-                          <option value="all">
-                            {t("jobseekerManagement.filters.allStatuses")}
-                          </option>
-                          <option value="pending">
-                            {t("jobseekerManagement.status.pending")}
-                          </option>
-                          <option value="verified">
-                            {t("jobseekerManagement.status.verified")}
-                          </option>
-                          <option value="rejected">
-                            {t("jobseekerManagement.status.rejected")}
-                          </option>
-                          <option value="need-attention">
-                            {t("jobseekerManagement.status.needsAttention")}
-                          </option>
-                        </select>
-                      </div>
-                    </div>
-                  </th>
-                  <th>
-                    <div className="column-filter">
-                      <div className="column-title">
                         {t("jobseekerManagement.columns.joinedDate")}
                       </div>
                       <div className="column-search">
@@ -674,6 +674,14 @@ export function JobSeekerManagement() {
                         {/* Status skeleton - needs special styling */}
                         <td className="skeleton-cell">
                           <div className="skeleton-status">
+                            <div className="skeleton-icon skeleton-status-icon"></div>
+                            <div className="skeleton-badge skeleton-status-text"></div>
+                          </div>
+                        </td>
+
+                        {/* Activity status skeleton */}
+                        <td className="skeleton-cell">
+                          <div className="skeleton-status">
                             <div className="skeleton-badge skeleton-status-text"></div>
                           </div>
                         </td>
@@ -696,14 +704,6 @@ export function JobSeekerManagement() {
                         </td>
                         <td className="skeleton-cell">
                           <div className="skeleton-text"></div>
-                        </td>
-
-                        {/* Status skeleton - needs special styling */}
-                        <td className="skeleton-cell">
-                          <div className="skeleton-status">
-                            <div className="skeleton-icon skeleton-status-icon"></div>
-                            <div className="skeleton-badge skeleton-status-text"></div>
-                          </div>
                         </td>
 
                         {/* Date skeleton */}
@@ -739,6 +739,14 @@ export function JobSeekerManagement() {
                         className={profile.isInactive ? 'inactive-row' : ''}
                       >
                         <td className="status-cell">
+                          <span className="status-display">
+                            {getStatusIcon(effectiveStatus)}
+                            <span className={`status-text ${effectiveStatus}`}>
+                              {formatStatusLabel(effectiveStatus)}
+                            </span>
+                          </span>
+                        </td>
+                        <td className="status-cell">
                           {profile.isInactive
                             ? <span className="inactive-badge">Inactive</span>
                             : <span className="active-badge">Active</span>
@@ -759,14 +767,6 @@ export function JobSeekerManagement() {
                         </td>
                         <td className="experience-cell">
                           {profile.experience}
-                        </td>
-                        <td className="status-cell">
-                          <span className="status-display">
-                            {getStatusIcon(effectiveStatus)}
-                            <span className={`status-text ${effectiveStatus}`}>
-                              {formatStatusLabel(effectiveStatus)}
-                            </span>
-                          </span>
                         </td>
                         <td className="date-cell">
                           {new Date(profile.createdAt).toLocaleDateString()}

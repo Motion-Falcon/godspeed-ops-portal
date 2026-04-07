@@ -333,6 +333,7 @@ export interface PositionData {
 
   // Metadata
   isDraft?: boolean;
+  isSubcategory?: boolean;
   createdAt?: string;
   updatedAt?: string;
   lastUpdated?: string;

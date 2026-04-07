@@ -134,6 +134,7 @@ function App() {
                   <Route path="/client-management/drafts/edit/:id" element={<ClientDraftEdit />} />
                   <Route path="/position-management" element={<PositionManagement />} />
                   <Route path="/position-management/create" element={<PositionCreate />} />
+                  <Route path="/position-management/create-subcategory" element={<PositionCreate defaultSubcategory={true} />} />
                   <Route path="/position-management/view/:id" element={<PositionView />} />
                   <Route path="/position-management/edit/:id" element={<PositionEdit />} />
                   <Route path="/position-management/drafts" element={<PositionDrafts />} />

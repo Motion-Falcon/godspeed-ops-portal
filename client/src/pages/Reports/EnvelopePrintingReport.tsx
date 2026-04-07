@@ -13,9 +13,9 @@ import {
 import { useLanguage } from "../../contexts/language/language-provider";
 import { Loader2, Calendar, Building, List, Repeat } from "lucide-react";
 import { formatDate as formatWeekDate } from "../../utils/weekUtils";
-import { LIST_NAMES, PAY_CYCLES } from "../../constants/formOptions";
-import "../../styles/pages/CommonReportsStyles.css";
+import { PAY_CYCLES } from "../../constants/formOptions";
 import { exportToCSV } from "../../utils/csvExport";
+import { getDropdownOptions } from "../../services/api/dropdownOptions";
 
 const getTableColumns = (
   t: (key: string) => string
@@ -122,6 +122,7 @@ export function EnvelopePrintingReport() {
 
   const [clients, setClients] = useState<ClientData[]>([]);
   const [selectedClients, setSelectedClients] = useState<ClientData[]>([]);
+  const [availableListNames, setAvailableListNames] = useState<string[]>([]);
   const [selectedListNames, setSelectedListNames] = useState<string[]>([]);
   const [selectedPayCycles, setSelectedPayCycles] = useState<string[]>([]);
   const [startDate, setStartDate] = useState<string>(defaultDates.startDate);
@@ -144,9 +145,17 @@ export function EnvelopePrintingReport() {
       .finally(() => setClientLoading(false));
   }, []);
 
-  // Set default selections for list names and pay cycles on component mount
   useEffect(() => {
-    setSelectedListNames([...LIST_NAMES]);
+    getDropdownOptions('list_name')
+      .then((opts) => {
+        const names = opts.map((o) => o.name);
+        setAvailableListNames(names);
+        setSelectedListNames(names);
+      })
+      .catch(() => setAvailableListNames([]));
+  }, []);
+
+  useEffect(() => {
     setSelectedPayCycles([...PAY_CYCLES]);
   }, []);
 
@@ -184,7 +193,7 @@ export function EnvelopePrintingReport() {
     isInactive: c.isInactive,
   }));
 
-  const listNameOptions: DropdownOption[] = LIST_NAMES.map((ln) => ({
+  const listNameOptions: DropdownOption[] = availableListNames.map((ln) => ({
     id: ln,
     label: ln,
     value: ln,
