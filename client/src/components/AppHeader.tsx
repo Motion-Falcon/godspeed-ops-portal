@@ -14,9 +14,9 @@ import "../styles/components/header.css";
 // Company data
 const companies = [
   {
-    name: "CanHire Ops",
+    name: "Hire Solutions Ops",
     logo: canHireIconLogo,
-    url: "https://app.canhiresolutions.ca",
+    url: "https://app.hiresolutions.ca",
   },
   {
     name: "All Staff Inc. Ops",
