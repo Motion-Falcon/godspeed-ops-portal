@@ -31,6 +31,57 @@ function checkJobseekerInactive(lastActivityAt: string | null, createdAt: string
   return lastActivity < sixtyDaysAgo;
 }
 
+function extractTaxPercentage(taxLabel: string | null | undefined): number {
+  if (!taxLabel) return 0;
+  const match = taxLabel.match(/(\d+\.?\d*)%/);
+  return match ? Number.parseFloat(match[1]) || 0 : 0;
+}
+
+function calculateEnvelopeTax(
+  baseAmount: number,
+  taxLabel: string | null | undefined
+): { taxRate: string; taxAmount: string; lineAmount: string } {
+  const taxPercentage = extractTaxPercentage(taxLabel);
+  const taxAmount = (baseAmount * taxPercentage) / 100;
+  const lineAmount = baseAmount + taxAmount;
+
+  return {
+    taxRate: taxPercentage.toFixed(2),
+    taxAmount: taxAmount.toFixed(2),
+    lineAmount: lineAmount.toFixed(2),
+  };
+}
+
+function formatWeekEndingForSrNo(dateValue: string | null | undefined): string {
+  if (!dateValue) return "00000000";
+
+  const digitsOnly = dateValue.replace(/\D/g, "");
+  if (digitsOnly.length >= 8) {
+    return digitsOnly.slice(0, 8);
+  }
+
+  const parsedDate = new Date(dateValue);
+  if (Number.isNaN(parsedDate.getTime())) {
+    return "00000000";
+  }
+
+  const year = parsedDate.getFullYear();
+  const month = String(parsedDate.getMonth() + 1).padStart(2, "0");
+  const day = String(parsedDate.getDate()).padStart(2, "0");
+  return `${year}${month}${day}`;
+}
+
+function buildEnvelopeSrNo(
+  shortCode: string | null | undefined,
+  weekEnding: string | null | undefined,
+  sequenceNumber: number
+): string {
+  const normalizedShortCode = (shortCode || "NA").trim() || "NA";
+  const weekEndingToken = formatWeekEndingForSrNo(weekEnding);
+  const sequenceToken = String(sequenceNumber).padStart(3, "0");
+  return `${normalizedShortCode}-${weekEndingToken}-${sequenceToken}`;
+}
+
 // POST /api/reports/timesheet
 router.post(
   "/timesheet",
@@ -1074,7 +1125,7 @@ router.post(
         const { data: jobseekersData, error: jobseekersError } = await supabase
           .from("jobseeker_profiles")
           .select(
-            "id, employee_id, license_number, passport_number, mobile, payment_method, last_activity_at, created_at"
+            "id, employee_id, license_number, passport_number, mobile, payment_method, hst_gst, last_activity_at, created_at"
           )
           .in("id", Array.from(jobseekerIdsSet));
 
@@ -1125,6 +1176,11 @@ router.post(
           // Get jobseeker info from jobseekerInfoMap
           const jobseekerInfo =
             jobseekerInfoMap[ts.jobseekerProfile.jobseekerProfileId] || {};
+          const totalAmount = Number(ts.totalJobseekerPay) || 0;
+          const { taxRate, taxAmount, lineAmount } = calculateEnvelopeTax(
+            totalAmount,
+            ts.salesTax
+          );
           // Compose row
           envelopeData.push({
             city: client.city1 || "",
@@ -1164,9 +1220,10 @@ router.post(
             regular_pay_rate: (Number(ts.regularPayRate) || 0).toFixed(2),
             premium_pay_rate: (Number(ts.premiumPayRate) || 0).toFixed(2),
             overtime_pay_rate: (Number(ts.overtimePayRate) || 0).toFixed(2),
-            total_amount: (Number(ts.totalJobseekerPay) || 0).toFixed(2),
-            tax_rate: "0",
-            hst_gst: "0.00",
+            total_amount: totalAmount.toFixed(2),
+            tax_rate: taxRate,
+            hst_gst: taxAmount,
+            line_amount: lineAmount,
             invoice_number: invoice.invoice_number || "",
             invoice_date: invoice.invoice_date || "",
             currency: invoice.currency || "",
@@ -1175,7 +1232,19 @@ router.post(
           });
         });
       });
-      res.json(envelopeData);
+      const numberedEnvelopeData = envelopeData.map((row, index) => {
+        const sequenceNumber = index + 1;
+        return {
+          sequence_number: sequenceNumber,
+          sr_no: buildEnvelopeSrNo(
+            row.short_code,
+            row.week_ending,
+            sequenceNumber
+          ),
+          ...row,
+        };
+      });
+      res.json(numberedEnvelopeData);
     } catch (error) {
       console.error("Unexpected error in envelope printing report:", error);
       return res.status(500).json({ error: "An unexpected error occurred." });
