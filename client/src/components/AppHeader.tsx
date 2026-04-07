@@ -13,7 +13,7 @@ import '../styles/components/header.css';
 
 // Company data
 const companies = [
-  { name: 'CanHire Ops', logo: canHireIconLogo, url: 'https://app.canhiresolutions.ca' },
+  { name: 'Hire Solutions Ops', logo: canHireIconLogo, url: 'https://app.hiresolutions.ca' },
   { name: 'All Staff Inc. Ops', logo: allStaffIconLogo, url: 'https://app.allstaff.ca' },
   { name: 'Godspeed Ops', logo: godspeedIconLogo, url: 'https://app.godspeedxp.com' }
 ];
