@@ -2729,6 +2729,8 @@
     },
     "columns": {
       "serialNumber": "N°",
+      "sequenceNumber": "#",
+      "srNo": "N° de série",
       "weekPeriod": "Période de la semaine",
       "jobseekerNumber": "N° demandeur d'emploi",
       "positionNumber": "N° poste",
@@ -2794,6 +2796,7 @@
       "positionName": "Nom du poste",
       "totalAmount": "Montant total",
       "hstGst": "TVH/TPS",
+      "lineAmount": "Montant de ligne",
       "totalBilledAmount": "Montant total facturé",
       "paidAmount": "Montant payé",
       "cashAmount": "Comptant",
