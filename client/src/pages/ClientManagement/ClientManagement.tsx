@@ -16,6 +16,7 @@ import {
   ClientData,
   deleteClient,
 } from "../../services/api/client";
+import { getDropdownOptions } from "../../services/api/dropdownOptions";
 import { AppHeader } from "../../components/AppHeader";
 import { ConfirmationModal } from "../../components/ConfirmationModal";
 import { getClickableRowProps } from "../../hooks/useClickableTableRow";
@@ -68,6 +69,15 @@ export function ClientManagement() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  // List name options for filter dropdown (fetched from DB)
+  const [listNameFilterOptions, setListNameFilterOptions] = useState<string[]>([]);
+
+  useEffect(() => {
+    getDropdownOptions('list_name')
+      .then((opts) => setListNameFilterOptions(opts.map((o) => o.name)))
+      .catch(() => setListNameFilterOptions([]));
+  }, []);
 
   // Edit confirmation state
   const [clientToEdit, setClientToEdit] = useState<ClientData | null>(null);
@@ -423,13 +433,16 @@ export function ClientManagement() {
                     <div className="column-filter">
                       <div className="column-title">List Name</div>
                       <div className="column-search">
-                        <input
-                          type="text"
-                          placeholder="Search list..."
+                        <select
                           value={listNameFilter}
                           onChange={(e) => setListNameFilter(e.target.value)}
                           className="column-search-input"
-                        />
+                        >
+                          <option value="">All</option>
+                          {listNameFilterOptions.map((name) => (
+                            <option key={name} value={name}>{name}</option>
+                          ))}
+                        </select>
                       </div>
                     </div>
                   </th>

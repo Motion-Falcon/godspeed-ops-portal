@@ -419,6 +419,7 @@ router.get(
           id,
           title,
           number_of_positions,
+          is_subcategory,
           created_at,
           created_by_user_id
         `
@@ -497,23 +498,31 @@ router.get(
         };
       }
 
+      // Collect IDs of subcategory positions to exclude their assignments from filled count
+      const subcategoryPositionIds = new Set(
+        (positions || []).filter((p: any) => p.is_subcategory).map((p: any) => p.id)
+      );
+
       // Process positions and populate monthly stats
       positions?.forEach((position: Position) => {
         const createdMonth = getMonthKey(position.created_at);
 
         if (monthlyStats[createdMonth]) {
           monthlyStats[createdMonth].totalPositionsAdded++;
-          monthlyStats[createdMonth].totalPositionSlots +=
-            position.number_of_positions || 1;
+          // Exclude subcategories from slot counts (no matchable slots)
+          if (!(position as any).is_subcategory) {
+            monthlyStats[createdMonth].totalPositionSlots +=
+              position.number_of_positions || 1;
+          }
           monthlyStats[createdMonth].positionsCreated.push(position);
         }
       });
 
-      // Process assignments and populate monthly stats
+      // Process assignments and populate monthly stats (exclude subcategory positions)
       assignments?.forEach((assignment: Assignment) => {
         const createdMonth = getMonthKey(assignment.created_at);
 
-        if (monthlyStats[createdMonth]) {
+        if (monthlyStats[createdMonth] && !subcategoryPositionIds.has(assignment.position_id)) {
           monthlyStats[createdMonth].totalPositionsFilled++;
           monthlyStats[createdMonth].assignmentsCreated.push(assignment);
         }
@@ -527,12 +536,15 @@ router.get(
 
       // Calculate current totals
       const totalPositionsAdded = positions?.length || 0;
+      const nonSubcategoryPositions = (positions || []).filter((p: any) => !p.is_subcategory);
       const totalPositionSlots =
-        positions?.reduce(
+        nonSubcategoryPositions.reduce(
           (sum: number, pos: Position) => sum + (pos.number_of_positions || 1),
           0
         ) || 0;
-      const totalPositionsFilled = assignments?.length || 0;
+      const totalPositionsFilled = (assignments || []).filter(
+        (a: Assignment) => !subcategoryPositionIds.has(a.position_id)
+      ).length;
 
       // Format historical data for charts
       const formatHistoricalData = (
@@ -665,6 +677,7 @@ router.get(
           id,
           title,
           number_of_positions,
+          is_subcategory,
           created_at,
           created_by_user_id
         `
@@ -745,23 +758,31 @@ router.get(
         };
       }
 
+      // Collect IDs of subcategory positions to exclude their assignments from filled count
+      const subcategoryPositionIds = new Set(
+        (positions || []).filter((p: any) => p.is_subcategory).map((p: any) => p.id)
+      );
+
       // Process positions and populate monthly stats
       positions?.forEach((position: Position) => {
         const createdMonth = getMonthKey(position.created_at);
 
         if (monthlyStats[createdMonth]) {
           monthlyStats[createdMonth].totalPositionsAdded++;
-          monthlyStats[createdMonth].totalPositionSlots +=
-            position.number_of_positions || 1;
+          // Exclude subcategories from slot counts (no matchable slots)
+          if (!(position as any).is_subcategory) {
+            monthlyStats[createdMonth].totalPositionSlots +=
+              position.number_of_positions || 1;
+          }
           monthlyStats[createdMonth].positionsCreated.push(position);
         }
       });
 
-      // Process assignments and populate monthly stats
+      // Process assignments and populate monthly stats (exclude subcategory positions)
       assignments?.forEach((assignment: Assignment) => {
         const createdMonth = getMonthKey(assignment.created_at);
 
-        if (monthlyStats[createdMonth]) {
+        if (monthlyStats[createdMonth] && !subcategoryPositionIds.has(assignment.position_id)) {
           monthlyStats[createdMonth].totalPositionsFilled++;
           monthlyStats[createdMonth].assignmentsCreated.push(assignment);
         }
@@ -775,12 +796,15 @@ router.get(
 
       // Calculate current totals
       const totalPositionsAdded = positions?.length || 0;
+      const nonSubcategoryPositions = (positions || []).filter((p: any) => !p.is_subcategory);
       const totalPositionSlots =
-        positions?.reduce(
+        nonSubcategoryPositions.reduce(
           (sum: number, pos: Position) => sum + (pos.number_of_positions || 1),
           0
         ) || 0;
-      const totalPositionsFilled = assignments?.length || 0;
+      const totalPositionsFilled = (assignments || []).filter(
+        (a: Assignment) => !subcategoryPositionIds.has(a.position_id)
+      ).length;
 
       // Format historical data for charts
       const formatHistoricalData = (

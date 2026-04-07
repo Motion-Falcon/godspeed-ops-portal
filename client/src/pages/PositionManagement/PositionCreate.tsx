@@ -206,11 +206,13 @@ type PositionFormData = z.infer<ReturnType<typeof createPositionFormSchema>>;
 interface PositionCreateProps {
   isEditMode?: boolean;
   isEditDraftMode?: boolean;
+  defaultSubcategory?: boolean;
 }
 
 export function PositionCreate({
   isEditMode = false,
   isEditDraftMode = false,
+  defaultSubcategory = false,
 }: PositionCreateProps) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -242,6 +244,9 @@ export function PositionCreate({
   const [copyFromPositionsLoading, setCopyFromPositionsLoading] =
     useState(false);
   const [copyFromPositionLoading, setCopyFromPositionLoading] = useState(false);
+
+  // Position subcategory — derived from prop or loaded position data, no interactive toggle
+  const [isSubcategory, setIsSubcategory] = useState<boolean>(defaultSubcategory);
 
   // Dynamic job title options from API
   const [dynamicTitles, setDynamicTitles] = useState<string[]>([]);
@@ -448,13 +453,21 @@ export function PositionCreate({
   // Set page title based on mode
   useEffect(() => {
     if (isEditMode) {
-      setPageTitle(t("positionCreate.editPosition"));
+      setPageTitle(
+        isSubcategory
+          ? t("positionCreate.editPositionSubcategory")
+          : t("positionCreate.editPosition")
+      );
     } else if (isEditDraftMode) {
       setPageTitle(t("positionCreate.editPositionDraft"));
     } else {
-      setPageTitle(t("positionCreate.createPosition"));
+      setPageTitle(
+        isSubcategory
+          ? t("positionCreate.createPositionSubcategory")
+          : t("positionCreate.createPosition")
+      );
     }
-  }, [isEditMode, isEditDraftMode, t]);
+  }, [isEditMode, isEditDraftMode, isSubcategory, t]);
 
   // Update load position effect
   useEffect(() => {
@@ -475,6 +488,12 @@ export function PositionCreate({
 
             // Reset form with position data
             reset(formattedPosition);
+
+            // Set subcategory state from loaded position
+            if (formattedPosition.isSubcategory !== undefined) {
+              setIsSubcategory(!!formattedPosition.isSubcategory);
+            }
+
             console.log("Form reset with position data");
             console.log("Client value after reset:", formattedPosition.client);
 
@@ -909,7 +928,7 @@ export function PositionCreate({
     try {
       if (isEditMode && positionId) {
         // Update existing position
-        const dataToSubmit = { ...data };
+        const dataToSubmit = { ...data, isSubcategory };
         // Remove clientName property if it exists
         if ("clientName" in dataToSubmit) {
           delete (dataToSubmit as Record<string, unknown>).clientName;
@@ -926,7 +945,7 @@ export function PositionCreate({
         }, 1000);
       } else {
         // Create new position regardless of whether we're in create mode or draft edit mode
-        const dataToSubmit = { ...data };
+        const dataToSubmit = { ...data, isSubcategory };
         // Remove clientName property if it exists
         if ("clientName" in dataToSubmit) {
           delete (dataToSubmit as Record<string, unknown>).clientName;
@@ -1034,13 +1053,28 @@ export function PositionCreate({
           </div>
         )}
 
-        {/* Copy from existing position - separate card at top (create mode only) */}
+        {/* Position Subcategory banner — only shown on /create-subcategory route */}
+        {defaultSubcategory && !isEditMode && !isEditDraftMode && (
+          <div className="card subcategory-banner-card">
+            <strong className="subcategory-banner-title">
+              {t("positionCreate.subcategory.bannerTitle")}
+            </strong>
+            <p className="subcategory-banner-subtitle">
+              {t("positionCreate.subcategory.sectionSubtitle")}
+            </p>
+          </div>
+        )}
+
+        {/* Copy from existing position - separate card (create mode only) */}
         {!isEditMode && !isEditDraftMode && (
           <div className="card copy-from-card">
-            <div className="copy-from-row">
-              <h2 className="copy-from-title">
-                {t("positionCreate.copyFrom.sectionTitle")}
-              </h2>
+            <h2 className="copy-from-title">
+              {t("positionCreate.copyFrom.sectionTitle")}
+            </h2>
+            <p className="copy-from-subtitle">
+              {t("positionCreate.copyFrom.sectionSubtitle")}
+            </p>
+            <div className="copy-from-dropdowns">
               <div className="form-group">
                 <label htmlFor="copy-from-client" className="form-label">
                   {t("positionCreate.copyFrom.filterByClient")}
@@ -1097,7 +1131,7 @@ export function PositionCreate({
                         ? {
                             id: copyFromSelectedPosition.id || "",
                             label: `${copyFromSelectedPosition.title || t("positionCreate.copyFrom.notSpecified")} - ${copyFromSelectedPosition.positionNumber || t("positionCreate.copyFrom.notSpecified")}`,
-                            sublabel: `${copyFromSelectedPosition.startDate || ""} – ${copyFromSelectedPosition.endDate || ""} | ${copyFromSelectedPosition.positionCategory || ""} | ${copyFromSelectedPosition.city || ""}, ${copyFromSelectedPosition.province || ""}`,
+                            sublabel: `${copyFromSelectedPosition.startDate || ""} \u2013 ${copyFromSelectedPosition.endDate || ""} | ${copyFromSelectedPosition.positionCategory || ""} | ${copyFromSelectedPosition.city || ""}, ${copyFromSelectedPosition.province || ""}`,
                             value:
                               copyFromSelectedPosition.id || "",
                           }
@@ -1373,11 +1407,17 @@ export function PositionCreate({
                         id="showOnJobPortal"
                         className="toggle-form"
                         {...methods.register("showOnJobPortal")}
+                        disabled={isSubcategory}
                       />
                       <label htmlFor="showOnJobPortal" className="label-form">
                         {t("positionCreate.fields.showOnJobPortal")}
                       </label>
                     </div>
+                    {isSubcategory && (
+                      <p className="form-hint">
+                        {t("positionCreate.subcategory.portalDisabledHint")}
+                      </p>
+                    )}
                   </div>
 
                   <div className="form-group">

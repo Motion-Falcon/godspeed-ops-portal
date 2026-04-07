@@ -236,7 +236,8 @@ export function PositionMatching() {
     try {
       setPositionsLoading(true);
       const response = await getClientPositions(clientId, { limit: 100000000 });
-      setPositions(response.positions);
+      // Exclude subcategory positions from matching
+      setPositions(response.positions.filter((p: any) => !p.isSubcategory));
     } catch (err) {
       console.error("Error fetching client positions:", err);
       setPositions([]);

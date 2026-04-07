@@ -38,6 +38,7 @@
     "positionManagement": "Gestion des postes",
     "allPositions": "Tous les postes",
     "createPosition": "Créer un poste",
+    "createPositionSubcategory": "Créer une sous-catégorie de poste",
     "draftPositions": "Brouillons des postes",
     "positionMatching": "Correspondance des postes",
     "financial": "Financier",
@@ -1288,6 +1289,7 @@
   },
   "bulkTimesheetManagement": {
     "title": "Créer une feuille de temps en lot",
+    "subcategoryBanner": "Ceci est un poste de sous-catégorie (facturation uniquement). Il n'a aucun chercheur d'emploi assigné. Utilisez la création de feuille de temps individuelle pour créer des feuilles de temps pour ce poste.",
     "listTitle": "Toutes les listes de feuilles de temps",
     "newBulkTimesheet": "Nouvelle feuille de temps en lot",
     "globalSearch": "Recherche globale...",
@@ -2110,6 +2112,9 @@
     "noEndDate": "Aucune date de fin (en cours)",
     "none": "Aucun",
     "nA": "N/A",
+    "subcategoryBadge": "SOUS",
+    "positionTypeBadgeSubcategory": "Sous-catégorie",
+    "positionTypeBadgeNormal": "Régulier",
     "yes": "Oui",
     "no": "Non",
     "editPositionConfirm": "Êtes-vous sûr de vouloir modifier ce poste ?",
@@ -2127,6 +2132,7 @@
       "numberOfPositions": "# Postes",
       "showOnPortal": "Afficher sur le portail",
       "startDate": "Date de début",
+      "positionType": "Type de poste",
       "actions": "Actions"
     },
     "placeholders": {
@@ -2422,8 +2428,23 @@
   },
   "positionCreate": {
     "createPosition": "Créer un poste",
+    "createPositionSubcategory": "Créer une sous-catégorie de poste",
     "editPosition": "Modifier le poste",
+    "editPositionSubcategory": "Modifier la sous-catégorie de poste",
     "editPositionDraft": "Modifier le brouillon de poste",
+    "subcategory": {
+      "sectionTitle": "Créer une sous-catégorie de poste",
+      "bannerTitle": "Vous créez une sous-catégorie de poste",
+      "sectionSubtitle": "Les postes de sous-catégorie sont utilisés exclusivement à des fins de facturation — ils n'apparaîtront pas dans la correspondance des postes et aucun chercheur d'emploi ne peut y être assigné.",
+      "toggleLabel": "Marquer comme sous-catégorie de poste",
+      "hint": "Activez pour en faire un poste de facturation uniquement. Les chercheurs d'emploi ne peuvent pas être assignés et il n'apparaîtra pas dans la correspondance des postes.",
+      "confirmTitle": "Changer le type de poste",
+      "confirmEnableMessage": "Marquer ce poste comme sous-catégorie l'exclura de la correspondance des postes. Les chercheurs d'emploi ne pourront pas être assignés à ce poste. Voulez-vous continuer ?",
+      "confirmDisableMessage": "Changer ce poste en poste régulier le rendra disponible dans la correspondance des postes et permettra les assignations de chercheurs d'emploi. Voulez-vous continuer ?",
+      "confirmButton": "Confirmer",
+      "cancelButton": "Annuler",
+      "portalDisabledHint": "Les postes de sous-catégorie ne peuvent pas être affichés sur le portail d'emploi."
+    },
     "sections": {
       "basicDetails": "Détails de base",
       "addressDetails": "Détails d'adresse",
@@ -2539,8 +2560,11 @@
     },
     "copyFrom": {
       "sectionTitle": "Copier à partir d'un poste existant",
+      "sectionSubtitle": "Accélérez la création de poste en préremplissant ce formulaire avec les détails d'un poste existant. Sélectionnez un client, puis choisissez un poste à copier.",
       "filterByClient": "Filtrer par client",
-      "copyExistingPosition": "Copier un poste existant",
+      "filterByClientSubtitle": "Sélectionnez un client pour charger ses postes existants.",
+      "copyExistingPosition": "Sélectionner un poste à copier",
+      "copyExistingPositionSubtitle": "Choisissez un poste pour préremplir le formulaire avec ses détails.",
       "selectClientPlaceholder": "Sélectionner un client...",
       "selectClientFirst": "Veuillez d'abord sélectionner un client",
       "selectPositionPlaceholder": "Sélectionner un poste à copier...",

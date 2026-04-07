@@ -80,7 +80,7 @@ router.get('/',
         });
       }
 
-      // Build the query to get positions with their assignments
+      // Build the query to get positions with their assignments (exclude subcategories)
       let positionsQuery = supabase
         .from('positions')
         .select(`
@@ -95,6 +95,7 @@ router.get('/',
           )
         `)
         .eq('is_draft', false)
+        .eq('is_subcategory', false)
         .gte('end_date', startDate)
         .lte('start_date', endDate);
 
@@ -330,7 +331,7 @@ router.get('/summary',
         });
       }
 
-      // Build the query to get positions with their assignments
+      // Build the query to get positions with their assignments (exclude subcategories)
       let positionsQuery = supabase
         .from('positions')
         .select(`
@@ -345,6 +346,7 @@ router.get('/summary',
           )
         `)
         .eq('is_draft', false)
+        .eq('is_subcategory', false)
         .gte('end_date', startDate)
         .lte('start_date', endDate);
 

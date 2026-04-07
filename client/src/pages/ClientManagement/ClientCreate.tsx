@@ -16,7 +16,7 @@ import { ConfirmationModal } from '../../components/ConfirmationModal';
 import { AppHeader } from '../../components/AppHeader';
 import { CustomDropdown, DropdownOption } from '../../components/CustomDropdown';
 import { ArrowLeft, Save } from 'lucide-react';
-import { PAYMENT_METHODS, PAYMENT_TERMS, PAY_CYCLES, LIST_NAMES, CANADIAN_PROVINCES } from '../../constants/formOptions';
+import { PAYMENT_METHODS, PAYMENT_TERMS, PAY_CYCLES, CANADIAN_PROVINCES } from '../../constants/formOptions';
 import { getDropdownOptions, type DropdownListType } from '../../services/api/dropdownOptions';
 import '../../styles/pages/ClientManagement.css';
 import '../../styles/components/form.css';
@@ -110,15 +110,6 @@ const createProvinceOptions = (): DropdownOption[] => {
   }));
 };
 
-// Helper function to convert list names to dropdown options
-const createListNameOptions = (): DropdownOption[] => {
-  return LIST_NAMES.map((name) => ({
-    id: name,
-    label: name,
-    value: name,
-  }));
-};
-
 // Helper function to create currency options
 const createCurrencyOptions = (): DropdownOption[] => {
   return [
@@ -181,6 +172,7 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
   const [salesPersonOptions, setSalesPersonOptions] = useState<DropdownOption[]>([]);
   const [accountingPersonOptions, setAccountingPersonOptions] = useState<DropdownOption[]>([]);
   const [accountingManagerOptions, setAccountingManagerOptions] = useState<DropdownOption[]>([]);
+  const [listNameOptions, setListNameOptions] = useState<DropdownOption[]>([]);
 
   // Get ID from URL params or location state
   const idFromParams = params.id;
@@ -218,6 +210,7 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
         setSalesPersonOptions(byType('salesperson'));
         setAccountingPersonOptions(byType('accounting_person'));
         setAccountingManagerOptions(byType('accounting_manager'));
+        setListNameOptions(byType('list_name'));
       } catch (err) {
         console.error('Failed to load dropdown options:', err);
       }
@@ -227,7 +220,6 @@ export function ClientCreate({ isEditMode = false, isEditDraftMode = false }: Cl
 
   // Create static dropdown options
   const provinceOptions = createProvinceOptions();
-  const listNameOptions = createListNameOptions();
   const currencyOptions = createCurrencyOptions();
   const invoiceLanguageOptions = createInvoiceLanguageOptions();
   const paymentMethodOptions = createPaymentMethodOptions();
