@@ -137,6 +137,7 @@ export interface PositionPaginationParams {
   experienceFilter?: string;
   showOnPortalFilter?: string;
   dateFilter?: string;
+  isSubcategoryFilter?: string;
 }
 
 export interface PaginatedPositionResponse {

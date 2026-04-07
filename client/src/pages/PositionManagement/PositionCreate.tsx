@@ -489,9 +489,9 @@ export function PositionCreate({
             // Reset form with position data
             reset(formattedPosition);
 
-            // Set subcategory state from loaded position
-            if (formattedPosition.isSubcategory !== undefined) {
-              setIsSubcategory(!!formattedPosition.isSubcategory);
+            // Set subcategory state from loaded position (use raw position, not formattedPosition)
+            if ((position as PositionData).isSubcategory !== undefined) {
+              setIsSubcategory(!!(position as PositionData).isSubcategory);
             }
 
             console.log("Form reset with position data");
