@@ -475,6 +475,93 @@ Notes:
     exists); subsequent calls return the existing record without re-sending
 
 
+--------------------------------------------------------------------------------
+14. JOBSEEKER EMAIL CONFIRMATION — WELCOME + EMPLOYMENT AGREEMENT
+--------------------------------------------------------------------------------
+Trigger:       A jobseeker confirms their email address for the first time.
+               The client calls this endpoint immediately after Supabase
+               completes the email confirmation redirect.
+API Endpoint:  POST /api/auth/send-confirmation-welcome
+Trigger File:  server/src/routes/auth.ts
+Email Service: SendGrid (sgMail.send directly — two emails sent in parallel)
+
+This trigger sends TWO emails to the same recipient:
+
+  EMAIL A — Jobseeker Welcome
+    Template Files:
+      server/src/email-templates/jobseeker-welcome-html.ts
+      server/src/email-templates/jobseeker-welcome-txt.ts
+    Subject:
+      "Welcome to {PORTAL_NAME}"
+    Content:
+      Same as #4 (JOBSEEKER WELCOME EMAIL) — greeting, portal link, support note.
+
+  EMAIL B — Employment Agreement
+    Template Files:
+      server/src/email-templates/employment-agreement-html.ts
+    Subject:
+      "Action Required: Sign Your Employment Agreement"
+    Content:
+      Same as #13 (EMPLOYMENT AGREEMENT) — account verified notice, two
+      sign options (direct link + login), next steps.
+
+Recipients:
+  TO: Jobseeker's email address (req.user.email from the authenticated session)
+
+Notes:
+  - Only sent to users with user_type = "jobseeker"
+  - Idempotent: guarded by the welcome_email_sent flag in Supabase
+    user_metadata; subsequent calls are a no-op if the flag is already true
+  - Flag is set BEFORE the emails are sent to prevent race-condition
+    duplicate sends
+  - The client passes the Supabase access token explicitly in the
+    Authorization header to handle timing issues at confirmation time
+  - Creates the employment agreement consent record (if it doesn't exist)
+    before sending the email
+  - If the employment agreement template is not configured in the DB,
+    only the welcome email is sent (non-blocking)
+  - Email failures are logged but do NOT cause the API to return an error
+
+
+--------------------------------------------------------------------------------
+15. FIRST LOGIN — ACCOUNT SETUP REMINDER
+--------------------------------------------------------------------------------
+Trigger:       A jobseeker logs in for the first time and has NOT yet
+               completed their profile (hasProfile !== true in user_metadata).
+               The client calls this endpoint after detecting the user is
+               authenticated and meets the conditions.
+API Endpoint:  POST /api/auth/first-login-reminder
+Trigger File:  server/src/routes/auth.ts
+Email Service: SendGrid (sgMail.send directly)
+Template Files:
+  server/src/email-templates/onboarding-reminder-html.ts
+  server/src/email-templates/onboarding-reminder-txt.ts
+
+Recipients:
+  TO: Jobseeker's email address (req.user.email)
+
+Subject:
+  "Complete Your Account Setup — Action Required"
+
+Content:
+  - Notice that email has been verified but profile setup is incomplete
+  - CTA button: "Complete Account Setup" → {CLIENT_URL}/profile/create
+  - Signed: "The Team at {PORTAL_NAME}"
+
+Notes:
+  - Only sent to users with user_type = "jobseeker"
+  - Skipped if the user already has a completed profile (hasProfile = true)
+  - Idempotent: guarded by the setup_reminder_sent flag in Supabase
+    user_metadata; subsequent calls are a no-op if the flag is already true
+  - Flag is set BEFORE the email is sent to prevent race-condition
+    duplicate sends
+  - Only triggers after the confirmation emails (#14) have already been sent
+    (client checks welcome_email_sent = true before calling)
+  - This trigger shares the onboarding-reminder template with trigger #2b
+    (Recruiter Onboarding Reminder) but targets jobseekers and links to
+    /profile/create instead of /complete-signup
+
+
 ================================================================================
   ENVIRONMENT VARIABLES REFERENCED FOR EMAIL
 ================================================================================
@@ -520,8 +607,8 @@ Notes:
   ├── jobseeker-removal-txt.ts         — Position removal plain text
   ├── jobseeker-welcome-html.ts        — New jobseeker welcome HTML
   ├── jobseeker-welcome-txt.ts         — New jobseeker welcome plain text
-  ├── onboarding-reminder-html.ts      — Recruiter onboarding reminder HTML
-  ├── onboarding-reminder-txt.ts       — Recruiter onboarding reminder plain text
+  ├── onboarding-reminder-html.ts      — Onboarding reminder HTML (used by #2b recruiter reminder & #15 first-login setup reminder)
+  ├── onboarding-reminder-txt.ts       — Onboarding reminder plain text (used by #2b & #15)
   ├── timesheet-email-numeric.ts       — Numeric helper for timesheet templates
   ├── timesheet-html.ts                — Timesheet summary HTML
   └── timesheet-txt.ts                 — Timesheet summary plain text

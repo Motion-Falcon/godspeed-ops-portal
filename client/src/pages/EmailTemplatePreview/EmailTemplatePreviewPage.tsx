@@ -36,7 +36,7 @@ const SUPABASE_TEMPLATES: UnifiedTemplate[] = [];
 // Defines the desired sidebar order by id
 const SIDEBAR_ORDER = [
   "recruiter-invitation",             // #1, #2a
-  "onboarding-reminder",              // #2b
+  "onboarding-reminder",              // #2b, #15
   "confirm-signup",                   // #3
   "jobseeker-welcome",                // #4
   "jobseeker-assignment",             // #5
@@ -44,7 +44,7 @@ const SIDEBAR_ORDER = [
   "timesheet",                        // #7, #8, #9
   "invoice",                          // #10
   "consent",                          // #11, #12
-  "employment-agreement",             // #13
+  "employment-agreement",             // #13, #14
 ];
 
 export function EmailTemplatePreviewPage() {
