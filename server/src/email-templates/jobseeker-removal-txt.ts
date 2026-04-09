@@ -1,17 +1,33 @@
-export function jobseekerRemovalTextTemplate(vars: Record<string, any>) {
-  const portalName = process.env.PORTAL_NAME || 'Ops Portal';
-  return `Subject: Update Regarding Your Position Assignment
+import { getPortalName, textFooter } from "./_layout.js";
 
-Hi ${vars.jobseeker_first_name || ''},
+export function jobseekerRemovalTextTemplate(vars: Record<string, any>): string {
+  const portalName = getPortalName();
+  const lines: string[] = [
+    `Subject: Position Assignment Update`,
+    ``,
+    `Hi${vars.jobseeker_first_name ? ` ${vars.jobseeker_first_name}` : ""},`,
+    ``,
+    `We're writing to let you know that you've been removed from the following position:`,
+    ``,
+    `Position: ${vars.title || ""}`,
+    `Location: ${vars.city || ""}, ${vars.province || ""}`,
+    `Type: ${vars.employment_type || ""} / ${vars.employment_term || ""}`,
+    `Start Date: ${vars.start_date || ""}`,
+  ];
 
-We wanted to let you know that you have been removed from the following position assignment:
+  if (vars.end_date) lines.push(`End Date: ${vars.end_date}`);
+  if (vars.position_category) lines.push(`Category: ${vars.position_category}`);
+  if (vars.experience) lines.push(`Experience: ${vars.experience}`);
 
-Position Title: ${vars.title || ''}
-Location: ${vars.city || ''}, ${vars.province || ''}
-Employment Type: ${vars.employment_type || ''} / ${vars.employment_term || ''}
-Start Date: ${vars.start_date || ''}
-${vars.end_date ? `End Date: ${vars.end_date}\n` : ''}${vars.position_category ? `Category: ${vars.position_category}\n` : ''}${vars.experience ? `Experience Required: ${vars.experience}\n` : ''}${vars.number_of_positions ? `Number of Positions: ${vars.number_of_positions}\n` : ''}If you have any questions or would like to discuss other opportunities, please reply to this email. We are here to support you in your job search.
+  lines.push(
+    ``,
+    `If you have any questions or would like to explore other opportunities, just reply to this email — we're here to help.`,
+    ``,
+    `Best regards,`,
+    `The Team at ${portalName}`,
+    ``,
+    textFooter(portalName)
+  );
 
-Best regards,
-The ${portalName} Team`;
+  return lines.join("\n");
 } 

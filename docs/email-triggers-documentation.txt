@@ -1,0 +1,529 @@
+================================================================================
+  EMAIL TRIGGERS DOCUMENTATION — GODSPEED OPS PORTAL
+  Generated: April 9, 2026
+  Email Provider: SendGrid (@sendgrid/mail)
+  Default From: DEFAULT_FROM_EMAIL env var (formatted as "Ops Portal <email>")
+================================================================================
+
+
+--------------------------------------------------------------------------------
+1. RECRUITER INVITATION
+--------------------------------------------------------------------------------
+Trigger:       Admin invites a new recruiter via the portal
+API Endpoint:  POST /api/users/invite-recruiter
+Trigger File:  server/src/routes/user.ts
+Email Service: Supabase Auth (supabase.auth.admin.inviteUserByEmail)
+
+Recipients:
+  TO: The newly invited recruiter's email address (req.body.email)
+
+Subject:
+  Sent by Supabase Auth — default Supabase invitation subject
+  (customizable via Supabase project email templates)
+
+Content:
+  Supabase-generated invitation email with a redirect link to:
+    {CLIENT_URL}/complete-signup
+  Includes recruiter name and a link to complete account setup.
+
+Notes:
+  - Only triggered if email does NOT already exist in Supabase Auth
+  - User metadata includes: name, user_type="recruiter", onboarding_complete=false
+
+
+--------------------------------------------------------------------------------
+2. RESEND RECRUITER INVITATION / ONBOARDING REMINDER
+--------------------------------------------------------------------------------
+Trigger:       Admin resends an invitation to a recruiter who hasn't completed
+               onboarding
+API Endpoint:  POST /api/users/resend-invitation
+Trigger File:  server/src/routes/user.ts
+
+Two paths depending on email verification status:
+
+  PATH A — Email NOT yet verified (uses Supabase invitation):
+    Email Service: Supabase Auth (supabase.auth.admin.inviteUserByEmail)
+    Recipients:
+      TO: Recruiter's email address
+    Subject:
+      Supabase default invitation subject
+    Content:
+      Supabase invitation email with redirect to {CLIENT_URL}/complete-signup
+
+  PATH B — Email already verified but onboarding incomplete (custom email):
+    Email Service: SendGrid (sgMail.send)
+    Template Files:
+      server/src/email-templates/onboarding-reminder-html.ts
+      server/src/email-templates/onboarding-reminder-txt.ts
+    Recipients:
+      TO: Recruiter's email address
+    Subject:
+      "Complete Your Account Setup - Action Required"
+    Content:
+      - Greeting: "Complete Your Account Setup, {name}"
+      - Notice that the email has been verified but onboarding is incomplete
+      - Orange warning banner: "Action Required: Please complete your account
+        setup to gain full access to the platform."
+      - CTA button: "Complete Account Setup" → {CLIENT_URL}/complete-signup
+      - Signed: "The {PORTAL_NAME} Team"
+
+Notes:
+  - Cannot be sent if user has already completed onboarding
+
+
+--------------------------------------------------------------------------------
+3. RESEND EMAIL VERIFICATION
+--------------------------------------------------------------------------------
+Trigger:       User requests re-sending of their email verification link
+               (e.g., from login page)
+API Endpoint:  POST /api/auth/resend-verification
+Trigger File:  server/src/routes/auth.ts
+Email Service: Supabase Auth (supabase.auth.resend)
+
+Recipients:
+  TO: The user's email address (req.body.email)
+
+Subject:
+  Supabase default verification subject
+
+Content:
+  Supabase-generated verification email with redirect to:
+    {CLIENT_URL}/login
+
+Notes:
+  - Public endpoint (no auth required)
+  - Uses Supabase signup re-send flow
+
+
+--------------------------------------------------------------------------------
+4. JOBSEEKER WELCOME EMAIL
+--------------------------------------------------------------------------------
+Trigger:       A new jobseeker profile is created
+API Endpoint:  POST /api/profile (create jobseeker profile)
+Trigger File:  server/src/routes/profile.ts
+Email Service: SendGrid via emailNotifier middleware
+Template Files:
+  server/src/email-templates/jobseeker-welcome-html.ts
+  server/src/email-templates/jobseeker-welcome-txt.ts
+
+Recipients:
+  TO: Jobseeker's email address (from profile creation data)
+
+Subject:
+  "Welcome to {PORTAL_NAME}"
+
+Content:
+  - Greeting: "Welcome to {PORTAL_NAME}, {firstName}"
+  - Confirmation that the jobseeker profile has been added successfully
+  - CTA button: "Open {PORTAL_NAME}" → {CLIENT_URL}
+  - Invitation to reply if the jobseeker has questions
+  - Signed: "The {PORTAL_NAME} Team"
+
+Attachments (optional):
+  - Any files found in Supabase Storage bucket "default-documents" under
+    the folder "jobseekerWelcomeDocs/" are attached (e.g., welcome packets,
+    policy documents). All files in the folder are attached automatically.
+
+Notes:
+  - Email only sent if jobseeker has a valid email address
+  - Attachments are optional; email sends even if no documents found
+
+
+--------------------------------------------------------------------------------
+5. JOBSEEKER ASSIGNED TO POSITION
+--------------------------------------------------------------------------------
+Trigger:       A jobseeker (candidate) is assigned to a position
+API Endpoint:  POST /api/positions/:id/assign (assign candidate)
+Trigger File:  server/src/routes/positions.ts
+Email Service: SendGrid via emailNotifier middleware
+Template Files:
+  server/src/email-templates/jobseeker-assignment-html.ts
+  server/src/email-templates/jobseeker-assignment-txt.ts
+
+Recipients:
+  TO: Jobseeker's email address (fetched from jobseeker_profiles table)
+
+Subject:
+  "Congratulations! You've Been Matched to a New Position Opportunity"
+
+Content:
+  - Greeting: "Congratulations, {jobseeker_first_name}!"
+  - Notification of new position match with the following details:
+      - Position Title
+      - Client (if available)
+      - Location (City, Province)
+      - Full Address (if Street Address / Postal Code available)
+      - Employment Type / Term
+      - Shift Time (if set)
+      - Pay Rate & Pay Rate Type (if set)
+      - Start Date
+      - End Date (if set)
+      - Category (if set)
+      - Experience Required (if set)
+  - Employee handbook section (if handbook was included as attachment)
+  - Note: "Our team will reach out to you soon with further details"
+  - Instructions to reply if they have questions
+  - Signed: "The {PORTAL_NAME} Team"
+
+Attachments (optional):
+  - Employee Handbook PDF downloaded from Supabase Storage:
+      Bucket: "default-documents"
+      Path:   "employeeHandbook/employeeHandbook2024.pdf"
+      Attachment name: "Godspeed_Employee_Handbook_2024.pdf"
+  - Email sends without attachment if handbook is not found
+
+Notes:
+  - Email is skipped if no candidate email is found
+
+
+--------------------------------------------------------------------------------
+6. JOBSEEKER REMOVED FROM POSITION
+--------------------------------------------------------------------------------
+Trigger:       A jobseeker is removed from a position assignment
+API Endpoint:  DELETE /api/positions/:id/assign/:candidateId
+Trigger File:  server/src/routes/positions.ts
+Email Service: SendGrid via emailNotifier middleware
+Template Files:
+  server/src/email-templates/jobseeker-removal-html.ts
+  server/src/email-templates/jobseeker-removal-txt.ts
+
+Recipients:
+  TO: Jobseeker's email address (fetched from jobseeker_profiles table)
+
+Subject:
+  "Update Regarding Your Position Assignment"
+
+Content:
+  - Greeting: "Hi {jobseeker_first_name},"
+  - Notification of removal from position with the following details:
+      - Position Title
+      - Location (City, Province)
+      - Employment Type / Term
+      - Start Date
+      - End Date (if set)
+      - Category (if set)
+      - Experience Required (if set)
+      - Number of Positions (if set)
+  - Invitation to reply for questions or to discuss other opportunities
+  - Signed: "The {PORTAL_NAME} Team"
+
+Notes:
+  - Email is skipped if no candidate email is found
+
+
+--------------------------------------------------------------------------------
+7. TIMESHEET CREATED (WITH EMAIL OPTION)
+--------------------------------------------------------------------------------
+Trigger:       A new timesheet is created and the creator opts to send an
+               email notification to the jobseeker (emailSent: true in request)
+API Endpoint:  POST /api/timesheets (create timesheet)
+Trigger File:  server/src/routes/timesheets.ts
+Email Service: SendGrid via emailNotifier middleware
+Template Files:
+  server/src/email-templates/timesheet-html.ts
+  server/src/email-templates/timesheet-txt.ts
+
+Recipients:
+  TO: Jobseeker's billing email (if set), otherwise jobseeker's primary email
+  CC: INVOICE_CC_EMAILS env var (comma-separated list)
+
+Subject:
+  "Timesheet Summary - Timesheet #{invoice_number}"
+
+Content:
+  - Header: "Timesheet Summary"
+  - Timesheet number and generation date
+  - Jobseeker name and email
+  - Position title
+  - Week period (start date to end date)
+  - Daily hours breakdown (date-by-date)
+  - Payment summary:
+      - Regular Hours & Regular Pay Rate
+      - Premium Pay Rate (if applicable)
+      - Regular Pay subtotal
+      - Overtime Hours & Rate (if overtime enabled)
+      - Bonus Amount (if set)
+      - Deductions (if set)
+      - Cash/e-Transfer deduction percentage & amount (if payment method is
+        Cash or e-Transfer and deduction % > 0)
+      - Total Jobseeker Pay
+  - Footer: "This timesheet was generated by {PORTAL_NAME}"
+
+Notes:
+  - Email is skipped if req.body.emailSent is not true
+  - Email is skipped if no jobseeker email is found
+  - Billing email is preferred over primary email
+
+
+--------------------------------------------------------------------------------
+8. TIMESHEET MANUALLY SENT (RE-SEND)
+--------------------------------------------------------------------------------
+Trigger:       Admin, Recruiter, or Jobseeker manually triggers a timesheet
+               email to be sent for an existing timesheet
+API Endpoint:  POST /api/timesheets/send-email/:id
+Trigger File:  server/src/routes/timesheets.ts
+Email Service: SendGrid (sgMail.send directly)
+Template Files:
+  server/src/email-templates/timesheet-html.ts
+  server/src/email-templates/timesheet-txt.ts
+
+Recipients:
+  TO: Jobseeker's billing email (if set), otherwise jobseeker's primary email
+  CC: INVOICE_CC_EMAILS env var (comma-separated list)
+
+Subject:
+  "Timesheet Summary - Timesheet #{invoice_number}"
+
+Content:
+  Same as #7 (TIMESHEET CREATED) — full timesheet data with daily hours
+  breakdown and payment summary.
+
+Notes:
+  - Jobseekers can only send emails for their own timesheets
+  - Updates the timesheet record's email_sent field to true on success
+
+
+--------------------------------------------------------------------------------
+9. TIMESHEET UPDATED (WITH EMAIL OPTION)
+--------------------------------------------------------------------------------
+Trigger:       An existing timesheet is updated and the updater opts to send
+               an email notification (emailSent: true in request)
+API Endpoint:  PUT /api/timesheets/:id (update timesheet)
+Trigger File:  server/src/routes/timesheets.ts
+Email Service: SendGrid via emailNotifier middleware
+Template Files:
+  server/src/email-templates/timesheet-html.ts
+  server/src/email-templates/timesheet-txt.ts
+
+Recipients:
+  TO: Jobseeker's billing email (if set), otherwise jobseeker's primary email
+  CC: INVOICE_CC_EMAILS env var (comma-separated list)
+
+Subject:
+  "Updated Timesheet Summary - Timesheet #{invoice_number}"
+
+Content:
+  Same layout as #7 but with:
+  - Header marked as "Updated Timesheet Summary" with an "UPDATED" badge
+  - is_updated flag = true (triggers the "Updated" prefix in template)
+
+Notes:
+  - Email is skipped if req.body.emailSent is not true
+  - Email is skipped if no jobseeker email is found
+
+
+--------------------------------------------------------------------------------
+10. INVOICE EMAIL SENT TO CLIENT
+--------------------------------------------------------------------------------
+Trigger:       Admin or Recruiter manually sends an invoice to a client
+API Endpoint:  POST /api/invoices/:id/send-email
+Trigger File:  server/src/routes/invoices.ts
+Email Service: SendGrid (sgMail.send directly)
+Template File: server/src/email-templates/invoice-html.ts
+
+Recipients:
+  TO:  Manually specified recipient email (req.body.email — typically the
+       client's primary email)
+  CC:  Built from multiple sources:
+         - INVOICE_CC_EMAILS env var (comma-separated, always included)
+         - client.email_address2 (if client.invoice_cc2 is true)
+         - client.email_address3 (if client.invoice_cc3 is true)
+         - client.dispatch_dept_email (if client.invoice_cc_dispatch is true)
+         - client.accounts_dept_email (if client.invoice_cc_accounts is true)
+
+Subject:
+  "Invoice #{invoice_number} for {client_company_name}"
+
+Content (HTML):
+  - Header: "Invoice #{invoiceNumber}"
+  - Issued date and Due date
+  - Client name and email
+  - Amount Due (grand total with currency)
+  - Custom message on invoice (if set)
+  - Footer: "This invoice was generated by {PORTAL_NAME}"
+
+Attachments:
+  - Main invoice PDF (downloaded from Supabase Storage, "invoices" bucket,
+    path from invoice.document_path)
+  - Additional attachments from invoice_data.attachments (if any), each
+    downloaded from Supabase Storage
+
+Notes:
+  - On success, updates invoice record: email_sent=true, email_sent_date,
+    invoice_sent_to fields
+  - Recipient email is required in the request body
+
+
+--------------------------------------------------------------------------------
+11. DIGITAL CONSENT REQUEST SENT
+--------------------------------------------------------------------------------
+Trigger:       Super Admin creates a new consent request for one or more
+               recipients (clients or jobseekers)
+API Endpoint:  POST /api/consent/request
+Trigger File:  server/src/routes/consent.ts
+Email Service: SendGrid via emailNotifier middleware
+Template Files:
+  server/src/email-templates/consent-html.ts (via consentHtmlTemplate)
+  server/src/email-templates/consent-html.ts (via generateConsentTextTemplate)
+
+Recipients:
+  TO: One email per recipient in the consent request
+      - If recipient type is "client": client.email_address1
+      - If recipient type is "jobseeker_profile": jobseeker.email
+  (Multiple emails sent — one per recipient in the batch)
+
+Subject:
+  "Digital Consent Request: {documentName}"
+
+Content:
+  - Greeting: "Hello {recipientName},"
+  - Notification of a digital consent request for: {documentName}
+  - CTA button: "Review & Provide Consent" → {CLIENT_URL}/consent?token={consent_token}
+  - Security warning: "This link is unique to you and should not be shared
+    with others. The link will expire if not used within a reasonable
+    timeframe for security purposes."
+  - Contact support if questions
+  - Signed: "The {PORTAL_NAME} Team"
+
+Notes:
+  - Each recipient gets a unique link with their own consent_token
+  - Email is skipped for any recipient where email cannot be resolved
+  - Access: Super Admin only
+
+
+--------------------------------------------------------------------------------
+12. DIGITAL CONSENT REQUEST RESENT
+--------------------------------------------------------------------------------
+Trigger:       Admin or Recruiter resends consent email(s) to one or more
+               recipients who have not yet completed consent
+API Endpoint:  POST /api/consent/resend
+Trigger File:  server/src/routes/consent.ts
+Email Service: SendGrid via emailNotifier middleware
+Template Files:
+  server/src/email-templates/consent-html.ts (via consentHtmlTemplate)
+  server/src/email-templates/consent-html.ts (via generateConsentTextTemplate)
+
+Recipients:
+  TO: One email per consent record in req.body.recordIds
+      - If consentable_type is "client": client.email_address1
+      - If consentable_type is "jobseeker_profile": jobseeker.email
+
+Subject:
+  "Digital Consent Request: {documentName}"
+
+Content:
+  Same as #11 but using existing consent tokens (not new ones).
+  Unique consent link: {CLIENT_URL}/consent?token={existing_consent_token}
+
+Notes:
+  - Updates sent_at timestamp for all resent records
+  - Email is skipped for any record where email cannot be resolved
+  - Access: Admin, Recruiter
+
+
+--------------------------------------------------------------------------------
+13. EMPLOYMENT AGREEMENT (JOBSEEKER ONBOARDING)
+--------------------------------------------------------------------------------
+Trigger A:     A jobseeker's profile is created by a recruiter (auto-created
+               consent record + email sent inline during profile creation)
+API Endpoint:  POST /api/profile/submit
+Trigger File:  server/src/routes/profile.ts
+
+Trigger B:     A jobseeker logs in / accesses the portal for the first time
+               and the system finds no existing employment agreement record
+               (creates the record on-demand and sends the email)
+API Endpoint:  GET /api/consent/jobseeker-onboarding-consent
+Trigger File:  server/src/routes/consent.ts
+
+Email Service: SendGrid (sgMail.send directly, inline in route handler)
+Template File: server/src/email-templates/employment-agreement-html.ts
+
+Recipients:
+  TO: Jobseeker's email address
+      - Trigger A: profileData.email (from profile creation payload)
+      - Trigger B: req.user.email (authenticated jobseeker's email)
+
+Subject:
+  "Action Required: Sign Your Employment Agreement"
+
+Content:
+  - Heading: "Your Account Has Been Verified!"
+  - Greeting: "Hello {recipientName},"
+  - Green confirmation box: "Email Verification Complete — Your account has
+    been successfully verified."
+  - Explanation that the Employment Agreement must be signed before accessing
+    the account
+  - Option 1 — Sign Directly:
+      CTA button: "Review & Sign Agreement" → {CLIENT_URL}/consent?token={consent_token}
+      (unique token per jobseeker)
+  - Option 2 — Sign via Account:
+      CTA button: "Log In to Your Account" → {CLIENT_URL}/login
+  - Next steps list: Sign agreement → Complete profile → Use portal
+  - Warning: link is unique and must not be shared; account is inaccessible
+    until agreement is signed
+  - Signed: "The {PORTAL_NAME} Team"
+
+Notes:
+  - Requires the "employmentAgreement" template to exist in
+    consent_document_templates table with is_active=true
+  - If the template is not found, the email is silently skipped (profile
+    creation still succeeds)
+  - Email failure does NOT abort the parent operation in either trigger
+  - Each jobseeker gets exactly one consent record
+    (idempotent — existing record is reused on subsequent GET calls)
+  - Trigger B only fires on the FIRST call per jobseeker (when no record
+    exists); subsequent calls return the existing record without re-sending
+
+
+================================================================================
+  ENVIRONMENT VARIABLES REFERENCED FOR EMAIL
+================================================================================
+
+  SENDGRID_API_KEY       — SendGrid API key for authenticated sending
+  DEFAULT_FROM_EMAIL     — Sender email address (formatted with PORTAL_NAME)
+  PORTAL_NAME            — Display name used in email body and "from" field
+  CLIENT_URL             — Frontend URL used to build action links
+  INVOICE_CC_EMAILS      — Comma-separated fixed CC list for timesheets &
+                           invoice emails (e.g., "ops@company.com,admin@...")
+
+================================================================================
+  EMAIL FLOW ARCHITECTURE
+================================================================================
+
+  Two patterns are used for sending emails:
+
+  PATTERN A — emailNotifier middleware (routes: profile, positions, timesheets,
+               consent):
+    1. Route handler executes and sets res.locals with data
+    2. After response finishes (res 'finish' event), the emailNotifier
+       middleware reads res.locals and req.body to build email data
+    3. Email is sent asynchronously AFTER the HTTP response is already sent
+    4. Failures are logged but do NOT cause the API response to fail
+
+  PATTERN B — Direct sgMail.send() inside route handler (routes: timesheets
+               send-email, invoices send-email, user resend-invitation):
+    1. Email sending is part of the main request handler
+    2. The HTTP response is only returned AFTER the email attempt completes
+    3. Failures cause the API to return a 500 error response
+
+================================================================================
+  TEMPLATE FILES SUMMARY
+================================================================================
+
+  server/src/email-templates/
+  ├── consent-html.ts                  — Consent request HTML + plain text
+  ├── employment-agreement-html.ts     — Employment agreement HTML + plain text (Handlebars)
+  ├── invoice-html.ts                  — Invoice notification HTML (Handlebars)
+  ├── jobseeker-assignment-html.ts     — Position assignment HTML
+  ├── jobseeker-assignment-txt.ts      — Position assignment plain text
+  ├── jobseeker-removal-html.ts        — Position removal HTML
+  ├── jobseeker-removal-txt.ts         — Position removal plain text
+  ├── jobseeker-welcome-html.ts        — New jobseeker welcome HTML
+  ├── jobseeker-welcome-txt.ts         — New jobseeker welcome plain text
+  ├── onboarding-reminder-html.ts      — Recruiter onboarding reminder HTML
+  ├── onboarding-reminder-txt.ts       — Recruiter onboarding reminder plain text
+  ├── timesheet-email-numeric.ts       — Numeric helper for timesheet templates
+  ├── timesheet-html.ts                — Timesheet summary HTML
+  └── timesheet-txt.ts                 — Timesheet summary plain text
+
+================================================================================

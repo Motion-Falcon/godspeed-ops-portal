@@ -1,9 +1,10 @@
 import { toNum } from "./timesheet-email-numeric.js";
+import { getPortalName, textFooter } from "./_layout.js";
 
-export function timesheetTextTemplate(vars: Record<string, any>) {
+export function timesheetTextTemplate(vars: Record<string, any>): string {
   const isUpdated = vars.is_updated || false;
-  const portalName = process.env.PORTAL_NAME || 'Ops Portal';
-  const titlePrefix = isUpdated ? 'Updated ' : '';
+  const portalName = getPortalName();
+  const titlePrefix = isUpdated ? "Updated " : "";
 
   const totalRegH = toNum(vars.total_regular_hours);
   const totalOtH = toNum(vars.total_overtime_hours);
@@ -15,74 +16,55 @@ export function timesheetTextTemplate(vars: Record<string, any>) {
   const cashDedPct = toNum(vars.cash_deduction_percentage);
   const cashDedAmt = toNum(vars.cash_deduction_amount);
   const totalPay = toNum(vars.total_jobseeker_pay);
+  const regularPay = totalRegH * (regularPayRate + premiumPayRate);
+  const overtimePay = totalOtH * overtimePayRate;
 
-  return `Subject: ${titlePrefix}Timesheet Summary - Timesheet #${vars.invoice_number || 'N/A'}
+  const dailyLines = vars.daily_hours
+    ? vars.daily_hours
+        .map((day: any) => `  ${new Date(day.date).toLocaleDateString()}: ${day.hours || 0} hrs`)
+        .join("\n")
+    : "  No hours recorded";
 
-${titlePrefix.toUpperCase()}TIMESHEET SUMMARY
-${'='.repeat(titlePrefix.length + 16)}
+  const lines: string[] = [
+    `Subject: ${titlePrefix}Timesheet #${vars.invoice_number || "N/A"}`,
+    ``,
+    `${titlePrefix}TIMESHEET SUMMARY`,
+    ``,
+    `Timesheet: #${vars.invoice_number || "N/A"}`,
+    `Generated: ${vars.generated_date || new Date().toLocaleDateString()}`,
+    ``,
+    `Jobseeker: ${vars.jobseeker_name || "N/A"} (${vars.jobseeker_email || "N/A"})`,
+    `Position: ${vars.position_title || "N/A"}`,
+    `Period: ${vars.week_start_date || "N/A"} — ${vars.week_end_date || "N/A"}`,
+    ``,
+    `Daily Hours:`,
+    dailyLines,
+    ``,
+    `Payment Summary:`,
+    `  Regular Hours: ${totalRegH} hrs`,
+    `  Regular Rate: $${regularPayRate.toFixed(2)}/hr`,
+  ];
 
-Timesheet Number: ${vars.invoice_number || 'N/A'}
-Generated: ${vars.generated_date || new Date().toLocaleDateString()}
+  if (premiumPayRate > 0) lines.push(`  Premium Rate: $${premiumPayRate.toFixed(2)}/hr`);
+  lines.push(`  Regular Pay: $${regularPay.toFixed(2)}`);
 
-JOBSEEKER INFORMATION
---------------------
-Name: ${vars.jobseeker_name || 'N/A'}
-Email: ${vars.jobseeker_email || 'N/A'}
-
-POSITION DETAILS
----------------
-Position: ${vars.position_title || 'N/A'}
-
-WEEK PERIOD
------------
-Start Date: ${vars.week_start_date || 'N/A'}
-End Date: ${vars.week_end_date || 'N/A'}
-
-DAILY HOURS BREAKDOWN
---------------------
-${vars.daily_hours ? vars.daily_hours.map((day: any) => {
-  const date = new Date(day.date).toLocaleDateString();
-  const hours = day.hours || 0;
-  return `${date}: ${hours} hours`;
-}).join('\n') : 'No daily hours data available'}
-
-PAYMENT SUMMARY
----------------
-Regular Hours: ${totalRegH} hours
-Regular Pay Rate: $${regularPayRate.toFixed(2)}/hour${
-    premiumPayRate > 0
-      ? `
-Premium Pay Rate: $${premiumPayRate.toFixed(2)}/hour`
-      : ""
+  if (vars.overtime_enabled && totalOtH > 0) {
+    lines.push(`  Overtime Hours: ${totalOtH} hrs`);
+    lines.push(`  Overtime Rate: $${overtimePayRate.toFixed(2)}/hr`);
+    lines.push(`  Overtime Pay: $${overtimePay.toFixed(2)}`);
   }
-Regular Pay: $${(totalRegH * (regularPayRate + premiumPayRate)).toFixed(2)}${
-    vars.overtime_enabled && totalOtH > 0
-      ? `
-Overtime Hours: ${totalOtH} hours
-Overtime Pay Rate: $${overtimePayRate.toFixed(2)}/hour
-Overtime Pay: $${(totalOtH * overtimePayRate).toFixed(2)}`
-      : ""
-  }${
-    bonusAmt > 0
-      ? `
-Bonus Amount: $${bonusAmt.toFixed(2)}`
-      : ""
-  }${
-    dedAmt > 0
-      ? `
-Deductions: -$${dedAmt.toFixed(2)}`
-      : ""
-  }${
-    cashDedPct > 0
-      ? `
-Cash Deduction (${cashDedPct}%): -$${cashDedAmt.toFixed(2)}`
-      : ""
-  }
+  if (bonusAmt > 0) lines.push(`  Bonus: $${bonusAmt.toFixed(2)}`);
+  if (dedAmt > 0) lines.push(`  Deductions: -$${dedAmt.toFixed(2)}`);
+  if (cashDedPct > 0) lines.push(`  Cash Deduction (${cashDedPct}%): -$${cashDedAmt.toFixed(2)}`);
 
-TOTAL JOBSEEKER PAY: $${totalPay.toFixed(2)}
+  lines.push(
+    ``,
+    `  Total Pay: $${totalPay.toFixed(2)}`,
+    ``,
+    `If you have any questions about this timesheet, please contact your recruitment team.`,
+    ``,
+    textFooter(portalName)
+  );
 
----
-This is an automated timesheet summary from ${portalName}.
-If you have any questions about this timesheet, please contact your recruitment team.
-Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}`;
-} 
+  return lines.join("\n");
+}

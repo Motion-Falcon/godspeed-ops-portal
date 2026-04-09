@@ -1,21 +1,22 @@
-export function onboardingReminderTextTemplate(vars: Record<string, any>) {
-  const portalName = process.env.PORTAL_NAME || 'Ops Portal';
-  return `
-Complete Your Account Setup${vars.name ? `, ${vars.name}` : ''}
+import { getPortalName, textFooter } from "./_layout.js";
 
-We noticed that you haven't finished setting up your account yet. Your email has been verified, but there are a few more steps to complete your onboarding.
+export function onboardingReminderTextTemplate(vars: Record<string, any>): string {
+  const portalName = getPortalName();
+  return `Complete Your Account Setup
 
-ACTION REQUIRED: Please complete your account setup to gain full access to the platform.
+Hi${vars.name ? ` ${vars.name}` : ""},
 
-To complete your onboarding, please visit:
+It looks like you haven't finished setting up your account yet. Your email has been verified, but there are a few more steps to complete.
+
+Action needed: Please complete your account setup to get full access to the platform.
+
+Complete your setup here:
 ${vars.onboarding_url}
 
-If you have any questions or need assistance, please don't hesitate to reach out to our support team.
+If you need any help, feel free to reach out to our support team.
 
 Best regards,
-The ${portalName} Team
+The Team at ${portalName}
 
----
-This email was sent because you have an incomplete account setup. If you believe this message was sent in error, please contact our support team.
-  `;
+${textFooter(portalName)}`.trim();
 }

@@ -1,47 +1,35 @@
-export function jobseekerWelcomeHtmlTemplate(vars: Record<string, any>) {
-  const portalName = process.env.PORTAL_NAME || "Ops Portal";
-  const firstName = vars.first_name || "there";
-  const portalUrl = vars.portal_url || "";
+import Handlebars from "handlebars";
+import { wrapInLayout, ensureHelpers, S, getPortalName, textFooter, ACCENT_GREEN, accentBtn } from "./_layout.js";
 
-  return `
-<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="UTF-8" />
-    <title>Welcome to ${portalName}</title>
-  </head>
-  <body style="font-family: Arial, sans-serif; background-color: #f5f7fb; margin: 0; padding: 24px; color: #1f2937;">
-    <div style="max-width: 620px; margin: 0 auto; background: #ffffff; border-radius: 10px; padding: 28px; box-shadow: 0 4px 16px rgba(0,0,0,0.06);">
-      <h2 style="margin-top: 0; color: #111827;">Welcome to ${portalName}, ${firstName}</h2>
+const btn = accentBtn(ACCENT_GREEN);
 
-      <p style="line-height: 1.6; margin: 0 0 14px;">
-        Your jobseeker profile has been added successfully.
-      </p>
+ensureHelpers();
 
-      <p style="line-height: 1.6; margin: 0 0 14px;">
-        You can access the portal using the link below:
-      </p>
+const bodySource = `
+<p style="${S.p}">Hi {{firstName}},</p>
 
-      ${
-        portalUrl
-          ? `<p style="margin: 18px 0 24px;">
-        <a href="${portalUrl}" style="display: inline-block; background: #2563eb; color: #ffffff; text-decoration: none; font-weight: 600; padding: 12px 20px; border-radius: 6px;">
-          Open ${portalName}
-        </a>
-      </p>`
-          : ""
-      }
+<p style="${S.p}">Welcome to the <strong style="${S.strong}">{{portalName}}</strong> network! We are thrilled to have you on board. Your jobseeker profile is now officially active.</p>
 
-      <p style="line-height: 1.6; margin: 0 0 14px;">
-        If you have any questions, please reply to this email and our team will help you.
-      </p>
+<p style="${S.p}">To ensure our recruiters can match you with the right employers as quickly as possible, please log in and make sure your resume and work history are completely up to date:</p>
 
-      <p style="line-height: 1.6; margin: 0;">
-        Best regards,<br />
-        The ${portalName} Team
-      </p>
-    </div>
-  </body>
-</html>
+{{#if portal_url}}
+<div style="${S.btnWrap}">
+  <a href="{{portal_url}}" style="${btn}">Access your portal</a>
+</div>
+{{/if}}
+
+<p style="${S.p}">We partner with top companies to find great candidates like you. If you need any help navigating the portal or updating your information, just reply to this email and our team will assist you.</p>
+
+<p style="${S.p}">We look forward to working with you!</p>
+
+<p style="${S.pLast}">Best regards,<br><strong style="${S.strong}">The Team at {{portalName}}</strong></p>
 `;
+
+const compiledBody = Handlebars.compile(bodySource);
+
+export function jobseekerWelcomeHtmlTemplate(vars: Record<string, any>): string {
+  const portalName = getPortalName();
+  const firstName = vars.first_name || "there";
+  const body = compiledBody({ ...vars, portalName, firstName });
+  return wrapInLayout(`Welcome to ${portalName}! Your profile is now active.`, body, portalName, ACCENT_GREEN);
 }
