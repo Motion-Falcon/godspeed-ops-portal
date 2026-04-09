@@ -225,7 +225,7 @@ Template Files:
 
 Recipients:
   TO: Jobseeker's billing email (if set), otherwise jobseeker's primary email
-  CC: INVOICE_CC_EMAILS env var (comma-separated list)
+  CC: None
 
 Subject:
   "Timesheet Summary - Timesheet #{invoice_number}"
@@ -253,6 +253,8 @@ Notes:
   - Email is skipped if req.body.emailSent is not true
   - Email is skipped if no jobseeker email is found
   - Billing email is preferred over primary email
+  - Timesheet emails are only sent to the jobseeker recipient; client/invoice
+    CC recipients are never included
 
 
 --------------------------------------------------------------------------------
@@ -269,7 +271,7 @@ Template Files:
 
 Recipients:
   TO: Jobseeker's billing email (if set), otherwise jobseeker's primary email
-  CC: INVOICE_CC_EMAILS env var (comma-separated list)
+  CC: None
 
 Subject:
   "Timesheet Summary - Timesheet #{invoice_number}"
@@ -281,6 +283,8 @@ Content:
 Notes:
   - Jobseekers can only send emails for their own timesheets
   - Updates the timesheet record's email_sent field to true on success
+  - Timesheet emails are only sent to the jobseeker recipient; client/invoice
+    CC recipients are never included
 
 
 --------------------------------------------------------------------------------
@@ -297,7 +301,7 @@ Template Files:
 
 Recipients:
   TO: Jobseeker's billing email (if set), otherwise jobseeker's primary email
-  CC: INVOICE_CC_EMAILS env var (comma-separated list)
+  CC: None
 
 Subject:
   "Updated Timesheet Summary - Timesheet #{invoice_number}"
@@ -310,6 +314,8 @@ Content:
 Notes:
   - Email is skipped if req.body.emailSent is not true
   - Email is skipped if no jobseeker email is found
+  - Timesheet emails are only sent to the jobseeker recipient; client/invoice
+    CC recipients are never included
 
 
 --------------------------------------------------------------------------------
@@ -570,8 +576,8 @@ Notes:
   DEFAULT_FROM_EMAIL     — Sender email address (formatted with PORTAL_NAME)
   PORTAL_NAME            — Display name used in email body and "from" field
   CLIENT_URL             — Frontend URL used to build action links
-  INVOICE_CC_EMAILS      — Comma-separated fixed CC list for timesheets &
-                           invoice emails (e.g., "ops@company.com,admin@...")
+  INVOICE_CC_EMAILS      — Comma-separated fixed CC list for invoice emails
+                           only (e.g., "ops@company.com,admin@...")
 
 ================================================================================
   EMAIL FLOW ARCHITECTURE
