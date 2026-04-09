@@ -313,7 +313,7 @@ router.get("/", authenticateToken, requireSuperAdmin, (_req: Request, res: Respo
     triggerRef,
     attachments,
     from,
-    cc: (id === "timesheet" || id === "invoice") ? ccEmails : [],
+    cc: id === "invoice" ? ccEmails : [],
     dynamicCc: dynamicCc || false,
     hasTextVersion: renderText !== null,
   }));
@@ -346,7 +346,7 @@ router.get("/:templateId/preview", authenticateToken, requireSuperAdmin, (req: R
       triggerRef: template.triggerRef,
       attachments: template.attachments,
       from,
-      cc: (template.id === "timesheet" || template.id === "invoice") ? ccEmails : [],
+      cc: template.id === "invoice" ? ccEmails : [],
       dynamicCc: template.dynamicCc || false,
       html,
       text,
