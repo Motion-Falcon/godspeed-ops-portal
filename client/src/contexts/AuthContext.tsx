@@ -39,6 +39,7 @@ type AuthContextType = {
   isAdmin: boolean;
   isRecruiter: boolean;
   isJobSeeker: boolean;
+  employmentAgreementSigned: boolean;
   profileVerificationStatus: VerificationStatus;
   hasProfile: boolean;
   isProfileLoading: boolean;
@@ -54,6 +55,7 @@ const AuthContext = createContext<AuthContextType>({
   isAdmin: false,
   isRecruiter: false,
   isJobSeeker: true,
+  employmentAgreementSigned: false,
   profileVerificationStatus: "not_created",
   hasProfile: false,
   isProfileLoading: false,
@@ -79,6 +81,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const isUserAdmin = useMemo(() => isAdmin(user), [user]);
   const isUserRecruiter = useMemo(() => isRecruiter(user), [user]);
   const isUserJobSeeker = useMemo(() => isJobSeeker(user), [user]);
+
+  const employmentAgreementSigned = useMemo(
+    () => (user?.user_metadata as Record<string, unknown> | undefined)?.employment_agreement_signed === true,
+    [user]
+  );
 
   // Function to fetch jobseeker profile status
   const fetchProfileStatus = async (userId: string, user: User | null) => {
@@ -228,6 +235,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         isAdmin: isUserAdmin,
         isRecruiter: isUserRecruiter,
         isJobSeeker: isUserJobSeeker,
+        employmentAgreementSigned,
         profileVerificationStatus,
         hasProfile,
         isProfileLoading,

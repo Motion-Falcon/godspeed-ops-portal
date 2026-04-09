@@ -12,6 +12,7 @@ export const ProtectedRoute = () => {
     isLoading,
     isJobSeeker,
     user,
+    employmentAgreementSigned,
     profileVerificationStatus,
     hasProfile,
     isProfileLoading,
@@ -42,6 +43,14 @@ export const ProtectedRoute = () => {
   // Simplified jobseeker route access logic
   if (isJobSeeker) {
     const currentPath = location.pathname;
+
+    // Employment agreement gate - must sign before accessing anything else
+    if (!employmentAgreementSigned) {
+      if (currentPath !== "/onboarding-consent") {
+        return <Navigate to="/onboarding-consent" replace />;
+      }
+      return <Outlet />;
+    }
 
     // Show loading state while profile data is being fetched
     if (isProfileLoading) {
