@@ -30,6 +30,7 @@ import {
   GitBranch,
   Calendar,
   CreditCard,
+  MailOpen,
 } from "lucide-react";
 import { ThemeToggle } from "./theme-toggle";
 import { LanguageToggle } from "./LanguageToggle";
@@ -564,6 +565,14 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
           requiresSuperAdmin: true,
         },
       ],
+    },
+    {
+      label: "Email Template Preview",
+      path: "/email-template-preview",
+      icon: <MailOpen size={16} />,
+      requiresAuth: true,
+      roles: ["admin"],
+      requiresSuperAdmin: true,
     },
     {
       label: t("navigation.financial"),

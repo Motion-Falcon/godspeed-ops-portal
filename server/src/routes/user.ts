@@ -554,6 +554,7 @@ router.post(
       // Default recruiter metadata
       const userMetadata: Record<string, unknown> = {
         name,
+        portal_name: process.env.PORTAL_NAME || 'Ops Portal',
         user_type: 'recruiter',
         user_role: ['recruiter'],
         onboarding_complete: false,
@@ -708,7 +709,7 @@ router.post(
       } else {
         // User hasn't verified email yet, use Supabase invitation
         const { data, error } = await supabase.auth.admin.inviteUserByEmail(user.email, {
-          data: userMetadata,
+          data: { ...userMetadata, portal_name: process.env.PORTAL_NAME || 'Ops Portal' },
           redirectTo: onboardingURL,
         } as any);
 

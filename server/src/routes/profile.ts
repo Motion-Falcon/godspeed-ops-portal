@@ -299,6 +299,7 @@ router.post(
                   user_type: "jobseeker",
                   hasProfile: true, // Set hasProfile flag for new users
                   phoneNumber: profileData.mobile,
+                  welcome_email_sent: true, // Welcome email is sent via emailNotifier below
                 },
               },
             });
@@ -419,6 +420,7 @@ router.post(
           ...existingUserMetadata,
           hasProfile: true,
           phoneNumber: profileData.mobile,
+          welcome_email_sent: true, // Ensure flag is set even if existing account
         };
 
         // Update user metadata with merged data

@@ -1,0 +1,80 @@
+EMAIL TRIGGERS — QUICK REFERENCE TABLE
+Godspeed Ops Portal | April 2026
+Full details: docs/email-triggers-documentation.txt
+=====================================================================================================================================================================
+ #  | TRIGGER EVENT                          | API ENDPOINT                          | RECIPIENTS                                    | SUBJECT                                      | EMAIL SERVICE
+=====================================================================================================================================================================
+ 1  | Admin invites a new recruiter          | POST /api/users/invite-recruiter      | Invited recruiter (TO)                        | Supabase default invitation subject          | Supabase Auth
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ 2a | Resend invitation (email not verified) | POST /api/users/resend-invitation     | Recruiter (TO)                                | Supabase default invitation subject          | Supabase Auth
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ 2b | Resend onboarding reminder             | POST /api/users/resend-invitation     | Recruiter (TO)                                | Complete Your Account Setup - Action         | SendGrid
+    | (email verified, onboarding incomplete)|                                       |                                               | Required                                     |
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ 3  | User requests resend of email          | POST /api/auth/resend-verification    | User (TO)                                     | Supabase default verification subject        | Supabase Auth
+    | verification link                      |                                       |                                               |                                              |
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ 4  | New jobseeker profile created          | POST /api/profile                     | Jobseeker (TO)                                | Welcome to {PORTAL_NAME}                     | SendGrid
+    | by a recruiter  [WELCOME EMAIL]        |                                       |                                               |                                              |
+    | Note: Also triggers Supabase           |                                       |                                               | + Supabase verification email (auto)         | Supabase Auth
+    | verification email if new auth account |                                       |                                               |                                              |
+    | is created alongside the profile       |                                       |                                               |                                              |
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ 5  | Jobseeker assigned to a position       | POST /api/positions/:id/assign        | Jobseeker (TO)                                | Congratulations! You've Been Matched to a    | SendGrid
+    |                                        |                                       |                                               | New Position Opportunity                     |
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ 6  | Jobseeker removed from a position      | DELETE /api/positions/:id/assign/     | Jobseeker (TO)                                | Update Regarding Your Position Assignment    | SendGrid
+    |                                        | :candidateId                          |                                               |                                              |
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ 7  | Timesheet created (email opted in)     | POST /api/timesheets                  | Jobseeker billing or primary email (TO)       | Timesheet Summary - Timesheet #{number}      | SendGrid
+    |                                        |                                       | INVOICE_CC_EMAILS env var (CC)                |                                              |
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ 8  | Timesheet manually re-sent             | POST /api/timesheets/send-email/:id   | Jobseeker billing or primary email (TO)       | Timesheet Summary - Timesheet #{number}      | SendGrid
+    |                                        |                                       | INVOICE_CC_EMAILS env var (CC)                |                                              |
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ 9  | Timesheet updated (email opted in)     | PUT /api/timesheets/:id               | Jobseeker billing or primary email (TO)       | Updated Timesheet Summary -                  | SendGrid
+    |                                        |                                       | INVOICE_CC_EMAILS env var (CC)                | Timesheet #{number}                          |
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ 10 | Invoice sent to client                 | POST /api/invoices/:id/send-email     | Specified recipient email (TO)                | Invoice #{number} for {client_name}          | SendGrid
+    |                                        |                                       | Client CC emails per client config (CC)       |                                              |
+    |                                        |                                       | INVOICE_CC_EMAILS env var (CC)                |                                              |
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ 11 | Digital consent request created        | POST /api/consent/request             | Each client or jobseeker in the batch (TO)    | Digital Consent Request: {documentName}      | SendGrid
+    |                                        |                                       | (one email per recipient)                     |                                              |
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ 12 | Digital consent request resent         | POST /api/consent/resend              | Each recipient from selected records (TO)     | Digital Consent Request: {documentName}      | SendGrid
+    |                                        |                                       | (one email per record)                        |                                              |
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ 13 | Employment agreement sent to        | POST /api/profile/submit (Trigger A)  | Jobseeker (TO)                                | Action Required: Sign Your Employment        | SendGrid
+    | jobseeker for signing                | GET /api/consent/jobseeker-onboarding | (profileData.email or req.user.email)         | Agreement                                    |
+    |                                      | -consent (Trigger B)                  |                                               |                                              |
+=====================================================================================================================================================================
+
+NOTES
+------
+- #4 sends TWO emails when the recruiter-created profile also creates a new auth account:
+    (a) Supabase verification email  — sent automatically by Supabase on signUp()
+    (b) Welcome email                — sent by SendGrid via emailNotifier middleware
+  The jobseeker's password is system-generated and only returned in the API response
+  to the recruiter; the jobseeker must use "Forgot Password" to set their own password.
+
+- #1 and the unverified path of #2a use Supabase's inviteUserByEmail, which sends
+  Supabase's built-in invitation email (template customisable in Supabase dashboard).
+
+- For #7, #8, #9: billing email is preferred over primary email when both are set.
+
+- For #10: CC list is built dynamically from client record flags (invoice_cc2,
+  invoice_cc_dispatch, invoice_cc_accounts, etc.) plus the INVOICE_CC_EMAILS env var.
+
+- For #11 and #12: each recipient receives a unique consent link with their own token.
+
+TEMPLATE FILES (SendGrid emails only)
+--------------------------------------
+  employment-agreement-html.ts        → #13
+  jobseeker-welcome-html/txt.ts       → #4
+  jobseeker-assignment-html/txt.ts    → #5
+  jobseeker-removal-html/txt.ts       → #6
+  timesheet-html/txt.ts               → #7, #8, #9
+  invoice-html.ts                     → #10
+  consent-html.ts                     → #11, #12
+  onboarding-reminder-html/txt.ts     → #2b

@@ -1,38 +1,32 @@
-export function onboardingReminderHtmlTemplate(vars: Record<string, any>) {
-  const portalName = process.env.PORTAL_NAME || 'Ops Portal';
-  return `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>Complete Your Account Setup - Action Required</title>
-</head>
-<body style="font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 30px; color: #333;">
-  <div style="max-width: 600px; margin: auto; background-color: #ffffff; border-radius: 8px; padding: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
-    
-    <h2 style="color: #2c3e50; margin-top: 0;">Complete Your Account Setup${vars.name ? `, ${vars.name}` : ''}</h2>
+import Handlebars from "handlebars";
+import { wrapInLayout, ensureHelpers, S, getPortalName, textFooter, ACCENT_BLUE, accentBtn } from "./_layout.js";
 
-    <p>We noticed that you haven't finished setting up your account yet. Your email has been verified, but there are a few more steps to complete your onboarding.</p>
+const btn = accentBtn(ACCENT_BLUE);
 
-    <div style="background: #fff3e0; padding: 16px; border-left: 4px solid #ff9800; margin: 20px 0; border-radius: 4px;">
-      <strong>Action Required:</strong> Please complete your account setup to gain full access to the platform.
-    </div>
+ensureHelpers();
 
-    <p>To complete your onboarding, please click the button below:</p>
+const bodySource = `
+<p style="${S.p}">Hi{{#if name}} {{name}}{{/if}},</p>
 
-    <p style="text-align: center; margin: 24px 0;">
-      <a href="${vars.onboarding_url}" style="display: inline-block; padding: 12px 24px; background-color: #28a745; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">Complete Account Setup</a>
-    </p>
+<p style="${S.p}">It looks like you haven't finished setting up your account yet. Your email has been verified, but there are a few more steps to complete.</p>
 
-    <p>If you have any questions or need assistance, please don't hesitate to reach out to our support team.</p>
+<div style="${S.notice}">
+  <strong>Action needed:</strong> Please complete your account setup to get full access to the platform.
+</div>
 
-    <p>Best regards,<br><strong>The ${portalName} Team</strong></p>
+<div style="${S.btnWrap}">
+  <a href="{{onboarding_url}}" style="${btn}">Complete Account Setup</a>
+</div>
 
-    <div style="font-size: 12px; color: #888; margin-top: 32px; border-top: 1px solid #eee; padding-top: 16px;">
-      This email was sent because you have an incomplete account setup. If you believe this message was sent in error, please contact our support team.
-    </div>
-  </div>
-</body>
-</html>
+<p style="${S.p}">If you need any help, feel free to reach out to our support team.</p>
+
+<p style="${S.pLast}">Best regards,<br><strong style="${S.strong}">The Team at {{portalName}}</strong></p>
 `;
+
+const compiledBody = Handlebars.compile(bodySource);
+
+export function onboardingReminderHtmlTemplate(vars: Record<string, any>): string {
+  const portalName = getPortalName();
+  const body = compiledBody({ ...vars, portalName });
+  return wrapInLayout("Complete Your Account Setup", body, portalName, ACCENT_BLUE);
 }
