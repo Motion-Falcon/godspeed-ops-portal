@@ -712,10 +712,6 @@ router.post(
         const fromEmail = process.env.DEFAULT_FROM_EMAIL || "godspeed@aimotion.com";
         await sgMail.send({
           to: emailTo,
-          cc: (process.env.INVOICE_CC_EMAILS || "")
-            .split(",")
-            .map((e) => e.trim())
-            .filter(Boolean),
           from: formatFromEmail(fromEmail),
           subject,
           text: bodyLines.join("\n").trim(),
@@ -1000,10 +996,6 @@ router.post(
 
       return {
         to: emailTo,
-        cc: (process.env.INVOICE_CC_EMAILS || "")
-          .split(",")
-          .map((e) => e.trim())
-          .filter(Boolean),
         subject,
         text: bodyLines.join("\n").trim(),
         html,
@@ -1318,10 +1310,6 @@ router.put(
 
       return {
         to: emailTo,
-        cc: (process.env.INVOICE_CC_EMAILS || "")
-          .split(",")
-          .map((e) => e.trim())
-          .filter(Boolean),
         subject,
         text: bodyLines.join("\n").trim(),
         html,
