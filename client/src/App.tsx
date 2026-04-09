@@ -73,6 +73,7 @@ import { ConsentListPage } from './pages/Consent/ConsentListPage';
 import { CreateConsentPage } from './pages/Consent/CreateConsentPage';
 import { ConsentDetailPage } from './pages/Consent/ConsentDetailPage';
 import { ConsentTemplatePage } from './pages/Consent/ConsentTemplatePage';
+import { EmailTemplatePreviewPage } from './pages/EmailTemplatePreview/EmailTemplatePreviewPage';
 import { ConsentPage } from './pages/Consent/ConsentPage';
 import { OnboardingConsent } from './pages/Consent/OnboardingConsent';
 import { TermsOfService } from './pages/Legal/TermsOfService';
@@ -171,6 +172,7 @@ function App() {
 
                 <Route element={<SuperAdminRoute />}>
                   <Route path="/consent-dashboard/templates" element={<ConsentTemplatePage />} />
+                  <Route path="/email-template-preview" element={<EmailTemplatePreviewPage />} />
                 </Route>
                 
                 <Route element={<JobSeekerRoute />}>

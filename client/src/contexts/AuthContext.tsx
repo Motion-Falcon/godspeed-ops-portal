@@ -22,6 +22,7 @@ import {
 } from "../lib/auth";
 import { supabase } from "../lib/supabaseClient";
 import { clearTokenCache } from "../services/api/index";
+import { sendConfirmationWelcomeEmails } from "../services/api/auth";
 
 // Define possible verification statuses
 export type VerificationStatus =
@@ -182,6 +183,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setIsProfileLoading(false);
     }
   }, [user?.id, isUserJobSeeker]);
+
+  // Fire the post-email-confirmation welcome emails exactly once.
+  // Conditions: authenticated jobseeker whose welcome_email_sent flag is not yet set.
+  // The server endpoint is idempotent, so this is safe even if called multiple times.
+  useEffect(() => {
+    if (!user) return;
+    const meta = (user.user_metadata || {}) as Record<string, unknown>;
+    if (
+      meta.user_type === "jobseeker" &&
+      meta.welcome_email_sent !== true
+    ) {
+      // Fire and forget — errors are silently swallowed in the API function
+      sendConfirmationWelcomeEmails();
+    }
+  }, [user?.id]);
 
   useEffect(() => {
     let isMounted = true;

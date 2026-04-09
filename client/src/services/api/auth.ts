@@ -294,4 +294,16 @@ export const complete2FAAPI = async (email: string, password: string) => {
   }
 };
 
-
+/**
+ * Called once after a jobseeker confirms their email through Supabase.
+ * Triggers the welcome + onboarding reminder emails server-side.
+ * Idempotent — the server uses a metadata flag to prevent duplicate sends.
+ */
+export const sendConfirmationWelcomeEmails = async () => {
+  try {
+    const response = await api.post("/api/auth/send-confirmation-welcome");
+    return response.data;
+  } catch {
+    // Silently fail — this is a best-effort fire-and-forget call.
+  }
+};
