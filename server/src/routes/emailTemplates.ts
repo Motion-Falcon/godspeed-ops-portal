@@ -101,15 +101,15 @@ const TEMPLATES: TemplateEntry[] = [
     renderHtml: (data) => confirmSignupHtmlTemplate(data),
     renderText: null,
   },
-  // #2b — Onboarding Reminder (SendGrid)
+  // #2b, #15 — Onboarding Reminder (SendGrid)
   {
     id: "onboarding-reminder",
     name: "Onboarding Reminder",
     subject: "Complete Your Account Setup - Action Required",
-    description: "Sent as a reminder when a recruiter has verified their email but not completed onboarding.",
+    description: "Sent in two scenarios: (#2b) when a recruiter has verified their email but not completed onboarding; (#15) on a jobseeker's first login if they have not yet completed their profile.",
     service: "sendgrid",
     tone: "neutral",
-    triggerRef: "#2b",
+    triggerRef: "#2b, #15",
     attachments: [],
     sampleData: {
       name: "Chris Johnson",
@@ -278,15 +278,15 @@ const TEMPLATES: TemplateEntry[] = [
     renderHtml: (data) => consentHtmlTemplate(data as any),
     renderText: (data) => generateConsentTextTemplate(data as any),
   },
-  // #13 — Employment Agreement (SendGrid)
+  // #13, #14 — Employment Agreement (SendGrid)
   {
     id: "employment-agreement",
     name: "Employment Agreement",
     subject: "Action Required: Sign Your Employment Agreement",
-    description: "Sent after a user's account is verified, prompting them to review and sign the employment agreement.",
+    description: "Sent when a jobseeker's email is confirmed (#14, alongside the welcome email) or when a recruiter creates a profile (#13), prompting the jobseeker to sign the employment agreement.",
     service: "sendgrid",
     tone: "success",
-    triggerRef: "#13",
+    triggerRef: "#13, #14",
     attachments: [],
     sampleData: {
       recipientName: "Jane Smith",

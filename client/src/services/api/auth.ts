@@ -296,12 +296,32 @@ export const complete2FAAPI = async (email: string, password: string) => {
 
 /**
  * Called once after a jobseeker confirms their email through Supabase.
- * Triggers the welcome + onboarding reminder emails server-side.
+ * Triggers the welcome + employment agreement emails server-side.
+ * Idempotent — the server uses a metadata flag to prevent duplicate sends.
+ *
+ * @param accessToken - Explicit Supabase access token to bypass axios interceptor timing issues
+ */
+export const sendConfirmationWelcomeEmails = async (accessToken?: string) => {
+  try {
+    const headers: Record<string, string> = {};
+    if (accessToken) {
+      headers.Authorization = `Bearer ${accessToken}`;
+    }
+    const response = await api.post("/api/auth/send-confirmation-welcome", {}, { headers });
+    return response.data;
+  } catch {
+    // Silently fail — this is a best-effort fire-and-forget call.
+  }
+};
+
+/**
+ * Called on first login when the jobseeker has not yet completed their profile.
+ * Triggers the "Complete Your Account Setup" reminder email.
  * Idempotent — the server uses a metadata flag to prevent duplicate sends.
  */
-export const sendConfirmationWelcomeEmails = async () => {
+export const sendFirstLoginReminder = async () => {
   try {
-    const response = await api.post("/api/auth/send-confirmation-welcome");
+    const response = await api.post("/api/auth/first-login-reminder");
     return response.data;
   } catch {
     // Silently fail — this is a best-effort fire-and-forget call.

@@ -22,7 +22,7 @@ import {
 } from "../lib/auth";
 import { supabase } from "../lib/supabaseClient";
 import { clearTokenCache } from "../services/api/index";
-import { sendConfirmationWelcomeEmails } from "../services/api/auth";
+import { sendConfirmationWelcomeEmails, sendFirstLoginReminder } from "../services/api/auth";
 
 // Define possible verification statuses
 export type VerificationStatus =
@@ -184,9 +184,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, [user?.id, isUserJobSeeker]);
 
-  // Fire the post-email-confirmation welcome emails exactly once.
+  // Fire the post-email-confirmation welcome + employment agreement emails exactly once.
   // Conditions: authenticated jobseeker whose welcome_email_sent flag is not yet set.
   // The server endpoint is idempotent, so this is safe even if called multiple times.
+  // We pass the access token explicitly to avoid axios interceptor timing issues
+  // (the token cache may not be populated yet at email confirmation time).
   useEffect(() => {
     if (!user) return;
     const meta = (user.user_metadata || {}) as Record<string, unknown>;
@@ -194,8 +196,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       meta.user_type === "jobseeker" &&
       meta.welcome_email_sent !== true
     ) {
+      // Get the current session token and pass it explicitly
+      supabase.auth.getSession().then(({ data }) => {
+        const token = data.session?.access_token;
+        sendConfirmationWelcomeEmails(token);
+      });
+    }
+  }, [user?.id]);
+
+  // Fire the "Complete Your Account Setup" reminder on first login,
+  // but only if the jobseeker has NOT completed their profile yet.
+  // This is separate from the confirmation-time emails above.
+  useEffect(() => {
+    if (!user) return;
+    const meta = (user.user_metadata || {}) as Record<string, unknown>;
+    if (
+      meta.user_type === "jobseeker" &&
+      meta.hasProfile !== true &&
+      meta.setup_reminder_sent !== true &&
+      meta.welcome_email_sent === true // Only after confirmation emails have been sent
+    ) {
       // Fire and forget — errors are silently swallowed in the API function
-      sendConfirmationWelcomeEmails();
+      sendFirstLoginReminder();
     }
   }, [user?.id]);
 
