@@ -1,0 +1,46 @@
+/* Onboarding Consent Page — sidebar-aware overrides */
+/* Inner component styles are shared from ConsentPage.css (ccp- prefix) */
+
+/* ===== PAGE LAYOUT (sidebar-aware) ===== */
+.obc-page {
+  margin-left: 68px;
+  margin-top: 60px;
+  min-height: calc(100vh - 60px);
+  color: var(--text);
+  font-family: var(--font-family);
+  display: flex;
+  flex-direction: column;
+  background: var(--background);
+}
+
+/* Override ccp-main-layout to remove fixed min-width for sidebar context */
+.obc-page .ccp-main-layout {
+  min-width: unset;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* ===== NOTICE BANNER ===== */
+.obc-notice {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-4) var(--spacing-8);
+  background: var(--warning-bg, #fef3cd);
+  border-bottom: 1px solid var(--warning-border, #ffc107);
+  color: var(--warning-text, #856404);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-medium);
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .obc-page {
+    margin-left: 0;
+  }
+
+  .obc-notice {
+    padding: var(--spacing-3) var(--spacing-4);
+    font-size: var(--font-size-xs, 12px);
+  }
+}

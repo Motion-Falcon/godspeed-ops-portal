@@ -5,6 +5,7 @@ import { sanitizeInputs, apiRateLimiter } from '../middleware/security.js';
 import { activityLogger } from '../middleware/activityLogger.js';
 import { emailNotifier } from '../middleware/emailNotifier.js';
 import { consentHtmlTemplate, generateConsentTextTemplate } from '../email-templates/consent-html.js';
+import { employmentAgreementHtmlTemplate, employmentAgreementTextTemplate } from '../email-templates/employment-agreement-html.js';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
 import { decode } from 'html-entities';
@@ -647,7 +648,8 @@ router.get('/documents',
       // Build the base query
       let baseQuery = supabase
         .from('consent_documents')
-        .select('*');
+        .select('*')
+        .eq('is_jobseeker_onboarding', false);
 
       // Handle search for uploader emails/names separately since we can't JOIN with auth.users
       let uploaderUserIds: string[] = [];
@@ -1564,6 +1566,12 @@ router.get('/view', // apiRateLimiter,
           entityName = `${jobseeker.first_name} ${jobseeker.last_name}`;
           entityEmail = jobseeker.email;
         }
+      } else if (record.consentable_type === 'user') {
+        const { data: userData } = await supabase.auth.admin.getUserById(record.consentable_id);
+        if (userData?.user) {
+          entityName = (userData.user.user_metadata as Record<string, unknown>)?.name as string || 'Unknown';
+          entityEmail = userData.user.email || '';
+        }
       }
     } catch (error) {
       console.error('Error fetching entity details:', error);
@@ -1742,6 +1750,12 @@ router.post('/submit',
             entityName = `${jobseeker.first_name} ${jobseeker.last_name}`;
             entityEmail = jobseeker.email;
           }
+        } else if (record.consentable_type === 'user') {
+          const { data: userData } = await supabase.auth.admin.getUserById(record.consentable_id);
+          if (userData?.user) {
+            entityName = (userData.user.user_metadata as Record<string, unknown>)?.name as string || 'Unknown';
+            entityEmail = userData.user.email || '';
+          }
         }
       } catch (error) {
         console.error('Error fetching entity details:', error);
@@ -1838,6 +1852,26 @@ router.post('/submit',
       console.log(`✏️ Consented Name: "${consentedName.trim()}"`);
       console.log(`📅 Completed At: ${completedAt}`);
       console.log(`🌐 IP Address: ${clientIP}\n`);
+
+      // If this is a jobseeker onboarding consent, update user_metadata
+      if (record.is_jobseeker_onboarding && record.consentable_type === 'user') {
+        try {
+          const { data: userData } = await supabase.auth.admin.getUserById(record.consentable_id);
+          if (userData?.user) {
+            const existingMeta = userData.user.user_metadata || {};
+            await supabase.auth.admin.updateUserById(record.consentable_id, {
+              user_metadata: {
+                ...existingMeta,
+                employment_agreement_signed: true
+              }
+            });
+            console.log(`✅ Updated employment_agreement_signed for user ${record.consentable_id}`);
+          }
+        } catch (metaError) {
+          console.error('Error updating employment_agreement_signed in user_metadata:', metaError);
+          // Don't fail the consent submission for this
+        }
+      }
 
       // Store data for activity logging
       res.locals.entityData = { name: entityName, email: entityEmail };
@@ -1964,5 +1998,170 @@ router.get(
 );
 
 // Removed /clients and /jobseekers endpoints - now using existing client and jobseeker APIs
+
+/**
+ * Get or create jobseeker onboarding consent (employment agreement)
+ * GET /api/consent/jobseeker-onboarding-consent
+ * @access Authenticated jobseekers only
+ */
+router.get('/jobseeker-onboarding-consent',
+  authenticateToken,
+  async (req: Request, res: Response) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      const userType = (req.user?.user_metadata as Record<string, unknown> | undefined)?.user_type;
+      if (userType !== 'jobseeker') {
+        return res.status(403).json({ error: 'Only jobseekers can access this endpoint' });
+      }
+
+      // 1. Find the employmentAgreement template
+      const { data: template, error: templateError } = await supabase
+        .from('consent_document_templates')
+        .select('*')
+        .eq('template_name', 'employmentAgreement')
+        .eq('is_active', true)
+        .single();
+
+      if (templateError || !template) {
+        console.error('Employment agreement template not found:', templateError);
+        return res.status(404).json({
+          error: 'Employment agreement template not configured. Please contact your administrator.'
+        });
+      }
+
+      // 2. Find or create the shared onboarding consent_documents row
+      let { data: consentDoc, error: docError } = await supabase
+        .from('consent_documents')
+        .select('*')
+        .eq('is_jobseeker_onboarding', true)
+        .eq('template_id', template.id)
+        .eq('is_active', true)
+        .single();
+
+      if (docError || !consentDoc) {
+        // Create the shared onboarding document
+        const { data: newDoc, error: createDocError } = await supabase
+          .from('consent_documents')
+          .insert({
+            file_name: template.file_name,
+            file_path: template.file_path,
+            consent_mode: 'autofill',
+            autofill_fields: template.field_mappings,
+            template_id: template.id,
+            uploaded_by: userId,
+            is_jobseeker_onboarding: true,
+            is_active: true,
+            version: 1
+          })
+          .select()
+          .single();
+
+        if (createDocError || !newDoc) {
+          console.error('Error creating onboarding consent document:', createDocError);
+          return res.status(500).json({ error: 'Failed to initialize employment agreement' });
+        }
+        consentDoc = newDoc;
+      }
+
+      // 3. Find existing consent_records for this user
+      let { data: consentRecord, error: recordError } = await supabase
+        .from('consent_records')
+        .select('*')
+        .eq('consentable_id', userId)
+        .eq('consentable_type', 'user')
+        .eq('document_id', consentDoc.id)
+        .eq('is_jobseeker_onboarding', true)
+        .single();
+
+      if (recordError || !consentRecord) {
+        // Create consent record for this user
+        const consentToken = generateConsentToken();
+        const { data: newRecord, error: createRecordError } = await supabase
+          .from('consent_records')
+          .insert({
+            document_id: consentDoc.id,
+            consentable_id: userId,
+            consentable_type: 'user',
+            status: 'pending',
+            consent_token: consentToken,
+            is_jobseeker_onboarding: true,
+            sent_at: new Date().toISOString()
+          })
+          .select()
+          .single();
+
+        if (createRecordError || !newRecord) {
+          console.error('Error creating onboarding consent record:', createRecordError);
+          return res.status(500).json({ error: 'Failed to create employment agreement record' });
+        }
+        consentRecord = newRecord;
+
+        // Send employment agreement email to the jobseeker
+        try {
+          const clientURL = process.env.CLIENT_URL || 'http://localhost:5173';
+          const userName = (req.user?.user_metadata as Record<string, unknown>)?.name as string || 'there';
+          const userEmail = req.user?.email;
+
+          if (userEmail) {
+            const consentUrl = `${clientURL}/consent?token=${consentToken}`;
+            const loginUrl = `${clientURL}/login`;
+
+            const htmlContent = employmentAgreementHtmlTemplate({
+              recipientName: userName,
+              consentUrl,
+              loginUrl
+            });
+            const textContent = employmentAgreementTextTemplate({
+              recipientName: userName,
+              consentUrl,
+              loginUrl
+            });
+
+            const sgMail = (await import('@sendgrid/mail')).default;
+            const { formatFromEmail } = await import('../middleware/emailNotifier.js');
+            const fromEmail = formatFromEmail(process.env.DEFAULT_FROM_EMAIL as string);
+
+            await sgMail.send({
+              to: userEmail,
+              from: fromEmail,
+              subject: 'Action Required: Sign Your Employment Agreement',
+              html: htmlContent,
+              text: textContent
+            });
+            console.log(`✉️ Employment agreement email sent to ${userEmail}`);
+          }
+        } catch (emailError) {
+          // Don't fail the endpoint if email fails
+          console.error('Error sending employment agreement email:', emailError);
+        }
+      }
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          status: consentRecord.status,
+          token: consentRecord.consent_token,
+          completedAt: consentRecord.completed_at,
+          consentedName: consentRecord.consented_name,
+          document: {
+            id: consentDoc.id,
+            fileName: consentDoc.file_name,
+            filePath: consentDoc.file_path,
+            consentMode: consentDoc.consent_mode,
+            version: consentDoc.version,
+            createdAt: consentDoc.created_at
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Error in jobseeker onboarding consent endpoint:', error);
+      return res.status(500).json({ error: 'An unexpected error occurred' });
+    }
+  }
+);
 
 export default router;
