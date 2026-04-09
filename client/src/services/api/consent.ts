@@ -446,3 +446,17 @@ export const getConsentRecordsByEntity = async (
 };
 
 // Removed getClientsForSelection and getJobseekersForSelection - using existing APIs directly in components
+
+/**
+ * Get jobseeker onboarding consent (employment agreement)
+ * Returns the consent token and document info for the authenticated jobseeker
+ */
+export const getJobseekerOnboardingConsent = async () => {
+  try {
+    const response = await api.get("/api/consent/jobseeker-onboarding-consent");
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching jobseeker onboarding consent:", error);
+    throw error;
+  }
+};
