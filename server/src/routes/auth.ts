@@ -825,7 +825,7 @@ router.get("/check-phone", async (req, res) => {
  * Called by the client immediately after a jobseeker confirms their email.
  * Sends two emails:
  *   1. Welcome email — same template used when a recruiter creates the profile
- *   2. Onboarding reminder — "Complete Your Account Setup"
+ *   2. Employment Agreement — prompts the jobseeker to sign the agreement
  *
  * Idempotent: the `welcome_email_sent` flag in user_metadata prevents
  * duplicate sends. Jobseekers whose profiles were created by a recruiter
@@ -860,7 +860,7 @@ router.post("/send-confirmation-welcome", authenticateToken, async (req, res) =>
     const clientUrl = (process.env.CLIENT_URL || "").replace(/\/$/, "");
     const firstName = (meta.name || "").split(" ")[0] || "there";
     const portalUrl = clientUrl;
-    const onboardingUrl = clientUrl + "/login";
+    const userName = (meta.name as string) || "there";
 
     const sgMail = (await import("@sendgrid/mail")).default;
     sgMail.setApiKey(process.env.SENDGRID_API_KEY!);
@@ -870,16 +870,12 @@ router.post("/send-confirmation-welcome", authenticateToken, async (req, res) =>
 
     const { jobseekerWelcomeHtmlTemplate } = await import("../email-templates/jobseeker-welcome-html.js");
     const { jobseekerWelcomeTextTemplate } = await import("../email-templates/jobseeker-welcome-txt.js");
-    const { onboardingReminderHtmlTemplate } = await import("../email-templates/onboarding-reminder-html.js");
-    const { onboardingReminderTextTemplate } = await import("../email-templates/onboarding-reminder-txt.js");
 
     const welcomeHtml = jobseekerWelcomeHtmlTemplate({ first_name: firstName, portal_url: portalUrl });
     const welcomeText = jobseekerWelcomeTextTemplate({ first_name: firstName, portal_url: portalUrl });
-    const onboardingHtml = onboardingReminderHtmlTemplate({ name: firstName, onboarding_url: onboardingUrl });
-    const onboardingText = onboardingReminderTextTemplate({ name: firstName, onboarding_url: onboardingUrl });
 
-    // Send both emails (fire both; collect errors without blocking)
-    const results = await Promise.allSettled([
+    // Build the list of email promises — always send welcome email
+    const emailPromises: Promise<any>[] = [
       sgMail.send({
         to: email,
         from: fromEmail,
@@ -887,14 +883,107 @@ router.post("/send-confirmation-welcome", authenticateToken, async (req, res) =>
         html: welcomeHtml,
         text: welcomeText,
       }),
-      sgMail.send({
-        to: email,
-        from: fromEmail,
-        subject: "Complete Your Account Setup — Action Required",
-        html: onboardingHtml,
-        text: onboardingText,
-      }),
-    ]);
+    ];
+
+    // Create employment agreement consent record and queue the email
+    try {
+      const { data: employmentTemplate } = await supabase
+        .from('consent_document_templates')
+        .select('*')
+        .eq('template_name', 'employmentAgreement')
+        .eq('is_active', true)
+        .single();
+
+      if (employmentTemplate) {
+        // Find or create the shared onboarding consent document
+        let { data: onboardingDoc } = await supabase
+          .from('consent_documents')
+          .select('*')
+          .eq('is_jobseeker_onboarding', true)
+          .eq('template_id', employmentTemplate.id)
+          .eq('is_active', true)
+          .single();
+
+        if (!onboardingDoc) {
+          const { data: newDoc } = await supabase
+            .from('consent_documents')
+            .insert({
+              file_name: employmentTemplate.file_name,
+              file_path: employmentTemplate.file_path,
+              consent_mode: 'autofill',
+              autofill_fields: employmentTemplate.field_mappings,
+              template_id: employmentTemplate.id,
+              uploaded_by: userId,
+              is_jobseeker_onboarding: true,
+              is_active: true,
+              version: 1
+            })
+            .select()
+            .single();
+          onboardingDoc = newDoc;
+        }
+
+        if (onboardingDoc) {
+          // Check if a consent record already exists (e.g. recruiter-created)
+          const { data: existingRecord } = await supabase
+            .from('consent_records')
+            .select('*')
+            .eq('consentable_id', userId)
+            .eq('consentable_type', 'user')
+            .eq('document_id', onboardingDoc.id)
+            .eq('is_jobseeker_onboarding', true)
+            .single();
+
+          let consentToken: string;
+
+          if (existingRecord) {
+            consentToken = existingRecord.consent_token;
+          } else {
+            const crypto = await import('crypto');
+            consentToken = crypto.randomBytes(32).toString('hex');
+
+            await supabase
+              .from('consent_records')
+              .insert({
+                document_id: onboardingDoc.id,
+                consentable_id: userId,
+                consentable_type: 'user',
+                status: 'pending',
+                consent_token: consentToken,
+                is_jobseeker_onboarding: true,
+                sent_at: new Date().toISOString()
+              });
+
+            console.log(`[send-confirmation-welcome] Created onboarding consent record for user ${userId}`);
+          }
+
+          // Queue employment agreement email
+          const { employmentAgreementHtmlTemplate, employmentAgreementTextTemplate } =
+            await import("../email-templates/employment-agreement-html.js");
+
+          const consentUrl = `${clientUrl}/consent?token=${consentToken}`;
+          const loginUrl = `${clientUrl}/login`;
+
+          emailPromises.push(
+            sgMail.send({
+              to: email,
+              from: fromEmail,
+              subject: "Action Required: Sign Your Employment Agreement",
+              html: employmentAgreementHtmlTemplate({ recipientName: userName, consentUrl, loginUrl }),
+              text: employmentAgreementTextTemplate({ recipientName: userName, consentUrl, loginUrl }),
+            })
+          );
+        }
+      } else {
+        console.log("[send-confirmation-welcome] Employment agreement template not found, skipping");
+      }
+    } catch (consentError) {
+      // Don't block welcome email if consent setup fails
+      console.error("[send-confirmation-welcome] Error setting up employment agreement:", consentError);
+    }
+
+    // Send all queued emails
+    const results = await Promise.allSettled(emailPromises);
 
     const errors = results
       .filter((r) => r.status === "rejected")
@@ -903,13 +992,86 @@ router.post("/send-confirmation-welcome", authenticateToken, async (req, res) =>
     if (errors.length > 0) {
       console.error("[send-confirmation-welcome] Some emails failed:", errors);
     } else {
-      console.log(`[send-confirmation-welcome] Welcome + onboarding emails sent to ${email}`);
+      console.log(`[send-confirmation-welcome] Welcome + employment agreement emails sent to ${email}`);
     }
 
     return res.status(200).json({ sent: true, errors: errors.length > 0 ? errors : undefined });
   } catch (error) {
     console.error("[send-confirmation-welcome] Error:", error);
     return res.status(500).json({ error: "Failed to send confirmation welcome emails" });
+  }
+});
+
+/**
+ * POST /api/auth/first-login-reminder
+ *
+ * Called by the client on first login when the jobseeker has NOT yet
+ * completed their profile. Sends the "Complete Your Account Setup" email.
+ *
+ * Idempotent: the `setup_reminder_sent` flag in user_metadata prevents
+ * duplicate sends. Skipped entirely if the user already has a profile
+ * (hasProfile === true).
+ */
+router.post("/first-login-reminder", authenticateToken, async (req, res) => {
+  try {
+    const user = req.user!;
+    const userId = user.id;
+    const meta = user.user_metadata || {};
+
+    // Only for jobseekers
+    if (meta.user_type !== "jobseeker") {
+      return res.status(200).json({ skipped: true, reason: "not_a_jobseeker" });
+    }
+
+    // Skip if the user already has a completed profile
+    if (meta.hasProfile === true) {
+      return res.status(200).json({ skipped: true, reason: "has_profile" });
+    }
+
+    // Already sent
+    if (meta.setup_reminder_sent === true) {
+      return res.status(200).json({ skipped: true, reason: "already_sent" });
+    }
+
+    const email = user.email;
+    if (!email) {
+      return res.status(400).json({ error: "User has no email address" });
+    }
+
+    // Set flag immediately to prevent race-condition duplicate sends
+    await supabase.auth.admin.updateUserById(userId, {
+      user_metadata: { ...meta, setup_reminder_sent: true },
+    });
+
+    const clientUrl = (process.env.CLIENT_URL || "").replace(/\/$/, "");
+    const firstName = (meta.name || "").split(" ")[0] || "there";
+    const onboardingUrl = clientUrl + "/profile/create";
+
+    const sgMail = (await import("@sendgrid/mail")).default;
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY!);
+
+    const { formatFromEmail } = await import("../middleware/emailNotifier.js");
+    const fromEmail = formatFromEmail(process.env.DEFAULT_FROM_EMAIL as string);
+
+    const { onboardingReminderHtmlTemplate } = await import("../email-templates/onboarding-reminder-html.js");
+    const { onboardingReminderTextTemplate } = await import("../email-templates/onboarding-reminder-txt.js");
+
+    const onboardingHtml = onboardingReminderHtmlTemplate({ name: firstName, onboarding_url: onboardingUrl });
+    const onboardingText = onboardingReminderTextTemplate({ name: firstName, onboarding_url: onboardingUrl });
+
+    await sgMail.send({
+      to: email,
+      from: fromEmail,
+      subject: "Complete Your Account Setup — Action Required",
+      html: onboardingHtml,
+      text: onboardingText,
+    });
+
+    console.log(`[first-login-reminder] Account setup reminder sent to ${email}`);
+    return res.status(200).json({ sent: true });
+  } catch (error) {
+    console.error("[first-login-reminder] Error:", error);
+    return res.status(500).json({ error: "Failed to send account setup reminder" });
   }
 });
 
