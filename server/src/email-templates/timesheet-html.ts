@@ -1,9 +1,123 @@
+import Handlebars from "handlebars";
 import { toNum } from "./timesheet-email-numeric.js";
+import { wrapInLayout, ensureHelpers, S, getPortalName, textFooter, ACCENT_BLUE } from "./_layout.js";
 
-export function timesheetHtmlTemplate(vars: Record<string, any>) {
+ensureHelpers();
+
+const bodySource = `
+{{#if isUpdated}}
+<div style="margin:0 0 16px;">
+  <span style="${S.badgeUpdate}">UPDATED</span>
+</div>
+{{/if}}
+
+<table style="${S.table}margin:0 0 20px;">
+  <tr>
+    <td style="vertical-align:top;padding:0;">
+      <p style="margin:0 0 2px;${S.muted}">Jobseeker</p>
+      <p style="margin:0;font-size:15px;${S.strong}">{{jobseeker_name}}</p>
+      <p style="margin:2px 0 0;${S.muted}">{{jobseeker_email}}</p>
+    </td>
+    <td style="vertical-align:top;padding:0;text-align:right;">
+      <p style="margin:0 0 2px;${S.muted}">Period</p>
+      <p style="margin:0;font-size:14px;color:#1a1a1a;">{{week_start_date}} — {{week_end_date}}</p>
+      <p style="margin:2px 0 0;${S.muted}">Generated {{generated_date}}</p>
+    </td>
+  </tr>
+</table>
+
+<div style="${S.infoBox}">
+  <p style="margin:0 0 2px;${S.muted}">Position</p>
+  <p style="margin:0;font-size:15px;${S.strong}">{{position_title}}</p>
+</div>
+
+<h3 style="${S.h3}">Daily Hours</h3>
+<table style="${S.table}">
+  <thead>
+    <tr>
+      <th style="${S.th}">Date</th>
+      <th style="${S.thRight}">Hours</th>
+    </tr>
+  </thead>
+  <tbody>
+    {{#each dailyRows}}
+    <tr>
+      <td style="${S.td}">{{this.date}}</td>
+      <td style="${S.tdRight}">{{this.hours}}</td>
+    </tr>
+    {{else}}
+    <tr><td colspan="2" style="${S.td}text-align:center;color:#6e6e6e;">No hours recorded</td></tr>
+    {{/each}}
+  </tbody>
+</table>
+
+<h3 style="${S.h3}">Payment Summary</h3>
+<table style="${S.table}">
+  <tr>
+    <td style="${S.tdLabel}">Regular Hours</td>
+    <td style="${S.tdValue}text-align:right;">{{totalRegH}} hrs</td>
+  </tr>
+  <tr>
+    <td style="${S.tdLabel}">Regular Rate</td>
+    <td style="${S.tdValue}text-align:right;">{{currency regularPayRate}}/hr</td>
+  </tr>
+  {{#if showPremium}}
+  <tr>
+    <td style="${S.tdLabel}">Premium Rate</td>
+    <td style="${S.tdValue}text-align:right;">{{currency premiumPayRate}}/hr</td>
+  </tr>
+  {{/if}}
+  <tr>
+    <td style="${S.tdLabel}">Regular Pay</td>
+    <td style="${S.tdValue}text-align:right;">{{currency regularPay}}</td>
+  </tr>
+  {{#if showOvertime}}
+  <tr>
+    <td style="${S.tdLabel}">Overtime Hours</td>
+    <td style="${S.tdValue}text-align:right;">{{totalOtH}} hrs</td>
+  </tr>
+  <tr>
+    <td style="${S.tdLabel}">Overtime Rate</td>
+    <td style="${S.tdValue}text-align:right;">{{currency overtimePayRate}}/hr</td>
+  </tr>
+  <tr>
+    <td style="${S.tdLabel}">Overtime Pay</td>
+    <td style="${S.tdValue}text-align:right;">{{currency overtimePay}}</td>
+  </tr>
+  {{/if}}
+  {{#if showBonus}}
+  <tr>
+    <td style="${S.tdLabel}">Bonus</td>
+    <td style="${S.tdValue}text-align:right;">{{currency bonusAmt}}</td>
+  </tr>
+  {{/if}}
+  {{#if showDeduction}}
+  <tr>
+    <td style="${S.tdLabel}">Deductions</td>
+    <td style="${S.tdValue}text-align:right;">-{{currency dedAmt}}</td>
+  </tr>
+  {{/if}}
+  {{#if showCashDed}}
+  <tr>
+    <td style="${S.tdLabel}">Cash Deduction ({{cashDedPct}}%)</td>
+    <td style="${S.tdValue}text-align:right;">-{{currency cashDedAmt}}</td>
+  </tr>
+  {{/if}}
+  <tr>
+    <td style="${S.totalLabel}">Total Pay</td>
+    <td style="${S.totalValue}">{{currency totalPay}}</td>
+  </tr>
+</table>
+
+<p style="margin:24px 0 0;${S.muted}text-align:center;">If you have any questions about this timesheet, please contact your recruitment team.</p>
+`;
+
+const compiledBody = Handlebars.compile(bodySource);
+
+export function timesheetHtmlTemplate(vars: Record<string, any>): string {
+  const portalName = getPortalName();
   const isUpdated = vars.is_updated || false;
-  const portalName = process.env.PORTAL_NAME || 'Ops Portal';
-  const titlePrefix = isUpdated ? 'Updated ' : '';
+  const titlePrefix = isUpdated ? "Updated " : "";
 
   const totalRegH = toNum(vars.total_regular_hours);
   const totalOtH = toNum(vars.total_overtime_hours);
@@ -15,193 +129,46 @@ export function timesheetHtmlTemplate(vars: Record<string, any>) {
   const cashDedPct = toNum(vars.cash_deduction_percentage);
   const cashDedAmt = toNum(vars.cash_deduction_amount);
   const totalPay = toNum(vars.total_jobseeker_pay);
+  const regularPay = totalRegH * (regularPayRate + premiumPayRate);
+  const overtimePay = totalOtH * overtimePayRate;
 
-  return `
-<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="UTF-8">
-    <title>${titlePrefix}Timesheet Summary - ${
-    vars.invoice_number || "Invoice"
-  }</title>
-    <style>
-      body { font-family: Arial, sans-serif; background: #f8f9fa; color: #222; margin: 0; padding: 0; }
-      .container { background: #fff; max-width: 700px; margin: 40px auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); padding: 32px 24px; }
-      h2 { color: #2e7d32; margin-top: 0; text-align: center; }
-      .header { text-align: center; margin-bottom: 30px; }
-      .invoice-info { width: 100%; margin-bottom: 30px; }
-      .invoice-info table { width: 100%; border-collapse: collapse; }
-      .invoice-info td { vertical-align: top; padding: 0; }
-      .invoice-info .right { text-align: right; }
-      .details-table { width: 100%; border-collapse: collapse; margin: 20px 0; border: 1px solid #ddd; }
-      .details-table th, .details-table td { padding: 12px 8px; text-align: left; border-bottom: 1px solid #ddd; }
-      .details-table th { background-color: #f5f5f5; font-weight: bold; color: #333; }
-      .details-table .date { width: 120px; }
-      .details-table .hours { width: 80px; text-align: center; }
-      .summary-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-      .summary-table td { padding: 8px 0; vertical-align: top; }
-      .summary-table .label { font-weight: bold; color: #555; width: 200px; }
-      .summary-table .value { text-align: right; font-weight: bold; }
-      .total-row { border-top: 2px solid #2e7d32; font-size: 16px; }
-      .footer { font-size: 12px; color: #888; margin-top: 32px; border-top: 1px solid #eee; padding-top: 16px; text-align: center; }
-      .position-info { background: #f8f9fa; padding: 10px; border-radius: 5px; margin: 20px 0; }
-      .position-info h3 { margin: 0 0 10px 0; color: #2e7d32; font-size: 16px; }
-      .updated-badge { background: #ff9800; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; margin-left: 10px; }
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <div class="header">
-        <h2>${titlePrefix}Timesheet Summary ${
-    isUpdated ? '<span class="updated-badge">UPDATED</span>' : ""
-  }</h2>
-        <p><strong>Timesheet #${vars.invoice_number || "N/A"}</strong></p>
-      </div>
+  const dailyRows = vars.daily_hours
+    ? vars.daily_hours.map((day: any) => ({
+        date: new Date(day.date).toLocaleDateString(),
+        hours: day.hours || 0,
+      }))
+    : [];
 
-      <div class="invoice-info">
-        <table>
-          <tr>
-            <td>
-              <strong>Jobseeker:</strong><br>
-              ${vars.jobseeker_name || "N/A"}<br>
-              ${vars.jobseeker_email || ""}
-            </td>
-            <td class="right">
-              <strong>Week Period:</strong><br>
-              ${vars.week_start_date || "N/A"} to ${
-    vars.week_end_date || "N/A"
-  }<br>
-              <strong>Generated:</strong> ${
-                vars.generated_date || new Date().toLocaleDateString()
-              }
-            </td>
-          </tr>
-        </table>
-      </div>
+  const data = {
+    ...vars,
+    portalName,
+    isUpdated,
+    totalRegH,
+    totalOtH,
+    regularPayRate,
+    premiumPayRate,
+    overtimePayRate,
+    bonusAmt,
+    dedAmt,
+    cashDedPct,
+    cashDedAmt,
+    totalPay,
+    regularPay,
+    overtimePay,
+    showPremium: premiumPayRate > 0,
+    showOvertime: vars.overtime_enabled && totalOtH > 0,
+    showBonus: bonusAmt > 0,
+    showDeduction: dedAmt > 0,
+    showCashDed: cashDedPct > 0,
+    dailyRows,
+    generated_date: vars.generated_date || new Date().toLocaleDateString(),
+  };
 
-      <div class="position-info">
-        <h3>Position Details</h3>
-        <table class="summary-table">
-          <tr>
-            <td class="label">Position:</td>
-            <td>${vars.position_title || "N/A"}</td>
-          </tr>
-        </table>
-      </div>
-
-      <h3>Daily Hours Breakdown</h3>
-      <table class="details-table">
-        <thead>
-          <tr>
-            <th class="date">Date</th>
-            <th class="hours">Hours Worked</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${
-            vars.daily_hours
-              ? vars.daily_hours
-                  .map(
-                    (day: any) => `
-            <tr>
-              <td class="date">${new Date(day.date).toLocaleDateString()}</td>
-              <td class="hours">${day.hours || 0}</td>
-            </tr>
-          `
-                  )
-                  .join("")
-              : '<tr><td colspan="2" style="text-align: center;">No daily hours data available</td></tr>'
-          }
-        </tbody>
-      </table>
-
-      <h3>Payment Summary</h3>
-      <table class="summary-table">
-        <tr>
-          <td class="label">Regular Hours:</td>
-          <td class="value">${totalRegH} hours</td>
-        </tr>
-        <tr>
-          <td class="label">Regular Pay Rate:</td>
-          <td class="value">$${regularPayRate.toFixed(2)}/hour</td>
-        </tr>
-        ${
-          premiumPayRate > 0
-            ? `
-        <tr>
-          <td class="label">Premium Pay Rate:</td>
-          <td class="value">$${premiumPayRate.toFixed(2)}/hour</td>
-        </tr>
-        `
-            : ""
-        }
-        <tr>
-          <td class="label">Regular Pay:</td>
-          <td class="value">$${(
-            totalRegH * (regularPayRate + premiumPayRate)
-          ).toFixed(2)}</td>
-        </tr>
-        ${
-          vars.overtime_enabled && totalOtH > 0
-            ? `
-        <tr>
-          <td class="label">Overtime Hours:</td>
-          <td class="value">${totalOtH} hours</td>
-        </tr>
-        <tr>
-          <td class="label">Overtime Pay Rate:</td>
-          <td class="value">$${overtimePayRate.toFixed(2)}/hour</td>
-        </tr>
-        <tr>
-          <td class="label">Overtime Pay:</td>
-          <td class="value">$${(totalOtH * overtimePayRate).toFixed(2)}</td>
-        </tr>
-        `
-            : ""
-        }
-        ${
-          bonusAmt > 0
-            ? `
-        <tr>
-          <td class="label">Bonus Amount:</td>
-          <td class="value">$${bonusAmt.toFixed(2)}</td>
-        </tr>
-        `
-            : ""
-        }
-        ${
-          dedAmt > 0
-            ? `
-        <tr>
-          <td class="label">Deductions:</td>
-          <td class="value">-$${dedAmt.toFixed(2)}</td>
-        </tr>
-        `
-            : ""
-        }
-        ${
-          cashDedPct > 0
-            ? `
-        <tr>
-          <td class="label">Cash Deduction (${cashDedPct}%):</td>
-          <td class="value">-$${cashDedAmt.toFixed(2)}</td>
-        </tr>
-        `
-            : ""
-        }
-        <tr class="total-row">
-          <td class="label">Total Jobseeker Pay:</td>
-          <td class="value">$${totalPay.toFixed(2)}</td>
-        </tr>
-      </table>
-
-      <div class="footer">
-        <p>This is an automated timesheet summary from ${portalName}.</p>
-        <p>If you have any questions about this timesheet, please contact your recruitment team.</p>
-        <p>Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}</p>
-      </div>
-    </div>
-  </body>
-</html>
-  `;
+  const body = compiledBody(data);
+  return wrapInLayout(
+    `${titlePrefix}Timesheet #${vars.invoice_number || "N/A"}`,
+    body,
+    portalName,
+    ACCENT_BLUE
+  );
 }

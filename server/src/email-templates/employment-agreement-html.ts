@@ -1,4 +1,10 @@
 import Handlebars from "handlebars";
+import { wrapInLayout, ensureHelpers, S, getPortalName, textFooter, ACCENT_GREEN, accentBtn, accentBtnOutline } from "./_layout.js";
+
+const btn = accentBtn(ACCENT_GREEN);
+const btnOutline = accentBtnOutline(ACCENT_GREEN);
+
+ensureHelpers();
 
 interface EmploymentAgreementEmailVars {
   recipientName: string;
@@ -7,131 +13,85 @@ interface EmploymentAgreementEmailVars {
   portalName?: string;
 }
 
-const templateSource = `
-<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="UTF-8">
-    <title>Employment Agreement - Action Required</title>
-    <style>
-      body { font-family: Arial, sans-serif; background: #f8f9fa; color: #222; margin: 0; padding: 0; }
-      .container { background: #fff; max-width: 600px; margin: 40px auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); padding: 32px 24px; }
-      h2 { color: #2e7d32; margin-top: 0; }
-      .info-box { background-color: #e8f5e9; border: 1px solid #c8e6c9; border-radius: 6px; padding: 16px; margin: 20px 0; text-align: center; }
-      .info-title { font-size: 16px; font-weight: bold; color: #2e7d32; margin-bottom: 4px; }
-      .info-text { color: #388e3c; margin: 0; font-size: 14px; }
-      .options-container { margin: 24px 0; }
-      .option { background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 20px; margin-bottom: 12px; }
-      .option-title { font-size: 14px; font-weight: bold; color: #1e293b; margin-bottom: 8px; }
-      .option-desc { font-size: 13px; color: #64748b; margin-bottom: 12px; }
-      .button-container { text-align: center; }
-      .button-primary { display: inline-block; background-color: #1976d2; color: white !important; padding: 12px 24px; text-decoration: none !important; border-radius: 5px; font-weight: bold; font-size: 14px; }
-      .button-secondary { display: inline-block; background-color: #f1f5f9; color: #1e293b !important; padding: 12px 24px; text-decoration: none !important; border-radius: 5px; font-weight: bold; border: 1px solid #cbd5e1; font-size: 14px; }
-      .warning { background-color: #fff3e0; border-left: 4px solid #ff9800; padding: 16px; margin: 20px 0; border-radius: 4px; }
-      .warning-title { font-weight: bold; color: #e65100; margin-bottom: 8px; }
-      .warning-text { color: #e65100; margin: 0; font-size: 13px; }
-      .steps { margin: 16px 0; padding-left: 20px; }
-      .steps li { margin-bottom: 8px; color: #475569; font-size: 14px; }
-      .footer { font-size: 12px; color: #888; margin-top: 32px; border-top: 1px solid #eee; padding-top: 16px; }
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <h2>Your Account Has Been Verified!</h2>
+const bodySource = `
+<p style="${S.p}">Hi {{recipientName}},</p>
 
-      <p>Hello {{recipientName}},</p>
+<div style="${S.infoBox}text-align:center;">
+  <p style="margin:0 0 4px;font-size:14px;font-weight:600;color:#1a1a1a;">Account Verified</p>
+  <p style="margin:0;${S.muted}">Your email has been successfully verified</p>
+</div>
 
-      <div class="info-box">
-        <div class="info-title">Email Verification Complete</div>
-        <p class="info-text">Your account has been successfully verified.</p>
-      </div>
+<p style="${S.p}">Before you can access your account, please review and sign the <strong style="${S.strong}">Employment Agreement</strong>. You can do this in one of two ways:</p>
 
-      <p>Before you can access your account, you need to review and sign the <strong>Employment Agreement</strong>. Please choose one of the options below:</p>
-
-      <div class="options-container">
-        <div class="option">
-          <div class="option-title">Option 1: Sign Directly</div>
-          <p class="option-desc">Use this link to go directly to the employment agreement, review it, and sign immediately.</p>
-          <div class="button-container">
-            <a href="{{consentUrl}}" class="button-primary" style="color: white !important; text-decoration: none;">Review & Sign Agreement</a>
-          </div>
-        </div>
-
-        <div class="option">
-          <div class="option-title">Option 2: Sign via Your Account</div>
-          <p class="option-desc">Log in to your account and you will be guided to the employment agreement before accessing the portal.</p>
-          <div class="button-container">
-            <a href="{{loginUrl}}" class="button-secondary" style="text-decoration: none;">Log In to Your Account</a>
-          </div>
-        </div>
-      </div>
-
-      <p><strong>Next steps after signing:</strong></p>
-      <ol class="steps">
-        <li>Review and sign the employment agreement</li>
-        <li>Complete your profile</li>
-        <li>Start using the portal</li>
-      </ol>
-
-      <div class="warning">
-        <div class="warning-title">Important:</div>
-        <p class="warning-text">The direct agreement link above is unique to you and should not be shared with others. You will not be able to access your account until the employment agreement is signed.</p>
-      </div>
-
-      <p>If you have any questions, please contact our support team.</p>
-
-      <p>Best regards,<br><b>The {{portalName}} Team</b></p>
-
-      <div class="footer">
-        This is an automated message from {{portalName}}. If you believe this message was sent in error, please contact our support team.
-      </div>
+<div style="margin:20px 0;">
+  <div style="${S.infoBox}">
+    <p style="margin:0 0 8px;font-size:14px;font-weight:600;color:#1a1a1a;">Option 1 — Sign directly</p>
+    <p style="margin:0 0 16px;${S.muted}">Go straight to the agreement, review it, and sign right away.</p>
+    <div style="text-align:center;">
+      <a href="{{consentUrl}}" style="${btn}">Review &amp; Sign Agreement</a>
     </div>
-  </body>
-</html>
+  </div>
+</div>
+
+<div style="margin:20px 0;">
+  <div style="${S.infoBox}">
+    <p style="margin:0 0 8px;font-size:14px;font-weight:600;color:#1a1a1a;">Option 2 — Sign via your account</p>
+    <p style="margin:0 0 16px;${S.muted}">Log in to your account and you'll be guided to the agreement.</p>
+    <div style="text-align:center;">
+      <a href="{{loginUrl}}" style="${btnOutline}">Log In to Your Account</a>
+    </div>
+  </div>
+</div>
+
+<h3 style="${S.h3}">What happens next</h3>
+<p style="${S.p}">1. Review and sign the employment agreement<br>2. Complete your profile<br>3. Start using the portal</p>
+
+<div style="${S.notice}">
+  <strong>Please note:</strong> The direct signing link is unique to you and should not be shared. You won't be able to access your account until the agreement is signed.
+</div>
+
+<p style="${S.p}">If you have any questions, feel free to reach out to our support team.</p>
+
+<p style="${S.pLast}">Best regards,<br><strong style="${S.strong}">The Team at {{portalName}}</strong></p>
 `;
 
-const compiledTemplate = Handlebars.compile(templateSource);
+const compiledBody = Handlebars.compile(bodySource);
 
 export function employmentAgreementHtmlTemplate(vars: EmploymentAgreementEmailVars): string {
-  const portalName = process.env.PORTAL_NAME || 'Ops Portal';
-  return compiledTemplate({
-    ...vars,
-    portalName
-  });
+  const portalName = getPortalName();
+  const body = compiledBody({ ...vars, portalName });
+  return wrapInLayout("Your Account Has Been Verified", body, portalName, ACCENT_GREEN);
 }
 
 export function employmentAgreementTextTemplate(vars: EmploymentAgreementEmailVars): string {
-  const portalName = process.env.PORTAL_NAME || 'Ops Portal';
-  return `
-Your Account Has Been Verified!
+  const portalName = getPortalName();
+  return `Your Account Has Been Verified
 
-Hello ${vars.recipientName},
+Hi ${vars.recipientName},
 
-Your account has been successfully verified.
+Your email has been successfully verified.
 
-Before you can access your account, you need to review and sign the Employment Agreement. You have two options:
+Before you can access your account, please review and sign the Employment Agreement. You have two options:
 
-OPTION 1: SIGN DIRECTLY
-Use this link to go directly to the employment agreement:
+OPTION 1 — SIGN DIRECTLY
+Go straight to the agreement:
 ${vars.consentUrl}
 
-OPTION 2: SIGN VIA YOUR ACCOUNT
-Log in to your account and you will be guided to the agreement:
+OPTION 2 — SIGN VIA YOUR ACCOUNT
+Log in and you'll be guided to the agreement:
 ${vars.loginUrl}
 
-NEXT STEPS AFTER SIGNING:
+What happens next:
 1. Review and sign the employment agreement
 2. Complete your profile
 3. Start using the portal
 
-IMPORTANT: The direct agreement link above is unique to you and should not be shared with others. You will not be able to access your account until the employment agreement is signed.
+Please note: The direct signing link is unique to you and should not be shared. You won't be able to access your account until the agreement is signed.
 
-If you have any questions, please contact our support team.
+If you have any questions, feel free to reach out to our support team.
 
 Best regards,
-The ${portalName} Team
+The Team at ${portalName}
 
----
-This is an automated message from ${portalName}. Please do not reply to this email.
-  `.trim();
+${textFooter(portalName)}`.trim();
 }

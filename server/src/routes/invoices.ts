@@ -5,7 +5,7 @@ import { apiRateLimiter, sanitizeInputs } from "../middleware/security.js";
 import { activityLogger } from "../middleware/activityLogger.js";
 import dotenv from "dotenv";
 import sgMail from "@sendgrid/mail";
-import { invoiceHtmlTemplate } from "../email-templates/invoice-html.js";
+import { invoiceHtmlTemplate, invoiceTextTemplate } from "../email-templates/invoice-html.js";
 import { decode } from "html-entities";
 import { formatFromEmail } from "../middleware/emailNotifier.js";
 
@@ -1402,7 +1402,7 @@ router.post(
       const pdfBase64 = pdfBuffer.toString("base64");
 
       // Prepare email content
-      const html = invoiceHtmlTemplate({
+      const templateVars = {
         invoiceNumber: invoice.invoice_number,
         invoiceDate: invoice.invoice_date,
         dueDate: invoice.due_date,
@@ -1411,7 +1411,9 @@ router.post(
         grandTotal: invoice.grand_total,
         currency: invoice.currency,
         messageOnInvoice: invoice.invoice_data?.messageOnInvoice,
-      });
+      };
+      const html = invoiceHtmlTemplate(templateVars);
+      const text = invoiceTextTemplate(templateVars);
       const subject = `Invoice #${invoice.invoice_number} for ${client.company_name}`;
 
       // Prepare the main PDF attachment
@@ -1470,6 +1472,7 @@ router.post(
         from: formatFromEmail(process.env.DEFAULT_FROM_EMAIL as string),
         subject,
         html,
+        text,
         attachments,
       };
       console.log("[SendGrid] Sending email with payload:", {
