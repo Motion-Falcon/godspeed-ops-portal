@@ -26,14 +26,12 @@ Full details: docs/email-triggers-documentation.txt
  6  | Jobseeker removed from a position      | DELETE /api/positions/:id/assign/     | Jobseeker (TO)                                | Update Regarding Your Position Assignment    | SendGrid
     |                                        | :candidateId                          |                                               |                                              |
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------
- 7  | Timesheet created (email opted in)     | POST /api/timesheets                  | Jobseeker billing or primary email (TO)       | Timesheet Summary - Timesheet #{number}      | SendGrid
-    |                                        |                                       | INVOICE_CC_EMAILS env var (CC)                |                                              |
+ 7  | Timesheet created (email opted in)     | POST /api/timesheets                  | Jobseeker billing or primary email (TO only)  | Timesheet Summary - Timesheet #{number}      | SendGrid
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------
- 8  | Timesheet manually re-sent             | POST /api/timesheets/send-email/:id   | Jobseeker billing or primary email (TO)       | Timesheet Summary - Timesheet #{number}      | SendGrid
-    |                                        |                                       | INVOICE_CC_EMAILS env var (CC)                |                                              |
+ 8  | Timesheet manually re-sent             | POST /api/timesheets/send-email/:id   | Jobseeker billing or primary email (TO only)  | Timesheet Summary - Timesheet #{number}      | SendGrid
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------
- 9  | Timesheet updated (email opted in)     | PUT /api/timesheets/:id               | Jobseeker billing or primary email (TO)       | Updated Timesheet Summary -                  | SendGrid
-    |                                        |                                       | INVOICE_CC_EMAILS env var (CC)                | Timesheet #{number}                          |
+ 9  | Timesheet updated (email opted in)     | PUT /api/timesheets/:id               | Jobseeker billing or primary email (TO only)  | Updated Timesheet Summary -                  | SendGrid
+    |                                        |                                       |                                               | Timesheet #{number}                          |
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------
  10 | Invoice sent to client                 | POST /api/invoices/:id/send-email     | Specified recipient email (TO)                | Invoice #{number} for {client_name}          | SendGrid
     |                                        |                                       | Client CC emails per client config (CC)       |                                              |
@@ -61,7 +59,8 @@ NOTES
 - #1 and the unverified path of #2a use Supabase's inviteUserByEmail, which sends
   Supabase's built-in invitation email (template customisable in Supabase dashboard).
 
-- For #7, #8, #9: billing email is preferred over primary email when both are set.
+- For #7, #8, #9: billing email is preferred over primary email when both are set,
+  and no CC recipients are used.
 
 - For #10: CC list is built dynamically from client record flags (invoice_cc2,
   invoice_cc_dispatch, invoice_cc_accounts, etc.) plus the INVOICE_CC_EMAILS env var.
