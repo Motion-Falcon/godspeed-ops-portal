@@ -301,7 +301,10 @@ export const complete2FAAPI = async (email: string, password: string) => {
  *
  * @param accessToken - Explicit Supabase access token to bypass axios interceptor timing issues
  */
-export const sendConfirmationWelcomeEmails = async (accessToken?: string) => {
+export const sendConfirmationWelcomeEmails = async (
+  accessToken?: string,
+  suppressErrors: boolean = true
+) => {
   try {
     const headers: Record<string, string> = {};
     if (accessToken) {
@@ -309,7 +312,10 @@ export const sendConfirmationWelcomeEmails = async (accessToken?: string) => {
     }
     const response = await api.post("/api/auth/send-confirmation-welcome", {}, { headers });
     return response.data;
-  } catch {
+  } catch (error) {
+    if (!suppressErrors) {
+      throw error;
+    }
     // Silently fail — this is a best-effort fire-and-forget call.
   }
 };
