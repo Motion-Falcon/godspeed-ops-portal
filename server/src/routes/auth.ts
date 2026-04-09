@@ -215,35 +215,35 @@ router.post('/register',
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    // Determine user type based on email
-    let userType = 'jobseeker'; // Default type
-    
-    // Check for recruiter email pattern
-    if (
-      email.includes("@godspeedxp") ||
-      email.includes("@motionfalcon") ||
-      email.includes("@canhiresolutions") ||
-      email.includes("@allstaff") ||
-      email.includes("@hdgroup")
-    ) {
-      userType = 'recruiter';
-    }
-    
-    // Create user metadata with phoneNumber if provided
-    const userMetadata: Record<string, any> = {
-      name,
-      user_type: userType,
-      // Ensure user_role exists for new users
-      user_role: userType === 'recruiter' ? ['recruiter'] : (userType === 'admin' ? ['admin'] : []),
-      // Ensure hierarchy container exists for new users
-      hierarchy: {
-        org_id: null,
-        team_id: null,
-        manager_id: null,
-        level: 0,
-      },
-      phone_verified: true
-    };
+      // Determine user type based on email
+      let userType = "jobseeker"; // Default type
+
+      // Check for recruiter email pattern
+      if (email.includes("@godspeedxp") || email.includes("@motionfalcon")) {
+        userType = "recruiter";
+      }
+
+      // Create user metadata with phoneNumber if provided
+      const userMetadata: Record<string, any> = {
+        name,
+        portal_name: process.env.PORTAL_NAME || 'Ops Portal',
+        user_type: userType,
+        // Ensure user_role exists for new users
+        user_role:
+          userType === "recruiter"
+            ? ["recruiter"]
+            : userType === "admin"
+            ? ["admin"]
+            : [],
+        // Ensure hierarchy container exists for new users
+        hierarchy: {
+          org_id: null,
+          team_id: null,
+          manager_id: null,
+          level: 0,
+        },
+        phone_verified: true,
+      };
 
     // If phone number is provided, store it in metadata for now
     if (normalizedPhone) {
@@ -760,12 +760,105 @@ router.get('/check-phone', async (req, res) => {
     return res.json({
       available: !phoneExists,
       phone: phone,
-      ...(phoneExists && { existingUserId: userId })
+      ...(phoneExists && { existingUserId: userId }),
     });
-    
   } catch (error) {
-    console.error('Error checking phone availability:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    console.error("Error checking phone availability:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+/**
+ * POST /api/auth/send-confirmation-welcome
+ *
+ * Called by the client immediately after a jobseeker confirms their email.
+ * Sends two emails:
+ *   1. Welcome email — same template used when a recruiter creates the profile
+ *   2. Onboarding reminder — "Complete Your Account Setup"
+ *
+ * Idempotent: the `welcome_email_sent` flag in user_metadata prevents
+ * duplicate sends. Jobseekers whose profiles were created by a recruiter
+ * already have this flag set, so this endpoint is a no-op for them.
+ */
+router.post("/send-confirmation-welcome", authenticateToken, async (req, res) => {
+  try {
+    const user = req.user!;
+    const userId = user.id;
+    const meta = user.user_metadata || {};
+
+    // Only for jobseekers
+    if (meta.user_type !== "jobseeker") {
+      return res.status(200).json({ skipped: true, reason: "not_a_jobseeker" });
+    }
+
+    // Already sent (recruiter-created flow or previous call)
+    if (meta.welcome_email_sent === true) {
+      return res.status(200).json({ skipped: true, reason: "already_sent" });
+    }
+
+    const email = user.email;
+    if (!email) {
+      return res.status(400).json({ error: "User has no email address" });
+    }
+
+    // Set flag immediately to prevent race-condition duplicate sends
+    await supabase.auth.admin.updateUserById(userId, {
+      user_metadata: { ...meta, welcome_email_sent: true },
+    });
+
+    const clientUrl = (process.env.CLIENT_URL || "").replace(/\/$/, "");
+    const firstName = (meta.name || "").split(" ")[0] || "there";
+    const portalUrl = clientUrl;
+    const onboardingUrl = clientUrl + "/login";
+
+    const sgMail = (await import("@sendgrid/mail")).default;
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY!);
+
+    const { formatFromEmail } = await import("../middleware/emailNotifier.js");
+    const fromEmail = formatFromEmail(process.env.DEFAULT_FROM_EMAIL as string);
+
+    const { jobseekerWelcomeHtmlTemplate } = await import("../email-templates/jobseeker-welcome-html.js");
+    const { jobseekerWelcomeTextTemplate } = await import("../email-templates/jobseeker-welcome-txt.js");
+    const { onboardingReminderHtmlTemplate } = await import("../email-templates/onboarding-reminder-html.js");
+    const { onboardingReminderTextTemplate } = await import("../email-templates/onboarding-reminder-txt.js");
+
+    const welcomeHtml = jobseekerWelcomeHtmlTemplate({ first_name: firstName, portal_url: portalUrl });
+    const welcomeText = jobseekerWelcomeTextTemplate({ first_name: firstName, portal_url: portalUrl });
+    const onboardingHtml = onboardingReminderHtmlTemplate({ name: firstName, onboarding_url: onboardingUrl });
+    const onboardingText = onboardingReminderTextTemplate({ name: firstName, onboarding_url: onboardingUrl });
+
+    // Send both emails (fire both; collect errors without blocking)
+    const results = await Promise.allSettled([
+      sgMail.send({
+        to: email,
+        from: fromEmail,
+        subject: `Welcome to ${process.env.PORTAL_NAME || "Ops Portal"}`,
+        html: welcomeHtml,
+        text: welcomeText,
+      }),
+      sgMail.send({
+        to: email,
+        from: fromEmail,
+        subject: "Complete Your Account Setup — Action Required",
+        html: onboardingHtml,
+        text: onboardingText,
+      }),
+    ]);
+
+    const errors = results
+      .filter((r) => r.status === "rejected")
+      .map((r) => (r as PromiseRejectedResult).reason?.message);
+
+    if (errors.length > 0) {
+      console.error("[send-confirmation-welcome] Some emails failed:", errors);
+    } else {
+      console.log(`[send-confirmation-welcome] Welcome + onboarding emails sent to ${email}`);
+    }
+
+    return res.status(200).json({ sent: true, errors: errors.length > 0 ? errors : undefined });
+  } catch (error) {
+    console.error("[send-confirmation-welcome] Error:", error);
+    return res.status(500).json({ error: "Failed to send confirmation welcome emails" });
   }
 });
 

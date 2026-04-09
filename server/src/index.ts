@@ -20,6 +20,7 @@ import reportsRoutes from "./routes/reports.js";
 import calendarRoutes from "./routes/calendar.js";
 import consentRoutes from "./routes/consent.js";
 import dropdownOptionsRoutes from "./routes/dropdownOptions.js";
+import emailTemplateRoutes from "./routes/emailTemplates.js";
 import {
   configureSecurityHeaders,
   forceTLS,
@@ -136,6 +137,9 @@ app.use("/api/calendar", calendarRoutes);
 
 // Consent routes
 app.use("/api/consent", consentRoutes);
+
+// Email template preview routes
+app.use("/api/email-templates", emailTemplateRoutes);
 
 // Dropdown options routes (client form dropdowns)
 app.use("/api/dropdown-options", dropdownOptionsRoutes);
