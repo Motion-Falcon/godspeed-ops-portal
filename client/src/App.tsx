@@ -74,6 +74,7 @@ import { CreateConsentPage } from './pages/Consent/CreateConsentPage';
 import { ConsentDetailPage } from './pages/Consent/ConsentDetailPage';
 import { ConsentTemplatePage } from './pages/Consent/ConsentTemplatePage';
 import { ConsentPage } from './pages/Consent/ConsentPage';
+import { OnboardingConsent } from './pages/Consent/OnboardingConsent';
 import { TermsOfService } from './pages/Legal/TermsOfService';
 import { PrivacyPolicy } from './pages/Legal/PrivacyPolicy';
 
@@ -111,6 +112,7 @@ function App() {
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/profile" element={<UserProfile />} />
                 <Route path="/profile/create" element={<ProfileCreate />} />
+                <Route path="/onboarding-consent" element={<OnboardingConsent />} />
                 <Route path="/jobseekers/:id/edit" element={<ProfileEdit />} />
                 <Route path="/jobseekers/:id" element={<JobSeekerProfile />} />
                 <Route path="/training-modules" element={<TrainingModules />} />
