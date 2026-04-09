@@ -268,20 +268,23 @@ router.post(
         phone_verified: true,
       };
 
-      // If phone number is provided, store it in metadata for now
-      if (normalizedPhone) {
-        userMetadata.phoneNumber = normalizedPhone;
-      }
+    // If phone number is provided, store it in metadata for now
+    if (normalizedPhone) {
+      userMetadata.phoneNumber = normalizedPhone;
+    }
 
-      // Register the user with email and password
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        phone: normalizedPhone,
-        options: {
-          data: userMetadata,
-        },
-      });
+    const clientURL = (process.env.CLIENT_URL || 'http://localhost:5173').replace(/\/$/, '');
+    
+    // Register the user with email and password
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      phone: normalizedPhone,
+      options: {
+        data: userMetadata,
+        emailRedirectTo: `${clientURL}/email-confirmed`,
+      }
+    });
 
       if (error) {
         return res.status(400).json({ error: error.message });
@@ -715,11 +718,13 @@ router.post("/resend-verification", async (req, res) => {
       return res.status(400).json({ error: "Email is required" });
     }
 
+    const clientURL = (process.env.CLIENT_URL || 'http://localhost:5173').replace(/\/$/, '');
+
     const { error } = await supabase.auth.resend({
       type: "signup",
       email,
       options: {
-        emailRedirectTo: `${process.env.CLIENT_URL}/login`,
+        emailRedirectTo: `${clientURL}/email-confirmed`,
       },
     });
 
