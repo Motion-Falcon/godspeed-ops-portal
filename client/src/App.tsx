@@ -12,6 +12,7 @@ import {
 import { Signup } from './pages/Authentication/Signup';
 import { Login } from './pages/Authentication/Login';
 import { VerificationPending } from './pages/Authentication/VerificationPending';
+import { EmailConfirmed } from './pages/Authentication/EmailConfirmed';
 import { CompleteSignup } from './pages/Authentication/CompleteSignup';
 import { ProfileVerificationPending } from './pages/JobseekerManagement/ProfileVerificationPending';
 import { ProfileVerificationRejected } from './pages/JobseekerManagement/ProfileVerificationRejected';
@@ -100,6 +101,7 @@ function App() {
               {/* Routes accessible regardless of auth status */}
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/two-factor-auth" element={<TwoFactorAuth />} />
+              <Route path="/email-confirmed" element={<EmailConfirmed />} />
               
               {/* Public consent page (no authentication required) */}
               <Route path="/consent" element={<ConsentPage />} />
