@@ -2122,8 +2122,8 @@ router.get('/jobseeker-onboarding-consent',
             });
 
             const sgMail = (await import('@sendgrid/mail')).default;
-            const { formatFromEmail } = await import('../middleware/emailNotifier.js');
-            const fromEmail = formatFromEmail(process.env.DEFAULT_FROM_EMAIL as string);
+            const { getNoReplyFromEmail } = await import('../middleware/emailNotifier.js');
+            const fromEmail = getNoReplyFromEmail();
 
             await sgMail.send({
               to: userEmail,

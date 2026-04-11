@@ -5,7 +5,7 @@ import { sanitizeInputs, apiRateLimiter } from "../middleware/security.js";
 import { activityLogger } from "../middleware/activityLogger.js";
 import dotenv from "dotenv";
 import { PositionData } from "../types.js";
-import { emailNotifier } from "../middleware/emailNotifier.js";
+import { emailNotifier, getAssignmentFromEmail } from "../middleware/emailNotifier.js";
 import { jobseekerAssignmentTextTemplate } from "../email-templates/jobseeker-assignment-txt.js";
 import { jobseekerAssignmentHtmlTemplate } from "../email-templates/jobseeker-assignment-html.js";
 import { jobseekerRemovalHtmlTemplate } from "../email-templates/jobseeker-removal-html.js";
@@ -1497,6 +1497,7 @@ router.post(
       // Prepare email data with attachment if available
       const emailData: any = {
         to: candidateEmail,
+        from: getAssignmentFromEmail(),
         subject,
         text: bodyLines.join("\n").trim(),
         html,
@@ -1843,6 +1844,7 @@ router.delete(
       const subject = subjectLine.replace("Subject:", "").trim();
       return {
         to: candidateEmail,
+        from: getAssignmentFromEmail(),
         subject,
         text: bodyLines.join("\n").trim(),
         html,

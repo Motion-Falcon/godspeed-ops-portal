@@ -3,7 +3,7 @@ import { authenticateToken, authorizeRoles } from "../middleware/auth.js";
 import { createClient } from "@supabase/supabase-js";
 import { apiRateLimiter, sanitizeInputs } from "../middleware/security.js";
 import { activityLogger } from "../middleware/activityLogger.js";
-import { emailNotifier, formatFromEmail } from "../middleware/emailNotifier.js";
+import { emailNotifier, getNoReplyFromEmail } from "../middleware/emailNotifier.js";
 import { timesheetHtmlTemplate } from "../email-templates/timesheet-html.js";
 import { timesheetTextTemplate } from "../email-templates/timesheet-txt.js";
 import {
@@ -709,10 +709,9 @@ router.post(
 
       try {
         // Send email
-        const fromEmail = process.env.DEFAULT_FROM_EMAIL || "godspeed@aimotion.com";
         await sgMail.send({
           to: emailTo,
-          from: formatFromEmail(fromEmail),
+          from: getNoReplyFromEmail(),
           subject,
           text: bodyLines.join("\n").trim(),
           html,
