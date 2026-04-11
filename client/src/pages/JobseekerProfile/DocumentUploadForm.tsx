@@ -91,6 +91,79 @@ interface DocumentItemProps {
   requiresWorkPermit?: boolean;
 }
 
+const getMandatoryDocumentSequence = (
+  requiresWorkPermit: boolean
+): string[] =>
+  requiresWorkPermit
+    ? ["sin", "government_id", "work_permit"]
+    : ["sin", "government_id"];
+
+const createMandatoryDocument = (documentType: string): DocumentItemData => ({
+  documentType,
+  documentTitle: "",
+  documentNotes: "",
+  id: crypto.randomUUID(),
+});
+
+const getMandatoryDocumentTypeAtIndex = (
+  index: number,
+  requiresWorkPermit: boolean
+): string | null => getMandatoryDocumentSequence(requiresWorkPermit)[index] || null;
+
+const normalizeDocumentsForForm = (
+  documents: DocumentItemData[],
+  requiresWorkPermit: boolean
+): DocumentItemData[] => {
+  const mandatoryTypes = getMandatoryDocumentSequence(requiresWorkPermit);
+  const nextDocuments = [...documents];
+  const consumedIndexes = new Set<number>();
+
+  const normalizedMandatoryDocs = mandatoryTypes.map((type) => {
+    const existingIndex = nextDocuments.findIndex(
+      (doc, index) => !consumedIndexes.has(index) && doc.documentType === type
+    );
+
+    if (existingIndex !== -1) {
+      consumedIndexes.add(existingIndex);
+      return {
+        ...nextDocuments[existingIndex],
+        documentType: type,
+      };
+    }
+
+    return createMandatoryDocument(type);
+  });
+
+  const remainingDocuments = nextDocuments.filter((_, index) => {
+    return !consumedIndexes.has(index);
+  });
+
+  return [...normalizedMandatoryDocs, ...remainingDocuments];
+};
+
+const areDocumentsEquivalent = (
+  currentDocuments: DocumentItemData[],
+  nextDocuments: DocumentItemData[]
+): boolean => {
+  if (currentDocuments.length !== nextDocuments.length) {
+    return false;
+  }
+
+  return currentDocuments.every((doc, index) => {
+    const nextDoc = nextDocuments[index];
+
+    return (
+      doc.id === nextDoc.id &&
+      doc.documentType === nextDoc.documentType &&
+      doc.documentTitle === nextDoc.documentTitle &&
+      doc.documentNotes === nextDoc.documentNotes &&
+      doc.documentPath === nextDoc.documentPath &&
+      doc.documentFileName === nextDoc.documentFileName &&
+      doc.documentFile === nextDoc.documentFile
+    );
+  });
+};
+
 // Helper function to decode HTML entities for slashes and handle URL encoding issues
 const decodePath = (path: string | undefined): string | undefined => {
   if (!path) return undefined;
@@ -245,17 +318,19 @@ function DocumentItem({
   // Check if we have a field error for the file
   const hasFileError = !!getDocumentFieldError(index, "documentFile");
 
-  // Check if this is a mandatory document
-  // SIN (index 0) is always mandatory
-  // Government ID (index 1) is always mandatory
-  // Work permit (index 2) is only mandatory if SIN starts with 9
-  const isMandatoryDocument = index === 0 || (index === 1 && documentType === "government_id") || (index === 2 && requiresWorkPermit && documentType === "work_permit");
+  const mandatoryDocumentType = getMandatoryDocumentTypeAtIndex(
+    index,
+    requiresWorkPermit
+  );
+  const resolvedDocumentType = documentType || mandatoryDocumentType || "";
+  const isMandatoryDocument =
+    mandatoryDocumentType !== null && resolvedDocumentType === mandatoryDocumentType;
 
   // Add conditional text/behavior based on edit mode and mandatory status
   const documentLabel = isMandatoryDocument
     ? `${t("profileCreate.documents.mandatoryDocument")} ${index + 1} - ${t(
         `profileCreate.documents.documentTypes.${
-          documentType || (index === 0 ? "sin" : index === 1 ? "government_id" : "work_permit")
+          resolvedDocumentType
         }`
       )}`
     : `${t("profileCreate.documents.documentLabel").replace(
@@ -441,7 +516,7 @@ function DocumentItem({
                     "{{type}}",
                     t(
                       `profileCreate.documents.documentTypes.${
-                        documentType || (index === 0 ? "sin" : index === 1 ? "government_id" : "work_permit")
+                        resolvedDocumentType
                       }`
                     ).toLowerCase()
                   )}
@@ -457,7 +532,7 @@ function DocumentItem({
                   className="form-input mandatory-document-type"
                   value={t(
                     `profileCreate.documents.documentTypes.${
-                      documentType || (index === 0 ? "sin" : index === 1 ? "government_id" : "work_permit")
+                      resolvedDocumentType
                     }`
                   )}
                   disabled
@@ -466,14 +541,14 @@ function DocumentItem({
                 <input
                   type="hidden"
                   {...register(`documents.${index}.documentType`)}
-                  value={documentType || (index === 0 ? "sin" : index === 1 ? "government_id" : "work_permit")}
+                  value={resolvedDocumentType}
                 />
                 <div className="mandatory-reason">
-                  {index === 0
+                  {mandatoryDocumentType === "sin"
                     ? t("profileCreate.documents.sinMandatoryReason")
-                    : index === 1 && documentType === "government_id"
+                    : mandatoryDocumentType === "government_id"
                     ? t("profileCreate.documents.governmentIdMandatoryReason")
-                    : documentType === "work_permit" && requiresWorkPermit
+                    : mandatoryDocumentType === "work_permit" && requiresWorkPermit
                     ? t("profileCreate.documents.workPermitMandatoryReason")
                     : ""}
                 </div>
@@ -680,8 +755,7 @@ function DocumentItem({
         )}
 
         <div className="remove-document-container">
-          {/* Don't allow removing SIN (index 0), Government ID (index 1), or work permit (index 2) if it's mandatory */}
-          {index > 2 || (index === 2 && (!requiresWorkPermit || documentType !== "work_permit")) ? (
+          {!isMandatoryDocument ? (
             <button
               type="button"
               className="button attachment-upload-button"
@@ -734,7 +808,7 @@ export function DocumentUploadForm({
   const [mandatoryDocsInitialized, setMandatoryDocsInitialized] =
     useState(false);
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove, replace } = useFieldArray({
     control,
     name: "documents",
   });
@@ -747,249 +821,37 @@ export function DocumentUploadForm({
   // Check if SIN starts with 9 (temporary residents need work permit)
   const requiresWorkPermit: boolean = !!(sinNumber && typeof sinNumber === "string" && sinNumber.trim() !== "" && sinNumber.trim().startsWith("9"));
 
-  // Initialize mandatory documents if not already present
   useEffect(() => {
-    // Case 1: No documents exist - create mandatory documents
-    if (!mandatoryDocsInitialized && fields.length === 0) {
-      // Add SIN document (mandatory for everyone)
-      const sinDoc = {
-        documentType: "sin",
-        documentTitle: "",
-        documentNotes: "",
-        id: crypto.randomUUID(),
-      } as DocumentItemData;
+    const currentDocuments = (getValues("documents") || []) as DocumentItemData[];
+    const normalizedDocuments = normalizeDocumentsForForm(
+      currentDocuments,
+      requiresWorkPermit
+    );
 
-      append(sinDoc);
+    if (!areDocumentsEquivalent(currentDocuments, normalizedDocuments)) {
+      replace(normalizedDocuments);
 
-      // Add Government ID document (mandatory for everyone)
-      const governmentIdDoc = {
-        documentType: "government_id",
-        documentTitle: "",
-        documentNotes: "",
-        id: crypto.randomUUID(),
-      } as DocumentItemData;
-      append(governmentIdDoc);
-
-      // Only add work permit document if SIN starts with 9
-      if (requiresWorkPermit) {
-        const workPermitDoc = {
-          documentType: "work_permit",
-          documentTitle: "",
-          documentNotes: "",
-          id: crypto.randomUUID(),
-        } as DocumentItemData;
-        append(workPermitDoc);
+      if (mandatoryDocsInitialized || userInteracted || isSubmitted || submitCount > 0) {
+        setTimeout(() => {
+          trigger("documents");
+        }, 100);
       }
-
-      setMandatoryDocsInitialized(true);
     }
-    // Case 2: Documents exist but first document doesn't have mandatory type (edit mode)
-    else if (!mandatoryDocsInitialized && fields.length > 0) {
-      // Ensure first document is SIN
-      if (fields[0].documentType !== "sin") {
-        setValue("documents.0.documentType", "sin");
-      }
 
-      // Check if government ID document exists
-      const hasGovernmentIdDoc = fields.some(
-        (doc) => doc.documentType === "government_id"
-      );
-      const governmentIdIndex = fields.findIndex(
-        (doc) => doc.documentType === "government_id"
-      );
-
-      // Ensure second document is Government ID
-      if (!hasGovernmentIdDoc) {
-        // Add government ID document if it doesn't exist
-        const governmentIdDoc = {
-          documentType: "government_id",
-          documentTitle: "",
-          documentNotes: "",
-          id: crypto.randomUUID(),
-        } as DocumentItemData;
-        // Insert at position 1
-        const currentFields = getValues("documents");
-        const newFields = [
-          currentFields[0],
-          governmentIdDoc,
-          ...currentFields.slice(1),
-        ];
-        // Clear and rebuild
-        currentFields.forEach((_, idx) => {
-          if (idx > 0) remove(1);
-        });
-        newFields.slice(1).forEach((doc) => append(doc));
-      } else if (governmentIdIndex !== 1) {
-        // Government ID exists but not in position 1, move it to position 1
-        // First, remove it from current position
-        remove(governmentIdIndex);
-        // Then add it at position 1
-        const governmentIdDoc = {
-          documentType: "government_id",
-          documentTitle: "",
-          documentNotes: "",
-          id: crypto.randomUUID(),
-        } as DocumentItemData;
-        // Insert at position 1
-        const currentFields = getValues("documents");
-        const newFields = [
-          currentFields[0],
-          governmentIdDoc,
-          ...currentFields.slice(1),
-        ];
-        // Clear and rebuild
-        currentFields.forEach((_, idx) => {
-          if (idx > 0) remove(1);
-        });
-        newFields.slice(1).forEach((doc) => append(doc));
-      } else {
-        // Government ID is in correct position, ensure it's set correctly
-        if (fields[1].documentType !== "government_id") {
-          setValue("documents.1.documentType", "government_id");
-        }
-      }
-
-      // Check if work permit document exists
-      const hasWorkPermitDoc = fields.some(
-        (doc) => doc.documentType === "work_permit"
-      );
-      const workPermitIndex = fields.findIndex(
-        (doc) => doc.documentType === "work_permit"
-      );
-
-      if (requiresWorkPermit) {
-        // SIN starts with 9 - work permit is required
-        if (!hasWorkPermitDoc) {
-          // Add work permit document if it doesn't exist
-          const workPermitDoc = {
-            documentType: "work_permit",
-            documentTitle: "",
-            documentNotes: "",
-            id: crypto.randomUUID(),
-          } as DocumentItemData;
-          append(workPermitDoc);
-        } else if (workPermitIndex !== 2) {
-          // Work permit exists but not in position 2, move it to position 2
-          // First, remove it from current position
-          remove(workPermitIndex);
-          // Then add it at position 2
-          const workPermitDoc = {
-            documentType: "work_permit",
-            documentTitle: "",
-            documentNotes: "",
-            id: crypto.randomUUID(),
-          } as DocumentItemData;
-          // Insert at position 2
-          const currentFields = getValues("documents");
-          const newFields = [
-            currentFields[0],
-            currentFields[1],
-            workPermitDoc,
-            ...currentFields.slice(2),
-          ];
-          // Clear and rebuild
-          currentFields.forEach((_, idx) => {
-            if (idx > 1) remove(2);
-          });
-          newFields.slice(2).forEach((doc) => append(doc));
-        }
-      } else {
-        // SIN doesn't start with 9 - work permit is NOT required
-        // Remove work permit document if it exists
-        if (hasWorkPermitDoc && workPermitIndex !== -1) {
-          remove(workPermitIndex);
-        }
-      }
-
-      // Trigger validation after fixing the types
-      setTimeout(() => {
-        trigger("documents");
-      }, 100);
-
+    if (!mandatoryDocsInitialized) {
       setMandatoryDocsInitialized(true);
     }
   }, [
-    fields.length,
-    append,
-    remove,
-    mandatoryDocsInitialized,
-    isEditMode,
-    setValue,
     fields,
-    requiresWorkPermit,
-    trigger,
     getValues,
+    mandatoryDocsInitialized,
+    requiresWorkPermit,
+    replace,
+    submitCount,
+    isSubmitted,
+    trigger,
+    userInteracted,
   ]);
-
-  // Effect to handle SIN changes - add/remove work permit document dynamically
-  useEffect(() => {
-    // Skip if mandatory docs haven't been initialized yet
-    if (!mandatoryDocsInitialized) return;
-
-    const hasWorkPermitDoc = fields.some(
-      (doc) => doc.documentType === "work_permit"
-    );
-    const workPermitIndex = fields.findIndex(
-      (doc) => doc.documentType === "work_permit"
-    );
-
-    if (requiresWorkPermit) {
-      // SIN starts with 9 - work permit is required
-      if (!hasWorkPermitDoc) {
-        // Add work permit document at position 2 (after SIN and Government ID)
-        const workPermitDoc = {
-          documentType: "work_permit",
-          documentTitle: "",
-          documentNotes: "",
-          id: crypto.randomUUID(),
-        } as DocumentItemData;
-        // Insert at position 2 if we have at least 2 documents (SIN and Government ID)
-        if (fields.length >= 2) {
-          const currentFields = getValues("documents");
-          const newFields = [
-            currentFields[0],
-            currentFields[1],
-            workPermitDoc,
-            ...currentFields.slice(2),
-          ];
-          // Clear and rebuild
-          currentFields.forEach((_, idx) => {
-            if (idx > 1) remove(2);
-          });
-          newFields.slice(2).forEach((doc) => append(doc));
-        } else {
-          append(workPermitDoc);
-        }
-      } else if (workPermitIndex !== 2 && fields.length >= 2) {
-        // Work permit exists but not in position 2, move it to position 2
-        remove(workPermitIndex);
-        const workPermitDoc = {
-          documentType: "work_permit",
-          documentTitle: "",
-          documentNotes: "",
-          id: crypto.randomUUID(),
-        } as DocumentItemData;
-        const currentFields = getValues("documents");
-        const newFields = [
-          currentFields[0],
-          currentFields[1],
-          workPermitDoc,
-          ...currentFields.slice(2),
-        ];
-        // Clear and rebuild
-        currentFields.forEach((_, idx) => {
-          if (idx > 1) remove(2);
-        });
-        newFields.slice(2).forEach((doc) => append(doc));
-      }
-    } else {
-      // SIN doesn't start with 9 - work permit is NOT required
-      // Remove work permit document if it exists
-      if (hasWorkPermitDoc && workPermitIndex !== -1) {
-        remove(workPermitIndex);
-      }
-    }
-  }, [sinNumber, requiresWorkPermit, mandatoryDocsInitialized, fields, append, remove, getValues]);
 
   // Add a specific effect to handle initial load in edit mode
   useEffect(() => {
