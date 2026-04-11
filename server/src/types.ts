@@ -53,6 +53,7 @@ export interface ProfileData {
   paymentMethod: string;
   hstGst?: string;
   cashDeduction?: string;
+  sinPayrollHoursCap?: string;
   overtimeEnabled: boolean;
   overtimeHours?: string;
   overtimeBillRate?: string;
@@ -113,6 +114,7 @@ export interface DbJobseekerProfile {
   payment_method: string;
   hst_gst?: string;
   cash_deduction?: string;
+  sin_payroll_hours_cap?: number | string | null;
   overtime_enabled: boolean;
   overtime_hours?: string;
   overtime_bill_rate?: string;

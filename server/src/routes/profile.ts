@@ -12,6 +12,10 @@ import { jobseekerWelcomeHtmlTemplate } from "../email-templates/jobseeker-welco
 import { jobseekerWelcomeTextTemplate } from "../email-templates/jobseeker-welcome-txt.js";
 import dotenv from "dotenv";
 import { ProfileData, Document, DbJobseekerProfile } from "../types.js";
+import {
+  isHybridPaymentMethod,
+  profileUsesCashDeduction,
+} from "../utils/paymentMethods.js";
 
 dotenv.config();
 
@@ -423,9 +427,15 @@ router.post(
         pay_rate: profileData.payRate,
         payment_method: profileData.paymentMethod,
         hst_gst: profileData.hstGst,
-        cash_deduction: (profileData.paymentMethod === "Cash" || profileData.paymentMethod === "e-Transfer")
+        cash_deduction: profileUsesCashDeduction(profileData.paymentMethod)
           ? profileData.cashDeduction
           : "0",
+        sin_payroll_hours_cap: isHybridPaymentMethod(profileData.paymentMethod)
+          ? profileData.sinPayrollHoursCap != null &&
+            String(profileData.sinPayrollHoursCap).trim() !== ""
+            ? Number.parseFloat(String(profileData.sinPayrollHoursCap))
+            : null
+          : null,
         overtime_enabled: profileData.overtimeEnabled,
         overtime_hours: profileData.overtimeHours,
         overtime_bill_rate: profileData.overtimeBillRate,

@@ -212,6 +212,7 @@ export function ProfileCreate({
       paymentMethod: "",
       hstGst: "",
       cashDeduction: "0",
+      sinPayrollHoursCap: "",
       overtimeEnabled: false,
       overtimeHours: "",
       overtimeBillRate: "",
@@ -299,9 +300,18 @@ export function ProfileCreate({
             payRate: profileData.payRate || "",
             paymentMethod: profileData.paymentMethod || "",
             hstGst: profileData.hstGst || "",
-            cashDeduction: (profileData.paymentMethod === "Cash" || profileData.paymentMethod === "e-Transfer")
-              ? (profileData.cashDeduction || "0")
-              : "0",
+            cashDeduction:
+              profileData.paymentMethod === "Cash" ||
+              profileData.paymentMethod === "e-Transfer" ||
+              profileData.paymentMethod === "SIN and cash" ||
+              profileData.paymentMethod === "SIN and e-Transfer"
+                ? profileData.cashDeduction || "0"
+                : "0",
+            sinPayrollHoursCap:
+              profileData.sinPayrollHoursCap != null &&
+              profileData.sinPayrollHoursCap !== ""
+                ? String(profileData.sinPayrollHoursCap)
+                : "",
             overtimeEnabled: profileData.overtimeEnabled || false,
             overtimeHours: profileData.overtimeHours || "",
             overtimeBillRate: profileData.overtimeBillRate || "",
@@ -1298,6 +1308,7 @@ export function ProfileCreate({
           "paymentMethod",
           "hstGst",
           "cashDeduction",
+          "sinPayrollHoursCap",
           "overtimeEnabled",
           "overtimeHours",
           "overtimeBillRate",
