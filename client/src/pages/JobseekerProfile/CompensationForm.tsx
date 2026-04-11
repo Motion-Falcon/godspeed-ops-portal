@@ -4,6 +4,10 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/language/language-provider";
 import { PAYRATE_TYPES, PAYMENT_METHODS } from "../../constants/formOptions";
 import { CompensationFormData } from "./profileSchemas";
+import {
+  isHybridPaymentMethod,
+  profileUsesCashDeductionField,
+} from "../../lib/hybridPayrollSplit";
 
 interface CompensationFormProps {
   currentStep: number;
@@ -19,14 +23,20 @@ export function CompensationForm({ allFields }: CompensationFormProps) {
 
   // Watch payment method to conditionally show cash deduction field
   const paymentMethod = watch("paymentMethod");
-  const isCashOrEtransfer = paymentMethod === "Cash" || paymentMethod === "e-Transfer";
+  const showCashDeduction = profileUsesCashDeductionField(paymentMethod);
+  const showSinHoursCap = isHybridPaymentMethod(paymentMethod);
 
-  // Reset cash deduction to "0" when payment method changes to non-cash/e-transfer
   useEffect(() => {
-    if (paymentMethod && !isCashOrEtransfer) {
+    if (paymentMethod && !showCashDeduction) {
       setValue("cashDeduction", "0");
     }
-  }, [paymentMethod, isCashOrEtransfer, setValue]);
+  }, [paymentMethod, showCashDeduction, setValue]);
+
+  useEffect(() => {
+    if (paymentMethod && !showSinHoursCap) {
+      setValue("sinPayrollHoursCap", "");
+    }
+  }, [paymentMethod, showSinHoursCap, setValue]);
 
   // Function to check if we should show an error for a specific field
   const shouldShowError = (fieldName: string) => {
@@ -115,6 +125,21 @@ export function CompensationForm({ allFields }: CompensationFormProps) {
             <p className="error-message">{allErrors.payRate?.message}</p>
           )}
         </div>
+
+        <div className="form-group">
+          <label htmlFor="hstGst" className="form-label">
+            {t('profileCreate.compensation.hstGst')}
+          </label>
+          <select id="hstGst" className="form-input" {...register("hstGst")}>
+            <option value="">None</option>
+            <option value="5">5%</option>
+            <option value="13">13%</option>
+            <option value="15">15%</option>
+          </select>
+          {shouldShowError("hstGst") && (
+            <p className="error-message">{allErrors.hstGst?.message}</p>
+          )}
+        </div>
       </div>
       <div className="form-row">
         <div className="form-group">
@@ -142,22 +167,35 @@ export function CompensationForm({ allFields }: CompensationFormProps) {
           )}
         </div>
 
-        <div className="form-group">
-          <label htmlFor="hstGst" className="form-label">
-            {t('profileCreate.compensation.hstGst')}
-          </label>
-          <select id="hstGst" className="form-input" {...register("hstGst")}>
-            <option value="">None</option>
-            <option value="5">5%</option>
-            <option value="13">13%</option>
-            <option value="15">15%</option>
-          </select>
-          {shouldShowError("hstGst") && (
-            <p className="error-message">{allErrors.hstGst?.message}</p>
-          )}
-        </div>
+        {showSinHoursCap && (
+          <div className="form-group">
+            <label
+              htmlFor="sinPayrollHoursCap"
+              className="form-label"
+              data-required="*"
+            >
+              {t("profileCreate.compensation.sinPayrollHoursCap")}
+            </label>
+            <input
+              id="sinPayrollHoursCap"
+              type="number"
+              min="0.01"
+              step="0.01"
+              className="form-input"
+              placeholder={t(
+                "profileCreate.compensation.sinPayrollHoursCapPlaceholder"
+              )}
+              {...register("sinPayrollHoursCap")}
+            />
+            {shouldShowError("sinPayrollHoursCap") && (
+              <p className="error-message">
+                {allErrors.sinPayrollHoursCap?.message}
+              </p>
+            )}
+          </div>
+        )}
 
-        {isCashOrEtransfer && (
+        {showCashDeduction && (
           <div className="form-group">
             <label htmlFor="cashDeduction" className="form-label">
               {t('profileCreate.compensation.cashDeduction')}

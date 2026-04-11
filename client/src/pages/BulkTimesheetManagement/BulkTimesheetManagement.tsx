@@ -20,6 +20,11 @@ import {
 import { Building, Minus } from "lucide-react";
 import "../../styles/pages/BulkTimesheetManagement.css";
 import { PositionWithOvertime } from "../TimesheetManagement/TimesheetManagement";
+import {
+  buildTimesheetRowsForPayroll,
+  isHybridPaymentMethod,
+  type ComputedTimesheetRow,
+} from "../../lib/hybridPayrollSplit";
 
 interface TimesheetEntry {
   date: string;
@@ -202,13 +207,13 @@ export function BulkTimesheetManagement() {
     return dates;
   };
 
-  // Calculation logic (same as TimesheetManagement.tsx)
   const calculateTimesheetTotals = (
     entries: TimesheetEntry[],
     bonusAmount = 0,
     deductionAmount = 0,
     jobseekerPaymentMethod?: string,
-    jobseekerCashDeduction?: string
+    jobseekerCashDeduction?: string,
+    sinPayrollHoursCap?: number | string | null
   ) => {
     if (!selectedPosition) {
       return {
@@ -220,41 +225,12 @@ export function BulkTimesheetManagement() {
     }
 
     const position = selectedPosition as PositionWithOvertime;
-
-    // Calculate total weekly hours from all entries
-    const totalWeeklyHours = entries.reduce(
-      (sum, entry) => sum + entry.hours,
-      0
-    );
-
-    let weeklyRegularHours: number;
-    let weeklyOvertimeHours: number;
-
-    // Only calculate overtime if overtime is enabled for this position
-    if (position.overtimeEnabled) {
-      // Get overtime threshold (default to 40 if not specified)
-      const overtimeThreshold = position.overtimeHours
-        ? parseFloat(position.overtimeHours)
-        : 0;
-
-      // Calculate weekly regular and overtime hours
-      weeklyRegularHours = Math.min(totalWeeklyHours, overtimeThreshold);
-      weeklyOvertimeHours = Math.max(0, totalWeeklyHours - overtimeThreshold);
-    } else {
-      // If overtime is not enabled, all hours are regular hours
-      weeklyRegularHours = totalWeeklyHours;
-      weeklyOvertimeHours = 0;
-    }
-
-    // Calculate pay rates
     const regularPayRate = parseFloat(position.regularPayRate || "0");
     const premiumPayRate = parseFloat(position.premiumPayRate || "0");
     const effectivePayRate = regularPayRate + premiumPayRate;
     const regularBillRate = parseFloat(position.billRate || "0");
-
     let overtimePayRate = effectivePayRate;
     let overtimeBillRate = regularBillRate;
-
     if (
       position.overtimeEnabled &&
       position.overtimePayRate &&
@@ -264,33 +240,79 @@ export function BulkTimesheetManagement() {
       overtimeBillRate = parseFloat(position.overtimeBillRate);
     }
 
-    // Calculate base pay (using effective pay rate = regular + premium)
-    const baseJobseekerPay =
-      weeklyRegularHours * effectivePayRate +
-      weeklyOvertimeHours * overtimePayRate;
+    const daily = entries.map((e) => ({ date: e.date, hours: e.hours }));
+    const cap = parseFloat(String(sinPayrollHoursCap ?? "0"));
+    const rows = buildTimesheetRowsForPayroll({
+      entries: daily,
+      overtimeEnabled: !!position.overtimeEnabled,
+      overtimeHoursRaw: position.overtimeHours,
+      effectiveRegularPayRate: effectivePayRate,
+      overtimePayRate,
+      regularBillRate,
+      overtimeBillRate,
+      paymentMethod: jobseekerPaymentMethod || "",
+      sinPayrollHoursCap: Number.isFinite(cap) ? cap : 0,
+      cashDeductionPct: parseFloat(jobseekerCashDeduction || "0"),
+      bonusAmount,
+      deductionAmount,
+    });
 
-    // Apply cash deduction percentage if payment method is Cash or e-Transfer
-    let cashDeductionAmount = 0;
-    if (jobseekerPaymentMethod === "Cash" || jobseekerPaymentMethod === "e-Transfer") {
-      const cashDeductionPct = parseFloat(jobseekerCashDeduction || "0");
-      if (cashDeductionPct > 0) {
-        cashDeductionAmount = baseJobseekerPay * (cashDeductionPct / 100);
-      }
+    if (rows.length === 0) {
+      return {
+        totalRegularHours: 0,
+        totalOvertimeHours: 0,
+        jobseekerPay: 0,
+        clientBill: 0,
+      };
     }
 
-    const totalJobseekerPay = baseJobseekerPay - cashDeductionAmount + bonusAmount - deductionAmount;
-
-    // Calculate totals
-    const clientBill =
-      weeklyRegularHours * regularBillRate +
-      weeklyOvertimeHours * overtimeBillRate;
-
     return {
-      totalRegularHours: weeklyRegularHours,
-      totalOvertimeHours: weeklyOvertimeHours,
-      jobseekerPay: totalJobseekerPay,
-      clientBill,
+      totalRegularHours: rows.reduce((s, r) => s + r.totalRegularHours, 0),
+      totalOvertimeHours: rows.reduce((s, r) => s + r.totalOvertimeHours, 0),
+      jobseekerPay: rows.reduce((s, r) => s + r.totalJobseekerPay, 0),
+      clientBill: rows.reduce((s, r) => s + r.totalClientBill, 0),
     };
+  };
+
+  const getPayrollPreviewRows = (
+    ts: JobseekerTimesheet
+  ): ComputedTimesheetRow[] => {
+    if (!selectedPosition) return [];
+    const position = selectedPosition as PositionWithOvertime;
+    const regularPayRate = parseFloat(position.regularPayRate || "0");
+    const premiumPayRate = parseFloat(position.premiumPayRate || "0");
+    const effectivePayRate = regularPayRate + premiumPayRate;
+    const regularBillRate = parseFloat(position.billRate || "0");
+    let overtimePayRate = effectivePayRate;
+    let overtimeBillRate = regularBillRate;
+    if (
+      position.overtimeEnabled &&
+      position.overtimePayRate &&
+      position.overtimeBillRate
+    ) {
+      overtimePayRate = parseFloat(position.overtimePayRate);
+      overtimeBillRate = parseFloat(position.overtimeBillRate);
+    }
+    const daily = ts.entries.map((e) => ({ date: e.date, hours: e.hours }));
+    const cap = parseFloat(
+      String(ts.jobseeker.jobseekerProfile?.sin_payroll_hours_cap ?? "0")
+    );
+    return buildTimesheetRowsForPayroll({
+      entries: daily,
+      overtimeEnabled: !!position.overtimeEnabled,
+      overtimeHoursRaw: position.overtimeHours,
+      effectiveRegularPayRate: effectivePayRate,
+      overtimePayRate,
+      regularBillRate,
+      overtimeBillRate,
+      paymentMethod: ts.jobseeker.jobseekerProfile?.payment_method || "",
+      sinPayrollHoursCap: Number.isFinite(cap) ? cap : 0,
+      cashDeductionPct: parseFloat(
+        ts.jobseeker.jobseekerProfile?.cash_deduction || "0"
+      ),
+      bonusAmount: ts.bonusAmount,
+      deductionAmount: ts.deductionAmount,
+    });
   };
 
   // Helper to calculate base pay (regular + overtime, no bonus/deduction)
@@ -330,7 +352,8 @@ export function BulkTimesheetManagement() {
           ts.bonusAmount,
           ts.deductionAmount,
           ts.jobseeker.jobseekerProfile?.payment_method,
-          ts.jobseeker.jobseekerProfile?.cash_deduction
+          ts.jobseeker.jobseekerProfile?.cash_deduction,
+          ts.jobseeker.jobseekerProfile?.sin_payroll_hours_cap
         );
 
         // Get the position to check if overtime is enabled
@@ -384,7 +407,8 @@ export function BulkTimesheetManagement() {
           bonus,
           ts.deductionAmount,
           ts.jobseeker.jobseekerProfile?.payment_method,
-          ts.jobseeker.jobseekerProfile?.cash_deduction
+          ts.jobseeker.jobseekerProfile?.cash_deduction,
+          ts.jobseeker.jobseekerProfile?.sin_payroll_hours_cap
         );
         return { ...ts, bonusAmount: bonus, ...totals };
       })
@@ -400,7 +424,8 @@ export function BulkTimesheetManagement() {
           ts.bonusAmount,
           deduction,
           ts.jobseeker.jobseekerProfile?.payment_method,
-          ts.jobseeker.jobseekerProfile?.cash_deduction
+          ts.jobseeker.jobseekerProfile?.cash_deduction,
+          ts.jobseeker.jobseekerProfile?.sin_payroll_hours_cap
         );
         return { ...ts, deductionAmount: deduction, ...totals };
       })
@@ -557,64 +582,93 @@ export function BulkTimesheetManagement() {
             })
           );
 
-          // Generate unique invoice number for each timesheet
-          const individualInvoiceNumber = await generateInvoiceNumber();
-          setCurrentInvoiceNumber(individualInvoiceNumber);
-
-          // Transform daily hours to the format expected by createTimesheet
           const dailyHours = ts.entries.map((entry) => ({
             date: entry.date,
             hours: entry.hours,
           }));
 
-          // Transform data to the format expected by createTimesheet API, ensuring all payments include bonuses/deductions
-          const timesheetData: Omit<
-            TimesheetData,
-            | "id"
-            | "createdAt"
-            | "updatedAt"
-            | "createdByUserId"
-            | "updatedByUserId"
-          > = {
-            invoiceNumber: individualInvoiceNumber,
-            jobseekerProfileId:
-              ts.jobseeker.jobseekerProfile?.id || ts.jobseeker.id,
-            jobseekerUserId: ts.jobseeker.candidate_id,
-            positionId: selectedPosition.id,
-            weekStartDate: selectedWeekStart,
-            weekEndDate: weekEndDate.toISOString().split("T")[0],
-            dailyHours: dailyHours,
-            totalRegularHours: ts.totalRegularHours,
-            totalOvertimeHours: ts.totalOvertimeHours,
-            regularPayRate: parseFloat(position.regularPayRate || "0"),
-            premiumPayRate: parseFloat(position.premiumPayRate || "0"),
-            overtimePayRate:
-              position.overtimeEnabled && position.overtimePayRate
-                ? parseFloat(position.overtimePayRate)
-                : parseFloat(position.regularPayRate || "0"),
-            regularBillRate: parseFloat(position.billRate || "0"),
-            overtimeBillRate:
-              position.overtimeEnabled && position.overtimeBillRate
-                ? parseFloat(position.overtimeBillRate)
-                : parseFloat(position.billRate || "0"),
-            totalJobseekerPay: ts.jobseekerPay, // This already includes bonus and deductions
-            totalClientBill: ts.clientBill,
-            overtimeEnabled: position.overtimeEnabled || false,
+          const regularPayRate = parseFloat(position.regularPayRate || "0");
+          const premiumPayRate = parseFloat(position.premiumPayRate || "0");
+          const effectivePayRate = regularPayRate + premiumPayRate;
+          const regularBillRate = parseFloat(position.billRate || "0");
+          let overtimePayRate = effectivePayRate;
+          let overtimeBillRate = regularBillRate;
+          if (
+            position.overtimeEnabled &&
+            position.overtimePayRate &&
+            position.overtimeBillRate
+          ) {
+            overtimePayRate = parseFloat(position.overtimePayRate);
+            overtimeBillRate = parseFloat(position.overtimeBillRate);
+          }
+
+          const sinCap = parseFloat(
+            String(ts.jobseeker.jobseekerProfile?.sin_payroll_hours_cap ?? "0")
+          );
+          const payrollRows = buildTimesheetRowsForPayroll({
+            entries: dailyHours,
+            overtimeEnabled: !!position.overtimeEnabled,
+            overtimeHoursRaw: position.overtimeHours,
+            effectiveRegularPayRate: effectivePayRate,
+            overtimePayRate,
+            regularBillRate,
+            overtimeBillRate,
+            paymentMethod:
+              ts.jobseeker.jobseekerProfile?.payment_method || "",
+            sinPayrollHoursCap: Number.isFinite(sinCap) ? sinCap : 0,
+            cashDeductionPct: parseFloat(
+              ts.jobseeker.jobseekerProfile?.cash_deduction || "0"
+            ),
             bonusAmount: ts.bonusAmount || 0,
             deductionAmount: ts.deductionAmount || 0,
-            notes: ts.notes || "",
-            emailSent: ts.emailSent,
-          };
+          });
 
-          // Create individual timesheet
-          const result = await createTimesheet(timesheetData);
-          createdTimesheets.push(result.timesheet);
+          for (const row of payrollRows) {
+            const individualInvoiceNumber = await generateInvoiceNumber();
+            setCurrentInvoiceNumber(individualInvoiceNumber);
+
+            const timesheetData: Omit<
+              TimesheetData,
+              | "id"
+              | "createdAt"
+              | "updatedAt"
+              | "createdByUserId"
+              | "updatedByUserId"
+            > = {
+              invoiceNumber: individualInvoiceNumber,
+              jobseekerProfileId:
+                ts.jobseeker.jobseekerProfile?.id || ts.jobseeker.id,
+              jobseekerUserId: ts.jobseeker.candidate_id,
+              positionId: selectedPosition.id,
+              weekStartDate: selectedWeekStart,
+              weekEndDate: weekEndDate.toISOString().split("T")[0],
+              dailyHours: row.dailyHours,
+              totalRegularHours: row.totalRegularHours,
+              totalOvertimeHours: row.totalOvertimeHours,
+              regularPayRate,
+              premiumPayRate,
+              overtimePayRate,
+              regularBillRate,
+              overtimeBillRate,
+              totalJobseekerPay: row.totalJobseekerPay,
+              totalClientBill: row.totalClientBill,
+              overtimeEnabled: position.overtimeEnabled || false,
+              bonusAmount: row.bonusAmount,
+              deductionAmount: row.deductionAmount,
+              notes: ts.notes || "",
+              emailSent: ts.emailSent,
+              paySplitSegment: row.paySplitSegment,
+              linePaymentMethod: row.linePaymentMethod,
+            };
+
+            const result = await createTimesheet(timesheetData);
+            createdTimesheets.push(result.timesheet);
+          }
 
           console.log(
-            `Created timesheet ${i + 1}/${
+            `Created ${payrollRows.length} timesheet row(s) for jobseeker ${i + 1}/${
               jobseekersWithHours.length
-            } for ${jobseekerName}:`,
-            result
+            } (${jobseekerName})`
           );
         } catch (error) {
           let errorMessage = "Unknown error";
@@ -1269,81 +1323,175 @@ export function BulkTimesheetManagement() {
                       </div>
 
                       <div className="timesheet-invoice-table-body">
-                        {/* Regular Hours Line Item */}
-                        <div className="timesheet-invoice-line-item">
-                          <div className="timesheet-col-description">
-                            <div className="timesheet-item-title">
-                              {t(
-                                "bulkTimesheetManagement.form.totalRegularHours"
-                              )}
-                            </div>
-                            <div className="timesheet-item-subtitle">
-                              {t(
-                                "bulkTimesheetManagement.form.standardWorkHours"
-                              )}{parseFloat((selectedPosition as PositionWithOvertime)?.premiumPayRate || "0") > 0 ? ` (incl. premium $${(selectedPosition as PositionWithOvertime)?.premiumPayRate}/h)` : ""}
-                            </div>
-                          </div>
-                          <div className="timesheet-col-hours">
-                            {ts.totalRegularHours.toFixed(2)}
-                          </div>
-                          <div className="timesheet-col-rate">
-                            ${(parseFloat(selectedPosition?.regularPayRate || "0") + parseFloat((selectedPosition as PositionWithOvertime)?.premiumPayRate || "0")).toFixed(2)}
-                          </div>
-                          <div className="timesheet-col-amount">
-                            $
-                            {(
-                              ts.totalRegularHours *
-                              (parseFloat(
-                                selectedPosition?.regularPayRate || "0"
-                              ) + parseFloat(
-                                (selectedPosition as PositionWithOvertime)?.premiumPayRate || "0"
-                              ))
-                            ).toFixed(2)}
-                          </div>
-                        </div>
+                        {(() => {
+                          const previewRows = getPayrollPreviewRows(ts);
+                          const positionOt =
+                            selectedPosition as PositionWithOvertime;
+                          const regularPayRate = parseFloat(
+                            selectedPosition?.regularPayRate || "0"
+                          );
+                          const premiumPayRate = parseFloat(
+                            positionOt?.premiumPayRate || "0"
+                          );
+                          const effectivePayRate =
+                            regularPayRate + premiumPayRate;
+                          let overtimePayRate = effectivePayRate;
+                          if (
+                            positionOt?.overtimeEnabled &&
+                            positionOt.overtimePayRate
+                          ) {
+                            overtimePayRate = parseFloat(
+                              positionOt.overtimePayRate
+                            );
+                          }
+                          const hybridPreview =
+                            isHybridPaymentMethod(
+                              ts.jobseeker.jobseekerProfile?.payment_method
+                            ) && previewRows.length > 0;
 
-                        {/* Overtime Hours Line Item (if applicable) */}
-                        {ts.totalOvertimeHours > 0 && (
-                          <div className="timesheet-invoice-line-item">
-                            <div className="timesheet-col-description">
-                              <div className="timesheet-item-title">
-                                {t(
-                                  "bulkTimesheetManagement.form.overtimeHours"
-                                )}
+                          if (hybridPreview) {
+                            return (
+                              <>
+                                {previewRows.map((row) => {
+                                  const regH = row.totalRegularHours;
+                                  const otH = row.totalOvertimeHours;
+                                  const segmentBase =
+                                    regH * effectivePayRate +
+                                    otH * overtimePayRate;
+                                  const rateLabel =
+                                    otH > 0 && regH > 0
+                                      ? "—"
+                                      : otH > 0
+                                        ? `$${overtimePayRate.toFixed(2)}`
+                                        : `$${effectivePayRate.toFixed(2)}`;
+                                  const payLineLabel =
+                                    row.linePaymentMethod || "Payroll";
+                                  const title =
+                                    row.paySplitSegment === "sin"
+                                      ? t(
+                                          "bulkTimesheetManagement.form.totalRegularHours"
+                                        )
+                                      : regH > 0 && otH > 0
+                                        ? t(
+                                            "bulkTimesheetManagement.form.hybridRegularAndOvertime"
+                                          )
+                                        : otH > 0
+                                          ? t(
+                                              "bulkTimesheetManagement.form.overtimeHours"
+                                            )
+                                          : t(
+                                              "bulkTimesheetManagement.form.totalRegularHours"
+                                            );
+                                  return (
+                                    <div
+                                      key={`${ts.jobseeker.id}-${row.paySplitSegment}-${payLineLabel}`}
+                                      className="timesheet-invoice-line-item"
+                                    >
+                                      <div className="timesheet-col-description">
+                                        <div className="timesheet-item-title">
+                                          {title}
+                                        </div>
+                                        <div className="timesheet-item-subtitle">
+                                          {payLineLabel}
+                                          {row.paySplitSegment === "sin" &&
+                                            premiumPayRate > 0 &&
+                                            ` (incl. premium $${positionOt?.premiumPayRate}/h)`}
+                                          {otH > 0 &&
+                                            regH > 0 &&
+                                            ` — ${regH.toFixed(2)}h reg, ${otH.toFixed(2)}h OT`}
+                                        </div>
+                                      </div>
+                                      <div className="timesheet-col-hours">
+                                        {(regH + otH).toFixed(2)}
+                                      </div>
+                                      <div className="timesheet-col-rate">
+                                        {rateLabel}
+                                      </div>
+                                      <div className="timesheet-col-amount">
+                                        ${segmentBase.toFixed(2)}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </>
+                            );
+                          }
+
+                          return (
+                            <>
+                              <div className="timesheet-invoice-line-item">
+                                <div className="timesheet-col-description">
+                                  <div className="timesheet-item-title">
+                                    {t(
+                                      "bulkTimesheetManagement.form.totalRegularHours"
+                                    )}
+                                  </div>
+                                  <div className="timesheet-item-subtitle">
+                                    {t(
+                                      "bulkTimesheetManagement.form.standardWorkHours"
+                                    )}
+                                    {premiumPayRate > 0
+                                      ? ` (incl. premium $${positionOt?.premiumPayRate}/h)`
+                                      : ""}
+                                  </div>
+                                </div>
+                                <div className="timesheet-col-hours">
+                                  {ts.totalRegularHours.toFixed(2)}
+                                </div>
+                                <div className="timesheet-col-rate">
+                                  ${effectivePayRate.toFixed(2)}
+                                </div>
+                                <div className="timesheet-col-amount">
+                                  $
+                                  {(
+                                    ts.totalRegularHours * effectivePayRate
+                                  ).toFixed(2)}
+                                </div>
                               </div>
-                              <div className="timesheet-item-subtitle">
-                                {t(
-                                  "bulkTimesheetManagement.form.exceedingHours"
-                                )}{" "}
-                                {(selectedPosition as PositionWithOvertime)
-                                  ?.overtimeHours || "40"}{" "}
-                                {t("bulkTimesheetManagement.form.hoursPerWeek")}
-                              </div>
-                            </div>
-                            <div className="timesheet-col-hours">
-                              {ts.totalOvertimeHours.toFixed(2)}
-                            </div>
-                            <div className="timesheet-col-rate">
-                              $
-                              {(selectedPosition as PositionWithOvertime)
-                                ?.overtimePayRate ||
-                                selectedPosition?.regularPayRate ||
-                                "0.00"}
-                            </div>
-                            <div className="timesheet-col-amount">
-                              $
-                              {(
-                                ts.totalOvertimeHours *
-                                parseFloat(
-                                  (selectedPosition as PositionWithOvertime)
-                                    ?.overtimePayRate ||
-                                    selectedPosition?.regularPayRate ||
-                                    "0"
-                                )
-                              ).toFixed(2)}
-                            </div>
-                          </div>
-                        )}
+
+                              {ts.totalOvertimeHours > 0 && (
+                                <div className="timesheet-invoice-line-item">
+                                  <div className="timesheet-col-description">
+                                    <div className="timesheet-item-title">
+                                      {t(
+                                        "bulkTimesheetManagement.form.overtimeHours"
+                                      )}
+                                    </div>
+                                    <div className="timesheet-item-subtitle">
+                                      {t(
+                                        "bulkTimesheetManagement.form.exceedingHours"
+                                      )}{" "}
+                                      {positionOt?.overtimeHours || "40"}{" "}
+                                      {t(
+                                        "bulkTimesheetManagement.form.hoursPerWeek"
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="timesheet-col-hours">
+                                    {ts.totalOvertimeHours.toFixed(2)}
+                                  </div>
+                                  <div className="timesheet-col-rate">
+                                    $
+                                    {positionOt?.overtimePayRate ||
+                                      selectedPosition?.regularPayRate ||
+                                      "0.00"}
+                                  </div>
+                                  <div className="timesheet-col-amount">
+                                    $
+                                    {(
+                                      ts.totalOvertimeHours *
+                                      parseFloat(
+                                        positionOt?.overtimePayRate ||
+                                          selectedPosition?.regularPayRate ||
+                                          "0"
+                                      )
+                                    ).toFixed(2)}
+                                  </div>
+                                </div>
+                              )}
+                            </>
+                          );
+                        })()}
 
                         {/* Bonus Line Item (if applicable) */}
                         {ts.bonusAmount > 0 && (

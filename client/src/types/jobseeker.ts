@@ -41,6 +41,7 @@ export interface JobSeekerProfile {
   isInactive?: boolean;
   paymentMethod?: string;
   cashDeduction?: string;
+  sinPayrollHoursCap?: number | string | null;
 }
 
 export interface JobSeekerDetailedProfile extends JobSeekerProfile {

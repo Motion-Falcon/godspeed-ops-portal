@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isHybridPaymentMethod } from "../../lib/hybridPayrollSplit";
 
 // Define the form schema types for each step
 export const getPersonalInfoSchema = (messages: Record<string, string>) =>
@@ -122,18 +123,28 @@ export const getAddressQualificationsSchema = (
   });
 
 export const getCompensationSchema = () =>
-  z.object({
-    payrateType: z.enum(["Hourly", "Daily", "Monthly"]).optional(),
-    billRate: z.string().optional(),
-    payRate: z.string().optional(),
-    paymentMethod: z.string().optional(),
-    hstGst: z.string().optional(),
-    cashDeduction: z.string().optional(),
-    overtimeEnabled: z.boolean().default(false),
-    overtimeHours: z.string().optional(),
-    overtimeBillRate: z.string().optional(),
-    overtimePayRate: z.string().optional(),
-  });
+  z
+    .object({
+      payrateType: z.enum(["Hourly", "Daily", "Monthly"]).optional(),
+      billRate: z.string().optional(),
+      payRate: z.string().optional(),
+      paymentMethod: z.string().optional(),
+      hstGst: z.string().optional(),
+      cashDeduction: z.string().optional(),
+      sinPayrollHoursCap: z.string().optional(),
+      overtimeEnabled: z.boolean().default(false),
+      overtimeHours: z.string().optional(),
+      overtimeBillRate: z.string().optional(),
+      overtimePayRate: z.string().optional(),
+    })
+    .refine(
+      (data) => {
+        if (!isHybridPaymentMethod(data.paymentMethod)) return true;
+        const v = parseFloat((data.sinPayrollHoursCap || "").trim());
+        return !Number.isNaN(v) && v > 0;
+      },
+      { path: ["sinPayrollHoursCap"], message: "SIN payroll hours required" }
+    );
 
 // Document Upload Schema
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
@@ -234,6 +245,7 @@ export const createFormSchema = (messages: Record<string, string>) => {
       paymentMethod: z.string().optional(),
       hstGst: z.string().optional(),
       cashDeduction: z.string().optional(),
+      sinPayrollHoursCap: z.string().optional(),
       overtimeEnabled: z.boolean().default(false),
       overtimeHours: z.string().optional(),
       overtimeBillRate: z.string().optional(),
@@ -370,6 +382,17 @@ export const createFormSchema = (messages: Record<string, string>) => {
       {
         message: messages.workPermitExpiryRequired,
         path: ["workPermitExpiry"],
+      }
+    )
+    .refine(
+      (data) => {
+        if (!isHybridPaymentMethod(data.paymentMethod)) return true;
+        const v = parseFloat((data.sinPayrollHoursCap || "").trim());
+        return !Number.isNaN(v) && v > 0;
+      },
+      {
+        message: "SIN payroll hours required",
+        path: ["sinPayrollHoursCap"],
       }
     );
 };

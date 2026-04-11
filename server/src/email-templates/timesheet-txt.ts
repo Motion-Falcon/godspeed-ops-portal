@@ -16,7 +16,8 @@ export function timesheetTextTemplate(vars: Record<string, any>): string {
   const cashDedPct = toNum(vars.cash_deduction_percentage);
   const cashDedAmt = toNum(vars.cash_deduction_amount);
   const totalPay = toNum(vars.total_jobseeker_pay);
-  const regularPay = totalRegH * (regularPayRate + premiumPayRate);
+  const effectiveRegularRate = regularPayRate + premiumPayRate;
+  const regularPay = totalRegH * effectiveRegularRate;
   const overtimePay = totalOtH * overtimePayRate;
 
   const dailyLines = vars.daily_hours
@@ -42,10 +43,9 @@ export function timesheetTextTemplate(vars: Record<string, any>): string {
     ``,
     `Payment Summary:`,
     `  Regular Hours: ${totalRegH} hrs`,
-    `  Regular Rate: $${regularPayRate.toFixed(2)}/hr`,
+    `  Regular Rate: $${effectiveRegularRate.toFixed(2)}/hr`,
   ];
 
-  if (premiumPayRate > 0) lines.push(`  Premium Rate: $${premiumPayRate.toFixed(2)}/hr`);
   lines.push(`  Regular Pay: $${regularPay.toFixed(2)}`);
 
   if (vars.overtime_enabled && totalOtH > 0) {

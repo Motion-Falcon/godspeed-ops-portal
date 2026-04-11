@@ -190,6 +190,25 @@
   gap: 0.5rem;
 }
 
+.timesheet-section-content.timesheet-employee-details-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem 1.25rem;
+}
+
+.timesheet-employee-details-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+@media (max-width: 720px) {
+  .timesheet-section-content.timesheet-employee-details-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
 .timesheet-detail-item {
   display: flex;
   align-items: center;
