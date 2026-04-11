@@ -40,7 +40,7 @@ Internationalization
 
 Environment
 - Client: `VITE_API_URL`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`.
-- Server: `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `SUPABASE_ANON_KEY`, `SENDGRID_API_KEY`, `DEFAULT_FROM_EMAIL`, `CLIENT_URL`, `TWILIO_*`, `AI_VERIFICATION_URL`.
+- Server: `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `SUPABASE_ANON_KEY`, `SENDGRID_API_KEY`, `NO_REPLY_FROM_EMAIL`, `ASSIGNMENT_FROM_EMAIL`, `DEFAULT_FROM_EMAIL` (fallback), `CLIENT_URL`, `TWILIO_*`, `AI_VERIFICATION_URL`.
 
 Notable Constraints / TODOs
 - Verify route `routes/jobseekers.ts` path for `'/api/profile/check-email'` to avoid double `/api` prefix.
