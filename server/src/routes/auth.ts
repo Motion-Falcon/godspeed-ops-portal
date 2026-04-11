@@ -870,8 +870,8 @@ router.post("/send-confirmation-welcome", authenticateToken, async (req, res) =>
     const sgMail = (await import("@sendgrid/mail")).default;
     sgMail.setApiKey(process.env.SENDGRID_API_KEY!);
 
-    const { formatFromEmail } = await import("../middleware/emailNotifier.js");
-    const fromEmail = formatFromEmail(process.env.DEFAULT_FROM_EMAIL as string);
+    const { getNoReplyFromEmail } = await import("../middleware/emailNotifier.js");
+    const fromEmail = getNoReplyFromEmail();
 
     const { jobseekerWelcomeHtmlTemplate } = await import("../email-templates/jobseeker-welcome-html.js");
     const { jobseekerWelcomeTextTemplate } = await import("../email-templates/jobseeker-welcome-txt.js");
@@ -1055,8 +1055,8 @@ router.post("/first-login-reminder", authenticateToken, async (req, res) => {
     const sgMail = (await import("@sendgrid/mail")).default;
     sgMail.setApiKey(process.env.SENDGRID_API_KEY!);
 
-    const { formatFromEmail } = await import("../middleware/emailNotifier.js");
-    const fromEmail = formatFromEmail(process.env.DEFAULT_FROM_EMAIL as string);
+    const { getNoReplyFromEmail } = await import("../middleware/emailNotifier.js");
+    const fromEmail = getNoReplyFromEmail();
 
     const { onboardingReminderHtmlTemplate } = await import("../email-templates/onboarding-reminder-html.js");
     const { onboardingReminderTextTemplate } = await import("../email-templates/onboarding-reminder-txt.js");

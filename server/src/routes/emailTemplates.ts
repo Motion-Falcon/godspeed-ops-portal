@@ -1,6 +1,9 @@
 import { Router, Request, Response } from "express";
 import { authenticateToken } from "../middleware/auth.js";
-import { formatFromEmail } from "../middleware/emailNotifier.js";
+import {
+  getAssignmentFromEmail,
+  getNoReplyFromEmail,
+} from "../middleware/emailNotifier.js";
 
 // Import all HTML templates
 import { confirmSignupHtmlTemplate } from "../email-templates/confirm-signup-html.js";
@@ -35,10 +38,12 @@ function requireSuperAdmin(req: Request, res: Response, next: Function) {
   next();
 }
 
-// Helper: build the formatted FROM email from ENV
-function getFromEmail(): string {
-  const raw = process.env.DEFAULT_FROM_EMAIL || "noreply@example.com";
-  return formatFromEmail(raw);
+function getTemplateFromEmail(templateId: string): string {
+  if (templateId === "jobseeker-assignment" || templateId === "jobseeker-removal") {
+    return getAssignmentFromEmail();
+  }
+
+  return getNoReplyFromEmail();
 }
 
 // Helper: build CC list from ENV
@@ -300,7 +305,6 @@ const TEMPLATES: TemplateEntry[] = [
 
 // GET /api/email-templates — List all templates
 router.get("/", authenticateToken, requireSuperAdmin, (_req: Request, res: Response) => {
-  const from = getFromEmail();
   const ccEmails = getInvoiceCcEmails();
 
   const list = TEMPLATES.map(({ id, name, subject, description, service, tone, triggerRef, attachments, dynamicCc, renderText }) => ({
@@ -312,7 +316,7 @@ router.get("/", authenticateToken, requireSuperAdmin, (_req: Request, res: Respo
     tone,
     triggerRef,
     attachments,
-    from,
+    from: getTemplateFromEmail(id),
     cc: id === "invoice" ? ccEmails : [],
     dynamicCc: dynamicCc || false,
     hasTextVersion: renderText !== null,
@@ -329,7 +333,6 @@ router.get("/:templateId/preview", authenticateToken, requireSuperAdmin, (req: R
     return res.status(404).json({ error: "Template not found" });
   }
 
-  const from = getFromEmail();
   const ccEmails = getInvoiceCcEmails();
 
   try {
@@ -345,7 +348,7 @@ router.get("/:templateId/preview", authenticateToken, requireSuperAdmin, (req: R
       tone: template.tone,
       triggerRef: template.triggerRef,
       attachments: template.attachments,
-      from,
+      from: getTemplateFromEmail(template.id),
       cc: template.id === "invoice" ? ccEmails : [],
       dynamicCc: template.dynamicCc || false,
       html,
