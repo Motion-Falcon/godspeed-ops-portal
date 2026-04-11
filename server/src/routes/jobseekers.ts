@@ -214,6 +214,41 @@ function generateUUID() {
   });
 }
 
+function hasUploadedDocument(
+  documents: DocumentRecord[] | undefined,
+  documentType: string
+): boolean {
+  if (!Array.isArray(documents)) {
+    return false;
+  }
+
+  return documents.some(
+    (document) =>
+      document.documentType === documentType &&
+      typeof document.documentPath === "string" &&
+      document.documentPath.trim().length > 0
+  );
+}
+
+function getRequiredDocumentValidationError(
+  documents: DocumentRecord[] | undefined,
+  sinNumber?: string
+): string | null {
+  if (!hasUploadedDocument(documents, "sin")) {
+    return "SIN document is required";
+  }
+
+  if (!hasUploadedDocument(documents, "government_id")) {
+    return "Government ID document is required";
+  }
+
+  if (sinNumber?.trim().startsWith("9") && !hasUploadedDocument(documents, "work_permit")) {
+    return "Work permit document is required for temporary residents";
+  }
+
+  return null;
+}
+
 // Apply only authentication middleware globally
 router.use(authenticateToken);
 // Remove the global isAdminOrRecruiter middleware and apply it to specific routes
@@ -1241,7 +1276,7 @@ router.put(
       // Get current profile documents and verification status to compare with updated documents
       const { data: currentProfile, error: docFetchError } = await supabaseAdmin
         .from("jobseeker_profiles")
-        .select("documents, verification_status")
+        .select("documents, verification_status, sin_number")
         .eq("id", id)
         .single();
 
@@ -1309,6 +1344,20 @@ router.put(
           // No changes or new document, keep as is
           return doc;
         });
+      }
+
+      const effectiveDocuments = (profileData.documents ||
+        currentProfile?.documents) as DocumentRecord[] | undefined;
+      const effectiveSinNumber =
+        typeof profileData.sinNumber === "string"
+          ? profileData.sinNumber
+          : currentProfile?.sin_number;
+      const documentValidationError = getRequiredDocumentValidationError(
+        effectiveDocuments,
+        effectiveSinNumber
+      );
+      if (documentValidationError) {
+        return res.status(400).json({ error: documentValidationError });
       }
 
       // Prepare profile data for update - convert camelCase to snake_case

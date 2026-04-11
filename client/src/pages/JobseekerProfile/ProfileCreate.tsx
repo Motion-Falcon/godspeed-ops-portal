@@ -218,17 +218,22 @@ export function ProfileCreate({
       overtimePayRate: "",
 
       // Document upload defaults - Updated for multiple documents
-      documents: [
-        {
-          documentType: "",
-          documentTitle: "",
-          documentNotes: "",
-          id: crypto.randomUUID(),
-        },
-      ],
+      documents: [],
       // documentFile is not included in defaultValues since it's a File object
     },
   });
+
+  const watchedDocuments = methods.watch("documents");
+  const recruiterEditRequiresGovernmentId =
+    isEditMode &&
+    !isJobSeeker &&
+    !(
+      watchedDocuments?.some(
+        (doc) =>
+          doc.documentType === "government_id" &&
+          (!!doc.documentPath || doc.documentFile instanceof File)
+      ) ?? false
+    );
 
   // Helper function to scroll to first error
   const scrollToError = () => {
@@ -1544,6 +1549,17 @@ export function ProfileCreate({
 
       {renderStepIndicator()}
 
+      {recruiterEditRequiresGovernmentId && (
+        <div className="profile-edit-requirement-banner">
+          <p className="profile-edit-requirement-title">
+            {t("profileCreate.missingGovernmentIdBannerTitle")}
+          </p>
+          <p className="profile-edit-requirement-copy">
+            {t("profileCreate.missingGovernmentIdBannerBody")}
+          </p>
+        </div>
+      )}
+
       {renderLoadingIndicator()}
 
       <div className={`form-card ${isLoading ? "form-loading" : ""}`}>
@@ -1619,7 +1635,15 @@ export function ProfileCreate({
                       onClick={() => {
                         setUserInteracted(true);
                       }}
-                      disabled={isLoading && justMounted.current}
+                      disabled={
+                        (isLoading && justMounted.current) ||
+                        recruiterEditRequiresGovernmentId
+                      }
+                      title={
+                        recruiterEditRequiresGovernmentId
+                          ? t("profileCreate.missingGovernmentIdSubmitDisabled")
+                          : ""
+                      }
                     >
                       {loadingStates.submitting ? (
                         <span className="loading-spinner"></span>
@@ -1638,7 +1662,15 @@ export function ProfileCreate({
                   onClick={() => {
                     setUserInteracted(true);
                   }}
-                  disabled={isLoading && justMounted.current}
+                  disabled={
+                    (isLoading && justMounted.current) ||
+                    recruiterEditRequiresGovernmentId
+                  }
+                  title={
+                    recruiterEditRequiresGovernmentId
+                      ? t("profileCreate.missingGovernmentIdSubmitDisabled")
+                      : ""
+                  }
                 >
                   {loadingStates.submitting ? (
                     <span className="loading-spinner"></span>
