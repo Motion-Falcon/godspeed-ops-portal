@@ -2,6 +2,10 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { User, CheckCircle, Clock, Eye, EyeOff, Copy, ArrowLeft } from 'lucide-react';
 import { useLanguage } from '../../contexts/language/language-provider';
+import {
+  isHybridPaymentMethod,
+  profileUsesCashDeductionField,
+} from '../../lib/hybridPayrollSplit';
 import '../../styles/pages/JobseekerProfileStyles.css';
 
 // Define a profile type based on the Supabase DB fields
@@ -36,6 +40,7 @@ interface JobseekerProfile {
   payment_method?: string;
   hst_gst?: string;
   cash_deduction?: string;
+  sin_payroll_hours_cap?: string | number | null;
   overtime_enabled?: boolean;
   overtime_hours?: string;
   overtime_bill_rate?: string;
@@ -337,7 +342,15 @@ export function ProfileAccountCreated() {
                     {renderDetailItem(t('profileAccountCreated.payRate'), state.profile.pay_rate)}
                     {renderDetailItem(t('profileAccountCreated.paymentMethod'), state.profile.payment_method)}
                     {renderDetailItem(t('profileAccountCreated.hstGst'), state.profile.hst_gst)}
-                    {(state.profile.payment_method === "Cash" || state.profile.payment_method === "e-Transfer") &&
+                    {isHybridPaymentMethod(state.profile.payment_method) &&
+                      renderDetailItem(
+                        t('jobSeekerProfile.sinPayrollHoursCap'),
+                        state.profile.sin_payroll_hours_cap != null &&
+                          state.profile.sin_payroll_hours_cap !== ''
+                          ? String(state.profile.sin_payroll_hours_cap)
+                          : undefined
+                      )}
+                    {profileUsesCashDeductionField(state.profile.payment_method) &&
                       renderDetailItem(t('profileAccountCreated.cashDeduction'), state.profile.cash_deduction)}
                     {renderDetailItem(t('profileAccountCreated.overtimeEnabled'), state.profile.overtime_enabled)}
                     {state.profile.overtime_enabled && (

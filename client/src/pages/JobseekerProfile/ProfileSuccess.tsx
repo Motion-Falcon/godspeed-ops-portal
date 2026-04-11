@@ -2,6 +2,10 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { User, CheckCircle, Clock, ArrowLeft } from 'lucide-react';
 import { useLanguage } from '../../contexts/language/language-provider';
+import {
+  isHybridPaymentMethod,
+  profileUsesCashDeductionField,
+} from '../../lib/hybridPayrollSplit';
 import '../../styles/pages/JobseekerProfileStyles.css';
 
 // Define a profile type based on the Supabase DB fields
@@ -38,6 +42,7 @@ interface JobseekerProfile {
   payment_method?: string;
   hst_gst?: string;
   cash_deduction?: string;
+  sin_payroll_hours_cap?: string | number | null;
   overtime_enabled?: boolean;
   overtime_hours?: string;
   overtime_bill_rate?: string;
@@ -245,7 +250,15 @@ export function ProfileSuccess() {
                 {renderDetailItem(t('jobSeekerProfile.payRate'), profile.pay_rate)}
                 {renderDetailItem(t('jobSeekerProfile.paymentMethod'), profile.payment_method)}
                 {renderDetailItem(t('jobSeekerProfile.hstGst'), profile.hst_gst)}
-                {(profile.payment_method === "Cash" || profile.payment_method === "e-Transfer") &&
+                {isHybridPaymentMethod(profile.payment_method) &&
+                  renderDetailItem(
+                    t('jobSeekerProfile.sinPayrollHoursCap'),
+                    profile.sin_payroll_hours_cap != null &&
+                      profile.sin_payroll_hours_cap !== ''
+                      ? String(profile.sin_payroll_hours_cap)
+                      : undefined
+                  )}
+                {profileUsesCashDeductionField(profile.payment_method) &&
                   renderDetailItem(t('jobSeekerProfile.cashDeduction'), profile.cash_deduction)}
                 {renderDetailItem(t('jobSeekerProfile.overtimeEnabled'), profile.overtime_enabled)}
                 {profile.overtime_enabled && (

@@ -33,6 +33,7 @@ export interface ProfileData {
   paymentMethod?: string;
   hstGst?: string;
   cashDeduction?: string;
+  sinPayrollHoursCap?: string;
   overtimeEnabled?: boolean;
   overtimeHours?: string;
   overtimeBillRate?: string;
