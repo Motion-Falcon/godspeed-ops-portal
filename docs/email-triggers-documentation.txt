@@ -2,7 +2,8 @@
   EMAIL TRIGGERS DOCUMENTATION — GODSPEED OPS PORTAL
   Generated: April 9, 2026
   Email Provider: SendGrid (@sendgrid/mail)
-  Default From: DEFAULT_FROM_EMAIL env var (formatted as "Ops Portal <email>")
+  Default From: NO_REPLY_FROM_EMAIL env var (formatted as "Ops Portal <email>")
+  Assignment/Removal From: ASSIGNMENT_FROM_EMAIL env var for jobseeker position assignment emails
 ================================================================================
 
 
@@ -573,7 +574,9 @@ Notes:
 ================================================================================
 
   SENDGRID_API_KEY       — SendGrid API key for authenticated sending
-  DEFAULT_FROM_EMAIL     — Sender email address (formatted with PORTAL_NAME)
+  NO_REPLY_FROM_EMAIL    — Sender email address for most emails
+  ASSIGNMENT_FROM_EMAIL  — Sender email address for jobseeker assignment/removal emails
+  DEFAULT_FROM_EMAIL     — Deprecated fallback sender if the new vars are not set
   PORTAL_NAME            — Display name used in email body and "from" field
   CLIENT_URL             — Frontend URL used to build action links
   INVOICE_CC_EMAILS      — Comma-separated fixed CC list for invoice emails

@@ -555,13 +555,13 @@ router.post(
             try {
               const { employmentAgreementHtmlTemplate, employmentAgreementTextTemplate } = await import('../email-templates/employment-agreement-html.js');
               const { default: sgMail } = await import('@sendgrid/mail');
-              const { formatFromEmail } = await import('../middleware/emailNotifier.js');
+              const { getNoReplyFromEmail } = await import('../middleware/emailNotifier.js');
 
               const clientURL = process.env.CLIENT_URL || 'http://localhost:5173';
               const recipientName = `${profileData.firstName} ${profileData.lastName}`;
               const consentUrl = `${clientURL}/consent?token=${consentToken}`;
               const loginUrl = `${clientURL}/login`;
-              const fromEmail = formatFromEmail(process.env.DEFAULT_FROM_EMAIL as string);
+              const fromEmail = getNoReplyFromEmail();
 
               await sgMail.send({
                 to: profileData.email,
