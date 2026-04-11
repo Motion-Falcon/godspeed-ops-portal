@@ -1,6 +1,6 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { AccessRole, hasAnyAccessRole } from "../lib/auth";
+import { AccessRole, hasAnyExactAccessRole } from "../lib/auth";
 
 interface RoleRouteProps {
   allowedRoles?: AccessRole[];
@@ -135,7 +135,7 @@ export const RoleRoute = ({ allowedRoles = [] }: RoleRouteProps) => {
     return <Navigate to="/login" replace />;
   }
 
-  if (allowedRoles.length > 0 && !hasAnyAccessRole(user, allowedRoles)) {
+  if (allowedRoles.length > 0 && !hasAnyExactAccessRole(user, allowedRoles)) {
     // Redirect to dashboard if user doesn't have required role
     return <Navigate to="/dashboard" replace />;
   }

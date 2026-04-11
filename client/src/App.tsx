@@ -5,8 +5,7 @@ import {
   ProtectedRoute,
   PublicRoute,
   JobSeekerRoute,
-  RecruiterRoute,
-  AdminRoute,
+  RoleRoute,
   SuperAdminRoute,
 } from './components/ProtectedRoute';
 import { Signup } from './pages/Authentication/Signup';
@@ -79,6 +78,32 @@ import { ConsentPage } from './pages/Consent/ConsentPage';
 import { OnboardingConsent } from './pages/Consent/OnboardingConsent';
 import { TermsOfService } from './pages/Legal/TermsOfService';
 import { PrivacyPolicy } from './pages/Legal/PrivacyPolicy';
+import {
+  AI_CHAT_ROLES,
+  ALL_USERS_ROLES,
+  BULK_TIMESHEET_ROLES,
+  CALENDAR_ROLES,
+  CLIENT_CREATE_ROLES,
+  CLIENT_DRAFT_ROLES,
+  CLIENT_LIST_ROLES,
+  CONSENT_CREATE_ROLES,
+  CONSENT_LIST_ROLES,
+  DROPDOWN_OPTIONS_ROLES,
+  INVOICE_MANAGEMENT_ROLES,
+  INVITE_INTERNAL_USER_ROLES,
+  JOBSEEKER_CREATE_ROLES,
+  JOBSEEKER_DRAFT_ROLES,
+  JOBSEEKER_LIST_ROLES,
+  JOBSEEKER_MANAGEMENT_CREATE_ROLES,
+  POSITION_CREATE_ROLES,
+  POSITION_DRAFT_ROLES,
+  POSITION_LIST_ROLES,
+  POSITION_MATCHING_ROLES,
+  RECRUITER_HIERARCHY_ROLES,
+  REPORTS_ROLES,
+  SIN_WORK_PERMIT_ROLES,
+  TIMESHEET_MANAGEMENT_ROLES,
+} from './constants/accessControl';
 
 function App() {
   return (
@@ -114,41 +139,101 @@ function App() {
               <Route element={<ProtectedRoute />}>
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/profile" element={<UserProfile />} />
-                <Route path="/profile/create" element={<ProfileCreate />} />
                 <Route path="/onboarding-consent" element={<OnboardingConsent />} />
-                <Route path="/jobseekers/:id/edit" element={<ProfileEdit />} />
-                <Route path="/jobseekers/:id" element={<JobSeekerProfile />} />
                 <Route path="/training-modules" element={<TrainingModules />} />
-                <Route path="/ai-chat" element={<GodspeedAIChat />} />
                 <Route path="/metric-examples" element={<MetricExamplePage />} />
 
-                <Route element={<RecruiterRoute />}>
-                  <Route path="/reports" element={<Reports />} />
+                <Route element={<RoleRoute allowedRoles={AI_CHAT_ROLES} />}>
+                  <Route path="/ai-chat" element={<GodspeedAIChat />} />
+                </Route>
+
+                <Route element={<RoleRoute allowedRoles={CALENDAR_ROLES} />}>
+                  <Route path="/calendar" element={<CalendarPage />} />
+                </Route>
+
+                <Route element={<RoleRoute allowedRoles={ALL_USERS_ROLES} />}>
+                  <Route path="/all-users-management" element={<AllUsersManagement />} />
+                </Route>
+
+                <Route element={<RoleRoute allowedRoles={JOBSEEKER_CREATE_ROLES} />}>
+                  <Route path="/profile/create" element={<ProfileCreate />} />
+                </Route>
+
+                <Route element={<RoleRoute allowedRoles={JOBSEEKER_MANAGEMENT_CREATE_ROLES} />}>
                   <Route path="/jobseekers/profile/account-created" element={<ProfileAccountCreated />} />
                   <Route path="/jobseekers/profile/success" element={<ProfileSuccess />} />
+                </Route>
+
+                <Route element={<RoleRoute allowedRoles={JOBSEEKER_LIST_ROLES} />}>
+                  <Route path="/jobseekers/:id" element={<JobSeekerProfile />} />
                   <Route path="/jobseeker-management" element={<JobSeekerManagement />} />
+                </Route>
+
+                <Route element={<RoleRoute allowedRoles={JOBSEEKER_CREATE_ROLES} />}>
+                  <Route path="/jobseekers/:id/edit" element={<ProfileEdit />} />
+                </Route>
+
+                <Route element={<RoleRoute allowedRoles={SIN_WORK_PERMIT_ROLES} />}>
                   <Route path="/sin-work-permit-management" element={<SinWorkPermitManagement />} />
-                  <Route path="/all-users-management" element={<AllUsersManagement />} />
+                </Route>
+
+                <Route element={<RoleRoute allowedRoles={JOBSEEKER_DRAFT_ROLES} />}>
                   <Route path="/jobseekers/drafts" element={<JobseekerDrafts />} />
                   <Route path="/jobseekers/drafts/edit/:id" element={<JobseekerProfileDraftEdit />} />
+                </Route>
+
+                <Route element={<RoleRoute allowedRoles={CLIENT_LIST_ROLES} />}>
                   <Route path="/client-management" element={<ClientManagement />} />
-                  <Route path="/client-management/create" element={<ClientCreate />} />
                   <Route path="/client-management/view/:id" element={<ClientView />} />
+                </Route>
+
+                <Route element={<RoleRoute allowedRoles={CLIENT_CREATE_ROLES} />}>
+                  <Route path="/client-management/create" element={<ClientCreate />} />
                   <Route path="/client-management/edit/:id" element={<ClientEdit />} />
+                </Route>
+
+                <Route element={<RoleRoute allowedRoles={CLIENT_DRAFT_ROLES} />}>
                   <Route path="/client-management/drafts" element={<ClientDrafts />} />
                   <Route path="/client-management/drafts/edit/:id" element={<ClientDraftEdit />} />
+                </Route>
+
+                <Route element={<RoleRoute allowedRoles={POSITION_LIST_ROLES} />}>
                   <Route path="/position-management" element={<PositionManagement />} />
+                  <Route path="/position-management/view/:id" element={<PositionView />} />
+                </Route>
+
+                <Route element={<RoleRoute allowedRoles={POSITION_CREATE_ROLES} />}>
                   <Route path="/position-management/create" element={<PositionCreate />} />
                   <Route path="/position-management/create-subcategory" element={<PositionCreate defaultSubcategory={true} />} />
-                  <Route path="/position-management/view/:id" element={<PositionView />} />
                   <Route path="/position-management/edit/:id" element={<PositionEdit />} />
+                </Route>
+
+                <Route element={<RoleRoute allowedRoles={POSITION_DRAFT_ROLES} />}>
                   <Route path="/position-management/drafts" element={<PositionDrafts />} />
                   <Route path="/position-management/drafts/edit/:id" element={<PositionDraftEdit />} />
+                </Route>
+
+                <Route element={<RoleRoute allowedRoles={POSITION_MATCHING_ROLES} />}>
                   <Route path="/position-matching" element={<PositionMatching />} />
+                </Route>
+
+                <Route element={<RoleRoute allowedRoles={TIMESHEET_MANAGEMENT_ROLES} />}>
                   <Route path="/timesheet-management" element={<TimesheetManagement />} />
+                </Route>
+
+                <Route element={<RoleRoute allowedRoles={BULK_TIMESHEET_ROLES} />}>
+                  <Route path="/bulk-timesheet-management" element={<BulkTimesheetManagement />} />
+                  <Route path="/bulk-timesheet-management/list" element={<BulkTimesheetList />} />
+                </Route>
+
+                <Route element={<RoleRoute allowedRoles={INVOICE_MANAGEMENT_ROLES} />}>
                   <Route path="/invoice-management" element={<InvoiceManagement />} />
                   <Route path="/invoice-management/create" element={<InvoiceManagement />} />
                   <Route path="/invoice-management/list" element={<InvoiceList />} />
+                </Route>
+
+                <Route element={<RoleRoute allowedRoles={REPORTS_ROLES} />}>
+                  <Route path="/reports" element={<Reports />} />
                   <Route path="/reports/weekly-timesheet" element={<WeeklyTimesheet />} />
                   <Route path="/reports/deduction" element={<DeductionReport />} />
                   <Route path="/reports/margin" element={<MarginReport />} />
@@ -157,18 +242,26 @@ function App() {
                   <Route path="/reports/clients" element={<ClientsReport />} />
                   <Route path="/reports/sales" element={<SalesReport />} />
                   <Route path="/reports/envelope-printing-position" element={<EnvelopePrintingReport />} />
-                  <Route path="/bulk-timesheet-management" element={<BulkTimesheetManagement />} />
-                  <Route path="/bulk-timesheet-management/list" element={<BulkTimesheetList />} />
-                  <Route path="/recruiter-hierarchy" element={<RecruiterHierarchy />} />
-                  <Route path="/calendar" element={<CalendarPage />} />
-                  <Route path="/consent-dashboard" element={<ConsentListPage />} />
-                  <Route path="/consent-dashboard/:documentId" element={<ConsentDetailPage />} />
-                  <Route path="/consent-dashboard/new" element={<CreateConsentPage />} />
-                  <Route path="/admin/dropdown-options" element={<DropdownOptionsManagement />} />
-                  {/* Add more recruiter-specific routes here */}
                 </Route>
 
-                <Route element={<AdminRoute />}>
+                <Route element={<RoleRoute allowedRoles={RECRUITER_HIERARCHY_ROLES} />}>
+                  <Route path="/recruiter-hierarchy" element={<RecruiterHierarchy />} />
+                </Route>
+
+                <Route element={<RoleRoute allowedRoles={CONSENT_LIST_ROLES} />}>
+                  <Route path="/consent-dashboard" element={<ConsentListPage />} />
+                  <Route path="/consent-dashboard/:documentId" element={<ConsentDetailPage />} />
+                </Route>
+
+                <Route element={<RoleRoute allowedRoles={CONSENT_CREATE_ROLES} />}>
+                  <Route path="/consent-dashboard/new" element={<CreateConsentPage />} />
+                </Route>
+
+                <Route element={<RoleRoute allowedRoles={DROPDOWN_OPTIONS_ROLES} />}>
+                  <Route path="/admin/dropdown-options" element={<DropdownOptionsManagement />} />
+                </Route>
+
+                <Route element={<RoleRoute allowedRoles={INVITE_INTERNAL_USER_ROLES} />}>
                   <Route path="/invite-recruiter" element={<InviteRecruiter />} />
                 </Route>
 

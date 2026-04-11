@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { authenticateToken, isAdminOrRecruiter } from "../middleware/auth.js";
+import { authenticateToken, authorizeExactRoles, isAdminOrRecruiter } from "../middleware/auth.js";
 import { activityLogger } from "../middleware/activityLogger.js";
 // Do not import the ANON client here, we'll create a service client
 // import { supabase } from '../utils/supabaseClient.js';
@@ -1539,7 +1539,7 @@ router.put(
 router.delete(
   "/profile/:id",
   authenticateToken,
-  isAdminOrRecruiter,
+  authorizeExactRoles(["admin", "recruiter_manager", "recruiter_director"]),
   activityLogger({
     onSuccess: (req, res) => {
       const jobseekerProfile = res.locals.jobseekerProfile;

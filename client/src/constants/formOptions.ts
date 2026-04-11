@@ -105,8 +105,11 @@ export type PayCycle = (typeof PAY_CYCLES)[number];
 export const USER_ROLES = [
   "admin",
   "recruiter",
-  "manager",
-  "accountant",
+  "bookkeeper",
+  "recruiter_manager",
+  "accountant_manager",
+  "sales",
+  "recruiter_director",
 ] as const;
 
 export const CANADIAN_PROVINCES = [
