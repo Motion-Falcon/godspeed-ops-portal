@@ -5,6 +5,10 @@ import { activityLogger } from "../middleware/activityLogger.js";
 // import { supabase } from '../utils/supabaseClient.js';
 import { createClient } from "@supabase/supabase-js";
 import dotenv from "dotenv";
+import {
+  isHybridPaymentMethod,
+  profileUsesCashDeduction,
+} from "../utils/paymentMethods.js";
 
 dotenv.config();
 
@@ -106,6 +110,7 @@ interface DbJobseekerProfile {
   payment_method?: string;
   hst_gst?: string;
   cash_deduction?: string;
+  sin_payroll_hours_cap?: number | string | null;
   overtime_enabled?: boolean;
   overtime_hours?: string;
   overtime_bill_rate?: string;
@@ -145,6 +150,7 @@ interface DbJobseekerProfileListView {
   last_activity_at?: string;
   payment_method?: string;
   cash_deduction?: string;
+  sin_payroll_hours_cap?: number | string | null;
 }
 
 // Interface for the simplified JobSeekerProfile list view (matches frontend expectation)
@@ -169,6 +175,7 @@ interface JobSeekerProfile {
   lastActivityAt?: string;
   paymentMethod?: string;
   cashDeduction?: string;
+  sinPayrollHoursCap?: number | string | null;
 }
 
 // Interface for the detailed JobSeekerProfile view (matches frontend expectation)
@@ -360,7 +367,8 @@ router.get("/", isAdminOrRecruiter, async (req, res) => {
         billing_email,
         last_activity_at,
         payment_method,
-        cash_deduction
+        cash_deduction,
+        sin_payroll_hours_cap
       `);
 
     // Apply all filters at database level
@@ -485,6 +493,7 @@ router.get("/", isAdminOrRecruiter, async (req, res) => {
         isInactive: lastActivity < sixtyDaysAgo,
         paymentMethod: profile.payment_method,
         cashDeduction: profile.cash_deduction,
+        sinPayrollHoursCap: profile.sin_payroll_hours_cap,
       };
       }
     );
@@ -1412,9 +1421,28 @@ router.put(
       if (profileData.hstGst) updateData.hst_gst = profileData.hstGst;
       if (profileData.cashDeduction)
         updateData.cash_deduction = profileData.cashDeduction;
-      // Ensure cash_deduction is reset when payment method is not Cash or e-Transfer
-      if (profileData.paymentMethod && profileData.paymentMethod !== "Cash" && profileData.paymentMethod !== "e-Transfer") {
-        updateData.cash_deduction = "0";
+      if (profileData.paymentMethod) {
+        if (!profileUsesCashDeduction(profileData.paymentMethod)) {
+          updateData.cash_deduction = "0";
+        }
+        if (isHybridPaymentMethod(profileData.paymentMethod)) {
+          if (
+            profileData.sinPayrollHoursCap != null &&
+            String(profileData.sinPayrollHoursCap).trim() !== ""
+          ) {
+            updateData.sin_payroll_hours_cap = Number.parseFloat(
+              String(profileData.sinPayrollHoursCap)
+            );
+          }
+        } else {
+          updateData.sin_payroll_hours_cap = null;
+        }
+      } else if (profileData.sinPayrollHoursCap !== undefined) {
+        const raw = profileData.sinPayrollHoursCap;
+        updateData.sin_payroll_hours_cap =
+          raw === "" || raw === null
+            ? null
+            : Number.parseFloat(String(raw));
       }
       if (profileData.overtimeEnabled !== undefined)
         updateData.overtime_enabled = profileData.overtimeEnabled;

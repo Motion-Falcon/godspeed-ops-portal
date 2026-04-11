@@ -51,7 +51,9 @@ export const PAYMENT_METHODS = [
   "Corporation-Cheque",
   "Corporation-Direct Deposit",
   "e-Transfer",
-  "Direct Deposit",
+  "SIN-Direct Deposit",
+  "SIN and cash",
+  "SIN and e-Transfer",
   "Cheque",
 ] as const;
 

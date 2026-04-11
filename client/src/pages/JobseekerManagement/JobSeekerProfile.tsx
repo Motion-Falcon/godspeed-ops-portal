@@ -36,6 +36,10 @@ import {
 import { hasAnyExactAccessRole } from "../../lib/auth";
 import { DocumentRecord } from "../../types/jobseeker";
 import { supabase } from "../../lib/supabaseClient";
+import {
+  isHybridPaymentMethod,
+  profileUsesCashDeductionField,
+} from "../../lib/hybridPayrollSplit";
 import PDFThumbnail from "../../components/PDFThumbnail";
 import PDFViewerModal from "../../components/PDFViewerModal";
 import { ConfirmationModal } from "../../components/ConfirmationModal";
@@ -88,6 +92,7 @@ interface FullJobseekerProfile {
   paymentMethod?: string | null;
   hstGst?: string | null;
   cashDeduction?: string | null;
+  sinPayrollHoursCap?: number | string | null;
   overtimeEnabled?: boolean | null;
   overtimeHours?: string | null;
   overtimeBillRate?: string | null;
@@ -2080,7 +2085,15 @@ export function JobSeekerProfile() {
                   profile.paymentMethod
                 )}
                 {renderDetailItem(t("jobSeekerProfile.hstGst"), profile.hstGst)}
-                {(profile.paymentMethod === "Cash" || profile.paymentMethod === "e-Transfer") &&
+                {isHybridPaymentMethod(profile.paymentMethod) &&
+                  renderDetailItem(
+                    t("jobSeekerProfile.sinPayrollHoursCap"),
+                    profile.sinPayrollHoursCap != null &&
+                      profile.sinPayrollHoursCap !== ""
+                      ? String(profile.sinPayrollHoursCap)
+                      : undefined
+                  )}
+                {profileUsesCashDeductionField(profile.paymentMethod) &&
                   renderDetailItem(
                     t("jobSeekerProfile.cashDeduction"),
                     profile.cashDeduction

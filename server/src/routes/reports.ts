@@ -82,6 +82,40 @@ function buildEnvelopeSrNo(
   return `${normalizedShortCode}-${weekEndingToken}-${sequenceToken}`;
 }
 
+function toNumReport(v: unknown): number {
+  if (v === null || v === undefined) return 0;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+}
+
+/** Cash / e-Transfer % deduction on base pay; aligns with timesheet email logic (line_payment_method for split rows). */
+function computeTimesheetCashDeductionAmount(
+  row: {
+    total_regular_hours?: unknown;
+    total_overtime_hours?: unknown;
+    regular_pay_rate?: unknown;
+    premium_pay_rate?: unknown;
+    overtime_pay_rate?: unknown;
+    line_payment_method?: string | null;
+  },
+  jp: { payment_method?: string | null; cash_deduction?: string | null }
+): string {
+  const pct = parseFloat(String(jp.cash_deduction ?? "0")) || 0;
+  const linePm = row.line_payment_method;
+  const profilePm = jp.payment_method;
+  const effectivePm =
+    linePm && String(linePm).trim() !== ""
+      ? String(linePm)
+      : String(profilePm ?? "");
+  const applies = effectivePm === "Cash" || effectivePm === "e-Transfer";
+  if (!applies || pct <= 0) return "0.00";
+  const basePay =
+    toNumReport(row.total_regular_hours) *
+      (toNumReport(row.regular_pay_rate) + toNumReport(row.premium_pay_rate)) +
+    toNumReport(row.total_overtime_hours) * toNumReport(row.overtime_pay_rate);
+  return (basePay * (pct / 100)).toFixed(2);
+}
+
 // POST /api/reports/timesheet
 router.post(
   "/timesheet",
@@ -148,12 +182,12 @@ router.post(
         .select(
           `
           jobseeker_profiles:jobseeker_profile_id (
-            employee_id, license_number, passport_number, first_name, last_name, mobile, email, hst_gst, payment_method, last_activity_at, created_at
+            employee_id, license_number, passport_number, first_name, last_name, mobile, email, hst_gst, payment_method, cash_deduction, last_activity_at, created_at
           ),
           positions:position_id (
             title, position_code, position_category, client_manager, notes, client
           ),
-          week_start_date, week_end_date, total_regular_hours, total_overtime_hours, regular_pay_rate, premium_pay_rate, overtime_pay_rate, total_jobseeker_pay, bonus_amount, deduction_amount, created_at, invoice_number, position_id
+          week_start_date, week_end_date, total_regular_hours, total_overtime_hours, regular_pay_rate, premium_pay_rate, overtime_pay_rate, total_jobseeker_pay, bonus_amount, deduction_amount, created_at, invoice_number, position_id, line_payment_method
         `
         )
         .in("jobseeker_profile_id", [jobseekerId])
@@ -216,9 +250,13 @@ router.post(
           total_jobseeker_pay: row.total_jobseeker_pay,
           bonus_amount: row.bonus_amount,
           deduction_amount: row.deduction_amount,
+          cash_deduction_amount: computeTimesheetCashDeductionAmount(row, jp),
           hst_gst: jp.hst_gst,
           currency: undefined, // will fill below
-          payment_method: jp.payment_method,
+          payment_method:
+            row.line_payment_method && String(row.line_payment_method).trim() !== ""
+              ? row.line_payment_method
+              : jp.payment_method,
           pay_cycle: undefined, // will fill below
           notes: p.notes,
           timesheet_created_at: row.created_at,
@@ -339,12 +377,13 @@ router.post(
 
       // Payment method keys (must match PAYMENT_METHODS constant order)
       const PAYMENT_METHOD_KEYS: Record<string, string> = {
-        "Cash": "paid_amount_cash",
+        Cash: "paid_amount_cash",
         "Corporation-Cheque": "paid_amount_corporation_cheque",
         "Corporation-Direct Deposit": "paid_amount_corporation_direct_deposit",
         "e-Transfer": "paid_amount_e_transfer",
         "Direct Deposit": "paid_amount_direct_deposit",
-        "Cheque": "paid_amount_cheque",
+        "SIN-Direct Deposit": "paid_amount_direct_deposit",
+        Cheque: "paid_amount_cheque",
       };
 
       // Transform the data for the frontend
@@ -373,7 +412,16 @@ router.post(
             ts.jobseekerProfile?.jobseekerProfileId ||
             ts.jobseekerProfileId ||
             ts.jobseekerProfile?.id;
-          const method = profileId ? (paymentMethodMap[profileId] || "") : "";
+          const linePmRaw =
+            ts.linePaymentMethod ?? ts.line_payment_method ?? "";
+          const linePm =
+            typeof linePmRaw === "string" ? linePmRaw.trim() : "";
+          const method =
+            linePm !== ""
+              ? linePm
+              : profileId
+                ? paymentMethodMap[profileId] || ""
+                : "";
           const methodKey = PAYMENT_METHOD_KEYS[method];
           if (methodKey) {
             paymentBreakdown[methodKey] += pay;
@@ -920,7 +968,10 @@ router.post(
         timesheets.forEach((ts: any) => {
           // Get positionId from nested position object
           const positionId = ts.position && ts.position.positionId;
-          const position = positionId ? positionInfoMap[positionId] : {};
+          const position =
+            positionId && positionInfoMap[positionId]
+              ? positionInfoMap[positionId]
+              : {};
 
           // Apply jobseeker filter
           if (
@@ -1166,7 +1217,10 @@ router.post(
           }
           // Get positionId from nested position object
           const positionId = ts.position && ts.position.positionId;
-          const position = positionId ? positionInfoMap[positionId] : {};
+          const position =
+            positionId && positionInfoMap[positionId]
+              ? positionInfoMap[positionId]
+              : {};
           // Skip if jobseekerProfile is missing
           if (!ts.jobseekerProfile || !ts.jobseekerProfile.jobseekerProfileId) {
             return;

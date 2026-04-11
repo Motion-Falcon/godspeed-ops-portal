@@ -32,6 +32,7 @@ export interface TimesheetReportRow {
   total_jobseeker_pay: string;
   bonus_amount: string;
   deduction_amount: string;
+  cash_deduction_amount: string;
   hst_gst: string;
   currency: string;
   payment_method: string;

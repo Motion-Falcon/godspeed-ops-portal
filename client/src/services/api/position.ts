@@ -672,6 +672,7 @@ export interface AssignmentRecord {
     is_inactive?: boolean;
     payment_method?: string;
     cash_deduction?: string;
+    sin_payroll_hours_cap?: number | string | null;
   };
 }
 export const getPositionAssignments = async (

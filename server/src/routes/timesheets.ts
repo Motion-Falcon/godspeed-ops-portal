@@ -54,6 +54,8 @@ interface TimesheetData {
   document?: string; // PDF file path or URL
   invoiceNumber?: string; // Auto-generated invoice number
   notes?: string; // Additional notes or comments
+  paySplitSegment?: string;
+  linePaymentMethod?: string | null;
 }
 
 interface OptimizedTimesheetData {
@@ -83,6 +85,36 @@ interface VersionHistoryEntry {
   action: "created" | "updated";
 }
 
+/** Cash / e-Transfer deduction for email templates: uses line_payment_method when set (split rows). */
+function emailCashDeductionVars(args: {
+  linePaymentMethod: string | null | undefined;
+  profilePaymentMethod: string | null | undefined;
+  cashDeductionStr: string | null | undefined;
+  totalRegularHours: number;
+  regularPayRate: number;
+  premiumPayRate: number;
+  totalOvertimeHours: number;
+  overtimePayRate: number;
+}): { cash_deduction_percentage: number; cash_deduction_amount: number } {
+  const pct = parseFloat(args.cashDeductionStr || "0");
+  const effectivePm =
+    args.linePaymentMethod && String(args.linePaymentMethod).trim() !== ""
+      ? args.linePaymentMethod
+      : args.profilePaymentMethod || "";
+  const applies = effectivePm === "Cash" || effectivePm === "e-Transfer";
+  if (!applies || pct <= 0) {
+    return { cash_deduction_percentage: 0, cash_deduction_amount: 0 };
+  }
+  const basePay =
+    toNum(args.totalRegularHours) *
+      (toNum(args.regularPayRate) + toNum(args.premiumPayRate)) +
+    toNum(args.totalOvertimeHours) * toNum(args.overtimePayRate);
+  return {
+    cash_deduction_percentage: pct,
+    cash_deduction_amount: basePay * (pct / 100),
+  };
+}
+
 interface DbTimesheetData {
   id?: string;
   jobseeker_profile_id: string;
@@ -108,6 +140,8 @@ interface DbTimesheetData {
   document?: string; // PDF file path or URL
   invoice_number?: string; // Auto-generated invoice number
   notes?: string; // Additional notes or comments
+  pay_split_segment?: string;
+  line_payment_method?: string | null;
   created_at?: string;
   created_by_user_id?: string;
   updated_at?: string;
@@ -153,6 +187,11 @@ function transformToDbFormat(
     document: data.document,
     invoice_number: data.invoiceNumber,
     notes: data.notes,
+    pay_split_segment: data.paySplitSegment ?? "single",
+    line_payment_method:
+      data.linePaymentMethod === undefined
+        ? null
+        : data.linePaymentMethod,
   };
 }
 
@@ -673,22 +712,16 @@ router.post(
           timesheet.overtime_enabled || timesheet.total_overtime_hours > 0,
         bonus_amount: timesheet.bonus_amount,
         deduction_amount: timesheet.deduction_amount,
-        cash_deduction_percentage: (jobseekerProfile.payment_method === "Cash" || jobseekerProfile.payment_method === "e-Transfer")
-          ? parseFloat(jobseekerProfile.cash_deduction || "0")
-          : 0,
-        cash_deduction_amount: (() => {
-          const pm = jobseekerProfile.payment_method;
-          const pct = parseFloat(jobseekerProfile.cash_deduction || "0");
-          if ((pm === "Cash" || pm === "e-Transfer") && pct > 0) {
-            const basePay =
-              toNum(timesheet.total_regular_hours) *
-                (toNum(timesheet.regular_pay_rate) + premiumPayRate) +
-              toNum(timesheet.total_overtime_hours) *
-                toNum(timesheet.overtime_pay_rate);
-            return basePay * (pct / 100);
-          }
-          return 0;
-        })(),
+        ...emailCashDeductionVars({
+          linePaymentMethod: timesheet.line_payment_method,
+          profilePaymentMethod: jobseekerProfile.payment_method,
+          cashDeductionStr: jobseekerProfile.cash_deduction,
+          totalRegularHours: toNum(timesheet.total_regular_hours),
+          regularPayRate: toNum(timesheet.regular_pay_rate),
+          premiumPayRate,
+          totalOvertimeHours: toNum(timesheet.total_overtime_hours),
+          overtimePayRate: toNum(timesheet.overtime_pay_rate),
+        }),
         generated_date: new Date().toLocaleDateString(),
       };
 
@@ -959,22 +992,16 @@ router.post(
         overtime_enabled: timesheetData.overtimeEnabled,
         bonus_amount: timesheetData.bonusAmount,
         deduction_amount: timesheetData.deductionAmount,
-        cash_deduction_percentage: (jobseekerProfile.payment_method === "Cash" || jobseekerProfile.payment_method === "e-Transfer")
-          ? parseFloat(jobseekerProfile.cash_deduction || "0")
-          : 0,
-        cash_deduction_amount: (() => {
-          const pm = jobseekerProfile.payment_method;
-          const pct = parseFloat(jobseekerProfile.cash_deduction || "0");
-          if ((pm === "Cash" || pm === "e-Transfer") && pct > 0) {
-            const basePay =
-              toNum(timesheetData.totalRegularHours) *
-                (toNum(timesheetData.regularPayRate) + premiumPayRate) +
-              toNum(timesheetData.totalOvertimeHours) *
-                toNum(timesheetData.overtimePayRate);
-            return basePay * (pct / 100);
-          }
-          return 0;
-        })(),
+        ...emailCashDeductionVars({
+          linePaymentMethod: timesheetData.linePaymentMethod,
+          profilePaymentMethod: jobseekerProfile.payment_method,
+          cashDeductionStr: jobseekerProfile.cash_deduction,
+          totalRegularHours: toNum(timesheetData.totalRegularHours),
+          regularPayRate: toNum(timesheetData.regularPayRate),
+          premiumPayRate,
+          totalOvertimeHours: toNum(timesheetData.totalOvertimeHours),
+          overtimePayRate: toNum(timesheetData.overtimePayRate),
+        }),
         generated_date: new Date().toLocaleDateString(),
       };
 
@@ -1051,7 +1078,9 @@ router.post(
           .json({ error: "You can only create timesheets for yourself" });
       }
 
-      // Check for duplicate timesheet (same jobseeker, position and week)
+      const paySegment = timesheetData.paySplitSegment ?? "single";
+
+      // Check for duplicate timesheet (same jobseeker, position, week, split segment)
       const { data: duplicateTimesheet, error: duplicateCheckError } =
         await supabase
           .from("timesheets")
@@ -1059,6 +1088,7 @@ router.post(
           .eq("jobseeker_profile_id", timesheetData.jobseekerProfileId)
           .eq("position_id", timesheetData.positionId)
           .eq("week_start_date", timesheetData.weekStartDate)
+          .eq("pay_split_segment", paySegment)
           .maybeSingle();
 
       if (duplicateCheckError) {
@@ -1272,22 +1302,16 @@ router.put(
         overtime_enabled: timesheetData.overtimeEnabled,
         bonus_amount: timesheetData.bonusAmount,
         deduction_amount: timesheetData.deductionAmount,
-        cash_deduction_percentage: (jobseekerProfile.payment_method === "Cash" || jobseekerProfile.payment_method === "e-Transfer")
-          ? parseFloat(jobseekerProfile.cash_deduction || "0")
-          : 0,
-        cash_deduction_amount: (() => {
-          const pm = jobseekerProfile.payment_method;
-          const pct = parseFloat(jobseekerProfile.cash_deduction || "0");
-          if ((pm === "Cash" || pm === "e-Transfer") && pct > 0) {
-            const basePay =
-              toNum(timesheetData.totalRegularHours) *
-                (toNum(timesheetData.regularPayRate) + premiumPayRate) +
-              toNum(timesheetData.totalOvertimeHours) *
-                toNum(timesheetData.overtimePayRate);
-            return basePay * (pct / 100);
-          }
-          return 0;
-        })(),
+        ...emailCashDeductionVars({
+          linePaymentMethod: timesheetData.linePaymentMethod,
+          profilePaymentMethod: jobseekerProfile.payment_method,
+          cashDeductionStr: jobseekerProfile.cash_deduction,
+          totalRegularHours: toNum(timesheetData.totalRegularHours),
+          regularPayRate: toNum(timesheetData.regularPayRate),
+          premiumPayRate,
+          totalOvertimeHours: toNum(timesheetData.totalOvertimeHours),
+          overtimePayRate: toNum(timesheetData.overtimePayRate),
+        }),
         generated_date: new Date().toLocaleDateString(),
         is_updated: true,
       };
@@ -1330,7 +1354,7 @@ router.put(
       let existingQuery = supabase
         .from("timesheets")
         .select(
-          "id, jobseeker_user_id, week_start_date, position_id, version, version_history"
+          "id, jobseeker_user_id, jobseeker_profile_id, week_start_date, position_id, pay_split_segment, version, version_history"
         )
         .eq("id", id);
 
@@ -1357,37 +1381,45 @@ router.put(
           .json({ error: "You can only update your own timesheets" });
       }
 
-      // Check for duplicate if assignment or week is being changed
-      if (
-        timesheetData.weekStartDate !== existingTimesheet.week_start_date ||
-        timesheetData.positionId !== existingTimesheet.position_id
-      ) {
-        const { data: duplicateTimesheet, error: duplicateCheckError } =
-          await supabase
-            .from("timesheets")
-            .select("id")
-            .eq("position_id", timesheetData.positionId)
-            .eq("week_start_date", timesheetData.weekStartDate)
-            .neq("id", id)
-            .maybeSingle();
+      const mergedWeek =
+        timesheetData.weekStartDate ?? existingTimesheet.week_start_date;
+      const mergedPositionId =
+        timesheetData.positionId ?? existingTimesheet.position_id;
+      const mergedProfileId =
+        timesheetData.jobseekerProfileId ??
+        existingTimesheet.jobseeker_profile_id;
+      const mergedSegment =
+        timesheetData.paySplitSegment ??
+        existingTimesheet.pay_split_segment ??
+        "single";
 
-        if (duplicateCheckError) {
-          console.error(
-            "Error checking for duplicate timesheet:",
-            duplicateCheckError
-          );
-          return res
-            .status(500)
-            .json({ error: "Failed to validate timesheet uniqueness" });
-        }
+      const { data: duplicateTimesheet, error: duplicateCheckError } =
+        await supabase
+          .from("timesheets")
+          .select("id")
+          .eq("jobseeker_profile_id", mergedProfileId)
+          .eq("position_id", mergedPositionId)
+          .eq("week_start_date", mergedWeek)
+          .eq("pay_split_segment", mergedSegment)
+          .neq("id", id)
+          .maybeSingle();
 
-        if (duplicateTimesheet) {
-          return res.status(409).json({
-            error:
-              "Another timesheet for this position and week already exists",
-            field: "positionId",
-          });
-        }
+      if (duplicateCheckError) {
+        console.error(
+          "Error checking for duplicate timesheet:",
+          duplicateCheckError
+        );
+        return res
+          .status(500)
+          .json({ error: "Failed to validate timesheet uniqueness" });
+      }
+
+      if (duplicateTimesheet) {
+        return res.status(409).json({
+          error:
+            "Another timesheet for this jobseeker, position, week, and pay segment already exists",
+          field: "positionId",
+        });
       }
 
       // Prepare timesheet data for database update

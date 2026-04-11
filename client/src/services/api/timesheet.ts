@@ -27,6 +27,10 @@ export interface TimesheetData {
   emailSent?: boolean;
   document?: string; // PDF file path or URL
   notes?: string; // Additional notes or comments
+  /** DB: single | sin | cash | e_transfer */
+  paySplitSegment?: string;
+  /** Per-row payout label for reporting / email */
+  linePaymentMethod?: string | null;
   createdAt?: string;
   updatedAt?: string;
   createdByUserId?: string;

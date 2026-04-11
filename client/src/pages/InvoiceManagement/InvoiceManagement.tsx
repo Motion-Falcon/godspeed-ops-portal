@@ -468,8 +468,8 @@ export function InvoiceManagement() {
       > = {};
 
       response.timesheets.forEach((timesheet: TimesheetFromAPI) => {
-        // Create a unique key for position + jobseeker combination
-        const key = `${timesheet.positionId}_${timesheet.jobseekerProfileId}`;
+        // One line item per timesheet row (hybrid pay uses multiple rows per week)
+        const key = timesheet.id;
 
         if (!groupedData[key]) {
           groupedData[key] = {

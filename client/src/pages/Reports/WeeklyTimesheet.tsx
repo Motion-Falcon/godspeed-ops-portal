@@ -30,6 +30,7 @@ const getTableColumns = (t: (key: string) => string): { key: string; label: stri
   { key: 'employee_id', label: t('reports.columns.jobseekerNumber'), format: (val) => val ? `#${val}` : '' },
   { key: 'position_code', label: t('reports.columns.positionNumber'), format: (val) => val ? `#${val}` : '' },
   { key: 'title', label: t('reports.columns.positionDetail'), format: (val) => String(val ?? '') },
+  { key: 'payment_method', label: t('reports.columns.paymentMethod'), format: (val) => String(val ?? '') },
   { key: 'total_regular_hours', label: t('reports.columns.regularHours'), format: (val) => String(val ?? '') },
   { key: 'total_overtime_hours', label: t('reports.columns.overtimeHours'), format: (val) => String(val ?? '') },
   { key: 'regular_pay_rate', label: t('reports.columns.regularPay'), format: (val) => val !== undefined && val !== 'N/A' ? `$${val}` : String(val ?? '') },
@@ -38,6 +39,10 @@ const getTableColumns = (t: (key: string) => string): { key: string; label: stri
   { key: 'total_jobseeker_pay', label: t('reports.columns.totalPay'), format: (val) => val !== undefined && val !== 'N/A' ? `$${val}` : String(val ?? '') },
   { key: 'bonus_amount', label: t('reports.columns.bonus'), format: (val) => val !== undefined && val !== 'N/A' ? `+$${val}` : String(val ?? '') },
   { key: 'deduction_amount', label: t('reports.columns.deduction'), format: (val) => val !== undefined && val !== 'N/A' ? `-$${val}` : String(val ?? '') },
+  { key: 'cash_deduction_amount', label: t('reports.columns.cashDeduction'), format: (val) => {
+    const n = Number(val);
+    return val !== undefined && val !== 'N/A' && Number.isFinite(n) && n > 0 ? `$${val}` : '';
+  } },
   { key: 'company_name', label: t('reports.columns.companyName'), format: (val) => String(val ?? '') },
   { key: 'list_name', label: t('reports.columns.listName'), format: (val) => String(val ?? '') },
   { key: 'name', label: t('reports.columns.name'), format: (val) => String(val ?? '') },
@@ -45,10 +50,7 @@ const getTableColumns = (t: (key: string) => string): { key: string; label: stri
   { key: 'email', label: t('reports.columns.email'), format: (val) => String(val ?? '') },
   { key: 'position_category', label: t('reports.columns.positionCategory'), format: (val) => String(val ?? '') },
   { key: 'client_manager', label: t('reports.columns.clientManager'), format: (val) => String(val ?? '') },
-  { key: 'regular_bill_rate', label: t('reports.columns.regularBillRate'), format: (val) => String(val ?? '') },
-  { key: 'overtime_bill_rate', label: t('reports.columns.overtimeBillRate'), format: (val) => String(val ?? '') },
   { key: 'currency', label: t('reports.columns.currency'), format: (val) => String(val ?? '') },
-  { key: 'payment_method', label: t('reports.columns.paymentMethod'), format: (val) => String(val ?? '') },
   { key: 'pay_cycle', label: t('reports.columns.payCycle'), format: (val) => String(val ?? '') },
   { key: 'notes', label: t('reports.columns.notes'), format: (val) => String(val ?? '') },
   { key: 'timesheet_created_at', label: t('reports.columns.createdAt'), format: (val) => formatDate(String(val ?? '')) },
@@ -300,14 +302,10 @@ export function WeeklyTimesheet() {
               className="button"
               onClick={() => {
                 // Prepare CSV data to match the table exactly (order: S.No., Timesheet #, Week Period, ...)
-                const statusLabel = t('reports.columns.status');
                 const csvData = reportRows.map((row, index) => {
                   const csvRow: Record<string, unknown> = {
                     [t("reports.columns.serialNumber") || "S.No."]: index + 1,
                   };
-                  const clientStatus = row.client_is_inactive ? 'Client Inactive' : 'Client Active';
-                  const jsStatus = row.jobseeker_is_inactive ? 'JS Inactive' : 'JS Active';
-                  csvRow[statusLabel] = `${clientStatus} / ${jsStatus}`;
                   csvColumns.forEach(col => {
                     if (col.key === 'week_period') {
                       csvRow[col.label] = col.format ? col.format(undefined, row as unknown as Record<string, unknown>) : '';
@@ -321,7 +319,7 @@ export function WeeklyTimesheet() {
                 exportToCSV(
                   csvData,
                   'Weekly Timesheet Report.csv',
-                  [t("reports.columns.serialNumber") || "S.No.", statusLabel, ...csvColumns.map(col => col.label)]
+                  [t("reports.columns.serialNumber") || "S.No.", ...csvColumns.map(col => col.label)]
                 );
               }}
             >
@@ -340,7 +338,6 @@ export function WeeklyTimesheet() {
             <table className="common-table">
               <thead>
                 <tr>
-                  <th>{t('reports.columns.status')}</th>
                   {/* UI table: Timesheet #, Week Period, then the rest */}
                   <th>{t('reports.columns.timesheetNumber')}</th>
                   <th>{t('reports.columns.weekPeriod')}</th>
@@ -352,16 +349,6 @@ export function WeeklyTimesheet() {
               <tbody>
                 {reportRows.map((row, idx) => (
                   <tr key={idx} className={(row.client_is_inactive || row.jobseeker_is_inactive) ? 'inactive-row' : ''}>
-                    <td className="status-cell">
-                      {row.client_is_inactive
-                        ? <span className="inactive-badge inactive-badge-sm">Client Inactive</span>
-                        : <span className="active-badge">Client Active</span>
-                      }
-                      {row.jobseeker_is_inactive
-                        ? <span className="inactive-badge inactive-badge-sm">JS Inactive</span>
-                        : <span className="active-badge">JS Active</span>
-                      }
-                    </td>
                     <td>{row.invoice_number ? String(row.invoice_number) : ''}</td>
                     <td>{tableColumns[0].format ? tableColumns[0].format(undefined, row as unknown as Record<string, unknown>) : ''}</td>
                     {tableColumns.filter(col => col.key !== 'week_period' && col.key !== 'invoice_number').map((col, i) => {

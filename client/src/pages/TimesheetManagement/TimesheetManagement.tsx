@@ -20,13 +20,21 @@ import { getClientPositions } from "../../services/api/position";
 import { getJobseekerProfiles } from "../../services/api/jobseeker";
 import { getClients, ClientData } from "../../services/api/client";
 import {
-  createTimesheetFromFrontendData,
+  createTimesheet,
   getJobseekerTimesheets,
   TimesheetData,
   TimesheetResponse,
   updateTimesheet,
   generateInvoiceNumber,
 } from "../../services/api/timesheet";
+import {
+  buildTimesheetRowsForPayroll,
+  profileUsesCashDeductionField,
+  isHybridPaymentMethod,
+  hybridSecondLinePaymentMethod,
+  SIN_DIRECT_DEPOSIT,
+  type ComputedTimesheetRow,
+} from "../../lib/hybridPayrollSplit";
 import "../../styles/pages/TimesheetManagement.css";
 import { generateWeekOptions, formatDate } from "../../utils/weekUtils";
 
@@ -36,6 +44,8 @@ interface TimesheetEntry {
   hours: number;
   overtimeHours: number;
 }
+
+type PaySplitSegmentKey = "single" | "sin" | "cash" | "e_transfer";
 
 interface WeeklyTimesheet {
   positionId: string;
@@ -50,7 +60,9 @@ interface WeeklyTimesheet {
   bonusAmount: number;
   deductionAmount: number;
   notes: string;
-  existingTimesheetId?: string; // Track if this is an existing timesheet
+  existingTimesheetId?: string;
+  /** When multiple DB rows exist for this week (hybrid pay), map segment → timesheet id */
+  splitExistingIds?: Partial<Record<PaySplitSegmentKey, string>>;
 }
 
 // Extended position type that includes overtime properties
@@ -109,6 +121,8 @@ interface ExistingTimesheetData {
   bonusAmount?: number;
   deductionAmount?: number;
   notes?: string;
+  paySplitSegment?: string;
+  linePaymentMethod?: string | null;
   dailyHours: Array<{
     date: string;
     hours: number;
@@ -272,6 +286,8 @@ export function TimesheetManagement() {
         bonusAmount: timesheet.bonusAmount,
         deductionAmount: timesheet.deductionAmount,
         notes: timesheet.notes,
+        paySplitSegment: timesheet.paySplitSegment,
+        linePaymentMethod: timesheet.linePaymentMethod,
         dailyHours: timesheet.dailyHours,
       }));
 
@@ -397,48 +413,62 @@ export function TimesheetManagement() {
 
     const weekDates = generateWeekDates(selectedWeekStart);
 
-    // Check if there's an existing timesheet for this specific position and week
-    const existingTimesheet = existingTimesheets.find(
-      (timesheet: ExistingTimesheetData) => {
-        return (
-          timesheet.weekStartDate === selectedWeekStart &&
-          timesheet.positionId === selectedPosition.id // Only match if positionId matches
-        );
-      }
+    const matching = existingTimesheets.filter(
+      (timesheet: ExistingTimesheetData) =>
+        timesheet.weekStartDate === selectedWeekStart &&
+        timesheet.positionId === selectedPosition.id
     );
 
-    let entries: TimesheetEntry[];
+    const splitExistingIds: Partial<Record<PaySplitSegmentKey, string>> = {};
+    for (const m of matching) {
+      const seg = (m.paySplitSegment || "single") as PaySplitSegmentKey;
+      if (m.id) splitExistingIds[seg] = m.id;
+    }
 
-    if (existingTimesheet && existingTimesheet.dailyHours) {
-      // Prefill with existing data only if position matches
-      entries = weekDates.map((date) => {
-        const existingEntry = existingTimesheet.dailyHours.find(
-          (entry: { date: string; hours: number }) => entry.date === date
-        );
-        return {
-          date,
-          hours: existingEntry ? existingEntry.hours : 0,
-          overtimeHours: 0, // Will be calculated
-        };
-      });
+    const byDate: Record<string, number> = {};
+    for (const t of matching) {
+      for (const d of t.dailyHours || []) {
+        byDate[d.date] = (byDate[d.date] || 0) + d.hours;
+      }
+    }
+
+    let entries: TimesheetEntry[];
+    if (matching.length > 0) {
+      entries = weekDates.map((date) => ({
+        date,
+        hours: byDate[date] || 0,
+        overtimeHours: 0,
+      }));
     } else {
-      // Initialize with empty data if no matching timesheet found
       entries = weekDates.map((date) => ({
         date,
         hours: 0,
         overtimeHours: 0,
       }));
     }
-    // Generate invoice number for new timesheets
-    let invoiceNumber = existingTimesheet?.invoiceNumber || "";
-    if (!existingTimesheet) {
+
+    const primary =
+      matching.find((m) => m.paySplitSegment === "sin") ||
+      matching.find((m) => m.paySplitSegment === "single") ||
+      matching[0];
+
+    let invoiceNumber = primary?.invoiceNumber || "";
+    if (matching.length === 0) {
       try {
         invoiceNumber = await generateInvoiceNumber();
       } catch (error) {
         console.error("Error generating invoice number:", error);
-        invoiceNumber = "TBD"; // Fallback if generation fails
+        invoiceNumber = "TBD";
       }
     }
+
+    const bonusAmount = primary?.bonusAmount || 0;
+    const deductionAmount = primary?.deductionAmount || 0;
+    const totals = calculateTimesheetTotals(
+      entries,
+      bonusAmount,
+      deductionAmount
+    );
 
     const timesheet: WeeklyTimesheet = {
       positionId: selectedPosition.id,
@@ -446,20 +476,14 @@ export function TimesheetManagement() {
       weekStartDate: selectedWeekStart,
       weekEndDate: weekEndDate.toISOString().split("T")[0],
       entries,
-      totalRegularHours: existingTimesheet?.totalRegularHours || 0,
-      totalOvertimeHours: existingTimesheet?.totalOvertimeHours || 0,
-      jobseekerPay: existingTimesheet?.totalJobseekerPay || 0,
-      clientBill: existingTimesheet?.totalClientBill || 0,
-      bonusAmount: existingTimesheet?.bonusAmount || 0,
-      deductionAmount: existingTimesheet?.deductionAmount || 0,
-      notes: existingTimesheet?.notes || "",
-      existingTimesheetId: existingTimesheet?.id,
+      ...totals,
+      bonusAmount,
+      deductionAmount,
+      notes: primary?.notes || "",
+      existingTimesheetId: matching.length === 1 ? primary?.id : undefined,
+      splitExistingIds:
+        matching.length > 1 ? splitExistingIds : undefined,
     };
-
-    // Calculate totals for the timesheet
-    const bonusAmount = existingTimesheet?.bonusAmount || 0;
-    const deductionAmount = existingTimesheet?.deductionAmount || 0;
-    calculateTimesheetTotals(entries, bonusAmount, deductionAmount);
 
     setTimesheets([timesheet]);
   };
@@ -589,41 +613,12 @@ export function TimesheetManagement() {
     }
 
     const position = assignment as PositionWithOvertime;
-
-    // Calculate total weekly hours from all entries
-    const totalWeeklyHours = entries.reduce(
-      (sum, entry) => sum + entry.hours,
-      0
-    );
-
-    let weeklyRegularHours: number;
-    let weeklyOvertimeHours: number;
-
-    // Only calculate overtime if overtime is enabled for this position
-    if (position.overtimeEnabled) {
-      // Get overtime threshold (default to 40 if not specified)
-      const overtimeThreshold = position.overtimeHours
-        ? parseFloat(position.overtimeHours)
-        : 40;
-
-      // Calculate weekly regular and overtime hours
-      weeklyRegularHours = Math.min(totalWeeklyHours, overtimeThreshold);
-      weeklyOvertimeHours = Math.max(0, totalWeeklyHours - overtimeThreshold);
-    } else {
-      // If overtime is not enabled, all hours are regular hours
-      weeklyRegularHours = totalWeeklyHours;
-      weeklyOvertimeHours = 0;
-    }
-
-    // Calculate pay rates
     const regularPayRate = parseFloat(position.regularPayRate || "0");
     const premiumPayRate = parseFloat(position.premiumPayRate || "0");
     const effectivePayRate = regularPayRate + premiumPayRate;
     const regularBillRate = parseFloat(position.billRate || "0");
-
     let overtimePayRate = effectivePayRate;
     let overtimeBillRate = regularBillRate;
-
     if (
       position.overtimeEnabled &&
       position.overtimePayRate &&
@@ -633,34 +628,81 @@ export function TimesheetManagement() {
       overtimeBillRate = parseFloat(position.overtimeBillRate);
     }
 
-    // Calculate base pay (using effective pay rate = regular + premium)
-    const baseJobseekerPay =
-      weeklyRegularHours * effectivePayRate +
-      weeklyOvertimeHours * overtimePayRate;
+    const daily = entries.map((e) => ({ date: e.date, hours: e.hours }));
+    const cap = parseFloat(
+      String(selectedJobseeker?.sinPayrollHoursCap ?? "0")
+    );
+    const rows = buildTimesheetRowsForPayroll({
+      entries: daily,
+      overtimeEnabled: !!position.overtimeEnabled,
+      overtimeHoursRaw: position.overtimeHours,
+      effectiveRegularPayRate: effectivePayRate,
+      overtimePayRate,
+      regularBillRate,
+      overtimeBillRate,
+      paymentMethod: selectedJobseeker?.paymentMethod || "",
+      sinPayrollHoursCap: Number.isFinite(cap) ? cap : 0,
+      cashDeductionPct: parseFloat(selectedJobseeker?.cashDeduction || "0"),
+      bonusAmount,
+      deductionAmount,
+    });
 
-    // Apply cash deduction percentage if payment method is Cash or e-Transfer
-    let cashDeductionAmount = 0;
-    const paymentMethod = selectedJobseeker?.paymentMethod;
-    if (paymentMethod === "Cash" || paymentMethod === "e-Transfer") {
-      const cashDeductionPct = parseFloat(selectedJobseeker?.cashDeduction || "0");
-      if (cashDeductionPct > 0) {
-        cashDeductionAmount = baseJobseekerPay * (cashDeductionPct / 100);
-      }
+    if (rows.length === 0) {
+      return {
+        totalRegularHours: 0,
+        totalOvertimeHours: 0,
+        jobseekerPay: 0,
+        clientBill: 0,
+      };
     }
 
-    const totalJobseekerPay = baseJobseekerPay - cashDeductionAmount + bonusAmount - deductionAmount;
-
-    // Calculate totals
-    const clientBill =
-      weeklyRegularHours * regularBillRate +
-      weeklyOvertimeHours * overtimeBillRate;
-
     return {
-      totalRegularHours: weeklyRegularHours,
-      totalOvertimeHours: weeklyOvertimeHours,
-      jobseekerPay: totalJobseekerPay,
-      clientBill,
+      totalRegularHours: rows.reduce((s, r) => s + r.totalRegularHours, 0),
+      totalOvertimeHours: rows.reduce((s, r) => s + r.totalOvertimeHours, 0),
+      jobseekerPay: rows.reduce((s, r) => s + r.totalJobseekerPay, 0),
+      clientBill: rows.reduce((s, r) => s + r.totalClientBill, 0),
     };
+  };
+
+  /** Invoice preview rows (one or two lines for hybrid SIN + cash / e-Transfer). */
+  const getPayrollPreviewRows = (
+    timesheet: WeeklyTimesheet
+  ): ComputedTimesheetRow[] => {
+    const assignment = positions.find((p) => p.id === selectedPosition?.id);
+    if (!assignment || !selectedJobseeker) return [];
+    const position = assignment as PositionWithOvertime;
+    const regularPayRate = parseFloat(position.regularPayRate || "0");
+    const premiumPayRate = parseFloat(position.premiumPayRate || "0");
+    const effectivePayRate = regularPayRate + premiumPayRate;
+    const regularBillRate = parseFloat(position.billRate || "0");
+    let overtimePayRate = effectivePayRate;
+    let overtimeBillRate = regularBillRate;
+    if (
+      position.overtimeEnabled &&
+      position.overtimePayRate &&
+      position.overtimeBillRate
+    ) {
+      overtimePayRate = parseFloat(position.overtimePayRate);
+      overtimeBillRate = parseFloat(position.overtimeBillRate);
+    }
+    const daily = timesheet.entries.map((e) => ({ date: e.date, hours: e.hours }));
+    const cap = parseFloat(
+      String(selectedJobseeker?.sinPayrollHoursCap ?? "0")
+    );
+    return buildTimesheetRowsForPayroll({
+      entries: daily,
+      overtimeEnabled: !!position.overtimeEnabled,
+      overtimeHoursRaw: position.overtimeHours,
+      effectiveRegularPayRate: effectivePayRate,
+      overtimePayRate,
+      regularBillRate,
+      overtimeBillRate,
+      paymentMethod: selectedJobseeker?.paymentMethod || "",
+      sinPayrollHoursCap: Number.isFinite(cap) ? cap : 0,
+      cashDeductionPct: parseFloat(selectedJobseeker?.cashDeduction || "0"),
+      bonusAmount: timesheet.bonusAmount || 0,
+      deductionAmount: timesheet.deductionAmount || 0,
+    });
   };
 
   const getDayName = (dateString: string): string => {
@@ -708,114 +750,108 @@ export function TimesheetManagement() {
       const weekEndDate = new Date(selectedWeekStart);
       weekEndDate.setDate(weekEndDate.getDate() + 6);
 
-      const results: (TimesheetResponse | TimesheetResponse[])[] = [];
+      const results: TimesheetResponse[] = [];
+      let updatedCount = 0;
+      let createdCount = 0;
 
-      // Process each timesheet - either update existing or create new
+      const regularPayRate = parseFloat(selectedPosition.regularPayRate || "0");
+      const premiumPayRate = parseFloat(selectedPosition.premiumPayRate || "0");
+      const effectivePayRate = regularPayRate + premiumPayRate;
+      const regularBillRate = parseFloat(selectedPosition.billRate || "0");
+      let overtimePayRate = effectivePayRate;
+      let overtimeBillRate = regularBillRate;
+      if (
+        selectedPosition.overtimeEnabled &&
+        selectedPosition.overtimePayRate &&
+        selectedPosition.overtimeBillRate
+      ) {
+        overtimePayRate = parseFloat(selectedPosition.overtimePayRate);
+        overtimeBillRate = parseFloat(selectedPosition.overtimeBillRate);
+      }
+
+      const sinCap = parseFloat(
+        String(selectedJobseeker.sinPayrollHoursCap ?? "0")
+      );
+
       for (const timesheet of timesheetsToProcess) {
         const shouldSendEmail = emailPreferences[timesheet.positionId] || false;
 
-        const timesheetData: Partial<TimesheetData> = {
-          jobseekerProfileId: selectedJobseeker.id,
-          jobseekerUserId: selectedJobseeker.userId,
-          positionId: selectedPosition.id,
-          weekStartDate: selectedWeekStart,
-          weekEndDate: weekEndDate.toISOString().split("T")[0],
-          dailyHours: timesheet.entries.map((entry) => ({
-            date: entry.date,
-            hours: entry.hours,
-          })),
-          totalRegularHours: timesheet.totalRegularHours,
-          totalOvertimeHours: timesheet.totalOvertimeHours,
-          regularPayRate: parseFloat(selectedPosition.regularPayRate || "0"),
-          premiumPayRate: parseFloat(selectedPosition.premiumPayRate || "0"),
-          overtimePayRate: selectedPosition.overtimePayRate
-            ? parseFloat(selectedPosition.overtimePayRate)
-            : parseFloat(selectedPosition.regularPayRate || "0"),
-          regularBillRate: parseFloat(selectedPosition.billRate || "0"),
-          overtimeBillRate: selectedPosition.overtimeBillRate
-            ? parseFloat(selectedPosition.overtimeBillRate)
-            : parseFloat(selectedPosition.billRate || "0"),
-          totalJobseekerPay: timesheet.jobseekerPay,
-          totalClientBill: timesheet.clientBill,
+        const dailyHours = timesheet.entries.map((entry) => ({
+          date: entry.date,
+          hours: entry.hours,
+        }));
+
+        const payrollRows = buildTimesheetRowsForPayroll({
+          entries: dailyHours,
+          overtimeEnabled: !!selectedPosition.overtimeEnabled,
+          overtimeHoursRaw: selectedPosition.overtimeHours,
+          effectiveRegularPayRate: effectivePayRate,
+          overtimePayRate,
+          regularBillRate,
+          overtimeBillRate,
+          paymentMethod: selectedJobseeker.paymentMethod || "",
+          sinPayrollHoursCap: Number.isFinite(sinCap) ? sinCap : 0,
+          cashDeductionPct: parseFloat(selectedJobseeker.cashDeduction || "0"),
           bonusAmount: timesheet.bonusAmount || 0,
           deductionAmount: timesheet.deductionAmount || 0,
-          notes: timesheet.notes || "",
-          overtimeEnabled: selectedPosition.overtimeEnabled || false,
-          markup: selectedPosition.markup
-            ? parseFloat(selectedPosition.markup)
-            : undefined,
-          emailSent: shouldSendEmail,
-        };
+        });
 
-        if (timesheet.existingTimesheetId) {
-          // Update existing timesheet
-          console.log(
-            `Updating existing timesheet ${timesheet.existingTimesheetId} for position ${selectedPosition.id}`
-          );
-          const result = await updateTimesheet(
-            timesheet.existingTimesheetId,
-            timesheetData
-          );
-          results.push(result);
-        } else {
-          // Create new timesheet using the existing function structure
-          const frontendData = {
-            jobseeker_profile_id: selectedJobseeker.id,
-            jobseeker_user_id: selectedJobseeker.userId,
-            week_start_date: selectedWeekStart,
-            week_end_date: weekEndDate.toISOString().split("T")[0],
-            email_sent: shouldSendEmail,
-            assignments: [
-              {
-                position_id: selectedPosition.id,
-                daily_hours: timesheet.entries.map((entry) => ({
-                  date: entry.date,
-                  hours: entry.hours,
-                })),
-                total_regular_hours: timesheet.totalRegularHours,
-                total_overtime_hours: timesheet.totalOvertimeHours,
-                regular_pay_rate: parseFloat(
-                  selectedPosition.regularPayRate || "0"
-                ),
-                premium_pay_rate: parseFloat(
-                  selectedPosition.premiumPayRate || "0"
-                ),
-                overtime_pay_rate: selectedPosition.overtimePayRate
-                  ? parseFloat(selectedPosition.overtimePayRate)
-                  : parseFloat(selectedPosition.regularPayRate || "0"),
-                regular_bill_rate: parseFloat(selectedPosition.billRate || "0"),
-                overtime_bill_rate: selectedPosition.overtimeBillRate
-                  ? parseFloat(selectedPosition.overtimeBillRate)
-                  : parseFloat(selectedPosition.billRate || "0"),
-                total_jobseeker_pay: timesheet.jobseekerPay,
-                total_client_bill: timesheet.clientBill,
-                bonus_amount: timesheet.bonusAmount || 0,
-                deduction_amount: timesheet.deductionAmount || 0,
-                notes: timesheet.notes || "",
-                overtime_enabled: selectedPosition.overtimeEnabled || false,
-                markup: selectedPosition.markup
-                  ? parseFloat(selectedPosition.markup)
-                  : undefined,
-              },
-            ],
+        for (const row of payrollRows) {
+          const seg = row.paySplitSegment as PaySplitSegmentKey;
+          const existingId =
+            timesheet.splitExistingIds?.[seg] ??
+            (seg === "single" ? timesheet.existingTimesheetId : undefined);
+
+          const partial: Partial<TimesheetData> = {
+            jobseekerProfileId: selectedJobseeker.id,
+            jobseekerUserId: selectedJobseeker.userId,
+            positionId: selectedPosition.id,
+            weekStartDate: selectedWeekStart,
+            weekEndDate: weekEndDate.toISOString().split("T")[0],
+            dailyHours: row.dailyHours,
+            totalRegularHours: row.totalRegularHours,
+            totalOvertimeHours: row.totalOvertimeHours,
+            regularPayRate,
+            premiumPayRate,
+            overtimePayRate,
+            regularBillRate,
+            overtimeBillRate,
+            totalJobseekerPay: row.totalJobseekerPay,
+            totalClientBill: row.totalClientBill,
+            bonusAmount: row.bonusAmount,
+            deductionAmount: row.deductionAmount,
+            notes: timesheet.notes || "",
+            overtimeEnabled: selectedPosition.overtimeEnabled || false,
+            markup: selectedPosition.markup
+              ? parseFloat(selectedPosition.markup)
+              : undefined,
+            emailSent: shouldSendEmail,
+            paySplitSegment: row.paySplitSegment,
+            linePaymentMethod: row.linePaymentMethod,
           };
 
-          console.log(
-            `Creating new timesheet for position ${selectedPosition.id}`
-          );
-          const newResults = await createTimesheetFromFrontendData(
-            frontendData
-          );
-          results.push(...newResults);
+          if (existingId) {
+            const result = await updateTimesheet(existingId, partial);
+            results.push(result);
+            updatedCount += 1;
+          } else {
+            const inv = await generateInvoiceNumber();
+            const result = await createTimesheet({
+              ...(partial as Omit<
+                TimesheetData,
+                | "id"
+                | "createdAt"
+                | "updatedAt"
+                | "createdByUserId"
+                | "updatedByUserId"
+              >),
+              invoiceNumber: inv,
+            });
+            results.push(result);
+            createdCount += 1;
+          }
         }
       }
-
-      const updatedCount = timesheetsToProcess.filter(
-        (t) => t.existingTimesheetId
-      ).length;
-      const createdCount = timesheetsToProcess.filter(
-        (t) => !t.existingTimesheetId
-      ).length;
       const emailCount = timesheetsToProcess.filter(
         (t) => emailPreferences[t.positionId]
       ).length;
@@ -1115,58 +1151,131 @@ export function TimesheetManagement() {
                             <h4 className="timesheet-section-title">
                               Employee Details
                             </h4>
-                            <div className="timesheet-section-content">
-                              <div className="timesheet-detail-item">
-                                <span className="timesheet-detail-label">
-                                  Name:
-                                </span>
-                                <span className="timesheet-detail-value">
-                                  {selectedJobseeker.name}
-                                </span>
+                            <div className="timesheet-section-content timesheet-employee-details-columns">
+                              <div className="timesheet-employee-details-col">
+                                <div className="timesheet-detail-item">
+                                  <span className="timesheet-detail-label">
+                                    Name:
+                                  </span>
+                                  <span className="timesheet-detail-value">
+                                    {selectedJobseeker.name}
+                                  </span>
+                                </div>
+                                <div className="timesheet-detail-item">
+                                  <span className="timesheet-detail-label">
+                                    Email:
+                                  </span>
+                                  <span className="timesheet-detail-value">
+                                    {selectedJobseeker.email}
+                                  </span>
+                                </div>
+                                <div className="timesheet-detail-item">
+                                  <span className="timesheet-detail-label">
+                                    Billing Email:
+                                  </span>
+                                  <span className="timesheet-detail-value">
+                                    {(
+                                      selectedJobseeker as JobSeekerProfile & {
+                                        billingEmail?: string;
+                                      }
+                                    ).billingEmail || "N/A"}
+                                  </span>
+                                </div>
+                                <div className="timesheet-detail-item">
+                                  <span className="timesheet-detail-label">
+                                    Phone Number:
+                                  </span>
+                                  <span className="timesheet-detail-value">
+                                    {(
+                                      selectedJobseeker as JobSeekerProfile & {
+                                        phoneNumber?: string;
+                                      }
+                                    ).phoneNumber || "N/A"}
+                                  </span>
+                                </div>
+                                <div className="timesheet-detail-item">
+                                  <span className="timesheet-detail-label">
+                                    Employee ID:
+                                  </span>
+                                  <span className="timesheet-detail-value">
+                                    {(
+                                      selectedJobseeker as JobSeekerProfile & {
+                                        employeeId?: string;
+                                      }
+                                    ).employeeId || "N/A"}
+                                  </span>
+                                </div>
                               </div>
-                              <div className="timesheet-detail-item">
-                                <span className="timesheet-detail-label">
-                                  Email:
-                                </span>
-                                <span className="timesheet-detail-value">
-                                  {selectedJobseeker.email}
-                                </span>
-                              </div>
-                              <div className="timesheet-detail-item">
-                                <span className="timesheet-detail-label">
-                                  Billing Email:
-                                </span>
-                                <span className="timesheet-detail-value">
-                                  {(
-                                    selectedJobseeker as JobSeekerProfile & {
-                                      billingEmail?: string;
-                                    }
-                                  ).billingEmail || "N/A"}
-                                </span>
-                              </div>
-                              <div className="timesheet-detail-item">
-                                <span className="timesheet-detail-label">
-                                  Phone Number:
-                                </span>
-                                <span className="timesheet-detail-value">
-                                  {(
-                                    selectedJobseeker as JobSeekerProfile & {
-                                      phoneNumber?: string;
-                                    }
-                                  ).phoneNumber || "N/A"}
-                                </span>
-                              </div>
-                              <div className="timesheet-detail-item">
-                                <span className="timesheet-detail-label">
-                                  Employee ID:
-                                </span>
-                                <span className="timesheet-detail-value">
-                                  {(
-                                    selectedJobseeker as JobSeekerProfile & {
-                                      employeeId?: string;
-                                    }
-                                  ).employeeId || "N/A"}
-                                </span>
+                              <div className="timesheet-employee-details-col">
+                                {(() => {
+                                  const pm =
+                                    selectedJobseeker.paymentMethod?.trim() ||
+                                    "";
+                                  const secondLine =
+                                    pm && isHybridPaymentMethod(pm)
+                                      ? hybridSecondLinePaymentMethod(pm)
+                                      : null;
+                                  const cashDeductionPct = parseFloat(
+                                    selectedJobseeker.cashDeduction || "0"
+                                  );
+                                  const sinCapRaw =
+                                    selectedJobseeker.sinPayrollHoursCap;
+                                  const sinCapNum = parseFloat(
+                                    String(sinCapRaw ?? "")
+                                  );
+                                  const sinCapDisplay =
+                                    sinCapRaw !== undefined &&
+                                    sinCapRaw !== null &&
+                                    sinCapRaw !== "" &&
+                                    Number.isFinite(sinCapNum)
+                                      ? `${sinCapNum} h / week`
+                                      : "—";
+
+                                  return (
+                                    <>
+                                      <div className="timesheet-detail-item">
+                                        <span className="timesheet-detail-label">
+                                          Payment method:
+                                        </span>
+                                        <span className="timesheet-detail-value">
+                                          {pm || "—"}
+                                        </span>
+                                      </div>
+                                      {secondLine && (
+                                        <div className="timesheet-detail-item">
+                                          <span className="timesheet-detail-label">
+                                            Paid as:
+                                          </span>
+                                          <span className="timesheet-detail-value">
+                                            {SIN_DIRECT_DEPOSIT} + {secondLine}
+                                          </span>
+                                        </div>
+                                      )}
+                                      {profileUsesCashDeductionField(pm) && (
+                                        <div className="timesheet-detail-item">
+                                          <span className="timesheet-detail-label">
+                                            Cash deduction:
+                                          </span>
+                                          <span className="timesheet-detail-value">
+                                            {Number.isFinite(cashDeductionPct)
+                                              ? `${cashDeductionPct}%`
+                                              : "—"}
+                                          </span>
+                                        </div>
+                                      )}
+                                      {isHybridPaymentMethod(pm) && (
+                                        <div className="timesheet-detail-item">
+                                          <span className="timesheet-detail-label">
+                                            SIN hours (weekly cap):
+                                          </span>
+                                          <span className="timesheet-detail-value">
+                                            {sinCapDisplay}
+                                          </span>
+                                        </div>
+                                      )}
+                                    </>
+                                  );
+                                })()}
                               </div>
                             </div>
                           </div>
@@ -1407,73 +1516,166 @@ export function TimesheetManagement() {
                           </div>
 
                           <div className="timesheet-invoice-table-body">
-                            {/* Regular Hours Line Item */}
-                            <div className="timesheet-invoice-line-item">
-                              <div className="timesheet-col-description">
-                                <div className="timesheet-item-title">
-                                  Regular Hours
-                                </div>
-                                <div className="timesheet-item-subtitle">
-                                  Standard work hours{parseFloat(selectedPosition?.premiumPayRate || "0") > 0 ? ` (incl. premium $${selectedPosition?.premiumPayRate}/h)` : ""}
-                                </div>
-                              </div>
-                              <div className="timesheet-col-hours">
-                                {timesheet.totalRegularHours.toFixed(2)}
-                              </div>
-                              <div className="timesheet-col-rate">
-                                ${(parseFloat(selectedPosition?.regularPayRate || "0") + parseFloat(selectedPosition?.premiumPayRate || "0")).toFixed(2)}
-                              </div>
-                              <div className="timesheet-col-amount">
-                                $
-                                {(
-                                  timesheet.totalRegularHours *
-                                  (parseFloat(
-                                    selectedPosition?.regularPayRate || "0"
-                                  ) + parseFloat(
-                                    selectedPosition?.premiumPayRate || "0"
-                                  ))
-                                ).toFixed(2)}
-                              </div>
-                            </div>
+                            {(() => {
+                              const previewRows = getPayrollPreviewRows(timesheet);
+                              const positionOt =
+                                positions.find(
+                                  (p) => p.id === selectedPosition?.id
+                                ) as PositionWithOvertime | undefined;
+                              const regularPayRate = parseFloat(
+                                selectedPosition?.regularPayRate || "0"
+                              );
+                              const premiumPayRate = parseFloat(
+                                selectedPosition?.premiumPayRate || "0"
+                              );
+                              const effectivePayRate =
+                                regularPayRate + premiumPayRate;
+                              let overtimePayRate = effectivePayRate;
+                              if (
+                                positionOt?.overtimeEnabled &&
+                                positionOt.overtimePayRate
+                              ) {
+                                overtimePayRate = parseFloat(
+                                  positionOt.overtimePayRate
+                                );
+                              }
+                              const hybridPreview =
+                                isHybridPaymentMethod(
+                                  selectedJobseeker?.paymentMethod
+                                ) && previewRows.length > 0;
 
-                            {/* Overtime Hours Line Item (if applicable) */}
-                            {timesheet.totalOvertimeHours > 0 && (
-                              <div className="timesheet-invoice-line-item">
-                                <div className="timesheet-col-description">
-                                  <div className="timesheet-item-title">
-                                    Overtime Hours
+                              if (hybridPreview) {
+                                return (
+                                  <>
+                                    {previewRows.map((row) => {
+                                      const regH = row.totalRegularHours;
+                                      const otH = row.totalOvertimeHours;
+                                      const segmentBase =
+                                        regH * effectivePayRate +
+                                        otH * overtimePayRate;
+                                      const rateLabel =
+                                        otH > 0 && regH > 0
+                                          ? "—"
+                                          : otH > 0
+                                            ? `$${overtimePayRate.toFixed(2)}`
+                                            : `$${effectivePayRate.toFixed(2)}`;
+                                      const payLineLabel =
+                                        row.linePaymentMethod || "Payroll";
+                                      const title =
+                                        row.paySplitSegment === "sin"
+                                          ? "Regular hours"
+                                          : regH > 0 && otH > 0
+                                            ? "Regular & overtime"
+                                            : otH > 0
+                                              ? "Overtime hours"
+                                              : "Regular hours";
+                                      return (
+                                        <div
+                                          key={`${row.paySplitSegment}-${payLineLabel}`}
+                                          className="timesheet-invoice-line-item"
+                                        >
+                                          <div className="timesheet-col-description">
+                                            <div className="timesheet-item-title">
+                                              {title}
+                                            </div>
+                                            <div className="timesheet-item-subtitle">
+                                              {payLineLabel}
+                                              {row.paySplitSegment ===
+                                                "sin" &&
+                                                premiumPayRate > 0 &&
+                                                ` (incl. premium $${selectedPosition?.premiumPayRate}/h)`}
+                                              {otH > 0 &&
+                                                regH > 0 &&
+                                                ` — ${regH.toFixed(2)}h reg, ${otH.toFixed(2)}h OT`}
+                                            </div>
+                                          </div>
+                                          <div className="timesheet-col-hours">
+                                            {(regH + otH).toFixed(2)}
+                                          </div>
+                                          <div className="timesheet-col-rate">
+                                            {rateLabel}
+                                          </div>
+                                          <div className="timesheet-col-amount">
+                                            ${segmentBase.toFixed(2)}
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </>
+                                );
+                              }
+
+                              return (
+                                <>
+                                  {/* Regular Hours Line Item */}
+                                  <div className="timesheet-invoice-line-item">
+                                    <div className="timesheet-col-description">
+                                      <div className="timesheet-item-title">
+                                        Regular Hours
+                                      </div>
+                                      <div className="timesheet-item-subtitle">
+                                        Standard work hours
+                                        {premiumPayRate > 0
+                                          ? ` (incl. premium $${selectedPosition?.premiumPayRate}/h)`
+                                          : ""}
+                                      </div>
+                                    </div>
+                                    <div className="timesheet-col-hours">
+                                      {timesheet.totalRegularHours.toFixed(2)}
+                                    </div>
+                                    <div className="timesheet-col-rate">
+                                      ${effectivePayRate.toFixed(2)}
+                                    </div>
+                                    <div className="timesheet-col-amount">
+                                      $
+                                      {(
+                                        timesheet.totalRegularHours *
+                                        effectivePayRate
+                                      ).toFixed(2)}
+                                    </div>
                                   </div>
-                                  <div className="timesheet-item-subtitle">
-                                    Hours exceeding{" "}
-                                    {(selectedPosition as PositionWithOvertime)
-                                      ?.overtimeHours || "8"}{" "}
-                                    hours/week
-                                  </div>
-                                </div>
-                                <div className="timesheet-col-hours">
-                                  {timesheet.totalOvertimeHours.toFixed(2)}
-                                </div>
-                                <div className="timesheet-col-rate">
-                                  $
-                                  {(selectedPosition as PositionWithOvertime)
-                                    ?.overtimePayRate ||
-                                    selectedPosition?.regularPayRate ||
-                                    "0.00"}
-                                </div>
-                                <div className="timesheet-col-amount">
-                                  $
-                                  {(
-                                    timesheet.totalOvertimeHours *
-                                    parseFloat(
-                                      (selectedPosition as PositionWithOvertime)
-                                        ?.overtimePayRate ||
-                                        selectedPosition?.regularPayRate ||
-                                        "0"
-                                    )
-                                  ).toFixed(2)}
-                                </div>
-                              </div>
-                            )}
+
+                                  {/* Overtime Hours Line Item (if applicable) */}
+                                  {timesheet.totalOvertimeHours > 0 && (
+                                    <div className="timesheet-invoice-line-item">
+                                      <div className="timesheet-col-description">
+                                        <div className="timesheet-item-title">
+                                          Overtime Hours
+                                        </div>
+                                        <div className="timesheet-item-subtitle">
+                                          Hours exceeding{" "}
+                                          {(selectedPosition as PositionWithOvertime)
+                                            ?.overtimeHours || "8"}{" "}
+                                          hours/week
+                                        </div>
+                                      </div>
+                                      <div className="timesheet-col-hours">
+                                        {timesheet.totalOvertimeHours.toFixed(2)}
+                                      </div>
+                                      <div className="timesheet-col-rate">
+                                        $
+                                        {(selectedPosition as PositionWithOvertime)
+                                          ?.overtimePayRate ||
+                                          selectedPosition?.regularPayRate ||
+                                          "0.00"}
+                                      </div>
+                                      <div className="timesheet-col-amount">
+                                        $
+                                        {(
+                                          timesheet.totalOvertimeHours *
+                                          parseFloat(
+                                            (selectedPosition as PositionWithOvertime)
+                                              ?.overtimePayRate ||
+                                              selectedPosition?.regularPayRate ||
+                                              "0"
+                                          )
+                                        ).toFixed(2)}
+                                      </div>
+                                    </div>
+                                  )}
+                                </>
+                              );
+                            })()}
 
                             {/* Bonus Line Item (if applicable) */}
                             {timesheet.bonusAmount > 0 && (
@@ -1529,18 +1731,22 @@ export function TimesheetManagement() {
                                 position
                               );
                               const subtotal = basePay;
-                              // Calculate cash deduction for display
-                              let cashDeductionDisplay = 0;
                               const paymentMethod = selectedJobseeker?.paymentMethod;
-                              const cashDeductionPct = parseFloat(selectedJobseeker?.cashDeduction || "0");
-                              if ((paymentMethod === "Cash" || paymentMethod === "e-Transfer") && cashDeductionPct > 0) {
-                                cashDeductionDisplay = subtotal * (cashDeductionPct / 100);
-                              }
-                              const employeePay =
-                                subtotal -
-                                cashDeductionDisplay +
-                                (timesheet.bonusAmount || 0) -
-                                (timesheet.deductionAmount || 0);
+                              const cashDeductionPct = parseFloat(
+                                selectedJobseeker?.cashDeduction || "0"
+                              );
+                              const employeePay = timesheet.jobseekerPay;
+                              const cashDeductionDisplay =
+                                profileUsesCashDeductionField(paymentMethod) &&
+                                cashDeductionPct > 0
+                                  ? Math.max(
+                                      0,
+                                      subtotal +
+                                        (timesheet.bonusAmount || 0) -
+                                        (timesheet.deductionAmount || 0) -
+                                        employeePay
+                                    )
+                                  : 0;
                               return (
                                 <>
                                   <div className="timesheet-total-line timesheet-subtotal">
@@ -1654,13 +1860,19 @@ export function TimesheetManagement() {
                                   size={16}
                                   className="timesheet-loading-spinner"
                                 />
-                                {timesheet.existingTimesheetId
+                                {timesheet.existingTimesheetId ||
+                                (timesheet.splitExistingIds &&
+                                  Object.keys(timesheet.splitExistingIds)
+                                    .length > 0)
                                   ? "Updating..."
                                   : "Generating..."}
                               </>
                             ) : (
                               <>
-                                {timesheet.existingTimesheetId ? (
+                                {timesheet.existingTimesheetId ||
+                                (timesheet.splitExistingIds &&
+                                  Object.keys(timesheet.splitExistingIds)
+                                    .length > 0) ? (
                                   <>
                                     <RefreshCw size={16} />
                                     Update Timesheet
@@ -1726,19 +1938,35 @@ export function TimesheetManagement() {
                         marginBottom: "16px",
                       }}
                     ></div>
-                    <div className="timesheet-section-content">
-                      {[1, 2].map((index) => (
-                        <div key={index} className="timesheet-detail-item">
-                          <div
-                            className="skeleton-text"
-                            style={{ width: "60px", height: "14px" }}
-                          ></div>
-                          <div
-                            className="skeleton-text"
-                            style={{ width: "140px", height: "14px" }}
-                          ></div>
-                        </div>
-                      ))}
+                    <div className="timesheet-section-content timesheet-employee-details-columns">
+                      <div className="timesheet-employee-details-col">
+                        {[1, 2, 3, 4, 5].map((index) => (
+                          <div key={index} className="timesheet-detail-item">
+                            <div
+                              className="skeleton-text"
+                              style={{ width: "60px", height: "14px" }}
+                            ></div>
+                            <div
+                              className="skeleton-text"
+                              style={{ width: "140px", height: "14px" }}
+                            ></div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="timesheet-employee-details-col">
+                        {[1, 2, 3, 4].map((index) => (
+                          <div key={index + 10} className="timesheet-detail-item">
+                            <div
+                              className="skeleton-text"
+                              style={{ width: "60px", height: "14px" }}
+                            ></div>
+                            <div
+                              className="skeleton-text"
+                              style={{ width: "140px", height: "14px" }}
+                            ></div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
                   <div className="timesheet-section timesheet-invoice-section">
