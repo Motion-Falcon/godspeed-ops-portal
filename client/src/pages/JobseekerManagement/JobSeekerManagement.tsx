@@ -25,6 +25,8 @@ import { AppHeader } from "../../components/AppHeader";
 import { EXPERIENCE_LEVELS } from "../../constants/formOptions";
 import { useLanguage } from "../../contexts/language/language-provider";
 import { getClickableRowProps } from "../../hooks/useClickableTableRow";
+import { hasAnyExactAccessRole } from "../../lib/auth";
+import { DELETE_JOBSEEKER_ROLES } from "../../constants/accessControl";
 import "../../styles/pages/JobSeekerManagement.css";
 import "../../styles/components/header.css";
 import "../../styles/components/CommonTable.css";
@@ -93,7 +95,8 @@ export function JobSeekerManagement() {
     useState<ExtendedJobSeekerProfile | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
-  const { isAdmin, isRecruiter } = useAuth();
+  const { user, isAdmin, isRecruiter } = useAuth();
+  const canDeleteProfiles = hasAnyExactAccessRole(user, DELETE_JOBSEEKER_ROLES);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -788,22 +791,28 @@ export function JobSeekerManagement() {
                             >
                               <Eye size={16} />
                             </button>
-                            <button
-                              className="action-icon-btn edit-btn"
-                              onClick={() => handleEditClick(profile)}
-                              title={t(
-                                "jobseekerManagement.actions.editProfile"
-                              )}
+                          <button
+                            className="action-icon-btn edit-btn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditClick(profile);
+                            }}
+                            title={t(
+                              "jobseekerManagement.actions.editProfile"
+                            )}
                               aria-label={t(
                                 "jobseekerManagement.actions.editProfile"
                               )}
                             >
                               <Pencil size={16} />
                             </button>
-                            {false && (
+                            {canDeleteProfiles && (
                               <button
                                 className="action-icon-btn delete-btn"
-                                onClick={() => handleDeleteClick(profile)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteClick(profile);
+                                }}
                                 title={t(
                                   "jobseekerManagement.actions.deleteProfile"
                                 )}

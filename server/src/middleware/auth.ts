@@ -15,17 +15,38 @@ if (!supabaseUrl || !supabaseKey) {
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 type UserType = 'jobseeker' | 'recruiter' | 'admin';
-export type AccessRole = UserType | 'manager' | 'accountant';
+export type AccessRole =
+  | UserType
+  | 'bookkeeper'
+  | 'recruiter_manager'
+  | 'accountant_manager'
+  | 'sales'
+  | 'recruiter_director';
 
 const ROLE_DISPLAY_ORDER: AccessRole[] = [
   'admin',
-  'manager',
-  'accountant',
+  'recruiter_director',
+  'recruiter_manager',
+  'accountant_manager',
+  'bookkeeper',
+  'sales',
   'recruiter',
   'jobseeker',
 ];
 
-const RECRUITER_ACCESS_ROLES: AccessRole[] = ['recruiter', 'manager', 'accountant'];
+const RECRUITER_ACCESS_ROLES: AccessRole[] = [
+  'recruiter',
+  'bookkeeper',
+  'recruiter_manager',
+  'accountant_manager',
+  'sales',
+  'recruiter_director',
+];
+
+const LEGACY_ROLE_ALIASES: Record<string, AccessRole> = {
+  manager: 'recruiter_manager',
+  accountant: 'bookkeeper',
+};
 
 function normalizeUserType(userType: unknown): UserType {
   if (userType === 'admin' || userType === 'recruiter') {
@@ -36,12 +57,19 @@ function normalizeUserType(userType: unknown): UserType {
 }
 
 function normalizeAccessRole(role: unknown): AccessRole | null {
+  if (typeof role === 'string' && role in LEGACY_ROLE_ALIASES) {
+    return LEGACY_ROLE_ALIASES[role];
+  }
+
   if (
     role === 'jobseeker' ||
     role === 'recruiter' ||
     role === 'admin' ||
-    role === 'manager' ||
-    role === 'accountant'
+    role === 'bookkeeper' ||
+    role === 'recruiter_manager' ||
+    role === 'accountant_manager' ||
+    role === 'sales' ||
+    role === 'recruiter_director'
   ) {
     return role;
   }
@@ -149,6 +177,18 @@ export function hasAccessRole(
   return resolvedRoles.includes(normalizedRole);
 }
 
+export function hasExactAccessRole(
+  user: Express.Request['user'] | undefined,
+  role: AccessRole | string
+): boolean {
+  const normalizedRole = normalizeAccessRole(role);
+  if (!normalizedRole) {
+    return false;
+  }
+
+  return getResolvedUserRoles(user).includes(normalizedRole);
+}
+
 /**
  * Middleware to check if the user is an admin or recruiter
  */
@@ -187,3 +227,20 @@ export const authorizeRoles = (allowedRoles: string[]) => {
     }
   };
 }; 
+
+export const authorizeExactRoles = (allowedRoles: string[]) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    if (allowedRoles.some((role) => hasExactAccessRole(req.user, role))) {
+      next();
+    } else {
+      return res.status(403).json({
+        error: 'Access denied',
+        message: `This resource is only accessible to: ${allowedRoles.join(', ')}`,
+      });
+    }
+  };
+};

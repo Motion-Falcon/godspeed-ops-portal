@@ -247,8 +247,11 @@
     "admins": "Admins",
     "recruiters": "Recruiters",
     "recruiter": "Recruiter",
-    "manager": "Manager",
-    "accountant": "Accountant",
+    "bookkeeper": "Bookkeeper",
+    "recruiter_manager": "Recruiter Manager",
+    "accountant_manager": "Accountant Manager",
+    "sales": "Sales",
+    "recruiter_director": "Recruiter Director",
     "jobseeker": "Job Seeker",
     "client": "Client"
   },
@@ -462,6 +465,7 @@
     "setManager": "Set Manager",
     "setRoles": "Set Roles",
     "availableRoles": "Available Roles",
+    "roleAssignmentUnauthorized": "Only admins and recruiter directors can assign user roles.",
     "selectManagerPlaceholder": "Select a manager...",
     "pagination": {
       "showing": "Showing",

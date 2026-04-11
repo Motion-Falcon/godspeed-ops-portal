@@ -34,7 +34,39 @@ import {
 } from "lucide-react";
 import { ThemeToggle } from "./theme-toggle";
 import { LanguageToggle } from "./LanguageToggle";
-import { getResolvedUserRoles, logoutUser, type AccessRole } from "../lib/auth";
+import {
+  getResolvedUserRoles,
+  hasAnyExactAccessRole,
+  logoutUser,
+  type AccessRole,
+} from "../lib/auth";
+import {
+  AI_CHAT_ROLES,
+  ALL_USERS_ROLES,
+  BULK_TIMESHEET_ROLES,
+  CALENDAR_ROLES,
+  CLIENT_CREATE_ROLES,
+  CLIENT_DRAFT_ROLES,
+  CLIENT_LIST_ROLES,
+  CONSENT_CREATE_ROLES,
+  CONSENT_LIST_ROLES,
+  DASHBOARD_ROLES,
+  DROPDOWN_OPTIONS_ROLES,
+  INVOICE_MANAGEMENT_ROLES,
+  INVITE_INTERNAL_USER_ROLES,
+  JOBSEEKER_DRAFT_ROLES,
+  JOBSEEKER_LIST_ROLES,
+  JOBSEEKER_MANAGEMENT_CREATE_ROLES,
+  POSITION_CREATE_ROLES,
+  POSITION_DRAFT_ROLES,
+  POSITION_LIST_ROLES,
+  POSITION_MATCHING_ROLES,
+  RECRUITER_HIERARCHY_ROLES,
+  REPORTS_ROLES,
+  SIN_WORK_PERMIT_ROLES,
+  TIMESHEET_MANAGEMENT_ROLES,
+  TRAINING_ROLES,
+} from "../constants/accessControl";
 import "../styles/components/hamburgerMenu.css";
 import { supabase } from "../lib/supabaseClient";
 
@@ -376,7 +408,7 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
       path: "/dashboard",
       icon: <Home size={16} />,
       requiresAuth: true,
-      roles: ["admin", "recruiter", "jobseeker"],
+      roles: DASHBOARD_ROLES,
       exact: true,
     },
     {
@@ -384,7 +416,7 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
       path: "/calendar",
       icon: <Calendar size={16} />,
       requiresAuth: true,
-      roles: ["admin", "recruiter"],
+      roles: CALENDAR_ROLES,
       exact: true,
     },
     {
@@ -392,7 +424,7 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
       path: "/training-modules",
       icon: <BookOpen size={16} />,
       requiresAuth: true,
-      roles: ["admin", "recruiter", "jobseeker"],
+      roles: TRAINING_ROLES,
       exact: true,
     },
     {
@@ -400,7 +432,7 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
       path: "/ai-chat",
       icon: <MessageSquare size={16} />,
       requiresAuth: true,
-      roles: ["admin"],
+      roles: AI_CHAT_ROLES,
       exact: true,
     },
 
@@ -409,14 +441,19 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
       label: t("navigation.userManagement"),
       icon: <Users size={16} />,
       requiresAuth: true,
-      roles: ["admin", "recruiter"],
+      roles: [
+        ...ALL_USERS_ROLES,
+        ...RECRUITER_HIERARCHY_ROLES,
+        ...INVITE_INTERNAL_USER_ROLES,
+        ...DROPDOWN_OPTIONS_ROLES,
+      ],
       submenu: [
         {
           label: t("navigation.allUsers"),
           path: "/all-users-management",
           icon: <Users size={16} />,
           exact: true,
-          roles: ["admin"],
+          roles: ALL_USERS_ROLES,
           activePaths: ["/all-users-management"]
         },
         {
@@ -424,21 +461,21 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
           path: "/recruiter-hierarchy",
           icon: <GitBranch size={16} />,
           exact: true,
-          roles: ["recruiter", "admin"],
+          roles: RECRUITER_HIERARCHY_ROLES,
         },
         {
           label: t("recruiterManagement.inviteRecruiter"),
           path: "/invite-recruiter",
           icon: <UserPlus size={16} />,
           exact: true,
-          roles: ["admin"],
+          roles: INVITE_INTERNAL_USER_ROLES,
         },
         {
           label: t("navigation.dropdownOptions"),
           path: "/admin/dropdown-options",
           icon: <ClipboardList size={16} />,
           exact: true,
-          roles: ["admin", "recruiter"],
+          roles: DROPDOWN_OPTIONS_ROLES,
         },
       ],
     },
@@ -446,31 +483,40 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
       label: t("navigation.jobseekerManagement"),
       icon: <Users size={16} />,
       requiresAuth: true,
-      roles: ["admin", "recruiter"],
+      roles: [
+        ...JOBSEEKER_LIST_ROLES,
+        ...JOBSEEKER_MANAGEMENT_CREATE_ROLES,
+        ...JOBSEEKER_DRAFT_ROLES,
+        ...SIN_WORK_PERMIT_ROLES,
+      ],
       submenu: [
         {
           label: t("navigation.allJobseekers"),
           path: "/jobseeker-management",
           icon: <ListChecks size={16} />,
           exact: true,
+          roles: JOBSEEKER_LIST_ROLES,
         },
         {
           label: t("navigation.createJobseeker"),
           path: "/profile/create",
           icon: <UserPlus size={16} />,
           exact: true,
+          roles: JOBSEEKER_MANAGEMENT_CREATE_ROLES,
         },
         {
           label: t("navigation.jobseekerDrafts"),
           path: "/jobseekers/drafts",
           icon: <FileEdit size={16} />,
           exact: true,
+          roles: JOBSEEKER_DRAFT_ROLES,
         },
         {
           label: t("navigation.sinWorkPermitManagement"),
           path: "/sin-work-permit-management",
           icon: <CreditCard size={16} />,
           exact: true,
+          roles: SIN_WORK_PERMIT_ROLES,
         },
       ],
     },
@@ -478,25 +524,28 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
       label: t("navigation.clientManagement"),
       icon: <Building2 size={16} />,
       requiresAuth: true,
-      roles: ["admin", "recruiter"],
+      roles: [...CLIENT_LIST_ROLES, ...CLIENT_CREATE_ROLES, ...CLIENT_DRAFT_ROLES],
       submenu: [
         {
           label: t("navigation.allClients"),
           path: "/client-management",
           icon: <Database size={16} />,
           exact: true,
+          roles: CLIENT_LIST_ROLES,
         },
         {
           label: t("navigation.createClient"),
           path: "/client-management/create",
           icon: <PlusCircle size={16} />,
           exact: true,
+          roles: CLIENT_CREATE_ROLES,
         },
         {
           label: t("navigation.draftClients"),
           path: "/client-management/drafts",
           icon: <FileText size={16} />,
           exact: true,
+          roles: CLIENT_DRAFT_ROLES,
         },
       ],
     },
@@ -504,37 +553,47 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
       label: t("navigation.positionManagement"),
       icon: <Briefcase size={16} />,
       requiresAuth: true,
-      roles: ["admin", "recruiter"],
+      roles: [
+        ...POSITION_LIST_ROLES,
+        ...POSITION_CREATE_ROLES,
+        ...POSITION_DRAFT_ROLES,
+        ...POSITION_MATCHING_ROLES,
+      ],
       submenu: [
         {
           label: t("navigation.allPositions"),
           path: "/position-management",
           icon: <ClipboardList size={16} />,
           exact: true,
+          roles: POSITION_LIST_ROLES,
         },
         {
           label: t("navigation.createPosition"),
           path: "/position-management/create",
           icon: <FilePlus size={16} />,
           exact: true,
+          roles: POSITION_CREATE_ROLES,
         },
         {
           label: t("navigation.createPositionSubcategory"),
           path: "/position-management/create-subcategory",
           icon: <PlusCircle size={16} />,
           exact: true,
+          roles: POSITION_CREATE_ROLES,
         },
         {
           label: t("navigation.draftPositions"),
           path: "/position-management/drafts",
           icon: <FileEdit size={16} />,
           exact: true,
+          roles: POSITION_DRAFT_ROLES,
         },
         {
           label: t("navigation.positionMatching"),
           path: "/position-matching",
           icon: <Users size={16} />,
           exact: true,
+          roles: POSITION_MATCHING_ROLES,
         },
       ],
     },
@@ -542,19 +601,21 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
       label: t("navigation.consentManagement"),
       icon: <FileText size={16} />,
       requiresAuth: true,
-      roles: ["admin", "recruiter"],
+      roles: [...CONSENT_LIST_ROLES, ...CONSENT_CREATE_ROLES],
       submenu: [
         {
           label: t("navigation.allConsentDocuments"),
           path: "/consent-dashboard",
           icon: <FileText size={16} />,
           exact: true,
+          roles: CONSENT_LIST_ROLES,
         },
         {
           label: t("navigation.createConsentDocument"),
           path: "/consent-dashboard/new",
           icon: <FilePlus size={16} />,
           exact: true,
+          roles: CONSENT_CREATE_ROLES,
         },
         {
           label: t("navigation.consentTemplates"),
@@ -578,37 +639,46 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
       label: t("navigation.financial"),
       icon: <Clock size={16} />,
       requiresAuth: true,
-      roles: ["admin", "recruiter"],
+      roles: [
+        ...TIMESHEET_MANAGEMENT_ROLES,
+        ...BULK_TIMESHEET_ROLES,
+        ...INVOICE_MANAGEMENT_ROLES,
+      ],
       submenu: [
         {
           label: t("navigation.timesheetManagement"),
           path: "/timesheet-management",
           icon: <Clock size={16} />,
           exact: true,
+          roles: TIMESHEET_MANAGEMENT_ROLES,
         },
         {
           label: t("navigation.createBulkTimesheet"),
           path: "/bulk-timesheet-management",
           icon: <FileSpreadsheet size={16} />,
           exact: true,
+          roles: BULK_TIMESHEET_ROLES,
         },
         {
           label: t("navigation.bulkTimesheetList"),
           path: "/bulk-timesheet-management/list",
           icon: <ListChecks size={16} />,
           exact: true,
+          roles: BULK_TIMESHEET_ROLES,
         },
         {
           label: t("navigation.invoiceManagement"),
           path: "/invoice-management",
           icon: <Receipt size={16} />,
           exact: true,
+          roles: INVOICE_MANAGEMENT_ROLES,
         },
         {
           label: t("navigation.invoiceList"),
           path: "/invoice-management/list",
           icon: <ListChecks size={16} />, // Use a list-style icon
           exact: true,
+          roles: INVOICE_MANAGEMENT_ROLES,
         },
       ],
     },
@@ -616,13 +686,14 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
       label: t("navigation.reportsAnalytics"),
       icon: <BarChart3 size={16} />,
       requiresAuth: true,
-      roles: ["admin", "recruiter"],
+      roles: REPORTS_ROLES,
       submenu: [
         {
           label: t("navigation.reports"),
           path: "/reports",
           icon: <BarChart3 size={16} />,
           exact: true,
+          roles: REPORTS_ROLES,
         },
       ],
     },
@@ -663,16 +734,13 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
 
       // Handle role-based access
       if (item.roles && item.roles.length > 0) {
-        if (isAdmin && item.roles.includes("admin")) return true;
-        if (isRecruiter && item.roles.includes("recruiter")) return true;
-
         // For jobseekers, check verification status
         if (isJobSeeker && item.roles.includes("jobseeker")) {
           // Only show menu items if profile is verified
           return profileVerificationStatus === "verified";
         }
 
-        return false;
+        return hasAnyExactAccessRole(user, item.roles);
       }
 
       return true;
@@ -687,14 +755,11 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
           // If submenu item has no role restrictions, show it
           if (!subItem.roles || subItem.roles.length === 0) return true;
 
-          // Check role-based access for submenu items
-          if (isAdmin && subItem.roles.includes("admin")) return true;
-          if (isRecruiter && subItem.roles.includes("recruiter")) return true;
           if (isJobSeeker && subItem.roles.includes("jobseeker")) {
             return profileVerificationStatus === "verified";
           }
 
-          return false;
+          return hasAnyExactAccessRole(user, subItem.roles);
         });
 
         return {
