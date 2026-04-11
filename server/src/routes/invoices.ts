@@ -7,7 +7,7 @@ import dotenv from "dotenv";
 import sgMail from "@sendgrid/mail";
 import { invoiceHtmlTemplate, invoiceTextTemplate } from "../email-templates/invoice-html.js";
 import { decode } from "html-entities";
-import { formatFromEmail } from "../middleware/emailNotifier.js";
+import { getNoReplyFromEmail } from "../middleware/emailNotifier.js";
 
 sgMail.setApiKey(process.env.SENDGRID_API_KEY!);
 
@@ -1469,7 +1469,7 @@ router.post(
       const sendPayload = {
         to: email,
         cc: cc.length > 0 ? cc : undefined,
-        from: formatFromEmail(process.env.DEFAULT_FROM_EMAIL as string),
+        from: getNoReplyFromEmail(),
         subject,
         html,
         text,

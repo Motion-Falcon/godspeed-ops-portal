@@ -6,7 +6,7 @@ import activityLogger from '../middleware/activityLogger.js';
 import sgMail from '@sendgrid/mail';
 import { onboardingReminderHtmlTemplate } from '../email-templates/onboarding-reminder-html.js';
 import { onboardingReminderTextTemplate } from '../email-templates/onboarding-reminder-txt.js';
-import { formatFromEmail } from '../middleware/emailNotifier.js';
+import { getNoReplyFromEmail } from '../middleware/emailNotifier.js';
 
 dotenv.config();
 
@@ -707,7 +707,7 @@ router.post(
         try {
           await sgMail.send({
             to: user.email,
-            from: formatFromEmail(process.env.DEFAULT_FROM_EMAIL as string),
+            from: getNoReplyFromEmail(),
             subject: 'Complete Your Account Setup - Action Required',
             text: textContent,
             html: htmlContent,

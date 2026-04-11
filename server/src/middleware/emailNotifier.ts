@@ -18,6 +18,14 @@ interface EmailData {
   from?: string;
 }
 
+function getFormattedFromEmail(
+  primaryEmail: string | undefined,
+  fallbackEmail: string | undefined,
+  defaultEmail: string,
+): string {
+  return formatFromEmail(primaryEmail || fallbackEmail || defaultEmail);
+}
+
 /**
  * Formats an email address with a display name
  * @param email - The email address
@@ -32,6 +40,22 @@ export function formatFromEmail(email: string, displayName?: string): string {
   // Use provided displayName, or fall back to environment variable, or default to "HDGroup"
   const brandName = displayName || process.env.PORTAL_NAME || '';
   return `${brandName} Ops Portal <${email}>`;
+}
+
+export function getNoReplyFromEmail(): string {
+  return getFormattedFromEmail(
+    process.env.NO_REPLY_FROM_EMAIL,
+    process.env.DEFAULT_FROM_EMAIL,
+    "noreply@example.com",
+  );
+}
+
+export function getAssignmentFromEmail(): string {
+  return getFormattedFromEmail(
+    process.env.ASSIGNMENT_FROM_EMAIL,
+    process.env.NO_REPLY_FROM_EMAIL || process.env.DEFAULT_FROM_EMAIL,
+    "noreply@example.com",
+  );
 }
 
 interface EmailNotifierOptions {
@@ -53,7 +77,7 @@ export const emailNotifier = (options: EmailNotifierOptions = {}) => {
             for (const email of emails) {
               // Ensure 'text' is always a string (required by SendGrid)
               const text = email.text ?? '';
-              const fromEmail = formatFromEmail(process.env.DEFAULT_FROM_EMAIL as string);
+              const fromEmail = email.from || getNoReplyFromEmail();
               console.log('[EmailNotifier] Sending email:', {
                 to: email.to,
                 subject: email.subject,
