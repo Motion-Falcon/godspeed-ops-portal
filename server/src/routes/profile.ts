@@ -33,6 +33,41 @@ if (!supabaseUrl || !supabaseKey) {
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+function hasUploadedDocument(
+  documents: Document[] | undefined,
+  documentType: string
+): boolean {
+  if (!Array.isArray(documents)) {
+    return false;
+  }
+
+  return documents.some(
+    (document) =>
+      document.documentType === documentType &&
+      typeof document.documentPath === "string" &&
+      document.documentPath.trim().length > 0
+  );
+}
+
+function getRequiredDocumentValidationError(
+  documents: Document[] | undefined,
+  sinNumber?: string
+): string | null {
+  if (!hasUploadedDocument(documents, "sin")) {
+    return "SIN document is required";
+  }
+
+  if (!hasUploadedDocument(documents, "government_id")) {
+    return "Government ID document is required";
+  }
+
+  if (sinNumber?.trim().startsWith("9") && !hasUploadedDocument(documents, "work_permit")) {
+    return "Work permit document is required for temporary residents";
+  }
+
+  return null;
+}
+
 /**
  * Submit complete jobseeker profile with security measures
  * POST /api/profile/submit
@@ -180,6 +215,14 @@ router.post(
         return res.status(400).json({
           error: "Either license number or passport number is required",
         });
+      }
+
+      const documentValidationError = getRequiredDocumentValidationError(
+        profileData.documents,
+        profileData.sinNumber
+      );
+      if (documentValidationError) {
+        return res.status(400).json({ error: documentValidationError });
       }
 
       // Check if the email already exists in jobseeker_profiles table
