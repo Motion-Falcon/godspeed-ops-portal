@@ -59,14 +59,8 @@ const bodySource = `
   </tr>
   <tr>
     <td style="${S.tdLabel}">Regular Rate</td>
-    <td style="${S.tdValue}text-align:right;">{{currency regularPayRate}}/hr</td>
+    <td style="${S.tdValue}text-align:right;">{{currency effectiveRegularRate}}/hr</td>
   </tr>
-  {{#if showPremium}}
-  <tr>
-    <td style="${S.tdLabel}">Premium Rate</td>
-    <td style="${S.tdValue}text-align:right;">{{currency premiumPayRate}}/hr</td>
-  </tr>
-  {{/if}}
   <tr>
     <td style="${S.tdLabel}">Regular Pay</td>
     <td style="${S.tdValue}text-align:right;">{{currency regularPay}}</td>
@@ -129,7 +123,8 @@ export function timesheetHtmlTemplate(vars: Record<string, any>): string {
   const cashDedPct = toNum(vars.cash_deduction_percentage);
   const cashDedAmt = toNum(vars.cash_deduction_amount);
   const totalPay = toNum(vars.total_jobseeker_pay);
-  const regularPay = totalRegH * (regularPayRate + premiumPayRate);
+  const effectiveRegularRate = regularPayRate + premiumPayRate;
+  const regularPay = totalRegH * effectiveRegularRate;
   const overtimePay = totalOtH * overtimePayRate;
 
   const dailyRows = vars.daily_hours
@@ -146,7 +141,7 @@ export function timesheetHtmlTemplate(vars: Record<string, any>): string {
     totalRegH,
     totalOtH,
     regularPayRate,
-    premiumPayRate,
+    effectiveRegularRate,
     overtimePayRate,
     bonusAmt,
     dedAmt,
@@ -155,7 +150,6 @@ export function timesheetHtmlTemplate(vars: Record<string, any>): string {
     totalPay,
     regularPay,
     overtimePay,
-    showPremium: premiumPayRate > 0,
     showOvertime: vars.overtime_enabled && totalOtH > 0,
     showBonus: bonusAmt > 0,
     showDeduction: dedAmt > 0,
