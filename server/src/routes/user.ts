@@ -1,7 +1,7 @@
 import express from 'express';
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
-import { authenticateToken, isAdminOrRecruiter, authorizeRoles, getResolvedUserRoles } from '../middleware/auth.js';
+import { authenticateToken, isAdminOrRecruiter, authorizeRoles, getResolvedUserRoles, hasAccessRole } from '../middleware/auth.js';
 import activityLogger from '../middleware/activityLogger.js';
 import sgMail from '@sendgrid/mail';
 import { onboardingReminderHtmlTemplate } from '../email-templates/onboarding-reminder-html.js';
@@ -428,8 +428,26 @@ router.patch(
     const { id } = req.params as { id: string };
     const { roles } = req.body as { roles?: unknown };
 
+    if (!hasAccessRole(req.user, 'admin') && !hasAccessRole(req.user, 'recruiter_director')) {
+      return res.status(403).json({
+        error: 'Access denied',
+        message: 'Only admins and recruiter directors can update user roles',
+      });
+    }
+
     // Do not allow assigning 'admin' role via this endpoint
-    const ALLOWED_ROLES = ['recruiter', 'manager', 'accountant'];
+    const ALLOWED_ROLES = [
+      'recruiter',
+      'bookkeeper',
+      'recruiter_manager',
+      'accountant_manager',
+      'sales',
+      'recruiter_director',
+    ] as const;
+    const LEGACY_ROLE_ALIASES: Record<string, (typeof ALLOWED_ROLES)[number]> = {
+      manager: 'recruiter_manager',
+      accountant: 'bookkeeper',
+    };
 
     // Validate roles input
     if (!Array.isArray(roles)) {
@@ -438,6 +456,7 @@ router.patch(
     const sanitizedRoles = roles
       .filter((r): r is string => typeof r === 'string')
       .map((r) => r.trim())
+      .map((r) => LEGACY_ROLE_ALIASES[r] ?? r)
       .filter((r) => r.length > 0);
 
     // Validate allowed values

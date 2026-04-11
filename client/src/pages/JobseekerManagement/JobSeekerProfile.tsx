@@ -33,6 +33,7 @@ import {
   updateJobseekerStatus,
   deleteJobseeker,
 } from "../../services/api/jobseeker";
+import { hasAnyExactAccessRole } from "../../lib/auth";
 import { DocumentRecord } from "../../types/jobseeker";
 import { supabase } from "../../lib/supabaseClient";
 import PDFThumbnail from "../../components/PDFThumbnail";
@@ -364,7 +365,7 @@ export function JobSeekerProfile() {
   const [showFullRejectionReason, setShowFullRejectionReason] =
     useState<boolean>(false);
   const { id } = useParams<{ id: string }>();
-  const { isAdmin, isRecruiter, isJobSeeker } = useAuth();
+  const { user, isAdmin, isRecruiter, isJobSeeker } = useAuth();
   const navigate = useNavigate();
   const { t } = useLanguage();
 
@@ -1547,7 +1548,7 @@ export function JobSeekerProfile() {
                 >
                   <Pencil size={20} className="icon" />
                 </button>
-                {(isAdmin || isRecruiter) && (
+                {hasAnyExactAccessRole(user, ["admin", "recruiter_manager", "recruiter_director"]) && (
                   <button
                     className="action-icon-btn delete-btn"
                     onClick={handleDeleteProfile}

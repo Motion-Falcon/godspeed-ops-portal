@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
 import { createClient } from "@supabase/supabase-js";
-import { authenticateToken, authorizeRoles } from "../middleware/auth.js";
+import { authenticateToken, authorizeExactRoles, authorizeRoles } from "../middleware/auth.js";
 import { sanitizeInputs, apiRateLimiter } from "../middleware/security.js";
 import { activityLogger } from "../middleware/activityLogger.js";
 import dotenv from "dotenv";
@@ -1286,7 +1286,7 @@ router.put(
 router.delete(
   "/:id",
   authenticateToken,
-  authorizeRoles(["admin", "recruiter"]),
+  authorizeExactRoles(["admin", "recruiter_manager", "recruiter_director"]),
   activityLogger({
     onSuccess: (req, res) => ({
       actionType: "delete_position",
@@ -1362,7 +1362,7 @@ router.delete(
 router.post(
   "/:id/assign",
   authenticateToken,
-  authorizeRoles(["admin", "recruiter"]),
+  authorizeExactRoles(["admin", "recruiter", "recruiter_manager", "recruiter_director"]),
   sanitizeInputs,
   activityLogger({
     onSuccess: (req, res) => ({
@@ -1707,7 +1707,7 @@ router.post(
 router.delete(
   "/:id/assign/:candidateId",
   authenticateToken,
-  authorizeRoles(["admin", "recruiter"]),
+  authorizeExactRoles(["admin", "recruiter_manager", "recruiter_director"]),
   activityLogger({
     onSuccess: (req, res) => ({
       actionType: "remove_jobseeker",

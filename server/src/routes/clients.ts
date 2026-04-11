@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { createClient } from '@supabase/supabase-js';
-import { authenticateToken, authorizeRoles } from '../middleware/auth.js';
+import { authenticateToken, authorizeExactRoles, authorizeRoles } from '../middleware/auth.js';
 import { sanitizeInputs, apiRateLimiter } from '../middleware/security.js';
 import dotenv from 'dotenv';
 import { ClientData, DbClientData } from '../types.js';
@@ -1111,7 +1111,7 @@ router.get('/draft',
  */
 router.delete('/:id', 
   authenticateToken, 
-  authorizeRoles(['admin', 'recruiter']),
+  authorizeExactRoles(['admin', 'recruiter_manager', 'recruiter_director']),
   activityLogger({
     onSuccess: (req, res) => ({
       actionType: 'delete_client',

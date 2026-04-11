@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/language/language-provider";
+import { hasAnyExactAccessRole } from "../../lib/auth";
 import Lottie from "lottie-react";
 import {
   Users,
@@ -20,6 +21,7 @@ import {
   BriefcaseIcon,
   Shield,
   Award,
+  CheckCircle,
   Eye,
 } from "lucide-react";
 import {
@@ -39,6 +41,10 @@ import "../../styles/components/CommonTable.css";
 import "../../styles/components/form.css";
 import aiLoadingAnimation from "../../assets/animations/aipoisitionmatching.json";
 import { ConfirmationModal } from "../../components/ConfirmationModal";
+import {
+  POSITION_MATCHING_ROLES,
+  REMOVE_ASSIGNED_JOBSEEKER_ROLES,
+} from "../../constants/accessControl";
 
 interface PaginationInfo {
   page: number;
@@ -112,7 +118,7 @@ export function PositionMatching() {
     "success"
   );
 
-  const { isAdmin, isRecruiter } = useAuth();
+  const { user } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -120,7 +126,14 @@ export function PositionMatching() {
   const animationData = aiLoadingAnimation;
 
   // Memoized values
-  const isAuthorized = useMemo(() => isAdmin || isRecruiter, [isAdmin, isRecruiter]);
+  const isAuthorized = useMemo(
+    () => hasAnyExactAccessRole(user, POSITION_MATCHING_ROLES),
+    [user]
+  );
+  const canRemoveAssignedJobseekers = useMemo(
+    () => hasAnyExactAccessRole(user, REMOVE_ASSIGNED_JOBSEEKER_ROLES),
+    [user]
+  );
 
   const clientOptions = useMemo((): DropdownOption[] =>
     clients.map((client) => ({
@@ -434,6 +447,10 @@ export function PositionMatching() {
   // Handle candidate removal
   const handleRemoveCandidate = useCallback(async (candidateId: string) => {
     if (!selectedPosition?.id) return;
+    if (!canRemoveAssignedJobseekers) {
+      setStatusWithTimeout(t("positionMatching.errors.removeCandidateFailed"), "error");
+      return;
+    }
 
     setAssignmentLoading(candidateId);
 
@@ -462,7 +479,7 @@ export function PositionMatching() {
     } finally {
       setAssignmentLoading(null);
     }
-  }, [selectedPosition?.id, assignedJobseekers, fetchAssignedJobseekers, setStatusWithTimeout, t]);
+  }, [canRemoveAssignedJobseekers, selectedPosition?.id, assignedJobseekers, fetchAssignedJobseekers, setStatusWithTimeout, t]);
 
   // Pagination handlers
   const handlePageChange = useCallback((newPage: number) => {
@@ -776,23 +793,30 @@ export function PositionMatching() {
                             {assignedJobseekers.some(
                               (js) => js.userId === candidate.candidateId
                             ) ? (
-                              <button
-                                className="remove-btn"
-                                onClick={() => openConfirmationModal("remove", candidate)}
-                                disabled={assignmentLoading === candidate.candidateId}
-                              >
-                                {assignmentLoading === candidate.candidateId ? (
-                                  <>
-                                    <div className="loading-spinner small"></div>
-                                    {t("positionMatching.buttons.removing")}
-                                  </>
-                                ) : (
-                                  <>
-                                    <Minus size={16} />
-                                    {t("buttons.remove")}
-                                  </>
-                                )}
-                              </button>
+                              canRemoveAssignedJobseekers ? (
+                                <button
+                                  className="remove-btn"
+                                  onClick={() => openConfirmationModal("remove", candidate)}
+                                  disabled={assignmentLoading === candidate.candidateId}
+                                >
+                                  {assignmentLoading === candidate.candidateId ? (
+                                    <>
+                                      <div className="loading-spinner small"></div>
+                                      {t("positionMatching.buttons.removing")}
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Minus size={16} />
+                                      {t("buttons.remove")}
+                                    </>
+                                  )}
+                                </button>
+                              ) : (
+                                <button className="assigned-btn" type="button" disabled>
+                                  <CheckCircle size={16} />
+                                  {t("positionMatching.status.assigned")}
+                                </button>
+                              )
                             ) : (
                               <button
                                 className="assign-btn"
@@ -1181,17 +1205,23 @@ export function PositionMatching() {
                                 </div>
                               </div>
                               <div className="slot-actions">
-                                <button
-                                  className="remove-slot-btn"
-                                  onClick={() => openConfirmationModal("remove", jobseeker)}
-                                  disabled={assignmentLoading === jobseeker.id}
-                                >
-                                  {assignmentLoading === jobseeker.id ? (
-                                    <div className="loading-spinner small"></div>
-                                  ) : (
-                                    <Minus size={14} />
-                                  )}
-                                </button>
+                                {canRemoveAssignedJobseekers ? (
+                                  <button
+                                    className="remove-slot-btn"
+                                    onClick={() => openConfirmationModal("remove", jobseeker)}
+                                    disabled={assignmentLoading === jobseeker.id}
+                                  >
+                                    {assignmentLoading === jobseeker.id ? (
+                                      <div className="loading-spinner small"></div>
+                                    ) : (
+                                      <Minus size={14} />
+                                    )}
+                                  </button>
+                                ) : (
+                                  <button className="assigned-slot-btn" type="button" disabled>
+                                    {t("positionMatching.status.assigned")}
+                                  </button>
+                                )}
                               </div>
                             </div>
                           </div>

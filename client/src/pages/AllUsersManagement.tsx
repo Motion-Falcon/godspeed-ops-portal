@@ -17,6 +17,7 @@ import "../styles/pages/JobSeekerManagement.css";
 import "../styles/components/CommonTable.css";
 import "../styles/pages/AllUsersManagement.css";
 import { USER_ROLES } from "../constants/formOptions";
+import { hasAccessRole } from "../lib/auth";
 import { getAllAuthUsersAPI, setUserManagerAPI, setUserRolesAPI, resendInvitationAPI } from "../services/api/user";
 import { clearCacheFor } from "../services/api";
 import { CustomDropdown, DropdownOption } from "../components/CustomDropdown";
@@ -60,7 +61,8 @@ export function AllUsersManagement() {
   const [emailVerifiedFilter, setEmailVerifiedFilter] = useState("");
   const [userRoleFilter, setUserRoleFilter] = useState("");
   const [managerIdFilter, setManagerIdFilter] = useState("");
-  const { isAdmin, isRecruiter } = useAuth();
+  const { user, isAdmin, isRecruiter } = useAuth();
+  const canAssignRoles = isAdmin || hasAccessRole(user, "recruiter_director");
 
   // Manager modal state
   const [isManagerModalOpen, setIsManagerModalOpen] = useState(false);
@@ -263,6 +265,10 @@ export function AllUsersManagement() {
   };
 
   const openRolesModal = (user: AllAuthUserListItem) => {
+    if (!canAssignRoles) {
+      pushStatus(t('userManagement.roleAssignmentUnauthorized'), 3000, 'error');
+      return;
+    }
     // Only recruiter-type accounts should have editable roles.
     if (user.userType?.toLowerCase() !== 'recruiter') {
       pushStatus(t('messages.error'), 3000, 'error');
@@ -628,7 +634,7 @@ export function AllUsersManagement() {
                             <span className={`user-type-badge ${getUserTypeBadgeClass(displayRole)}`}>
                               {t(`roles.${displayRole}`)}
                             </span>
-                          ) : (
+                          ) : canAssignRoles ? (
                             <button
                               className={`user-role-badge ${getUserTypeBadgeClass(displayRole)}`}
                               onClick={() => openRolesModal(user)}
@@ -637,6 +643,10 @@ export function AllUsersManagement() {
                             >
                               {displayRoleLabel || t('roles.recruiter')} <Edit size={14} className="edit-icon" />
                             </button>
+                          ) : (
+                            <span className={`user-type-badge ${getUserTypeBadgeClass(displayRole)}`}>
+                              {displayRoleLabel || t('roles.recruiter')}
+                            </span>
                           )}
                         </td>
                         <td className="email-verified-cell">

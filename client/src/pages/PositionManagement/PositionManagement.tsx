@@ -20,6 +20,9 @@ import { ConfirmationModal } from "../../components/ConfirmationModal";
 import { AppHeader } from "../../components/AppHeader";
 import { useLanguage } from "../../contexts/language/language-provider";
 import { getClickableRowProps } from "../../hooks/useClickableTableRow";
+import { useAuth } from "../../contexts/AuthContext";
+import { hasAnyExactAccessRole } from "../../lib/auth";
+import { DELETE_POSITION_ROLES } from "../../constants/accessControl";
 import "../../styles/pages/PositionManagement.css";
 import "../../styles/components/header.css";
 import "../../styles/components/CommonTable.css";
@@ -79,6 +82,8 @@ export function PositionManagement() {
   const [showEditConfirmation, setShowEditConfirmation] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const { user } = useAuth();
+  const canDeletePositions = hasAnyExactAccessRole(user, DELETE_POSITION_ROLES);
 
   const convertToCamelCase = (
     data: Record<string, unknown>
@@ -812,9 +817,10 @@ export function PositionManagement() {
                           </button>
                           <button
                             className="action-icon-btn edit-btn"
-                            onClick={() =>
-                              confirmEditPosition(position.id as string)
-                            }
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              confirmEditPosition(position.id as string);
+                            }}
                             title={t("positionManagement.actions.editPosition")}
                             aria-label={t(
                               "positionManagement.actions.editPosition"
@@ -822,12 +828,13 @@ export function PositionManagement() {
                           >
                             <Pencil size={16} />
                           </button>
-                          {false && (
+                          {canDeletePositions && (
                             <button
                               className="action-icon-btn delete-btn"
-                              onClick={() =>
-                                confirmDeletePosition(position.id as string)
-                              }
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                confirmDeletePosition(position.id as string);
+                              }}
                               title={t(
                                 "positionManagement.actions.deletePosition"
                               )}

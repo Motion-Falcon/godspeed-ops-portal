@@ -247,8 +247,11 @@
     "admins": "Administrateurs",
     "recruiters": "Recruteurs",
     "recruiter": "Recruteur",
-    "manager": "Gestionnaire",
-    "accountant": "Comptable",
+    "bookkeeper": "Teneur de livres",
+    "recruiter_manager": "Gestionnaire du recrutement",
+    "accountant_manager": "Gestionnaire comptable",
+    "sales": "Ventes",
+    "recruiter_director": "Directeur du recrutement",
     "jobseeker": "Chercheur d'emploi",
     "client": "Client"
   },
@@ -462,6 +465,7 @@
     "setManager": "Définir le gestionnaire",
     "setRoles": "Définir les rôles",
     "availableRoles": "Rôles disponibles",
+    "roleAssignmentUnauthorized": "Seuls les administrateurs et les directeurs du recrutement peuvent attribuer des rôles.",
     "selectManagerPlaceholder": "Sélectionner un gestionnaire...",
     "pagination": {
       "showing": "Affichage",
