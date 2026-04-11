@@ -532,7 +532,8 @@
 }
 
 .assign-btn,
-.remove-btn {
+.remove-btn,
+.assigned-btn {
   display: flex;
   align-items: center;
   gap: var(--spacing-1);
@@ -567,10 +568,22 @@
   color: white;
 }
 
+.assigned-btn {
+  background: #2563eb;
+  color: white;
+  cursor: default;
+}
+
 .remove-btn:hover {
   background: var(--failure);
   opacity: 0.9;
   transform: translateY(-1px);
+}
+
+.assigned-btn:hover {
+  background: #2563eb;
+  opacity: 1;
+  transform: none;
 }
 
 .candidate-details {
@@ -857,6 +870,17 @@
   transform: scale(1.1);
 }
 
+.assigned-slot-btn {
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 9999px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: default;
+}
+
 .slot-content {
   display: flex;
   justify-content: space-between;
@@ -1115,7 +1139,8 @@
   }
 
   .assign-btn,
-  .remove-btn {
+  .remove-btn,
+  .assigned-btn {
     padding: var(--spacing-1) var(--spacing-2);
     font-size: 12px;
   }

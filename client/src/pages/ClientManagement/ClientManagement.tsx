@@ -20,6 +20,9 @@ import { getDropdownOptions } from "../../services/api/dropdownOptions";
 import { AppHeader } from "../../components/AppHeader";
 import { ConfirmationModal } from "../../components/ConfirmationModal";
 import { getClickableRowProps } from "../../hooks/useClickableTableRow";
+import { useAuth } from "../../contexts/AuthContext";
+import { hasAnyExactAccessRole } from "../../lib/auth";
+import { DELETE_CLIENT_ROLES } from "../../constants/accessControl";
 import "../../styles/components/CommonTable.css";
 import "../../styles/pages/ClientManagement.css";
 
@@ -82,6 +85,8 @@ export function ClientManagement() {
   // Edit confirmation state
   const [clientToEdit, setClientToEdit] = useState<ClientData | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const { user } = useAuth();
+  const canDeleteClients = hasAnyExactAccessRole(user, DELETE_CLIENT_ROLES);
 
   const getFieldValue = (
     client: ClientData,
@@ -642,16 +647,22 @@ export function ClientManagement() {
                           </button>
                           <button
                             className="action-icon-btn edit-btn"
-                            onClick={() => handleEditClick(client)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditClick(client);
+                            }}
                             title="Edit this client"
                             aria-label="Edit client"
                           >
                             <Pencil size={16} />
                           </button>
-                          {false && (
+                          {canDeleteClients && (
                             <button
                               className="action-icon-btn delete-btn"
-                              onClick={() => handleDeleteClick(client)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteClick(client);
+                              }}
                               title="Delete this client"
                               aria-label="Delete client"
                             >

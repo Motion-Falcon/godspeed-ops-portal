@@ -9,25 +9,53 @@ import type { AllAuthUserListItem } from '../types/auth';
 export type UserRole = 'jobseeker' | 'recruiter' | 'admin';
 
 // Effective access roles used for feature access and UI display
-export type AccessRole = UserRole | 'manager' | 'accountant';
+export type AccessRole =
+  | UserRole
+  | 'bookkeeper'
+  | 'recruiter_manager'
+  | 'accountant_manager'
+  | 'sales'
+  | 'recruiter_director';
 
 const ROLE_DISPLAY_ORDER: AccessRole[] = [
   'admin',
-  'manager',
-  'accountant',
+  'recruiter_director',
+  'recruiter_manager',
+  'accountant_manager',
+  'bookkeeper',
+  'sales',
   'recruiter',
   'jobseeker',
 ];
 
-const RECRUITER_ACCESS_ROLES: AccessRole[] = ['recruiter', 'manager', 'accountant'];
+const RECRUITER_ACCESS_ROLES: AccessRole[] = [
+  'recruiter',
+  'bookkeeper',
+  'recruiter_manager',
+  'accountant_manager',
+  'sales',
+  'recruiter_director',
+];
+
+const LEGACY_ROLE_ALIASES: Record<string, AccessRole> = {
+  manager: 'recruiter_manager',
+  accountant: 'bookkeeper',
+};
 
 function normalizeAccessRole(role: unknown): AccessRole | null {
+  if (typeof role === 'string' && role in LEGACY_ROLE_ALIASES) {
+    return LEGACY_ROLE_ALIASES[role];
+  }
+
   if (
     role === 'jobseeker' ||
     role === 'recruiter' ||
     role === 'admin' ||
-    role === 'manager' ||
-    role === 'accountant'
+    role === 'bookkeeper' ||
+    role === 'recruiter_manager' ||
+    role === 'accountant_manager' ||
+    role === 'sales' ||
+    role === 'recruiter_director'
   ) {
     return role;
   }
@@ -79,7 +107,9 @@ export function getUserRoles(user: User | null): string[] {
   const rawRoles = (metadata as Record<string, unknown>).user_role;
   if (!Array.isArray(rawRoles)) return [];
 
-  return rawRoles.filter((role): role is string => typeof role === "string");
+  return rawRoles
+    .filter((role): role is string => typeof role === "string")
+    .map((role) => normalizeAccessRole(role) ?? role);
 }
 
 function resolveUserRoles(userType: UserRole, rawRoles: string[]): AccessRole[] {
@@ -143,6 +173,14 @@ export function hasAccessRole(user: User | null, role: AccessRole): boolean {
 
 export function hasAnyAccessRole(user: User | null, roles: AccessRole[]): boolean {
   return roles.some((role) => hasAccessRole(user, role));
+}
+
+export function hasExactAccessRole(user: User | null, role: AccessRole): boolean {
+  return getResolvedUserRoles(user).includes(role);
+}
+
+export function hasAnyExactAccessRole(user: User | null, roles: AccessRole[]): boolean {
+  return roles.some((role) => hasExactAccessRole(user, role));
 }
 
 // Check if user has a metadata role from user_role[]
@@ -209,7 +247,9 @@ export function getUserRolesFromRaw(raw: unknown): string[] {
   const metaObj = meta as Record<string, unknown>;
   const roles = metaObj['user_role'];
   if (!Array.isArray(roles)) return [];
-  return roles.filter((r): r is string => typeof r === 'string');
+  return roles
+    .filter((r): r is string => typeof r === "string")
+    .map((role) => normalizeAccessRole(role) ?? role);
 }
 
 // Helper: safely extract manager_id (uuid string) from raw user JSON
