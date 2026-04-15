@@ -713,10 +713,12 @@ router.get('/check-email', async (req, res) => {
       return res.status(400).json({ error: 'Email parameter is required' });
     }
 
+    const emailNormalized = email.trim().toLowerCase();
+
     // Use existing SQL function to check if user exists by email
     const { data: userId, error } = await supabase.rpc(
       'get_user_id_by_email',
-      { user_email: email }
+      { user_email: emailNormalized }
     );
     
     if (error) {
@@ -729,7 +731,7 @@ router.get('/check-email', async (req, res) => {
     
     return res.json({
       available: !emailExists,
-      email: email,
+      email: emailNormalized,
       ...(emailExists && { existingUserId: userId })
     });
     
