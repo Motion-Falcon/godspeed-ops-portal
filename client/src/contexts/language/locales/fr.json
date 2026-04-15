@@ -989,6 +989,19 @@
     "submitChanges": "Oui, soumettre les modifications",
     "profileStatusChangeNoticeTitle": "Avis de changement de statut du profil",
     "profileStatusChangeNoticeMessage": "La modification de votre profil réinitialisera votre statut de vérification à 'en attente'. Tant que votre profil est en attente, il ne sera pas visible par les employeurs jusqu'à ce que notre équipe examine et approuve les modifications. Voulez-vous continuer vers la page d'édition ?",
+    "profileCreatedSuccess": "Profil cree avec succes",
+    "submissionStatus": {
+      "progressTitle": "Creation du profil du demandeur d'emploi",
+      "progressDescription": "Veuillez garder cette fenetre ouverte pendant que nous terminons la configuration finale.",
+      "uploadTitle": "Televersement des documents",
+      "uploadDescription": "Enregistrement securise des fichiers selectionnes avant la soumission du profil.",
+      "accountTitle": "Creation du compte si necessaire",
+      "accountDescription": "Verification de l'existence d'un acces et creation d'un compte si necessaire.",
+      "profileTitle": "Creation du profil",
+      "profileDescription": "Envoi des donnees finales du profil pour creation.",
+      "successTitle": "Profil cree avec succes",
+      "successDescription": "Retour vers la gestion des demandeurs d'emploi..."
+    },
     "personalInfo": {
       "sectionTitle": "Informations personnelles",
       "sectionDescription": "Veuillez fournir vos informations personnelles de base. Les champs marqués d'un * sont obligatoires.",

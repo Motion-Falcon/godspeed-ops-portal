@@ -73,8 +73,22 @@ export interface DraftResponse {
   updatedByUserId?: string | null;
 }
 
+export interface SubmitProfileResponse {
+  success: boolean;
+  message: string;
+  accountCreated?: boolean;
+  email?: string;
+  password?: string;
+  profile?: {
+    id?: string;
+    [key: string]: unknown;
+  } | null;
+}
+
 // Profile API endpoints
-export const submitProfile = async (profileData: ProfileData) => {
+export const submitProfile = async (
+  profileData: ProfileData
+): Promise<SubmitProfileResponse> => {
   try {
     const response = await api.post("/api/profile/submit", profileData);
     return response.data;
