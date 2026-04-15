@@ -383,7 +383,7 @@ export function ProfileAccountCreated() {
           
           <button 
             className="button secondary"
-            onClick={() => navigate('/jobseekers')}
+            onClick={() => navigate('/jobseeker-management')}
           >
             {t('profileAccountCreated.viewAllJobseekers')}
           </button>
