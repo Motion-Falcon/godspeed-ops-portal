@@ -214,6 +214,10 @@ router.post(
         }
       }
 
+      // Auth stores emails lowercase; RPC used to match exactly and missed mixed-case input,
+      // causing duplicate sign-up attempts and FK failures on jobseeker_profiles.
+      const emailNormalized = String(profileData.email).trim().toLowerCase();
+
       // Validate business logic - at least one ID must be present
       if (!profileData.licenseNumber && !profileData.passportNumber) {
         return res.status(400).json({
@@ -234,7 +238,7 @@ router.post(
         await supabase
           .from("jobseeker_profiles")
           .select("id, email")
-          .eq("email", profileData.email)
+          .eq("email", emailNormalized)
           .maybeSingle();
 
       if (emailCheckError) {
@@ -272,7 +276,7 @@ router.post(
         // Execute a custom SQL query to find a user with the given email
         const { data: userByEmail, error: userLookupError } =
           await supabase.rpc("get_user_id_by_email", {
-            user_email: profileData.email,
+            user_email: emailNormalized,
           });
 
         if (userLookupError) {
@@ -284,7 +288,7 @@ router.post(
           // If a user with the provided email exists, use their ID
           profileUserId = userByEmail;
           console.log(
-            `Found existing user account for email ${profileData.email}, using ID: ${profileUserId}`
+            `Found existing user account for email ${emailNormalized}, using ID: ${profileUserId}`
           );
 
           // Get existing user metadata to merge with updates
@@ -295,7 +299,7 @@ router.post(
           }
         } else {
           console.log(
-            `No existing user account found for email ${profileData.email}, creating new account`
+            `No existing user account found for email ${emailNormalized}, creating new account`
           );
 
           // Generate a random password that meets password validation requirements
@@ -335,19 +339,18 @@ router.post(
           // Replace the randomPassword generation with our new function
           const randomPassword = generateSecurePassword();
 
-          // Create a new user account
-          const { data: newUser, error: signupError } =
-            await supabase.auth.signUp({
-              email: profileData.email,
+          // Server-side user creation (avoids signUp client/session quirks)
+          const { data: newUserData, error: signupError } =
+            await supabase.auth.admin.createUser({
+              email: emailNormalized,
               password: randomPassword,
-              options: {
-                data: {
-                  name: `${profileData.firstName} ${profileData.lastName}`,
-                  user_type: "jobseeker",
-                  hasProfile: true, // Set hasProfile flag for new users
-                  phoneNumber: profileData.mobile,
-                  welcome_email_sent: true, // Welcome email is sent via emailNotifier below
-                },
+              email_confirm: true,
+              user_metadata: {
+                name: `${profileData.firstName} ${profileData.lastName}`,
+                user_type: "jobseeker",
+                hasProfile: true,
+                phoneNumber: profileData.mobile,
+                welcome_email_sent: true,
               },
             });
 
@@ -358,14 +361,14 @@ router.post(
                 signupError.message ||
                 "Failed to create user account. Please try again or use a different email.",
             });
-          } else if (newUser?.user) {
-            profileUserId = newUser.user.id;
-            existingUserMetadata = newUser.user.user_metadata || {};
+          } else if (newUserData?.user) {
+            profileUserId = newUserData.user.id;
+            existingUserMetadata = newUserData.user.user_metadata || {};
             console.log(`Created new user account with ID: ${profileUserId}`);
 
             // Add account information to the response
             responseData.accountCreated = true;
-            responseData.email = profileData.email;
+            responseData.email = emailNormalized;
             responseData.password = randomPassword;
 
             // Store account creation flag for activity logging
@@ -397,7 +400,7 @@ router.post(
         first_name: profileData.firstName,
         last_name: profileData.lastName,
         dob: profileData.dob,
-        email: profileData.email, // This will be the unique identifier
+        email: emailNormalized,
         billing_email: profileData.billingEmail || null,
         mobile: profileData.mobile,
         license_number: profileData.licenseNumber,
@@ -501,7 +504,7 @@ router.post(
       }
 
       console.log(
-        `Profile created with user_id: ${profileUserId}, creator_id: ${userId}, email: ${profileData.email}`
+        `Profile created with user_id: ${profileUserId}, creator_id: ${userId}, email: ${emailNormalized}`
       );
 
       // Create onboarding employment agreement consent record for the jobseeker
@@ -574,13 +577,13 @@ router.post(
               const fromEmail = getNoReplyFromEmail();
 
               await sgMail.send({
-                to: profileData.email,
+                to: emailNormalized,
                 from: fromEmail,
                 subject: 'Action Required: Sign Your Employment Agreement',
                 html: employmentAgreementHtmlTemplate({ recipientName, consentUrl, loginUrl }),
                 text: employmentAgreementTextTemplate({ recipientName, consentUrl, loginUrl })
               });
-              console.log(`✉️ Employment agreement email sent to ${profileData.email}`);
+              console.log(`✉️ Employment agreement email sent to ${emailNormalized}`);
             } catch (emailErr) {
               console.error('Error sending employment agreement email:', emailErr);
             }
