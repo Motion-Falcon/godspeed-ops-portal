@@ -997,9 +997,22 @@
     "missingGovernmentIdBannerBody": "This profile was created without a government ID document. Please go to Documents and upload a government ID before saving any changes.",
     "missingGovernmentIdSubmitDisabled": "Upload a government ID in Documents before saving changes.",
     "profileUpdatedSuccess": "Profile updated successfully",
+    "profileCreatedSuccess": "Profile created successfully",
     "submitChanges": "Yes, Submit Changes",
     "profileStatusChangeNoticeTitle": "Profile Status Change Notice",
     "profileStatusChangeNoticeMessage": "Editing your profile will reset your verification status to 'pending'. While your profile is in pending status, it will not be visible to employers until our team reviews and approves the changes. Do you want to proceed to the edit page?",
+    "submissionStatus": {
+      "progressTitle": "Creating jobseeker profile",
+      "progressDescription": "Please keep this window open while we finish the final setup.",
+      "uploadTitle": "Uploading documents",
+      "uploadDescription": "Saving the selected files securely before the profile is submitted.",
+      "accountTitle": "Creating account if needed",
+      "accountDescription": "Checking whether a login already exists and creating one when required.",
+      "profileTitle": "Creating profile",
+      "profileDescription": "Sending the final jobseeker profile data for creation.",
+      "successTitle": "Profile created successfully",
+      "successDescription": "Returning to Jobseeker Management..."
+    },
     "personalInfo": {
       "sectionTitle": "Personal Information",
       "sectionDescription": "Please provide your basic personal information. Fields marked with * are required.",

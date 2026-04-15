@@ -528,6 +528,141 @@ select.form-input {
   to { transform: rotate(360deg); }
 }
 
+.profile-submission-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(2px);
+}
+
+.profile-submission-modal {
+  width: min(100%, 520px);
+  background: var(--background);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.22);
+  padding: 1.5rem;
+}
+
+.profile-submission-modal.is-success {
+  max-width: 460px;
+}
+
+.profile-submission-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.profile-submission-icon {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(37, 99, 235, 0.1);
+  color: #2563eb;
+  flex-shrink: 0;
+}
+
+.profile-submission-modal.is-success .profile-submission-icon {
+  background: rgba(22, 163, 74, 0.12);
+  color: #16a34a;
+}
+
+.profile-submission-title {
+  margin: 0;
+  font-size: 1.15rem;
+  color: var(--heading);
+}
+
+.profile-submission-description {
+  margin: 0.35rem 0 0;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.profile-submission-spinner {
+  animation: spin 1s linear infinite;
+}
+
+.profile-submission-steps {
+  margin-top: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.profile-submission-step {
+  display: flex;
+  gap: 0.85rem;
+  align-items: flex-start;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: rgba(148, 163, 184, 0.06);
+}
+
+.profile-submission-step.is-active {
+  border-color: rgba(37, 99, 235, 0.25);
+  background: rgba(37, 99, 235, 0.08);
+}
+
+.profile-submission-step.is-complete {
+  border-color: rgba(22, 163, 74, 0.22);
+  background: rgba(22, 163, 74, 0.08);
+}
+
+.profile-submission-step-indicator {
+  width: 1.25rem;
+  height: 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  margin-top: 0.1rem;
+  flex-shrink: 0;
+}
+
+.profile-submission-step.is-active .profile-submission-step-indicator {
+  color: #2563eb;
+}
+
+.profile-submission-step.is-complete .profile-submission-step-indicator {
+  color: #16a34a;
+}
+
+.profile-submission-step-dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: 0.55;
+}
+
+.profile-submission-step-copy {
+  min-width: 0;
+}
+
+.profile-submission-step-label {
+  margin: 0;
+  font-weight: 600;
+  color: var(--heading);
+}
+
+.profile-submission-step-description {
+  margin: 0.25rem 0 0;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
 /* Add email validation styles */
 .email-validation-container {
   margin-top: 10px;
