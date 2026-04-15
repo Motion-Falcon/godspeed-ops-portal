@@ -763,11 +763,14 @@ router.get("/check-email", async (req, res) => {
       return res.status(400).json({ error: "Email parameter is required" });
     }
 
-    // Use existing SQL function to check if user exists by email
-    const { data: userId, error } = await supabase.rpc("get_user_id_by_email", {
-      user_email: email,
-    });
+    const emailNormalized = email.trim().toLowerCase();
 
+    // Use existing SQL function to check if user exists by email
+    const { data: userId, error } = await supabase.rpc(
+      'get_user_id_by_email',
+      { user_email: emailNormalized }
+    );
+    
     if (error) {
       console.error("Error checking email availability:", error);
       return res
@@ -780,8 +783,8 @@ router.get("/check-email", async (req, res) => {
 
     return res.json({
       available: !emailExists,
-      email: email,
-      ...(emailExists && { existingUserId: userId }),
+      email: emailNormalized,
+      ...(emailExists && { existingUserId: userId })
     });
   } catch (error) {
     console.error("Error checking email availability:", error);
