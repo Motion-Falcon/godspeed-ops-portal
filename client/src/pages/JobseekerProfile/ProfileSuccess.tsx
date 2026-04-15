@@ -287,7 +287,7 @@ export function ProfileSuccess() {
           
           <button 
             className="button secondary"
-            onClick={() => navigate('/jobseekers')}
+            onClick={() => navigate('/jobseeker-management')}
           >
             {t('profileSuccess.viewAllJobseekers')}
           </button>

@@ -15,6 +15,7 @@ import {
   checkEmailAvailability,
   updateProfile,
   getDraft,
+  type SubmitProfileResponse,
 } from "../../services/api/profile";
 import {
   getJobseekerProfile,
@@ -28,6 +29,7 @@ import "../../styles/components/form.css";
 import "../../styles/pages/JobseekerProfileStyles.css";
 import "../../styles/components/header.css";
 import { ArrowLeft, Check, Save } from "lucide-react";
+import { ProfileSubmissionOverlay } from "./ProfileSubmissionOverlay";
 import {
   validateSIN,
   validateDOB,
@@ -44,6 +46,33 @@ interface ProfileCreateProps {
   isDraftEditMode?: boolean;
   isNewForm?: boolean; // Add new prop to indicate creating a fresh form
 }
+
+type CreateSubmissionStage = "documents" | "account" | "profile";
+
+type CreateSubmissionOverlayState =
+  | {
+      mode: "idle";
+      activeStage: CreateSubmissionStage;
+    }
+  | {
+      mode: "progress";
+      activeStage: CreateSubmissionStage;
+    }
+  | {
+      mode: "success";
+      activeStage: CreateSubmissionStage;
+    };
+
+const createSubmissionStageOrder: CreateSubmissionStage[] = [
+  "documents",
+  "account",
+  "profile",
+];
+
+const delay = (ms: number) =>
+  new Promise<void>((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
 
 export function ProfileCreate({
   isEditMode = false,
@@ -156,6 +185,11 @@ export function ProfileCreate({
     submitting: false, // Form submission
     fileUploading: false, // File uploads
   });
+  const [createSubmissionOverlay, setCreateSubmissionOverlay] =
+    useState<CreateSubmissionOverlayState>({
+      mode: "idle",
+      activeStage: "documents",
+    });
 
   // Helper function to update specific loading state
   const setLoading = (key: keyof typeof loadingStates, value: boolean) => {
@@ -164,6 +198,29 @@ export function ProfileCreate({
 
   // Compute overall loading state
   const isLoading = Object.values(loadingStates).some((state) => state);
+  const shouldShowCreateSubmissionOverlay =
+    !isEditMode && createSubmissionOverlay.mode !== "idle";
+
+  const setCreateSubmissionStage = (activeStage: CreateSubmissionStage) => {
+    setCreateSubmissionOverlay({
+      mode: "progress",
+      activeStage,
+    });
+  };
+
+  const showCreateSubmissionSuccess = () => {
+    setCreateSubmissionOverlay({
+      mode: "success",
+      activeStage: "profile",
+    });
+  };
+
+  const resetCreateSubmissionOverlay = () => {
+    setCreateSubmissionOverlay({
+      mode: "idle",
+      activeStage: "documents",
+    });
+  };
 
   // Calculate total steps based on user type (hide compensation step for jobseekers)
   const totalSteps = isJobSeeker ? 4 : 5;
@@ -616,6 +673,44 @@ export function ProfileCreate({
           logValidation(
             "validateCurrentStep: SIN Expiry validation failed - required when SIN starts with '9'"
           );
+        }
+
+        // Work/study permit fields — Zod object refinements may not run on partial trigger(); enforce here (same as SIN expiry)
+        if (
+          values.sinNumber.trim() !== "" &&
+          values.sinNumber.startsWith("9")
+        ) {
+          const uci = (values.workPermitUci || "").trim();
+          if (!uci) {
+            methods.setError("workPermitUci", {
+              type: "custom",
+              message: validationMessages.workPermitUciRequired,
+            });
+            personalInfoValid = false;
+            logValidation(
+              "validateCurrentStep: Work permit UCI required when SIN starts with '9'"
+            );
+          } else if (!/^\d{8}$|^\d{10}$/.test(uci)) {
+            methods.setError("workPermitUci", {
+              type: "custom",
+              message: validationMessages.workPermitUciInvalid,
+            });
+            personalInfoValid = false;
+            logValidation(
+              "validateCurrentStep: Work permit UCI format invalid"
+            );
+          }
+
+          if (!values.workPermitExpiry || values.workPermitExpiry.trim() === "") {
+            methods.setError("workPermitExpiry", {
+              type: "custom",
+              message: validationMessages.workPermitExpiryRequired,
+            });
+            personalInfoValid = false;
+            logValidation(
+              "validateCurrentStep: Work permit expiry required when SIN starts with '9'"
+            );
+          }
         }
       }
 
@@ -1073,190 +1168,169 @@ export function ProfileCreate({
     submitFormData(data);
   };
 
+  const getAuthenticatedUserForFileUpload = async () => {
+    const {
+      data: { user: authenticatedUser },
+    } = await supabase.auth.getUser();
+
+    if (!authenticatedUser) {
+      throw new Error("User not authenticated for file upload");
+    }
+
+    return authenticatedUser;
+  };
+
+  const prepareProfileDataForSubmission = (
+    data: JobseekerProfileFormData
+  ): JobseekerProfileFormData => {
+    const profileData = structuredClone(data);
+
+    if (isJobSeeker) {
+      if (!profileData.payrateType) profileData.payrateType = "Hourly";
+      if (!profileData.billRate) profileData.billRate = "0";
+      if (!profileData.payRate) profileData.payRate = "0";
+      if (!profileData.paymentMethod) profileData.paymentMethod = "Cheque";
+    }
+
+    return profileData;
+  };
+
+  const uploadProfileDocuments = async (
+    profileData: JobseekerProfileFormData,
+    authenticatedUserId: string
+  ) => {
+    if (!profileData.documents?.length) {
+      return;
+    }
+
+    setLoading("fileUploading", true);
+
+    try {
+      for (const doc of profileData.documents) {
+        if (!(doc.documentFile instanceof File)) {
+          continue;
+        }
+
+        const fileToUpload = doc.documentFile;
+        const fileExt = fileToUpload.name.split(".").pop();
+        const uniqueFileName = `${crypto.randomUUID()}.${fileExt}`;
+        const filePath = `${authenticatedUserId}/${
+          doc.documentType || "uncategorized"
+        }/${uniqueFileName}`;
+
+        console.log(`Uploading file to: ${filePath}`);
+
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from("jobseeker-documents")
+          .upload(filePath, fileToUpload);
+
+        if (uploadError) {
+          console.error("Supabase upload error:", uploadError);
+          throw new Error(`Failed to upload document: ${uploadError.message}`);
+        }
+
+        doc.documentPath = uploadData?.path || "";
+        doc.documentFileName = fileToUpload.name;
+        console.log(`File uploaded successfully: ${doc.documentPath}`);
+
+        // Remove the File object before sending the payload to the API.
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { documentFile, ...docWithoutFile } = doc;
+        Object.assign(doc, docWithoutFile);
+        doc.documentFile = undefined;
+      }
+    } finally {
+      setLoading("fileUploading", false);
+    }
+  };
+
+  const navigateToAccountCreated = (result: SubmitProfileResponse) => {
+    navigate("/jobseekers/profile/account-created", {
+      state: {
+        email: result.email,
+        password: result.password,
+        profile: result.profile,
+        accountCreated: true,
+      },
+    });
+  };
+
+  const handleCreateProfileSuccess = async (result: SubmitProfileResponse) => {
+    setCreateSubmissionStage("profile");
+    await delay(250);
+
+    if (isJobSeeker) {
+      window.location.reload();
+      navigate("/profile-verification-pending");
+      return;
+    }
+
+    if (result.accountCreated) {
+      navigateToAccountCreated(result);
+      return;
+    }
+
+    showCreateSubmissionSuccess();
+    await delay(1200);
+    navigate("/jobseeker-management", {
+      state: {
+        message: t("profileCreate.profileCreatedSuccess"),
+        type: "success",
+      },
+    });
+  };
+
   // New function to handle the actual submission after confirmation
   const submitFormData = async (data: JobseekerProfileFormData) => {
     try {
-      // ... existing code from the handleSubmit function ...
-
-      // Safeguard against automatic submissions
       const isDocumentStep = currentStep === 5;
       const isLoadingDocuments = loadingStates.fileUploading;
 
       if (isDocumentStep && isLoadingDocuments) {
         console.log("Preventing submission while documents are loading");
-        return; // Prevent submission while documents are loading
+        return;
       }
 
       setLoading("submitting", true);
       setError(null);
 
-      // Get authenticated user for file paths
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) {
-        throw new Error("User not authenticated for file upload");
+      const authenticatedUser = await getAuthenticatedUserForFileUpload();
+      const profileData = prepareProfileDataForSubmission(data);
+      const hasPendingUploads =
+        profileData.documents?.some(
+          (doc) => doc.documentFile instanceof File
+        ) ?? false;
+
+      if (!isEditMode) {
+        setCreateSubmissionStage(hasPendingUploads ? "documents" : "account");
       }
 
-      // Prepare data for submission
-      const profileData = structuredClone(data);
-
-      // Ensure jobseekers have default values for compensation fields if they're empty
-      if (isJobSeeker) {
-        if (!profileData.payrateType) profileData.payrateType = "Hourly";
-        if (!profileData.billRate) profileData.billRate = "0";
-        if (!profileData.payRate) profileData.payRate = "0";
-        if (!profileData.paymentMethod) profileData.paymentMethod = "Cheque";
-      }
-
-      // Handle document file uploads if any exist
-      if (profileData.documents && profileData.documents.length > 0) {
-        setLoading("fileUploading", true);
-        // Process each document with a file
-        for (const doc of profileData.documents) {
-          if (doc.documentFile instanceof File) {
-            const fileToUpload = doc.documentFile;
-            const fileExt = fileToUpload.name.split(".").pop();
-            // Use a more structured path: userId/documentType/uuid.ext
-            const uniqueFileName = `${crypto.randomUUID()}.${fileExt}`;
-            const filePath = `${user.id}/${
-              doc.documentType || "uncategorized"
-            }/${uniqueFileName}`;
-
-            console.log(`Uploading file to: ${filePath}`); // Debug log
-
-            const { data: uploadData, error: uploadError } =
-              await supabase.storage
-                .from("jobseeker-documents") // Ensure this bucket exists and has policies set
-                .upload(filePath, fileToUpload);
-
-            if (uploadError) {
-              console.error("Supabase upload error:", uploadError); // Log detailed error
-              setLoading("fileUploading", false);
-              throw new Error(
-                `Failed to upload document: ${uploadError.message}`
-              );
-            }
-
-            // Update document with path info
-            doc.documentPath = uploadData?.path || "";
-            doc.documentFileName = fileToUpload.name;
-            console.log(`File uploaded successfully: ${doc.documentPath}`); // Debug log
-
-            // Remove the file object before submission
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            const { documentFile, ...docWithoutFile } = doc;
-            Object.assign(doc, docWithoutFile);
-            doc.documentFile = undefined;
-          }
-        }
-        setLoading("fileUploading", false);
-      }
-
-      let result;
+      await uploadProfileDocuments(profileData, authenticatedUser.id);
 
       if (isEditMode && profileId) {
-        // Update existing profile
-        result = await updateProfile(profileId, profileData);
+        await updateProfile(profileId, profileData);
 
-        // If jobseeker is editing their own profile, set status to pending and redirect to verification page
         if (isJobSeeker) {
-          // Update the status to pending
           await updateJobseekerStatus(profileId, "pending");
           window.location.reload();
           return;
         }
 
-        // For recruiter/admin edited profiles, navigate to the jobseeker management page with success message
         navigate("/jobseeker-management", {
           state: {
             message: t("profileCreate.profileUpdatedSuccess"),
             type: "success",
           },
         });
-      } else if (isDraftEditMode && profileId) {
-        // We're in draft edit mode and trying to create a profile from the draft
-        console.log("Creating profile from draft in isDraftEditMode");
-
-        try {
-          // Submit as a new profile (don't use saveJobseekerDraft)
-          result = await submitProfile(profileData);
-          console.log("Profile created from draft:", result);
-
-          // If the user is a jobseeker who created their own profile, redirect to verification pending page
-          if (isJobSeeker) {
-            window.location.reload();
-            navigate("/profile-verification-pending");
-            return;
-          }
-
-          // For recruiter-created profiles
-          // Check if a new account was created
-          if (result.accountCreated) {
-            // Navigate to the account created page with credentials
-            navigate("/jobseekers/profile/account-created", {
-              state: {
-                email: result.email,
-                password: result.password,
-                profile: result.profile,
-                accountCreated: true,
-              },
-            });
-          } else {
-            // Navigate to success page
-            navigate("/jobseekers/profile/success", {
-              state: {
-                message: t("profileSuccess.title"),
-                profileId: result.profile?.id,
-                profile: result.profile,
-              },
-            });
-          }
-        } catch (submitError) {
-          console.error("Error submitting profile from draft:", submitError);
-          setError(
-            submitError instanceof Error
-              ? submitError.message
-              : "Failed to create profile from draft"
-          );
-          throw submitError; // Re-throw to be caught by the outer catch block
-        }
-      } else {
-        // Create new profile
-        submitProfile(profileData).then((result) => {
-          // If the user is a jobseeker who created their own profile, redirect to verification pending page
-          if (isJobSeeker) {
-            window.location.reload();
-            navigate("/profile-verification-pending");
-            return;
-          }
-
-          // For recruiter-created profiles
-          // Check if a new account was created
-          if (result.accountCreated) {
-            // Navigate to the account created page with credentials
-            navigate("/jobseekers/profile/account-created", {
-              state: {
-                email: result.email,
-                password: result.password,
-                profile: result.profile,
-                accountCreated: true,
-              },
-            });
-          } else {
-            // Navigate to success page
-            navigate("/jobseekers/profile/success", {
-              state: {
-                message: t("profileSuccess.title"),
-                profileId: result.profile?.id,
-                profile: result.profile,
-              },
-            });
-          }
-        });
+        return;
       }
+
+      setCreateSubmissionStage("account");
+
+      const result = await submitProfile(profileData);
+      await handleCreateProfileSuccess(result);
     } catch (error) {
-      console.error("Form submission error:", error); // Log detailed error
+      console.error("Form submission error:", error);
       if (error instanceof Error) {
         setError(error.message);
       } else {
@@ -1265,6 +1339,7 @@ export function ProfileCreate({
     } finally {
       setLoading("submitting", false);
       setLoading("fileUploading", false);
+      resetCreateSubmissionOverlay();
     }
   };
 
@@ -1453,8 +1528,61 @@ export function ProfileCreate({
         return "profileCreate.stepGeneric";
     }
   };
+
+  const createSubmissionSteps = createSubmissionStageOrder.map((stage) => {
+    const activeStageIndex = createSubmissionStageOrder.indexOf(
+      createSubmissionOverlay.activeStage
+    );
+    const stageIndex = createSubmissionStageOrder.indexOf(stage);
+
+    let status: "pending" | "active" | "complete" = "pending";
+
+    if (createSubmissionOverlay.mode === "success") {
+      status = "complete";
+    } else if (stageIndex < activeStageIndex) {
+      status = "complete";
+    } else if (stageIndex === activeStageIndex) {
+      status = "active";
+    }
+
+    switch (stage) {
+      case "documents":
+        return {
+          key: stage,
+          label: t("profileCreate.submissionStatus.uploadTitle"),
+          description: t("profileCreate.submissionStatus.uploadDescription"),
+          status,
+        };
+      case "account":
+        return {
+          key: stage,
+          label: t("profileCreate.submissionStatus.accountTitle"),
+          description: t("profileCreate.submissionStatus.accountDescription"),
+          status,
+        };
+      case "profile":
+        return {
+          key: stage,
+          label: t("profileCreate.submissionStatus.profileTitle"),
+          description: t("profileCreate.submissionStatus.profileDescription"),
+          status,
+        };
+      default:
+        return {
+          key: stage,
+          label: "",
+          description: "",
+          status,
+        };
+    }
+  });
+
   // Render loading indicator based on specific loading states
   const renderLoadingIndicator = () => {
+    if (shouldShowCreateSubmissionOverlay) {
+      return null;
+    }
+
     if (loadingStates.formLoading) {
       return (
         <div className="loading-indicator">
@@ -1572,6 +1700,23 @@ export function ProfileCreate({
       )}
 
       {renderLoadingIndicator()}
+      <ProfileSubmissionOverlay
+        isOpen={shouldShowCreateSubmissionOverlay}
+        variant={
+          createSubmissionOverlay.mode === "success" ? "success" : "progress"
+        }
+        title={
+          createSubmissionOverlay.mode === "success"
+            ? t("profileCreate.submissionStatus.successTitle")
+            : t("profileCreate.submissionStatus.progressTitle")
+        }
+        description={
+          createSubmissionOverlay.mode === "success"
+            ? t("profileCreate.submissionStatus.successDescription")
+            : t("profileCreate.submissionStatus.progressDescription")
+        }
+        steps={createSubmissionSteps}
+      />
 
       <div className={`form-card ${isLoading ? "form-loading" : ""}`}>
         <FormProvider {...methods}>
