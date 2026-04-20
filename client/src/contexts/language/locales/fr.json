@@ -2146,6 +2146,7 @@
     "nA": "N/A",
     "subcategoryBadge": "SOUS",
     "positionTypeBadgeSubcategory": "Sous-catégorie",
+    "subcategoryPortion": "Type de poste de sous-catégorie",
     "positionTypeBadgeNormal": "Régulier",
     "yes": "Oui",
     "no": "Non",
@@ -2475,7 +2476,10 @@
       "confirmDisableMessage": "Changer ce poste en poste régulier le rendra disponible dans la correspondance des postes et permettra les assignations de chercheurs d'emploi. Voulez-vous continuer ?",
       "confirmButton": "Confirmer",
       "cancelButton": "Annuler",
-      "portalDisabledHint": "Les postes de sous-catégorie ne peuvent pas être affichés sur le portail d'emploi."
+      "portalDisabledHint": "Les postes de sous-catégorie ne peuvent pas être affichés sur le portail d'emploi.",
+      "portionLabel": "Choisir le type de poste de sous-catégorie",
+      "selectPortionPlaceholder": "Sélectionnez Miles, Bonus ou une autre option configurée…",
+      "noPortionOptionsConfigured": "Aucune option configurée. Demandez à un administrateur d’ajouter des entrées sous Admin → Options des listes déroulantes → Position de sous-catégorie."
     },
     "sections": {
       "basicDetails": "Détails de base",
@@ -2647,7 +2651,8 @@
       "errorLoadingPosition": "Erreur lors du chargement du poste",
       "errorLoadingDraft": "Erreur lors du chargement du brouillon",
       "failedToSaveDraft": "Échec de la sauvegarde du brouillon",
-      "failedToCreateUpdatePosition": "Échec de la création/mise à jour du poste"
+      "failedToCreateUpdatePosition": "Échec de la création/mise à jour du poste",
+      "subcategoryPortionRequired": "Le type de poste de sous-catégorie est obligatoire pour les postes de sous-catégorie."
     },
     "messages": {
       "draftSaved": "Brouillon sauvegardé avec succès",
