@@ -336,7 +336,7 @@ export interface PositionData {
   // Metadata
   isDraft?: boolean;
   isSubcategory?: boolean;
-  subcategoryPortion?: string | null;
+  subcategoryPortion?: string[] | null;
   createdAt?: string;
   updatedAt?: string;
   lastUpdated?: string;
@@ -415,7 +415,7 @@ export interface DbPositionData {
 
   // Metadata
   is_draft?: boolean;
-  subcategory_portion?: string | null;
+  subcategory_portion?: string[] | null;
   created_at?: string;
   updated_at?: string;
   last_updated?: string;
