@@ -2476,8 +2476,8 @@
       "cancelButton": "Cancel",
       "portalDisabledHint": "Subcategory positions cannot be shown on the job portal.",
       "portionLabel": "Choose subcategory position type",
-      "selectPortionPlaceholder": "Select Miles, Bonus, or another configured option…",
-      "noPortionOptionsConfigured": "No options configured. Ask an admin to add entries under Admin → Dropdown options → Subcategory position."
+      "selectPortionPlaceholder": "Select one or more types (e.g. Miles, Bonus)…",
+      "noPortionOptionsConfigured": "No options configured. Ask an admin to add entries under Admin → Dropdown options → Subcategory position (multi-select)."
     },
     "sections": {
       "basicDetails": "Basic Details",
@@ -2650,7 +2650,7 @@
       "errorLoadingDraft": "Error loading draft",
       "failedToSaveDraft": "Failed to save draft",
       "failedToCreateUpdatePosition": "Failed to create/update position",
-      "subcategoryPortionRequired": "Subcategory position type is required for subcategory positions."
+      "subcategoryPortionRequired": "Select at least one subcategory position type."
     },
     "messages": {
       "draftSaved": "Draft saved successfully",
