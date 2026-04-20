@@ -2144,6 +2144,7 @@
     "nA": "N/A",
     "subcategoryBadge": "SUB",
     "positionTypeBadgeSubcategory": "Subcategory",
+    "subcategoryPortion": "Subcategory position type",
     "positionTypeBadgeNormal": "Regular",
     "yes": "Yes",
     "no": "No",
@@ -2473,7 +2474,10 @@
       "confirmDisableMessage": "Changing this to a regular position will make it available in Position Matching and allow jobseeker assignments. Do you want to continue?",
       "confirmButton": "Confirm",
       "cancelButton": "Cancel",
-      "portalDisabledHint": "Subcategory positions cannot be shown on the job portal."
+      "portalDisabledHint": "Subcategory positions cannot be shown on the job portal.",
+      "portionLabel": "Choose subcategory position type",
+      "selectPortionPlaceholder": "Select Miles, Bonus, or another configured option…",
+      "noPortionOptionsConfigured": "No options configured. Ask an admin to add entries under Admin → Dropdown options → Subcategory position."
     },
     "sections": {
       "basicDetails": "Basic Details",
@@ -2645,7 +2649,8 @@
       "errorLoadingPosition": "Error loading position",
       "errorLoadingDraft": "Error loading draft",
       "failedToSaveDraft": "Failed to save draft",
-      "failedToCreateUpdatePosition": "Failed to create/update position"
+      "failedToCreateUpdatePosition": "Failed to create/update position",
+      "subcategoryPortionRequired": "Subcategory position type is required for subcategory positions."
     },
     "messages": {
       "draftSaved": "Draft saved successfully",

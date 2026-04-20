@@ -451,6 +451,11 @@ export function PositionView() {
               )}
               {renderDetailItem(t("positionManagement.showOnJobPortal"), position.showOnJobPortal)}
               {renderDetailItem(t("positionManagement.stat"), position.stat)}
+              {position.isSubcategory &&
+                renderDetailItem(
+                  t("positionManagement.subcategoryPortion"),
+                  position.subcategoryPortion
+                )}
               {renderDetailItem(t("positionManagement.clientManager"), position.clientManager)}
               {renderDetailItem(t("positionManagement.salesManager"), position.salesManager)}
               {renderDetailItem(t("positionManagement.positionCode"), position.positionNumber)}
