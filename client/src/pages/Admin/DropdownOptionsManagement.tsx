@@ -28,6 +28,7 @@ const CLIENT_LIST_TYPES: DropdownListType[] = [
 
 const POSITION_LIST_TYPES: DropdownListType[] = [
   "position_title",
+  "subcategory_portion",
 ];
 
 export function DropdownOptionsManagement() {

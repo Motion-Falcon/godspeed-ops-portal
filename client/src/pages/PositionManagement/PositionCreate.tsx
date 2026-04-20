@@ -66,6 +66,7 @@ const createPositionFormSchema = (t: (key: string) => string) =>
         .min(1, { message: t("positionCreate.errors.endDateRequired") }),
       showOnJobPortal: z.boolean().default(false),
       stat: z.boolean().default(false),
+      subcategoryPortion: z.string().optional(),
       clientManager: z.string().optional(),
       salesManager: z.string().optional(),
       positionNumber: z.string().optional(),
@@ -260,12 +261,32 @@ export function PositionCreate({
       });
   }, []);
 
+  const [subcategoryPortionOptions, setSubcategoryPortionOptions] = useState<
+    string[]
+  >([]);
+  useEffect(() => {
+    getDropdownOptionsByType("subcategory_portion")
+      .then((opts) => {
+        setSubcategoryPortionOptions(opts.map((o) => o.name));
+      })
+      .catch(() => {
+        setSubcategoryPortionOptions([]);
+      });
+  }, []);
+
   // Job title options from API
   const titleOptions: DropdownOption[] = dynamicTitles.map((title) => ({
     id: title,
     value: title,
     label: title,
   }));
+
+  const subcategoryPortionDropdownOptions: DropdownOption[] =
+    subcategoryPortionOptions.map((name) => ({
+      id: name,
+      value: name,
+      label: name,
+    }));
 
   // Employment term options
   const employmentTermOptions: DropdownOption[] = EMPLOYMENT_TERMS.map(
@@ -350,6 +371,7 @@ export function PositionCreate({
         directDeposit: false,
       },
       payrateType: t("positionCreate.defaults.hourly"),
+      subcategoryPortion: "",
     },
     mode: "onBlur",
   });
@@ -621,6 +643,12 @@ export function PositionCreate({
     }
   }, [methods.watch("startDate")]);
 
+  useEffect(() => {
+    if (isSubcategory) {
+      methods.setValue("showOnJobPortal", false);
+    }
+  }, [isSubcategory, methods]);
+
   // Clear overtime fields when overtime is disabled
   useEffect(() => {
     const overtimeEnabled = methods.watch("overtimeEnabled");
@@ -857,6 +885,13 @@ export function PositionCreate({
     methods.setValue("title", option.value as string);
   };
 
+  const handleSubcategoryPortionSelect = (
+    option: DropdownOption | DropdownOption[]
+  ) => {
+    if (Array.isArray(option)) return;
+    methods.setValue("subcategoryPortion", (option?.value as string) || "");
+  };
+
   const handleSaveDraft = async () => {
     const formData = methods.getValues();
 
@@ -923,12 +958,29 @@ export function PositionCreate({
       }
     }
 
+    if (
+      isSubcategory &&
+      (!data.subcategoryPortion || !String(data.subcategoryPortion).trim())
+    ) {
+      setError(t("positionCreate.errors.subcategoryPortionRequired"));
+      setTimeout(() => setError(null), 5000);
+      return;
+    }
+
     setLoading(true);
 
     try {
+      const portionPayload = isSubcategory
+        ? String(data.subcategoryPortion || "").trim()
+        : undefined;
+
       if (isEditMode && positionId) {
         // Update existing position
-        const dataToSubmit = { ...data, isSubcategory };
+        const dataToSubmit = {
+          ...data,
+          isSubcategory,
+          subcategoryPortion: portionPayload,
+        };
         // Remove clientName property if it exists
         if ("clientName" in dataToSubmit) {
           delete (dataToSubmit as Record<string, unknown>).clientName;
@@ -945,7 +997,11 @@ export function PositionCreate({
         }, 1000);
       } else {
         // Create new position regardless of whether we're in create mode or draft edit mode
-        const dataToSubmit = { ...data, isSubcategory };
+        const dataToSubmit = {
+          ...data,
+          isSubcategory,
+          subcategoryPortion: portionPayload,
+        };
         // Remove clientName property if it exists
         if ("clientName" in dataToSubmit) {
           delete (dataToSubmit as Record<string, unknown>).clientName;
@@ -1400,25 +1456,63 @@ export function PositionCreate({
                     />
                   </div>
 
-                  <div className="form-group">
-                    <div className="container-form">
-                      <input
-                        type="checkbox"
-                        id="showOnJobPortal"
-                        className="toggle-form"
-                        {...methods.register("showOnJobPortal")}
-                        disabled={isSubcategory}
-                      />
-                      <label htmlFor="showOnJobPortal" className="label-form">
-                        {t("positionCreate.fields.showOnJobPortal")}
-                      </label>
+                  {!isSubcategory && (
+                    <div className="form-group">
+                      <div className="container-form">
+                        <input
+                          type="checkbox"
+                          id="showOnJobPortal"
+                          className="toggle-form"
+                          {...methods.register("showOnJobPortal")}
+                        />
+                        <label htmlFor="showOnJobPortal" className="label-form">
+                          {t("positionCreate.fields.showOnJobPortal")}
+                        </label>
+                      </div>
                     </div>
-                    {isSubcategory && (
-                      <p className="form-hint">
-                        {t("positionCreate.subcategory.portalDisabledHint")}
-                      </p>
-                    )}
-                  </div>
+                  )}
+
+                  {isSubcategory && (
+                    <div className="form-group">
+                      <label
+                        htmlFor="subcategory-portion"
+                        className="form-label"
+                        data-required="*"
+                      >
+                        {t("positionCreate.subcategory.portionLabel")}
+                      </label>
+                      <input
+                        type="hidden"
+                        {...methods.register("subcategoryPortion")}
+                      />
+                      <CustomDropdown
+                        options={subcategoryPortionDropdownOptions}
+                        selectedOption={(() => {
+                          const v = methods.getValues("subcategoryPortion");
+                          if (v) {
+                            return {
+                              id: v,
+                              label: v,
+                              value: v,
+                            };
+                          }
+                          return null;
+                        })()}
+                        onSelect={handleSubcategoryPortionSelect}
+                        placeholder={t(
+                          "positionCreate.subcategory.selectPortionPlaceholder"
+                        )}
+                        searchable={true}
+                        clearable={true}
+                        onClear={() =>
+                          methods.setValue("subcategoryPortion", "")
+                        }
+                        emptyMessage={t(
+                          "positionCreate.subcategory.noPortionOptionsConfigured"
+                        )}
+                      />
+                    </div>
+                  )}
 
                   <div className="form-group">
                     <div className="container-form">
