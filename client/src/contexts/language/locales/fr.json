@@ -2478,8 +2478,8 @@
       "cancelButton": "Annuler",
       "portalDisabledHint": "Les postes de sous-catégorie ne peuvent pas être affichés sur le portail d'emploi.",
       "portionLabel": "Choisir le type de poste de sous-catégorie",
-      "selectPortionPlaceholder": "Sélectionnez Miles, Bonus ou une autre option configurée…",
-      "noPortionOptionsConfigured": "Aucune option configurée. Demandez à un administrateur d’ajouter des entrées sous Admin → Options des listes déroulantes → Position de sous-catégorie."
+      "selectPortionPlaceholder": "Sélectionnez un ou plusieurs types (p. ex. Miles, Bonus)…",
+      "noPortionOptionsConfigured": "Aucune option configurée. Demandez à un administrateur d’ajouter des entrées sous Admin → Options des listes déroulantes → Position de sous-catégorie (sélection multiple)."
     },
     "sections": {
       "basicDetails": "Détails de base",
@@ -2652,7 +2652,7 @@
       "errorLoadingDraft": "Erreur lors du chargement du brouillon",
       "failedToSaveDraft": "Échec de la sauvegarde du brouillon",
       "failedToCreateUpdatePosition": "Échec de la création/mise à jour du poste",
-      "subcategoryPortionRequired": "Le type de poste de sous-catégorie est obligatoire pour les postes de sous-catégorie."
+      "subcategoryPortionRequired": "Sélectionnez au moins un type de poste de sous-catégorie."
     },
     "messages": {
       "draftSaved": "Brouillon sauvegardé avec succès",

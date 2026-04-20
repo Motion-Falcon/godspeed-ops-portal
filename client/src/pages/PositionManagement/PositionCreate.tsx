@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { useLanguage } from "../../contexts/language/language-provider";
-import { useForm, FormProvider } from "react-hook-form";
+import { useForm, FormProvider, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
@@ -46,6 +46,18 @@ const getTodayFormatted = (): string => {
   return formatDateForInput(new Date());
 };
 
+function normalizeSubcategoryPortionToForm(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value
+      .map((v) => (typeof v === "string" ? v.trim() : String(v)))
+      .filter(Boolean);
+  }
+  if (typeof value === "string" && value.trim()) {
+    return [value.trim()];
+  }
+  return [];
+}
+
 // Define form schema function to support translations
 const createPositionFormSchema = (t: (key: string) => string) =>
   z
@@ -66,7 +78,7 @@ const createPositionFormSchema = (t: (key: string) => string) =>
         .min(1, { message: t("positionCreate.errors.endDateRequired") }),
       showOnJobPortal: z.boolean().default(false),
       stat: z.boolean().default(false),
-      subcategoryPortion: z.string().optional(),
+      subcategoryPortion: z.array(z.string()).default([]),
       clientManager: z.string().optional(),
       salesManager: z.string().optional(),
       positionNumber: z.string().optional(),
@@ -371,12 +383,12 @@ export function PositionCreate({
         directDeposit: false,
       },
       payrateType: t("positionCreate.defaults.hourly"),
-      subcategoryPortion: "",
+      subcategoryPortion: [],
     },
     mode: "onBlur",
   });
 
-  const { handleSubmit, reset, formState, watch, setValue, getValues } =
+  const { handleSubmit, reset, formState, watch, setValue, getValues, control } =
     methods;
   const { isDirty } = formState;
 
@@ -400,6 +412,11 @@ export function PositionCreate({
         result[camelKey] = value;
       }
     });
+
+    (result as Record<string, unknown>).subcategoryPortion =
+      normalizeSubcategoryPortionToForm(
+        (result as Record<string, unknown>).subcategoryPortion
+      );
 
     return result as PositionFormData;
   };
@@ -885,13 +902,6 @@ export function PositionCreate({
     methods.setValue("title", option.value as string);
   };
 
-  const handleSubcategoryPortionSelect = (
-    option: DropdownOption | DropdownOption[]
-  ) => {
-    if (Array.isArray(option)) return;
-    methods.setValue("subcategoryPortion", (option?.value as string) || "");
-  };
-
   const handleSaveDraft = async () => {
     const formData = methods.getValues();
 
@@ -960,7 +970,8 @@ export function PositionCreate({
 
     if (
       isSubcategory &&
-      (!data.subcategoryPortion || !String(data.subcategoryPortion).trim())
+      (!Array.isArray(data.subcategoryPortion) ||
+        data.subcategoryPortion.length === 0)
     ) {
       setError(t("positionCreate.errors.subcategoryPortionRequired"));
       setTimeout(() => setError(null), 5000);
@@ -971,7 +982,9 @@ export function PositionCreate({
 
     try {
       const portionPayload = isSubcategory
-        ? String(data.subcategoryPortion || "").trim()
+        ? (data.subcategoryPortion || [])
+            .map((s) => String(s).trim())
+            .filter(Boolean)
         : undefined;
 
       if (isEditMode && positionId) {
@@ -1481,34 +1494,45 @@ export function PositionCreate({
                       >
                         {t("positionCreate.subcategory.portionLabel")}
                       </label>
-                      <input
-                        type="hidden"
-                        {...methods.register("subcategoryPortion")}
-                      />
-                      <CustomDropdown
-                        options={subcategoryPortionDropdownOptions}
-                        selectedOption={(() => {
-                          const v = methods.getValues("subcategoryPortion");
-                          if (v) {
-                            return {
-                              id: v,
-                              label: v,
-                              value: v,
-                            };
-                          }
-                          return null;
-                        })()}
-                        onSelect={handleSubcategoryPortionSelect}
-                        placeholder={t(
-                          "positionCreate.subcategory.selectPortionPlaceholder"
-                        )}
-                        searchable={true}
-                        clearable={true}
-                        onClear={() =>
-                          methods.setValue("subcategoryPortion", "")
-                        }
-                        emptyMessage={t(
-                          "positionCreate.subcategory.noPortionOptionsConfigured"
+                      <Controller
+                        name="subcategoryPortion"
+                        control={control}
+                        render={({ field }) => (
+                          <CustomDropdown
+                            multiSelect={true}
+                            showSelectAll={true}
+                            options={subcategoryPortionDropdownOptions}
+                            selectedOptions={subcategoryPortionDropdownOptions.filter(
+                              (o) =>
+                                (field.value || []).includes(
+                                  String(o.value)
+                                )
+                            )}
+                            onSelect={(opts) => {
+                              if (Array.isArray(opts)) {
+                                field.onChange(
+                                  opts.map((o) => String(o.value))
+                                );
+                              } else if (
+                                opts &&
+                                typeof opts === "object" &&
+                                "value" in opts
+                              ) {
+                                field.onChange([String(opts.value)]);
+                              } else {
+                                field.onChange([]);
+                              }
+                            }}
+                            placeholder={t(
+                              "positionCreate.subcategory.selectPortionPlaceholder"
+                            )}
+                            searchable={true}
+                            clearable={true}
+                            onClear={() => field.onChange([])}
+                            emptyMessage={t(
+                              "positionCreate.subcategory.noPortionOptionsConfigured"
+                            )}
+                          />
                         )}
                       />
                     </div>
