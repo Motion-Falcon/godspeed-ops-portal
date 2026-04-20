@@ -73,7 +73,7 @@ export interface PositionData {
 
   // Subcategory flag – invoicing-only positions excluded from matching
   isSubcategory?: boolean;
-  subcategoryPortion?: string | null;
+  subcategoryPortion?: string[] | null;
 
   // Metadata
   isDraft?: boolean;

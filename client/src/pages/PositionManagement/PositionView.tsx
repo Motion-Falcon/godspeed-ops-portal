@@ -454,7 +454,20 @@ export function PositionView() {
               {position.isSubcategory &&
                 renderDetailItem(
                   t("positionManagement.subcategoryPortion"),
-                  position.subcategoryPortion
+                  (() => {
+                    const p = position.subcategoryPortion as
+                      | string[]
+                      | string
+                      | null
+                      | undefined;
+                    if (Array.isArray(p) && p.length > 0) {
+                      return p.join(", ");
+                    }
+                    if (typeof p === "string" && p.trim()) {
+                      return p.trim();
+                    }
+                    return null;
+                  })()
                 )}
               {renderDetailItem(t("positionManagement.clientManager"), position.clientManager)}
               {renderDetailItem(t("positionManagement.salesManager"), position.salesManager)}
