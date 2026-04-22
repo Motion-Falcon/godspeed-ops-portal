@@ -36,6 +36,10 @@ import {
   PAYMENT_TERMS,
 } from "../../constants/formOptions";
 import { getDropdownOptionsByType } from "../../services/api/dropdownOptions";
+import {
+  getPositionDisplayTitle,
+  normalizeSubcategoryPortions,
+} from "../../utils/positionDisplay";
 
 // Helper function for date formatting and validation
 const formatDateForInput = (date: Date): string => {
@@ -47,15 +51,15 @@ const getTodayFormatted = (): string => {
 };
 
 function normalizeSubcategoryPortionToForm(value: unknown): string[] {
-  if (Array.isArray(value)) {
-    return value
-      .map((v) => (typeof v === "string" ? v.trim() : String(v)))
-      .filter(Boolean);
-  }
-  if (typeof value === "string" && value.trim()) {
-    return [value.trim()];
-  }
-  return [];
+  return normalizeSubcategoryPortions(value);
+}
+
+function readIsSubcategory(value: unknown): boolean {
+  const record = value as {
+    isSubcategory?: unknown;
+    is_subcategory?: unknown;
+  };
+  return record.isSubcategory === true || record.is_subcategory === true;
 }
 
 // Define form schema function to support translations
@@ -528,10 +532,8 @@ export function PositionCreate({
             // Reset form with position data
             reset(formattedPosition);
 
-            // Set subcategory state from loaded position (use raw position, not formattedPosition)
-            if ((position as PositionData).isSubcategory !== undefined) {
-              setIsSubcategory(!!(position as PositionData).isSubcategory);
-            }
+            // The detail API may return snake_case; use the converted metadata.
+            setIsSubcategory(readIsSubcategory(formattedPosition));
 
             console.log("Form reset with position data");
             console.log("Client value after reset:", formattedPosition.client);
@@ -576,6 +578,7 @@ export function PositionCreate({
 
             // Reset form with draft data
             reset(formattedDraft);
+            setIsSubcategory(readIsSubcategory(formattedDraft));
             console.log("Form reset with draft data");
             console.log("Client value after reset:", formattedDraft.client);
 
@@ -782,7 +785,7 @@ export function PositionCreate({
       return {
         id: position.id || "",
         value: position.id || "",
-        label: `${position.title || t("positionCreate.copyFrom.notSpecified")} - ${position.positionNumber || t("positionCreate.copyFrom.notSpecified")}`,
+        label: `${getPositionDisplayTitle(position, t("positionCreate.copyFrom.notSpecified"))} - ${position.positionNumber || t("positionCreate.copyFrom.notSpecified")}`,
         sublabel: `${period} | ${position.positionCategory || t("positionCreate.copyFrom.notSpecified")} | ${position.city || ""}, ${position.province || ""}`.trim(),
       };
     }
@@ -1199,7 +1202,7 @@ export function PositionCreate({
                       copyFromSelectedPosition
                         ? {
                             id: copyFromSelectedPosition.id || "",
-                            label: `${copyFromSelectedPosition.title || t("positionCreate.copyFrom.notSpecified")} - ${copyFromSelectedPosition.positionNumber || t("positionCreate.copyFrom.notSpecified")}`,
+                            label: `${getPositionDisplayTitle(copyFromSelectedPosition, t("positionCreate.copyFrom.notSpecified"))} - ${copyFromSelectedPosition.positionNumber || t("positionCreate.copyFrom.notSpecified")}`,
                             sublabel: `${copyFromSelectedPosition.startDate || ""} \u2013 ${copyFromSelectedPosition.endDate || ""} | ${copyFromSelectedPosition.positionCategory || ""} | ${copyFromSelectedPosition.city || ""}, ${copyFromSelectedPosition.province || ""}`,
                             value:
                               copyFromSelectedPosition.id || "",
