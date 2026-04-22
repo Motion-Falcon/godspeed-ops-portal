@@ -37,6 +37,7 @@ import {
 } from "../../lib/hybridPayrollSplit";
 import "../../styles/pages/TimesheetManagement.css";
 import { generateWeekOptions, formatDate } from "../../utils/weekUtils";
+import { getPositionDisplayTitle } from "../../utils/positionDisplay";
 
 // Types for timesheet
 interface TimesheetEntry {
@@ -89,6 +90,8 @@ export interface PositionWithOvertime {
   overtimePayRate?: string;
   overtimeBillRate?: string;
   markup?: string;
+  isSubcategory?: boolean;
+  subcategoryPortion?: string[] | null;
 }
 
 // Interface for client positions
@@ -242,6 +245,8 @@ export function TimesheetManagement() {
           overtimeBillRate: pos.overtimeBillRate,
           markup: pos.markup,
           positionNumber: pos.positionNumber,
+          isSubcategory: pos.isSubcategory,
+          subcategoryPortion: pos.subcategoryPortion,
         })
       );
       setPositions(transformedPositions);
@@ -328,7 +333,7 @@ export function TimesheetManagement() {
 
   const positionOptions: DropdownOption[] = positions.map((position) => ({
     id: position.id,
-    label: position.title || "Unknown Position",
+    label: getPositionDisplayTitle(position),
     sublabel: `${position.positionCode} - ${position.positionNumber}`,
     value: position,
   }));

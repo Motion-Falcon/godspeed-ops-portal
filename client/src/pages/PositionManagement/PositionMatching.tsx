@@ -36,6 +36,7 @@ import {
 import { getClients, ClientData } from "../../services/api/client";
 import { AppHeader } from "../../components/AppHeader";
 import { CustomDropdown, DropdownOption } from "../../components/CustomDropdown";
+import { getPositionDisplayTitle } from "../../utils/positionDisplay";
 import "../../styles/pages/PositionMatching.css";
 import "../../styles/components/CommonTable.css";
 import "../../styles/components/form.css";
@@ -154,7 +155,7 @@ export function PositionMatching() {
     positions.map((position) => ({
       id: position.id || '',
       value: position.id || '',
-      label: `${position.title || t("positionMatching.notSpecified")} - ${position.positionNumber || t("positionMatching.notSpecified")}`,
+      label: `${getPositionDisplayTitle(position, t("positionMatching.notSpecified"))} - ${position.positionNumber || t("positionMatching.notSpecified")}`,
       sublabel: `Pay Rate: $${
         (Number.parseFloat(position.regularPayRate || "0") || 0).toFixed(2)
       } | ${position.positionNumber || t("positionMatching.notSpecified")} | ${
@@ -1003,7 +1004,7 @@ export function PositionMatching() {
                     options={positionOptions}
                     selectedOption={selectedPosition ? {
                       id: selectedPosition.id || '',
-                      label: `${selectedPosition.title || t("positionMatching.notSpecified")} - ${selectedPosition.positionNumber || t("positionMatching.notSpecified")}`,
+                      label: `${getPositionDisplayTitle(selectedPosition, t("positionMatching.notSpecified"))} - ${selectedPosition.positionNumber || t("positionMatching.notSpecified")}`,
                       sublabel: `Pay Rate: $${
                         (Number.parseFloat(selectedPosition.regularPayRate || "0") || 0).toFixed(2)
                       } | ${selectedPosition.positionNumber || t("positionMatching.notSpecified")} | ${
