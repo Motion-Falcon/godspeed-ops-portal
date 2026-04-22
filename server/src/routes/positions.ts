@@ -186,7 +186,8 @@ router.get(
           regular_pay_rate,
           premium_pay_rate,
           bill_rate,
-          is_subcategory
+          is_subcategory,
+          subcategory_portion
         `);
 
       // Apply all filters at database level
@@ -454,7 +455,8 @@ router.get(
           overtime_pay_rate,
           city,
           province,
-          is_subcategory
+          is_subcategory,
+          subcategory_portion
         `
         )
         .eq("client", clientId);
@@ -1248,7 +1250,9 @@ router.put(
           created_at,
           updated_at,
           created_by_user_id,
-          updated_by_user_id
+          updated_by_user_id,
+          is_subcategory,
+          subcategory_portion
         `
         )
         .single();
