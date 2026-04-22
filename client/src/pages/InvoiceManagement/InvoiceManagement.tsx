@@ -43,6 +43,7 @@ import {
 import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/language/language-provider";
 import { supabase } from "../../lib/supabaseClient";
+import { getPositionDisplayTitle } from "../../utils/positionDisplay";
 import {
   generateInvoicePDF as generatePDF,
   InvoiceData as PDFInvoiceData,
@@ -696,7 +697,7 @@ export function InvoiceManagement() {
 
   const positionOptions: DropdownOption[] = positions.map((position) => ({
     id: position.id || "",
-    label: `${position.title || t("invoiceManagement.unknownPosition")} - ${position.positionNumber || ""}`,
+    label: `${getPositionDisplayTitle(position, t("invoiceManagement.unknownPosition"))} - ${position.positionNumber || ""}`,
     sublabel: `Pay Rate: $${
       (Number.parseFloat(position.regularPayRate || "0") || 0).toFixed(2)
     } | ${position.positionNumber || ""} | ${position.positionCategory || ""} | ${position.city || ""}, ${position.province || ""}`,

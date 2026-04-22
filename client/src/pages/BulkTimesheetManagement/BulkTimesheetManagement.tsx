@@ -25,6 +25,7 @@ import {
   isHybridPaymentMethod,
   type ComputedTimesheetRow,
 } from "../../lib/hybridPayrollSplit";
+import { getPositionDisplayTitle } from "../../utils/positionDisplay";
 
 interface TimesheetEntry {
   date: string;
@@ -477,7 +478,7 @@ export function BulkTimesheetManagement() {
   const positionOptions: DropdownOption[] = positions.map((position) => ({
     id: position.id || "",
     label:
-      `${position.title || t("bulkTimesheetManagement.constants.unknownPosition")} - ${position.positionNumber || ""}`,
+      `${getPositionDisplayTitle(position, t("bulkTimesheetManagement.constants.unknownPosition"))} - ${position.positionNumber || ""}`,
     sublabel: `Pay Rate: $${
       (Number.parseFloat(position.regularPayRate || "0") || 0).toFixed(2)
     } | ${position.positionNumber || ""} | ${position.positionCategory || ""} | ${position.city || ""}, ${position.province || ""}`,
