@@ -2144,7 +2144,7 @@
     "nA": "N/A",
     "subcategoryBadge": "SUB",
     "positionTypeBadgeSubcategory": "Subcategory",
-    "subcategoryPortion": "Subcategory position type",
+    "subcategoryPosition": "Subcategory position type",
     "positionTypeBadgeNormal": "Regular",
     "yes": "Yes",
     "no": "No",
@@ -2475,9 +2475,10 @@
       "confirmButton": "Confirm",
       "cancelButton": "Cancel",
       "portalDisabledHint": "Subcategory positions cannot be shown on the job portal.",
-      "portionLabel": "Choose subcategory position type",
-      "selectPortionPlaceholder": "Select one or more types (e.g. Miles, Bonus)…",
-      "noPortionOptionsConfigured": "No options configured. Ask an admin to add entries under Admin → Dropdown options → Subcategory position (multi-select)."
+      "positionTypeLabel": "Choose subcategory position type",
+      "selectPositionTypePlaceholder": "Select one or more types (e.g. Miles, Bonus)…",
+      "noPositionTypeOptionsConfigured": "No options configured. Ask an admin to add entries under Admin → Dropdown options → Subcategory position (multi-select).",
+      "detailHeading": "Position details — {{label}}"
     },
     "sections": {
       "basicDetails": "Basic Details",
@@ -2650,7 +2651,8 @@
       "errorLoadingDraft": "Error loading draft",
       "failedToSaveDraft": "Failed to save draft",
       "failedToCreateUpdatePosition": "Failed to create/update position",
-      "subcategoryPortionRequired": "Select at least one subcategory position type."
+      "subcategoryPositionRequired": "Select at least one subcategory position type.",
+      "subcategoryPositionDetailsMismatch": "Add complete position details for each selected subcategory position type."
     },
     "messages": {
       "draftSaved": "Draft saved successfully",

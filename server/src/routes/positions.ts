@@ -4,7 +4,14 @@ import { authenticateToken, authorizeExactRoles, authorizeRoles } from "../middl
 import { sanitizeInputs, apiRateLimiter } from "../middleware/security.js";
 import { activityLogger } from "../middleware/activityLogger.js";
 import dotenv from "dotenv";
-import { PositionData } from "../types.js";
+import { PositionData, SubcategoryPositionDetailInput } from "../types.js";
+import {
+  validateSubcategoryPositionDetails,
+  applyFirstSubcategoryDetailToMainPosition,
+  detailRowToDbInsert,
+  dbDetailRowToApi,
+  orderDetailRowsForResponse,
+} from "../subcategoryPositionDetails.js";
 import { emailNotifier, getAssignmentFromEmail } from "../middleware/emailNotifier.js";
 import { jobseekerAssignmentTextTemplate } from "../email-templates/jobseeker-assignment-txt.js";
 import { jobseekerAssignmentHtmlTemplate } from "../email-templates/jobseeker-assignment-html.js";
@@ -95,6 +102,25 @@ async function syncAssignedJobseekers(positionId: string): Promise<string[]> {
 /**
  * Helper function to update position's assigned_jobseekers array based on active assignments
  */
+async function replaceSubcategoryPositionDetailRows(
+  positionId: string,
+  rows: SubcategoryPositionDetailInput[]
+): Promise<{ error: { message: string } | null }> {
+  const { error: delErr } = await supabase
+    .from("position_subcategory_position_details")
+    .delete()
+    .eq("position_id", positionId);
+  if (delErr) return { error: delErr };
+
+  if (rows.length === 0) return { error: null };
+
+  const inserts = rows.map((r) => detailRowToDbInsert(positionId, r));
+  const { error: insErr } = await supabase
+    .from("position_subcategory_position_details")
+    .insert(inserts);
+  return { error: insErr };
+}
+
 async function updatePositionAssignedJobseekers(
   positionId: string
 ): Promise<void> {
@@ -187,7 +213,7 @@ router.get(
           premium_pay_rate,
           bill_rate,
           is_subcategory,
-          subcategory_portion
+          subcategory_position
         `);
 
       // Apply all filters at database level
@@ -456,7 +482,7 @@ router.get(
           city,
           province,
           is_subcategory,
-          subcategory_portion
+          subcategory_position
         `
         )
         .eq("client", clientId);
@@ -768,9 +794,31 @@ router.get(
       const clientName = position.clients?.company_name || null;
       const { clients, ...positionData } = position;
 
+      let subcategoryPositionDetails: SubcategoryPositionDetailInput[] | undefined;
+      if (positionData.is_subcategory) {
+        const { data: detailRows, error: detErr } = await supabase
+          .from("position_subcategory_position_details")
+          .select("*")
+          .eq("position_id", id);
+        if (detErr) {
+          console.error("Error fetching subcategory position details:", detErr);
+          return res.status(500).json({
+            error: "Failed to load subcategory position details",
+          });
+        }
+        const labels = positionData.subcategory_position as string[] | null | undefined;
+        subcategoryPositionDetails = orderDetailRowsForResponse(
+          labels ?? null,
+          (detailRows ?? []) as Record<string, unknown>[]
+        );
+      }
+
       return res.status(200).json({
         ...positionData,
         clientName,
+        ...(subcategoryPositionDetails !== undefined
+          ? { subcategoryPositionDetails }
+          : {}),
       });
     } catch (error) {
       console.error("Unexpected error fetching position:", error);
@@ -886,6 +934,14 @@ router.post(
         delete (cleanedData as any).clientName;
       }
 
+      const detailPayload = (cleanedData as Record<string, unknown>)
+        .subcategoryPositionDetails as SubcategoryPositionDetailInput[] | undefined;
+      delete (cleanedData as Record<string, unknown>).subcategoryPositionDetails;
+
+      delete (cleanedData as Record<string, unknown>).isSubcategoryForm;
+
+      let orderedSubcategoryDetails: SubcategoryPositionDetailInput[] | undefined;
+
       // Handle empty date fields
       if (cleanedData.startDate === "") cleanedData.startDate = undefined;
       if (cleanedData.endDate === "") cleanedData.endDate = undefined;
@@ -919,6 +975,20 @@ router.post(
       // Ensure numberOfPositions is a number
       if (cleanedData.numberOfPositions !== undefined) {
         cleanedData.numberOfPositions = Number(cleanedData.numberOfPositions);
+      }
+
+      if (cleanedData.isSubcategory) {
+        const v = validateSubcategoryPositionDetails(
+          cleanedData.subcategoryPosition,
+          detailPayload
+        );
+        if (!v.ok) {
+          return res.status(400).json({ error: v.error });
+        }
+        orderedSubcategoryDetails = v.orderedRows;
+        applyFirstSubcategoryDetailToMainPosition(cleanedData, v.orderedRows[0]);
+      } else {
+        orderedSubcategoryDetails = undefined;
       }
 
       // Validate required fields
@@ -967,13 +1037,13 @@ router.post(
       // Store client name for activity logging
       res.locals.clientName = client.company_name;
 
-      // Validate documents required - at least one must be selected
+      // Validate documents required - at least one must be selected (regular positions only)
       const documentsRequired = cleanedData.documentsRequired || {};
       const hasAtLeastOneDoc = Object.values(documentsRequired).some(
         (v) => v === true
       );
 
-      if (!hasAtLeastOneDoc) {
+      if (!cleanedData.isSubcategory && !hasAtLeastOneDoc) {
         return res.status(400).json({
           error: "At least one document must be required",
           field: "documentsRequired",
@@ -1013,6 +1083,24 @@ router.post(
 
       // Store new position for activity logging
       res.locals.newPosition = newPosition;
+
+      if (
+        cleanedData.isSubcategory &&
+        orderedSubcategoryDetails &&
+        orderedSubcategoryDetails.length > 0 &&
+        newPosition?.id
+      ) {
+        const { error: detErr } = await replaceSubcategoryPositionDetailRows(
+          newPosition.id as string,
+          orderedSubcategoryDetails
+        );
+        if (detErr) {
+          console.error("Error saving subcategory position details:", detErr);
+          return res.status(500).json({
+            error: "Failed to save subcategory position details",
+          });
+        }
+      }
 
       return res.status(201).json({
         success: true,
@@ -1082,6 +1170,14 @@ router.put(
         delete (cleanedData as any).clientName;
       }
 
+      const detailPayloadPut = (cleanedData as Record<string, unknown>)
+        .subcategoryPositionDetails as SubcategoryPositionDetailInput[] | undefined;
+      delete (cleanedData as Record<string, unknown>).subcategoryPositionDetails;
+
+      delete (cleanedData as Record<string, unknown>).isSubcategoryForm;
+
+      let orderedSubcategoryDetailsPut: SubcategoryPositionDetailInput[] | undefined;
+
       // Handle empty date fields
       if (cleanedData.startDate === "") cleanedData.startDate = undefined;
       if (cleanedData.endDate === "") cleanedData.endDate = undefined;
@@ -1109,6 +1205,20 @@ router.put(
       // Ensure numberOfPositions is a number
       if (cleanedData.numberOfPositions !== undefined) {
         cleanedData.numberOfPositions = Number(cleanedData.numberOfPositions);
+      }
+
+      if (cleanedData.isSubcategory) {
+        const v = validateSubcategoryPositionDetails(
+          cleanedData.subcategoryPosition,
+          detailPayloadPut
+        );
+        if (!v.ok) {
+          return res.status(400).json({ error: v.error });
+        }
+        orderedSubcategoryDetailsPut = v.orderedRows;
+        applyFirstSubcategoryDetailToMainPosition(cleanedData, v.orderedRows[0]);
+      } else {
+        orderedSubcategoryDetailsPut = undefined;
       }
 
       // Check if position exists
@@ -1169,13 +1279,13 @@ router.put(
       // Store client name for activity logging
       res.locals.clientName = client.company_name;
 
-      // Validate documents required - at least one must be selected
+      // Validate documents required - at least one must be selected (regular positions only)
       const documentsRequired = cleanedData.documentsRequired || {};
       const hasAtLeastOneDoc = Object.values(documentsRequired).some(
         (v) => v === true
       );
 
-      if (!hasAtLeastOneDoc) {
+      if (!cleanedData.isSubcategory && !hasAtLeastOneDoc) {
         return res.status(400).json({
           error: "At least one document must be required",
           field: "documentsRequired",
@@ -1252,7 +1362,7 @@ router.put(
           created_by_user_id,
           updated_by_user_id,
           is_subcategory,
-          subcategory_portion
+          subcategory_position
         `
         )
         .single();
@@ -1269,6 +1379,32 @@ router.put(
 
       // Store updated position for activity logging
       res.locals.updatedPosition = updatedPosition;
+
+      if (cleanedData.isSubcategory) {
+        if (orderedSubcategoryDetailsPut?.length) {
+          const { error: detErr } = await replaceSubcategoryPositionDetailRows(
+            id,
+            orderedSubcategoryDetailsPut
+          );
+          if (detErr) {
+            console.error("Error saving subcategory position details:", detErr);
+            return res.status(500).json({
+              error: "Failed to save subcategory position details",
+            });
+          }
+        }
+      } else {
+        const { error: delErr } = await supabase
+          .from("position_subcategory_position_details")
+          .delete()
+          .eq("position_id", id);
+        if (delErr) {
+          console.error("Error clearing subcategory position details:", delErr);
+          return res.status(500).json({
+            error: "Failed to update subcategory position details",
+          });
+        }
+      }
 
       return res.status(200).json({
         success: true,
