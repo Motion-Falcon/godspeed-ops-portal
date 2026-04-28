@@ -1,7 +1,7 @@
 import axios, { AxiosRequestConfig } from "axios";
 import { supabase } from "../../lib/supabaseClient";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
 
 // Request caching system
 interface CacheRecord {

@@ -518,6 +518,7 @@ router.post(
       // Handle empty date fields - convert empty strings to null
       // Using a type-safe approach to avoid TypeScript errors
       const dataWithNullDates = { ...positionDataWithoutClientName };
+      delete (dataWithNullDates as Record<string, unknown>).isSubcategoryForm;
       if (dataWithNullDates.startDate === "")
         dataWithNullDates.startDate = undefined;
       if (dataWithNullDates.endDate === "")
@@ -683,6 +684,7 @@ router.put(
       // Handle empty date fields - convert empty strings to null
       // Using a type-safe approach to avoid TypeScript errors
       const dataWithNullDates = { ...positionDataWithoutClientName };
+      delete (dataWithNullDates as Record<string, unknown>).isSubcategoryForm;
       if (dataWithNullDates.startDate === "")
         dataWithNullDates.startDate = undefined;
       if (dataWithNullDates.endDate === "")

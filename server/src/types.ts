@@ -266,6 +266,17 @@ export interface DbClientData {
   updated_by_user_id: string;
 }
 
+/** One row in position_subcategory_position_details / draft JSON */
+export interface SubcategoryPositionDetailInput {
+  subcategoryPosition: string;
+  payrateType: string;
+  numberOfPositions: number;
+  regularPayRate: string;
+  premiumPayRate?: string;
+  markup?: string;
+  billRate: string;
+}
+
 // Position Data Types
 export interface PositionData {
   id?: string;
@@ -314,6 +325,7 @@ export interface PositionData {
   payrateType?: string;  // Hourly/Daily/Monthly
   numberOfPositions?: number;
   regularPayRate?: string;
+  premiumPayRate?: string;
   markup?: string;
   billRate?: string;
   
@@ -336,7 +348,12 @@ export interface PositionData {
   // Metadata
   isDraft?: boolean;
   isSubcategory?: boolean;
-  subcategoryPortion?: string[] | null;
+  /** Selected labels from dropdown list_type subcategory_position */
+  subcategoryPosition?: string[] | null;
+  /** Per-label rate rows (subcategory positions only); persisted in position_subcategory_position_details */
+  subcategoryPositionDetails?: SubcategoryPositionDetailInput[];
+  /** Form-only: mirrored from route / edit load; strip before DB insert */
+  isSubcategoryForm?: boolean;
   createdAt?: string;
   updatedAt?: string;
   lastUpdated?: string;
@@ -415,7 +432,7 @@ export interface DbPositionData {
   
   // Metadata
   is_draft?: boolean;
-  subcategory_portion?: string[] | null;
+  subcategory_position?: string[] | null;
   created_at?: string;
   updated_at?: string;
   last_updated?: string;

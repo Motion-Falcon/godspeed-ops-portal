@@ -1,6 +1,16 @@
 import axios, { AxiosRequestConfig } from "axios";
 import { api, clearCacheFor } from "./index";
 
+export interface SubcategoryPositionDetailRow {
+  subcategoryPosition: string;
+  payrateType: string;
+  numberOfPositions: number;
+  regularPayRate: string;
+  premiumPayRate?: string;
+  markup?: string;
+  billRate: string;
+}
+
 export interface PositionData {
   id?: string;
 
@@ -73,7 +83,8 @@ export interface PositionData {
 
   // Subcategory flag – invoicing-only positions excluded from matching
   isSubcategory?: boolean;
-  subcategoryPortion?: string[] | null;
+  subcategoryPosition?: string[] | null;
+  subcategoryPositionDetails?: SubcategoryPositionDetailRow[];
 
   // Metadata
   isDraft?: boolean;
