@@ -26,6 +26,17 @@ END $$;
 COMMENT ON COLUMN public.position_drafts.subcategory_position IS
   'Draft copy of subcategory_position (text[]) when applicable.';
 
+-- If subcategory_position rows already exist (partial migration / duplicate seed),
+-- renaming subcategory_portion → subcategory_position would violate client_dropdown_options_list_type_name_key.
+DELETE FROM public.client_dropdown_options AS old
+WHERE old.list_type = 'subcategory_portion'
+  AND EXISTS (
+    SELECT 1
+    FROM public.client_dropdown_options AS neu
+    WHERE neu.list_type = 'subcategory_position'
+      AND neu.name = old.name
+  );
+
 UPDATE public.client_dropdown_options SET list_type = 'subcategory_position' WHERE list_type = 'subcategory_portion';
 
 ALTER TABLE public.position_drafts
