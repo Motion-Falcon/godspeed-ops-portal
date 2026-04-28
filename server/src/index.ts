@@ -34,7 +34,7 @@ dotenv.config();
 
 // Initialize Express app
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001; // 5000 is often used by macOS AirPlay
 
 // Trust proxy configuration for Vercel deployment
 // Only trust the first proxy (Vercel) to prevent IP spoofing

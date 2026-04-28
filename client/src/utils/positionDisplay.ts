@@ -2,17 +2,17 @@ export interface PositionDisplayFields {
   title?: string | null;
   isSubcategory?: boolean | null;
   is_subcategory?: boolean | null;
-  subcategoryPortion?: string[] | string | null;
-  subcategory_portion?: string[] | string | null;
+  subcategoryPosition?: string[] | string | null;
+  subcategory_position?: string[] | string | null;
 }
 
-function cleanPortionLabel(value: unknown): string {
+function cleanSubcategoryLabel(value: unknown): string {
   return String(value ?? "")
     .trim()
     .replace(/^["']|["']$/g, "");
 }
 
-function normalizeStringSubcategoryPortions(value: string): string[] {
+function normalizeStringSubcategoryPositionValues(value: string): string[] {
   const trimmed = value.trim();
 
   if (!trimmed) {
@@ -21,7 +21,7 @@ function normalizeStringSubcategoryPortions(value: string): string[] {
 
   if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
     try {
-      return normalizeSubcategoryPortions(JSON.parse(trimmed));
+      return normalizeSubcategoryPositionArray(JSON.parse(trimmed));
     } catch {
       // Fall through to comma splitting below.
     }
@@ -31,29 +31,29 @@ function normalizeStringSubcategoryPortions(value: string): string[] {
     return trimmed
       .slice(1, -1)
       .split(",")
-      .map(cleanPortionLabel)
+      .map(cleanSubcategoryLabel)
       .filter((item) => item.length > 0);
   }
 
   return trimmed
     .split(",")
-    .map(cleanPortionLabel)
+    .map(cleanSubcategoryLabel)
     .filter((item) => item.length > 0);
 }
 
-export function normalizeSubcategoryPortions(value: unknown): string[] {
+export function normalizeSubcategoryPositionArray(value: unknown): string[] {
   if (Array.isArray(value)) {
     return value
       .flatMap((item) =>
         typeof item === "string"
-          ? normalizeStringSubcategoryPortions(item)
-          : [cleanPortionLabel(item)]
+          ? normalizeStringSubcategoryPositionValues(item)
+          : [cleanSubcategoryLabel(item)]
       )
       .filter((item) => item.length > 0);
   }
 
   if (typeof value === "string") {
-    return normalizeStringSubcategoryPortions(value);
+    return normalizeStringSubcategoryPositionValues(value);
   }
 
   return [];
@@ -66,13 +66,13 @@ export function getPositionDisplayTitle(
   const title = position.title?.trim() || fallbackTitle;
   const isSubcategory =
     position.isSubcategory === true || position.is_subcategory === true;
-  const portions = normalizeSubcategoryPortions(
-    position.subcategoryPortion ?? position.subcategory_portion
+  const subcategoryLabels = normalizeSubcategoryPositionArray(
+    position.subcategoryPosition ?? position.subcategory_position
   );
 
-  if (!isSubcategory || portions.length === 0) {
+  if (!isSubcategory || subcategoryLabels.length === 0) {
     return title;
   }
 
-  return `${title} - (Subcategory - ${portions.join(", ")})`;
+  return `${title} - (Subcategory - ${subcategoryLabels.join(", ")})`;
 }

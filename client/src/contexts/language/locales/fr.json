@@ -2157,7 +2157,7 @@
     "nA": "N/A",
     "subcategoryBadge": "SOUS",
     "positionTypeBadgeSubcategory": "Sous-catégorie",
-    "subcategoryPortion": "Type de poste de sous-catégorie",
+    "subcategoryPosition": "Type de poste de sous-catégorie",
     "positionTypeBadgeNormal": "Régulier",
     "yes": "Oui",
     "no": "Non",
@@ -2488,9 +2488,10 @@
       "confirmButton": "Confirmer",
       "cancelButton": "Annuler",
       "portalDisabledHint": "Les postes de sous-catégorie ne peuvent pas être affichés sur le portail d'emploi.",
-      "portionLabel": "Choisir le type de poste de sous-catégorie",
-      "selectPortionPlaceholder": "Sélectionnez un ou plusieurs types (p. ex. Miles, Bonus)…",
-      "noPortionOptionsConfigured": "Aucune option configurée. Demandez à un administrateur d’ajouter des entrées sous Admin → Options des listes déroulantes → Position de sous-catégorie (sélection multiple)."
+      "positionTypeLabel": "Choisir le type de poste de sous-catégorie",
+      "selectPositionTypePlaceholder": "Sélectionnez un ou plusieurs types (p. ex. Miles, Bonus)…",
+      "noPositionTypeOptionsConfigured": "Aucune option configurée. Demandez à un administrateur d’ajouter des entrées sous Admin → Options des listes déroulantes → Position de sous-catégorie (sélection multiple).",
+      "detailHeading": "Détails du poste — {{label}}"
     },
     "sections": {
       "basicDetails": "Détails de base",
@@ -2663,7 +2664,8 @@
       "errorLoadingDraft": "Erreur lors du chargement du brouillon",
       "failedToSaveDraft": "Échec de la sauvegarde du brouillon",
       "failedToCreateUpdatePosition": "Échec de la création/mise à jour du poste",
-      "subcategoryPortionRequired": "Sélectionnez au moins un type de poste de sous-catégorie."
+      "subcategoryPositionRequired": "Sélectionnez au moins un type de poste de sous-catégorie.",
+      "subcategoryPositionDetailsMismatch": "Ajoutez des détails de poste complets pour chaque type de poste de sous-catégorie sélectionné."
     },
     "messages": {
       "draftSaved": "Brouillon sauvegardé avec succès",

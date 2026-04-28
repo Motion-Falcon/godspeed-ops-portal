@@ -83,6 +83,8 @@ interface MenuItem {
   exact?: boolean; // Whether the path should match exactly
   activePattern?: string; // Pattern to match for active state
   activePaths?: string[]; // Array of paths that should activate this menu item
+  /** Full browser navigation — remounts the page (e.g. reset heavy create forms). */
+  fullPageLoad?: boolean;
 }
 
 interface HamburgerMenuProps {
@@ -124,11 +126,13 @@ function MenuItemComponent({
   isOpen,
   onTooltipShow,
   onTooltipHide,
+  onClose,
 }: {
   item: MenuItem;
   isOpen: boolean;
   onTooltipShow: (text: string, element: HTMLElement) => void;
   onTooltipHide: () => void;
+  onClose: () => void;
 }) {
   const location = useLocation();
   const hasSubmenu = item.submenu && item.submenu.length > 0;
@@ -257,28 +261,60 @@ function MenuItemComponent({
           <ul className="menu-category-items">
             {item.submenu!.map((subItem, subIndex) => (
               <li key={subIndex} className="menu-item submenu-item">
-                <NavLink
-                  to={subItem.path || "#"}
-                  className={() =>
-                    // Use our custom active detection for submenu items
-                    isPathActive(subItem.path, subItem.exact, subItem.activePattern, subItem.activePaths) ? "active" : ""
-                  }
-                  onMouseEnter={(e) => {
-                    if (!isOpen) {
-                      onTooltipShow(subItem.label, e.currentTarget);
+                {subItem.fullPageLoad && subItem.path ? (
+                  <a
+                    href={subItem.path}
+                    className={
+                      isPathActive(
+                        subItem.path,
+                        subItem.exact,
+                        subItem.activePattern,
+                        subItem.activePaths
+                      )
+                        ? "active"
+                        : ""
                     }
-                  }}
-                  onMouseLeave={() => {
-                    if (!isOpen) {
-                      onTooltipHide();
+                    onClick={() => onClose()}
+                    onMouseEnter={(e) => {
+                      if (!isOpen) {
+                        onTooltipShow(subItem.label, e.currentTarget);
+                      }
+                    }}
+                    onMouseLeave={() => {
+                      if (!isOpen) {
+                        onTooltipHide();
+                      }
+                    }}
+                  >
+                    {subItem.icon && (
+                      <span className="menu-item-icon">{subItem.icon}</span>
+                    )}
+                    <span className="menu-item-text">{subItem.label}</span>
+                  </a>
+                ) : (
+                  <NavLink
+                    to={subItem.path || "#"}
+                    className={() =>
+                      // Use our custom active detection for submenu items
+                      isPathActive(subItem.path, subItem.exact, subItem.activePattern, subItem.activePaths) ? "active" : ""
                     }
-                  }}
-                >
-                  {subItem.icon && (
-                    <span className="menu-item-icon">{subItem.icon}</span>
-                  )}
-                  <span className="menu-item-text">{subItem.label}</span>
-                </NavLink>
+                    onMouseEnter={(e) => {
+                      if (!isOpen) {
+                        onTooltipShow(subItem.label, e.currentTarget);
+                      }
+                    }}
+                    onMouseLeave={() => {
+                      if (!isOpen) {
+                        onTooltipHide();
+                      }
+                    }}
+                  >
+                    {subItem.icon && (
+                      <span className="menu-item-icon">{subItem.icon}</span>
+                    )}
+                    <span className="menu-item-text">{subItem.label}</span>
+                  </NavLink>
+                )}
               </li>
             ))}
           </ul>
@@ -573,6 +609,7 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
           icon: <FilePlus size={16} />,
           exact: true,
           roles: POSITION_CREATE_ROLES,
+          fullPageLoad: true,
         },
         {
           label: t("navigation.createPositionSubcategory"),
@@ -580,6 +617,7 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
           icon: <PlusCircle size={16} />,
           exact: true,
           roles: POSITION_CREATE_ROLES,
+          fullPageLoad: true,
         },
         {
           label: t("navigation.draftPositions"),
@@ -890,6 +928,7 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
               isOpen={isOpen}
               onTooltipShow={handleTooltipShow}
               onTooltipHide={handleTooltipHide}
+              onClose={onClose}
             />
           ))}
         </ul>

@@ -9,7 +9,7 @@ export type DropdownListType =
   | "accounting_manager"
   | "position_title"
   | "list_name"
-  | "subcategory_portion";
+  | "subcategory_position";
 
 export interface ClientDropdownOption {
   id: string;
@@ -157,5 +157,5 @@ export const LIST_TYPE_LABELS: Record<DropdownListType, string> = {
   accounting_manager: "Accounting Manager",
   position_title: "Position Title",
   list_name: "List Name",
-  subcategory_portion: "Subcategory position",
+  subcategory_position: "Subcategory position",
 };

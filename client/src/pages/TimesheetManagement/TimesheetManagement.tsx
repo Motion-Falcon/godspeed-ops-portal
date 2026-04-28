@@ -91,7 +91,7 @@ export interface PositionWithOvertime {
   overtimeBillRate?: string;
   markup?: string;
   isSubcategory?: boolean;
-  subcategoryPortion?: string[] | null;
+  subcategoryPosition?: string[] | null;
 }
 
 // Interface for client positions
@@ -245,8 +245,10 @@ export function TimesheetManagement() {
           overtimeBillRate: pos.overtimeBillRate,
           markup: pos.markup,
           positionNumber: pos.positionNumber,
-          isSubcategory: pos.isSubcategory,
-          subcategoryPortion: pos.subcategoryPortion,
+          isSubcategory: pos.isSubcategory ?? (pos as { is_subcategory?: boolean }).is_subcategory,
+          subcategoryPosition:
+            pos.subcategoryPosition ??
+            (pos as { subcategory_position?: string[] | null }).subcategory_position,
         })
       );
       setPositions(transformedPositions);

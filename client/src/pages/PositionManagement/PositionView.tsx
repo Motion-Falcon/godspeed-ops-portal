@@ -20,6 +20,7 @@ import {
 import "../../styles/pages/ClientView.css";
 import "../../styles/pages/PositionManagement.css";
 import "../../styles/components/header.css";
+import { normalizeSubcategoryPositionArray } from "../../utils/positionDisplay";
 
 interface ExtendedPositionData extends PositionData {
   [key: string]: unknown;
@@ -451,24 +452,20 @@ export function PositionView() {
               )}
               {renderDetailItem(t("positionManagement.showOnJobPortal"), position.showOnJobPortal)}
               {renderDetailItem(t("positionManagement.stat"), position.stat)}
-              {position.isSubcategory &&
-                renderDetailItem(
-                  t("positionManagement.subcategoryPortion"),
-                  (() => {
-                    const p = position.subcategoryPortion as
-                      | string[]
-                      | string
-                      | null
-                      | undefined;
-                    if (Array.isArray(p) && p.length > 0) {
-                      return p.join(", ");
-                    }
-                    if (typeof p === "string" && p.trim()) {
-                      return p.trim();
-                    }
-                    return null;
-                  })()
-                )}
+              {(Boolean(position.isSubcategory) ||
+                Boolean((position as ExtendedPositionData).is_subcategory)) &&
+                (() => {
+                  const raw =
+                    position.subcategoryPosition ??
+                    (position as ExtendedPositionData).subcategory_position;
+                  const labels = normalizeSubcategoryPositionArray(raw);
+                  const subcategoryLabelsDisplay: string | null =
+                    labels.length > 0 ? labels.join(", ") : null;
+                  return renderDetailItem(
+                    t("positionManagement.subcategoryPosition"),
+                    subcategoryLabelsDisplay
+                  );
+                })()}
               {renderDetailItem(t("positionManagement.clientManager"), position.clientManager)}
               {renderDetailItem(t("positionManagement.salesManager"), position.salesManager)}
               {renderDetailItem(t("positionManagement.positionCode"), position.positionNumber)}
