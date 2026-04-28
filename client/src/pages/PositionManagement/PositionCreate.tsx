@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { useLanguage } from "../../contexts/language/language-provider";
-import { useForm, FormProvider, Controller } from "react-hook-form";
+import { useForm, FormProvider, Controller, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
@@ -9,6 +9,7 @@ import {
   getPositionDraftById,
   createPosition,
   PositionData,
+  SubcategoryPositionDetailRow,
   deletePositionDraft,
   getPosition,
   updatePosition,
@@ -38,7 +39,7 @@ import {
 import { getDropdownOptionsByType } from "../../services/api/dropdownOptions";
 import {
   getPositionDisplayTitle,
-  normalizeSubcategoryPortions,
+  normalizeSubcategoryPositionArray,
 } from "../../utils/positionDisplay";
 
 // Helper function for date formatting and validation
@@ -50,8 +51,20 @@ const getTodayFormatted = (): string => {
   return formatDateForInput(new Date());
 };
 
-function normalizeSubcategoryPortionToForm(value: unknown): string[] {
-  return normalizeSubcategoryPortions(value);
+function normalizeSubcategoryPositionToForm(value: unknown): string[] {
+  return normalizeSubcategoryPositionArray(value);
+}
+
+function defaultSubcategoryDetailRow(label: string): SubcategoryPositionDetailRow {
+  return {
+    subcategoryPosition: label,
+    payrateType: PAYRATE_TYPES[0],
+    numberOfPositions: 1,
+    regularPayRate: "",
+    premiumPayRate: "",
+    markup: "",
+    billRate: "",
+  };
 }
 
 function readIsSubcategory(value: unknown): boolean {
@@ -63,8 +76,26 @@ function readIsSubcategory(value: unknown): boolean {
 }
 
 // Define form schema function to support translations
-const createPositionFormSchema = (t: (key: string) => string) =>
-  z
+const createPositionFormSchema = (t: (key: string) => string) => {
+  const detailRowSchema = z.object({
+    subcategoryPosition: z.string(),
+    payrateType: z
+      .string()
+      .min(1, { message: t("positionCreate.errors.payrateTypeRequired") }),
+    numberOfPositions: z.coerce.number().min(1, {
+      message: t("positionCreate.errors.numberOfPositionsRequired"),
+    }),
+    regularPayRate: z
+      .string()
+      .min(1, { message: t("positionCreate.errors.regularPayRateRequired") }),
+    premiumPayRate: z.string().optional(),
+    markup: z.string().optional(),
+    billRate: z
+      .string()
+      .min(1, { message: t("positionCreate.errors.billRateRequired") }),
+  });
+
+  return z
     .object({
       // Basic Details
       client: z
@@ -82,7 +113,9 @@ const createPositionFormSchema = (t: (key: string) => string) =>
         .min(1, { message: t("positionCreate.errors.endDateRequired") }),
       showOnJobPortal: z.boolean().default(false),
       stat: z.boolean().default(false),
-      subcategoryPortion: z.array(z.string()).default([]),
+      isSubcategoryForm: z.boolean().default(false),
+      subcategoryPosition: z.array(z.string()).default([]),
+      subcategoryPositionDetails: z.array(detailRowSchema).default([]),
       clientManager: z.string().optional(),
       salesManager: z.string().optional(),
       positionNumber: z.string().optional(),
@@ -121,45 +154,26 @@ const createPositionFormSchema = (t: (key: string) => string) =>
         .min(1, { message: t("positionCreate.errors.experienceRequired") }),
 
       // Documents Required
-      documentsRequired: z
-        .object({
-          license: z.boolean().default(false),
-          driverAbstract: z.boolean().default(false),
-          tdgCertificate: z.boolean().default(false),
-          sin: z.boolean().default(false),
-          immigrationStatus: z.boolean().default(false),
-          passport: z.boolean().default(false),
-          cvor: z.boolean().default(false),
-          resume: z.boolean().default(false),
-          articlesOfIncorporation: z.boolean().default(false),
-          directDeposit: z.boolean().default(false),
-        })
-        .refine(
-          // At least one document must be selected
-          (data) => Object.values(data).some((value) => value === true),
-          {
-            message: t("positionCreate.errors.documentsRequired"),
-            path: ["root"],
-          }
-        ),
+      documentsRequired: z.object({
+        license: z.boolean().default(false),
+        driverAbstract: z.boolean().default(false),
+        tdgCertificate: z.boolean().default(false),
+        sin: z.boolean().default(false),
+        immigrationStatus: z.boolean().default(false),
+        passport: z.boolean().default(false),
+        cvor: z.boolean().default(false),
+        resume: z.boolean().default(false),
+        articlesOfIncorporation: z.boolean().default(false),
+        directDeposit: z.boolean().default(false),
+      }),
 
-      // Position Details
-      payrateType: z
-        .string()
-        .min(1, { message: t("positionCreate.errors.payrateTypeRequired") }),
-      numberOfPositions: z.coerce
-        .number()
-        .min(1, {
-          message: t("positionCreate.errors.numberOfPositionsRequired"),
-        }),
-      regularPayRate: z
-        .string()
-        .min(1, { message: t("positionCreate.errors.regularPayRateRequired") }),
+      // Position Details (optional at schema level; enforced in superRefine for non-subcategory)
+      payrateType: z.string().optional(),
+      numberOfPositions: z.coerce.number().optional(),
+      regularPayRate: z.string().optional(),
       premiumPayRate: z.string().optional(),
       markup: z.string().optional(),
-      billRate: z
-        .string()
-        .min(1, { message: t("positionCreate.errors.billRateRequired") }),
+      billRate: z.string().optional(),
 
       // Overtime
       overtimeEnabled: z.boolean().default(false),
@@ -185,16 +199,90 @@ const createPositionFormSchema = (t: (key: string) => string) =>
       projCompDate: z.string().optional(),
       taskTime: z.string().optional(),
     })
+    .superRefine((data, ctx) => {
+      if (data.isSubcategoryForm) {
+        const labels = data.subcategoryPosition.map((x) => String(x).trim()).filter(Boolean);
+        if (labels.length === 0) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: t("positionCreate.errors.subcategoryPositionRequired"),
+            path: ["subcategoryPosition"],
+          });
+          return;
+        }
+        const details = data.subcategoryPositionDetails ?? [];
+        if (details.length !== labels.length) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: t("positionCreate.errors.subcategoryPositionDetailsMismatch"),
+            path: ["subcategoryPositionDetails"],
+          });
+          return;
+        }
+        for (let i = 0; i < labels.length; i++) {
+          const lab = labels[i];
+          const row = details[i];
+          if (!row || String(row.subcategoryPosition).trim() !== lab) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: t("positionCreate.errors.subcategoryPositionDetailsMismatch"),
+              path: ["subcategoryPositionDetails", i],
+            });
+          }
+        }
+        return;
+      }
+
+      if (!Object.values(data.documentsRequired).some((value) => value === true)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: t("positionCreate.errors.documentsRequired"),
+          path: ["documentsRequired", "root"],
+        });
+      }
+      if (!data.payrateType?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: t("positionCreate.errors.payrateTypeRequired"),
+          path: ["payrateType"],
+        });
+      }
+      if (
+        data.numberOfPositions === undefined ||
+        data.numberOfPositions === null ||
+        Number(data.numberOfPositions) < 1 ||
+        Number.isNaN(Number(data.numberOfPositions))
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: t("positionCreate.errors.numberOfPositionsRequired"),
+          path: ["numberOfPositions"],
+        });
+      }
+      if (!data.regularPayRate?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: t("positionCreate.errors.regularPayRateRequired"),
+          path: ["regularPayRate"],
+        });
+      }
+      if (!data.billRate?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: t("positionCreate.errors.billRateRequired"),
+          path: ["billRate"],
+        });
+      }
+    })
     .refine(
       (data) => {
-        // If overtime is enabled, require overtime fields
         if (data.overtimeEnabled) {
           return (
-            data.overtimeHours &&
+            !!data.overtimeHours &&
             data.overtimeHours.trim() !== "" &&
-            data.overtimeBillRate &&
+            !!data.overtimeBillRate &&
             data.overtimeBillRate.trim() !== "" &&
-            data.overtimePayRate &&
+            !!data.overtimePayRate &&
             data.overtimePayRate.trim() !== ""
           );
         }
@@ -206,7 +294,6 @@ const createPositionFormSchema = (t: (key: string) => string) =>
       }
     )
     .transform((data) => {
-      // Clear overtime fields when overtime is disabled
       if (!data.overtimeEnabled) {
         return {
           ...data,
@@ -217,6 +304,7 @@ const createPositionFormSchema = (t: (key: string) => string) =>
       }
       return data;
     });
+};
 
 type PositionFormData = z.infer<ReturnType<typeof createPositionFormSchema>>;
 
@@ -277,16 +365,16 @@ export function PositionCreate({
       });
   }, []);
 
-  const [subcategoryPortionOptions, setSubcategoryPortionOptions] = useState<
+  const [subcategoryPositionOptions, setSubcategoryPositionOptions] = useState<
     string[]
   >([]);
   useEffect(() => {
-    getDropdownOptionsByType("subcategory_portion")
+    getDropdownOptionsByType("subcategory_position")
       .then((opts) => {
-        setSubcategoryPortionOptions(opts.map((o) => o.name));
+        setSubcategoryPositionOptions(opts.map((o) => o.name));
       })
       .catch(() => {
-        setSubcategoryPortionOptions([]);
+        setSubcategoryPositionOptions([]);
       });
   }, []);
 
@@ -297,8 +385,8 @@ export function PositionCreate({
     label: title,
   }));
 
-  const subcategoryPortionDropdownOptions: DropdownOption[] =
-    subcategoryPortionOptions.map((name) => ({
+  const subcategoryPositionDropdownOptions: DropdownOption[] =
+    subcategoryPositionOptions.map((name) => ({
       id: name,
       value: name,
       label: name,
@@ -387,7 +475,9 @@ export function PositionCreate({
         directDeposit: false,
       },
       payrateType: t("positionCreate.defaults.hourly"),
-      subcategoryPortion: [],
+      isSubcategoryForm: defaultSubcategory,
+      subcategoryPosition: [],
+      subcategoryPositionDetails: [],
     },
     mode: "onBlur",
   });
@@ -395,6 +485,15 @@ export function PositionCreate({
   const { handleSubmit, reset, formState, watch, setValue, getValues, control } =
     methods;
   const { isDirty } = formState;
+
+  const { fields: subcategoryDetailFields, replace: replaceSubcategoryDetails } =
+    useFieldArray({
+      control,
+      name: "subcategoryPositionDetails",
+    });
+
+  const watchedSubcategoryPosition = watch("subcategoryPosition");
+  const watchedSubcategoryDetails = watch("subcategoryPositionDetails");
 
   // Function to convert snake_case keys to camelCase
   const convertToCamelCase = (
@@ -404,23 +503,63 @@ export function PositionCreate({
 
     // Process each key-value pair
     Object.entries(data).forEach(([key, value]) => {
+      // Handle special case: map client_id to client for the form
+      if (key === "client_id") {
+        result["client"] = value;
+        return;
+      }
+      if (key === "subcategory_position") {
+        result["subcategoryPosition"] = value;
+        return;
+      }
+      if (key === "subcategory_position_details") {
+        result["subcategoryPositionDetails"] = value;
+        return;
+      }
+
       // Convert snake_case to camelCase
       const camelKey = key.replace(/_([a-z])/g, (_, letter) =>
         letter.toUpperCase()
       );
 
-      // Handle special case: map client_id to client for the form
-      if (key === "client_id") {
-        result["client"] = value;
-      } else {
-        result[camelKey] = value;
-      }
+      result[camelKey] = value;
     });
 
-    (result as Record<string, unknown>).subcategoryPortion =
-      normalizeSubcategoryPortionToForm(
-        (result as Record<string, unknown>).subcategoryPortion
-      );
+    const rawSp =
+      (result as Record<string, unknown>).subcategoryPosition ??
+      (result as Record<string, unknown>).subcategory_position;
+    (result as Record<string, unknown>).subcategoryPosition =
+      normalizeSubcategoryPositionToForm(rawSp);
+    delete (result as Record<string, unknown>).subcategory_position;
+
+    let details = (result as Record<string, unknown>).subcategoryPositionDetails as
+      | SubcategoryPositionDetailRow[]
+      | undefined;
+    const labelsForDetails = (result as Record<string, unknown>).subcategoryPosition as
+      | string[]
+      | undefined;
+    if (
+      (!details || details.length === 0) &&
+      Array.isArray(labelsForDetails) &&
+      labelsForDetails.length > 0
+    ) {
+      details = labelsForDetails.map((lab) => ({
+        subcategoryPosition: lab,
+        payrateType: String(
+          (result as Record<string, unknown>).payrateType || PAYRATE_TYPES[0]
+        ),
+        numberOfPositions: Number(
+          (result as Record<string, unknown>).numberOfPositions ?? 1
+        ),
+        regularPayRate: String((result as Record<string, unknown>).regularPayRate ?? ""),
+        premiumPayRate: String((result as Record<string, unknown>).premiumPayRate ?? ""),
+        markup: String((result as Record<string, unknown>).markup ?? ""),
+        billRate: String((result as Record<string, unknown>).billRate ?? ""),
+      }));
+      (result as Record<string, unknown>).subcategoryPositionDetails = details;
+    }
+
+    (result as Record<string, unknown>).isSubcategoryForm = readIsSubcategory(result);
 
     return result as PositionFormData;
   };
@@ -669,6 +808,44 @@ export function PositionCreate({
     }
   }, [isSubcategory, methods]);
 
+  useEffect(() => {
+    methods.setValue("isSubcategoryForm", isSubcategory);
+  }, [isSubcategory, methods]);
+
+  useEffect(() => {
+    if (!isSubcategory) return;
+    const labels = (watchedSubcategoryPosition || [])
+      .map((x) => String(x).trim())
+      .filter(Boolean);
+    const prev = methods.getValues("subcategoryPositionDetails") || [];
+    const map = new Map(
+      prev.map((r) => [String(r.subcategoryPosition).trim(), r])
+    );
+    const next: SubcategoryPositionDetailRow[] = labels.map((lab) => {
+      const existing = map.get(lab);
+      return existing ?? defaultSubcategoryDetailRow(lab);
+    });
+    replaceSubcategoryDetails(next);
+  }, [
+    isSubcategory,
+    watchedSubcategoryPosition,
+    methods,
+    replaceSubcategoryDetails,
+  ]);
+
+  useEffect(() => {
+    if (!isSubcategory) return;
+    const details = watchedSubcategoryDetails || [];
+    const first = details[0];
+    if (!first) return;
+    methods.setValue("payrateType", first.payrateType);
+    methods.setValue("numberOfPositions", first.numberOfPositions);
+    methods.setValue("regularPayRate", first.regularPayRate);
+    methods.setValue("premiumPayRate", first.premiumPayRate ?? "");
+    methods.setValue("markup", first.markup ?? "");
+    methods.setValue("billRate", first.billRate);
+  }, [isSubcategory, watchedSubcategoryDetails, methods]);
+
   // Clear overtime fields when overtime is disabled
   useEffect(() => {
     const overtimeEnabled = methods.watch("overtimeEnabled");
@@ -692,6 +869,7 @@ export function PositionCreate({
     const subscription = methods.watch((value, { name, type }) => {
       // Skip if we're in the middle of a calculation or not a user change
       if (isCalculating || type !== "change") return;
+      if (value.isSubcategoryForm) return;
 
       const payRate = parseFloat(value.regularPayRate || "0");
       const markup = value.markup ? parseFloat(value.markup) : null;
@@ -735,6 +913,69 @@ export function PositionCreate({
           } else if (billRate !== null && !isNaN(billRate) && billRate > 0) {
             const calculatedMarkup = ((billRate - payRate) / payRate) * 100;
             methods.setValue("markup", calculatedMarkup.toFixed(2), {
+              shouldValidate: false,
+            });
+          }
+        }
+      } finally {
+        isCalculating = false;
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [methods]);
+
+  useEffect(() => {
+    let isCalculating = false;
+    const subscription = methods.watch((value, { name, type }) => {
+      if (isCalculating || type !== "change") return;
+      if (!value.isSubcategoryForm) return;
+      const match = name?.match(
+        /^subcategoryPositionDetails\.(\d+)\.(markup|billRate|regularPayRate)$/
+      );
+      if (!match) return;
+      const idx = Number(match[1]);
+      const field = match[2];
+      const rows = value.subcategoryPositionDetails || [];
+      const row = rows[idx];
+      if (!row) return;
+      const payRate = parseFloat(row.regularPayRate || "0");
+      const markup = row.markup ? parseFloat(row.markup) : null;
+      const billRate = row.billRate ? parseFloat(row.billRate) : null;
+
+      isCalculating = true;
+      try {
+        const basePath = `subcategoryPositionDetails.${idx}` as const;
+        if (
+          field === "markup" &&
+          payRate > 0 &&
+          markup !== null &&
+          !isNaN(markup)
+        ) {
+          const calculatedBillRate = payRate * (1 + markup / 100);
+          methods.setValue(`${basePath}.billRate`, calculatedBillRate.toFixed(2), {
+            shouldValidate: true,
+          });
+        } else if (
+          field === "billRate" &&
+          payRate > 0 &&
+          billRate !== null &&
+          !isNaN(billRate) &&
+          billRate > 0
+        ) {
+          const calculatedMarkup = ((billRate - payRate) / payRate) * 100;
+          methods.setValue(`${basePath}.markup`, calculatedMarkup.toFixed(2), {
+            shouldValidate: false,
+          });
+        } else if (field === "regularPayRate" && payRate > 0) {
+          if (markup !== null && !isNaN(markup)) {
+            const calculatedBillRate = payRate * (1 + markup / 100);
+            methods.setValue(`${basePath}.billRate`, calculatedBillRate.toFixed(2), {
+              shouldValidate: true,
+            });
+          } else if (billRate !== null && !isNaN(billRate) && billRate > 0) {
+            const calculatedMarkup = ((billRate - payRate) / payRate) * 100;
+            methods.setValue(`${basePath}.markup`, calculatedMarkup.toFixed(2), {
               shouldValidate: false,
             });
           }
@@ -971,31 +1212,22 @@ export function PositionCreate({
       }
     }
 
-    if (
-      isSubcategory &&
-      (!Array.isArray(data.subcategoryPortion) ||
-        data.subcategoryPortion.length === 0)
-    ) {
-      setError(t("positionCreate.errors.subcategoryPortionRequired"));
-      setTimeout(() => setError(null), 5000);
-      return;
-    }
-
     setLoading(true);
 
     try {
-      const portionPayload = isSubcategory
-        ? (data.subcategoryPortion || [])
-            .map((s) => String(s).trim())
-            .filter(Boolean)
+      const subcategoryPositionPayload = data.isSubcategoryForm
+        ? (data.subcategoryPosition || []).map((s) => String(s).trim()).filter(Boolean)
         : undefined;
 
       if (isEditMode && positionId) {
         // Update existing position
         const dataToSubmit = {
           ...data,
-          isSubcategory,
-          subcategoryPortion: portionPayload,
+          isSubcategory: data.isSubcategoryForm,
+          subcategoryPosition: subcategoryPositionPayload,
+          subcategoryPositionDetails: data.isSubcategoryForm
+            ? data.subcategoryPositionDetails
+            : undefined,
         };
         // Remove clientName property if it exists
         if ("clientName" in dataToSubmit) {
@@ -1015,8 +1247,11 @@ export function PositionCreate({
         // Create new position regardless of whether we're in create mode or draft edit mode
         const dataToSubmit = {
           ...data,
-          isSubcategory,
-          subcategoryPortion: portionPayload,
+          isSubcategory: data.isSubcategoryForm,
+          subcategoryPosition: subcategoryPositionPayload,
+          subcategoryPositionDetails: data.isSubcategoryForm
+            ? data.subcategoryPositionDetails
+            : undefined,
         };
         // Remove clientName property if it exists
         if ("clientName" in dataToSubmit) {
@@ -1491,21 +1726,21 @@ export function PositionCreate({
                   {isSubcategory && (
                     <div className="form-group">
                       <label
-                        htmlFor="subcategory-portion"
+                        htmlFor="subcategory-position"
                         className="form-label"
                         data-required="*"
                       >
-                        {t("positionCreate.subcategory.portionLabel")}
+                        {t("positionCreate.subcategory.positionTypeLabel")}
                       </label>
                       <Controller
-                        name="subcategoryPortion"
+                        name="subcategoryPosition"
                         control={control}
                         render={({ field }) => (
                           <CustomDropdown
                             multiSelect={true}
                             showSelectAll={true}
-                            options={subcategoryPortionDropdownOptions}
-                            selectedOptions={subcategoryPortionDropdownOptions.filter(
+                            options={subcategoryPositionDropdownOptions}
+                            selectedOptions={subcategoryPositionDropdownOptions.filter(
                               (o) =>
                                 (field.value || []).includes(
                                   String(o.value)
@@ -1527,13 +1762,13 @@ export function PositionCreate({
                               }
                             }}
                             placeholder={t(
-                              "positionCreate.subcategory.selectPortionPlaceholder"
+                              "positionCreate.subcategory.selectPositionTypePlaceholder"
                             )}
                             searchable={true}
                             clearable={true}
                             onClear={() => field.onChange([])}
                             emptyMessage={t(
-                              "positionCreate.subcategory.noPortionOptionsConfigured"
+                              "positionCreate.subcategory.noPositionTypeOptionsConfigured"
                             )}
                           />
                         )}
@@ -1860,6 +2095,7 @@ export function PositionCreate({
               </div>
 
               {/* Documents Required Section */}
+              {!isSubcategory && (
               <div className="form-section">
                 <h2>{t("positionCreate.sections.documentsRequired")}</h2>
 
@@ -2000,8 +2236,10 @@ export function PositionCreate({
                   </p>
                 )}
               </div>
+              )}
 
-              {/* Position Details Section */}
+              {/* Position Details Section — regular positions only */}
+              {!isSubcategory && (
               <div className="form-section">
                 <h2>{t("positionCreate.sections.positionDetails")}</h2>
 
@@ -2149,6 +2387,192 @@ export function PositionCreate({
                   </div>
                 </div>
               </div>
+              )}
+
+              {/* Position Details — one block per subcategory position type */}
+              {isSubcategory && (
+                <div className="form-section">
+                  <h2>{t("positionCreate.sections.positionDetails")}</h2>
+                  {subcategoryDetailFields.map((field, index) => {
+                    const rowLabel =
+                      watch(`subcategoryPositionDetails.${index}.subcategoryPosition`) ||
+                      "";
+                    const detailErrors = methods.formState.errors
+                      .subcategoryPositionDetails?.[index] as
+                      | Record<string, { message?: string }>
+                      | undefined;
+                    return (
+                      <div
+                        key={field.id}
+                        className="subcategory-position-detail-block"
+                        style={{ marginBottom: "1.75rem" }}
+                      >
+                        <h3 className="section-title" style={{ fontSize: "1rem", marginBottom: "0.75rem" }}>
+                          {t("positionCreate.subcategory.detailHeading", {
+                            label: rowLabel,
+                          })}
+                        </h3>
+                        <input
+                          type="hidden"
+                          {...methods.register(
+                            `subcategoryPositionDetails.${index}.subcategoryPosition`
+                          )}
+                        />
+                        <div className="form-row">
+                          <div className="form-group">
+                            <label
+                              className="form-label"
+                              data-required="*"
+                            >
+                              {t("positionCreate.fields.numberOfPositions")}
+                            </label>
+                            <input
+                              type="number"
+                              className="form-input"
+                              min={1}
+                              {...methods.register(
+                                `subcategoryPositionDetails.${index}.numberOfPositions`,
+                                { valueAsNumber: true }
+                              )}
+                            />
+                            {detailErrors?.numberOfPositions?.message && (
+                              <p className="form-error">
+                                {detailErrors.numberOfPositions.message}
+                              </p>
+                            )}
+                          </div>
+                          <div className="form-group">
+                            <label className="form-label" data-required="*">
+                              {t("positionCreate.fields.payrateType")}
+                            </label>
+                            <input
+                              type="hidden"
+                              {...methods.register(
+                                `subcategoryPositionDetails.${index}.payrateType`
+                              )}
+                            />
+                            <CustomDropdown
+                              options={payrateTypeOptions}
+                              selectedOption={
+                                payrateTypeOptions.find(
+                                  (option) =>
+                                    option.value ===
+                                    getValues(
+                                      `subcategoryPositionDetails.${index}.payrateType`
+                                    )
+                                ) || null
+                              }
+                              onSelect={(option) => {
+                                if (Array.isArray(option)) return;
+                                setValue(
+                                  `subcategoryPositionDetails.${index}.payrateType`,
+                                  option.value as string,
+                                  { shouldValidate: true }
+                                );
+                              }}
+                              placeholder={t(
+                                "positionCreate.selectOptions.selectPayrateType"
+                              )}
+                              searchable={true}
+                              clearable={true}
+                              onClear={() =>
+                                setValue(
+                                  `subcategoryPositionDetails.${index}.payrateType`,
+                                  "",
+                                  { shouldValidate: true }
+                                )
+                              }
+                            />
+                            {detailErrors?.payrateType?.message && (
+                              <p className="form-error">
+                                {detailErrors.payrateType.message}
+                              </p>
+                            )}
+                          </div>
+                          <div className="form-group">
+                            <label className="form-label" data-required="*">
+                              {t("positionCreate.fields.regularPayRate")}
+                            </label>
+                            <input
+                              type="text"
+                              className="form-input"
+                              {...methods.register(
+                                `subcategoryPositionDetails.${index}.regularPayRate`
+                              )}
+                            />
+                            {detailErrors?.regularPayRate?.message && (
+                              <p className="form-error">
+                                {detailErrors.regularPayRate.message}
+                              </p>
+                            )}
+                          </div>
+                          <div className="form-group">
+                            <label className="form-label">
+                              {t("positionCreate.fields.premiumPayRate")}
+                            </label>
+                            <input
+                              type="text"
+                              className="form-input"
+                              {...methods.register(
+                                `subcategoryPositionDetails.${index}.premiumPayRate`
+                              )}
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label className="form-label" data-required="*">
+                              {t("positionCreate.fields.billRate")}
+                            </label>
+                            <input
+                              type="text"
+                              className="form-input"
+                              {...methods.register(
+                                `subcategoryPositionDetails.${index}.billRate`
+                              )}
+                            />
+                            <div className="form-info">
+                              <small>
+                                {t("positionCreate.info.billRateAutoCalc")}
+                              </small>
+                            </div>
+                            {detailErrors?.billRate?.message && (
+                              <p className="form-error">
+                                {detailErrors.billRate.message}
+                              </p>
+                            )}
+                          </div>
+                          <div className="form-group">
+                            <label className="form-label">
+                              {t("positionCreate.fields.markup")}
+                            </label>
+                            <input
+                              type="text"
+                              className="form-input"
+                              {...methods.register(
+                                `subcategoryPositionDetails.${index}.markup`
+                              )}
+                            />
+                            <div className="form-info">
+                              <small>
+                                {t("positionCreate.info.markupAutoCalc")}
+                              </small>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {methods.formState.errors.subcategoryPositionDetails &&
+                    typeof methods.formState.errors.subcategoryPositionDetails
+                      .message === "string" && (
+                      <p className="form-error">
+                        {
+                          methods.formState.errors.subcategoryPositionDetails
+                            .message as string
+                        }
+                      </p>
+                    )}
+                </div>
+              )}
 
               {/* Overtime Section */}
               <div className="form-section">

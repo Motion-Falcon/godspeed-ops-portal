@@ -25,7 +25,7 @@ export const DROPDOWN_LIST_TYPES = [
   'accounting_manager',
   'position_title',
   'list_name',
-  'subcategory_portion',
+  'subcategory_position',
 ] as const;
 
 export type DropdownListType = (typeof DROPDOWN_LIST_TYPES)[number];
