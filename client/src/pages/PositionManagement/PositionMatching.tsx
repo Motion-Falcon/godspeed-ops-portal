@@ -36,7 +36,7 @@ import {
 import { getClients, ClientData } from "../../services/api/client";
 import { AppHeader } from "../../components/AppHeader";
 import { CustomDropdown, DropdownOption } from "../../components/CustomDropdown";
-import { getPositionDisplayTitle } from "../../utils/positionDisplay";
+import { getPositionDisplayTitle, positionMatchingStyleDropdownSublabel } from "../../utils/positionDisplay";
 import "../../styles/pages/PositionMatching.css";
 import "../../styles/components/CommonTable.css";
 import "../../styles/components/form.css";
@@ -156,11 +156,7 @@ export function PositionMatching() {
       id: position.id || '',
       value: position.id || '',
       label: `${getPositionDisplayTitle(position, t("positionMatching.notSpecified"))} - ${position.positionNumber || t("positionMatching.notSpecified")}`,
-      sublabel: `Pay Rate: $${
-        (Number.parseFloat(position.regularPayRate || "0") || 0).toFixed(2)
-      } | ${position.positionNumber || t("positionMatching.notSpecified")} | ${
-        position.positionCategory || t("positionMatching.notSpecified")
-      } | ${position.city || t("positionMatching.unknownCity")}, ${position.province || t("positionMatching.unknownProvince")}`
+      sublabel: positionMatchingStyleDropdownSublabel(position, t),
     })), [positions, t]
   );
 
@@ -1005,11 +1001,7 @@ export function PositionMatching() {
                     selectedOption={selectedPosition ? {
                       id: selectedPosition.id || '',
                       label: `${getPositionDisplayTitle(selectedPosition, t("positionMatching.notSpecified"))} - ${selectedPosition.positionNumber || t("positionMatching.notSpecified")}`,
-                      sublabel: `Pay Rate: $${
-                        (Number.parseFloat(selectedPosition.regularPayRate || "0") || 0).toFixed(2)
-                      } | ${selectedPosition.positionNumber || t("positionMatching.notSpecified")} | ${
-                        selectedPosition.positionCategory || t("positionMatching.notSpecified")
-                      } | ${selectedPosition.city || t("positionMatching.unknownCity")}, ${selectedPosition.province || t("positionMatching.unknownProvince")}`,
+                      sublabel: positionMatchingStyleDropdownSublabel(selectedPosition, t),
                       value: selectedPosition
                     } : null}
                     onSelect={(option) => { if (Array.isArray(option)) return; handlePositionSelectDropdown(option); }}
