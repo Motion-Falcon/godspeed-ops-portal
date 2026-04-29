@@ -951,15 +951,6 @@ router.post(
       // Validate date values
       if (cleanedData.startDate) {
         const startDate = new Date(cleanedData.startDate);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0); // Reset time part
-
-        if (startDate < today) {
-          return res.status(400).json({
-            error: "Start date must be today or in the future",
-            field: "startDate",
-          });
-        }
 
         // If endDate is provided, validate it's after startDate
         if (cleanedData.endDate) {
