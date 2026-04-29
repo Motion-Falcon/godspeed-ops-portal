@@ -76,3 +76,24 @@ export function getPositionDisplayTitle(
 
   return `${title} - (Subcategory - ${subcategoryLabels.join(", ")})`;
 }
+
+/** Same sublabel pattern as Position Matching position dropdown (pay | # | category | location). */
+export function positionMatchingStyleDropdownSublabel(
+  position: {
+    regularPayRate?: string | null;
+    positionNumber?: string | null;
+    positionCategory?: string | null;
+    city?: string | null;
+    province?: string | null;
+  },
+  t: (key: string) => string
+): string {
+  const pay = (
+    Number.parseFloat(String(position.regularPayRate || "0")) || 0
+  ).toFixed(2);
+  return `Pay Rate: $${pay} | ${
+    position.positionNumber || t("positionMatching.notSpecified")
+  } | ${position.positionCategory || t("positionMatching.notSpecified")} | ${
+    position.city || t("positionMatching.unknownCity")
+  }, ${position.province || t("positionMatching.unknownProvince")}`;
+}
