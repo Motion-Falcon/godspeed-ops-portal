@@ -11,15 +11,41 @@ function trimLabel(s: string): string {
 }
 
 /**
+ * DB may return text[] (array), a single VARCHAR (legacy), or a JSON string.
+ * Must not pass a raw string to code that does `(labels ?? []).map` — strings are
+ * truthy so `("Miles").map` throws.
+ */
+export function coerceSubcategoryPositionLabels(value: unknown): string[] {
+  if (value == null) return [];
+  if (Array.isArray(value)) {
+    return value.map((x) => trimLabel(String(x))).filter((s) => s.length > 0);
+  }
+  if (typeof value === "string") {
+    const s = value.trim();
+    if (!s) return [];
+    if (s.startsWith("[") && s.endsWith("]")) {
+      try {
+        const parsed = JSON.parse(s) as unknown;
+        if (Array.isArray(parsed)) {
+          return parsed.map((x) => trimLabel(String(x))).filter((x) => x.length > 0);
+        }
+      } catch {
+        // fall through to single label
+      }
+    }
+    return [trimLabel(s)];
+  }
+  return [];
+}
+
+/**
  * Validates detail rows against the selected subcategory_position labels and returns rows in array order.
  */
 export function validateSubcategoryPositionDetails(
-  subcategoryPosition: string[] | null | undefined,
+  subcategoryPosition: unknown,
   details: SubcategoryPositionDetailInput[] | null | undefined
 ): SubcategoryDetailsValidation {
-  const labels = (subcategoryPosition ?? [])
-    .map(trimLabel)
-    .filter((x) => x.length > 0);
+  const labels = coerceSubcategoryPositionLabels(subcategoryPosition);
   if (labels.length === 0) {
     return { ok: false, error: "subcategoryPosition must have at least one label" };
   }
@@ -140,14 +166,13 @@ export function dbDetailRowToApi(row: Record<string, unknown>): SubcategoryPosit
 
 /** Order DB rows to match positions.subcategory_position[] when possible. */
 export function orderDetailRowsForResponse(
-  labels: string[] | null | undefined,
+  labels: unknown,
   rawRows: Record<string, unknown>[]
 ): SubcategoryPositionDetailInput[] {
   const map = new Map(
     rawRows.map((r) => [trimLabel(String(r.subcategory_position ?? "")), r])
   );
-  const labelOrder =
-    (labels ?? []).map(trimLabel).filter((x) => x.length > 0);
+  const labelOrder = coerceSubcategoryPositionLabels(labels);
   const keysToEmit =
     labelOrder.length > 0 ? labelOrder : [...map.keys()].sort();
   const result: SubcategoryPositionDetailInput[] = [];

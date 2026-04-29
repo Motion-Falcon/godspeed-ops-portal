@@ -802,15 +802,16 @@ router.get(
           .eq("position_id", id);
         if (detErr) {
           console.error("Error fetching subcategory position details:", detErr);
-          return res.status(500).json({
-            error: "Failed to load subcategory position details",
-          });
+          subcategoryPositionDetails = orderDetailRowsForResponse(
+            positionData.subcategory_position,
+            []
+          );
+        } else {
+          subcategoryPositionDetails = orderDetailRowsForResponse(
+            positionData.subcategory_position,
+            (detailRows ?? []) as Record<string, unknown>[]
+          );
         }
-        const labels = positionData.subcategory_position as string[] | null | undefined;
-        subcategoryPositionDetails = orderDetailRowsForResponse(
-          labels ?? null,
-          (detailRows ?? []) as Record<string, unknown>[]
-        );
       }
 
       return res.status(200).json({
