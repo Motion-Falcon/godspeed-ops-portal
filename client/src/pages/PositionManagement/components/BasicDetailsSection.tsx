@@ -1,0 +1,326 @@
+import { Controller, useFormContext } from "react-hook-form";
+import { CustomDropdown, DropdownOption } from "../../../components/CustomDropdown";
+import { useLanguage } from "../../../contexts/language/language-provider";
+import { PositionFormData } from "../positionCreateSchema";
+import { PositionClientOption } from "../hooks/usePositionClients";
+
+interface BasicDetailsSectionProps {
+  clientLoading: boolean;
+  clientOptions: DropdownOption[];
+  clients: PositionClientOption[];
+  isEditDraftMode: boolean;
+  isSubcategory: boolean;
+  minEndDate: string;
+  onClientSelect: (option: DropdownOption | DropdownOption[]) => void;
+  onTitleSelect: (option: DropdownOption | DropdownOption[]) => void;
+  subcategoryPositionDropdownOptions: DropdownOption[];
+  titleOptions: DropdownOption[];
+}
+
+export function BasicDetailsSection({
+  clientLoading,
+  clientOptions,
+  clients,
+  isEditDraftMode,
+  isSubcategory,
+  minEndDate,
+  onClientSelect,
+  onTitleSelect,
+  subcategoryPositionDropdownOptions,
+  titleOptions,
+}: BasicDetailsSectionProps) {
+  const { t } = useLanguage();
+  const { control, formState, getValues, register, setValue } =
+    useFormContext<PositionFormData>();
+  const errors = formState.errors;
+
+  return (
+    <div className="form-section">
+      <h2>{t("positionCreate.sections.basicDetails")}</h2>
+
+      <div className="form-row">
+        <div className="form-group">
+          <label htmlFor="client" className="form-label" data-required="*">
+            {t("positionCreate.fields.client")}
+          </label>
+          <input type="hidden" {...register("client")} />
+          {clientLoading ? (
+            <div className="invoice-dropdown-skeleton">
+              <div className="skeleton-dropdown-trigger">
+                <div className="skeleton-icon"></div>
+                <div className="skeleton-text skeleton-dropdown-text"></div>
+                <div className="skeleton-icon skeleton-chevron"></div>
+              </div>
+            </div>
+          ) : (
+            <CustomDropdown
+              options={clientOptions}
+              selectedOption={(() => {
+                const selectedClientId = getValues("client");
+                if (!selectedClientId) return null;
+                const selectedClient = clients.find(
+                  (client) => client.id === selectedClientId
+                );
+                return selectedClient
+                  ? {
+                      id: selectedClient.id,
+                      label: selectedClient.companyName,
+                      value: selectedClient.id,
+                    }
+                  : null;
+              })()}
+              onSelect={onClientSelect}
+              placeholder={t("positionCreate.placeholders.searchClients")}
+              searchable={true}
+              clearable={true}
+              onClear={() => setValue("client", "")}
+              emptyMessage="No clients found"
+            />
+          )}
+          {errors.client && (
+            <p className="form-error">{errors.client.message}</p>
+          )}
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="title" className="form-label" data-required="*">
+            {t("positionCreate.fields.title")}
+          </label>
+          <input type="hidden" {...register("title")} />
+          <CustomDropdown
+            options={titleOptions}
+            selectedOption={
+              getValues("title")
+                ? {
+                    id: getValues("title"),
+                    label: getValues("title"),
+                    value: getValues("title"),
+                  }
+                : null
+            }
+            onSelect={onTitleSelect}
+            placeholder={t("positionCreate.placeholders.searchJobTitles")}
+            searchable={true}
+            clearable={true}
+            onClear={() => setValue("title", "")}
+            emptyMessage={t("positionCreate.emptyMessages.noJobTitles")}
+          />
+          {errors.title && <p className="form-error">{errors.title.message}</p>}
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="positionNumber" className="form-label">
+            {t("positionCreate.fields.positionNumber")}
+          </label>
+          <input
+            type="text"
+            id="positionNumber"
+            className="form-input"
+            placeholder={t("positionCreate.placeholders.positionCode")}
+            {...register("positionNumber")}
+          />
+        </div>
+      </div>
+
+      <div className="form-row">
+        <div className="form-group">
+          <label htmlFor="positionCode" className="form-label">
+            {t("positionCreate.fields.positionId")}
+          </label>
+          <input
+            type="text"
+            id="positionCode"
+            className="form-input auto-populated"
+            placeholder={
+              isEditDraftMode
+                ? t("positionCreate.placeholders.autoRegenerated")
+                : t("positionCreate.placeholders.autoGenerated")
+            }
+            disabled
+            {...register("positionCode")}
+          />
+          {isEditDraftMode && (
+            <div className="form-info">
+              <small>{t("positionCreate.info.positionIdRegenerated")}</small>
+            </div>
+          )}
+          {errors.positionCode && (
+            <p className="form-error">{errors.positionCode.message}</p>
+          )}
+        </div>
+        <div className="form-group">
+          <label htmlFor="startDate" className="form-label" data-required="*">
+            {t("positionCreate.fields.startDate")}
+          </label>
+          <div className="date-picker-container">
+            <input
+              type="date"
+              id="startDate"
+              className="form-input"
+              {...register("startDate")}
+              onClick={(event) => event.currentTarget.showPicker()}
+            />
+          </div>
+          {errors.startDate && (
+            <p className="form-error">{errors.startDate.message}</p>
+          )}
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="endDate" className="form-label" data-required="*">
+            {t("positionCreate.fields.endDate")}
+          </label>
+          <div className="date-picker-container">
+            <input
+              type="date"
+              id="endDate"
+              className="form-input"
+              min={minEndDate}
+              {...register("endDate")}
+              onClick={(event) => event.currentTarget.showPicker()}
+            />
+          </div>
+          {errors.endDate && (
+            <p className="form-error">{errors.endDate.message}</p>
+          )}
+        </div>
+      </div>
+
+      <div className="form-row">
+        <div className="form-group">
+          <label htmlFor="clientManager" className="form-label">
+            {t("positionCreate.fields.clientManager")}
+          </label>
+          <input
+            type="text"
+            id="clientManager"
+            className="form-input auto-populated"
+            placeholder={t("positionCreate.placeholders.autoFilled")}
+            disabled
+            {...register("clientManager")}
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="salesManager" className="form-label">
+            {t("positionCreate.fields.salesManager")}
+          </label>
+          <input
+            type="text"
+            id="salesManager"
+            className="form-input auto-populated"
+            placeholder={t("positionCreate.placeholders.autoFilled")}
+            disabled
+            {...register("salesManager")}
+          />
+        </div>
+
+        {!isSubcategory && (
+          <div className="form-group">
+            <div className="container-form">
+              <input
+                type="checkbox"
+                id="showOnJobPortal"
+                className="toggle-form"
+                {...register("showOnJobPortal")}
+              />
+              <label htmlFor="showOnJobPortal" className="label-form">
+                {t("positionCreate.fields.showOnJobPortal")}
+              </label>
+            </div>
+          </div>
+        )}
+
+        {isSubcategory && (
+          <div className="form-group" id="subcategory-position-type-field">
+            <label
+              htmlFor="subcategory-position"
+              className="form-label"
+              data-required="*"
+            >
+              {t("positionCreate.subcategory.positionTypeLabel")}
+            </label>
+            <Controller
+              name="subcategoryPosition"
+              control={control}
+              render={({ field }) => (
+                <CustomDropdown
+                  multiSelect={true}
+                  showSelectAll={true}
+                  options={subcategoryPositionDropdownOptions}
+                  selectedOptions={subcategoryPositionDropdownOptions.filter(
+                    (option) =>
+                      (field.value || []).includes(String(option.value))
+                  )}
+                  onSelect={(opts) => {
+                    if (Array.isArray(opts)) {
+                      field.onChange(opts.map((option) => String(option.value)));
+                    } else if (
+                      opts &&
+                      typeof opts === "object" &&
+                      "value" in opts
+                    ) {
+                      field.onChange([String(opts.value)]);
+                    } else {
+                      field.onChange([]);
+                    }
+                  }}
+                  placeholder={t(
+                    "positionCreate.subcategory.selectPositionTypePlaceholder"
+                  )}
+                  searchable={true}
+                  clearable={true}
+                  onClear={() => field.onChange([])}
+                  emptyMessage={t(
+                    "positionCreate.subcategory.noPositionTypeOptionsConfigured"
+                  )}
+                />
+              )}
+            />
+            {errors.subcategoryPosition &&
+              typeof errors.subcategoryPosition.message === "string" && (
+                <p
+                  className="form-error"
+                  id="subcategory-position-type-error"
+                >
+                  {errors.subcategoryPosition.message as string}
+                </p>
+              )}
+          </div>
+        )}
+
+        <div className="form-group">
+          <div className="container-form">
+            <input
+              type="checkbox"
+              id="stat"
+              className="toggle-form"
+              {...register("stat")}
+            />
+            <label htmlFor="stat" className="label-form">
+              {t("positionCreate.fields.stat")}
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div className="form-row">
+        <div className="form-group">
+          <label htmlFor="description" className="form-label" data-required="*">
+            {t("positionCreate.fields.description")}
+          </label>
+          <textarea
+            id="description"
+            className="form-textarea"
+            placeholder={t("positionCreate.placeholders.positionDescription")}
+            rows={4}
+            {...register("description")}
+          />
+          {errors.description && (
+            <p className="form-error">{errors.description.message}</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
