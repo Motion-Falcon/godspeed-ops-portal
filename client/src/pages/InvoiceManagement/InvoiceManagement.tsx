@@ -324,7 +324,7 @@ export function InvoiceManagement() {
   const fetchClientPositions = async (clientId: string) => {
     try {
       setPositionLoading(true);
-      const response = await getClientPositions(clientId, { limit: 10000000 });
+      const response = await getClientPositions(clientId, { limit: 10000000, showAllSiblings: "true" });
 
       setPositions(response.positions);
     } catch (error) {

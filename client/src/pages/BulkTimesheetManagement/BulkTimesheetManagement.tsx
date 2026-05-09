@@ -178,7 +178,7 @@ export function BulkTimesheetManagement() {
   const fetchClientPositions = async (clientId: string) => {
     setPositionLoading(true);
     try {
-      const response = await getClientPositions(clientId, { limit: 1000000 });
+      const response = await getClientPositions(clientId, { limit: 1000000, showAllSiblings: "true" });
       setPositions(response.positions);
     } catch (e) {
       setPositions([]);

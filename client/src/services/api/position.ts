@@ -824,6 +824,7 @@ export interface ClientPositionFilters {
   experienceFilter?: string;
   showOnPortalFilter?: string;
   dateFilter?: string;
+  showAllSiblings?: string;
 }
 
 export interface ClientPositionsResponse {

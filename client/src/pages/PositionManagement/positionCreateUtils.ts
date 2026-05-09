@@ -58,32 +58,38 @@ export function convertPositionToFormData(
     result[camelKey] = value;
   });
 
-  const rawSubcategoryPosition =
-    result.subcategoryPosition ?? result.subcategory_position;
-  result.subcategoryPosition = normalizeSubcategoryPositionToForm(
-    rawSubcategoryPosition
-  );
-  delete result.subcategory_position;
-
   let details = result.subcategoryPositionDetails as
     | SubcategoryPositionDetailRow[]
     | undefined;
-  const labelsForDetails = result.subcategoryPosition as string[] | undefined;
-  if (
-    (!details || details.length === 0) &&
-    Array.isArray(labelsForDetails) &&
-    labelsForDetails.length > 0
-  ) {
-    details = labelsForDetails.map((label) => ({
-      subcategoryPosition: label,
-      payrateType: String(result.payrateType || PAYRATE_TYPES[0]),
-      numberOfPositions: Number(result.numberOfPositions ?? 1),
-      regularPayRate: String(result.regularPayRate ?? ""),
-      premiumPayRate: String(result.premiumPayRate ?? ""),
-      markup: String(result.markup ?? ""),
-      billRate: String(result.billRate ?? ""),
-    }));
-    result.subcategoryPositionDetails = details;
+
+  // If we already have details from the backend, extract the types to populate the multiselect dropdown
+  if (details && details.length > 0) {
+    result.subcategoryPosition = details.map((d: any) => d.subcategoryPosition || d.subcategory_position);
+  } else {
+    // Otherwise fall back to whatever is in the base row
+    const rawSubcategoryPosition =
+      result.subcategoryPosition ?? result.subcategory_position;
+    result.subcategoryPosition = normalizeSubcategoryPositionToForm(
+      rawSubcategoryPosition
+    );
+    delete result.subcategory_position;
+
+    const labelsForDetails = result.subcategoryPosition as string[] | undefined;
+    if (
+      Array.isArray(labelsForDetails) &&
+      labelsForDetails.length > 0
+    ) {
+      details = labelsForDetails.map((label) => ({
+        subcategoryPosition: label,
+        payrateType: String(result.payrateType || PAYRATE_TYPES[0]),
+        numberOfPositions: Number(result.numberOfPositions ?? 1),
+        regularPayRate: String(result.regularPayRate ?? ""),
+        premiumPayRate: String(result.premiumPayRate ?? ""),
+        markup: String(result.markup ?? ""),
+        billRate: String(result.billRate ?? ""),
+      }));
+      result.subcategoryPositionDetails = details;
+    }
   }
 
   result.isSubcategoryForm = readIsSubcategory(result);
