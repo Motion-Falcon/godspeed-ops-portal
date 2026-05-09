@@ -1,4 +1,5 @@
 import { Router, Request, Response } from "express";
+import crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
 import { authenticateToken, authorizeExactRoles, authorizeRoles } from "../middleware/auth.js";
 import { sanitizeInputs, apiRateLimiter } from "../middleware/security.js";
@@ -165,6 +166,7 @@ router.get(
         showOnPortalFilter = "",
         dateFilter = "",
         isSubcategoryFilter = "",
+        showAllSiblings = "",
       } = req.query as {
         page?: string;
         limit?: string;
@@ -181,6 +183,7 @@ router.get(
         showOnPortalFilter?: string;
         dateFilter?: string;
         isSubcategoryFilter?: string;
+        showAllSiblings?: string;
       };
 
       const pageNum = parseInt(page);
@@ -231,12 +234,17 @@ router.get(
         showOnPortalFilter,
         dateFilter,
         isSubcategoryFilter,
+        showAllSiblingsFilter: showAllSiblings,
       });
 
       // Get total count (unfiltered)
-      const { count: totalCount, error: countError } = await supabase
+      let totalCountQuery = supabase
         .from("positions")
         .select("*", { count: "exact", head: true });
+      if (showAllSiblings !== "true") {
+        totalCountQuery = totalCountQuery.or('is_subcategory.eq.false,is_primary_subcategory.eq.true');
+      }
+      const { count: totalCount, error: countError } = await totalCountQuery;
 
       if (countError) {
         console.error("Error getting total count:", countError);
@@ -264,6 +272,7 @@ router.get(
         showOnPortalFilter,
         dateFilter,
         isSubcategoryFilter,
+        showAllSiblingsFilter: showAllSiblings,
       });
 
       const { count: filteredCount, error: filteredCountError } =
@@ -413,6 +422,7 @@ router.get(
         showOnPortalFilter = "",
         dateFilter = "",
         isSubcategoryFilter = "",
+        showAllSiblings = "",
       } = req.query as {
         page?: string;
         limit?: string;
@@ -428,6 +438,7 @@ router.get(
         showOnPortalFilter?: string;
         dateFilter?: string;
         isSubcategoryFilter?: string;
+        showAllSiblings?: string;
       };
 
       const pageNum = parseInt(page);
@@ -501,13 +512,18 @@ router.get(
         showOnPortalFilter,
         dateFilter,
         isSubcategoryFilter,
+        showAllSiblingsFilter: showAllSiblings,
       });
 
       // Get total count for this client (unfiltered)
-      const { count: totalCount, error: countError } = await supabase
+      let totalCountQuery = supabase
         .from("positions")
         .select("*", { count: "exact", head: true })
         .eq("client", clientId);
+      if (showAllSiblings !== "true") {
+        totalCountQuery = totalCountQuery.or('is_subcategory.eq.false,is_primary_subcategory.eq.true');
+      }
+      const { count: totalCount, error: countError } = await totalCountQuery;
 
       if (countError) {
         console.error("Error getting total count:", countError);
@@ -535,6 +551,7 @@ router.get(
         showOnPortalFilter,
         dateFilter,
         isSubcategoryFilter,
+        showAllSiblingsFilter: showAllSiblings,
       });
 
       const { count: filteredCount, error: filteredCountError } =
@@ -676,6 +693,7 @@ function applyPositionFilters(
     showOnPortalFilter?: string;
     dateFilter?: string;
     isSubcategoryFilter?: string;
+    showAllSiblingsFilter?: string;
   }
 ) {
   const {
@@ -692,6 +710,7 @@ function applyPositionFilters(
     showOnPortalFilter,
     dateFilter,
     isSubcategoryFilter,
+    showAllSiblingsFilter,
   } = filters;
 
   // Global search across multiple fields
@@ -762,6 +781,11 @@ function applyPositionFilters(
     query = query.eq("is_subcategory", isSubcategory);
   }
 
+  // Hide sibling subcategory types from lists to visually group them unless explicitly requested
+  if (showAllSiblingsFilter !== "true") {
+    query = query.or('is_subcategory.eq.false,is_primary_subcategory.eq.true');
+  }
+
   return query;
 }
 
@@ -795,22 +819,29 @@ router.get(
       const { clients, ...positionData } = position;
 
       let subcategoryPositionDetails: SubcategoryPositionDetailInput[] | undefined;
-      if (positionData.is_subcategory) {
+      if (positionData.is_subcategory && positionData.subcategory_group_id) {
         const { data: detailRows, error: detErr } = await supabase
-          .from("position_subcategory_position_details")
+          .from("positions")
           .select("*")
-          .eq("position_id", id);
+          .eq("subcategory_group_id", positionData.subcategory_group_id);
+          
         if (detErr) {
-          console.error("Error fetching subcategory position details:", detErr);
-          subcategoryPositionDetails = orderDetailRowsForResponse(
-            positionData.subcategory_position,
-            []
-          );
-        } else {
-          subcategoryPositionDetails = orderDetailRowsForResponse(
-            positionData.subcategory_position,
-            (detailRows ?? []) as Record<string, unknown>[]
-          );
+          console.error("Error fetching subcategory positions:", detErr);
+        } else if (detailRows && detailRows.length > 0) {
+          subcategoryPositionDetails = detailRows.map(row => ({
+            subcategoryPosition: row.subcategory_position,
+            payrateType: row.payrate_type,
+            numberOfPositions: row.number_of_positions,
+            regularPayRate: row.regular_pay_rate,
+            premiumPayRate: row.premium_pay_rate,
+            markup: row.markup,
+            billRate: row.bill_rate
+          }));
+          
+          // Fix title to not include the suffix for the edit form
+          if (positionData.title.includes(' - ')) {
+             positionData.title = positionData.title.split(' - ')[0];
+          }
         }
       }
 
@@ -1061,38 +1092,43 @@ router.post(
       // Add client_name to the database data
       dbPositionData.client_name = client.company_name;
 
-      // Insert position into database
-      const { data: newPosition, error: insertError } = await supabase
-        .from("positions")
-        .insert([dbPositionData])
-        .select()
-        .single();
+      let insertData: any[] = [];
+      let newGroupId: string | null = null;
+      if (cleanedData.isSubcategory && orderedSubcategoryDetails && orderedSubcategoryDetails.length > 0) {
+        newGroupId = crypto.randomUUID();
+        let isFirst = true;
+        insertData = orderedSubcategoryDetails.map((det) => {
+          const detailData = { ...dbPositionData };
+          detailData.is_primary_subcategory = isFirst;
+          isFirst = false;
+          detailData.title = `${dbPositionData.title} - ${det.subcategoryPosition}`;
+          detailData.subcategory_position = det.subcategoryPosition;
+          detailData.subcategory_group_id = newGroupId;
+          detailData.payrate_type = det.payrateType;
+          detailData.number_of_positions = det.numberOfPositions;
+          detailData.regular_pay_rate = det.regularPayRate;
+          detailData.premium_pay_rate = det.premiumPayRate;
+          detailData.markup = det.markup;
+          detailData.bill_rate = det.billRate;
+          return detailData;
+        });
+      } else {
+        insertData = [dbPositionData];
+      }
 
-      if (insertError) {
+      // Insert position into database
+      const { data: newPositions, error: insertError } = await supabase
+        .from("positions")
+        .insert(insertData)
+        .select();
+
+      if (insertError || !newPositions || newPositions.length === 0) {
         console.error("Error creating position:", insertError);
         return res.status(500).json({ error: "Failed to create position" });
       }
 
-      // Store new position for activity logging
+      const newPosition = newPositions[0]; // returning first one for frontend references
       res.locals.newPosition = newPosition;
-
-      if (
-        cleanedData.isSubcategory &&
-        orderedSubcategoryDetails &&
-        orderedSubcategoryDetails.length > 0 &&
-        newPosition?.id
-      ) {
-        const { error: detErr } = await replaceSubcategoryPositionDetailRows(
-          newPosition.id as string,
-          orderedSubcategoryDetails
-        );
-        if (detErr) {
-          console.error("Error saving subcategory position details:", detErr);
-          return res.status(500).json({
-            error: "Failed to save subcategory position details",
-          });
-        }
-      }
 
       return res.status(201).json({
         success: true,
@@ -1303,105 +1339,76 @@ router.put(
       // Add client_name to the database data
       dbPositionData.client_name = client.company_name;
 
-      // Update position in database
-      const { data: updatedPosition, error: updateError } = await supabase
-        .from("positions")
-        .update(dbPositionData)
-        .eq("id", id)
-        .select(
-          `
-          id,
-          client,
-          client_name,
-          title,
-          position_code,
-          start_date,
-          end_date,
-          show_on_job_portal,
-          client_manager,
-          sales_manager,
-          position_number,
-          description,
-          street_address,
-          city,
-          province,
-          postal_code,
-          employment_term,
-          employment_type,
-          position_category,
-          experience,
-          documents_required,
-          payrate_type,
-          number_of_positions,
-          regular_pay_rate,
-          premium_pay_rate,
-          markup,
-          bill_rate,
-          overtime_enabled,
-          overtime_hours,
-          overtime_bill_rate,
-          overtime_pay_rate,
-          preferred_payment_method,
-          terms,
-          notes,
-          assigned_to,
-          proj_comp_date,
-          task_time,
-          assigned_jobseekers,
-          is_draft,
-          created_at,
-          updated_at,
-          created_by_user_id,
-          updated_by_user_id,
-          is_subcategory,
-          subcategory_position
-        `
-        )
-        .single();
+      // Check if this position is part of a subcategory group
+      const { data: posGroupData } = await supabase.from("positions").select("subcategory_group_id").eq("id", id).single();
+      const groupId = posGroupData?.subcategory_group_id;
 
-      if (updateError) {
-        console.error("Error updating position:", updateError);
-        // Assignment was already deleted, but position update failed
-        // This creates an inconsistent state, but we cannot easily rollback the deletion
-        console.error(
-          "Warning: Assignment was deleted but position update failed. Manual intervention may be required."
-        );
-        return res.status(500).json({ error: "Failed to remove candidate" });
-      }
+      let returnedPosition = null;
 
-      // Store updated position for activity logging
-      res.locals.updatedPosition = updatedPosition;
+      if (cleanedData.isSubcategory && groupId && orderedSubcategoryDetailsPut && orderedSubcategoryDetailsPut.length > 0) {
+        // Fetch all existing rows in the group
+        const { data: existingGroupRows } = await supabase.from("positions").select("id, subcategory_position").eq("subcategory_group_id", groupId);
+        const existingMap = new Map((existingGroupRows || []).map(r => [r.subcategory_position, r.id]));
+        const incomingTypes = new Set(orderedSubcategoryDetailsPut.map(d => d.subcategoryPosition));
 
-      if (cleanedData.isSubcategory) {
-        if (orderedSubcategoryDetailsPut?.length) {
-          const { error: detErr } = await replaceSubcategoryPositionDetailRows(
-            id,
-            orderedSubcategoryDetailsPut
-          );
-          if (detErr) {
-            console.error("Error saving subcategory position details:", detErr);
-            return res.status(500).json({
-              error: "Failed to save subcategory position details",
-            });
+        // Delete rows that are no longer in the incoming types
+        const typesToDelete = [...existingMap.keys()].filter(t => !incomingTypes.has(t));
+        for (const type of typesToDelete) {
+          await supabase.from("positions").delete().eq("id", existingMap.get(type));
+        }
+
+        // Update existing or Insert new
+        let isFirst = true;
+        for (const det of orderedSubcategoryDetailsPut) {
+          const detailData = { ...dbPositionData };
+          detailData.is_primary_subcategory = isFirst;
+          isFirst = false;
+          detailData.title = `${dbPositionData.title} - ${det.subcategoryPosition}`;
+          detailData.subcategory_position = det.subcategoryPosition;
+          detailData.subcategory_group_id = groupId;
+          detailData.payrate_type = det.payrateType;
+          detailData.number_of_positions = det.numberOfPositions;
+          detailData.regular_pay_rate = det.regularPayRate;
+          detailData.premium_pay_rate = det.premiumPayRate;
+          detailData.markup = det.markup;
+          detailData.bill_rate = det.billRate;
+
+          if (existingMap.has(det.subcategoryPosition)) {
+             const rowId = existingMap.get(det.subcategoryPosition);
+             const { data: updated, error: updErr } = await supabase.from("positions").update(detailData).eq("id", rowId).select().single();
+             if (updErr) console.error("Update subcategory error:", updErr);
+             if (rowId === id) returnedPosition = updated;
+          } else {
+             delete detailData.id; // Crucial: remove id so Postgres generates a new one
+             detailData.created_by_user_id = userId; // Required by not-null constraint on new rows
+             detailData.created_at = new Date().toISOString();
+             const { data: inserted, error: insErr } = await supabase.from("positions").insert([detailData]).select().single();
+             if (insErr) console.error("Insert subcategory error:", insErr);
+             if (!returnedPosition) returnedPosition = inserted;
           }
         }
       } else {
-        const { error: delErr } = await supabase
-          .from("position_subcategory_position_details")
-          .delete()
-          .eq("position_id", id);
-        if (delErr) {
-          console.error("Error clearing subcategory position details:", delErr);
-          return res.status(500).json({
-            error: "Failed to update subcategory position details",
-          });
+        // Normal single update
+        const { data: updatedPosition, error: updateError } = await supabase
+          .from("positions")
+          .update(dbPositionData)
+          .eq("id", id)
+          .select()
+          .single();
+
+        if (updateError) {
+          console.error("Error updating position:", updateError);
+          return res.status(500).json({ error: "Failed to update position" });
         }
+        returnedPosition = updatedPosition;
       }
+
+      res.locals.updatedPosition = returnedPosition;
 
       return res.status(200).json({
         success: true,
         message: "Position updated successfully",
-        position: updatedPosition,
+        position: returnedPosition,
       });
     } catch (error) {
       console.error("Unexpected error updating position:", error);
@@ -1463,11 +1470,16 @@ router.delete(
       // Store position data for activity logging
       res.locals.deletedPosition = existingPosition;
 
-      // Delete position
-      const { error: deleteError } = await supabase
-        .from("positions")
-        .delete()
-        .eq("id", id);
+      // First check if it has a subcategory_group_id
+      const { data: posToDelete } = await supabase.from("positions").select("subcategory_group_id").eq("id", id).single();
+      let deleteError = null;
+      if (posToDelete?.subcategory_group_id) {
+        const { error: groupError } = await supabase.from("positions").delete().eq("subcategory_group_id", posToDelete.subcategory_group_id);
+        deleteError = groupError;
+      } else {
+        const { error: singleError } = await supabase.from("positions").delete().eq("id", id);
+        deleteError = singleError;
+      }
 
       if (deleteError) {
         console.error("Error deleting position:", deleteError);
