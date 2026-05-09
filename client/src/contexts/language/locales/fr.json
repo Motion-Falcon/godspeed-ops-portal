@@ -242,7 +242,6 @@
     "termsOfService": "Conditions d'utilisation",
     "privacyPolicy": "Politique de confidentialité"
   },
-
   "demoLogin": {
     "title": "Connexion démo",
     "description": "Sélectionnez un compte démo pour explorer la plateforme",
@@ -252,7 +251,6 @@
       "failed": "Échec de la connexion avec le compte démo. Veuillez réessayer."
     }
   },
-
   "roles": {
     "admin": "Administrateur",
     "admins": "Administrateurs",
@@ -1219,7 +1217,6 @@
     "compensation": "Rémunération",
     "firstName": "Prénom",
     "lastName": "Nom de famille",
-    "email": "Email",
     "mobile": "Téléphone",
     "dateOfBirth": "Date de naissance",
     "licenseNumber": "Numéro de permis",
@@ -1531,12 +1528,10 @@
     "thisWeekLabel": "Cette semaine",
     "thisMonthLabel": "Ce mois",
     "custom": "Personnalisé",
-    "dateRange": "Plage de dates",
     "from": "Du",
     "to": "Au",
     "apply": "Appliquer",
     "loading": "Chargement du résumé...",
-    "openPositions": "Postes ouverts",
     "summaryPeriod": "Période",
     "statusBreakdown": "Répartition par statut",
     "active": "Actif",
@@ -1545,7 +1540,6 @@
     "cancelled": "Annulé",
     "next": "Suivant",
     "previous": "Précédent",
-    "today": "Aujourd'hui",
     "month": "Mois",
     "week": "Semaine",
     "day": "Jour",
@@ -2220,7 +2214,8 @@
       "confirm": "Supprimer le poste",
       "deleting": "Suppression...",
       "cancel": "Annuler",
-      "error": "Erreur : {{error}}"
+      "error": "Erreur : {{error}}",
+      "subcategoryWarning": "Avertissement : Il s'agit d'un poste de sous-catégorie. Sa suppression entraînera également la suppression de tous ses types associés (ex. Bonus, Miles) !"
     },
     "editModal": {
       "title": "Modifier le poste",
@@ -2388,14 +2383,13 @@
     "positionVacant": "Poste vacant",
     "ai": {
       "initializingEngine": "🧠 Initialisation du moteur de correspondance IA...",
-      "processingVectors": "🔬 Traitement des vecteurs de données des candidats...",
+      "processingVectors": "Traitement de {{count}} vecteurs...",
       "runningAnalysis": "⚡ Exécution de l'analyse du réseau neuronal...",
       "computingAlgorithms": "🎯 Calcul des algorithmes de similarité...",
       "optimizingPredictions": "🚀 Optimisation des prédictions de correspondance...",
       "processing": "Traitement IA",
       "accuracy": "Précision : {{percentage}}%",
-      "trainingModels": "Entraînement des modèles sur les paramètres {{positionTitle}}...",
-      "processingVectors": "Traitement de {{count}} vecteurs..."
+      "trainingModels": "Entraînement des modèles sur les paramètres {{positionTitle}}..."
     },
     "modal": {
       "confirmAssignment": "Confirmer l'attribution",
@@ -2884,5 +2878,3 @@
     "goBack": "Retour"
   }
 }
-
-

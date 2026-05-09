@@ -229,7 +229,7 @@ export function TimesheetManagement() {
   const fetchClientPositions = async (clientId: string) => {
     try {
       setPositionLoading(true);
-      const response = await getClientPositions(clientId, { limit: 10000000 });
+      const response = await getClientPositions(clientId, { limit: 10000000, showAllSiblings: "true" });
       // Transform positions to match our interface
       const transformedPositions: ClientPosition[] = response.positions.map(
         (pos) => ({

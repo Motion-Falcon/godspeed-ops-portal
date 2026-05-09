@@ -242,7 +242,6 @@
     "termsOfService": "Terms of Service",
     "privacyPolicy": "Privacy Policy"
   },
-
   "demoLogin": {
     "title": "Demo Login",
     "description": "Select a demo account to explore the platform",
@@ -252,7 +251,6 @@
       "failed": "Failed to login with demo account. Please try again."
     }
   },
-
   "roles": {
     "admin": "Administrator",
     "admins": "Admins",
@@ -1217,7 +1215,6 @@
     "compensation": "Compensation",
     "firstName": "First Name",
     "lastName": "Last Name",
-    "email": "Email",
     "mobile": "Mobile",
     "dateOfBirth": "Date of Birth",
     "licenseNumber": "License Number",
@@ -1529,12 +1526,10 @@
     "thisWeekLabel": "This Week",
     "thisMonthLabel": "This Month",
     "custom": "Custom",
-    "dateRange": "Date Range",
     "from": "From",
     "to": "To",
     "apply": "Apply",
     "loading": "Loading summary...",
-    "openPositions": "Open Positions",
     "summaryPeriod": "Period",
     "statusBreakdown": "Status Breakdown",
     "active": "Active",
@@ -1543,7 +1538,6 @@
     "cancelled": "Cancelled",
     "next": "Next",
     "previous": "Previous",
-    "today": "Today",
     "month": "Month",
     "week": "Week",
     "day": "Day",
@@ -2218,7 +2212,8 @@
       "confirm": "Delete Position",
       "deleting": "Deleting...",
       "cancel": "Cancel",
-      "error": "Error: {{error}}"
+      "error": "Error: {{error}}",
+      "subcategoryWarning": "Warning: This is a subcategory position. Deleting it will also delete all of its related types (e.g. Bonus, Miles)!"
     },
     "editModal": {
       "title": "Edit Position",
@@ -2386,14 +2381,13 @@
     "positionVacant": "Position Vacant",
     "ai": {
       "initializingEngine": "🧠 Initializing AI matching engine...",
-      "processingVectors": "🔬 Processing candidate data vectors...",
+      "processingVectors": "Processing {{count}} vectors...",
       "runningAnalysis": "⚡ Running neural network analysis...",
       "computingAlgorithms": "🎯 Computing similarity algorithms...",
       "optimizingPredictions": "🚀 Optimizing match predictions...",
       "processing": "AI Processing",
       "accuracy": "Accuracy: {{percentage}}%",
-      "trainingModels": "Training models on {{positionTitle}} parameters...",
-      "processingVectors": "Processing {{count}} vectors..."
+      "trainingModels": "Training models on {{positionTitle}} parameters..."
     },
     "modal": {
       "confirmAssignment": "Confirm Assignment",
