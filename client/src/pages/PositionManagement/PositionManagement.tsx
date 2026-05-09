@@ -935,6 +935,10 @@ export function PositionManagement() {
         message={`${t("positionManagement.deleteModal.message", {
           title: "",
         })}${
+          positions.find((p) => p.id === positionToDelete)?.isSubcategory
+            ? `\n\n${t("positionManagement.deleteModal.subcategoryWarning")}`
+            : ""
+        }${
           deleteError
             ? `\n\n${t("positionManagement.deleteModal.error", {
                 error: deleteError,
