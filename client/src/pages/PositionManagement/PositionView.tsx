@@ -455,10 +455,12 @@ export function PositionView() {
               {(Boolean(position.isSubcategory) ||
                 Boolean((position as ExtendedPositionData).is_subcategory)) &&
                 (() => {
-                  const raw =
-                    position.subcategoryPosition ??
-                    (position as ExtendedPositionData).subcategory_position;
-                  const labels = normalizeSubcategoryPositionArray(raw);
+                  const labels = position.subcategoryPositionDetails
+                    ? (position.subcategoryPositionDetails as any[]).map(d => d.subcategoryPosition)
+                    : normalizeSubcategoryPositionArray(
+                        position.subcategoryPosition ??
+                        (position as ExtendedPositionData).subcategory_position
+                      );
                   const subcategoryLabelsDisplay: string | null =
                     labels.length > 0 ? labels.join(", ") : null;
                   return renderDetailItem(
@@ -505,17 +507,36 @@ export function PositionView() {
 
           <div className="position-details-section section-card">
             <h2 className="section-title">{t("positionManagement.positionDetailsSection")}</h2>
-            <div className="detail-group">
-              {renderDetailItem(t("positionManagement.payrateType"), position.payrateType)}
-              {renderDetailItem(
-                t("positionManagement.numberOfPositions"),
-                position.numberOfPositions
-              )}
-              {renderDetailItem(t("positionManagement.regularPayRate"), position.regularPayRate)}
-              {position.premiumPayRate && parseFloat(position.premiumPayRate) > 0 && renderDetailItem(t("positionManagement.premiumPayRate"), position.premiumPayRate)}
-              {renderDetailItem(t("positionManagement.markup"), position.markup)}
-              {renderDetailItem(t("positionManagement.billRate"), position.billRate)}
-            </div>
+            
+            {position.isSubcategory && position.subcategoryPositionDetails && (position.subcategoryPositionDetails as any[]).length > 0 ? (
+              <div className="subcategory-details-list">
+                {(position.subcategoryPositionDetails as any[]).map((detail: any, index: number) => (
+                  <div key={index} className="subcategory-detail-card" style={{ padding: '16px', background: 'var(--bg-secondary)', borderRadius: '8px', marginBottom: '16px', border: '1px solid var(--border-color)' }}>
+                    <h3 style={{ marginBottom: '12px', fontSize: '1.1rem', color: 'var(--text-primary)' }}>{detail.subcategoryPosition}</h3>
+                    <div className="detail-group">
+                      {renderDetailItem(t("positionManagement.payrateType"), detail.payrateType)}
+                      {renderDetailItem(t("positionManagement.numberOfPositions"), detail.numberOfPositions)}
+                      {renderDetailItem(t("positionManagement.regularPayRate"), detail.regularPayRate)}
+                      {detail.premiumPayRate && parseFloat(detail.premiumPayRate) > 0 && renderDetailItem(t("positionManagement.premiumPayRate"), detail.premiumPayRate)}
+                      {renderDetailItem(t("positionManagement.markup"), detail.markup)}
+                      {renderDetailItem(t("positionManagement.billRate"), detail.billRate)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="detail-group">
+                {renderDetailItem(t("positionManagement.payrateType"), position.payrateType)}
+                {renderDetailItem(
+                  t("positionManagement.numberOfPositions"),
+                  position.numberOfPositions
+                )}
+                {renderDetailItem(t("positionManagement.regularPayRate"), position.regularPayRate)}
+                {position.premiumPayRate && parseFloat(position.premiumPayRate as string) > 0 && renderDetailItem(t("positionManagement.premiumPayRate"), position.premiumPayRate)}
+                {renderDetailItem(t("positionManagement.markup"), position.markup)}
+                {renderDetailItem(t("positionManagement.billRate"), position.billRate)}
+              </div>
+            )}
           </div>
 
           <div className="overtime-section section-card">
