@@ -7,7 +7,8 @@ import {
 } from "../../components/CustomDropdown";
 import { useLanguage } from "../../contexts/language/language-provider";
 import type { ClientData } from "../../services/api/client";
-import { Building, Minus } from "lucide-react";
+import { Building, Info, Minus, Users } from "lucide-react";
+import { mapAssignmentToJobseeker } from "./functions/mapAssignmentToJobseeker";
 import "../../styles/pages/BulkTimesheetManagement.css";
 import "../../styles/pages/TimesheetManagement.css";
 import { getPositionDisplayTitle } from "../../utils/positionDisplay";
@@ -42,6 +43,7 @@ export function BulkTimesheetManagement() {
     selectedWeekStart,
     setSelectedWeekStart,
     assignedJobseekers,
+    assignmentsLoading,
     resetSelection,
   } = selection;
 
@@ -167,7 +169,25 @@ export function BulkTimesheetManagement() {
       setGenerationError(t("bulkTimesheetManagement.messages.cannotGenerate"));
       return;
     }
-    void generateBulkTimesheets(rows, clientPosition, selectedWeekStart);
+    const submitRows = rows
+      .map((row) => {
+        const jobseeker = mapAssignmentToJobseeker(row.assignment);
+        const profile = row.assignment.jobseekerProfile;
+        const progressLabel =
+          `${profile?.first_name ?? ""} ${profile?.last_name ?? ""}`.trim() ||
+          "Unknown";
+        if (!jobseeker) return null;
+        return {
+          form: row.form,
+          emailSent: row.emailSent,
+          clientPosition,
+          jobseeker,
+          progressLabel,
+        };
+      })
+      .filter((row): row is NonNullable<typeof row> => row !== null);
+
+    void generateBulkTimesheets(submitRows, selectedWeekStart);
   };
 
   const showJobseekerForms =
@@ -217,6 +237,11 @@ export function BulkTimesheetManagement() {
         }
       />
       <div className="timesheet-content-container">
+        <p className="bulk-timesheet-selection-hint" role="note">
+          <Info size={16} aria-hidden />
+          {t("bulkTimesheetManagement.selectionHint")}
+        </p>
+
         <div className="timesheet-selection-bar">
           <div className="selection-section">
             <label className="selection-label">
@@ -319,6 +344,7 @@ export function BulkTimesheetManagement() {
             />
           </div>
         </div>
+
         {/* Move client info header below selection bar, as a separate section */}
         {selectedClient && (
           <div className="timesheet-unified-header">
@@ -414,6 +440,20 @@ export function BulkTimesheetManagement() {
             <span>{t("bulkTimesheetManagement.subcategoryBanner")}</span>
           </div>
         )}
+
+        {selectedClient &&
+          selectedPosition &&
+          !positionLoading &&
+          !assignmentsLoading &&
+          assignedJobseekers.length === 0 && (
+            <div className="timesheet-card empty-state-card">
+              <div className="timesheet-empty-state">
+                <Users size={48} />
+                <h3>{t("bulkTimesheetManagement.empty.noJobseekersTitle")}</h3>
+                <p>{t("bulkTimesheetManagement.empty.noJobseekersBody")}</p>
+              </div>
+            </div>
+          )}
 
         {prefetchEnabled && hoursLoading && (
           <div className="bulk-timesheet-forms-container">

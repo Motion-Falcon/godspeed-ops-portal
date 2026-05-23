@@ -22,14 +22,30 @@ export function TimesheetList() {
       <AppHeader
         title={t("bulkTimesheetManagement.listTitle")}
         actions={
-          <button
-            type="button"
-            className="button primary button-icon"
-            onClick={() => navigate("/bulk-timesheet-management")}
-          >
-            <Plus size={16} />
-            <span>{t("bulkTimesheetManagement.newBulkTimesheet")}</span>
-          </button>
+          <div className="timesheet-list-header-actions">
+            <button
+              type="button"
+              className="button primary button-icon"
+              onClick={() => navigate("/bulk-timesheet-management")}
+            >
+              <Plus size={16} />
+              <span>
+                {t("bulkTimesheetManagement.newBulkTimesheetClient")}
+              </span>
+            </button>
+            <button
+              type="button"
+              className="button secondary button-icon"
+              onClick={() =>
+                navigate("/bulk-timesheet-management/jobseeker")
+              }
+            >
+              <Plus size={16} />
+              <span>
+                {t("bulkTimesheetManagement.newBulkTimesheetJobseeker")}
+              </span>
+            </button>
+          </div>
         }
         statusMessage={list.message || list.error}
         statusType={list.error ? "error" : "success"}

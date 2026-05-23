@@ -73,7 +73,8 @@ These rules map directly to the hamburger menu pages and route guards.
 | Page | Allowed roles |
 | --- | --- |
 | Timesheet Management | `admin`, `recruiter`, `bookkeeper`, `recruiter_manager`, `recruiter_director` |
-| Create Bulk Timesheet | `admin`, `bookkeeper` |
+| Create Bulk Timesheet (Client) | `admin`, `bookkeeper` |
+| Create Bulk Timesheet (Job Seeker) | `admin`, `bookkeeper` |
 | Bulk Timesheet List | `admin`, `bookkeeper` |
 
 ### Finance

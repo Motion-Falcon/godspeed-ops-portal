@@ -97,10 +97,16 @@
     "singlePageTitle": "Create Single Timesheet"
   },
   "bulkTimesheetManagement": {
-    "title": "Create Bulk Timesheet",
+    "title": "Create Bulk Timesheet (Client)",
     "subcategoryBanner": "This is a subcategory position (invoicing only). It has no assigned jobseekers. Use the individual timesheet creation to create timesheets for this position.",
+    "selectionHint": "When you choose a client and a position, job seekers assigned to that position are loaded automatically—you do not select them from a list.",
+    "empty": {
+      "noJobseekersTitle": "No job seekers on this position",
+      "noJobseekersBody": "Nobody is assigned to this position yet. Assign job seekers to this position in Job Seeker Management, or pick a different position."
+    },
     "listTitle": "All Timesheet Lists",
-    "newBulkTimesheet": "New Bulk Timesheet",
+    "newBulkTimesheetClient": "New bulk timesheet (client)",
+    "newBulkTimesheetJobseeker": "New bulk timesheet (job seeker)",
     "columns": {
       "invoiceNumber": "Invoice #",
       "client": "Client",
@@ -206,6 +212,51 @@
       "na": "N/A",
       "noClientsFound": "No clients found",
       "noPositionsFound": "No positions found"
+    }
+  },
+  "bulkJobseekerTimesheetManagement": {
+    "title": "Create Bulk Timesheet (Job Seeker)",
+    "labels": {
+      "payDetails": "Pay details"
+    },
+    "dropdown": {
+      "subcategoryBadge": "Subcategory invoicing"
+    },
+    "summary": {
+      "variousRates": "—"
+    },
+    "empty": {
+      "noAssignmentsForClient": "This client has no positions. Choose another client or add positions for this client."
+    },
+    "placeholders": {
+      "selectPositionDraft": "Select a position…",
+      "noPositionsLeft": "All positions are already in use in this batch"
+    },
+    "buttons": {
+      "removePosition": "Remove position from batch",
+      "addRow": "Add another position",
+      "generateBulk": "Generate Bulk Timesheet",
+      "generating": "Generating..."
+    },
+    "email": {
+      "sendToAll": "Send timesheets via email for every position row"
+    },
+    "messages": {
+      "contextIncompleteForGenerate": "Choose job seeker, client, and week; then enter hours on at least one filled position row.",
+      "noRowsWithHours": "Cannot generate: no rows have hours entered.",
+      "failedToCreate": "Failed to create bulk timesheet:",
+      "generating": "Creating timesheets…",
+      "pleaseWait": "Please wait while we process your request",
+      "loadingWeekData": "Loading existing timesheets for this week…",
+      "buildingDraft": "Preparing position form…",
+      "processingMultiple": "Processing each position timesheet individually",
+      "generatingInvoices": "Generating unique invoice numbers where needed",
+      "processing": "Creating timesheet {{current}} of {{total}} for {{jobseekerName}}…",
+      "duplicateDetected": "⚠️ Duplicate timesheet detected for {{jobseekerName}}. Continuing with remaining rows…",
+      "allTimesheetsExist": "❌ All timesheets already exist for the selected week and positions.",
+      "allTimesheetsCreated": "✅ All {{count}} timesheets created successfully! Total: {{totalHours}} hours, ${{totalPay}} CAD",
+      "partialTimesheetsCreated": "⚠️ {{successful}} of {{total}} timesheets created successfully ({{failed}} failed). Total: {{totalHours}} hours, ${{totalPay}} CAD",
+      "allTimesheetsFailed": "❌ Failed to create any timesheets. Details: {{failureDetails}}"
     }
   }
 }
