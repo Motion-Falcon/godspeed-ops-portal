@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { useLanguage } from "../contexts/language/language-provider";
@@ -69,6 +69,10 @@ import {
 } from "../constants/accessControl";
 import "../styles/components/hamburgerMenu.css";
 import { supabase } from "../lib/supabaseClient";
+import {
+  restoreMenuScroll,
+  setMenuScrollTop,
+} from "../lib/menuScrollState";
 
 // Interface for menu item structure
 interface MenuItem {
@@ -126,13 +130,15 @@ function MenuItemComponent({
   isOpen,
   onTooltipShow,
   onTooltipHide,
-  onClose,
+  onSaveScroll,
+  onNavigate,
 }: {
   item: MenuItem;
   isOpen: boolean;
   onTooltipShow: (text: string, element: HTMLElement) => void;
   onTooltipHide: () => void;
-  onClose: () => void;
+  onSaveScroll: () => void;
+  onNavigate: () => void;
 }) {
   const location = useLocation();
   const hasSubmenu = item.submenu && item.submenu.length > 0;
@@ -191,9 +197,15 @@ function MenuItemComponent({
   };
 
   const handleItemClick = () => {
+    onSaveScroll();
     if (hasOnClick && item.onClick) {
       item.onClick();
     }
+  };
+
+  const handleNavInteraction = () => {
+    onSaveScroll();
+    onNavigate();
   };
 
   const handleMouseEnter = (e: React.MouseEvent<HTMLElement>) => {
@@ -220,6 +232,8 @@ function MenuItemComponent({
                 // Use our custom active detection for main menu items
                 isPathActive(item.path, item.exact, item.activePattern, item.activePaths) ? "active" : ""
               }
+              onMouseDown={onSaveScroll}
+              onClick={handleNavInteraction}
               onMouseEnter={handleMouseEnter}
               onMouseLeave={handleMouseLeave}
             >
@@ -274,7 +288,8 @@ function MenuItemComponent({
                         ? "active"
                         : ""
                     }
-                    onClick={() => onClose()}
+                    onMouseDown={onSaveScroll}
+                    onClick={handleNavInteraction}
                     onMouseEnter={(e) => {
                       if (!isOpen) {
                         onTooltipShow(subItem.label, e.currentTarget);
@@ -298,6 +313,8 @@ function MenuItemComponent({
                       // Use our custom active detection for submenu items
                       isPathActive(subItem.path, subItem.exact, subItem.activePattern, subItem.activePaths) ? "active" : ""
                     }
+                    onMouseDown={onSaveScroll}
+                    onClick={handleNavInteraction}
                     onMouseEnter={(e) => {
                       if (!isOpen) {
                         onTooltipShow(subItem.label, e.currentTarget);
@@ -336,8 +353,8 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
   } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
-  const location = useLocation();
   const menuRef = useRef<HTMLElement>(null);
+  const menuItemsRef = useRef<HTMLUListElement>(null);
   const [tooltip, setTooltip] = useState<{
     text: string;
     isVisible: boolean;
@@ -365,20 +382,15 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
     setTooltip((prev) => ({ ...prev, isVisible: false }));
   };
 
-  const scrollToActiveItem = () => {
-    if (menuRef.current) {
-      const activeItem = menuRef.current.querySelector(".active");
-      if (activeItem) {
-        const menuContainer = menuRef.current.querySelector(".menu-items");
-        if (menuContainer) {
-          const activeRect = activeItem.getBoundingClientRect();
-          const containerRect = menuContainer.getBoundingClientRect();
-          const scrollTop =
-            activeRect.top - containerRect.top + menuContainer.scrollTop - 50;
-          menuContainer.scrollTo({ top: scrollTop, behavior: "smooth" });
-        }
-      }
+  const saveMenuScroll = () => {
+    if (menuItemsRef.current) {
+      setMenuScrollTop(menuItemsRef.current.scrollTop);
     }
+  };
+
+  const handleMenuNavigate = () => {
+    saveMenuScroll();
+    onClose();
   };
 
   const handleExpandMenu = (e: React.MouseEvent) => {
@@ -425,6 +437,7 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
   }, [user?.id, isJobSeeker]);
 
   const handleProfileNavigation = () => {
+    saveMenuScroll();
     if (jobseekerProfileId) {
       navigate(`/jobseekers/${jobseekerProfileId}`);
     }
@@ -432,8 +445,9 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
   };
 
   const handleUserProfileNavigation = () => {
+    saveMenuScroll();
     navigate("/profile");
-    onClose(); // Close the menu after navigation
+    onClose();
   };
 
   // Define all possible menu items
@@ -845,18 +859,32 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
     };
   }, [isOpen, onClose]);
 
-  // Scroll to active item when menu opens
-  useEffect(() => {
-    if (isOpen) {
-      // Small delay to ensure DOM is updated
-      setTimeout(scrollToActiveItem, 100);
+  // Restore scroll after route change or refresh; scroll to active item when nothing saved
+  useLayoutEffect(() => {
+    if (menuItemsRef.current && menuItems.length > 0) {
+      restoreMenuScroll(menuItemsRef.current);
     }
-  }, [isOpen]);
+  }, [menuItems.length]);
 
-  // Scroll sidebar to show the active item whenever navigation happens
   useEffect(() => {
-    setTimeout(scrollToActiveItem, 100);
-  }, [location.pathname]);
+    const menuList = menuItemsRef.current;
+    if (!menuList) return;
+
+    const handleScroll = () => {
+      setMenuScrollTop(menuList.scrollTop);
+    };
+
+    const handlePageHide = () => {
+      setMenuScrollTop(menuList.scrollTop);
+    };
+
+    menuList.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("pagehide", handlePageHide);
+    return () => {
+      menuList.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("pagehide", handlePageHide);
+    };
+  }, [menuItems.length]);
 
   const getUserTypeDisplay = () => {
     if (!user) {
@@ -920,7 +948,7 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
           </div>
         </div>
 
-        <ul className="menu-items">
+        <ul className="menu-items" ref={menuItemsRef}>
           {menuItems.map((item, index) => (
             <MenuItemComponent
               key={index}
@@ -928,7 +956,8 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
               isOpen={isOpen}
               onTooltipShow={handleTooltipShow}
               onTooltipHide={handleTooltipHide}
-              onClose={onClose}
+              onSaveScroll={saveMenuScroll}
+              onNavigate={handleMenuNavigate}
             />
           ))}
         </ul>
