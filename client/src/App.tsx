@@ -63,6 +63,7 @@ import './styles/main.css';
 import { Dashboard } from './pages/Dashboard/Dashboard';
 import { MetricExamplePage } from './pages/Dashboard/MetricExamplePage';
 import { BulkTimesheetManagement } from './pages/TimesheetManagement/BulkTimesheetManagement';
+import { BulkTimesheetJobseekerManagement } from './pages/TimesheetManagement/BulkTimesheetJobseekerManagement';
 import { TimesheetList } from './pages/TimesheetManagement/TimesheetList';
 import { GodspeedAIChat } from './pages/GodspeedAIChat';
 import { RecruiterHierarchy } from './pages/RecruiterHierarchy';
@@ -223,6 +224,10 @@ function App() {
 
                 <Route element={<RoleRoute allowedRoles={BULK_TIMESHEET_ROLES} />}>
                   <Route path="/bulk-timesheet-management" element={<BulkTimesheetManagement />} />
+                  <Route
+                    path="/bulk-timesheet-management/jobseeker"
+                    element={<BulkTimesheetJobseekerManagement />}
+                  />
                   <Route path="/timesheet-management/list" element={<TimesheetList />} />
                   <Route
                     path="/bulk-timesheet-management/list"
