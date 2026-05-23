@@ -121,3 +121,13 @@ export interface BulkJobseekerRow {
   form: WeeklyTimesheet;
   emailSent: boolean;
 }
+
+/** One position row on the jobseeker-centric bulk page (position optional until picked). */
+export interface BulkPositionRow {
+  rowId: string;
+  position: ClientPosition | null;
+  form: WeeklyTimesheet | null;
+  /** Seed loading after choosing a position */
+  formLoading?: boolean;
+  emailSent: boolean;
+}

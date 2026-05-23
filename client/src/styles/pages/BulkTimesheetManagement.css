@@ -3,6 +3,26 @@
   position: relative;
 }
 
+.bulk-timesheet-selection-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin: 0 0 0.65rem 0;
+  padding: 0.5rem 0.65rem;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--text-muted);
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.bulk-timesheet-selection-hint svg {
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+  color: var(--primary);
+}
+
 /* Example: override or extend styles as needed */
 .bulk-timesheet-page-container .timesheet-assignment-card {
   background: var(--card);
@@ -93,6 +113,13 @@
 .bulk-timesheet-page-container
   .timesheet-hours-title.timesheet-pay-adjustments-title {
   padding-bottom: 20px;
+}
+
+/* Jobseeker bulk row: match daily hours title rhythm (avoid large gap above bonus/deduction) */
+.bulk-jobseeker-bulk-page
+  .bulk-jobseeker-position-card
+  .timesheet-hours-title.timesheet-pay-adjustments-title {
+  padding-bottom: 0.35rem;
 }
 
 .bulk-timesheet-page-container .timesheet-hours-header .button.danger {
@@ -224,4 +251,481 @@
 }
 :is(.timesheet-list-page, .bulk-timesheet-list) .email-status-no {
   background: var(--danger);
+}
+
+.timesheet-list-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.bulk-jobseeker-bulk-page .bulk-jobseeker-profile-strip {
+  margin: 1rem 0;
+}
+
+/** Employee strip uses the same card chrome as bulk position rows */
+.bulk-jobseeker-bulk-page
+  .bulk-jobseeker-employee-details-card.timesheet-assignment-card {
+  margin-bottom: 1rem;
+}
+
+.bulk-jobseeker-bulk-page
+  .bulk-jobseeker-employee-details-card
+  .timesheet-jobseeker-info-section--row {
+  border-bottom: none;
+  padding-bottom: 0;
+  margin-bottom: 0;
+}
+
+.bulk-jobseeker-forms .bulk-jobseeker-position-card {
+  position: relative;
+  margin-bottom: 1rem;
+  overflow: visible;
+}
+
+.bulk-jobseeker-forms
+  .bulk-jobseeker-position-card:has(.bulk-position-remove-btn--floating) {
+  padding-right: 2.5rem;
+}
+
+/* Add another position — fit content width */
+.bulk-jobseeker-add-row-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+}
+
+.bulk-jobseeker-add-row-footer .button.secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  width: fit-content;
+  max-width: 100%;
+}
+
+/* One row: position | hours+adjustments+pay | remove */
+.bulk-jobseeker-position-card .bulk-position-inline-row {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  gap: 0.65rem;
+  width: 100%;
+  overflow: visible;
+  box-sizing: border-box;
+}
+
+.bulk-jobseeker-position-card .bulk-position-field--dropdown {
+  flex: 0 0 300px;
+  width: 300px;
+  min-width: 260px;
+  max-width: 300px;
+  overflow: visible;
+}
+
+/* Slightly smaller trigger + list text for the narrow position column */
+.bulk-jobseeker-position-card .bulk-position-field--dropdown .custom-dropdown-text {
+  font-size: 0.75rem;
+}
+
+.bulk-jobseeker-position-card .bulk-position-field--dropdown .custom-dropdown-search {
+  font-size: 0.75rem;
+}
+
+.bulk-jobseeker-position-card .bulk-position-field--dropdown .custom-dropdown-option-label {
+  font-size: 0.75rem;
+}
+
+.bulk-jobseeker-position-card .bulk-position-field--dropdown .custom-dropdown-option-sublabel {
+  font-size: 0.6rem;
+}
+
+.bulk-jobseeker-position-card .bulk-position-field--dropdown .custom-dropdown-empty {
+  font-size: 0.75rem;
+}
+
+.bulk-jobseeker-position-card .bulk-position-field--loading {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  min-height: 40px;
+}
+
+.bulk-jobseeker-position-card .bulk-position-hours-block {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  gap: 0.75rem;
+  overflow: visible;
+  justify-content: flex-start;
+  align-items: flex-start;
+}
+
+/* Daily hours uses remaining width; adjustments + pay stay compact (no inner scroll) */
+.bulk-jobseeker-position-card
+  .bulk-position-hours-block
+  > .timesheet-hours-section:first-of-type {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: visible;
+}
+
+.bulk-jobseeker-position-card
+  .bulk-position-hours-block
+  > .timesheet-hours-section.adjustments-section {
+  flex: 0 0 auto;
+  flex-shrink: 0;
+}
+
+.bulk-jobseeker-position-card
+  .bulk-position-hours-block
+  > .timesheet-pay-info-section.bulk-position-pay-info {
+  flex: 0 0 340px;
+  width: 340px;
+  min-width: 340px;
+  max-width: 340px;
+  flex-shrink: 0;
+}
+
+.bulk-jobseeker-position-card .bulk-position-pay-details-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+}
+
+.bulk-jobseeker-position-card .bulk-position-pay-details-title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+  font-size: 0.8rem;
+}
+
+.bulk-jobseeker-position-card .bulk-position-pay-info .timesheet-pay-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem 0.5rem;
+  width: 100%;
+}
+
+.bulk-jobseeker-position-card .bulk-position-pay-info .timesheet-pay-info-item {
+  padding: 0.35rem 0.45rem;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.bulk-jobseeker-position-card .bulk-position-pay-info .timesheet-pay-info-item .timesheet-pay-label {
+  flex-shrink: 0;
+}
+
+.bulk-jobseeker-position-card .bulk-position-pay-info .timesheet-pay-info-item .timesheet-pay-value {
+  min-width: 0;
+  flex: 1 1 auto;
+  text-align: right;
+  word-break: break-word;
+}
+
+.bulk-jobseeker-position-card .bulk-position-pay-info .timesheet-pay-label {
+  font-size: 0.65rem;
+}
+
+.bulk-jobseeker-position-card .bulk-position-pay-info .timesheet-pay-value {
+  font-size: 0.75rem;
+}
+
+.bulk-jobseeker-position-card .bulk-position-remove-btn {
+  z-index: 3;
+  /* Override global .button { width: 100% } */
+  width: 32px !important;
+  min-width: 32px !important;
+  max-width: 32px !important;
+  height: 32px !important;
+  padding: 0 !important;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--danger) !important;
+  color: var(--background) !important;
+  border: 1px solid var(--danger) !important;
+  box-shadow: none;
+}
+
+.bulk-jobseeker-position-card .bulk-position-remove-btn--floating {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+}
+
+.bulk-jobseeker-position-card .bulk-position-remove-btn--pay-header {
+  position: static;
+  width: 28px !important;
+  min-width: 28px !important;
+  max-width: 28px !important;
+  height: 28px !important;
+  flex-shrink: 0;
+}
+
+.bulk-jobseeker-position-card .bulk-position-remove-btn:hover:not(:disabled) {
+  filter: brightness(1.06);
+}
+
+.bulk-jobseeker-position-card .bulk-position-remove-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Slightly compact controls (readable, not tiny) */
+.bulk-jobseeker-bulk-page .bulk-jobseeker-position-card .timesheet-hours-title {
+  font-size: 0.8rem;
+}
+
+/* Align column headers: Position, Daily hours, Pay adjustments, Pay details */
+.bulk-jobseeker-bulk-page
+  .bulk-jobseeker-position-card
+  .bulk-position-field--dropdown
+  > .selection-label {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text);
+  text-transform: none;
+  letter-spacing: normal;
+  margin: 0 0 0.5rem 0;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--border);
+  min-height: 2rem;
+  box-sizing: border-box;
+}
+
+.bulk-jobseeker-bulk-page
+  .bulk-jobseeker-position-card
+  .bulk-position-hours-block
+  > .timesheet-hours-section
+  > .timesheet-hours-title {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--border);
+  min-height: 2rem;
+  box-sizing: border-box;
+}
+
+.bulk-jobseeker-bulk-page
+  .bulk-jobseeker-position-card
+  .bulk-position-pay-details-header {
+  margin: 0 0 0.5rem 0;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--border);
+  min-height: 2rem;
+  box-sizing: border-box;
+}
+
+.bulk-jobseeker-bulk-page
+  .bulk-jobseeker-position-card
+  .bulk-position-pay-details-title.timesheet-hours-title {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+  min-height: 0;
+}
+
+.bulk-jobseeker-bulk-page .bulk-jobseeker-position-card .timesheet-day-label {
+  font-size: 0.68rem;
+}
+
+.bulk-jobseeker-bulk-page .bulk-jobseeker-position-card .timesheet-days-grid {
+  gap: 0.5rem;
+}
+
+/* Compact numeric fields: daily hours, bonus, deduction — same width & column rhythm */
+.bulk-jobseeker-bulk-page .bulk-jobseeker-position-card .timesheet-hours-input {
+  width: 4.5rem;
+  min-width: 4.5rem;
+  max-width: 4.5rem;
+  box-sizing: border-box;
+  padding: 0.3rem 0.35rem;
+  font-size: 0.78rem;
+}
+
+.bulk-jobseeker-bulk-page
+  .bulk-jobseeker-position-card
+  .timesheet-hours-section.adjustments-section
+  .timesheet-day-entry {
+  width: fit-content;
+  min-width: 0;
+}
+
+.bulk-jobseeker-position-card .bulk-position-notes-email-shell {
+  display: grid;
+  grid-template-columns: 35fr 65fr;
+  gap: 0.75rem;
+  align-items: stretch;
+  margin-top: 1rem;
+  margin-bottom: 0.65rem;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.bulk-jobseeker-position-card .bulk-position-email-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 0.45rem;
+  min-width: 0;
+  padding: 0.65rem;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: var(--card-shadow);
+}
+
+.bulk-jobseeker-position-card .bulk-position-email-billing-note {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+
+.bulk-jobseeker-position-card
+  .bulk-position-notes-email-shell
+  .timesheet-notes-section.bulk-position-notes-card {
+  margin: 0;
+  padding: 0.65rem;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: var(--card-shadow);
+  min-width: 0;
+}
+
+.bulk-jobseeker-position-card
+  .bulk-position-notes-email-shell
+  .bulk-position-notes-card
+  .timesheet-notes-title {
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.35rem;
+}
+
+@media (max-width: 900px) {
+  .bulk-jobseeker-position-card .bulk-position-notes-email-shell {
+    grid-template-columns: 1fr;
+  }
+}
+
+.bulk-jobseeker-bulk-page
+  .bulk-jobseeker-position-card
+  .bulk-position-notes-email-shell
+  .timesheet-notes-textarea {
+  min-height: 48px;
+  font-size: 0.8rem;
+}
+
+/* Compact invoice preview — scale to match bulk-position-inline-row density */
+.bulk-jobseeker-position-card .timesheet-invoice-container {
+  margin-top: 0.5rem;
+}
+
+.bulk-jobseeker-position-card .timesheet-invoice-container .timesheet-invoice-table {
+  border-radius: 6px;
+}
+
+.bulk-jobseeker-position-card .timesheet-invoice-table-header {
+  gap: 0.45rem;
+  padding: 0.45rem 0.65rem;
+  font-size: 0.625rem;
+  letter-spacing: 0.35px;
+  border-radius: 6px 6px 0 0;
+}
+
+.bulk-jobseeker-position-card .timesheet-invoice-line-item {
+  gap: 0.45rem;
+  padding: 0.45rem 0.65rem;
+}
+
+.bulk-jobseeker-position-card .timesheet-item-title {
+  font-size: 0.78rem;
+}
+
+.bulk-jobseeker-position-card .timesheet-item-subtitle {
+  font-size: 0.68rem;
+}
+
+.bulk-jobseeker-position-card .timesheet-col-hours,
+.bulk-jobseeker-position-card .timesheet-col-rate,
+.bulk-jobseeker-position-card .timesheet-col-amount,
+.bulk-jobseeker-position-card .timesheet-col-tax {
+  font-size: 0.78rem;
+}
+
+.bulk-jobseeker-position-card .timesheet-invoice-totals {
+  padding: 0.2rem 0.65rem 0 0.65rem;
+}
+
+.bulk-jobseeker-position-card .timesheet-total-line {
+  padding: 0.3rem 0;
+}
+
+.bulk-jobseeker-position-card .timesheet-total-label,
+.bulk-jobseeker-position-card .timesheet-total-value {
+  font-size: 0.78rem;
+}
+
+.bulk-jobseeker-position-card .timesheet-subtotal {
+  font-size: 0.78rem;
+}
+
+.bulk-jobseeker-position-card .timesheet-grand-total {
+  font-size: 0.85rem;
+  margin: 0.45rem -0.65rem 0 -0.65rem;
+  padding: 0.5rem 0.65rem;
+  border-radius: 0 0 6px 6px;
+}
+
+.bulk-jobseeker-position-card .timesheet-grand-total .timesheet-total-label,
+.bulk-jobseeker-position-card .timesheet-grand-total .timesheet-total-value {
+  font-size: inherit;
+}
+
+.bulk-jobseeker-select-position-hint {
+  margin: 0.5rem 0 0;
+}
+
+@media (max-width: 1100px) {
+  .bulk-jobseeker-position-card .bulk-position-inline-row {
+    flex-wrap: wrap;
+  }
+
+  .bulk-jobseeker-position-card .bulk-position-field--dropdown {
+    flex: 1 1 100%;
+    width: 100%;
+    max-width: none;
+  }
+
+  .bulk-jobseeker-position-card .bulk-position-hours-block {
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+}
+
+.bulk-jobseeker-grand-summary {
+  margin-top: 1rem;
 }
