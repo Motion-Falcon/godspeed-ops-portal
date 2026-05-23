@@ -164,8 +164,14 @@
   gap: 0; /* Remove default gap for more control */
   overflow-y: auto; /* Add scrolling to menu items only */
   overflow-x: hidden;
+  overflow-anchor: none; /* Do not auto-scroll when active item changes */
   scrollbar-width: thin;
   scrollbar-color: var(--border) transparent;
+}
+
+.menu-items a,
+.menu-items .menu-action-button {
+  scroll-margin: 0;
 }
 
 /* Custom scrollbar for menu items */
