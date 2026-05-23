@@ -7,7 +7,7 @@ import { CustomDropdown, DropdownOption } from "../../components/CustomDropdown"
 import { useLanguage } from "../../contexts/language/language-provider";
 import { Loader2, Calendar, User, Building, Users } from "lucide-react";
 import { JobSeekerProfile } from "../../types/jobseeker";
-import { formatDate as formatWeekDate } from "../../utils/weekUtils";
+import { formatDate as formatWeekDate } from "../TimesheetManagement/functions/weekUtils";
 import "../../styles/pages/CommonReportsStyles.css";
 import { exportToCSV } from '../../utils/csvExport';
 
