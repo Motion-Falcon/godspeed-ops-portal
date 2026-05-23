@@ -29,6 +29,7 @@ export function useBulkTimesheetSelection() {
   const [assignedJobseekers, setAssignedJobseekers] = useState<
     AssignmentRecord[]
   >([]);
+  const [assignmentsLoading, setAssignmentsLoading] = useState(false);
 
   const clientPosition: ClientPosition | null = useMemo(() => {
     if (!selectedPosition?.id) return null;
@@ -64,11 +65,14 @@ export function useBulkTimesheetSelection() {
   }, []);
 
   const fetchAssignedJobseekers = useCallback(async (positionId: string) => {
+    setAssignmentsLoading(true);
     try {
       const response = await getPositionAssignments(positionId);
       setAssignedJobseekers(response.assignments || []);
     } catch {
       setAssignedJobseekers([]);
+    } finally {
+      setAssignmentsLoading(false);
     }
   }, []);
 
@@ -92,6 +96,7 @@ export function useBulkTimesheetSelection() {
       void fetchAssignedJobseekers(selectedPosition.id);
     } else {
       setAssignedJobseekers([]);
+      setAssignmentsLoading(false);
     }
   }, [selectedPosition, fetchAssignedJobseekers]);
 
@@ -117,6 +122,7 @@ export function useBulkTimesheetSelection() {
     selectedWeekStart,
     setSelectedWeekStart,
     assignedJobseekers,
+    assignmentsLoading,
     resetSelection,
   };
 }

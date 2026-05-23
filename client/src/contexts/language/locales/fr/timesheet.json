@@ -97,10 +97,16 @@
     "singlePageTitle": "Créer une feuille de temps individuelle"
   },
   "bulkTimesheetManagement": {
-    "title": "Créer une feuille de temps en lot",
+    "title": "Créer une feuille de temps en lot (client)",
     "subcategoryBanner": "Ceci est un poste de sous-catégorie (facturation uniquement). Il n'a aucun chercheur d'emploi assigné. Utilisez la création de feuille de temps individuelle pour créer des feuilles de temps pour ce poste.",
+    "selectionHint": "Lorsque vous choisissez un client et un poste, les demandeurs assignés à ce poste sont chargés automatiquement—vous ne les sélectionnez pas dans une liste.",
+    "empty": {
+      "noJobseekersTitle": "Aucun demandeur sur ce poste",
+      "noJobseekersBody": "Personne n'est assigné à ce poste pour l'instant. Assignez des demandeurs dans la gestion des demandeurs d'emploi, ou choisissez un autre poste."
+    },
     "listTitle": "Toutes les listes de feuilles de temps",
-    "newBulkTimesheet": "Nouvelle feuille de temps en lot",
+    "newBulkTimesheetClient": "Nouvelle feuille de temps en lot (client)",
+    "newBulkTimesheetJobseeker": "Nouvelle feuille de temps en lot (demandeur d’emploi)",
     "columns": {
       "invoiceNumber": "N° Facture",
       "client": "Client",
@@ -206,6 +212,51 @@
       "na": "N/A",
       "noClientsFound": "Aucun client trouvé",
       "noPositionsFound": "Aucun poste trouvé"
+    }
+  },
+  "bulkJobseekerTimesheetManagement": {
+    "title": "Créer une feuille de temps en lot (demandeurs d'emploi)",
+    "labels": {
+      "payDetails": "Détails de rémunération"
+    },
+    "dropdown": {
+      "subcategoryBadge": "Sous-catégorie (facturation)"
+    },
+    "summary": {
+      "variousRates": "—"
+    },
+    "empty": {
+      "noAssignmentsForClient": "Ce client n'a aucun poste. Choisissez un autre client ou ajoutez des postes pour ce client."
+    },
+    "placeholders": {
+      "selectPositionDraft": "Sélectionner un poste…",
+      "noPositionsLeft": "Tous les postes sont déjà utilisés dans ce lot"
+    },
+    "buttons": {
+      "removePosition": "Retirer le poste du lot",
+      "addRow": "Ajouter un autre poste",
+      "generateBulk": "Générer la feuille de temps en lot",
+      "generating": "Génération..."
+    },
+    "email": {
+      "sendToAll": "Envoyer les feuilles de temps par courriel pour chaque ligne de poste"
+    },
+    "messages": {
+      "contextIncompleteForGenerate": "Choisissez le demandeur d'emploi, le client et la semaine ; saisissez ensuite des heures sur au moins une ligne avec un poste rempli.",
+      "noRowsWithHours": "Impossible de générer : aucune ligne n’a d’heures saisies.",
+      "failedToCreate": "Échec de la création de la feuille de temps en lot :",
+      "generating": "Création des feuilles de temps…",
+      "pleaseWait": "Veuillez patienter pendant le traitement",
+      "loadingWeekData": "Chargement des feuilles de temps existantes pour cette semaine…",
+      "buildingDraft": "Préparation du formulaire du poste…",
+      "processingMultiple": "Traitement de chaque feuille de temps par poste individuellement",
+      "generatingInvoices": "Génération de numéros de facture uniques lorsque nécessaire",
+      "processing": "Création de la feuille de temps {{current}} sur {{total}} pour {{jobseekerName}}…",
+      "duplicateDetected": "⚠️ Feuille de temps en double pour {{jobseekerName}}. Poursuite des autres lignes…",
+      "allTimesheetsExist": "❌ Toutes les feuilles de temps existent déjà pour la semaine et les postes sélectionnés.",
+      "allTimesheetsCreated": "✅ Toutes les {{count}} feuilles de temps créées avec succès ! Total : {{totalHours}} heures, ${{totalPay}} CAD",
+      "partialTimesheetsCreated": "⚠️ {{successful}} sur {{total}} feuilles de temps créées avec succès ({{failed}} échouées). Total : {{totalHours}} heures, ${{totalPay}} CAD",
+      "allTimesheetsFailed": "❌ Échec de la création de toutes les feuilles de temps. Détails : {{failureDetails}}"
     }
   }
 }

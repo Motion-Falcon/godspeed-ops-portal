@@ -14,6 +14,7 @@
 
 ## TimesheetManagement Components ✅
 - ✅ TimesheetList.tsx (all-timesheets index; lives under `/timesheet-management/list`)
+- ✅ BulkTimesheetJobseekerManagement.tsx (`/bulk-timesheet-management/jobseeker`; `bulkJobseekerTimesheetManagement.*` strings)
 
 ## Calendar Components ✅
 - ✅ CalendarPage.tsx

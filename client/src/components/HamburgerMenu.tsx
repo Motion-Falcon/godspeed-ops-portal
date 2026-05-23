@@ -705,8 +705,15 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
           roles: TIMESHEET_MANAGEMENT_ROLES,
         },
         {
-          label: t("navigation.createBulkTimesheet"),
+          label: t("navigation.createBulkTimesheetClient"),
           path: "/bulk-timesheet-management",
+          icon: <FileSpreadsheet size={16} />,
+          exact: true,
+          roles: BULK_TIMESHEET_ROLES,
+        },
+        {
+          label: t("navigation.createBulkTimesheetJobseeker"),
+          path: "/bulk-timesheet-management/jobseeker",
           icon: <FileSpreadsheet size={16} />,
           exact: true,
           roles: BULK_TIMESHEET_ROLES,
