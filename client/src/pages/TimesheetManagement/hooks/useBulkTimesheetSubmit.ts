@@ -1,21 +1,36 @@
 import { useCallback, useState } from "react";
+import type { JobSeekerProfile } from "../../../types/jobseeker";
 import type { TimesheetRow } from "../../../services/types/timesheet";
-import { mapAssignmentToJobseeker } from "../functions/mapAssignmentToJobseeker";
 import { submitWeeklyTimesheets } from "../functions/timesheetSubmit";
-import type { BulkJobseekerRow, ClientPosition } from "../types";
+import type { ClientPosition, WeeklyTimesheet } from "../types";
 
 export type BulkTimesheetT = (
   key: string,
   params?: Record<string, string | number>
 ) => string;
 
+/** One row submitted in a sequential bulk loop — each maps to one submitWeeklyTimesheets call */
+export interface BulkSubmitRow {
+  form: WeeklyTimesheet;
+  emailSent: boolean;
+  clientPosition: ClientPosition;
+  jobseeker: JobSeekerProfile;
+  /** Shown in progress and failure summaries */
+  progressLabel: string;
+}
+
 export interface UseBulkTimesheetSubmitParams {
   t: BulkTimesheetT;
+  /** Namespace for message keys under `.messages.*` */
+  translationNamespace?:
+    | "bulkTimesheetManagement"
+    | "bulkJobseekerTimesheetManagement";
   onSuccessReset: () => void;
 }
 
 export function useBulkTimesheetSubmit({
   t,
+  translationNamespace = "bulkTimesheetManagement",
   onSuccessReset,
 }: UseBulkTimesheetSubmitParams) {
   const [isGenerating, setIsGenerating] = useState(false);
@@ -23,12 +38,14 @@ export function useBulkTimesheetSubmit({
   const [generationError, setGenerationError] = useState("");
   const [currentInvoiceNumber, setCurrentInvoiceNumber] = useState("");
 
+  const msg = useCallback(
+    (suffix: string, params?: Record<string, string | number>) =>
+      t(`${translationNamespace}.messages.${suffix}`, params),
+    [t, translationNamespace]
+  );
+
   const generateBulkTimesheets = useCallback(
-    async (
-      rows: BulkJobseekerRow[],
-      clientPosition: ClientPosition,
-      weekStart: string
-    ) => {
+    async (rows: BulkSubmitRow[], weekStart: string) => {
       const withHours = rows.filter((row) => {
         const total =
           row.form.totalRegularHours + row.form.totalOvertimeHours;
@@ -37,7 +54,11 @@ export function useBulkTimesheetSubmit({
 
       if (withHours.length === 0) {
         setGenerationError(
-          t("bulkTimesheetManagement.messages.noJobseekersWithHours")
+          msg(
+            translationNamespace === "bulkJobseekerTimesheetManagement"
+              ? "noRowsWithHours"
+              : "noJobseekersWithHours"
+          )
         );
         return;
       }
@@ -54,21 +75,17 @@ export function useBulkTimesheetSubmit({
       try {
         for (let i = 0; i < withHours.length; i++) {
           const row = withHours[i];
-          const profile = row.assignment.jobseekerProfile;
-          const jobseekerName =
-            `${profile?.first_name ?? ""} ${profile?.last_name ?? ""}`.trim() ||
-            "Unknown";
+          const jobseekerName = row.progressLabel;
 
           setGenerationMessage(
-            t("bulkTimesheetManagement.messages.processing", {
+            msg("processing", {
               current: i + 1,
               total: withHours.length,
               jobseekerName,
             })
           );
 
-          const jobseeker = mapAssignmentToJobseeker(row.assignment);
-          if (!jobseeker) {
+          if (!row.jobseeker?.id || !row.jobseeker.userId) {
             failed.push({
               jobseeker: jobseekerName,
               error: "Missing jobseeker profile",
@@ -76,10 +93,12 @@ export function useBulkTimesheetSubmit({
             continue;
           }
 
+          const { clientPosition } = row;
+
           try {
             const result = await submitWeeklyTimesheets({
               timesheetsToProcess: [row.form],
-              jobseeker,
+              jobseeker: row.jobseeker,
               selectedPosition: clientPosition,
               selectedWeekStart: weekStart,
               emailPreferences: {
@@ -117,7 +136,7 @@ export function useBulkTimesheetSubmit({
               errorMessage.includes("duplicate")
             ) {
               setGenerationMessage(
-                t("bulkTimesheetManagement.messages.duplicateDetected", {
+                msg("duplicateDetected", {
                   jobseekerName,
                 })
               );
@@ -143,7 +162,7 @@ export function useBulkTimesheetSubmit({
           const countLabel = String(savedCount);
           if (failed.length === 0) {
             setGenerationMessage(
-              t("bulkTimesheetManagement.messages.allTimesheetsCreated", {
+              msg("allTimesheetsCreated", {
                 count: countLabel,
                 totalHours: grandTotalHours.toFixed(2),
                 totalPay: grandTotalPay.toFixed(2),
@@ -151,7 +170,7 @@ export function useBulkTimesheetSubmit({
             );
           } else {
             setGenerationMessage(
-              t("bulkTimesheetManagement.messages.partialTimesheetsCreated", {
+              msg("partialTimesheetsCreated", {
                 successful: savedCount,
                 total: savedCount + failed.length,
                 failed: failed.length,
@@ -178,12 +197,10 @@ export function useBulkTimesheetSubmit({
           );
 
           if (duplicateErrors.length === failed.length) {
-            setGenerationError(
-              t("bulkTimesheetManagement.messages.allTimesheetsExist")
-            );
+            setGenerationError(msg("allTimesheetsExist"));
           } else {
             setGenerationError(
-              t("bulkTimesheetManagement.messages.allTimesheetsFailed", {
+              msg("allTimesheetsFailed", {
                 failureDetails: failed
                   .map((f) => `${f.jobseeker}: ${f.error}`)
                   .join("; "),
@@ -196,7 +213,7 @@ export function useBulkTimesheetSubmit({
       } catch (error) {
         console.error("Error in bulk timesheet generation:", error);
         setGenerationError(
-          `${t("bulkTimesheetManagement.messages.failedToCreate")} ${
+          `${msg("failedToCreate")} ${
             error instanceof Error ? error.message : "Unknown error"
           }`
         );
@@ -207,7 +224,7 @@ export function useBulkTimesheetSubmit({
         setCurrentInvoiceNumber("");
       }
     },
-    [onSuccessReset, t]
+    [msg, onSuccessReset]
   );
 
   return {
