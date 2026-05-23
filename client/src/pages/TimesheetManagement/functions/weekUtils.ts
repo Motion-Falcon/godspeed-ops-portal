@@ -7,7 +7,6 @@ export interface WeekOption {
 
 /**
  * Generates week options for the past 52 weeks, each with a start (Sunday) and end (Saturday) date.
- * @returns {WeekOption[]} Array of week options
  */
 export function generateWeekOptions(): WeekOption[] {
   const options: WeekOption[] = [];
@@ -43,8 +42,6 @@ export function generateWeekOptions(): WeekOption[] {
 
 /**
  * Formats a date string (YYYY-MM-DD) to a readable format (e.g., 'Apr 7, 2024').
- * @param dateString
- * @returns {string}
  */
 export function formatDate(dateString: string): string {
   const [year, month, day] = dateString.split("-").map(Number);
@@ -54,4 +51,25 @@ export function formatDate(dateString: string): string {
     day: "numeric",
     year: "numeric",
   });
-} 
+}
+
+/** Sunday-based week end (start + 6 days), formatted YYYY-MM-DD. */
+export function getWeekEndDate(weekStartDate: string): string {
+  const weekEnd = new Date(weekStartDate);
+  weekEnd.setDate(weekEnd.getDate() + 6);
+  return weekEnd.toISOString().split("T")[0];
+}
+
+/** Seven consecutive dates starting at weekStartDate (YYYY-MM-DD each). */
+export function generateWeekDates(weekStartDate: string): string[] {
+  const dates: string[] = [];
+  const startDate = new Date(weekStartDate);
+
+  for (let i = 0; i < 7; i++) {
+    const date = new Date(startDate);
+    date.setDate(startDate.getDate() + i);
+    dates.push(date.toISOString().split("T")[0]);
+  }
+
+  return dates;
+}

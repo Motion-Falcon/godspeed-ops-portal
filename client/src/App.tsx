@@ -62,8 +62,8 @@ import { LanguageProvider } from "./contexts/language/language-provider";
 import './styles/main.css';
 import { Dashboard } from './pages/Dashboard/Dashboard';
 import { MetricExamplePage } from './pages/Dashboard/MetricExamplePage';
-import { BulkTimesheetManagement } from './pages/BulkTimesheetManagement/BulkTimesheetManagement';
-import { BulkTimesheetList } from './pages/BulkTimesheetManagement/BulkTimesheetList';
+import { BulkTimesheetManagement } from './pages/TimesheetManagement/BulkTimesheetManagement';
+import { TimesheetList } from './pages/TimesheetManagement/TimesheetList';
 import { GodspeedAIChat } from './pages/GodspeedAIChat';
 import { RecruiterHierarchy } from './pages/RecruiterHierarchy';
 import { InviteRecruiter } from './pages/RecruiterManagement/InviteRecruiter';
@@ -223,7 +223,11 @@ function App() {
 
                 <Route element={<RoleRoute allowedRoles={BULK_TIMESHEET_ROLES} />}>
                   <Route path="/bulk-timesheet-management" element={<BulkTimesheetManagement />} />
-                  <Route path="/bulk-timesheet-management/list" element={<BulkTimesheetList />} />
+                  <Route path="/timesheet-management/list" element={<TimesheetList />} />
+                  <Route
+                    path="/bulk-timesheet-management/list"
+                    element={<Navigate to="/timesheet-management/list" replace />}
+                  />
                 </Route>
 
                 <Route element={<RoleRoute allowedRoles={INVOICE_MANAGEMENT_ROLES} />}>
