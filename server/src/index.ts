@@ -9,7 +9,7 @@ import jobseekersRoutes from "./routes/jobseekers.js";
 import clientsRoutes from "./routes/clients.js";
 import positionsRoutes from "./routes/positions.js";
 import positionsDraftRoutes from "./routes/positionDrafts.js";
-import timesheetsRoutes from "./routes/timesheets.js";
+import timesheetsRoutes from "./routes/timesheet.routes.js";
 import invoicesRoutes from "./routes/invoices.js";
 import jobseekerMetricsRoutes from "./routes/jobseekerMetrics.js";
 import recruiterMetricsRoutes from "./routes/recruiterMetrics.js";

@@ -1,107 +1,40 @@
 import axios from "axios";
 import { api, clearCacheFor } from "./index";
+import type {
+  TimesheetInput,
+  TimesheetListFilters,
+  PaginatedTimesheetsResponse,
+  PaginatedJobseekerTimesheetsResponse,
+  TimesheetMutationResponse,
+  TimesheetWithJoins,
+  GenerateInvoiceNumberResponse,
+  SendTimesheetEmailResponse,
+  DeleteTimesheetResponse,
+} from "../types/timesheet";
 
-// Timesheet management API functions
-export interface TimesheetData {
-  id?: string;
-  invoiceNumber: string;
-  jobseekerProfileId: string;
-  jobseekerUserId: string;
-  positionId?: string;
-  weekStartDate: string;
-  weekEndDate: string;
-  dailyHours: Array<{ date: string; hours: number }>;
-  totalRegularHours: number;
-  totalOvertimeHours: number;
-  regularPayRate: number;
-  premiumPayRate?: number;
-  overtimePayRate: number;
-  regularBillRate: number;
-  overtimeBillRate: number;
-  totalJobseekerPay: number;
-  totalClientBill: number;
-  overtimeEnabled: boolean;
-  bonusAmount: number;
-  deductionAmount: number;
-  markup?: number;
-  emailSent?: boolean;
-  document?: string; // PDF file path or URL
-  notes?: string; // Additional notes or comments
-  /** DB: single | sin | cash | e_transfer */
-  paySplitSegment?: string;
-  /** Per-row payout label for reporting / email */
-  linePaymentMethod?: string | null;
-  createdAt?: string;
-  updatedAt?: string;
-  createdByUserId?: string;
-  updatedByUserId?: string;
-  // Populated fields from joins
-  jobseekerProfile?: {
-    id: string;
-    firstName: string;
-    lastName: string;
-    name: string;
-    email: string;
-    billingEmail?: string;
-    mobile?: string;
-  };
-  position?: {
-    id: string;
-    positionCode: string;
-    title: string;
-    clientName: string;
-    city: string;
-    province: string;
-  };
-}
+export type {
+  TimesheetRow,
+  TimesheetInput,
+  TimesheetListItem,
+  TimesheetWithJoins,
+  TimesheetListFilters,
+  TimesheetFilterParams,
+  PaginatedTimesheetsResponse,
+  PaginatedJobseekerTimesheetsResponse,
+  TimesheetMutationResponse,
+  GenerateInvoiceNumberResponse,
+  SendTimesheetEmailResponse,
+  DeleteTimesheetResponse,
+} from "../types/timesheet";
 
-export interface TimesheetFilters {
-  page?: number;
-  limit?: number;
-  searchTerm?: string;
-  jobseekerFilter?: string;
-  positionFilter?: string;
-  clientFilter?: string;
-  invoiceNumberFilter?: string;
-  billingEmailFilter?: string;
-  emailSentFilter?: string;
-  dateRangeStart?: string;
-  dateRangeEnd?: string;
-}
-
-export interface PaginatedTimesheetResponse {
-  timesheets: TimesheetData[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalFiltered: number;
-    totalPages: number;
-    hasNextPage: boolean;
-    hasPrevPage: boolean;
-  };
-}
-
-export interface TimesheetResponse {
-  success: boolean;
-  message: string;
-  timesheet: TimesheetData;
-}
-
-/**
- * Get all timesheets with pagination and filtering
- */
 export const getTimesheets = async (
-  params: TimesheetFilters = {}
-): Promise<PaginatedTimesheetResponse> => {
+  params: TimesheetListFilters = {}
+): Promise<PaginatedTimesheetsResponse> => {
   try {
     const queryParams = new URLSearchParams();
 
-    // Add pagination params
     if (params.page) queryParams.append("page", params.page.toString());
     if (params.limit) queryParams.append("limit", params.limit.toString());
-
-    // Add filter params
     if (params.searchTerm) queryParams.append("searchTerm", params.searchTerm);
     if (params.jobseekerFilter)
       queryParams.append("jobseekerFilter", params.jobseekerFilter);
@@ -120,7 +53,9 @@ export const getTimesheets = async (
     if (params.dateRangeEnd)
       queryParams.append("dateRangeEnd", params.dateRangeEnd);
 
-    const response = await api.get(`/api/timesheets?${queryParams.toString()}`);
+    const response = await api.get<PaginatedTimesheetsResponse>(
+      `/api/timesheets?${queryParams.toString()}`
+    );
     return response.data;
   } catch (error) {
     console.error("Error fetching timesheets:", error);
@@ -133,13 +68,10 @@ export const getTimesheets = async (
   }
 };
 
-/**
- * Get a specific timesheet by ID
- */
-export const getTimesheet = async (id: string): Promise<TimesheetData> => {
+export const getTimesheet = async (id: string): Promise<TimesheetWithJoins> => {
   try {
-    const response = await api.get(`/api/timesheets/${id}`);
-    return response.data.timesheet;
+    const response = await api.get<TimesheetWithJoins>(`/api/timesheets/${id}`);
+    return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
       throw new Error(error.response.data.error || "Failed to fetch timesheet");
@@ -148,18 +80,14 @@ export const getTimesheet = async (id: string): Promise<TimesheetData> => {
   }
 };
 
-/**
- * Create a new timesheet
- */
 export const createTimesheet = async (
-  timesheetData: Omit<
-    TimesheetData,
-    "id" | "createdAt" | "updatedAt" | "createdByUserId" | "updatedByUserId"
-  >
-): Promise<TimesheetResponse> => {
+  timesheetData: TimesheetInput
+): Promise<TimesheetMutationResponse> => {
   try {
-    const response = await api.post("/api/timesheets", timesheetData);
-    // Clear cache for timesheets list after creation
+    const response = await api.post<TimesheetMutationResponse>(
+      "/api/timesheets",
+      timesheetData
+    );
     clearCacheFor("/api/timesheets");
     return response.data;
   } catch (error) {
@@ -172,16 +100,15 @@ export const createTimesheet = async (
   }
 };
 
-/**
- * Update an existing timesheet
- */
 export const updateTimesheet = async (
   id: string,
-  timesheetData: Partial<TimesheetData>
-): Promise<TimesheetResponse> => {
+  timesheetData: TimesheetInput
+): Promise<TimesheetMutationResponse> => {
   try {
-    const response = await api.put(`/api/timesheets/${id}`, timesheetData);
-    // Clear cache for this timesheet and the timesheets list
+    const response = await api.put<TimesheetMutationResponse>(
+      `/api/timesheets/${id}`,
+      timesheetData
+    );
     clearCacheFor(`/api/timesheets/${id}`);
     clearCacheFor("/api/timesheets");
     return response.data;
@@ -195,18 +122,15 @@ export const updateTimesheet = async (
   }
 };
 
-/**
- * Update only the document field of a timesheet (for PDF generation)
- */
 export const updateTimesheetDocument = async (
   id: string,
   document: string
-): Promise<TimesheetResponse> => {
+): Promise<TimesheetMutationResponse> => {
   try {
-    const response = await api.patch(`/api/timesheets/${id}/document`, {
-      document,
-    });
-    // Clear cache for this timesheet and the timesheets list
+    const response = await api.patch<TimesheetMutationResponse>(
+      `/api/timesheets/${id}/document`,
+      { document }
+    );
     clearCacheFor(`/api/timesheets/${id}`);
     clearCacheFor("/api/timesheets");
     return response.data;
@@ -220,15 +144,13 @@ export const updateTimesheetDocument = async (
   }
 };
 
-/**
- * Delete a timesheet
- */
 export const deleteTimesheet = async (
   id: string
-): Promise<{ success: boolean; message: string; deletedId: string }> => {
+): Promise<DeleteTimesheetResponse> => {
   try {
-    const response = await api.delete(`/api/timesheets/${id}`);
-    // Clear cache for timesheets list after deletion
+    const response = await api.delete<DeleteTimesheetResponse>(
+      `/api/timesheets/${id}`
+    );
     clearCacheFor("/api/timesheets");
     return response.data;
   } catch (error) {
@@ -241,21 +163,15 @@ export const deleteTimesheet = async (
   }
 };
 
-/**
- * Get timesheets for a specific jobseeker
- */
 export const getJobseekerTimesheets = async (
   userId: string,
-  params: TimesheetFilters = {}
-): Promise<PaginatedTimesheetResponse> => {
+  params: TimesheetListFilters = {}
+): Promise<PaginatedJobseekerTimesheetsResponse> => {
   try {
     const queryParams = new URLSearchParams();
 
-    // Add pagination params
     if (params.page) queryParams.append("page", params.page.toString());
     if (params.limit) queryParams.append("limit", params.limit.toString());
-
-    // Add filter params
     if (params.searchTerm) queryParams.append("searchTerm", params.searchTerm);
     if (params.positionFilter)
       queryParams.append("positionFilter", params.positionFilter);
@@ -270,7 +186,7 @@ export const getJobseekerTimesheets = async (
     if (params.dateRangeEnd)
       queryParams.append("dateRangeEnd", params.dateRangeEnd);
 
-    const response = await api.get(
+    const response = await api.get<PaginatedJobseekerTimesheetsResponse>(
       `/api/timesheets/jobseeker/${userId}?${queryParams.toString()}`
     );
     return response.data;
@@ -285,13 +201,12 @@ export const getJobseekerTimesheets = async (
   }
 };
 
-/**
- * Generate next available invoice number
- */
 export const generateInvoiceNumber = async (): Promise<string> => {
   try {
-    const response = await api.get("/api/timesheets/generate-invoice-number");
-    return response.data.invoiceNumber;
+    const response = await api.get<GenerateInvoiceNumberResponse>(
+      "/api/timesheets/generate-invoice-number"
+    );
+    return response.data.invoice_number;
   } catch (error) {
     console.error("Error generating invoice number:", error);
     if (axios.isAxiosError(error) && error.response) {
@@ -303,10 +218,6 @@ export const generateInvoiceNumber = async (): Promise<string> => {
   }
 };
 
-/**
- * Helper function to create timesheet data from frontend format
- * This matches the generateTimesheetData function in TimesheetManagement.tsx
- */
 export const createTimesheetFromFrontendData = async (frontendData: {
   jobseeker_profile_id: string;
   jobseeker_user_id: string;
@@ -315,7 +226,7 @@ export const createTimesheetFromFrontendData = async (frontendData: {
   email_sent: boolean;
   assignments: Array<{
     position_id?: string;
-    daily_hours: Array<{ date: string; hours: number }>;
+    daily_hours: TimesheetInput["daily_hours"];
     total_regular_hours: number;
     total_overtime_hours: number;
     regular_pay_rate: number;
@@ -331,41 +242,36 @@ export const createTimesheetFromFrontendData = async (frontendData: {
     notes?: string;
     markup?: number;
   }>;
-}): Promise<TimesheetResponse[]> => {
+}): Promise<TimesheetMutationResponse[]> => {
   try {
-    const results: TimesheetResponse[] = [];
+    const results: TimesheetMutationResponse[] = [];
 
-    // Create one timesheet per assignment
     for (const assignment of frontendData.assignments) {
-      // Generate invoice number for each timesheet
-      const invoiceNumber = await generateInvoiceNumber();
+      const invoice_number = await generateInvoiceNumber();
 
-      const timesheetData: Omit<
-        TimesheetData,
-        "id" | "createdAt" | "updatedAt" | "createdByUserId" | "updatedByUserId"
-      > = {
-        invoiceNumber: invoiceNumber, // Add the generated invoice number
-        jobseekerProfileId: frontendData.jobseeker_profile_id,
-        jobseekerUserId: frontendData.jobseeker_user_id,
-        positionId: assignment.position_id,
-        weekStartDate: frontendData.week_start_date,
-        weekEndDate: frontendData.week_end_date,
-        dailyHours: assignment.daily_hours,
-        totalRegularHours: assignment.total_regular_hours,
-        totalOvertimeHours: assignment.total_overtime_hours,
-        regularPayRate: assignment.regular_pay_rate,
-        premiumPayRate: assignment.premium_pay_rate || 0,
-        overtimePayRate: assignment.overtime_pay_rate,
-        regularBillRate: assignment.regular_bill_rate,
-        overtimeBillRate: assignment.overtime_bill_rate,
-        totalJobseekerPay: assignment.total_jobseeker_pay,
-        totalClientBill: assignment.total_client_bill,
-        overtimeEnabled: assignment.overtime_enabled,
-        bonusAmount: assignment.bonus_amount,
-        deductionAmount: assignment.deduction_amount,
+      const timesheetData: TimesheetInput = {
+        invoice_number,
+        jobseeker_profile_id: frontendData.jobseeker_profile_id,
+        jobseeker_user_id: frontendData.jobseeker_user_id,
+        position_id: assignment.position_id,
+        week_start_date: frontendData.week_start_date,
+        week_end_date: frontendData.week_end_date,
+        daily_hours: assignment.daily_hours,
+        total_regular_hours: assignment.total_regular_hours,
+        total_overtime_hours: assignment.total_overtime_hours,
+        regular_pay_rate: assignment.regular_pay_rate,
+        premium_pay_rate: assignment.premium_pay_rate || 0,
+        overtime_pay_rate: assignment.overtime_pay_rate,
+        regular_bill_rate: assignment.regular_bill_rate,
+        overtime_bill_rate: assignment.overtime_bill_rate,
+        total_jobseeker_pay: assignment.total_jobseeker_pay,
+        total_client_bill: assignment.total_client_bill,
+        overtime_enabled: assignment.overtime_enabled,
+        bonus_amount: assignment.bonus_amount,
+        deduction_amount: assignment.deduction_amount,
         notes: assignment.notes,
         markup: assignment.markup,
-        emailSent: frontendData.email_sent,
+        email_sent: frontendData.email_sent,
       };
 
       const result = await createTimesheet(timesheetData);
@@ -379,9 +285,6 @@ export const createTimesheetFromFrontendData = async (frontendData: {
   }
 };
 
-/**
- * Send emails for a bulk timesheet (without updating version/version_history)
- */
 export const sendTimesheetEmails = async (
   id: string,
   jobseekerId?: string
@@ -392,11 +295,16 @@ export const sendTimesheetEmails = async (
   emailsSkipped: string[];
 }> => {
   try {
-    const response = await api.post(
+    const response = await api.post<SendTimesheetEmailResponse>(
       `/api/timesheets/send-email/${id}`,
       jobseekerId ? { jobseekerId } : {}
     );
-    return response.data;
+    return {
+      success: response.data.success,
+      message: response.data.message,
+      emailsSent: response.data.email_sent ? [id] : [],
+      emailsSkipped: response.data.email_sent ? [] : [id],
+    };
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
       throw new Error(

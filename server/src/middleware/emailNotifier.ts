@@ -1,8 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import sgMail from '@sendgrid/mail';
-import fs from 'fs';
 import path from 'path';
-import Handlebars from 'handlebars';
 import { fileURLToPath } from 'url';
 
 sgMail.setApiKey(process.env.SENDGRID_API_KEY!);

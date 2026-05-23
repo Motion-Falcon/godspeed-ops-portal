@@ -1,6 +1,9 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import enTranslations from "./locales/en.json";
-import frTranslations from "./locales/fr.json";
+import coreEn from "./locales/en.json";
+import timesheetEn from "./locales/en/timesheet.json";
+import coreFr from "./locales/fr.json";
+import timesheetFr from "./locales/fr/timesheet.json";
+import { mergeLocale } from "./mergeLocales";
 
 export type Language = "en" | "fr";
 
@@ -18,8 +21,8 @@ interface LanguageProviderState {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const translations: Record<Language, Record<string, any>> = {
-  en: enTranslations,
-  fr: frTranslations,
+  en: mergeLocale(coreEn, timesheetEn),
+  fr: mergeLocale(coreFr, timesheetFr),
 };
 
 const initialState: LanguageProviderState = {

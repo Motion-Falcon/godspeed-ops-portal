@@ -699,7 +699,7 @@ export function HamburgerMenu({ isOpen, onClose, onOpen }: HamburgerMenuProps) {
         },
         {
           label: t("navigation.bulkTimesheetList"),
-          path: "/bulk-timesheet-management/list",
+          path: "/timesheet-management/list",
           icon: <ListChecks size={16} />,
           exact: true,
           roles: BULK_TIMESHEET_ROLES,

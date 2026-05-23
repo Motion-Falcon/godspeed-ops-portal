@@ -10,8 +10,10 @@
 - ✅ VerificationPending.tsx
 
 ## BulkTimesheetManagement Components ✅
-- ✅ BulkTimesheetList.tsx
 - ✅ BulkTimesheetManagement.tsx
+
+## TimesheetManagement Components ✅
+- ✅ TimesheetList.tsx (all-timesheets index; lives under `/timesheet-management/list`)
 
 ## Calendar Components ✅
 - ✅ CalendarPage.tsx
