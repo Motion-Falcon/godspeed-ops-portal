@@ -336,6 +336,7 @@ export interface EnvelopePrintingReportRow {
   jobseeker_name: string;
   phone_number: string;
   email_id: string;
+  billing_email: string;
   pay_method: string;
   position_category: string;
   position_name: string;

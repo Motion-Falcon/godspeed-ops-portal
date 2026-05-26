@@ -1248,6 +1248,7 @@ router.get(
         `
         )
         .eq("positions.client", clientId)
+        // Same rule as timesheetWeekWithinRange(week_start, week_end, startDate, endDate)
         .gte("week_start_date", startDate)
         .lte("week_end_date", endDate)
         .order("week_start_date", { ascending: true });
