@@ -8,7 +8,8 @@ Status key: **Fully working** means the code path is wired end to end assuming e
 - Role-based access control: Routes, menus, and backend middleware restrict features by role. Access: all roles. Status: **Partially built** because several frontend/backend role rules do not match.
 - Jobseeker onboarding gates: Jobseekers are forced through employment agreement, profile creation, pending, rejected, or verified flows. Access: jobseeker. Status: **Fully working**.
 - Internal user invitations and hierarchy: Admin-style users can invite recruiters/internal users, assign managers, and manage user roles/hierarchy. Access: admin, recruiter managers/directors in UI. Status: **Partially built** due permission mismatches with backend.
-- Theme, language, legal pages: App supports light/dark theme, English/French locale toggling, terms, and privacy pages. Access: all users/public where applicable. Status: **Fully working**.
+- Theme, language, legal pages: App supports light/dark theme, English/French locale toggling (including merged `en/timesheet.json` and `fr/timesheet.json` bundles for all timesheet screens), terms, and privacy pages. Access: all users/public where applicable. Status: **Fully working**.
+- Sidebar menu scroll persistence: Hamburger menu restores scroll position across navigation and refresh via session storage (`menuScrollState.ts`). Access: users with sidebar. Status: **Fully working**.
 - Company switcher: Header has a company selector component. Access: internal users if enabled. Status: **Scaffolded/stubbed**; I did not see it enabled by a real route.
 
 **Jobseeker Management**
@@ -35,11 +36,28 @@ Status key: **Fully working** means the code path is wired end to end assuming e
 - Invoicing-only position subcategories: Schema and logic distinguish invoice-only subcategories from normal assignment/calendar use. Access: position managers. Status: **Fully working**.
 
 **Timesheet & Payroll**
-- Single timesheets: Users can create, edit, list, delete, email, and attach document metadata for weekly timesheets. Access: admin, recruiter, bookkeeper, recruiter manager/director. Status: **Fully working**.
-- Hybrid payroll split: Timesheets calculate regular/overtime hours, deductions, bonuses, cash/SIN/e-transfer/direct-deposit split, and SIN cap behavior. Access: payroll/timesheet roles. Status: **Fully working**.
-- Bulk timesheet entry: Users can select client, position, week, assigned workers, enter hours and adjustments, and create individual timesheets. Access: admin, bookkeeper. Status: **Fully working** for creation.
-- Bulk timesheet list/actions: Bulk-style list and email resend exist, but view/delete actions are commented out. Access: admin, bookkeeper. Status: **Partially built**.
-- Timesheet email workflow: Timesheets can be sent by email using server templates. Access: timesheet roles. Status: **Fully working** if SendGrid/config is present.
+
+_Module layout (May 2026):_ Client code lives under `client/src/pages/TimesheetManagement/` (pages, hooks, components, calculation helpers). Server API was split from monolithic `routes/timesheets.ts` into `routes/timesheet.routes.ts`, `controllers/timesheet.controller.ts`, `services/timesheet.service.ts`, `services/timesheet.email.ts`, and `types/timesheet.types.ts`. Routes remain mounted at `/api/timesheets`.
+
+| Route | Page | UI roles |
+| --- | --- | --- |
+| `/timesheet-management` | Single timesheet | `TIMESHEET_MANAGEMENT_ROLES` |
+| `/bulk-timesheet-management` | Bulk by client | `BULK_TIMESHEET_ROLES` (admin, bookkeeper) |
+| `/bulk-timesheet-management/jobseeker` | Bulk by jobseeker | `BULK_TIMESHEET_ROLES` |
+| `/timesheet-management/list` | All timesheets | `BULK_TIMESHEET_ROLES` |
+| `/bulk-timesheet-management/list` | Redirect → list | — |
+
+- Single timesheet entry: Jobseeker → client → position → week cascade; daily hours grid; load/create/update one record per combination; live payroll preview; bonus/deduction/notes; optional email on submit. Access: admin, recruiter, bookkeeper, recruiter manager/director (UI). Status: **Fully working**.
+- Hybrid payroll split: Shared `timesheetCalculations.ts` drives regular/overtime, premium rates, payment-method deductions, and SIN cap behavior in single and bulk forms. Access: timesheet roles. Status: **Fully working**.
+- Bulk timesheet (client-centric): Select client, position, week; auto-load assigned jobseekers; per-worker forms; batch submit creates **one timesheet per worker** with unique invoice numbers, progress UI, duplicate skip, and partial-failure reporting. Invoice-only subcategory positions show a banner (no assignees). Access: admin, bookkeeper. Status: **Fully working** for create/update batch flows.
+- Bulk timesheet (jobseeker-centric): Select jobseeker, client, week; add multiple position rows (`BulkJobseekerPositionCard`); prefills existing week data; same per-row invoice/batch submit behavior as client bulk. Access: admin, bookkeeper. Status: **Fully working** for create/update batch flows.
+- All timesheets list: Paginated index with column filters (invoice #, client, position, jobseeker, billing email, date range, email status); send/resend email per row; header shortcuts to both bulk creators. Access: admin, bookkeeper. Status: **Fully working** for list/filter/email; **Partially built** for delete (see below).
+- Timesheet email workflow: Create/update optional email via `emailNotifier`; manual send via `POST /api/timesheets/send-email/:id`; templates in `email-templates/timesheet-*.ts`. Prefers billing email over primary. Access: timesheet roles (backend `authorizeRoles(["admin","recruiter","jobseeker"])` expands `recruiter` to include bookkeeper and other internal roles). Status: **Fully working** if SendGrid/config is present.
+- Timesheet delete API: `DELETE /api/timesheets/:id` implemented with activity logging. Access: same expanded recruiter group. Status: **Fully working** on server; **not wired** from current timesheet UI pages.
+- Timesheet list delete UI: `ConfirmationModal` and `deleteTimesheet` API client exist, but `useTimesheetsList.handleConfirmDelete` is an empty placeholder and `TimesheetListTable` has no delete action buttons—only email actions. Status: **Partially built**.
+- Timesheet detail view from list: No dedicated view/edit route from list rows; staff use single or bulk entry screens to edit by selection. Status: **Not present** on list (by design currently).
+- Document metadata on timesheet: `PATCH /api/timesheets/:id/document` for attachment metadata. Access: timesheet roles. Status: **Fully working** where used.
+- Deprecated client paths: `pages/BulkTimesheetManagement/` removed; old `BulkTimesheetList` removed; `/bulk-timesheet-management/list` redirects to `/timesheet-management/list`.
 
 **Invoicing & Billing**
 - Invoice creation/editing: Users can build invoices from timesheets, manual line items, supplier/PO details, tax settings, notes, payment terms, and attachments. Access: admin, accountant manager. Status: **Fully working**.
@@ -106,9 +124,13 @@ Status key: **Fully working** means the code path is wired end to end assuming e
 - **Bug:** Jobseeker dashboard metrics likely fail for jobseekers because the candidate metrics endpoint allows admin/recruiter roles only.
 - **Bug:** `GET /api/metrics/jobseekers/:candidateId` appears before `GET /api/metrics/jobseekers/expiry-status-counts`, so the expiry route may be swallowed as a candidate ID.
 - **UI without active backend/use:** Training completion/progress, company switcher, metrics example page, and calendar filters are present but not fully wired.
-- **Commented out/scaffolded:** Floating AI chat widget, bulk timesheet view/delete buttons, calendar filter UI, and several “coming soon” training modules.
+- **Commented out/scaffolded:** Floating AI chat widget, calendar filter UI, and several “coming soon” training modules.
+- **Timesheet list delete not wired:** Backend delete and client `deleteTimesheet()` exist; list confirm handler is a no-op and table exposes no delete control—only email send/resend.
+- **Doc drift (timesheet):** `docs/email-triggers-documentation.txt` and `docs/email-triggers-table.txt` still cite removed `server/src/routes/timesheets.ts`; handlers now live under `timesheet.routes.ts` / `timesheet.controller.ts`.
 - **Security concern if re-enabled:** Floating AI chat renders markdown with `dangerouslySetInnerHTML` and sanitization disabled; it is currently inactive.
 - **Maintainability concern:** Several debug `console.log` calls remain in header/activity code.
 - **Build concern:** Client bundle is very large and Vite reports eval usage from dependencies, but build succeeds.
+
+*Last updated: May 24, 2026 — Timesheet & Payroll section expanded after module refactor, jobseeker bulk entry, and all-timesheets list.*
 
 Audit complete.
