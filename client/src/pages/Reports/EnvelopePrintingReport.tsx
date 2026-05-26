@@ -138,7 +138,20 @@ const getTableColumns = (
   {
     key: "invoice_date",
     label: t("reports.columns.invoiceDate"),
-    format: (val) => formatWeekDate(String(val ?? "")),
+    format: (val) => {
+      const s = String(val ?? "").trim();
+      if (!s) return "";
+      return formatWeekDate(s);
+    },
+  },
+  {
+    key: "payment_due_date",
+    label: t("reports.columns.paymentDueDate"),
+    format: (val) => {
+      const s = String(val ?? "").trim();
+      if (!s) return "";
+      return formatWeekDate(s);
+    },
   },
   { key: "currency", label: t("reports.columns.currency") },
   {

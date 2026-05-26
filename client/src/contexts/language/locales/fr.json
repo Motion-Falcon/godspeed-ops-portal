@@ -2662,6 +2662,7 @@
       "invoiceNumber": "N° facture",
       "fromToDate": "Du & au (date)",
       "invoiceDate": "Date de facture",
+      "paymentDueDate": "Date d'échéance du paiement",
       "dueDate": "Date d'échéance",
       "terms": "Conditions",
       "itemPosition": "Article/Poste",

@@ -2660,6 +2660,7 @@
       "invoiceNumber": "Invoice #",
       "fromToDate": "From & To (date)",
       "invoiceDate": "Invoice Date",
+      "paymentDueDate": "Payment Due Date",
       "dueDate": "Due Date",
       "terms": "Terms",
       "itemPosition": "Item/Position",
