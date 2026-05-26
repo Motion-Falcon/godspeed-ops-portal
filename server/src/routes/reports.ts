@@ -3,6 +3,7 @@ import { authenticateToken, authorizeRoles } from "../middleware/auth.js";
 import { createClient } from "@supabase/supabase-js";
 import dotenv from "dotenv";
 import { timesheetWeekWithinRange } from "../utils/timesheetDateRange.js";
+import { computePaymentDueDate } from "../utils/paymentDueDate.js";
 
 dotenv.config();
 
@@ -77,12 +78,9 @@ function invoiceLineMatchesJobseekerPosition(
 function resolveEnvelopeInvoice(
   jobseekerProfileId: string,
   positionId: string,
-  weekStart: string,
-  weekEnd: string,
   invoices: Array<{
     invoice_number?: string;
     invoice_date?: string;
-    due_date?: string;
     invoice_data?: { timesheets?: unknown[] };
   }>
 ): EnvelopeInvoiceLookup | null {
@@ -90,15 +88,6 @@ function resolveEnvelopeInvoice(
   let bestDate = "";
 
   for (const invoice of invoices) {
-    const rangeStart = invoice.invoice_date;
-    const rangeEnd = invoice.due_date;
-    if (!rangeStart || !rangeEnd) continue;
-    if (
-      !timesheetWeekWithinRange(weekStart, weekEnd, rangeStart, rangeEnd)
-    ) {
-      continue;
-    }
-
     const lines = (invoice.invoice_data?.timesheets || []) as Array<{
       jobseekerProfile?: { jobseekerProfileId?: string };
       jobseekerProfileId?: string;
@@ -1307,9 +1296,13 @@ router.post(
         const matchedInvoice = resolveEnvelopeInvoice(
           row.jobseeker_profile_id,
           row.position_id,
-          row.week_start_date,
-          row.week_end_date,
           invoicesByClient[clientId] || []
+        );
+
+        const paymentDueDate = computePaymentDueDate(
+          client.pay_cycle,
+          row.week_start_date,
+          row.week_end_date
         );
 
         const totalAmount = Number(row.total_jobseeker_pay) || 0;
@@ -1347,6 +1340,7 @@ router.post(
           line_amount: totalFormatted,
           invoice_number: matchedInvoice?.invoice_number ?? "",
           invoice_date: matchedInvoice?.invoice_date ?? "",
+          payment_due_date: paymentDueDate ?? "",
           currency: client.currency || "",
           client_is_inactive: checkClientInactive(
             client.last_activity_at,
