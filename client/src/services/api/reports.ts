@@ -351,6 +351,7 @@ export interface EnvelopePrintingReportRow {
   line_amount: string;
   invoice_number: string;
   invoice_date: string;
+  payment_due_date: string;
   currency: string;
   client_is_inactive?: boolean;
   jobseeker_is_inactive?: boolean;
