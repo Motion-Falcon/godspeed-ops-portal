@@ -2684,6 +2684,7 @@
       "jobseekerName": "Nom du demandeur d'emploi",
       "phoneNumber": "Numéro de téléphone",
       "emailId": "ID email",
+      "billingEmail": "Courriel de facturation",
       "payMethod": "Méthode de paie",
       "positionName": "Nom du poste",
       "totalAmount": "Montant total",

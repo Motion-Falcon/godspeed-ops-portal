@@ -91,6 +91,7 @@ const getTableColumns = (
     format: (val) => formatPhoneNumber(val),
   },
   { key: "email_id", label: t("reports.columns.emailId") },
+  { key: "billing_email", label: t("reports.columns.billingEmail") },
   { key: "pay_method", label: t("reports.columns.payMethod") },
   { key: "position_category", label: t("reports.columns.positionCategory") },
   { key: "position_name", label: t("reports.columns.positionName") },

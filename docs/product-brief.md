@@ -26,7 +26,7 @@ The app has two distinct user populations:
 - **Admins / Directors** — Full access; oversee the entire operation
 - **Recruiter Directors / Managers** — Manage recruiters and their pipelines
 - **Recruiters** — Manage jobseeker profiles, match candidates to positions
-- **Bookkeepers** — Handle timesheet management and financial tracking
+- **Bookkeepers** — Primary owners of weekly payroll entry: single timesheets, two bulk-entry workflows (by client or by jobseeker), and the all-timesheets list with email follow-up
 - **Accountant Managers** — Manage invoicing and financial reporting
 - **Sales** — View clients and positions; focused on business development
 
@@ -84,13 +84,62 @@ Each user role sees a dashboard tailored to their responsibilities:
 
 ### Timesheet Management
 
-Timesheets are records of hours a jobseeker worked during a given week at a specific position.
+Timesheets are weekly records of hours a jobseeker worked at a specific client position. The timesheet area was rebuilt as a dedicated module with separate screens for single entry, two bulk workflows, and a searchable master list. Access is under the Finance section of the navigation menu.
 
-- **Individual timesheets:** Created per-jobseeker per-week. Captures regular hours, overtime hours, premium pay adjustments, bonuses, deductions, and cash/e-transfer payment method deductions (where a percentage is withheld from pay).
-- **Bulk timesheets:** A bookkeeper can create a single "bulk timesheet" that covers multiple jobseekers at once — useful for processing a weekly payroll run efficiently.
-- **Email delivery:** When creating or updating a timesheet, the system can immediately email the jobseeker a full pay summary. Bulk timesheets allow selectively emailing some or all jobseekers in the batch.
-- **Invoice number generation:** Each timesheet gets a unique, sequential invoice-style number for tracking.
+**Who can use it**
+
+| Screen | Typical users |
+| --- | --- |
+| Create / edit a single timesheet | Admin, recruiter, bookkeeper, recruiter manager, recruiter director |
+| Bulk entry (client or jobseeker) | Admin, bookkeeper |
+| All timesheets list (search, email, delete UI) | Admin, bookkeeper |
+
+#### Single timesheet (`/timesheet-management`)
+
+Used when processing one jobseeker at a time. The flow is **jobseeker → client → position → week**, with cascading dropdowns so each choice narrows the next.
+
+- **Daily hours grid:** Enter hours per day for the selected week; the form loads an existing timesheet for that combination when one already exists (create or update in place).
+- **Pay adjustments:** Bonuses and deductions with descriptions.
+- **Live payroll preview:** As hours change, the UI shows regular vs. overtime split, premium rates, payment-method-specific rules (cash / e-Transfer deductions, SIN hours cap where applicable), and totals before submit.
+- **Employee context panel:** Surfaces name, billing email, payment method, and other pay-relevant profile fields beside the form.
+- **Invoice summary:** Position pay rates, period, and per-line pay breakdown aligned with what will be stored and emailed.
+- **Optional email on save:** Checkbox to send the jobseeker a pay summary immediately; prefers billing email when set.
+
+#### Bulk timesheet — by client (`/bulk-timesheet-management`)
+
+Used for a typical weekly payroll run at one client site: one position, one week, many workers.
+
+- Select **client**, **position**, and **week**; the system loads every jobseeker currently assigned to that position (no manual multi-select list).
+- Each assigned worker gets their own expandable form on the same page (hours, adjustments, notes, per-person email toggle).
+- Workers can be removed from the batch before submit.
+- **Submit creates one timesheet per jobseeker**, each with its own invoice number — not a single combined “bulk” database row. A progress overlay shows invoice generation and per-person success, skip-on-duplicate, or partial-failure outcomes.
+- **Invoice-only subcategory positions** (invoicing without placements) show a banner and direct staff to single timesheet entry instead.
+
+#### Bulk timesheet — by job seeker (`/bulk-timesheet-management/jobseeker`)
+
+Used when one worker worked **multiple positions** (or the same client under different roles) in the same week — the mirror of the client-centric bulk flow.
+
+- Select **jobseeker**, **client**, and **week**.
+- Add one or more **position rows**; each row is a full timesheet form for that position.
+- Prefills from any existing timesheets for that jobseeker/week; supports add/remove rows and optional email-to-all on submit.
+- Same per-row invoice numbering and batch progress behavior as client bulk entry.
+
+#### All timesheets list (`/timesheet-management/list`)
+
+Central index for bookkeepers and admins (replaces the older standalone bulk list route, which redirects here).
+
+- **Filters:** Invoice number, client, position, jobseeker name, billing email, date range, email sent / not sent.
+- **Pagination** with configurable page size.
+- **Email actions:** Send or resend timesheet summary email per row from the list.
+- **Shortcuts** to start new bulk entry (client or jobseeker) from the page header.
+- Delete confirmation exists in the UI; backend delete wiring may still be incomplete (see gaps).
+
+#### Cross-cutting behavior
+
+- **Invoice numbers:** Generated sequentially per timesheet on create (bulk runs assign a unique number to each created record).
+- **Email delivery:** Templates include daily hours, rates, deductions, and totals; billing email is preferred over primary email when present.
 - **Document attachment:** Timesheet records can have a PDF document attached (e.g., a signed timesheet scan).
+- **Localization:** All timesheet screens use dedicated English and French string bundles (full UI copy for forms, bulk flows, and the list).
 
 ---
 
@@ -245,7 +294,7 @@ The portal is likely accessed via a direct URL shared with staff during onboardi
 5. **Creates positions** → adds job openings for clients with pay/bill rates
 6. **Creates or reviews jobseeker profiles** → enters worker details, uploads or triggers AI document verification
 7. **Assigns candidates** → matches jobseekers to open positions; the jobseeker receives an automated email
-8. **Creates timesheets** → records hours worked weekly; optionally emails the jobseeker their pay summary
+8. **Creates timesheets** → for recruiters/managers, usually one jobseeker at a time via single timesheet entry; bookkeepers often use client bulk (whole position for a week) or jobseeker bulk (one worker across multiple positions), then review and resend emails from the all-timesheets list
 9. **Creates invoices** → bills the client for services; sends invoice via email with PDF attachment
 10. **Runs reports** → exports data for payroll, margin analysis, or client records
 11. **Reviews consent status** → monitors which jobseekers/clients have signed required agreements
@@ -291,6 +340,8 @@ There is **no subscription, usage-based pricing, or freemium model** visible in 
 
 - **Route Path Anomaly:** There is a noted bug where a profile-checking route (`/api/profile/check-email`) may be mounted at an incorrect URL path due to how the jobseekers router registers it. This is a known issue flagged in the project notes.
 
+- **Timesheet delete from list:** The all-timesheets list shows a delete confirmation modal, but the confirm action is not fully wired to the API yet (placeholder handler). Email resend from the list is working.
+
 ### Scalability Constraints
 
 - Several list and report endpoints fetch a broad set of data from the database and then filter it in application code (rather than in the database query). This works fine at small scale but could become slow as the dataset grows.
@@ -335,4 +386,4 @@ Based on the codebase, feature scaffolding, and documentation, the product appea
 
 ---
 
-*Last updated: May 2026. Document generated from full codebase analysis.*
+*Last updated: May 24, 2026 — timesheet module section refreshed after single/bulk/list refactor and jobseeker-centric bulk entry.*
