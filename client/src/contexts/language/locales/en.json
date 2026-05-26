@@ -2682,6 +2682,7 @@
       "jobseekerName": "Jobseeker Name",
       "phoneNumber": "Phone Number",
       "emailId": "Email ID",
+      "billingEmail": "Billing Email",
       "payMethod": "Pay Method",
       "positionName": "Position Name",
       "totalAmount": "Total Amount",

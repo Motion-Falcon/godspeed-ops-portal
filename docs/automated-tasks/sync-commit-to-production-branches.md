@@ -29,7 +29,7 @@ I will provide one or more commit SHAs (full or short). Apply them **oldest firs
 
 Optional flags I may add:
 
-- `push` — after all cherry-picks succeed on a branch, `git push origin <branch>`
+- `no-push` — do **not** push to `origin` (default is to push when there are no conflicts; see §4)
 - `no-pull` — skip `git pull` before cherry-pick (default is to pull each production branch first)
 
 ---
@@ -82,7 +82,13 @@ For each production branch in order: **allstaff-production** → **canhire-produ
    |--------|----------|---------|----------|---------|-------|
    | `<short-sha>` | ok / conflict / skipped | … | … | … | |
 
-3. If I included `push`: push only branches where cherry-pick completed successfully; report any branch not pushed.
+3. **Push (default)** — unless I said `no-push`:
+   - If **every** cherry-pick for **every** requested commit succeeded on **all four** branches with **no unresolved conflicts**, push all four production branches to `origin`:
+     - `git push origin allstaff-production canhire-production godspeed-production hdgroup-production`
+     - Or push each branch individually if a single combined push fails.
+   - Report the pushed ref ranges (e.g. `4192d5e..73a0f65`).
+   - If **any** cherry-pick hit a conflict and was not fully completed on all four branches: **do not push** anything. Tell me which branches are ahead locally and wait for my direction.
+   - If some branches succeeded and others conflicted mid-run: push **only** branches that fully completed all requested cherry-picks for this session, and say explicitly which were not pushed.
 
 ### 5. Safety rules (non-negotiable)
 
@@ -97,7 +103,7 @@ For each production branch in order: **allstaff-production** → **canhire-produ
 
 ## How I invoke this
 
-Minimal message in chat:
+Minimal message in chat (cherry-pick + push on success):
 
 ```text
 Run docs/automated-tasks/sync-commit-to-production-branches.md
@@ -107,10 +113,10 @@ Commits:
 b534379
 ```
 
-With push:
+Skip push (local cherry-picks only):
 
 ```text
-Run docs/automated-tasks/sync-commit-to-production-branches.md push
+Run docs/automated-tasks/sync-commit-to-production-branches.md no-push
 
 Commits:
 03fa4fa
@@ -120,5 +126,5 @@ Commits:
 
 ## Success criteria
 
-- Each given commit exists on all four production branches (new cherry-pick commits with `-x` metadata), **or**
-- You stopped on the first conflict with a clear report and the repo is in a recoverable state (`cherry-pick --continue` or `--abort` documented).
+- Each given commit exists on all four production branches (new cherry-pick commits with `-x` metadata), **and** those branches are pushed to `origin` (unless `no-push` or a conflict stopped the run), **or**
+- You stopped on the first conflict with a clear report, **did not push** (unless some branches fully completed—in that case only those are pushed), and the repo is in a recoverable state (`cherry-pick --continue` or `--abort` documented).
