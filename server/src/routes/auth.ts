@@ -39,6 +39,18 @@ const normalizeToE164 = (phone?: string) => {
   return trimmed.startsWith('+') ? trimmed : `+${trimmed}`;
 };
 
+// Helper function to check if user is a recruiter based on email
+const isRecruiterEmail = (email: string): boolean => {
+  return (
+    email.includes("@godspeedxp") ||
+    email.includes("@motionfalcon") ||
+    email.includes("@canhiresolutions") ||
+    email.includes("@hiresolutions") ||
+    email.includes("@allstaff") ||
+    email.includes("@hdgroup")
+  );
+};
+
 // Send phone verification code
 router.post('/send-verification', async (req, res) => {
   try {
@@ -219,7 +231,7 @@ router.post('/register',
       let userType = "jobseeker"; // Default type
 
       // Check for recruiter email pattern
-      if (email.includes("@godspeedxp") || email.includes("@motionfalcon")) {
+      if (isRecruiterEmail(email)) {
         userType = "recruiter";
       }
 
@@ -343,13 +355,7 @@ router.post('/validate-credentials', async (req, res) => {
     }
 
     // Determine if user is a recruiter or admin based on email
-    const isRecruiterOrAdmin = (
-      email.includes("@godspeedxp") ||
-      email.includes("@motionfalcon") ||
-      email.includes("@canhiresolutions") ||
-      email.includes("@allstaff") ||
-      email.includes("@hdgroup")
-    ); // Add your admin email domain(s) here
+    const isRecruiterOrAdmin = isRecruiterEmail(email);
 
     // For recruiters or admins, we validate credentials without creating a session
     if (isRecruiterOrAdmin) {
