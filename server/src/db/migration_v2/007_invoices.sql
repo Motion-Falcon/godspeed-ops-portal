@@ -222,3 +222,33 @@ COMMENT ON COLUMN public.invoices.invoice_number IS 'Auto-generated unique invoi
 COMMENT ON COLUMN public.invoices.invoice_sent_to IS 'Email address where the invoice was sent to.';
 COMMENT ON COLUMN public.invoices.version_history IS 'Optional JSON audit metadata for versioned updates';
 COMMENT ON COLUMN public.invoices.notes IS 'Additional notes or comments about the invoice';
+
+-- ===== STORAGE BUCKET RLS POLICIES =====
+-- Files in the 'invoices' bucket are stored under {client_id}/{invoice_number}/...
+-- (NOT under user_id), so policies must allow any authenticated user to access them.
+
+DROP POLICY IF EXISTS "Allow authenticated users to upload invoice attachments" ON storage.objects;
+DROP POLICY IF EXISTS "Allow authenticated users to select invoice attachments" ON storage.objects;
+DROP POLICY IF EXISTS "Allow authenticated users to update invoice attachments" ON storage.objects;
+DROP POLICY IF EXISTS "Allow authenticated users to delete invoice attachments" ON storage.objects;
+
+CREATE POLICY "Allow authenticated users to upload invoice attachments"
+  ON storage.objects FOR INSERT
+  TO authenticated
+  WITH CHECK (bucket_id = 'invoices');
+
+CREATE POLICY "Allow authenticated users to select invoice attachments"
+  ON storage.objects FOR SELECT
+  TO authenticated
+  USING (bucket_id = 'invoices');
+
+CREATE POLICY "Allow authenticated users to update invoice attachments"
+  ON storage.objects FOR UPDATE
+  TO authenticated
+  USING (bucket_id = 'invoices')
+  WITH CHECK (bucket_id = 'invoices');
+
+CREATE POLICY "Allow authenticated users to delete invoice attachments"
+  ON storage.objects FOR DELETE
+  TO authenticated
+  USING (bucket_id = 'invoices');
