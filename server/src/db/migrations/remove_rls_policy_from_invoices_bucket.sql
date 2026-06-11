@@ -297,4 +297,34 @@ INSERT INTO public.invoices (
 SELECT invoice_number, status, grand_total, invoice_data->'client'->>'companyName' as client_name FROM public.invoices;
 SELECT * FROM public.invoices WHERE invoice_data->'client'->>'companyName' = 'Test Company';
 SELECT * FROM public.invoices WHERE invoice_data->'totals'->>'grandTotal' > '500';
-*/ 
+*/
+
+-- ===== STORAGE BUCKET RLS POLICIES =====
+-- Files in the 'invoices' bucket are stored under {client_id}/{invoice_number}/...
+-- (NOT under user_id), so policies must allow any authenticated user to access them.
+
+DROP POLICY IF EXISTS "Allow authenticated users to upload invoice attachments" ON storage.objects;
+DROP POLICY IF EXISTS "Allow authenticated users to select invoice attachments" ON storage.objects;
+DROP POLICY IF EXISTS "Allow authenticated users to update invoice attachments" ON storage.objects;
+DROP POLICY IF EXISTS "Allow authenticated users to delete invoice attachments" ON storage.objects;
+
+CREATE POLICY "Allow authenticated users to upload invoice attachments"
+  ON storage.objects FOR INSERT
+  TO authenticated
+  WITH CHECK (bucket_id = 'invoices');
+
+CREATE POLICY "Allow authenticated users to select invoice attachments"
+  ON storage.objects FOR SELECT
+  TO authenticated
+  USING (bucket_id = 'invoices');
+
+CREATE POLICY "Allow authenticated users to update invoice attachments"
+  ON storage.objects FOR UPDATE
+  TO authenticated
+  USING (bucket_id = 'invoices')
+  WITH CHECK (bucket_id = 'invoices');
+
+CREATE POLICY "Allow authenticated users to delete invoice attachments"
+  ON storage.objects FOR DELETE
+  TO authenticated
+  USING (bucket_id = 'invoices'); 
