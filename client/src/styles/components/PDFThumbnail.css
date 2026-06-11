@@ -88,6 +88,25 @@
   font-size: 12px;
 }
 
+.pdf-thumbnail-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 100%;
+  color: #aaa;
+}
+
+.pdf-thumbnail-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: #aaa;
+  text-transform: uppercase;
+}
+
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -115,6 +134,11 @@
   
   .pdf-thumbnail-error {
     color: #ff6b6b;
+  }
+
+  .pdf-thumbnail-placeholder,
+  .pdf-thumbnail-label {
+    color: #666;
   }
 }
 
