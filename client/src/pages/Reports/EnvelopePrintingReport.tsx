@@ -450,7 +450,18 @@ export function EnvelopePrintingReport() {
               className="button"
               onClick={() => {
                 const reportGeneratedDate = new Date().toLocaleDateString();
-                const csvData = reportRows.map((row) => {
+                const sortedRows = [...reportRows].sort((a, b) => {
+                  const clientA = (a.client_name || "").toLowerCase();
+                  const clientB = (b.client_name || "").toLowerCase();
+                  if (clientA < clientB) return -1;
+                  if (clientA > clientB) return 1;
+                  const nameA = (a.jobseeker_name || "").toLowerCase();
+                  const nameB = (b.jobseeker_name || "").toLowerCase();
+                  if (nameA < nameB) return -1;
+                  if (nameA > nameB) return 1;
+                  return 0;
+                });
+                const csvData = sortedRows.map((row) => {
                   const csvRow: Record<string, unknown> = {};
                   csvColumns.forEach((col) => {
                     if (col.key === "report_generated_date") return;
