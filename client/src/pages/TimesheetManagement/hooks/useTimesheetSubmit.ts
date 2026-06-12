@@ -10,6 +10,7 @@ export interface GenerateTimesheetSubmitParams {
   weekStart: string;
   emailPreferences: Record<string, boolean>;
   refetchWeekTimesheets?: () => Promise<void>;
+  onSuccessReset?: () => void;
 }
 
 export function useTimesheetSubmit() {
@@ -39,6 +40,7 @@ export function useTimesheetSubmit() {
       weekStart,
       emailPreferences: prefs,
       refetchWeekTimesheets,
+      onSuccessReset,
     }: GenerateTimesheetSubmitParams) => {
       if (!timesheetsToProcess.length || !jobseeker || !position || !weekStart) {
         setGenerationError(
@@ -75,7 +77,14 @@ export function useTimesheetSubmit() {
         }
 
         setGenerationMessage(message);
-        await refetchWeekTimesheets?.();
+        
+        if (onSuccessReset) {
+          onSuccessReset();
+          setTimeout(() => setGenerationMessage(""), 5000);
+        } else {
+          await refetchWeekTimesheets?.();
+          setTimeout(() => setGenerationMessage(""), 5000);
+        }
       } catch (error) {
         console.error("Error processing timesheets:", error);
         setGenerationError(
