@@ -58,6 +58,7 @@ import { InvoiceReport } from './pages/Reports/InvoiceReport';
 import { ClientsReport } from './pages/Reports/ClientsReport';
 import { SalesReport } from './pages/Reports/SalesReport';
 import { EnvelopePrintingReport } from './pages/Reports/EnvelopePrintingReport';
+import { EnvelopePrintingByDueDateReport } from './pages/Reports/EnvelopePrintingByDueDateReport';
 import { LanguageProvider } from "./contexts/language/language-provider";
 import './styles/main.css';
 import { Dashboard } from './pages/Dashboard/Dashboard';
@@ -251,6 +252,7 @@ function App() {
                   <Route path="/reports/clients" element={<ClientsReport />} />
                   <Route path="/reports/sales" element={<SalesReport />} />
                   <Route path="/reports/envelope-printing-position" element={<EnvelopePrintingReport />} />
+                  <Route path="/reports/envelope-printing-by-due-date" element={<EnvelopePrintingByDueDateReport />} />
                 </Route>
 
                 <Route element={<RoleRoute allowedRoles={RECRUITER_HIERARCHY_ROLES} />}>

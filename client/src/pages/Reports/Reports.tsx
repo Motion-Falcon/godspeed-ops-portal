@@ -70,6 +70,13 @@ const getReportCategories = (t: (key: string) => string) => [
         to: '/reports/envelope-printing-position',
       },
       {
+        id: 'envelope-printing-by-due-date',
+        icon: <FileText size={20} color="#E040FB" />,
+        title: t('reports.types.envelopePrintingByDueDate.title') || 'Envelope Printing Report (By Due Date)',
+        description: t('reports.types.envelopePrintingByDueDate.description') || 'View envelope printing report filtered by payment due date.',
+        to: '/reports/envelope-printing-by-due-date',
+      },
+      {
         id: 'clients',
         icon: <Users size={20} color="#607D8B" />,
         title: t('reports.types.clients.title'),
