@@ -188,6 +188,13 @@ export function useTimesheetSelection() {
     setSelectedWeekStart(option.value as string);
   };
 
+  const resetSelection = useCallback(() => {
+    setSelectedJobseeker(null);
+    setSelectedClient(null);
+    setSelectedPosition(null);
+    setSelectedWeekStart("");
+  }, []);
+
   return {
     jobseekers,
     selectedJobseeker,
@@ -212,5 +219,6 @@ export function useTimesheetSelection() {
     handleClientSelect,
     handlePositionSelect,
     handleWeekSelect,
+    resetSelection,
   };
 }
