@@ -161,6 +161,10 @@ export function TimesheetManagement() {
                       weekStart: selection.selectedWeekStart,
                       emailPreferences: submit.emailPreferences,
                       refetchWeekTimesheets: refetch,
+                      onSuccessReset: () => {
+                        selection.resetSelection();
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                      },
                     })
                   }
                   isGenerating={submit.isGeneratingTimesheet}
