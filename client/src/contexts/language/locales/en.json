@@ -2557,6 +2557,10 @@
         "title": "Envelope Printing (Position Details)",
         "description": "Print envelopes with detailed position information for selected users."
       },
+      "envelopePrintingByDueDate": {
+        "title": "Envelope Printing (By Due Date)",
+        "description": "Print envelopes with detailed position information filtered by payment due date."
+      },
       "clients": {
         "title": "Clients",
         "description": "View and export client lists and details."
@@ -2574,7 +2578,8 @@
       "jobseekers": "Jobseekers",
       "salesPerson": "Sales Person",
       "startDate": "Start Date",
-      "endDate": "End Date"
+      "endDate": "End Date",
+      "dueDate": "Payment Due Date"
     },
     "placeholders": {
       "selectJobSeeker": "Select job seeker...",
@@ -2714,7 +2719,8 @@
       "status": "Status"
     },
     "info": {
-      "defaultDateRange": "Default date range: Last 1 month"
+      "defaultDateRange": "Default date range: Last 1 month",
+      "singleDateRange": "Showing timesheets due on this exact date"
     }
   },
   "legal": {

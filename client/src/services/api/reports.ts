@@ -370,3 +370,23 @@ export const getEnvelopePrintingReport = async (
     throw error;
   }
 }; 
+
+export interface EnvelopePrintingByDueDateReportFilter {
+  clientIds: string[];
+  dueDate: string;
+  payCycle?: string | string[];
+}
+
+export const getEnvelopePrintingByDueDateReport = async (
+  filters: EnvelopePrintingByDueDateReportFilter
+): Promise<EnvelopePrintingReportRow[]> => {
+  try {
+    const response = await api.post("/api/reports/envelope-printing-by-due-date", filters);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(error.response.data.error || "Failed to fetch envelope printing report by due date");
+    }
+    throw error;
+  }
+};
