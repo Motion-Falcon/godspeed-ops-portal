@@ -11,11 +11,11 @@ import {
   DropdownOption,
 } from "../../components/CustomDropdown";
 import { useLanguage } from "../../contexts/language/language-provider";
-import { Loader2, Calendar, Building, List, Repeat } from "lucide-react";
+import { Loader2, Calendar, Building, Repeat } from "lucide-react";
 import { formatDate as formatWeekDate } from "../TimesheetManagement/functions/weekUtils";
 import { PAY_CYCLES } from "../../constants/formOptions";
 import { exportToCSV } from "../../utils/csvExport";
-import { getDropdownOptions } from "../../services/api/dropdownOptions";
+
 
 const formatCurrency = (value: unknown): string => {
   if (value === undefined || value === null || value === "" || value === "N/A") {
