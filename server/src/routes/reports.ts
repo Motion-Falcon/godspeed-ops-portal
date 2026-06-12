@@ -1374,4 +1374,238 @@ router.post(
   }
 );
 
+// POST /api/reports/envelope-printing-by-due-date
+router.post(
+  "/envelope-printing-by-due-date",
+  authenticateToken,
+  authorizeRoles(["admin", "recruiter"]),
+  async (req: Request, res: Response) => {
+    try {
+      const { clientIds, dueDate, payCycle } =
+        req.body || {};
+
+      if (!Array.isArray(clientIds) || clientIds.length === 0) {
+        return res.status(400).json({ error: "At least one client is required." });
+      }
+
+      const { data: clientsData, error: clientsError } = await supabase
+        .from("clients")
+        .select(
+          "id, company_name, short_code, list_name, city1, province1, pay_cycle, sales_person, currency, last_activity_at, created_at"
+        )
+        .in("id", clientIds);
+
+      if (clientsError) {
+        console.error("Error fetching clients:", clientsError);
+        return res.status(500).json({ error: "Failed to fetch clients." });
+      }
+
+      const clientInfoMap: Record<string, any> = {};
+      (clientsData || []).forEach((client: any) => {
+        clientInfoMap[client.id] = client;
+      });
+
+      const { data: positionsData, error: positionsError } = await supabase
+        .from("positions")
+        .select("id, client")
+        .in("client", clientIds);
+
+      if (positionsError) {
+        console.error("Error fetching positions:", positionsError);
+        return res.status(500).json({ error: "Failed to fetch positions." });
+      }
+
+      const positionIds = (positionsData || []).map((p: { id: string }) => p.id);
+      if (positionIds.length === 0) {
+        return res.json([]);
+      }
+
+      let timesheetQuery = supabase
+        .from("timesheets")
+        .select(
+          `
+          id,
+          jobseeker_profile_id,
+          position_id,
+          week_start_date,
+          week_end_date,
+          total_regular_hours,
+          total_overtime_hours,
+          regular_pay_rate,
+          premium_pay_rate,
+          overtime_pay_rate,
+          total_jobseeker_pay,
+          jobseeker_profiles:jobseeker_profile_id (
+            employee_id,
+            license_number,
+            passport_number,
+            first_name,
+            last_name,
+            mobile,
+            email,
+            billing_email,
+            payment_method,
+            last_activity_at,
+            created_at
+          ),
+          positions:position_id (
+            title,
+            position_number,
+            position_category,
+            client
+          )
+        `
+        )
+        .in("position_id", positionIds)
+        .order("week_end_date", { ascending: true });
+
+      if (dueDate) {
+        const d = new Date(dueDate);
+        if (!isNaN(d.getTime())) {
+          d.setDate(d.getDate() - 35);
+          timesheetQuery = timesheetQuery.gte("week_start_date", d.toISOString().split("T")[0]);
+        }
+        // Also limit the week_end_date to the dueDate itself, because a timesheet week_end_date cannot be after its own payment due date
+        timesheetQuery = timesheetQuery.lte("week_end_date", dueDate);
+      }
+
+      const { data: timesheetRows, error: timesheetError } = await timesheetQuery;
+
+      if (timesheetError) {
+        console.error("Error fetching envelope printing timesheets:", timesheetError);
+        return res
+          .status(500)
+          .json({ error: "Failed to fetch envelope printing report." });
+      }
+
+      const { data: invoices, error: invoicesError } = await supabase
+        .from("invoices")
+        .select(
+          "invoice_number, invoice_date, due_date, client_id, invoice_data"
+        )
+        .in("client_id", clientIds);
+
+      if (invoicesError) {
+        console.error("Error fetching invoices for envelope report:", invoicesError);
+        return res.status(500).json({ error: "Failed to fetch invoices." });
+      }
+
+      const invoicesByClient: Record<string, typeof invoices> = {};
+      (invoices || []).forEach((inv: any) => {
+        if (!invoicesByClient[inv.client_id]) {
+          invoicesByClient[inv.client_id] = [];
+        }
+        invoicesByClient[inv.client_id].push(inv);
+      });
+
+      const payCycleArray = payCycle
+        ? Array.isArray(payCycle)
+          ? payCycle
+          : [payCycle]
+        : [];
+
+      const envelopeData: any[] = [];
+
+      (timesheetRows || []).forEach((row: any) => {
+        const position = row.positions || {};
+        const clientId = position.client;
+        if (!clientId || !clientInfoMap[clientId]) return;
+
+        const client = clientInfoMap[clientId];
+        const jp = row.jobseeker_profiles || {};
+
+        if (
+          payCycleArray.length > 0 &&
+          !payCycleArray.includes(client.pay_cycle)
+        ) {
+          return;
+        }
+
+        if (!row.jobseeker_profile_id || !row.position_id) return;
+
+        const paymentDueDate = computePaymentDueDate(
+          client.pay_cycle,
+          row.week_start_date,
+          row.week_end_date
+        );
+
+        if (dueDate && paymentDueDate !== dueDate) {
+          return;
+        }
+
+        const matchedInvoice = resolveEnvelopeInvoice(
+          row.jobseeker_profile_id,
+          row.position_id,
+          invoicesByClient[clientId] || []
+        );
+
+        const totalAmount = Number(row.total_jobseeker_pay) || 0;
+        const totalFormatted = totalAmount.toFixed(2);
+
+        envelopeData.push({
+          city: client.city1 || "",
+          list_name: client.list_name || "",
+          week_ending: row.week_end_date || "",
+          client_name: client.company_name || "",
+          sales_person: client.sales_person || "",
+          short_code: client.short_code || "",
+          work_province: client.province1 || "",
+          pay_cycle: client.pay_cycle || "",
+          jobseeker_id: jp.employee_id || "",
+          license_number: jp.license_number || "",
+          passport_number: jp.passport_number || "",
+          jobseeker_name: `${jp.first_name || ""} ${jp.last_name || ""}`.trim(),
+          phone_number: jp.mobile || "",
+          email_id: jp.email || "",
+          billing_email: jp.billing_email || "",
+          pay_method: jp.payment_method || "",
+          position_category: position.position_category || "",
+          position_name: position.title
+            ? `${position.title} [${position.position_number || ""}]`
+            : "",
+          hours: (Number(row.total_regular_hours) || 0).toString(),
+          overtime_hours: (Number(row.total_overtime_hours) || 0).toString(),
+          regular_pay_rate: (Number(row.regular_pay_rate) || 0).toFixed(2),
+          premium_pay_rate: (Number(row.premium_pay_rate) || 0).toFixed(2),
+          overtime_pay_rate: (Number(row.overtime_pay_rate) || 0).toFixed(2),
+          total_amount: totalFormatted,
+          tax_rate: "0.00",
+          hst_gst: "0.00",
+          line_amount: totalFormatted,
+          invoice_number: matchedInvoice?.invoice_number ?? "",
+          invoice_date: matchedInvoice?.invoice_date ?? "",
+          payment_due_date: paymentDueDate ?? "",
+          currency: client.currency || "",
+          client_is_inactive: checkClientInactive(
+            client.last_activity_at,
+            client.created_at
+          ),
+          jobseeker_is_inactive: checkJobseekerInactive(
+            jp.last_activity_at,
+            jp.created_at
+          ),
+        });
+      });
+
+      const numberedEnvelopeData = envelopeData.map((row, index) => {
+        const sequenceNumber = index + 1;
+        return {
+          sequence_number: sequenceNumber,
+          sr_no: buildEnvelopeSrNo(
+            row.short_code,
+            row.week_ending,
+            sequenceNumber
+          ),
+          ...row,
+        };
+      });
+
+      res.json(numberedEnvelopeData);
+    } catch (error) {
+      console.error("Unexpected error in envelope printing report by due date:", error);
+      return res.status(500).json({ error: "An unexpected error occurred." });
+    }
+  }
+);
+
 export default router;
