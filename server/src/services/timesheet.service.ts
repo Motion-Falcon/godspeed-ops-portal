@@ -219,8 +219,8 @@ export async function getAllTimesheets(
           week_end_date,
           total_jobseeker_pay,
           email_sent,
-          jobseeker_profiles!inner(first_name, last_name, email, billing_email),
-          positions!inner(title, position_code, client_name)
+          jobseeker_profiles!inner(id, first_name, last_name, email, billing_email),
+          positions!inner(id, title, position_code, client_name, client)
         `);
 
   if (userType === "jobseeker") {
@@ -266,8 +266,8 @@ export async function getAllTimesheets(
           week_end_date,
           total_jobseeker_pay,
           email_sent,
-          jobseeker_profiles!inner(first_name, last_name, email, billing_email),
-          positions!inner(title, position_code, client_name)
+          jobseeker_profiles!inner(id, first_name, last_name, email, billing_email),
+          positions!inner(id, title, position_code, client_name, client)
         `,
     { count: "exact", head: true }
   );
