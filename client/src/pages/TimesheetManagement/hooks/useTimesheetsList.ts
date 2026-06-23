@@ -6,7 +6,7 @@ import {
   type Dispatch,
   type SetStateAction,
 } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   getTimesheets,
   type TimesheetListItem,
@@ -69,9 +69,11 @@ export interface UseTimesheetsListResult {
   handleCancelDelete: () => void;
   handleConfirmDelete: () => Promise<void>;
   sendEmailToJobseeker: (timesheetId: string, jobseekerName: string) => Promise<void>;
+  handleEditTimesheet: (timesheet: TimesheetListItem) => void;
 }
 
 export function useTimesheetsList(t: TimesheetsListT): UseTimesheetsListResult {
+  const navigate = useNavigate();
   const location = useLocation();
 
   /** Skip resetting page once after URL parses so bookmarked page+filters work. */
@@ -267,6 +269,24 @@ export function useTimesheetsList(t: TimesheetsListT): UseTimesheetsListResult {
     [t]
   );
 
+  const handleEditTimesheet = useCallback(
+    (timesheet: TimesheetListItem) => {
+      const profileId = timesheet.jobseeker_profiles?.id ?? "";
+      const clientId = timesheet.positions?.client ?? "";
+      const positionId = timesheet.positions?.id ?? "";
+      const weekStart = timesheet.week_start_date ?? "";
+
+      const params = new URLSearchParams();
+      if (profileId) params.set("profileId", profileId);
+      if (clientId) params.set("clientId", clientId);
+      if (positionId) params.set("positionId", positionId);
+      if (weekStart) params.set("weekStart", weekStart);
+
+      navigate(`/timesheet-management?${params.toString()}`);
+    },
+    [navigate]
+  );
+
   return {
     timesheets,
     loading,
@@ -305,5 +325,6 @@ export function useTimesheetsList(t: TimesheetsListT): UseTimesheetsListResult {
     handleCancelDelete,
     handleConfirmDelete,
     sendEmailToJobseeker,
+    handleEditTimesheet,
   };
 }
