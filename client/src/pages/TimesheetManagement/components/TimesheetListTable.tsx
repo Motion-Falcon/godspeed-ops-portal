@@ -1,4 +1,4 @@
-import { Mail } from "lucide-react";
+import { Mail, Pencil } from "lucide-react";
 import type { TimesheetListItem } from "../../../services/api/timesheet";
 import {
   getTimesheetListClientDisplayName,
@@ -6,13 +6,14 @@ import {
   type TimesheetListT,
 } from "../functions/timesheetListDisplay";
 
-const LIST_COLUMNS = 8;
+const LIST_COLUMNS = 9;
 
 interface TimesheetListRowProps {
   timesheet: TimesheetListItem;
   t: TimesheetListT;
   sendingJobseekerEmail: Record<string, boolean>;
   onSendEmail: (timesheetId: string, jobseekerName: string) => Promise<void>;
+  onEditTimesheet: (timesheet: TimesheetListItem) => void;
 }
 
 function TimesheetListRow({
@@ -20,6 +21,7 @@ function TimesheetListRow({
   t,
   sendingJobseekerEmail,
   onSendEmail,
+  onEditTimesheet,
 }: TimesheetListRowProps) {
   const profile = timesheet.jobseeker_profiles;
   const fullName = profile
@@ -89,6 +91,17 @@ function TimesheetListRow({
           </button>
         </div>
       </td>
+      <td className="actions-cell">
+        <button
+          className="button button-xs edit-timesheet-btn"
+          type="button"
+          onClick={() => onEditTimesheet(timesheet)}
+          title={`Edit timesheet for ${fullName}`}
+        >
+          <Pencil size={14} className="edit-icon" />{" "}
+          Edit
+        </button>
+      </td>
       <td className="total-pay-cell">
         ${timesheet.total_jobseeker_pay.toFixed(2)}
       </td>
@@ -135,6 +148,7 @@ interface TimesheetListTableProps {
   setEmailSentFilter: (v: string) => void;
   sendingJobseekerEmail: Record<string, boolean>;
   onSendEmail: (timesheetId: string, jobseekerName: string) => Promise<void>;
+  onEditTimesheet: (timesheet: TimesheetListItem) => void;
 }
 
 export function TimesheetListTable(props: TimesheetListTableProps) {
@@ -161,6 +175,7 @@ export function TimesheetListTable(props: TimesheetListTableProps) {
     setEmailSentFilter,
     sendingJobseekerEmail,
     onSendEmail,
+    onEditTimesheet,
   } = props;
 
   const rowSkeletonCount = pagination.limit || 10;
@@ -345,6 +360,14 @@ export function TimesheetListTable(props: TimesheetListTableProps) {
                 className="column-filter"
                 style={{ alignItems: "center" }}
               >
+                <div className="column-title">Actions</div>
+              </div>
+            </th>
+            <th>
+              <div
+                className="column-filter"
+                style={{ alignItems: "center" }}
+              >
                 <div className="column-title">Total Pay</div>
               </div>
             </th>
@@ -371,6 +394,7 @@ export function TimesheetListTable(props: TimesheetListTableProps) {
                 t={t}
                 sendingJobseekerEmail={sendingJobseekerEmail}
                 onSendEmail={onSendEmail}
+                onEditTimesheet={onEditTimesheet}
               />
             ))
           )}
