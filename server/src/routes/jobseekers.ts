@@ -933,6 +933,80 @@ router.get("/profile/:id", async (req, res) => {
 });
 
 /**
+ * @route PUT /api/jobseekers/profile/:id/activate
+ * @desc Explicitly update the last_activity_at timestamp to mark jobseeker as active
+ * @access Public (Owner, Admin, Recruiter)
+ */
+router.put(
+  "/profile/:id/activate",
+  activityLogger({
+    onSuccess: (req, res) => {
+      const currentProfile = res.locals.currentProfile || {};
+      const profileName =
+        currentProfile.first_name && currentProfile.last_name
+          ? `${currentProfile.first_name} ${currentProfile.last_name}`.trim()
+          : currentProfile.email || "Unknown";
+
+      return {
+        actionType: "verify_jobseeker", // Reusing an existing action type for tracking
+        actionVerb: "marked as active",
+        primaryEntityType: "jobseeker",
+        primaryEntityId: req.params.id,
+        primaryEntityName: profileName,
+        displayMessage: `Marked jobseeker profile for ${profileName} as active`,
+        category: "candidate_management" as const,
+        priority: "normal" as const,
+        status: "completed",
+        metadata: {
+          profileId: req.params.id,
+          email: currentProfile.email,
+        },
+      };
+    },
+  }),
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      // Get current profile
+      const { data: currentProfile, error: fetchError } = await supabaseAdmin
+        .from("jobseeker_profiles")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+      if (fetchError) {
+        console.error("Error fetching current profile:", fetchError);
+        if (fetchError.code === "PGRST116") {
+          return res.status(404).json({ error: "Profile not found" });
+        }
+        return res.status(500).json({ error: "Failed to fetch profile" });
+      }
+
+      res.locals.currentProfile = currentProfile;
+
+      // Force update of last_activity_at
+      const { error } = await supabaseAdmin
+        .from("jobseeker_profiles")
+        .update({ last_activity_at: new Date().toISOString() })
+        .eq("id", id);
+
+      if (error) {
+        console.error("Error activating profile:", error);
+        return res.status(500).json({ error: "Failed to mark profile as active" });
+      }
+
+      res.json({ message: "Profile marked as active successfully" });
+    } catch (error) {
+      console.error("Unexpected error activating jobseeker:", error);
+      res.status(500).json({
+        error: "An unexpected error occurred while activating the profile",
+      });
+    }
+  }
+);
+
+/**
  * @route PUT /api/jobseekers/:id/status
  * @desc Update a jobseeker profile status
  * @access Public (Owner, Admin, Recruiter)

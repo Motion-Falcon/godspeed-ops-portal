@@ -131,6 +131,20 @@ export const updateJobseekerStatus = async (
   }
 };
 
+export const activateJobseeker = async (id: string) => {
+  try {
+    const response = await api.put(`/api/jobseekers/profile/${id}/activate`);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(
+        error.response.data.error || "Failed to activate jobseeker"
+      );
+    }
+    throw error;
+  }
+};
+
 // Add delete jobseeker function
 export const deleteJobseeker = async (
   id: string
