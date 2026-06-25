@@ -25,8 +25,8 @@ CREATE TABLE IF NOT EXISTS public.timesheets (
     daily_hours JSONB NOT NULL DEFAULT '[]'::jsonb,
     
     -- Weekly calculations
-    total_regular_hours DECIMAL(5,2) DEFAULT 0 NOT NULL,
-    total_overtime_hours DECIMAL(5,2) DEFAULT 0 NOT NULL,
+    total_regular_hours DECIMAL(8,2) DEFAULT 0 NOT NULL,
+    total_overtime_hours DECIMAL(8,2) DEFAULT 0 NOT NULL,
     regular_pay_rate DECIMAL(10,2) DEFAULT 0 NOT NULL,
     overtime_pay_rate DECIMAL(10,2) DEFAULT 0 NOT NULL,
     regular_bill_rate DECIMAL(10,2) DEFAULT 0 NOT NULL,
