@@ -141,35 +141,37 @@ export function useTimesheetSelection() {
 
   const jobseekerOptions: DropdownOption[] = useMemo(
     () =>
-      jobseekers.map((jobseeker) => {
-        const phoneNumber = (
-          jobseeker as JobSeekerProfile & { phoneNumber?: string }
-        ).phoneNumber;
-        const employeeId = (
-          jobseeker as JobSeekerProfile & { employeeId?: string }
-        ).employeeId;
-        return {
-          id: jobseeker.id,
-          label: jobseeker.name || jobseeker.email || "Unknown",
-          sublabel: [jobseeker.email, phoneNumber, employeeId]
-            .filter(Boolean)
-            .join(" - "),
-          value: jobseeker,
-          isInactive: jobseeker.isInactive,
-        };
-      }),
+      jobseekers
+        .filter((jobseeker) => !jobseeker.isInactive)
+        .map((jobseeker) => {
+          const phoneNumber = (
+            jobseeker as JobSeekerProfile & { phoneNumber?: string }
+          ).phoneNumber;
+          const employeeId = (
+            jobseeker as JobSeekerProfile & { employeeId?: string }
+          ).employeeId;
+          return {
+            id: jobseeker.id,
+            label: jobseeker.name || jobseeker.email || "Unknown",
+            sublabel: [jobseeker.email, phoneNumber, employeeId]
+              .filter(Boolean)
+              .join(" - "),
+            value: jobseeker,
+          };
+        }),
     [jobseekers]
   );
 
   const clientOptions: DropdownOption[] = useMemo(
     () =>
-      clients.map((client) => ({
-        id: client.id!,
-        label: client.companyName || "Unknown Client",
-        sublabel: client.shortCode || "",
-        value: client,
-        isInactive: client.isInactive,
-      })),
+      clients
+        .filter((client) => !client.isInactive)
+        .map((client) => ({
+          id: client.id!,
+          label: client.companyName || "Unknown Client",
+          sublabel: client.shortCode || "",
+          value: client,
+        })),
     [clients]
   );
 
