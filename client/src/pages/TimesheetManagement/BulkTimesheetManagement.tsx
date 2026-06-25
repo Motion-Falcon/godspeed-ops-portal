@@ -104,15 +104,17 @@ export function BulkTimesheetManagement() {
     }
   }, [rows]);
 
-  const clientOptions: DropdownOption[] = clients.map((client) => ({
-    id: client.id!,
-    label:
-      client.companyName ||
-      t("bulkTimesheetManagement.constants.unknownClient"),
-    sublabel: client.shortCode || "",
-    value: client,
-    isInactive: client.isInactive,
-  }));
+  const clientOptions: DropdownOption[] = clients
+    .filter((client) => !client.isInactive)
+    .map((client) => ({
+      id: client.id!,
+      label:
+        client.companyName ||
+        t("bulkTimesheetManagement.constants.unknownClient"),
+      sublabel: client.shortCode || "",
+      value: client,
+    }));
+
 
   const positionOptions: DropdownOption[] = positions.map((position) => ({
     id: position.id || "",
