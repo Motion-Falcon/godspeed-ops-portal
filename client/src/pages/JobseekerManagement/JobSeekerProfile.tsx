@@ -32,6 +32,7 @@ import {
   getJobseekerProfile,
   updateJobseekerStatus,
   deleteJobseeker,
+  activateJobseeker,
 } from "../../services/api/jobseeker";
 import { hasAnyExactAccessRole } from "../../lib/auth";
 import { DocumentRecord } from "../../types/jobseeker";
@@ -356,6 +357,7 @@ export function JobSeekerProfile() {
   const [isDeleteConfirmationOpen, setIsDeleteConfirmationOpen] =
     useState<boolean>(false);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
+  const [isActivating, setIsActivating] = useState<boolean>(false);
   const [isStatusModalOpen, setIsStatusModalOpen] = useState<boolean>(false);
   const [selectedStatus, setSelectedStatus] = useState<
     "pending" | "verified" | "rejected"
@@ -964,6 +966,28 @@ export function JobSeekerProfile() {
     }
   };
 
+  const handleActivateProfile = async () => {
+    if (!id) return;
+    try {
+      setIsActivating(true);
+      await activateJobseeker(id);
+      setUpdateStatus(t("messages.profileActivated"));
+      
+      // Update local state instead of refetching
+      setProfile((prev) => prev ? { ...prev, isInactive: false } : prev);
+      
+      setTimeout(() => setUpdateStatus(null), 3000);
+    } catch (err) {
+      console.error("Error activating profile:", err);
+      setUpdateStatus(
+        err instanceof Error ? err.message : t("messages.failedToActivateProfile")
+      );
+      setTimeout(() => setUpdateStatus(null), 3000);
+    } finally {
+      setIsActivating(false);
+    }
+  };
+
   const openStatusModal = () => {
     // Set the current status from profile
     setSelectedStatus(
@@ -1530,19 +1554,37 @@ export function JobSeekerProfile() {
             </div>
             <div className="profile-actions-container">
               {(isAdmin || isRecruiter) && (
-                <div className="profile-actions">
-                  <button
-                    className="action-icon-btn update-status-btn"
-                    onClick={openStatusModal}
-                    title={t("jobSeekerProfile.updateStatus")}
-                    aria-label={t("jobSeekerProfile.updateStatus")}
-                  >
-                    <span className="status-text">
-                      {t("jobSeekerProfile.updateStatus")}
-                    </span>{" "}
-                    <RefreshCw size={16} className="icon" />
-                  </button>
-                </div>
+                <>
+                  {profile?.isInactive && (
+                    <div className="profile-actions">
+                      <button
+                        className="action-icon-btn update-status-btn"
+                        onClick={handleActivateProfile}
+                        title={t("jobSeekerProfile.markActive")}
+                        aria-label={t("jobSeekerProfile.markActive")}
+                        disabled={isActivating}
+                      >
+                        <span className="status-text">
+                          {isActivating ? t("jobSeekerProfile.activating") : t("jobSeekerProfile.markActive")}
+                        </span>
+                        <CheckCircle size={16} className="icon" />
+                      </button>
+                    </div>
+                  )}
+                  <div className="profile-actions">
+                    <button
+                      className="action-icon-btn update-status-btn"
+                      onClick={openStatusModal}
+                      title={t("jobSeekerProfile.updateStatus")}
+                      aria-label={t("jobSeekerProfile.updateStatus")}
+                    >
+                      <span className="status-text">
+                        {t("jobSeekerProfile.updateStatus")}
+                      </span>{" "}
+                      <RefreshCw size={16} className="icon" />
+                    </button>
+                  </div>
+                </>
               )}
               <div className="profile-actions">
                 <button
