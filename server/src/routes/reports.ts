@@ -170,21 +170,23 @@ router.post(
   authorizeRoles(["admin", "recruiter"]),
   async (req: Request, res: Response) => {
     try {
-      const { jobseekerId, clientIds, weekPeriods, payCycle, listName } =
+      const { jobseekerIds, clientIds, weekPeriods, payCycles, listNames } =
         req.body || {};
       if (
-        !jobseekerId ||
+        !jobseekerIds ||
+        !Array.isArray(jobseekerIds) ||
+        jobseekerIds.length === 0 ||
         !Array.isArray(weekPeriods) ||
         weekPeriods.length === 0
       ) {
         return res.status(400).json({
-          error: "jobseekerId and at least one week period are required.",
+          error: "At least one jobseeker and one week period are required.",
         });
       }
 
       // Build week period filter (OR for each period)
       const weekClauses: string[] = [];
-      const params: any[] = [jobseekerId];
+      const params: any[] = [jobseekerIds];
       let paramIdx = 2;
       weekPeriods.forEach((wp: any) => {
         if (wp && wp.start && wp.end) {
@@ -210,14 +212,14 @@ router.post(
         params.push(clientIds);
         paramIdx++;
       }
-      if (payCycle) {
-        filterSql += ` AND c.pay_cycle = $${paramIdx}`;
-        params.push(payCycle);
+      if (payCycles && Array.isArray(payCycles) && payCycles.length > 0) {
+        filterSql += ` AND c.pay_cycle = ANY($${paramIdx})`;
+        params.push(payCycles);
         paramIdx++;
       }
-      if (listName) {
-        filterSql += ` AND c.list_name = $${paramIdx}`;
-        params.push(listName);
+      if (listNames && Array.isArray(listNames) && listNames.length > 0) {
+        filterSql += ` AND c.list_name = ANY($${paramIdx})`;
+        params.push(listNames);
         paramIdx++;
       }
 
@@ -237,7 +239,7 @@ router.post(
           week_start_date, week_end_date, total_regular_hours, total_overtime_hours, regular_pay_rate, premium_pay_rate, overtime_pay_rate, total_jobseeker_pay, bonus_amount, deduction_amount, created_at, invoice_number, position_id, line_payment_method
         `
         )
-        .in("jobseeker_profile_id", [jobseekerId])
+        .in("jobseeker_profile_id", jobseekerIds)
         .order("week_start_date", { ascending: true });
 
       if (error) {
@@ -262,7 +264,7 @@ router.post(
             return false;
         }
         // Pay cycle
-        if (payCycle && row.positions && row.positions.client_manager) {
+        if (payCycles && payCycles.length > 0 && row.positions && row.positions.client_manager) {
           // pay_cycle is on client, not position, so skip here
         }
         // List name
@@ -342,10 +344,10 @@ router.post(
         delete row.client_id; // remove from final output
       });
 
-      // Apply payCycle and listName filters after merging client info
+      // Apply payCycles and listNames filters after merging client info
       const finalFiltered = result.filter((row: any) => {
-        if (payCycle && row.pay_cycle !== payCycle) return false;
-        if (listName && row.list_name !== listName) return false;
+        if (payCycles && payCycles.length > 0 && !payCycles.includes(row.pay_cycle)) return false;
+        if (listNames && listNames.length > 0 && !listNames.includes(row.list_name)) return false;
         return true;
       });
 
