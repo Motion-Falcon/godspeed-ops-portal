@@ -1010,7 +1010,11 @@ router.post(
         const invoiceData = invoice.invoice_data || {};
         const timesheets = invoiceData.timesheets || [];
         timesheets.forEach((ts: any) => {
-          if (ts.jobseekerProfileId) salesJobseekerIds.add(ts.jobseekerProfileId);
+          const profileId =
+            ts.jobseekerProfile?.jobseekerProfileId ||
+            ts.jobseekerProfileId ||
+            ts.jobseekerProfile?.id;
+          if (profileId) salesJobseekerIds.add(profileId);
         });
       });
       let salesJobseekerInfoMap: Record<string, any> = {};
@@ -1038,6 +1042,11 @@ router.post(
         totalTimesheets += timesheets.length;
 
         timesheets.forEach((ts: any) => {
+          const profileId =
+            ts.jobseekerProfile?.jobseekerProfileId ||
+            ts.jobseekerProfileId ||
+            ts.jobseekerProfile?.id;
+
           // Get positionId from nested position object
           const positionId = ts.position && ts.position.positionId;
           const position =
@@ -1051,7 +1060,7 @@ router.post(
             Array.isArray(jobseekerIds) &&
             jobseekerIds.length > 0
           ) {
-            if (!jobseekerIds.includes(ts.jobseekerProfileId)) return;
+            if (!jobseekerIds.includes(profileId)) return;
           }
           afterJobseekerFilter++;
 
@@ -1131,10 +1140,10 @@ router.post(
             total: total.toFixed(2),
             currency: invoice.currency || "N/A",
             client_is_inactive: checkClientInactive(client.last_activity_at, client.created_at),
-            jobseeker_is_inactive: ts.jobseekerProfileId
+            jobseeker_is_inactive: profileId
               ? checkJobseekerInactive(
-                  (salesJobseekerInfoMap[ts.jobseekerProfileId] || {}).last_activity_at,
-                  (salesJobseekerInfoMap[ts.jobseekerProfileId] || {}).created_at
+                  (salesJobseekerInfoMap[profileId] || {}).last_activity_at,
+                  (salesJobseekerInfoMap[profileId] || {}).created_at
                 )
               : false,
           });
