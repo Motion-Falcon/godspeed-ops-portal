@@ -222,6 +222,7 @@ export function SalesReport() {
                 </div>
               ) : (
                 <CustomDropdown
+                  disabled={true}
                   options={jobseekerOptions}
                   selectedOptions={selectedJobseekers.length > 0 ? (selectedJobseekers.map((j) => jobseekerOptions.find((o) => o.id === j.id) as DropdownOption).filter(Boolean)) : []}
                   onSelect={(opts) => {
