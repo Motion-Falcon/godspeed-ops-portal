@@ -107,6 +107,10 @@ export function BulkTimesheetJobseekerManagement() {
     hoursLoading: weekTsLoading,
 
     weekTimesheetsForJobseeker: weekTimesheets,
+    
+    assignablePositions,
+
+    positionLoading,
   });
 
   const {
