@@ -63,6 +63,8 @@ export function parseTimesheetFromApi(
     pay_split_segment: timesheet.pay_split_segment,
     line_payment_method: timesheet.line_payment_method,
     daily_hours: normalizeDailyHoursFromWire(timesheet.daily_hours),
+    is_bulk: timesheet.is_bulk,
+    bulk_breakdown: timesheet.bulk_breakdown,
   };
 }
 
@@ -74,7 +76,8 @@ export function filterTimesheetsForWeekAndPosition(
   return timesheets.filter(
     (timesheet) =>
       timesheet.week_start_date === week_start_date &&
-      timesheet.position_id === position_id
+      timesheet.position_id === position_id &&
+      !timesheet.is_bulk
   );
 }
 

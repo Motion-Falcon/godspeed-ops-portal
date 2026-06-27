@@ -49,6 +49,8 @@ export type WeekTimesheetRecord = Pick<
   | "pay_split_segment"
   | "line_payment_method"
   | "daily_hours"
+  | "is_bulk"
+  | "bulk_breakdown"
 >;
 
 /** In-memory weekly form model bound to one position/week. */
