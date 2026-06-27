@@ -191,6 +191,7 @@ export function useTimesheetsList(t: TimesheetsListT): UseTimesheetsListResult {
         dateRangeStart,
         dateRangeEnd,
         emailSentFilter,
+        excludeBulk: true,
       };
       const response: PaginatedTimesheetsResponse = await getTimesheets(params);
       setTimesheets(response.timesheets);

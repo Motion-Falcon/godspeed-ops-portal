@@ -52,6 +52,8 @@ export const getTimesheets = async (
       queryParams.append("dateRangeStart", params.dateRangeStart);
     if (params.dateRangeEnd)
       queryParams.append("dateRangeEnd", params.dateRangeEnd);
+    if (params.excludeBulk !== undefined)
+      queryParams.append("excludeBulk", params.excludeBulk.toString());
 
     const response = await api.get<PaginatedTimesheetsResponse>(
       `/api/timesheets?${queryParams.toString()}`
@@ -185,6 +187,8 @@ export const getJobseekerTimesheets = async (
       queryParams.append("dateRangeStart", params.dateRangeStart);
     if (params.dateRangeEnd)
       queryParams.append("dateRangeEnd", params.dateRangeEnd);
+    if (params.excludeBulk !== undefined)
+      queryParams.append("excludeBulk", params.excludeBulk.toString());
 
     const response = await api.get<PaginatedJobseekerTimesheetsResponse>(
       `/api/timesheets/jobseeker/${userId}?${queryParams.toString()}`

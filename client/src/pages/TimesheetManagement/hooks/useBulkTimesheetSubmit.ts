@@ -73,37 +73,50 @@ export function useBulkTimesheetSubmit({
       let totalUpdated = 0;
 
       try {
-        for (let i = 0; i < withHours.length; i++) {
-          const row = withHours[i];
-          const jobseekerName = row.progressLabel;
+        // Group rows by jobseeker ID
+        const groupedRows = new Map<string, BulkSubmitRow[]>();
+        for (const row of withHours) {
+          if (!row.jobseeker?.id) continue;
+          if (!groupedRows.has(row.jobseeker.id)) {
+            groupedRows.set(row.jobseeker.id, []);
+          }
+          groupedRows.get(row.jobseeker.id)!.push(row);
+        }
+
+        let i = 0;
+        for (const [, jobseekerRows] of groupedRows.entries()) {
+          const firstRow = jobseekerRows[0];
+          const jobseekerName = firstRow.progressLabel;
 
           setGenerationMessage(
             msg("processing", {
               current: i + 1,
-              total: withHours.length,
+              total: groupedRows.size,
               jobseekerName,
             })
           );
 
-          if (!row.jobseeker?.id || !row.jobseeker.userId) {
+          if (!firstRow.jobseeker?.userId) {
             failed.push({
               jobseeker: jobseekerName,
-              error: "Missing jobseeker profile",
+              error: "Missing jobseeker user ID",
             });
+            i++;
             continue;
           }
 
-          const { clientPosition } = row;
-
           try {
             const result = await submitWeeklyTimesheets({
-              timesheetsToProcess: [row.form],
-              jobseeker: row.jobseeker,
-              selectedPosition: clientPosition,
+              timesheetsToProcess: jobseekerRows.map((r) => r.form),
+              jobseeker: firstRow.jobseeker,
+              selectedPosition: firstRow.clientPosition, // Using first position for client linking
               selectedWeekStart: weekStart,
-              emailPreferences: {
-                [clientPosition.id]: row.emailSent,
-              },
+              emailPreferences: jobseekerRows.reduce((acc, r) => {
+                acc[r.clientPosition.id] = r.emailSent;
+                return acc;
+              }, {} as Record<string, boolean>),
+              isBulk: true, // We will add this flag to submitWeeklyTimesheets
+              bulkRows: jobseekerRows,
             });
 
             totalCreated += result.createdCount;
@@ -143,6 +156,7 @@ export function useBulkTimesheetSubmit({
               setTimeout(() => setGenerationMessage(""), 5000);
             }
           }
+          i++;
         }
 
         const savedCount = savedRows.length;

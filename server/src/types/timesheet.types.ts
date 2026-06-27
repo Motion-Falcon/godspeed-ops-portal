@@ -42,6 +42,8 @@ export interface TimesheetRow {
   notes?: string;
   pay_split_segment?: string;
   line_payment_method?: string | null;
+  is_bulk?: boolean;
+  bulk_breakdown?: any[];
   created_at?: string;
   created_by_user_id?: string;
   updated_at?: string;
@@ -143,6 +145,7 @@ export interface TimesheetFilterParams {
   emailSentFilter?: string;
   dateRangeStart?: string;
   dateRangeEnd?: string;
+  excludeBulk?: boolean;
 }
 
 export interface TimesheetListQuery extends TimesheetFilterParams {

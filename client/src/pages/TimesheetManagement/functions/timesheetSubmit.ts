@@ -17,6 +17,8 @@ export interface SubmitWeeklyTimesheetsParams {
   selectedPosition: ClientPosition;
   selectedWeekStart: string;
   emailPreferences: Record<string, boolean>;
+  isBulk?: boolean;
+  bulkRows?: any[];
 }
 
 export interface SubmitWeeklyTimesheetsResult {
@@ -32,6 +34,8 @@ export async function submitWeeklyTimesheets({
   selectedPosition,
   selectedWeekStart,
   emailPreferences,
+  isBulk,
+  bulkRows,
 }: SubmitWeeklyTimesheetsParams): Promise<SubmitWeeklyTimesheetsResult> {
   const weekEndDateStr = getWeekEndDate(selectedWeekStart);
   const results: TimesheetMutationResponse[] = [];
@@ -47,6 +51,96 @@ export async function submitWeeklyTimesheets({
   const overtimeBillRate = rates.overtimeBillRate;
 
   const sinCap = parseFloat(String(jobseeker.sinPayrollHoursCap ?? "0"));
+
+  if (isBulk && bulkRows && bulkRows.length > 0) {
+    let totalRegularHours = 0;
+    let totalOvertimeHours = 0;
+    let totalJobseekerPay = 0;
+    let totalClientBill = 0;
+    let bonusAmount = 0;
+    let deductionAmount = 0;
+    let anyEmailSent = false;
+    
+    const dailyHoursMap = new Map<string, number>();
+    
+    const bulk_breakdown = bulkRows.map(r => {
+      totalRegularHours += r.form.totalRegularHours;
+      totalOvertimeHours += r.form.totalOvertimeHours;
+      totalJobseekerPay += r.form.jobseekerPay;
+      totalClientBill += r.form.clientBill;
+      bonusAmount += r.form.bonusAmount;
+      deductionAmount += r.form.deductionAmount;
+      if (r.emailSent) anyEmailSent = true;
+      
+      r.form.entries.forEach((e: any) => {
+        const current = dailyHoursMap.get(e.date) || 0;
+        dailyHoursMap.set(e.date, current + e.hours);
+      });
+      
+      return {
+        position_id: r.clientPosition.id,
+        position_title: r.clientPosition.title,
+        position_code: r.clientPosition.positionCode,
+        regular_hours: r.form.totalRegularHours,
+        overtime_hours: r.form.totalOvertimeHours,
+        total_jobseeker_pay: r.form.jobseekerPay,
+        total_client_bill: r.form.clientBill,
+        regular_pay_rate: resolvePositionRates(r.clientPosition).effectivePayRate,
+        regular_bill_rate: resolvePositionRates(r.clientPosition).regularBillRate,
+        bonus_amount: r.form.bonusAmount,
+        deduction_amount: r.form.deductionAmount,
+        notes: r.form.notes,
+        entries: r.form.entries,
+      };
+    });
+    
+    const dailyHours = Array.from(dailyHoursMap.entries()).map(([date, hours]) => ({ date, hours })).sort((a,b) => a.date.localeCompare(b.date));
+
+    const partial: TimesheetInput = {
+      jobseeker_profile_id: jobseeker.id,
+      jobseeker_user_id: jobseeker.userId,
+      position_id: selectedPosition.id,
+      week_start_date: selectedWeekStart,
+      week_end_date: weekEndDateStr,
+      daily_hours: dailyHours,
+      total_regular_hours: totalRegularHours,
+      total_overtime_hours: totalOvertimeHours,
+      regular_pay_rate: 0,
+      premium_pay_rate: 0,
+      overtime_pay_rate: 0,
+      regular_bill_rate: 0,
+      overtime_bill_rate: 0,
+      total_jobseeker_pay: totalJobseekerPay,
+      total_client_bill: totalClientBill,
+      bonus_amount: bonusAmount,
+      deduction_amount: deductionAmount,
+      notes: "Aggregated Bulk Timesheet",
+      overtime_enabled: true,
+      email_sent: anyEmailSent,
+      pay_split_segment: "single",
+      line_payment_method: null,
+      is_bulk: true,
+      bulk_breakdown
+    };
+
+    const inv = await generateInvoiceNumber();
+    const result = await createTimesheet({
+      ...partial,
+      invoice_number: inv,
+    });
+    results.push(result);
+    createdCount += 1;
+
+    let emailCount = 0;
+    if (anyEmailSent) emailCount = 1;
+
+    return {
+      results,
+      updatedCount: 0,
+      createdCount,
+      emailCount,
+    };
+  }
 
   for (const timesheet of timesheetsToProcess) {
     const shouldSendEmail = emailPreferences[timesheet.positionId] || false;

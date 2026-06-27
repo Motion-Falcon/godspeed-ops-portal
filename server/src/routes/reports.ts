@@ -223,6 +223,18 @@ router.post(
         paramIdx++;
       }
 
+      let positionIds: string[] = [];
+      if (clientIds && Array.isArray(clientIds) && clientIds.length > 0) {
+        // Fetch all position IDs for the selected clients to handle bulk timesheets properly
+        const { data: positionsData } = await supabase
+          .from("positions")
+          .select("id")
+          .in("client", clientIds);
+        if (positionsData) {
+          positionIds = positionsData.map((p: any) => p.id);
+        }
+      }
+
       // Use Supabase RPC to run raw SQL (if enabled), otherwise use supabase-js query builder (less flexible for OR logic)
       // For now, use supabase-js query builder for compatibility
       // Fallback: Use supabase-js for most filters, then filter week periods in JS
@@ -236,7 +248,7 @@ router.post(
           positions:position_id (
             title, position_code, position_category, client_manager, notes, client
           ),
-          week_start_date, week_end_date, total_regular_hours, total_overtime_hours, regular_pay_rate, premium_pay_rate, overtime_pay_rate, total_jobseeker_pay, bonus_amount, deduction_amount, created_at, invoice_number, position_id, line_payment_method
+          week_start_date, week_end_date, total_regular_hours, total_overtime_hours, regular_pay_rate, premium_pay_rate, overtime_pay_rate, total_jobseeker_pay, bonus_amount, deduction_amount, created_at, invoice_number, position_id, line_payment_method, is_bulk, bulk_breakdown
         `
         )
         .in("jobseeker_profile_id", jobseekerIds)
@@ -260,8 +272,18 @@ router.post(
         if (!weekMatch) return false;
         // Client filter
         if (clientIds && clientIds.length > 0) {
-          if (!row.positions || !clientIds.includes(row.positions.client))
-            return false;
+          let matchesClient = false;
+          if (row.positions && clientIds.includes(row.positions.client)) {
+            matchesClient = true;
+          } else if (row.is_bulk && row.bulk_breakdown && Array.isArray(row.bulk_breakdown)) {
+            // Check if any position in the bulk breakdown belongs to the selected clients
+            const hasMatchingPosition = row.bulk_breakdown.some((bd: any) => positionIds.includes(bd.position_id));
+            if (hasMatchingPosition) {
+              matchesClient = true;
+            }
+          }
+          
+          if (!matchesClient) return false;
         }
         // Pay cycle
         if (payCycles && payCycles.length > 0 && row.positions && row.positions.client_manager) {
@@ -285,17 +307,18 @@ router.post(
           email: jp.email,
           company_name: undefined, // will fill below
           list_name: undefined, // will fill below
-          title: p.title,
-          position_code: p.position_code,
-          position_category: p.position_category,
-          client_manager: p.client_manager,
+          title: row.is_bulk ? "Multiple Positions" : p.title,
+          position_code: row.is_bulk ? "N/A" : p.position_code,
+          position_category: row.is_bulk ? "N/A" : p.position_category,
+          client_manager: p.client_manager, // We keep the client manager from the first position
+
           week_start_date: row.week_start_date,
           week_end_date: row.week_end_date,
           total_regular_hours: row.total_regular_hours,
           total_overtime_hours: row.total_overtime_hours,
-          regular_pay_rate: row.regular_pay_rate,
-          premium_pay_rate: row.premium_pay_rate,
-          overtime_pay_rate: row.overtime_pay_rate,
+          regular_pay_rate: row.is_bulk ? 0 : row.regular_pay_rate,
+          premium_pay_rate: row.is_bulk ? 0 : row.premium_pay_rate,
+          overtime_pay_rate: row.is_bulk ? 0 : row.overtime_pay_rate,
           total_jobseeker_pay: row.total_jobseeker_pay,
           bonus_amount: row.bonus_amount,
           deduction_amount: row.deduction_amount,
@@ -1186,6 +1209,8 @@ router.post(
           premium_pay_rate,
           overtime_pay_rate,
           total_jobseeker_pay,
+          is_bulk,
+          bulk_breakdown,
           jobseeker_profiles:jobseeker_profile_id (
             employee_id,
             license_number,
@@ -1207,8 +1232,14 @@ router.post(
           )
         `
         )
-        .in("position_id", positionIds)
-        .order("week_end_date", { ascending: true });
+        
+      if (positionIds.length > 0) {
+        timesheetQuery = timesheetQuery.or(`position_id.in.(${positionIds.join(",")}),is_bulk.eq.true`);
+      } else {
+        timesheetQuery = timesheetQuery.eq("is_bulk", true);
+      }
+      
+      timesheetQuery = timesheetQuery.order("week_end_date", { ascending: true });
 
       if (startDate) {
         timesheetQuery = timesheetQuery.gte("week_start_date", startDate);
@@ -1260,9 +1291,28 @@ router.post(
       const envelopeData: any[] = [];
 
       (timesheetRows || []).forEach((row: any) => {
-        const position = row.positions || {};
-        const clientId = position.client;
-        if (!clientId || !clientInfoMap[clientId]) return;
+        let position = row.positions || {};
+        let clientId = position.client;
+        
+        if (!clientId || !clientInfoMap[clientId]) {
+          if (row.is_bulk && row.bulk_breakdown && Array.isArray(row.bulk_breakdown)) {
+            // Find a valid client from the breakdown
+            const validBreakdown = row.bulk_breakdown.find((bd: any) => positionIds.includes(bd.position_id));
+            if (validBreakdown) {
+               clientId = positionsData.find((p: any) => p.id === validBreakdown.position_id)?.client;
+               if (clientId && clientInfoMap[clientId]) {
+                 // We simulate that the primary position is the valid one for the envelope report group
+                 position = { client: clientId }; 
+               } else {
+                 return;
+               }
+            } else {
+              return;
+            }
+          } else {
+            return;
+          }
+        }
 
         const client = clientInfoMap[clientId];
         const jp = row.jobseeker_profiles || {};
@@ -1327,15 +1377,15 @@ router.post(
           email_id: jp.email || "",
           billing_email: jp.billing_email || "",
           pay_method: jp.payment_method || "",
-          position_category: position.position_category || "",
-          position_name: position.title
+          position_category: row.is_bulk ? "N/A" : (position.position_category || ""),
+          position_name: row.is_bulk ? "Multiple Positions" : (position.title
             ? `${position.title} [${position.position_number || ""}]`
-            : "",
+            : ""),
           hours: (Number(row.total_regular_hours) || 0).toString(),
           overtime_hours: (Number(row.total_overtime_hours) || 0).toString(),
-          regular_pay_rate: (Number(row.regular_pay_rate) || 0).toFixed(2),
-          premium_pay_rate: (Number(row.premium_pay_rate) || 0).toFixed(2),
-          overtime_pay_rate: (Number(row.overtime_pay_rate) || 0).toFixed(2),
+          regular_pay_rate: row.is_bulk ? "0.00" : (Number(row.regular_pay_rate) || 0).toFixed(2),
+          premium_pay_rate: row.is_bulk ? "0.00" : (Number(row.premium_pay_rate) || 0).toFixed(2),
+          overtime_pay_rate: row.is_bulk ? "0.00" : (Number(row.overtime_pay_rate) || 0).toFixed(2),
           total_amount: totalFormatted,
           tax_rate: "0.00",
           hst_gst: "0.00",
@@ -1437,6 +1487,8 @@ router.post(
           premium_pay_rate,
           overtime_pay_rate,
           total_jobseeker_pay,
+          is_bulk,
+          bulk_breakdown,
           jobseeker_profiles:jobseeker_profile_id (
             employee_id,
             license_number,
@@ -1458,8 +1510,14 @@ router.post(
           )
         `
         )
-        .in("position_id", positionIds)
-        .order("week_end_date", { ascending: true });
+        
+      if (positionIds.length > 0) {
+        timesheetQuery = timesheetQuery.or(`position_id.in.(${positionIds.join(",")}),is_bulk.eq.true`);
+      } else {
+        timesheetQuery = timesheetQuery.eq("is_bulk", true);
+      }
+      
+      timesheetQuery = timesheetQuery.order("week_end_date", { ascending: true });
 
       if (dueDate) {
         const d = new Date(dueDate);
@@ -1509,9 +1567,28 @@ router.post(
       const envelopeData: any[] = [];
 
       (timesheetRows || []).forEach((row: any) => {
-        const position = row.positions || {};
-        const clientId = position.client;
-        if (!clientId || !clientInfoMap[clientId]) return;
+        let position = row.positions || {};
+        let clientId = position.client;
+        
+        if (!clientId || !clientInfoMap[clientId]) {
+          if (row.is_bulk && row.bulk_breakdown && Array.isArray(row.bulk_breakdown)) {
+            // Find a valid client from the breakdown
+            const validBreakdown = row.bulk_breakdown.find((bd: any) => positionIds.includes(bd.position_id));
+            if (validBreakdown) {
+               clientId = positionsData.find((p: any) => p.id === validBreakdown.position_id)?.client;
+               if (clientId && clientInfoMap[clientId]) {
+                 // We simulate that the primary position is the valid one for the envelope report group
+                 position = { client: clientId }; 
+               } else {
+                 return;
+               }
+            } else {
+              return;
+            }
+          } else {
+            return;
+          }
+        }
 
         const client = clientInfoMap[clientId];
         const jp = row.jobseeker_profiles || {};
@@ -1561,15 +1638,15 @@ router.post(
           email_id: jp.email || "",
           billing_email: jp.billing_email || "",
           pay_method: jp.payment_method || "",
-          position_category: position.position_category || "",
-          position_name: position.title
+          position_category: row.is_bulk ? "N/A" : (position.position_category || ""),
+          position_name: row.is_bulk ? "Multiple Positions" : (position.title
             ? `${position.title} [${position.position_number || ""}]`
-            : "",
+            : ""),
           hours: (Number(row.total_regular_hours) || 0).toString(),
           overtime_hours: (Number(row.total_overtime_hours) || 0).toString(),
-          regular_pay_rate: (Number(row.regular_pay_rate) || 0).toFixed(2),
-          premium_pay_rate: (Number(row.premium_pay_rate) || 0).toFixed(2),
-          overtime_pay_rate: (Number(row.overtime_pay_rate) || 0).toFixed(2),
+          regular_pay_rate: row.is_bulk ? "0.00" : (Number(row.regular_pay_rate) || 0).toFixed(2),
+          premium_pay_rate: row.is_bulk ? "0.00" : (Number(row.premium_pay_rate) || 0).toFixed(2),
+          overtime_pay_rate: row.is_bulk ? "0.00" : (Number(row.overtime_pay_rate) || 0).toFixed(2),
           total_amount: totalFormatted,
           tax_rate: "0.00",
           hst_gst: "0.00",
