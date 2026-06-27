@@ -76,12 +76,12 @@ export function WeeklyTimesheet() {
   // Filter state
   const [jobseekers, setJobseekers] = useState<JobSeekerProfile[]>([]);
   const [clients, setClients] = useState<ClientData[]>([]);
-  const [selectedJobseeker, setSelectedJobseeker] = useState<JobSeekerProfile | null>(null);
+  const [selectedJobseekers, setSelectedJobseekers] = useState<JobSeekerProfile[]>([]);
   const [selectedClients, setSelectedClients] = useState<ClientData[]>([]);
   const [weekOptions, setWeekOptions] = useState<{ value: string; label: string }[]>([]);
   const [selectedWeeks, setSelectedWeeks] = useState<Array<{ start: string; end: string }>>([]);
-  const [payCycle, setPayCycle] = useState<string>("");
-  const [listName, setListName] = useState<string>("");
+  const [selectedPayCycles, setSelectedPayCycles] = useState<string[]>([]);
+  const [selectedListNames, setSelectedListNames] = useState<string[]>([]);
   const [availableListNames, setAvailableListNames] = useState<string[]>([]);
 
   // Data state
@@ -121,24 +121,24 @@ export function WeeklyTimesheet() {
 
   // Fetch report when filters change
   useEffect(() => {
-    if (!selectedJobseeker || selectedWeeks.length === 0) {
+    if (selectedJobseekers.length === 0 || selectedWeeks.length === 0) {
       setReportRows([]);
       return;
     }
     setLoading(true);
     setError(null);
     const filter: TimesheetReportFilter = {
-      jobseekerId: selectedJobseeker.id,
+      jobseekerIds: selectedJobseekers.map(j => j.id ?? ""),
       clientIds: selectedClients.map((c) => c.id ?? ""),
       weekPeriods: selectedWeeks,
-      payCycle: payCycle || undefined,
-      listName: listName || undefined,
+      payCycles: selectedPayCycles,
+      listNames: selectedListNames,
     };
     getTimesheetReport(filter)
       .then(setReportRows)
       .catch((e) => setError(e.message || "Failed to fetch report"))
       .finally(() => setLoading(false));
-  }, [selectedJobseeker, selectedClients, selectedWeeks, payCycle, listName]);
+  }, [selectedJobseekers, selectedClients, selectedWeeks, selectedPayCycles, selectedListNames]);
 
   // Dropdown options
   const jobseekerOptions: DropdownOption[] = jobseekers.map((j) => {
@@ -175,15 +175,8 @@ export function WeeklyTimesheet() {
       value: { start, end },
     };
   });
-  // Add a 'Select (None)' option to both dropdowns
-  const payCycleOptions: DropdownOption[] = [
-    { id: '', label: t('reports.placeholders.selectNone'), value: '' },
-    ...PAY_CYCLES.map((pc) => ({ id: pc, label: pc, value: pc }))
-  ];
-  const listNameOptions: DropdownOption[] = [
-    { id: '', label: t('reports.placeholders.selectNone'), value: '' },
-    ...availableListNames.map((ln) => ({ id: ln, label: ln, value: ln }))
-  ];
+  const payCycleOptions: DropdownOption[] = PAY_CYCLES.map((pc) => ({ id: pc, label: pc, value: pc }));
+  const listNameOptions: DropdownOption[] = availableListNames.map((ln) => ({ id: ln, label: ln, value: ln }));
 
   return (
     <div className="page-container common-report-container">
@@ -204,13 +197,18 @@ export function WeeklyTimesheet() {
               ) : (
                 <CustomDropdown
                   options={jobseekerOptions}
-                  selectedOption={selectedJobseeker ? jobseekerOptions.find((o) => o.id === selectedJobseeker.id) || null : null}
-                  onSelect={(opt) => {
-                    if (!Array.isArray(opt) && opt && typeof opt === 'object') setSelectedJobseeker(opt.value as JobSeekerProfile);
+                  selectedOptions={selectedJobseekers.length > 0 ? (selectedJobseekers.map((j) => jobseekerOptions.find((o) => o.id === j.id) as DropdownOption).filter(Boolean)) : []}
+                  onSelect={(opts) => {
+                    if (Array.isArray(opts)) setSelectedJobseekers(opts.map((o) => o.value as JobSeekerProfile));
+                    else if (opts && typeof opts === 'object') setSelectedJobseekers([opts.value as JobSeekerProfile]);
+                    else setSelectedJobseekers([]);
                   }}
                   placeholder={t('reports.placeholders.selectJobSeeker')}
+                  multiSelect={true}
+                  showSelectAll={true}
                   icon={<User size={16} />}
                   emptyMessage={t('reports.emptyMessages.noJobSeekers')}
+                  maxVisibleTagsOverride={2}
                 />
               )}
             </div>
@@ -267,15 +265,16 @@ export function WeeklyTimesheet() {
               <CustomDropdown
                 options={payCycleOptions}
                 searchable={false}
-                selectedOption={payCycleOptions.find((o) => o.value === payCycle) || null}
-                onSelect={(opt) => {
-                  if (!Array.isArray(opt) && opt && typeof opt === 'object') {
-                    setPayCycle(opt.value as string);
-                  } else {
-                    setPayCycle('');
-                  }
+                selectedOptions={selectedPayCycles.length > 0 ? (selectedPayCycles.map((pc) => payCycleOptions.find((o) => o.value === pc) as DropdownOption).filter(Boolean)) : []}
+                onSelect={(opts) => {
+                  if (Array.isArray(opts)) setSelectedPayCycles(opts.map((o) => o.value as string));
+                  else if (opts && typeof opts === 'object') setSelectedPayCycles([opts.value as string]);
+                  else setSelectedPayCycles([]);
                 }}
                 placeholder={t('reports.placeholders.selectPayCycle')}
+                multiSelect={true}
+                showSelectAll={true}
+                maxVisibleTagsOverride={2}
               />
             </div>
             <div className="selection-section">
@@ -283,15 +282,16 @@ export function WeeklyTimesheet() {
               <CustomDropdown
                 options={listNameOptions}
                 searchable={false}
-                selectedOption={listNameOptions.find((o) => o.value === listName) || null}
-                onSelect={(opt) => {
-                  if (!Array.isArray(opt) && opt && typeof opt === 'object') {
-                    setListName(opt.value as string);
-                  } else {
-                    setListName('');
-                  }
+                selectedOptions={selectedListNames.length > 0 ? (selectedListNames.map((ln) => listNameOptions.find((o) => o.value === ln) as DropdownOption).filter(Boolean)) : []}
+                onSelect={(opts) => {
+                  if (Array.isArray(opts)) setSelectedListNames(opts.map((o) => o.value as string));
+                  else if (opts && typeof opts === 'object') setSelectedListNames([opts.value as string]);
+                  else setSelectedListNames([]);
                 }}
                 placeholder={t('reports.placeholders.selectListName')}
+                multiSelect={true}
+                showSelectAll={true}
+                maxVisibleTagsOverride={2}
               />
             </div>
           </div>
