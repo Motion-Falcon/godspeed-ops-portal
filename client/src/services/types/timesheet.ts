@@ -46,6 +46,8 @@ export interface TimesheetRow {
   notes?: string;
   pay_split_segment?: string;
   line_payment_method?: string | null;
+  is_bulk?: boolean;
+  bulk_breakdown?: any[];
   created_at?: string;
   created_by_user_id?: string;
   updated_at?: string;
@@ -120,6 +122,7 @@ export interface TimesheetFilterParams {
 export interface TimesheetListFilters extends TimesheetFilterParams {
   page?: number;
   limit?: number;
+  excludeBulk?: boolean;
 }
 
 export interface TimesheetPaginationMeta {

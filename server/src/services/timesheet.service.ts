@@ -83,6 +83,7 @@ function applyTimesheetFilters(query: any, filters: TimesheetFilterParams) {
     emailSentFilter,
     dateRangeStart,
     dateRangeEnd,
+    excludeBulk,
   } = filters;
 
   if (searchTerm && searchTerm.trim().length > 0) {
@@ -130,6 +131,13 @@ function applyTimesheetFilters(query: any, filters: TimesheetFilterParams) {
 
   if (dateRangeEnd && dateRangeEnd.trim().length > 0) {
     query = query.lte("week_end_date", dateRangeEnd.trim());
+  }
+
+  if (excludeBulk) {
+    const excludeBulkBool = String(excludeBulk).toLowerCase() === "true";
+    if (excludeBulkBool) {
+      query = query.eq("is_bulk", false);
+    }
   }
 
   return query;
@@ -548,7 +556,6 @@ export async function getTimesheetById(
 const CREATE_REQUIRED_FIELDS: (keyof TimesheetInput)[] = [
   "jobseeker_profile_id",
   "jobseeker_user_id",
-  "position_id",
   "week_start_date",
   "week_end_date",
   "daily_hours",
@@ -605,16 +612,33 @@ export async function createTimesheet(
     };
   }
 
+  if (
+    !timesheetData.is_bulk &&
+    (timesheetData.position_id === undefined || timesheetData.position_id === null)
+  ) {
+    return {
+      success: false,
+      status: 400,
+      error: "Missing required field: position_id",
+    };
+  }
+
   const paySegment = timesheetData.pay_split_segment ?? "single";
 
-  const { data: duplicateTimesheet, error: duplicateCheckError } = await supabase
+  let duplicateQuery = supabase
     .from("timesheets")
     .select("id")
     .eq("jobseeker_profile_id", timesheetData.jobseeker_profile_id)
-    .eq("position_id", timesheetData.position_id!)
     .eq("week_start_date", timesheetData.week_start_date)
-    .eq("pay_split_segment", paySegment)
-    .maybeSingle();
+    .eq("pay_split_segment", paySegment);
+
+  if (timesheetData.is_bulk) {
+    duplicateQuery = duplicateQuery.eq("is_bulk", true);
+  } else {
+    duplicateQuery = duplicateQuery.eq("position_id", timesheetData.position_id!).eq("is_bulk", false);
+  }
+
+  const { data: duplicateTimesheet, error: duplicateCheckError } = await duplicateQuery.maybeSingle();
 
   if (duplicateCheckError) {
     console.error(
@@ -632,9 +656,10 @@ export async function createTimesheet(
     return {
       success: false,
       status: 409,
-      error:
-        "A timesheet for this jobseeker, position and week already exists",
-      field: "position_id",
+      error: timesheetData.is_bulk
+        ? "A bulk timesheet for this jobseeker and week already exists"
+        : "A timesheet for this jobseeker, position and week already exists",
+      field: timesheetData.is_bulk ? undefined : "position_id",
     };
   }
 
@@ -676,7 +701,7 @@ export async function updateTimesheet(
   let existingQuery = supabase
     .from("timesheets")
     .select(
-      "id, jobseeker_user_id, jobseeker_profile_id, week_start_date, position_id, pay_split_segment, version, version_history"
+      "id, jobseeker_user_id, jobseeker_profile_id, week_start_date, position_id, pay_split_segment, is_bulk, version, version_history"
     )
     .eq("id", id);
 
@@ -717,16 +742,23 @@ export async function updateTimesheet(
     existingTimesheet.pay_split_segment ??
     "single";
 
-  const { data: duplicateTimesheet, error: duplicateCheckError } =
-    await supabase
-      .from("timesheets")
-      .select("id")
-      .eq("jobseeker_profile_id", mergedProfileId)
-      .eq("position_id", mergedPositionId)
-      .eq("week_start_date", mergedWeek)
-      .eq("pay_split_segment", mergedSegment)
-      .neq("id", id)
-      .maybeSingle();
+  const mergedIsBulk = timesheetData.is_bulk ?? existingTimesheet.is_bulk ?? false;
+
+  let duplicateQuery = supabase
+    .from("timesheets")
+    .select("id")
+    .eq("jobseeker_profile_id", mergedProfileId)
+    .eq("week_start_date", mergedWeek)
+    .eq("pay_split_segment", mergedSegment)
+    .neq("id", id);
+
+  if (mergedIsBulk) {
+    duplicateQuery = duplicateQuery.eq("is_bulk", true);
+  } else {
+    duplicateQuery = duplicateQuery.eq("position_id", mergedPositionId).eq("is_bulk", false);
+  }
+
+  const { data: duplicateTimesheet, error: duplicateCheckError } = await duplicateQuery.maybeSingle();
 
   if (duplicateCheckError) {
     console.error(
@@ -744,9 +776,10 @@ export async function updateTimesheet(
     return {
       success: false,
       status: 409,
-      error:
-        "Another timesheet for this jobseeker, position, week, and pay segment already exists",
-      field: "position_id",
+      error: mergedIsBulk
+        ? "Another bulk timesheet for this jobseeker, week, and pay segment already exists"
+        : "Another timesheet for this jobseeker, position, week, and pay segment already exists",
+      field: mergedIsBulk ? undefined : "position_id",
     };
   }
 

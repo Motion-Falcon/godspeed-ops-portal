@@ -38,6 +38,8 @@ export interface UseBulkJobseekerPositionFormsParams {
   selectedWeekStart: string;
   hoursLoading: boolean;
   weekTimesheetsForJobseeker: WeekTimesheetRecord[];
+  assignablePositions: ClientPosition[];
+  positionLoading: boolean;
 }
 
 export function useBulkJobseekerPositionForms({
@@ -46,6 +48,8 @@ export function useBulkJobseekerPositionForms({
   selectedWeekStart,
   hoursLoading,
   weekTimesheetsForJobseeker,
+  assignablePositions,
+  positionLoading,
 }: UseBulkJobseekerPositionFormsParams) {
   const [rows, setRows] = useState<BulkPositionRow[]>([]);
 
@@ -56,24 +60,6 @@ export function useBulkJobseekerPositionForms({
     jobseeker?.userId ?? "",
     selectedClientId ?? "",
     selectedWeekStart,
-  ]);
-
-  /** One empty row when workbench context is ready and week data landed */
-  useEffect(() => {
-    if (
-      !jobseeker?.userId ||
-      !selectedClientId ||
-      !selectedWeekStart ||
-      hoursLoading
-    ) {
-      return;
-    }
-    setRows((prev) => (prev.length === 0 ? [newEmptyRow()] : prev));
-  }, [
-    jobseeker?.userId,
-    selectedClientId,
-    selectedWeekStart,
-    hoursLoading,
   ]);
 
   const payrollCtxForPosition = useCallback(
@@ -90,6 +76,75 @@ export function useBulkJobseekerPositionForms({
         : null,
     []
   );
+
+  /** Hydrate rows from existing bulk timesheet if it exists, otherwise one empty row */
+  useEffect(() => {
+    if (
+      !jobseeker?.userId ||
+      !selectedClientId ||
+      !selectedWeekStart ||
+      hoursLoading ||
+      positionLoading
+    ) {
+      return;
+    }
+    
+    setRows((prev) => {
+        // If we already have rows with a position, don't re-hydrate
+        if (prev.some(r => r.position !== null)) return prev;
+        
+        // If we only have the default empty row but the user hasn't touched it, we can replace it.
+        // Or if prev.length > 0 and there's NO bulk timesheet, just return prev to keep the empty row.
+        const bulkTimesheet = weekTimesheetsForJobseeker.find(ts => ts.is_bulk && ts.week_start_date === selectedWeekStart);
+        
+        if (!bulkTimesheet && prev.length > 0) return prev;
+        
+        if (bulkTimesheet && Array.isArray(bulkTimesheet.bulk_breakdown)) {
+            const initialRows: BulkPositionRow[] = [];
+            
+            for (const item of bulkTimesheet.bulk_breakdown) {
+                const position = assignablePositions.find(p => p.id === item.position_id) || null;
+                const row = newEmptyRow();
+                if (position) {
+                    row.position = position;
+                    const ctx = payrollCtxForPosition(position, jobseeker);
+                    if (ctx) {
+                        row.form = {
+                            positionId: position.id,
+                            invoiceNumber: bulkTimesheet.invoice_number || "",
+                            weekStartDate: bulkTimesheet.week_start_date,
+                            weekEndDate: bulkTimesheet.week_end_date,
+                            entries: item.entries || [],
+                            totalRegularHours: item.regular_hours || 0,
+                            totalOvertimeHours: item.overtime_hours || 0,
+                            jobseekerPay: item.total_jobseeker_pay || 0,
+                            clientBill: item.total_client_bill || 0,
+                            bonusAmount: item.bonus_amount || 0,
+                            deductionAmount: item.deduction_amount || 0,
+                            notes: item.notes || "",
+                            existingTimesheetId: bulkTimesheet.id,
+                        };
+                        row.formLoading = false;
+                    }
+                }
+                initialRows.push(row);
+            }
+            
+            if (initialRows.length > 0) return initialRows;
+        }
+
+        return [newEmptyRow()];
+    });
+  }, [
+    jobseeker,
+    selectedClientId,
+    selectedWeekStart,
+    hoursLoading,
+    positionLoading,
+    weekTimesheetsForJobseeker,
+    assignablePositions,
+    payrollCtxForPosition
+  ]);
 
   /** Hydrate forms for rows awaiting seed (position chosen, week data ready) */
   useEffect(() => {
