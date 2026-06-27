@@ -2,11 +2,11 @@ import axios from "axios";
 import { api } from "./index";
 
 export interface TimesheetReportFilter {
-  jobseekerId: string;
+  jobseekerIds: string[];
   clientIds?: string[];
   weekPeriods: Array<{ start: string; end: string }>;
-  payCycle?: string;
-  listName?: string;
+  payCycles?: string[];
+  listNames?: string[];
 }
 
 export interface TimesheetReportRow {
