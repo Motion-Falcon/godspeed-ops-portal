@@ -42,6 +42,7 @@ export interface JobSeekerProfile {
   paymentMethod?: string;
   cashDeduction?: string;
   sinPayrollHoursCap?: number | string | null;
+  hstGst?: string;
 }
 
 export interface JobSeekerDetailedProfile extends JobSeekerProfile {

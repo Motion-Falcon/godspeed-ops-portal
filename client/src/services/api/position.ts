@@ -685,6 +685,7 @@ export interface AssignmentRecord {
     payment_method?: string;
     cash_deduction?: string;
     sin_payroll_hours_cap?: number | string | null;
+    hst_gst?: string;
   };
 }
 export const getPositionAssignments = async (
