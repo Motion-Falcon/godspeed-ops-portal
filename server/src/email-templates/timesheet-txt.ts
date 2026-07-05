@@ -13,6 +13,7 @@ export function timesheetTextTemplate(vars: Record<string, any>): string {
   const overtimePayRate = toNum(vars.overtime_pay_rate);
   const bonusAmt = toNum(vars.bonus_amount);
   const dedAmt = toNum(vars.deduction_amount);
+  const taxAmt = toNum(vars.tax_amount);
   const cashDedPct = toNum(vars.cash_deduction_percentage);
   const cashDedAmt = toNum(vars.cash_deduction_amount);
   const totalPay = toNum(vars.total_jobseeker_pay);
@@ -55,6 +56,7 @@ export function timesheetTextTemplate(vars: Record<string, any>): string {
   }
   if (bonusAmt > 0) lines.push(`  Bonus: $${bonusAmt.toFixed(2)}`);
   if (dedAmt > 0) lines.push(`  Deductions: -$${dedAmt.toFixed(2)}`);
+  if (taxAmt > 0) lines.push(`  Tax (HST/GST): $${taxAmt.toFixed(2)}`);
   if (cashDedPct > 0) lines.push(`  Cash Deduction (${cashDedPct}%): -$${cashDedAmt.toFixed(2)}`);
 
   lines.push(

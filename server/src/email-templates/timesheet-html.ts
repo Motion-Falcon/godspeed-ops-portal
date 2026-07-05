@@ -91,6 +91,12 @@ const bodySource = `
     <td style="${S.tdValue}text-align:right;">-{{currency dedAmt}}</td>
   </tr>
   {{/if}}
+  {{#if showTax}}
+  <tr>
+    <td style="${S.tdLabel}">Tax (HST/GST)</td>
+    <td style="${S.tdValue}text-align:right;">{{currency taxAmt}}</td>
+  </tr>
+  {{/if}}
   {{#if showCashDed}}
   <tr>
     <td style="${S.tdLabel}">Cash Deduction ({{cashDedPct}}%)</td>
@@ -120,6 +126,7 @@ export function timesheetHtmlTemplate(vars: Record<string, any>): string {
   const overtimePayRate = toNum(vars.overtime_pay_rate);
   const bonusAmt = toNum(vars.bonus_amount);
   const dedAmt = toNum(vars.deduction_amount);
+  const taxAmt = toNum(vars.tax_amount);
   const cashDedPct = toNum(vars.cash_deduction_percentage);
   const cashDedAmt = toNum(vars.cash_deduction_amount);
   const totalPay = toNum(vars.total_jobseeker_pay);
@@ -145,6 +152,7 @@ export function timesheetHtmlTemplate(vars: Record<string, any>): string {
     overtimePayRate,
     bonusAmt,
     dedAmt,
+    taxAmt,
     cashDedPct,
     cashDedAmt,
     totalPay,
@@ -153,6 +161,7 @@ export function timesheetHtmlTemplate(vars: Record<string, any>): string {
     showOvertime: vars.overtime_enabled && totalOtH > 0,
     showBonus: bonusAmt > 0,
     showDeduction: dedAmt > 0,
+    showTax: taxAmt > 0,
     showCashDed: cashDedPct > 0,
     dailyRows,
     generated_date: vars.generated_date || new Date().toLocaleDateString(),

@@ -40,6 +40,7 @@
     "grandTotalBonus": "Grand total des primes",
     "grandTotalDeduction": "Grand total des déductions",
     "grandTotalPay": "Grand total de la rémunération",
+    "taxAmount": "Taxe (TVH/TPS)",
     "cashDeduction": "Déduction cash ({{percent}}%)",
     "payroll": "Paie",
     "inclPremium": "(incl. prime ${{rate}}/h)",
@@ -77,7 +78,8 @@
       "paidAs": "Payé comme",
       "cashDeduction": "Déduction cash",
       "sinHoursCap": "Plafond d'heures NAS",
-      "sinHoursCapValue": "{{hours}} h"
+      "sinHoursCapValue": "{{hours}} h",
+      "hstGst": "Taux d'imposition"
     },
     "submit": {
       "sendEmail": "Envoyer la feuille de temps par courriel au demandeur d'emploi",

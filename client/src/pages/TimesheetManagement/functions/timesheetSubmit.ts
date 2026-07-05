@@ -59,6 +59,7 @@ export async function submitWeeklyTimesheets({
     let totalClientBill = 0;
     let bonusAmount = 0;
     let deductionAmount = 0;
+    let taxAmount = 0;
     let anyEmailSent = false;
     
     const dailyHoursMap = new Map<string, number>();
@@ -70,6 +71,7 @@ export async function submitWeeklyTimesheets({
       totalClientBill += r.form.clientBill;
       bonusAmount += r.form.bonusAmount;
       deductionAmount += r.form.deductionAmount;
+      taxAmount += r.form.taxAmount || 0;
       if (r.emailSent) anyEmailSent = true;
       
       r.form.entries.forEach((e: any) => {
@@ -89,6 +91,7 @@ export async function submitWeeklyTimesheets({
         regular_bill_rate: resolvePositionRates(r.clientPosition).regularBillRate,
         bonus_amount: r.form.bonusAmount,
         deduction_amount: r.form.deductionAmount,
+        tax_amount: r.form.taxAmount || 0,
         notes: r.form.notes,
         entries: r.form.entries,
       };
@@ -114,6 +117,7 @@ export async function submitWeeklyTimesheets({
       total_client_bill: totalClientBill,
       bonus_amount: bonusAmount,
       deduction_amount: deductionAmount,
+      tax_amount: taxAmount,
       notes: "Aggregated Bulk Timesheet",
       overtime_enabled: true,
       email_sent: anyEmailSent,
@@ -163,6 +167,7 @@ export async function submitWeeklyTimesheets({
       cashDeductionPct: parseFloat(jobseeker.cashDeduction || "0"),
       bonusAmount: timesheet.bonusAmount || 0,
       deductionAmount: timesheet.deductionAmount || 0,
+      hstGst: jobseeker.hstGst,
     });
 
     for (const row of payrollRows) {
@@ -189,6 +194,7 @@ export async function submitWeeklyTimesheets({
         total_client_bill: row.totalClientBill,
         bonus_amount: row.bonusAmount,
         deduction_amount: row.deductionAmount,
+        tax_amount: row.taxAmount || 0,
         notes: timesheet.notes || "",
         overtime_enabled: selectedPosition.overtimeEnabled || false,
         markup: selectedPosition.markup
