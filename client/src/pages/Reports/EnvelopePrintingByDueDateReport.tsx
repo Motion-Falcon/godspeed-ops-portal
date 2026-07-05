@@ -373,11 +373,21 @@ export function EnvelopePrintingByDueDateReport() {
                   if (nameA > nameB) return 1;
                   return 0;
                 });
-                const csvData = sortedRows.map((row) => {
+                const csvData = sortedRows.map((row, index) => {
+                  const newSequenceNumber = index + 1;
+                  const newSrNo = row.sr_no
+                    ? `${row.sr_no.substring(0, row.sr_no.lastIndexOf('-') + 1)}${String(newSequenceNumber).padStart(3, '0')}`
+                    : `NA-NA-${String(newSequenceNumber).padStart(3, '0')}`;
+
                   const csvRow: Record<string, unknown> = {};
                   csvColumns.forEach((col) => {
                     if (col.key === "report_generated_date") return;
-                    const val = row[col.key as keyof EnvelopePrintingReportRow];
+                    let val: unknown = row[col.key as keyof EnvelopePrintingReportRow];
+                    if (col.key === "sequence_number") {
+                      val = newSequenceNumber;
+                    } else if (col.key === "sr_no") {
+                      val = newSrNo;
+                    }
                     csvRow[col.label] = col.format
                       ? col.format(val, row)
                       : val !== undefined && val !== null
