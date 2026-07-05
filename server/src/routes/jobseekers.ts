@@ -151,6 +151,7 @@ interface DbJobseekerProfileListView {
   payment_method?: string;
   cash_deduction?: string;
   sin_payroll_hours_cap?: number | string | null;
+  hst_gst?: string;
 }
 
 // Interface for the simplified JobSeekerProfile list view (matches frontend expectation)
@@ -176,6 +177,7 @@ interface JobSeekerProfile {
   paymentMethod?: string;
   cashDeduction?: string;
   sinPayrollHoursCap?: number | string | null;
+  hstGst?: string;
 }
 
 // Interface for the detailed JobSeekerProfile view (matches frontend expectation)
@@ -368,7 +370,8 @@ router.get("/", isAdminOrRecruiter, async (req, res) => {
         last_activity_at,
         payment_method,
         cash_deduction,
-        sin_payroll_hours_cap
+        sin_payroll_hours_cap,
+        hst_gst
       `);
 
     // Apply all filters at database level
@@ -494,6 +497,7 @@ router.get("/", isAdminOrRecruiter, async (req, res) => {
         paymentMethod: profile.payment_method,
         cashDeduction: profile.cash_deduction,
         sinPayrollHoursCap: profile.sin_payroll_hours_cap,
+        hstGst: profile.hst_gst,
       };
       }
     );

@@ -109,6 +109,9 @@ export function TimesheetJobseekerInfoPanel({
         {isHybridPaymentMethod(pm) ? (
           <InfoCell label={tf("employee.sinHoursCap")} value={sinCapDisplay} />
         ) : null}
+        {pm.startsWith("Corporation") && (jobseeker as JobSeekerProfile & { hstGst?: string }).hstGst ? (
+          <InfoCell label={tf("employee.hstGst")} value={`${(jobseeker as JobSeekerProfile & { hstGst?: string }).hstGst}%`} />
+        ) : null}
       </div>
     </section>
   );

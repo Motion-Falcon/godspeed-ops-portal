@@ -40,6 +40,7 @@ export interface TimesheetRow {
   markup?: number;
   bonus_amount?: number;
   deduction_amount?: number;
+  tax_amount?: number;
   email_sent: boolean;
   document?: string;
   invoice_number?: string;
@@ -75,6 +76,7 @@ export interface TimesheetJobseekerProfileJoin {
   billing_email?: string | null;
   payment_method?: string | null;
   cash_deduction?: string | null;
+  hst_gst?: string | null;
 }
 
 export interface TimesheetPositionJoin {

@@ -1218,6 +1218,7 @@ router.post(
           premium_pay_rate,
           overtime_pay_rate,
           total_jobseeker_pay,
+          tax_amount,
           is_bulk,
           bulk_breakdown,
           jobseeker_profiles:jobseeker_profile_id (
@@ -1230,6 +1231,7 @@ router.post(
             email,
             billing_email,
             payment_method,
+            hst_gst,
             last_activity_at,
             created_at
           ),
@@ -1369,6 +1371,17 @@ router.post(
         const totalAmount = Number(row.total_jobseeker_pay) || 0;
         const totalFormatted = totalAmount.toFixed(2);
 
+        const taxAmt = Number(row.tax_amount) || 0;
+        const taxFormatted = taxAmt.toFixed(2);
+        
+        let taxRate = 0;
+        if (taxAmt > 0 && typeof jp.hst_gst === "string") {
+          const match = jp.hst_gst.match(/^([\d.]+)\s*%?$/);
+          if (match && match[1]) {
+            taxRate = parseFloat(match[1]) || 0;
+          }
+        }
+
         envelopeData.push({
           city: client.city1 || "",
           list_name: client.list_name || "",
@@ -1396,8 +1409,8 @@ router.post(
           premium_pay_rate: row.is_bulk ? "0.00" : (Number(row.premium_pay_rate) || 0).toFixed(2),
           overtime_pay_rate: row.is_bulk ? "0.00" : (Number(row.overtime_pay_rate) || 0).toFixed(2),
           total_amount: totalFormatted,
-          tax_rate: "0.00",
-          hst_gst: "0.00",
+          tax_rate: taxRate.toFixed(2),
+          hst_gst: taxFormatted,
           line_amount: totalFormatted,
           invoice_number: matchedInvoice?.invoice_number ?? "",
           invoice_date: matchedInvoice?.invoice_date ?? "",
@@ -1496,6 +1509,7 @@ router.post(
           premium_pay_rate,
           overtime_pay_rate,
           total_jobseeker_pay,
+          tax_amount,
           is_bulk,
           bulk_breakdown,
           jobseeker_profiles:jobseeker_profile_id (
@@ -1508,6 +1522,7 @@ router.post(
             email,
             billing_email,
             payment_method,
+            hst_gst,
             last_activity_at,
             created_at
           ),
@@ -1630,6 +1645,17 @@ router.post(
         const totalAmount = Number(row.total_jobseeker_pay) || 0;
         const totalFormatted = totalAmount.toFixed(2);
 
+        const taxAmt = Number(row.tax_amount) || 0;
+        const taxFormatted = taxAmt.toFixed(2);
+        
+        let taxRate = 0;
+        if (taxAmt > 0 && typeof jp.hst_gst === "string") {
+          const match = jp.hst_gst.match(/^([\d.]+)\s*%?$/);
+          if (match && match[1]) {
+            taxRate = parseFloat(match[1]) || 0;
+          }
+        }
+
         envelopeData.push({
           city: client.city1 || "",
           list_name: client.list_name || "",
@@ -1657,8 +1683,8 @@ router.post(
           premium_pay_rate: row.is_bulk ? "0.00" : (Number(row.premium_pay_rate) || 0).toFixed(2),
           overtime_pay_rate: row.is_bulk ? "0.00" : (Number(row.overtime_pay_rate) || 0).toFixed(2),
           total_amount: totalFormatted,
-          tax_rate: "0.00",
-          hst_gst: "0.00",
+          tax_rate: taxRate.toFixed(2),
+          hst_gst: taxFormatted,
           line_amount: totalFormatted,
           invoice_number: matchedInvoice?.invoice_number ?? "",
           invoice_date: matchedInvoice?.invoice_date ?? "",
