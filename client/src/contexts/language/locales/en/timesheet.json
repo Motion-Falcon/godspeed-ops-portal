@@ -40,6 +40,7 @@
     "grandTotalBonus": "Grand Total Bonus",
     "grandTotalDeduction": "Grand Total Deduction",
     "grandTotalPay": "Grand Total Pay",
+    "taxAmount": "Tax (HST/GST)",
     "cashDeduction": "Cash Deduction ({{percent}}%)",
     "payroll": "Payroll",
     "inclPremium": "(incl. premium ${{rate}}/h)",
@@ -77,7 +78,8 @@
       "paidAs": "Paid as",
       "cashDeduction": "Cash deduction",
       "sinHoursCap": "SIN hours cap",
-      "sinHoursCapValue": "{{hours}} h"
+      "sinHoursCapValue": "{{hours}} h",
+      "hstGst": "Tax Rate"
     },
     "submit": {
       "sendEmail": "Send timesheet via email to jobseeker",

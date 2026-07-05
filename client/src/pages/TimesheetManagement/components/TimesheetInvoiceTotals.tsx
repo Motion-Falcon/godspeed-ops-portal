@@ -60,6 +60,14 @@ export function TimesheetInvoiceTotals({
           </div>
         </div>
       )}
+      {timesheet.taxAmount !== undefined && timesheet.taxAmount > 0 && (
+        <div className="timesheet-total-line">
+          <div className="timesheet-total-label">{tf("taxAmount", { defaultValue: "Tax (HST/GST)" })}:</div>
+          <div className="timesheet-total-value">
+            +${timesheet.taxAmount.toFixed(2)}
+          </div>
+        </div>
+      )}
       {timesheet.bonusAmount > 0 && (
         <div className="timesheet-total-line">
           <div className="timesheet-total-label">{tf("bonus")}:</div>

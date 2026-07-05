@@ -31,6 +31,7 @@ export interface BuildHybridRowsInput extends WeeklyHoursSplitParams, HybridPayr
   cashDeductionPct: number;
   bonusAmount: number;
   deductionAmount: number;
+  hstGst?: string | null;
 }
 
 export interface ComputedTimesheetRow {
@@ -43,6 +44,7 @@ export interface ComputedTimesheetRow {
   totalJobseekerPay: number;
   bonusAmount: number;
   deductionAmount: number;
+  taxAmount?: number;
 }
 
 export function isHybridPaymentMethod(
@@ -80,6 +82,17 @@ export function hybridSecondLinePaymentMethod(
 
 function roundHours(n: number): number {
   return Math.round(n * 100) / 100;
+}
+
+export function parseHstGstPercentage(hstGst?: string | null): number {
+  if (!hstGst) return 0;
+  // Match a number (e.g., "13", "13.5") optionally followed by a '%'
+  const match = hstGst.match(/^([\d.]+)\s*%?$/);
+  if (match && match[1]) {
+    const val = parseFloat(match[1]);
+    return isNaN(val) ? 0 : val;
+  }
+  return 0;
 }
 
 export function computeWeeklyRegularOvertime(
@@ -168,22 +181,26 @@ export function buildTimesheetRowsForPayroll(
 
   if (!isHybridPaymentMethod(input.paymentMethod)) {
     let cashDeductionAmount = 0;
+    let taxAmount = 0;
+    const basePay =
+      weeklyRegularHours * input.effectiveRegularPayRate +
+      weeklyOvertimeHours * input.overtimePayRate;
+
     if (
       input.paymentMethod === "Cash" ||
       input.paymentMethod === "e-Transfer"
     ) {
       if (input.cashDeductionPct > 0) {
-        const base =
-          weeklyRegularHours * input.effectiveRegularPayRate +
-          weeklyOvertimeHours * input.overtimePayRate;
-        cashDeductionAmount = base * (input.cashDeductionPct / 100);
+        cashDeductionAmount = basePay * (input.cashDeductionPct / 100);
+      }
+    } else if (input.paymentMethod === "Corporation-Direct Deposit") {
+      const taxRate = parseHstGstPercentage(input.hstGst);
+      if (taxRate > 0) {
+        taxAmount = basePay * (taxRate / 100);
       }
     }
-    const basePay =
-      weeklyRegularHours * input.effectiveRegularPayRate +
-      weeklyOvertimeHours * input.overtimePayRate;
     const totalJobseekerPay =
-      basePay - cashDeductionAmount + input.bonusAmount - input.deductionAmount;
+      basePay - cashDeductionAmount + taxAmount + input.bonusAmount - input.deductionAmount;
     const clientBill =
       weeklyRegularHours * input.regularBillRate +
       weeklyOvertimeHours * input.overtimeBillRate;
@@ -199,6 +216,7 @@ export function buildTimesheetRowsForPayroll(
         totalJobseekerPay: roundHours(totalJobseekerPay),
         bonusAmount: input.bonusAmount,
         deductionAmount: input.deductionAmount,
+        taxAmount: roundHours(taxAmount),
       },
     ];
   }

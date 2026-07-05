@@ -226,8 +226,9 @@ export async function getAllTimesheets(
           week_start_date,
           week_end_date,
           total_jobseeker_pay,
+          tax_amount,
           email_sent,
-          jobseeker_profiles!inner(id, first_name, last_name, email, billing_email),
+          jobseeker_profiles!inner(id, first_name, last_name, email, billing_email, hst_gst),
           positions!inner(id, title, position_code, client_name, client)
         `);
 
@@ -273,8 +274,9 @@ export async function getAllTimesheets(
           week_start_date,
           week_end_date,
           total_jobseeker_pay,
+          tax_amount,
           email_sent,
-          jobseeker_profiles!inner(id, first_name, last_name, email, billing_email),
+          jobseeker_profiles!inner(id, first_name, last_name, email, billing_email, hst_gst),
           positions!inner(id, title, position_code, client_name, client)
         `,
     { count: "exact", head: true }
@@ -369,7 +371,8 @@ export async function sendTimesheetEmail(
             email,
             billing_email,
             payment_method,
-            cash_deduction
+            cash_deduction,
+            hst_gst
           ),
           positions!inner(
             title,
@@ -437,6 +440,7 @@ export async function sendTimesheetEmail(
       timesheet.overtime_enabled || timesheet.total_overtime_hours > 0,
     bonus_amount: timesheet.bonus_amount,
     deduction_amount: timesheet.deduction_amount,
+    tax_amount: timesheet.tax_amount,
     ...emailCashDeductionVars({
       linePaymentMethod: timesheet.line_payment_method,
       profilePaymentMethod: jobseekerProfile.payment_method,
@@ -533,7 +537,7 @@ export async function getTimesheetById(
     .select(
       `
           *,
-          jobseeker_profiles!inner(id, first_name, last_name, email),
+          jobseeker_profiles!inner(id, first_name, last_name, email, hst_gst, payment_method, cash_deduction),
           positions(id, position_code, title, client)
         `
     )
@@ -576,6 +580,7 @@ function withTimesheetDefaults(
   return {
     ...data,
     premium_pay_rate: data.premium_pay_rate ?? 0,
+    tax_amount: data.tax_amount ?? 0,
     email_sent: data.email_sent ?? false,
     pay_split_segment: data.pay_split_segment ?? "single",
     line_payment_method:

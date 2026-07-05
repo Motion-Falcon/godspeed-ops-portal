@@ -55,6 +55,7 @@ export function calculateTimesheetTotals(
   totalOvertimeHours: number;
   jobseekerPay: number;
   clientBill: number;
+  taxAmount: number;
 } {
   const assignment = findPositionAssignment(ctx);
   if (!assignment) {
@@ -63,6 +64,7 @@ export function calculateTimesheetTotals(
       totalOvertimeHours: 0,
       jobseekerPay: 0,
       clientBill: 0,
+      taxAmount: 0,
     };
   }
 
@@ -89,6 +91,7 @@ export function calculateTimesheetTotals(
     cashDeductionPct: parseFloat(ctx.jobseeker?.cashDeduction || "0"),
     bonusAmount,
     deductionAmount,
+    hstGst: ctx.jobseeker?.hstGst,
   });
 
   if (rows.length === 0) {
@@ -97,6 +100,7 @@ export function calculateTimesheetTotals(
       totalOvertimeHours: 0,
       jobseekerPay: 0,
       clientBill: 0,
+      taxAmount: 0,
     };
   }
 
@@ -105,6 +109,7 @@ export function calculateTimesheetTotals(
     totalOvertimeHours: rows.reduce((s, r) => s + r.totalOvertimeHours, 0),
     jobseekerPay: rows.reduce((s, r) => s + r.totalJobseekerPay, 0),
     clientBill: rows.reduce((s, r) => s + r.totalClientBill, 0),
+    taxAmount: rows.reduce((s, r) => s + (r.taxAmount || 0), 0),
   };
 }
 
@@ -139,6 +144,7 @@ export function getPayrollPreviewRows(
     cashDeductionPct: parseFloat(ctx.jobseeker.cashDeduction || "0"),
     bonusAmount: timesheet.bonusAmount || 0,
     deductionAmount: timesheet.deductionAmount || 0,
+    hstGst: ctx.jobseeker.hstGst,
   });
 }
 
