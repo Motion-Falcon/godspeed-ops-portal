@@ -28,5 +28,6 @@ export function mapAssignmentToJobseeker(
     paymentMethod: profile.payment_method,
     cashDeduction: profile.cash_deduction,
     sinPayrollHoursCap: profile.sin_payroll_hours_cap,
+    hstGst: profile.hst_gst,
   };
 }

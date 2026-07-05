@@ -2239,7 +2239,7 @@ router.get(
       const { data: jobseekerProfiles, error: profilesError } = await supabase
         .from("jobseeker_profiles")
         .select(
-          "id, user_id, first_name, last_name, email, mobile, employee_id, billing_email, payment_method, cash_deduction, sin_payroll_hours_cap, last_activity_at, created_at"
+          "id, user_id, first_name, last_name, email, mobile, employee_id, billing_email, payment_method, cash_deduction, sin_payroll_hours_cap, hst_gst, last_activity_at, created_at"
         )
         .in("user_id", candidateIds);
 

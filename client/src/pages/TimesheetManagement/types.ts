@@ -66,6 +66,7 @@ export interface WeeklyTimesheet {
   clientBill: number;
   bonusAmount: number;
   deductionAmount: number;
+  taxAmount?: number;
   notes: string;
   existingTimesheetId?: string;
   splitExistingIds?: Partial<Record<PaySplitSegmentKey, string>>;
