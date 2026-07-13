@@ -224,14 +224,16 @@ router.post(
       }
 
       let positionIds: string[] = [];
+      let positionsMap: Record<string, any> = {};
       if (clientIds && Array.isArray(clientIds) && clientIds.length > 0) {
-        // Fetch all position IDs for the selected clients to handle bulk timesheets properly
+        // Fetch full position details for the selected clients to handle bulk timesheets properly
         const { data: positionsData } = await supabase
           .from("positions")
-          .select("id")
+          .select("id, title, position_code, position_category, client_manager, notes, client")
           .in("client", clientIds);
         if (positionsData) {
           positionIds = positionsData.map((p: any) => p.id);
+          positionsData.forEach((p: any) => { positionsMap[p.id] = p; });
         }
       }
 
@@ -298,6 +300,55 @@ router.post(
       const result = filtered.map((row: any) => {
         const jp = row.jobseeker_profiles || {};
         const p = row.positions || {};
+
+        // For bulk timesheets, resolve position info and rates from the breakdown.
+        // Always show real position names (comma-separated if multiple).
+        let resolvedTitle = p.title;
+        let resolvedCode = p.position_code;
+        let resolvedCategory = p.position_category;
+        let resolvedClientManager = p.client_manager;
+        let resolvedNotes = p.notes;
+        let resolvedPayRate = row.regular_pay_rate;
+        let resolvedPremiumRate = row.premium_pay_rate;
+        let resolvedOvertimeRate = row.overtime_pay_rate;
+        let resolvedClientId = p.client;
+
+        if (row.is_bulk && Array.isArray(row.bulk_breakdown) && row.bulk_breakdown.length > 0) {
+          // Find breakdown entries belonging to the selected client's positions
+          const matchingBreakdowns = positionIds.length > 0
+            ? row.bulk_breakdown.filter((bd: any) => positionIds.includes(bd.position_id))
+            : row.bulk_breakdown;
+
+          if (matchingBreakdowns.length > 0) {
+            // Build comma-separated position names/codes from the real positions map,
+            // falling back to the title/code stored in bulk_breakdown itself.
+            const titles: string[] = [];
+            const codes: string[] = [];
+            const categories: string[] = [];
+
+            for (const bd of matchingBreakdowns) {
+              const posFromMap = positionsMap[bd.position_id];
+              titles.push(posFromMap?.title || bd.position_title || "");
+              codes.push(posFromMap?.position_code || bd.position_code || "");
+              categories.push(posFromMap?.position_category || "");
+            }
+
+            resolvedTitle = [...new Set(titles.filter(Boolean))].join(", ");
+            resolvedCode = [...new Set(codes.filter(Boolean))].join(", ");
+            resolvedCategory = [...new Set(categories.filter(Boolean))].join(", ");
+
+            // Use the first matching breakdown's rates (most relevant for the selected client)
+            const firstBd = matchingBreakdowns[0];
+            const firstPosFromMap = positionsMap[firstBd.position_id];
+            resolvedPayRate = firstBd.regular_pay_rate ?? 0;
+            resolvedPremiumRate = firstBd.premium_pay_rate ?? row.premium_pay_rate ?? 0;
+            resolvedOvertimeRate = firstBd.overtime_pay_rate ?? row.overtime_pay_rate ?? 0;
+            resolvedClientManager = firstPosFromMap?.client_manager || p.client_manager;
+            resolvedNotes = firstPosFromMap?.notes || p.notes;
+            resolvedClientId = firstPosFromMap?.client || p.client;
+          }
+        }
+
         return {
           employee_id: jp.employee_id,
           license_number: jp.license_number,
@@ -307,22 +358,25 @@ router.post(
           email: jp.email,
           company_name: undefined, // will fill below
           list_name: undefined, // will fill below
-          title: row.is_bulk ? "Multiple Positions" : p.title,
-          position_code: row.is_bulk ? "N/A" : p.position_code,
-          position_category: row.is_bulk ? "N/A" : p.position_category,
-          client_manager: p.client_manager, // We keep the client manager from the first position
+          title: resolvedTitle,
+          position_code: resolvedCode,
+          position_category: resolvedCategory,
+          client_manager: resolvedClientManager,
 
           week_start_date: row.week_start_date,
           week_end_date: row.week_end_date,
           total_regular_hours: row.total_regular_hours,
           total_overtime_hours: row.total_overtime_hours,
-          regular_pay_rate: row.is_bulk ? 0 : row.regular_pay_rate,
-          premium_pay_rate: row.is_bulk ? 0 : row.premium_pay_rate,
-          overtime_pay_rate: row.is_bulk ? 0 : row.overtime_pay_rate,
+          regular_pay_rate: resolvedPayRate,
+          premium_pay_rate: resolvedPremiumRate,
+          overtime_pay_rate: resolvedOvertimeRate,
           total_jobseeker_pay: row.total_jobseeker_pay,
           bonus_amount: row.bonus_amount,
           deduction_amount: row.deduction_amount,
-          cash_deduction_amount: computeTimesheetCashDeductionAmount(row, jp),
+          cash_deduction_amount: computeTimesheetCashDeductionAmount(
+            { ...row, regular_pay_rate: resolvedPayRate, premium_pay_rate: resolvedPremiumRate, overtime_pay_rate: resolvedOvertimeRate },
+            jp
+          ),
           hst_gst: jp.hst_gst,
           currency: undefined, // will fill below
           payment_method:
@@ -330,13 +384,14 @@ router.post(
               ? row.line_payment_method
               : jp.payment_method,
           pay_cycle: undefined, // will fill below
-          notes: p.notes,
+          notes: resolvedNotes,
           timesheet_created_at: row.created_at,
           invoice_number: row.invoice_number,
-          client_id: p.client, // <-- add client_id for later lookup
+          client_id: resolvedClientId, // <-- resolved client_id for lookup below
           jobseeker_is_inactive: checkJobseekerInactive(jp.last_activity_at, jp.created_at),
         };
       });
+
 
       // To fill company_name, list_name, currency, pay_cycle, need to fetch client info for all unique client ids
       const clientIdsSet = new Set(
@@ -1190,7 +1245,7 @@ router.post(
 
       const { data: positionsData, error: positionsError } = await supabase
         .from("positions")
-        .select("id, client")
+        .select("id, title, position_number, position_category, client")
         .in("client", clientIds);
 
       if (positionsError) {
@@ -1199,6 +1254,8 @@ router.post(
       }
 
       const positionIds = (positionsData || []).map((p: { id: string }) => p.id);
+      const positionsMap: Record<string, any> = {};
+      (positionsData || []).forEach((p: any) => { positionsMap[p.id] = p; });
       if (positionIds.length === 0) {
         return res.json([]);
       }
@@ -1369,9 +1426,16 @@ router.post(
         );
 
         const totalAmount = Number(row.total_jobseeker_pay) || 0;
-        const totalFormatted = totalAmount.toFixed(2);
-
         const taxAmt = Number(row.tax_amount) || 0;
+
+        let finalTotalAmount = totalAmount;
+        const pm = jp.payment_method || "";
+        if (pm.includes("Corporation") && pm.includes("Direct Deposit")) {
+          finalTotalAmount += taxAmt;
+        }
+
+        const totalFormatted = finalTotalAmount.toFixed(2);
+        const lineFormatted = totalAmount.toFixed(2);
         const taxFormatted = taxAmt.toFixed(2);
         
         let taxRate = 0;
@@ -1379,6 +1443,39 @@ router.post(
           const match = jp.hst_gst.match(/^([\d.]+)\s*%?$/);
           if (match && match[1]) {
             taxRate = parseFloat(match[1]) || 0;
+          }
+        }
+
+        // Resolve position name, category, and rates from bulk_breakdown if is_bulk
+        let resolvedPositionName = position.title
+          ? `${position.title} [${position.position_number || ""}]`
+          : "";
+        let resolvedPositionCategory = position.position_category || "";
+        let resolvedPayRate = (Number(row.regular_pay_rate) || 0).toFixed(2);
+        let resolvedPremiumRate = (Number(row.premium_pay_rate) || 0).toFixed(2);
+        let resolvedOvertimeRate = (Number(row.overtime_pay_rate) || 0).toFixed(2);
+
+        if (row.is_bulk && Array.isArray(row.bulk_breakdown) && row.bulk_breakdown.length > 0) {
+          const matchingBreakdowns = positionIds.length > 0
+            ? row.bulk_breakdown.filter((bd: any) => positionIds.includes(bd.position_id))
+            : row.bulk_breakdown;
+
+          if (matchingBreakdowns.length > 0) {
+            const names: string[] = [];
+            const categories: string[] = [];
+            for (const bd of matchingBreakdowns) {
+              const posFromMap = positionsMap[bd.position_id];
+              const title = posFromMap?.title || bd.position_title || "";
+              const num = posFromMap?.position_number || "";
+              if (title) names.push(num ? `${title} [${num}]` : title);
+              if (posFromMap?.position_category) categories.push(posFromMap.position_category);
+            }
+            resolvedPositionName = [...new Set(names)].join(", ");
+            resolvedPositionCategory = [...new Set(categories)].join(", ");
+            const firstBd = matchingBreakdowns[0];
+            resolvedPayRate = (Number(firstBd.regular_pay_rate) || 0).toFixed(2);
+            resolvedPremiumRate = (Number(firstBd.premium_pay_rate) || 0).toFixed(2);
+            resolvedOvertimeRate = (Number(firstBd.overtime_pay_rate) || 0).toFixed(2);
           }
         }
 
@@ -1399,19 +1496,17 @@ router.post(
           email_id: jp.email || "",
           billing_email: jp.billing_email || "",
           pay_method: jp.payment_method || "",
-          position_category: row.is_bulk ? "N/A" : (position.position_category || ""),
-          position_name: row.is_bulk ? "Multiple Positions" : (position.title
-            ? `${position.title} [${position.position_number || ""}]`
-            : ""),
+          position_category: resolvedPositionCategory,
+          position_name: resolvedPositionName,
           hours: (Number(row.total_regular_hours) || 0).toString(),
           overtime_hours: (Number(row.total_overtime_hours) || 0).toString(),
-          regular_pay_rate: row.is_bulk ? "0.00" : (Number(row.regular_pay_rate) || 0).toFixed(2),
-          premium_pay_rate: row.is_bulk ? "0.00" : (Number(row.premium_pay_rate) || 0).toFixed(2),
-          overtime_pay_rate: row.is_bulk ? "0.00" : (Number(row.overtime_pay_rate) || 0).toFixed(2),
+          regular_pay_rate: resolvedPayRate,
+          premium_pay_rate: resolvedPremiumRate,
+          overtime_pay_rate: resolvedOvertimeRate,
           total_amount: totalFormatted,
           tax_rate: taxRate.toFixed(2),
           hst_gst: taxFormatted,
-          line_amount: totalFormatted,
+          line_amount: lineFormatted,
           invoice_number: matchedInvoice?.invoice_number ?? "",
           invoice_date: matchedInvoice?.invoice_date ?? "",
           payment_due_date: paymentDueDate ?? "",
@@ -1481,7 +1576,7 @@ router.post(
 
       const { data: positionsData, error: positionsError } = await supabase
         .from("positions")
-        .select("id, client")
+        .select("id, title, position_number, position_category, client")
         .in("client", clientIds);
 
       if (positionsError) {
@@ -1490,6 +1585,8 @@ router.post(
       }
 
       const positionIds = (positionsData || []).map((p: { id: string }) => p.id);
+      const positionsMap: Record<string, any> = {};
+      (positionsData || []).forEach((p: any) => { positionsMap[p.id] = p; });
       if (positionIds.length === 0) {
         return res.json([]);
       }
@@ -1643,9 +1740,16 @@ router.post(
         );
 
         const totalAmount = Number(row.total_jobseeker_pay) || 0;
-        const totalFormatted = totalAmount.toFixed(2);
-
         const taxAmt = Number(row.tax_amount) || 0;
+
+        let finalTotalAmount = totalAmount;
+        const pm = jp.payment_method || "";
+        if (pm.includes("Corporation") && pm.includes("Direct Deposit")) {
+          finalTotalAmount += taxAmt;
+        }
+
+        const totalFormatted = finalTotalAmount.toFixed(2);
+        const lineFormatted = totalAmount.toFixed(2);
         const taxFormatted = taxAmt.toFixed(2);
         
         let taxRate = 0;
@@ -1653,6 +1757,39 @@ router.post(
           const match = jp.hst_gst.match(/^([\d.]+)\s*%?$/);
           if (match && match[1]) {
             taxRate = parseFloat(match[1]) || 0;
+          }
+        }
+
+        // Resolve position name, category, and rates from bulk_breakdown if is_bulk
+        let resolvedPositionName = position.title
+          ? `${position.title} [${position.position_number || ""}]`
+          : "";
+        let resolvedPositionCategory = position.position_category || "";
+        let resolvedPayRate = (Number(row.regular_pay_rate) || 0).toFixed(2);
+        let resolvedPremiumRate = (Number(row.premium_pay_rate) || 0).toFixed(2);
+        let resolvedOvertimeRate = (Number(row.overtime_pay_rate) || 0).toFixed(2);
+
+        if (row.is_bulk && Array.isArray(row.bulk_breakdown) && row.bulk_breakdown.length > 0) {
+          const matchingBreakdowns = positionIds.length > 0
+            ? row.bulk_breakdown.filter((bd: any) => positionIds.includes(bd.position_id))
+            : row.bulk_breakdown;
+
+          if (matchingBreakdowns.length > 0) {
+            const names: string[] = [];
+            const categories: string[] = [];
+            for (const bd of matchingBreakdowns) {
+              const posFromMap = positionsMap[bd.position_id];
+              const title = posFromMap?.title || bd.position_title || "";
+              const num = posFromMap?.position_number || "";
+              if (title) names.push(num ? `${title} [${num}]` : title);
+              if (posFromMap?.position_category) categories.push(posFromMap.position_category);
+            }
+            resolvedPositionName = [...new Set(names)].join(", ");
+            resolvedPositionCategory = [...new Set(categories)].join(", ");
+            const firstBd = matchingBreakdowns[0];
+            resolvedPayRate = (Number(firstBd.regular_pay_rate) || 0).toFixed(2);
+            resolvedPremiumRate = (Number(firstBd.premium_pay_rate) || 0).toFixed(2);
+            resolvedOvertimeRate = (Number(firstBd.overtime_pay_rate) || 0).toFixed(2);
           }
         }
 
@@ -1673,19 +1810,17 @@ router.post(
           email_id: jp.email || "",
           billing_email: jp.billing_email || "",
           pay_method: jp.payment_method || "",
-          position_category: row.is_bulk ? "N/A" : (position.position_category || ""),
-          position_name: row.is_bulk ? "Multiple Positions" : (position.title
-            ? `${position.title} [${position.position_number || ""}]`
-            : ""),
+          position_category: resolvedPositionCategory,
+          position_name: resolvedPositionName,
           hours: (Number(row.total_regular_hours) || 0).toString(),
           overtime_hours: (Number(row.total_overtime_hours) || 0).toString(),
-          regular_pay_rate: row.is_bulk ? "0.00" : (Number(row.regular_pay_rate) || 0).toFixed(2),
-          premium_pay_rate: row.is_bulk ? "0.00" : (Number(row.premium_pay_rate) || 0).toFixed(2),
-          overtime_pay_rate: row.is_bulk ? "0.00" : (Number(row.overtime_pay_rate) || 0).toFixed(2),
+          regular_pay_rate: resolvedPayRate,
+          premium_pay_rate: resolvedPremiumRate,
+          overtime_pay_rate: resolvedOvertimeRate,
           total_amount: totalFormatted,
           tax_rate: taxRate.toFixed(2),
           hst_gst: taxFormatted,
-          line_amount: totalFormatted,
+          line_amount: lineFormatted,
           invoice_number: matchedInvoice?.invoice_number ?? "",
           invoice_date: matchedInvoice?.invoice_date ?? "",
           payment_due_date: paymentDueDate ?? "",
