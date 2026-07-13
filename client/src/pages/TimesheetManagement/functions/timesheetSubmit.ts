@@ -108,11 +108,14 @@ export async function submitWeeklyTimesheets({
       daily_hours: dailyHours,
       total_regular_hours: totalRegularHours,
       total_overtime_hours: totalOvertimeHours,
-      regular_pay_rate: 0,
-      premium_pay_rate: 0,
-      overtime_pay_rate: 0,
-      regular_bill_rate: 0,
-      overtime_bill_rate: 0,
+      // Store the primary selected position's rates at the top level.
+      // For single-position bulk this is the exact rate; for multi-position
+      // bulk the authoritative per-position rates live in bulk_breakdown.
+      regular_pay_rate: regularPayRate,
+      premium_pay_rate: premiumPayRate,
+      overtime_pay_rate: overtimePayRate,
+      regular_bill_rate: regularBillRate,
+      overtime_bill_rate: overtimeBillRate,
       total_jobseeker_pay: totalJobseekerPay,
       total_client_bill: totalClientBill,
       bonus_amount: bonusAmount,

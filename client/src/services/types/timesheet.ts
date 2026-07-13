@@ -98,6 +98,7 @@ export type TimesheetListItem = Pick<
   | "week_end_date"
   | "total_jobseeker_pay"
   | "email_sent"
+  | "is_bulk"
 > & {
   jobseeker_profiles: TimesheetJobseekerProfileJoin | null;
   positions: TimesheetPositionJoin | null;

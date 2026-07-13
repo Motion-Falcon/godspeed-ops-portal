@@ -228,6 +228,7 @@ export async function getAllTimesheets(
           total_jobseeker_pay,
           tax_amount,
           email_sent,
+          is_bulk,
           jobseeker_profiles!inner(id, first_name, last_name, email, billing_email, hst_gst),
           positions!inner(id, title, position_code, client_name, client)
         `);

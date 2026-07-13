@@ -328,6 +328,8 @@ export interface TimesheetFromAPI {
   bonusAmount: number;
   deductionAmount: number;
   invoiceNumber?: string;
+  isBulk?: boolean;
+  bulkBreakdown?: any[];
   position: {
     id: string;
     title: string;
