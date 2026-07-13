@@ -469,52 +469,106 @@ export function InvoiceManagement() {
       > = {};
 
       response.timesheets.forEach((timesheet: TimesheetFromAPI) => {
-        // One line item per timesheet row (hybrid pay uses multiple rows per week)
-        const key = timesheet.id;
+        if (
+          timesheet.isBulk &&
+          Array.isArray(timesheet.bulkBreakdown) &&
+          timesheet.bulkBreakdown.length > 0
+        ) {
+          timesheet.bulkBreakdown.forEach((item, index) => {
+            const key = `${timesheet.id}_${item.position_id}_${index}`;
+            const itemTotalHours =
+              (Number(item.regular_hours) || 0) + (Number(item.overtime_hours) || 0);
 
-        if (!groupedData[key]) {
-          groupedData[key] = {
-            position: {
-              id: timesheet.position.id,
-              positionCode: timesheet.position.positionCode,
-              positionNumber: timesheet.position.positionNumber,
-              title: timesheet.position.title,
-              regularPayRate: timesheet.regularPayRate.toString(),
-              premiumPayRate: (timesheet.premiumPayRate || 0).toString(),
-              billRate: timesheet.regularBillRate.toString(),
-              markup: "0",
-              overtimeEnabled: timesheet.overtimeEnabled,
-              overtimeBillRate: timesheet.overtimeBillRate.toString(),
-              overtimePayRate: timesheet.overtimePayRate.toString(),
-            },
-            jobseeker: {
-              id: timesheet.jobseekerProfileId,
-              candidateId: timesheet.jobseekerUserId,
-              firstName: timesheet.jobseekerProfile.firstName,
-              lastName: timesheet.jobseekerProfile.lastName,
-              email: timesheet.jobseekerProfile.email,
-              employeeId: timesheet.jobseekerProfile.employeeId,
-              status: "active",
-              startDate: timesheet.weekStartDate,
-              endDate: timesheet.weekEndDate,
-            },
-            totalHours: 0,
-            regularBillRate: timesheet.regularBillRate,
-            regularPayRate: timesheet.regularPayRate,
-            premiumPayRate: timesheet.premiumPayRate || 0,
-            timesheetIds: [],
-            description: `Work period: ${new Date(
-              timesheet.weekStartDate
-            ).toLocaleDateString()} - ${new Date(
-              timesheet.weekEndDate
-            ).toLocaleDateString()}`,
-          };
+            if (!groupedData[key]) {
+              groupedData[key] = {
+                position: {
+                  id: item.position_id,
+                  positionCode: item.position_code || "",
+                  positionNumber: item.position_code || "",
+                  title: item.position_title || "",
+                  regularPayRate: (item.regular_pay_rate || 0).toString(),
+                  premiumPayRate: "0",
+                  billRate: (item.regular_bill_rate || 0).toString(),
+                  markup: "0",
+                  overtimeEnabled: timesheet.overtimeEnabled,
+                  overtimeBillRate: (item.regular_bill_rate || 0).toString(), // Fallback
+                  overtimePayRate: (item.regular_pay_rate || 0).toString(), // Fallback
+                },
+                jobseeker: {
+                  id: timesheet.jobseekerProfileId,
+                  candidateId: timesheet.jobseekerUserId,
+                  firstName: timesheet.jobseekerProfile.firstName,
+                  lastName: timesheet.jobseekerProfile.lastName,
+                  email: timesheet.jobseekerProfile.email,
+                  employeeId: timesheet.jobseekerProfile.employeeId,
+                  status: "active",
+                  startDate: timesheet.weekStartDate,
+                  endDate: timesheet.weekEndDate,
+                },
+                totalHours: 0,
+                regularBillRate: Number(item.regular_bill_rate) || 0,
+                regularPayRate: Number(item.regular_pay_rate) || 0,
+                premiumPayRate: 0,
+                timesheetIds: [],
+                description: `Work period: ${new Date(
+                  timesheet.weekStartDate
+                ).toLocaleDateString()} - ${new Date(
+                  timesheet.weekEndDate
+                ).toLocaleDateString()}`,
+              };
+            }
+
+            groupedData[key].totalHours += itemTotalHours;
+            groupedData[key].timesheetIds.push(timesheet.id);
+          });
+        } else {
+          // One line item per timesheet row (hybrid pay uses multiple rows per week)
+          const key = timesheet.id;
+
+          if (!groupedData[key]) {
+            groupedData[key] = {
+              position: {
+                id: timesheet.position.id,
+                positionCode: timesheet.position.positionCode,
+                positionNumber: timesheet.position.positionNumber,
+                title: timesheet.position.title,
+                regularPayRate: timesheet.regularPayRate.toString(),
+                premiumPayRate: (timesheet.premiumPayRate || 0).toString(),
+                billRate: timesheet.regularBillRate.toString(),
+                markup: "0",
+                overtimeEnabled: timesheet.overtimeEnabled,
+                overtimeBillRate: timesheet.overtimeBillRate.toString(),
+                overtimePayRate: timesheet.overtimePayRate.toString(),
+              },
+              jobseeker: {
+                id: timesheet.jobseekerProfileId,
+                candidateId: timesheet.jobseekerUserId,
+                firstName: timesheet.jobseekerProfile.firstName,
+                lastName: timesheet.jobseekerProfile.lastName,
+                email: timesheet.jobseekerProfile.email,
+                employeeId: timesheet.jobseekerProfile.employeeId,
+                status: "active",
+                startDate: timesheet.weekStartDate,
+                endDate: timesheet.weekEndDate,
+              },
+              totalHours: 0,
+              regularBillRate: timesheet.regularBillRate,
+              regularPayRate: timesheet.regularPayRate,
+              premiumPayRate: timesheet.premiumPayRate || 0,
+              timesheetIds: [],
+              description: `Work period: ${new Date(
+                timesheet.weekStartDate
+              ).toLocaleDateString()} - ${new Date(
+                timesheet.weekEndDate
+              ).toLocaleDateString()}`,
+            };
+          }
+
+          // Aggregate hours
+          groupedData[key].totalHours +=
+            timesheet.totalRegularHours + timesheet.totalOvertimeHours;
+          groupedData[key].timesheetIds.push(timesheet.id);
         }
-
-        // Aggregate hours
-        groupedData[key].totalHours +=
-          timesheet.totalRegularHours + timesheet.totalOvertimeHours;
-        groupedData[key].timesheetIds.push(timesheet.id);
       });
 
       // Convert grouped data to line items

@@ -76,8 +76,7 @@ export function filterTimesheetsForWeekAndPosition(
   return timesheets.filter(
     (timesheet) =>
       timesheet.week_start_date === week_start_date &&
-      timesheet.position_id === position_id &&
-      !timesheet.is_bulk
+      timesheet.position_id === position_id
   );
 }
 
