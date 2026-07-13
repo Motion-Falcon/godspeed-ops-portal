@@ -14,7 +14,7 @@ export const getPersonalInfoSchema = (messages: Record<string, string>) =>
         .email({ message: messages.emailInvalid })
         .optional()
         .or(z.literal("")),
-      mobile: z.string().min(1, { message: messages.mobileRequired }),
+      mobile: z.string().min(1, { message: messages.mobileRequired }).regex(/^[0-9+\-()\s]+$/, { message: "Invalid phone number format" }),
       licenseNumber: z.string().optional(),
       passportNumber: z.string().optional(),
       governmentIdType: z.string().optional(),
@@ -207,7 +207,7 @@ export const createFormSchema = (messages: Record<string, string>) => {
         .email({ message: messages.emailInvalid })
         .optional()
         .or(z.literal("")),
-      mobile: z.string().min(1, { message: messages.mobileRequired }),
+      mobile: z.string().min(1, { message: messages.mobileRequired }).regex(/^[0-9+\-()\s]+$/, { message: "Invalid phone number format" }),
       licenseNumber: z.string().optional(),
       passportNumber: z.string().optional(),
       governmentIdType: z.string().optional(),

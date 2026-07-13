@@ -1231,6 +1231,8 @@ router.get(
           bonus_amount,
           deduction_amount,
           invoice_number,
+          is_bulk,
+          bulk_breakdown,
           positions!inner(
             id,
             title,
@@ -1279,6 +1281,8 @@ router.get(
         bonusAmount: parseFloat(timesheet.bonus_amount) || 0,
         deductionAmount: parseFloat(timesheet.deduction_amount) || 0,
         invoiceNumber: timesheet.invoice_number,
+        isBulk: timesheet.is_bulk,
+        bulkBreakdown: timesheet.bulk_breakdown,
         position: {
           id: timesheet.positions.id,
           title: timesheet.positions.title,

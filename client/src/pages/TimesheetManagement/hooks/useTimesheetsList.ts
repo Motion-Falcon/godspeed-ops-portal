@@ -283,7 +283,11 @@ export function useTimesheetsList(t: TimesheetsListT): UseTimesheetsListResult {
       if (positionId) params.set("positionId", positionId);
       if (weekStart) params.set("weekStart", weekStart);
 
-      navigate(`/timesheet-management?${params.toString()}`);
+      if (timesheet.is_bulk) {
+        navigate(`/bulk-timesheet-management/jobseeker?${params.toString()}`);
+      } else {
+        navigate(`/timesheet-management?${params.toString()}`);
+      }
     },
     [navigate]
   );

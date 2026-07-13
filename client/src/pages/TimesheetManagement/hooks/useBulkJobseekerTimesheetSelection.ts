@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
 import type { DropdownOption } from "../../../components/CustomDropdown";
 import type { JobSeekerProfile } from "../../../types/jobseeker";
 import { getClients, type ClientData } from "../../../services/api/client";
@@ -9,6 +10,17 @@ import { mapPositionsFromApiResponse } from "../functions/mapClientPositions";
 import type { ClientPosition } from "../types";
 
 export function useBulkJobseekerTimesheetSelection() {
+  const location = useLocation();
+  const urlParamsApplied = useRef(false);
+
+  const urlParams = useRef((() => {
+    const params = new URLSearchParams(location.search);
+    return {
+      profileId: params.get("profileId") ?? "",
+      clientId: params.get("clientId") ?? "",
+      weekStart: params.get("weekStart") ?? "",
+    };
+  })());
   const [jobseekers, setJobseekers] = useState<JobSeekerProfile[]>([]);
   const [selectedJobseeker, setSelectedJobseeker] =
     useState<JobSeekerProfile | null>(null);
@@ -43,6 +55,16 @@ export function useBulkJobseekerTimesheetSelection() {
     setWeekOptions(generateWeekOptions());
   }, [fetchJobseekers]);
 
+  useEffect(() => {
+    const { profileId, weekStart } = urlParams.current;
+    if (!profileId || urlParamsApplied.current || jobseekers.length === 0) return;
+    const match = jobseekers.find((js) => js.id === profileId);
+    if (match) {
+      setSelectedJobseeker(match);
+      if (weekStart) setSelectedWeekStart(weekStart);
+    }
+  }, [jobseekers]);
+
   const fetchClients = useCallback(async () => {
     try {
       setClientLoading(true);
@@ -56,11 +78,20 @@ export function useBulkJobseekerTimesheetSelection() {
   }, []);
 
   useEffect(() => {
+    const { clientId } = urlParams.current;
+    if (!clientId || urlParamsApplied.current || clients.length === 0) return;
+    const match = clients.find((c) => c.id === clientId);
+    if (match) {
+      setSelectedClient(match);
+      urlParamsApplied.current = true;
+    }
+  }, [clients]);
+
+  useEffect(() => {
     if (selectedJobseeker) {
       void fetchClients();
       setSelectedClient(null);
       setPositions([]);
-      setSelectedWeekStart("");
     }
   }, [selectedJobseeker, fetchClients]);
 
