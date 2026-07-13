@@ -277,8 +277,8 @@ const styles = StyleSheet.create({
 // Company information
 const COMPANY_INFO = {
   name: "Hire Solutions O/A 17417292 Canada Inc",
-  address: "Unit-140 1315",
-  address2: "Bishop St Cambridge Ontario",
+  address: "30 Kennedy Rd S",
+  address2: "Brampton, ON, L6W 3E2",
   gst: "GST/HST No. 72724 0764 RT0001",
 };
 
