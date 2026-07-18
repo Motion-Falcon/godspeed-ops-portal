@@ -1428,14 +1428,16 @@ router.post(
         const totalAmount = Number(row.total_jobseeker_pay) || 0;
         const taxAmt = Number(row.tax_amount) || 0;
 
+        let lineAmount = totalAmount;
         let finalTotalAmount = totalAmount;
         const pm = jp.payment_method || "";
         if (pm.includes("Corporation") && pm.includes("Direct Deposit")) {
-          finalTotalAmount += taxAmt;
+          lineAmount = Math.max(0, totalAmount - taxAmt);
+          finalTotalAmount = totalAmount;
         }
 
         const totalFormatted = finalTotalAmount.toFixed(2);
-        const lineFormatted = totalAmount.toFixed(2);
+        const lineFormatted = lineAmount.toFixed(2);
         const taxFormatted = taxAmt.toFixed(2);
         
         let taxRate = 0;
@@ -1742,14 +1744,16 @@ router.post(
         const totalAmount = Number(row.total_jobseeker_pay) || 0;
         const taxAmt = Number(row.tax_amount) || 0;
 
+        let lineAmount = totalAmount;
         let finalTotalAmount = totalAmount;
         const pm = jp.payment_method || "";
         if (pm.includes("Corporation") && pm.includes("Direct Deposit")) {
-          finalTotalAmount += taxAmt;
+          lineAmount = Math.max(0, totalAmount - taxAmt);
+          finalTotalAmount = totalAmount;
         }
 
         const totalFormatted = finalTotalAmount.toFixed(2);
-        const lineFormatted = totalAmount.toFixed(2);
+        const lineFormatted = lineAmount.toFixed(2);
         const taxFormatted = taxAmt.toFixed(2);
         
         let taxRate = 0;
