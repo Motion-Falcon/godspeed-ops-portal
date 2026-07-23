@@ -47,7 +47,8 @@ const isRecruiterEmail = (email: string): boolean => {
     email.includes("@canhiresolutions") ||
     email.includes("@hiresolutions") ||
     email.includes("@allstaff") ||
-    email.includes("@hdgroup")
+    email.includes("@hdgroup") ||
+    email.includes("@gdworkforce")
   );
 };
 
@@ -83,7 +84,7 @@ router.post('/send-verification', async (req, res) => {
     } catch (error) {
       console.error('Twilio verification error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to send verification code';
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'Failed to send verification code',
         details: errorMessage
       });
@@ -133,10 +134,10 @@ router.post('/verify-otp', async (req, res) => {
           } else {
             // Also update the user_metadata to set phone_verified flag
             const { data: userData } = await supabase.auth.admin.getUserById(userId);
-            
+
             if (userData?.user) {
               const currentMetadata = userData.user.user_metadata || {};
-              
+
               const { error: metadataError } = await supabase.auth.admin.updateUserById(
                 userId,
                 {
@@ -146,7 +147,7 @@ router.post('/verify-otp', async (req, res) => {
                   }
                 }
               );
-              
+
               if (metadataError) {
                 console.error('Error updating user metadata:', metadataError);
               }
@@ -169,7 +170,7 @@ router.post('/verify-otp', async (req, res) => {
     } catch (error) {
       console.error('Twilio verification check error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to verify code';
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'Failed to verify code',
         details: errorMessage
       });
@@ -195,7 +196,7 @@ router.post('/register',
           }
         } as any;
       }
-      
+
       return {
         actionType: 'user_registration',
         actionVerb: 'registered',
@@ -219,13 +220,13 @@ router.post('/register',
     }
   }),
   async (req, res) => {
-  try {
-    const { email, password, name, phoneNumber } = req.body;
-    const normalizedPhone = phoneNumber ? normalizeToE164(phoneNumber) : undefined;
+    try {
+      const { email, password, name, phoneNumber } = req.body;
+      const normalizedPhone = phoneNumber ? normalizeToE164(phoneNumber) : undefined;
 
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password are required' });
-    }
+      if (!email || !password) {
+        return res.status(400).json({ error: 'Email and password are required' });
+      }
 
       // Determine user type based on email
       let userType = "jobseeker"; // Default type
@@ -245,8 +246,8 @@ router.post('/register',
           userType === "recruiter"
             ? ["recruiter"]
             : userType === "admin"
-            ? ["admin"]
-            : [],
+              ? ["admin"]
+              : [],
         // Ensure hierarchy container exists for new users
         hierarchy: {
           org_id: null,
@@ -257,64 +258,64 @@ router.post('/register',
         phone_verified: true,
       };
 
-    // If phone number is provided, store it in metadata for now
-    if (normalizedPhone) {
-      userMetadata.phoneNumber = normalizedPhone;
-    }
-
-    const clientURL = (process.env.CLIENT_URL || 'http://localhost:5173').replace(/\/$/, '');
-    
-    // Register the user with email and password
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      phone: normalizedPhone,
-      options: {
-        data: userMetadata,
-        emailRedirectTo: `${clientURL}/email-confirmed`,
+      // If phone number is provided, store it in metadata for now
+      if (normalizedPhone) {
+        userMetadata.phoneNumber = normalizedPhone;
       }
-    });
 
-    if (error) {
-      return res.status(400).json({ error: error.message });
-    }
+      const clientURL = (process.env.CLIENT_URL || 'http://localhost:5173').replace(/\/$/, '');
 
-    // Check if user is null, which indicates the email already exists
-    if (!data.user) {
-      return res.status(400).json({ error: 'An account with this email already exists' });
-    }
+      // Register the user with email and password
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        phone: normalizedPhone,
+        options: {
+          data: userMetadata,
+          emailRedirectTo: `${clientURL}/email-confirmed`,
+        }
+      });
 
-    // Re-assert metadata (and phone) after signUp to avoid provider defaults overwriting our values
-    if (data.user) {
-      const { user } = data;
-      const currentMeta = (user as any).user_metadata || {};
-      const updatedMeta = {
-        ...currentMeta,
-        phone_verified: true,
-        ...(normalizedPhone ? { phoneNumber: normalizedPhone } : {})
-      };
-      try {
-        await supabase.auth.admin.updateUserById(user.id, {
-          user_metadata: updatedMeta,
-          ...(normalizedPhone ? { phone: normalizedPhone as any } : {})
-        });
-      } catch (metaUpdateErr) {
-        console.error('Post-signup metadata update error:', metaUpdateErr);
+      if (error) {
+        return res.status(400).json({ error: error.message });
       }
+
+      // Check if user is null, which indicates the email already exists
+      if (!data.user) {
+        return res.status(400).json({ error: 'An account with this email already exists' });
+      }
+
+      // Re-assert metadata (and phone) after signUp to avoid provider defaults overwriting our values
+      if (data.user) {
+        const { user } = data;
+        const currentMeta = (user as any).user_metadata || {};
+        const updatedMeta = {
+          ...currentMeta,
+          phone_verified: true,
+          ...(normalizedPhone ? { phoneNumber: normalizedPhone } : {})
+        };
+        try {
+          await supabase.auth.admin.updateUserById(user.id, {
+            user_metadata: updatedMeta,
+            ...(normalizedPhone ? { phone: normalizedPhone as any } : {})
+          });
+        } catch (metaUpdateErr) {
+          console.error('Post-signup metadata update error:', metaUpdateErr);
+        }
+      }
+
+      // Store user data for activity logging
+      res.locals.newUser = data.user;
+
+      return res.status(201).json({
+        message: 'Registration successful. Please check your email for verification.',
+        user: data.user,
+      });
+    } catch (error) {
+      console.error('Registration error:', error);
+      return res.status(500).json({ error: 'Failed to register user' });
     }
-
-    // Store user data for activity logging
-    res.locals.newUser = data.user;
-
-    return res.status(201).json({
-      message: 'Registration successful. Please check your email for verification.',
-      user: data.user,
-    });
-  } catch (error) {
-    console.error('Registration error:', error);
-    return res.status(500).json({ error: 'Failed to register user' });
-  }
-});
+  });
 
 // Login user
 router.post('/login', async (req, res) => {
@@ -494,12 +495,12 @@ router.post('/reset-password', async (req, res) => {
 
     // Make sure we have the right clientURL with http/https
     const clientURL = process.env.CLIENT_URL || 'http://localhost:5173';
-    
+
     // Ensure the clientURL doesn't have a trailing slash before appending the path
     const redirectURL = clientURL.endsWith('/')
       ? `${clientURL}reset-password`
       : `${clientURL}/reset-password`;
-    
+
     // Send password reset email with redirect
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: redirectURL,
@@ -525,7 +526,7 @@ router.post('/update-password', async (req, res) => {
     const { password } = req.body;
     const authHeader = req.headers.authorization;
     const token = authHeader && authHeader.split(' ')[1];
-    
+
     if (!password) {
       return res.status(400).json({ error: 'New password is required' });
     }
@@ -534,15 +535,15 @@ router.post('/update-password', async (req, res) => {
     if (!token) {
       return res.status(401).json({ error: 'Authentication token is required for password reset' });
     }
-    
+
     // Get user ID from the token
     const { data: userData, error: userError } = await supabase.auth.getUser(token);
-    
+
     if (userError) {
       console.error('User validation error:', userError);
       return res.status(401).json({ error: 'Invalid or expired reset token' });
     }
-    
+
     if (!userData.user) {
       console.error('No user found with token');
       return res.status(401).json({ error: 'User not found' });
@@ -560,7 +561,7 @@ router.post('/update-password', async (req, res) => {
           message: 'Password updated successfully',
         });
       }
-      
+
       // If service role update failed, log the error and try fallback
       console.error('Admin update failed:', error);
     } catch (adminError) {
@@ -569,15 +570,15 @@ router.post('/update-password', async (req, res) => {
 
     // Fallback to user context update
     try {
-      const { error: userUpdateError } = await supabase.auth.updateUser({ 
-        password 
+      const { error: userUpdateError } = await supabase.auth.updateUser({
+        password
       });
-      
+
       if (userUpdateError) {
         console.error('User update error:', userUpdateError);
         return res.status(400).json({ error: userUpdateError.message });
       }
-      
+
       return res.status(200).json({
         message: 'Password updated successfully',
       });
@@ -592,8 +593,8 @@ router.post('/update-password', async (req, res) => {
 });
 
 // Complete onboarding: set password (if provided), phone metadata, and mark onboarding complete
-router.post('/complete-onboarding', 
-  authenticateToken, 
+router.post('/complete-onboarding',
+  authenticateToken,
   authorizeRoles(['admin', 'recruiter']),
   activityLogger({
     onSuccess: (req, res) => {
@@ -617,55 +618,55 @@ router.post('/complete-onboarding',
     }
   }),
   async (req, res) => {
-  try {
-    const { password } = req.body as { password?: string; phoneNumber?: string };
-    const phoneNumberRaw = (req.body as any).phoneNumber as string | undefined;
-    const phoneNumber = normalizeToE164(phoneNumberRaw);
+    try {
+      const { password } = req.body as { password?: string; phoneNumber?: string };
+      const phoneNumberRaw = (req.body as any).phoneNumber as string | undefined;
+      const phoneNumber = normalizeToE164(phoneNumberRaw);
 
-    // Get current user from auth middleware
-    const userId = req.user?.id;
-    if (!userId) {
-      return res.status(401).json({ error: 'Not authenticated' });
-    }
-
-    // Update password if provided
-    if (password && password.length >= 8) {
-      const { error: passErr } = await supabase.auth.admin.updateUserById(userId, { password });
-      if (passErr) {
-        return res.status(400).json({ error: 'Failed to set password' });
+      // Get current user from auth middleware
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ error: 'Not authenticated' });
       }
-    }
 
-    // Merge metadata: set phone and flags
-    const { data: current, error: getErr } = await supabase.auth.admin.getUserById(userId);
-    if (getErr || !current?.user) {
-      return res.status(400).json({ error: 'Failed to load user' });
-    }
-    const currentMeta = (current.user as any).user_metadata || {};
-    const updatedMeta = {
-      ...currentMeta,
-      onboarding_complete: true,
-      phone_verified: !!phoneNumber || currentMeta.phone_verified || false,
-      ...(phoneNumber ? { phoneNumber } : {}),
-    };
+      // Update password if provided
+      if (password && password.length >= 8) {
+        const { error: passErr } = await supabase.auth.admin.updateUserById(userId, { password });
+        if (passErr) {
+          return res.status(400).json({ error: 'Failed to set password' });
+        }
+      }
 
-    // Update phone field and metadata atomically (two calls as required by API)
-    if (phoneNumber) {
-      await supabase.auth.admin.updateUserById(userId, { phone: phoneNumber as any });
-    }
-    const { error: metaErr } = await supabase.auth.admin.updateUserById(userId, {
-      user_metadata: updatedMeta,
-    });
-    if (metaErr) {
-      return res.status(400).json({ error: 'Failed to update profile' });
-    }
+      // Merge metadata: set phone and flags
+      const { data: current, error: getErr } = await supabase.auth.admin.getUserById(userId);
+      if (getErr || !current?.user) {
+        return res.status(400).json({ error: 'Failed to load user' });
+      }
+      const currentMeta = (current.user as any).user_metadata || {};
+      const updatedMeta = {
+        ...currentMeta,
+        onboarding_complete: true,
+        phone_verified: !!phoneNumber || currentMeta.phone_verified || false,
+        ...(phoneNumber ? { phoneNumber } : {}),
+      };
 
-    return res.status(200).json({ success: true });
-  } catch (e) {
-    console.error('Complete onboarding error:', e);
-    return res.status(500).json({ error: 'Failed to complete onboarding' });
-  }
-});
+      // Update phone field and metadata atomically (two calls as required by API)
+      if (phoneNumber) {
+        await supabase.auth.admin.updateUserById(userId, { phone: phoneNumber as any });
+      }
+      const { error: metaErr } = await supabase.auth.admin.updateUserById(userId, {
+        user_metadata: updatedMeta,
+      });
+      if (metaErr) {
+        return res.status(400).json({ error: 'Failed to update profile' });
+      }
+
+      return res.status(200).json({ success: true });
+    } catch (e) {
+      console.error('Complete onboarding error:', e);
+      return res.status(500).json({ error: 'Failed to complete onboarding' });
+    }
+  });
 
 // Resend verification email
 router.post('/resend-verification', async (req, res) => {
@@ -714,7 +715,7 @@ router.get('/me', authenticateToken, async (req, res) => {
 router.get('/check-email', async (req, res) => {
   try {
     const { email } = req.query;
-    
+
     if (!email || typeof email !== 'string') {
       return res.status(400).json({ error: 'Email parameter is required' });
     }
@@ -726,7 +727,7 @@ router.get('/check-email', async (req, res) => {
       'get_user_id_by_email',
       { user_email: emailNormalized }
     );
-    
+
     if (error) {
       console.error('Error checking email availability:', error);
       return res.status(500).json({ error: 'Failed to check email availability' });
@@ -734,13 +735,13 @@ router.get('/check-email', async (req, res) => {
 
     // If userId is not null, email is already taken
     const emailExists = userId !== null;
-    
+
     return res.json({
       available: !emailExists,
       email: emailNormalized,
       ...(emailExists && { existingUserId: userId })
     });
-    
+
   } catch (error) {
     console.error('Error checking email availability:', error);
     return res.status(500).json({ error: 'Internal server error' });
@@ -751,7 +752,7 @@ router.get('/check-email', async (req, res) => {
 router.get('/check-phone', async (req, res) => {
   try {
     const { phone } = req.query;
-    
+
     if (!phone || typeof phone !== 'string') {
       return res.status(400).json({ error: 'Phone parameter is required' });
     }
@@ -761,7 +762,7 @@ router.get('/check-phone', async (req, res) => {
       'get_user_id_by_phone',
       { user_phone: phone }
     );
-    
+
     if (error) {
       console.error('Error checking phone availability:', error);
       return res.status(500).json({ error: 'Failed to check phone availability' });
@@ -769,7 +770,7 @@ router.get('/check-phone', async (req, res) => {
 
     // If userId is not null, phone is already taken
     const phoneExists = userId !== null;
-    
+
     return res.json({
       available: !phoneExists,
       phone: phone,
