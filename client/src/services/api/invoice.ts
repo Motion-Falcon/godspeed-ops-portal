@@ -40,6 +40,7 @@ export interface InvoiceData {
     companyName: string;
     shortCode: string;
     emailAddress1: string;
+    streetAddress1?: string;
     city1?: string;
     province1?: string;
     postalCode1?: string;
@@ -388,6 +389,7 @@ export const createInvoiceFromFrontendData = async (frontendData: {
     companyName: string;
     shortCode: string;
     emailAddress1: string;
+    streetAddress1?: string;
     city1?: string;
     province1?: string;
     postalCode1?: string;

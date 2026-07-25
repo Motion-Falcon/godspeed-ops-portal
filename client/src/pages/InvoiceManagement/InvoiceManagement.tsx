@@ -842,6 +842,7 @@ export function InvoiceManagement() {
         contactPersonName2: basicClient.contactPersonName2,
         mobile1: basicClient.mobile1,
         mobile2: basicClient.mobile2,
+        streetAddress1: basicClient.streetAddress1,
         city1: basicClient.city1,
         province1: basicClient.province1,
         postalCode1: basicClient.postalCode1,
@@ -1219,6 +1220,7 @@ export function InvoiceManagement() {
               companyName: selectedClient.companyName!,
               shortCode: selectedClient.shortCode!,
               emailAddress1: selectedClient.emailAddress1!,
+              streetAddress1: selectedClient.streetAddress1,
               city1: selectedClient.city1,
               province1: selectedClient.province1,
               postalCode1: selectedClient.postalCode1,
@@ -1313,6 +1315,7 @@ export function InvoiceManagement() {
             companyName: selectedClient.companyName!,
             shortCode: selectedClient.shortCode!,
             emailAddress1: selectedClient.emailAddress1!,
+            streetAddress1: selectedClient.streetAddress1,
             city1: selectedClient.city1,
             province1: selectedClient.province1,
             postalCode1: selectedClient.postalCode1,
@@ -1436,6 +1439,7 @@ export function InvoiceManagement() {
         client: {
           companyName: selectedClient.companyName || "",
           address: [
+            selectedClient.streetAddress1 || "",
             selectedClient.city1 || "",
             selectedClient.province1 || "",
             selectedClient.postalCode1 || "",
@@ -2103,6 +2107,19 @@ export function InvoiceManagement() {
                     </span>
                     <span className="timesheet-detail-value">
                       {selectedClient.emailAddress1}
+                    </span>
+                  </div>
+                  <div className="timesheet-detail-item">
+                    <span className="timesheet-detail-label">Address</span>
+                    <span className="timesheet-detail-value">
+                      {[
+                        selectedClient.streetAddress1,
+                        selectedClient.city1,
+                        selectedClient.province1,
+                        selectedClient.postalCode1,
+                      ]
+                        .filter(Boolean)
+                        .join(", ") || "N/A"}
                     </span>
                   </div>
                 </div>
