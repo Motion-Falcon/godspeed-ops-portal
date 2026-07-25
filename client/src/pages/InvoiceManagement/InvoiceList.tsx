@@ -19,6 +19,7 @@ import {
 } from "../../services/api/invoice";
 import { AppHeader } from "../../components/AppHeader";
 import { ConfirmationModal } from "../../components/ConfirmationModal";
+import { DateRangePicker } from "../../components/DateRangePicker";
 import { useLanguage } from "../../contexts/language/language-provider";
 import "../../styles/pages/InvoiceManagement.css";
 
@@ -509,35 +510,72 @@ export function InvoiceList() {
                       <div className="column-title">
                         {t("invoiceManagement.invoiceDate")}
                       </div>
-                      <div
-                        className="column-search"
-                        style={{
-                          display: "flex",
-                          flexDirection: "row",
-                          alignItems: "center",
-                          gap: "4px",
-                        }}
-                      >
-                        <div className="date-picker-wrapper">
-                          <input
-                            type="date"
-                            value={dateRangeStart}
-                            onChange={(e) => setDateRangeStart(e.target.value)}
-                            className="date-picker-input"
-                            onClick={(e) => e.currentTarget.showPicker()}
-                          />
+                      <div className="column-search">
+                        <DateRangePicker
+                          startDate={dateRangeStart}
+                          endDate={dateRangeEnd}
+                          onStartChange={setDateRangeStart}
+                          onEndChange={setDateRangeEnd}
+                          placeholder={t("invoiceManagement.filterDateRange") || "Select Date Range"}
+                        />
+                      </div>
+                    </div>
+                  </th>
+                  <th>
+                    <div
+                      className="column-filter"
+                      style={{ alignItems: "center" }}
+                    >
+                      <div className="column-title">
+                        {t("invoiceManagement.dueDate") || "Due Date"}
+                      </div>
+                      <div className="column-search">
+                        <DateRangePicker
+                          startDate={dueDateStart}
+                          endDate={dueDateEnd}
+                          onStartChange={setDueDateStart}
+                          onEndChange={setDueDateEnd}
+                          placeholder={t("invoiceManagement.filterDueDateRange") || "Select Due Date Range"}
+                        />
+                      </div>
+                    </div>
+                  </th>
+                  <th>
+                    <div
+                      className="column-filter"
+                      style={{ alignItems: "center" }}
+                    >
+                      <div className="column-title">
+                        {t("invoiceManagement.paymentTerms") || "Payment Terms"}
+                      </div>
+                      <div className="column-search">
+                        <div className="actions-info">
+                          <span
+                            className="actions-help-text"
+                            style={{ visibility: "hidden" }}
+                          >
+                            -
+                          </span>
                         </div>
-                        <span style={{ margin: "0 4px" }}>
-                          {t("invoiceManagement.list.dateTo")}
-                        </span>
-                        <div className="date-picker-wrapper">
-                          <input
-                            type="date"
-                            value={dateRangeEnd}
-                            onChange={(e) => setDateRangeEnd(e.target.value)}
-                            className="date-picker-input"
-                            onClick={(e) => e.currentTarget.showPicker()}
-                          />
+                      </div>
+                    </div>
+                  </th>
+                  <th>
+                    <div
+                      className="column-filter"
+                      style={{ alignItems: "flex-end" }}
+                    >
+                      <div className="column-title">
+                        {t("invoiceManagement.totalAmount") || "Total Amount"}
+                      </div>
+                      <div className="column-search">
+                        <div className="actions-info">
+                          <span
+                            className="actions-help-text"
+                            style={{ visibility: "hidden" }}
+                          >
+                            -
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -551,32 +589,6 @@ export function InvoiceList() {
                         <select
                           value={invoiceSentFilter}
                           onChange={(e) => setInvoiceSentFilter(e.target.value)}
-                          className="column-search-input"
-                        >
-                          <option value="">
-                            {t("invoiceManagement.filters.all")}
-                          </option>
-                          <option value="true">
-                            {t("invoiceManagement.filters.yes")}
-                          </option>
-                          <option value="false">
-                            {t("invoiceManagement.filters.no")}
-                          </option>
-                        </select>
-                      </div>
-                    </div>
-                  </th>
-                  <th>
-                    <div className="column-filter">
-                      <div className="column-title">
-                        {t("invoiceManagement.list.invoicePdfGenerated")}
-                      </div>
-                      <div className="column-search">
-                        <select
-                          value={documentGeneratedFilter}
-                          onChange={(e) =>
-                            setDocumentGeneratedFilter(e.target.value)
-                          }
                           className="column-search-input"
                         >
                           <option value="">
@@ -658,6 +670,12 @@ export function InvoiceList() {
                           <td className="skeleton-cell">
                             <div className="skeleton-text"></div>
                           </td>
+                          <td className="skeleton-cell">
+                            <div className="skeleton-text"></div>
+                          </td>
+                          <td className="skeleton-cell">
+                            <div className="skeleton-text"></div>
+                          </td>
 
                           {/* Actions skeleton - needs special styling */}
                           <td className="skeleton-cell">
@@ -672,7 +690,7 @@ export function InvoiceList() {
                   </>
                 ) : invoices.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="empty-state-cell">
+                    <td colSpan={10} className="empty-state-cell">
                       <div className="empty-state">
                         <p>{t("invoiceManagement.list.noInvoicesMatch")}</p>
                       </div>
@@ -704,13 +722,29 @@ export function InvoiceList() {
                         >
                           {formatted.formattedInvoiceDate}
                         </td>
+                        <td
+                          className="date-cell"
+                          style={{ textAlign: "center" }}
+                        >
+                          {formatted.formattedDueDate}
+                        </td>
+                        <td
+                          className="terms-cell"
+                          style={{ textAlign: "center" }}
+                        >
+                          {invoice.paymentTerms ||
+                            (invoice.invoiceData as any)?.paymentTerms ||
+                            (invoice.client as any)?.terms ||
+                            "N/A"}
+                        </td>
+                        <td
+                          className="amount-cell"
+                          style={{ textAlign: "right", fontWeight: "bold" }}
+                        >
+                          {formatted.formattedGrandTotal}
+                        </td>
                         <td className="email-sent-cell">
                           {invoice.emailSent
-                            ? t("invoiceManagement.filters.yes")
-                            : t("invoiceManagement.filters.no")}
-                        </td>
-                        <td className="pdf-generated-cell">
-                          {invoice.documentGenerated
                             ? t("invoiceManagement.filters.yes")
                             : t("invoiceManagement.filters.no")}
                         </td>

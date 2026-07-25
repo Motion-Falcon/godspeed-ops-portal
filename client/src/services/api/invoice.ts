@@ -524,15 +524,9 @@ export const formatInvoiceForDisplay = (invoice: InvoiceData) => {
     formattedUpdatedAt: invoice.updatedAt
       ? new Date(invoice.updatedAt).toLocaleDateString()
       : null,
-    formattedGrandTotal: `$${invoice.grandTotal.toFixed(2)} ${
-      invoice.currency || "CAD"
-    }`,
-    formattedSubtotal: `$${invoice.subtotal.toFixed(2)} ${
-      invoice.currency || "CAD"
-    }`,
-    formattedTotalTax: `$${invoice.totalTax.toFixed(2)} ${
-      invoice.currency || "CAD"
-    }`,
+    formattedGrandTotal: `$${invoice.grandTotal.toFixed(2)}`,
+    formattedSubtotal: `$${invoice.subtotal.toFixed(2)}`,
+    formattedTotalTax: `$${invoice.totalTax.toFixed(2)}`,
     clientDisplayName:
       invoice.client?.companyName ||
       invoice.client?.shortCode ||
