@@ -320,7 +320,7 @@ router.get(
       // Build the base query with joins for related data
       let baseQuery = supabase.from("invoices").select(`
           *,
-          clients!inner(id, company_name, short_code, email_address1)
+          clients!inner(id, company_name, short_code, email_address1, street_address1, city1, province1, postal_code1)
         `);
 
       // Apply role-based filtering
@@ -563,7 +563,7 @@ router.get(
         .select(
           `
           *,
-          clients!inner(id, company_name, short_code, email_address1, city1, province1, postal_code1)
+          clients!inner(id, company_name, short_code, email_address1, street_address1, city1, province1, postal_code1)
         `
         )
         .eq("id", id);
