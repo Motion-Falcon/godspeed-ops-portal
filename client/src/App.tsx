@@ -43,6 +43,7 @@ import { TrainingModules } from './pages/TrainingModules';
 import { UserProfile } from './pages/UserProfile';
 import { JobSeekerPositions } from './pages/JobseekerManagement/JobSeekerPositions';
 import { TimesheetManagement } from './pages/TimesheetManagement/TimesheetManagement';
+import { TimesheetView } from './pages/TimesheetManagement/TimesheetView';
 import { TwoFactorAuth } from './pages/Authentication/TwoFactorAuth';
 import { ClientManagement } from './pages/ClientManagement/ClientManagement';
 import { InvoiceManagement } from './pages/InvoiceManagement/InvoiceManagement';
@@ -231,6 +232,8 @@ function App() {
                     element={<BulkTimesheetJobseekerManagement />}
                   />
                   <Route path="/timesheet-management/list" element={<TimesheetList />} />
+                  <Route path="/timesheet-management/view/:id" element={<TimesheetView />} />
+                  <Route path="/timesheet-management/view" element={<TimesheetView />} />
                   <Route
                     path="/bulk-timesheet-management/list"
                     element={<Navigate to="/timesheet-management/list" replace />}
