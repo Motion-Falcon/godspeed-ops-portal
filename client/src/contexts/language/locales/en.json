@@ -270,6 +270,7 @@
   "common": {
     "search": "Search",
     "filter": "Filter",
+    "loading": "Loading...",
     "sort": "Sort",
     "export": "Export",
     "import": "Import",
@@ -1735,8 +1736,8 @@
     "documentGenerated": "Document Generated",
     "paymentTerms": "Payment Terms",
     "totalAmount": "Total Amount",
-    "filterDateRange": "Select Date Range",
-    "filterDueDateRange": "Select Due Date Range",
+    "filterDateRange": "Select Range",
+    "filterDueDateRange": "Select Range",
     "dateRangePicker": {
       "placeholder": "Select Date Range",
       "startDatePlaceholder": "Select start date...",
@@ -1916,7 +1917,8 @@
       "invoicePdfGenerated": "Invoice PDF Generated",
       "sendEmailColumn": "Send Email",
       "sendEmailAction": "Send • Resend",
-      "viewDeleteAction": "Edit • Delete",
+      "totalAmountHelpText": "Subtotal + Tax",
+      "viewDeleteAction": "View • Edit • Delete",
       "noInvoicesMatch": "No invoices match your search criteria.",
       "sendAgainTo": "Send again to {{email}}",
       "sendTo": "Send to {{email}}",

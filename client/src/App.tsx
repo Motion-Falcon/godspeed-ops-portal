@@ -47,6 +47,7 @@ import { TwoFactorAuth } from './pages/Authentication/TwoFactorAuth';
 import { ClientManagement } from './pages/ClientManagement/ClientManagement';
 import { InvoiceManagement } from './pages/InvoiceManagement/InvoiceManagement';
 import { InvoiceList } from './pages/InvoiceManagement/InvoiceList';
+import { InvoiceView } from './pages/InvoiceManagement/InvoiceView';
 import { AllUsersManagement } from './pages/AllUsersManagement';
 // import FloatingChat from './components/FloatingChat';
 import { Reports } from './pages/Reports/Reports';
@@ -240,6 +241,8 @@ function App() {
                   <Route path="/invoice-management" element={<InvoiceManagement />} />
                   <Route path="/invoice-management/create" element={<InvoiceManagement />} />
                   <Route path="/invoice-management/list" element={<InvoiceList />} />
+                  <Route path="/invoice-management/view/:id" element={<InvoiceView />} />
+                  <Route path="/invoice-management/view" element={<InvoiceView />} />
                 </Route>
 
                 <Route element={<RoleRoute allowedRoles={REPORTS_ROLES} />}>
