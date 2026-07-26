@@ -1,4 +1,5 @@
-import { Mail, Pencil } from "lucide-react";
+import { Eye, Mail, Pencil, Trash2 } from "lucide-react";
+import { DateRangePicker } from "../../../components/DateRangePicker";
 import type { TimesheetListItem } from "../../../services/api/timesheet";
 import {
   getTimesheetListClientDisplayName,
@@ -14,6 +15,8 @@ interface TimesheetListRowProps {
   sendingJobseekerEmail: Record<string, boolean>;
   onSendEmail: (timesheetId: string, jobseekerName: string) => Promise<void>;
   onEditTimesheet: (timesheet: TimesheetListItem) => void;
+  onViewTimesheet?: (timesheet: TimesheetListItem) => void;
+  onDeleteTimesheet?: (timesheet: TimesheetListItem) => void;
 }
 
 function TimesheetListRow({
@@ -22,6 +25,8 @@ function TimesheetListRow({
   sendingJobseekerEmail,
   onSendEmail,
   onEditTimesheet,
+  onViewTimesheet,
+  onDeleteTimesheet,
 }: TimesheetListRowProps) {
   const profile = timesheet.jobseeker_profiles;
   const fullName = profile
@@ -30,13 +35,14 @@ function TimesheetListRow({
   const email = profile?.email || "";
   const billingEmail = profile?.billing_email || "";
   const emailSent = timesheet.email_sent || false;
-  const statusClass = emailSent ? "email-status-yes" : "email-status-no";
   const isSending = Boolean(sendingJobseekerEmail[timesheet.id || ""]);
   const weekPeriod = `${timesheet.week_start_date} - ${timesheet.week_end_date}`;
 
   return (
     <tr>
-      <td className="invoice-number-cell"># {timesheet.invoice_number}</td>
+      <td className="invoice-number-cell" style={{ width: "90px" }}>
+        # {timesheet.invoice_number}
+      </td>
       <td className="client-cell">{getTimesheetListClientDisplayName(timesheet, t)}</td>
       <td className="position-cell">{getTimesheetListPositionDisplayName(timesheet, t)}</td>
       <td className="date-cell">{weekPeriod}</td>
@@ -49,16 +55,14 @@ function TimesheetListRow({
         </div>
       </td>
       <td className="billing-email-cell">{billingEmail || "-"}</td>
-      <td className="email-status-cell">
-        <div className="jobseeker-actions">
-          <span
-            className={`email-status-dot ${statusClass}`}
-            title={
-              emailSent
-                ? t("bulkTimesheetManagement.email.emailSent")
-                : t("bulkTimesheetManagement.email.notSent")
-            }
-          ></span>
+      <td
+        className="total-pay-cell"
+        style={{ minWidth: "130px", textAlign: "center", fontWeight: "bold" }}
+      >
+        ${timesheet.total_jobseeker_pay.toFixed(2)}
+      </td>
+      <td className="email-status-cell" style={{ textAlign: "center" }}>
+        <div className="jobseeker-actions" style={{ justifyContent: "center" }}>
           <button
             className={`button button-xs send-email-cell ${
               emailSent ? "resend-email" : "send-email"
@@ -92,18 +96,35 @@ function TimesheetListRow({
         </div>
       </td>
       <td className="actions-cell">
-        <button
-          className="button button-xs edit-timesheet-btn"
-          type="button"
-          onClick={() => onEditTimesheet(timesheet)}
-          title={`Edit timesheet for ${fullName}`}
-        >
-          <Pencil size={14} className="edit-icon" />{" "}
-          Edit
-        </button>
-      </td>
-      <td className="total-pay-cell">
-        ${timesheet.total_jobseeker_pay.toFixed(2)}
+        <div className="action-buttons">
+          <button
+            className="action-icon-btn view-btn"
+            type="button"
+            onClick={() => onViewTimesheet?.(timesheet)}
+            title={`View timesheet for ${fullName}`}
+            aria-label="View Timesheet"
+          >
+            <Eye size={16} />
+          </button>
+          <button
+            className="action-icon-btn edit-btn"
+            type="button"
+            onClick={() => onEditTimesheet(timesheet)}
+            title={`Edit timesheet for ${fullName}`}
+            aria-label="Edit Timesheet"
+          >
+            <Pencil size={16} />
+          </button>
+          <button
+            className="action-icon-btn delete-btn"
+            type="button"
+            onClick={() => onDeleteTimesheet?.(timesheet)}
+            title={`Delete timesheet for ${fullName}`}
+            aria-label="Delete Timesheet"
+          >
+            <Trash2 size={16} />
+          </button>
+        </div>
       </td>
     </tr>
   );
@@ -149,6 +170,8 @@ interface TimesheetListTableProps {
   sendingJobseekerEmail: Record<string, boolean>;
   onSendEmail: (timesheetId: string, jobseekerName: string) => Promise<void>;
   onEditTimesheet: (timesheet: TimesheetListItem) => void;
+  onViewTimesheet?: (timesheet: TimesheetListItem) => void;
+  onDeleteTimesheet?: (timesheet: TimesheetListItem) => void;
 }
 
 export function TimesheetListTable(props: TimesheetListTableProps) {
@@ -176,6 +199,8 @@ export function TimesheetListTable(props: TimesheetListTableProps) {
     sendingJobseekerEmail,
     onSendEmail,
     onEditTimesheet,
+    onViewTimesheet,
+    onDeleteTimesheet,
   } = props;
 
   const rowSkeletonCount = pagination.limit || 10;
@@ -185,7 +210,7 @@ export function TimesheetListTable(props: TimesheetListTableProps) {
       <table className="common-table">
         <thead>
           <tr>
-            <th>
+            <th style={{ width: "90px" }}>
               <div className="column-filter">
                 <div className="column-title">
                   {t("bulkTimesheetManagement.columns.invoiceNumber")}
@@ -240,51 +265,23 @@ export function TimesheetListTable(props: TimesheetListTableProps) {
               </div>
             </th>
             <th>
-              <div
-                className="column-filter"
-                style={{ alignItems: "center" }}
-              >
+              <div className="column-filter" style={{ alignItems: "center" }}>
                 <div className="column-title">
                   {t("bulkTimesheetManagement.columns.weekPeriod")}
                 </div>
-                <div
-                  className="column-search"
-                  style={{
-                    display: "flex",
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: "4px",
-                  }}
-                >
-                  <div className="date-picker-wrapper">
-                    <input
-                      type="date"
-                      value={dateRangeStart}
-                      onChange={(e) => setDateRangeStart(e.target.value)}
-                      className="date-picker-input"
-                      onClick={(e) => e.currentTarget.showPicker()}
-                    />
-                  </div>
-                  <span style={{ margin: "0 4px" }}>
-                    {t("bulkTimesheetManagement.filters.to")}
-                  </span>
-                  <div className="date-picker-wrapper">
-                    <input
-                      type="date"
-                      value={dateRangeEnd}
-                      onChange={(e) => setDateRangeEnd(e.target.value)}
-                      className="date-picker-input"
-                      onClick={(e) => e.currentTarget.showPicker()}
-                    />
-                  </div>
+                <div className="column-search">
+                  <DateRangePicker
+                    startDate={dateRangeStart}
+                    endDate={dateRangeEnd}
+                    onStartChange={setDateRangeStart}
+                    onEndChange={setDateRangeEnd}
+                    placeholder={t("invoiceManagement.filterDateRange") || "Select Range"}
+                  />
                 </div>
               </div>
             </th>
             <th>
-              <div
-                className="column-filter"
-                style={{ alignItems: "center" }}
-              >
+              <div className="column-filter" style={{ alignItems: "center" }}>
                 <div className="column-title">
                   {t("bulkTimesheetManagement.columns.jobseekers")}
                 </div>
@@ -302,10 +299,7 @@ export function TimesheetListTable(props: TimesheetListTableProps) {
               </div>
             </th>
             <th>
-              <div
-                className="column-filter"
-                style={{ alignItems: "center" }}
-              >
+              <div className="column-filter">
                 <div className="column-title">
                   {t("bulkTimesheetManagement.columns.billingEmail")}
                 </div>
@@ -316,34 +310,35 @@ export function TimesheetListTable(props: TimesheetListTableProps) {
                       "bulkTimesheetManagement.placeholders.searchBillingEmail"
                     )}
                     value={billingEmailFilter}
-                    onChange={(e) =>
-                      setBillingEmailFilter(e.target.value)
-                    }
+                    onChange={(e) => setBillingEmailFilter(e.target.value)}
                     className="column-search-input"
                   />
                 </div>
               </div>
             </th>
+            <th style={{ minWidth: "130px" }}>
+              <div className="column-filter" style={{ alignItems: "center" }}>
+                <div className="column-title">Total Pay</div>
+                <div className="column-search">
+                  <div className="actions-info">
+                    <span className="actions-help-text">Pay ($)</span>
+                  </div>
+                </div>
+              </div>
+            </th>
             <th>
-              <div
-                className="column-filter"
-                style={{ alignItems: "center" }}
-              >
+              <div className="column-filter" style={{ alignItems: "center" }}>
                 <div className="column-title">
                   {t("bulkTimesheetManagement.columns.emailStatus")}
                 </div>
                 <div className="column-search">
                   <select
                     value={emailSentFilter}
-                    onChange={(e) =>
-                      setEmailSentFilter(e.target.value)
-                    }
-                    className="column-filter-select"
+                    onChange={(e) => setEmailSentFilter(e.target.value)}
+                    className="column-search-input"
                   >
                     <option value="">
-                      {t(
-                        "bulkTimesheetManagement.filters.allEmailStatus"
-                      )}
+                      {t("bulkTimesheetManagement.filters.allEmailStatus")}
                     </option>
                     <option value="true">
                       {t("bulkTimesheetManagement.filters.emailSent")}
@@ -356,19 +351,13 @@ export function TimesheetListTable(props: TimesheetListTableProps) {
               </div>
             </th>
             <th>
-              <div
-                className="column-filter"
-                style={{ alignItems: "center" }}
-              >
+              <div className="column-filter" style={{ alignItems: "center" }}>
                 <div className="column-title">Actions</div>
-              </div>
-            </th>
-            <th>
-              <div
-                className="column-filter"
-                style={{ alignItems: "center" }}
-              >
-                <div className="column-title">Total Pay</div>
+                <div className="column-search">
+                  <div className="actions-info">
+                    <span className="actions-help-text">View • Edit • Delete</span>
+                  </div>
+                </div>
               </div>
             </th>
           </tr>
@@ -395,6 +384,8 @@ export function TimesheetListTable(props: TimesheetListTableProps) {
                 sendingJobseekerEmail={sendingJobseekerEmail}
                 onSendEmail={onSendEmail}
                 onEditTimesheet={onEditTimesheet}
+                onViewTimesheet={onViewTimesheet}
+                onDeleteTimesheet={onDeleteTimesheet}
               />
             ))
           )}

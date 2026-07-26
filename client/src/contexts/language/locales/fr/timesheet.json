@@ -186,6 +186,8 @@
     },
     "messages": {
       "failedToFetch": "Échec de la récupération des feuilles de temps en lot",
+      "deleteSuccess": "Feuille de temps #{{invoiceNumber}} supprimée avec succès.",
+      "failedToDelete": "Échec de la suppression de la feuille de temps.",
       "emailSentTo": "Email envoyé avec succès à {{name}}",
       "failedToSendEmail": "Échec de l'envoi de l'email à {{name}}",
       "noBulkTimesheets": "Aucune feuille de temps en lot trouvée correspondant à vos critères de recherche",
