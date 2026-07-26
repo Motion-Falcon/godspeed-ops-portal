@@ -64,7 +64,6 @@ import { EnvelopePrintingByDueDateReport } from './pages/Reports/EnvelopePrintin
 import { LanguageProvider } from "./contexts/language/language-provider";
 import './styles/main.css';
 import { Dashboard } from './pages/Dashboard/Dashboard';
-import { MetricExamplePage } from './pages/Dashboard/MetricExamplePage';
 import { BulkTimesheetManagement } from './pages/TimesheetManagement/BulkTimesheetManagement';
 import { BulkTimesheetJobseekerManagement } from './pages/TimesheetManagement/BulkTimesheetJobseekerManagement';
 import { TimesheetList } from './pages/TimesheetManagement/TimesheetList';
@@ -145,7 +144,6 @@ function App() {
                 <Route path="/profile" element={<UserProfile />} />
                 <Route path="/onboarding-consent" element={<OnboardingConsent />} />
                 <Route path="/training-modules" element={<TrainingModules />} />
-                <Route path="/metric-examples" element={<MetricExamplePage />} />
 
                 <Route element={<RoleRoute allowedRoles={AI_CHAT_ROLES} />}>
                   <Route path="/ai-chat" element={<GodspeedAIChat />} />
