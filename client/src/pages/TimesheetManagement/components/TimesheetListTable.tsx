@@ -6,6 +6,9 @@ import {
   getTimesheetListPositionDisplayName,
   type TimesheetListT,
 } from "../functions/timesheetListDisplay";
+import { useAuth } from "../../../contexts/AuthContext";
+import { hasAnyExactAccessRole } from "../../../lib/auth";
+import { DELETE_TIMESHEET_ROLES } from "../../../constants/accessControl";
 
 const LIST_COLUMNS = 9;
 
@@ -28,6 +31,8 @@ function TimesheetListRow({
   onViewTimesheet,
   onDeleteTimesheet,
 }: TimesheetListRowProps) {
+  const { user } = useAuth();
+  const canDeleteTimesheet = hasAnyExactAccessRole(user, DELETE_TIMESHEET_ROLES);
   const profile = timesheet.jobseeker_profiles;
   const fullName = profile
     ? `${profile.first_name || ""} ${profile.last_name || ""}`.trim()
@@ -115,15 +120,17 @@ function TimesheetListRow({
           >
             <Pencil size={16} />
           </button>
-          <button
-            className="action-icon-btn delete-btn"
-            type="button"
-            onClick={() => onDeleteTimesheet?.(timesheet)}
-            title={`Delete timesheet for ${fullName}`}
-            aria-label="Delete Timesheet"
-          >
-            <Trash2 size={16} />
-          </button>
+          {canDeleteTimesheet && (
+            <button
+              className="action-icon-btn delete-btn"
+              type="button"
+              onClick={() => onDeleteTimesheet?.(timesheet)}
+              title={`Delete timesheet for ${fullName}`}
+              aria-label="Delete Timesheet"
+            >
+              <Trash2 size={16} />
+            </button>
+          )}
         </div>
       </td>
     </tr>

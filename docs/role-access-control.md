@@ -43,12 +43,14 @@ These rules map directly to the hamburger menu pages and route guards.
 | Create Jobseeker | `admin`, `recruiter`, `recruiter_manager`, `recruiter_director` |
 | Jobseeker Drafts | `admin`, `recruiter`, `recruiter_manager`, `recruiter_director` |
 | SIN / Work Permit Management | `admin`, `recruiter`, `recruiter_manager`, `recruiter_director` |
+| My Positions (Jobseeker Portal) | `jobseeker` |
+| Verification Pending / Rejected | `jobseeker` |
 
 ### Clients
 
 | Page | Allowed roles |
 | --- | --- |
-| All Clients | `admin`, `recruiter_manager`, `accountant_manager`, `recruiter_director` |
+| All Clients | `admin`, `recruiter_manager`, `accountant_manager`, `recruiter_director`, `sales` |
 | Create Client | `admin`, `recruiter_manager`, `accountant_manager`, `recruiter_director` |
 | Draft Clients | `admin`, `recruiter_manager`, `accountant_manager`, `recruiter_director` |
 
@@ -56,7 +58,7 @@ These rules map directly to the hamburger menu pages and route guards.
 
 | Page | Allowed roles |
 | --- | --- |
-| All Positions | `admin`, `recruiter`, `bookkeeper`, `recruiter_manager`, `accountant_manager`, `recruiter_director` |
+| All Positions | `admin`, `recruiter`, `bookkeeper`, `recruiter_manager`, `accountant_manager`, `recruiter_director`, `sales` |
 | Create Position | `admin`, `recruiter_manager`, `recruiter_director` |
 | Draft Positions | `admin`, `recruiter_manager`, `recruiter_director` |
 | Position Matching | `admin`, `recruiter`, `recruiter_manager`, `recruiter_director` |
@@ -67,28 +69,36 @@ These rules map directly to the hamburger menu pages and route guards.
 | --- | --- |
 | All Consent Documents | `admin`, `recruiter`, `recruiter_manager`, `recruiter_director` |
 | Create Consent Document | `admin`, `recruiter`, `recruiter_manager`, `recruiter_director` |
+| Consent Templates | `admin` (superadmin) |
+
+### System & Administration
+
+| Page | Allowed roles |
+| --- | --- |
+| Email Template Preview | `admin` (superadmin) |
+| Metric Examples | `admin` (superadmin) |
 
 ### Timesheets
 
 | Page | Allowed roles |
 | --- | --- |
 | Timesheet Management | `admin`, `recruiter`, `bookkeeper`, `recruiter_manager`, `recruiter_director` |
-| Create Bulk Timesheet (Client) | `admin`, `bookkeeper` |
-| Create Bulk Timesheet (Job Seeker) | `admin`, `bookkeeper` |
-| Bulk Timesheet List | `admin`, `bookkeeper` |
+| Create Bulk Timesheet (Client) | `admin`, `bookkeeper`, `recruiter_manager`, `recruiter_director` |
+| Create Bulk Timesheet (Job Seeker) | `admin`, `bookkeeper`, `recruiter_manager`, `recruiter_director` |
+| Bulk Timesheet List | `admin`, `bookkeeper`, `recruiter_manager`, `recruiter_director` |
 
 ### Finance
 
 | Page | Allowed roles |
 | --- | --- |
-| Invoice Management | `admin`, `accountant_manager` |
-| Invoice List | `admin`, `accountant_manager` |
+| Invoice Management | `admin`, `accountant_manager`, `bookkeeper` |
+| Invoice List | `admin`, `accountant_manager`, `bookkeeper` |
 
 ### Reports
 
 | Page | Allowed roles |
 | --- | --- |
-| Reports | `admin`, `bookkeeper`, `accountant_manager`, `recruiter_director` |
+| Reports | `admin`, `bookkeeper`, `accountant_manager`, `recruiter_director`, `sales` |
 
 ## Non-Menu Route Inheritance
 
@@ -106,7 +116,11 @@ These routes inherit the menu-page access above.
 - Position create subcategory: `/position-management/create-subcategory` uses `Create Position`
 - Position draft edit: `/position-management/drafts/edit/:id` uses `Draft Positions`
 - Consent detail: `/consent-dashboard/:documentId` uses `All Consent Documents`
+- Timesheet detail view: `/timesheet-management/view/:id` uses `Bulk Timesheet List` / `Timesheet Management`
+- Invoice detail view: `/invoice-management/view/:id` uses `Invoice Management`
 - Reports subpages under `/reports/*` use `Reports`
+- Onboarding consent: `/onboarding-consent` uses common authenticated user access
+- Public routes (no auth required): `/consent` (document signing), `/terms-of-service`, `/privacy-policy`
 
 ## Implementation Notes
 
@@ -129,3 +143,7 @@ These are not the page-level rules. They must be enforced separately inside page
 | Delete Position | `admin`, `recruiter_manager`, `recruiter_director` |
 | Remove assigned jobseeker from a position | `admin`, `recruiter_manager`, `recruiter_director` |
 | Invite Recruiter/Accountant submit action | `admin`, `recruiter_manager`, `accountant_manager`, `recruiter_director` |
+| Edit Single Timesheet | `admin`, `recruiter`, `bookkeeper`, `recruiter_manager`, `recruiter_director` |
+| Delete Timesheet | `admin`, `bookkeeper`, `recruiter_manager`, `recruiter_director` |
+| Edit Invoice | `admin`, `accountant_manager`, `bookkeeper` |
+| Delete Invoice | `admin`, `accountant_manager`, `bookkeeper` |

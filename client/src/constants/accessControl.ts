@@ -74,10 +74,16 @@ export const CLIENT_LIST_ROLES: AccessRole[] = [
   "recruiter_manager",
   "accountant_manager",
   "recruiter_director",
+  "sales",
 ];
 
-export const CLIENT_CREATE_ROLES: AccessRole[] = [...CLIENT_LIST_ROLES];
-export const CLIENT_DRAFT_ROLES: AccessRole[] = [...CLIENT_LIST_ROLES];
+export const CLIENT_CREATE_ROLES: AccessRole[] = [
+  "admin",
+  "recruiter_manager",
+  "accountant_manager",
+  "recruiter_director",
+];
+export const CLIENT_DRAFT_ROLES: AccessRole[] = [...CLIENT_CREATE_ROLES];
 
 export const POSITION_LIST_ROLES: AccessRole[] = [
   "admin",
@@ -86,6 +92,7 @@ export const POSITION_LIST_ROLES: AccessRole[] = [
   "recruiter_manager",
   "accountant_manager",
   "recruiter_director",
+  "sales",
 ];
 
 export const POSITION_CREATE_ROLES: AccessRole[] = [
@@ -120,13 +127,23 @@ export const TIMESHEET_MANAGEMENT_ROLES: AccessRole[] = [
   "recruiter_director",
 ];
 
-export const BULK_TIMESHEET_ROLES: AccessRole[] = ["admin", "bookkeeper"];
-export const INVOICE_MANAGEMENT_ROLES: AccessRole[] = ["admin", "accountant_manager"];
+export const BULK_TIMESHEET_ROLES: AccessRole[] = [
+  "admin",
+  "bookkeeper",
+  "recruiter_manager",
+  "recruiter_director",
+];
+export const INVOICE_MANAGEMENT_ROLES: AccessRole[] = [
+  "admin",
+  "accountant_manager",
+  "bookkeeper",
+];
 export const REPORTS_ROLES: AccessRole[] = [
   "admin",
   "bookkeeper",
   "accountant_manager",
   "recruiter_director",
+  "sales",
 ];
 
 export const DELETE_JOBSEEKER_ROLES: AccessRole[] = [
@@ -137,6 +154,12 @@ export const DELETE_JOBSEEKER_ROLES: AccessRole[] = [
 
 export const DELETE_CLIENT_ROLES: AccessRole[] = [...DELETE_JOBSEEKER_ROLES];
 export const DELETE_POSITION_ROLES: AccessRole[] = [...DELETE_JOBSEEKER_ROLES];
+export const DELETE_TIMESHEET_ROLES: AccessRole[] = [
+  "admin",
+  "bookkeeper",
+  "recruiter_manager",
+  "recruiter_director",
+];
 export const REMOVE_ASSIGNED_JOBSEEKER_ROLES: AccessRole[] = [
   "admin",
   "recruiter_manager",
