@@ -1278,6 +1278,7 @@ router.post(
           tax_amount,
           is_bulk,
           bulk_breakdown,
+          line_payment_method,
           jobseeker_profiles:jobseeker_profile_id (
             employee_id,
             license_number,
@@ -1428,10 +1429,14 @@ router.post(
         const totalAmount = Number(row.total_jobseeker_pay) || 0;
         const taxAmt = Number(row.tax_amount) || 0;
 
+        const effectivePm =
+          row.line_payment_method && String(row.line_payment_method).trim() !== ""
+            ? String(row.line_payment_method)
+            : String(jp.payment_method || "");
+
         let lineAmount = totalAmount;
         let finalTotalAmount = totalAmount;
-        const pm = jp.payment_method || "";
-        if (pm.includes("Corporation") && pm.includes("Direct Deposit")) {
+        if (effectivePm.includes("Corporation")) {
           lineAmount = Math.max(0, totalAmount - taxAmt);
           finalTotalAmount = totalAmount;
         }
@@ -1441,10 +1446,15 @@ router.post(
         const taxFormatted = taxAmt.toFixed(2);
         
         let taxRate = 0;
-        if (taxAmt > 0 && typeof jp.hst_gst === "string") {
-          const match = jp.hst_gst.match(/^([\d.]+)\s*%?$/);
-          if (match && match[1]) {
-            taxRate = parseFloat(match[1]) || 0;
+        if (taxAmt > 0) {
+          if (typeof jp.hst_gst === "string") {
+            const match = jp.hst_gst.match(/^([\d.]+)\s*%?$/);
+            if (match && match[1]) {
+              taxRate = parseFloat(match[1]) || 0;
+            }
+          }
+          if (taxRate === 0 && lineAmount > 0) {
+            taxRate = (taxAmt / lineAmount) * 100;
           }
         }
 
@@ -1497,7 +1507,10 @@ router.post(
           phone_number: jp.mobile || "",
           email_id: jp.email || "",
           billing_email: jp.billing_email || "",
-          pay_method: jp.payment_method || "",
+          pay_method:
+            row.line_payment_method && String(row.line_payment_method).trim() !== ""
+              ? row.line_payment_method
+              : jp.payment_method || "",
           position_category: resolvedPositionCategory,
           position_name: resolvedPositionName,
           hours: (Number(row.total_regular_hours) || 0).toString(),
@@ -1611,6 +1624,7 @@ router.post(
           tax_amount,
           is_bulk,
           bulk_breakdown,
+          line_payment_method,
           jobseeker_profiles:jobseeker_profile_id (
             employee_id,
             license_number,
@@ -1744,10 +1758,14 @@ router.post(
         const totalAmount = Number(row.total_jobseeker_pay) || 0;
         const taxAmt = Number(row.tax_amount) || 0;
 
+        const effectivePm =
+          row.line_payment_method && String(row.line_payment_method).trim() !== ""
+            ? String(row.line_payment_method)
+            : String(jp.payment_method || "");
+
         let lineAmount = totalAmount;
         let finalTotalAmount = totalAmount;
-        const pm = jp.payment_method || "";
-        if (pm.includes("Corporation") && pm.includes("Direct Deposit")) {
+        if (effectivePm.includes("Corporation")) {
           lineAmount = Math.max(0, totalAmount - taxAmt);
           finalTotalAmount = totalAmount;
         }
@@ -1757,10 +1775,15 @@ router.post(
         const taxFormatted = taxAmt.toFixed(2);
         
         let taxRate = 0;
-        if (taxAmt > 0 && typeof jp.hst_gst === "string") {
-          const match = jp.hst_gst.match(/^([\d.]+)\s*%?$/);
-          if (match && match[1]) {
-            taxRate = parseFloat(match[1]) || 0;
+        if (taxAmt > 0) {
+          if (typeof jp.hst_gst === "string") {
+            const match = jp.hst_gst.match(/^([\d.]+)\s*%?$/);
+            if (match && match[1]) {
+              taxRate = parseFloat(match[1]) || 0;
+            }
+          }
+          if (taxRate === 0 && lineAmount > 0) {
+            taxRate = (taxAmt / lineAmount) * 100;
           }
         }
 
@@ -1813,7 +1836,10 @@ router.post(
           phone_number: jp.mobile || "",
           email_id: jp.email || "",
           billing_email: jp.billing_email || "",
-          pay_method: jp.payment_method || "",
+          pay_method:
+            row.line_payment_method && String(row.line_payment_method).trim() !== ""
+              ? row.line_payment_method
+              : jp.payment_method || "",
           position_category: resolvedPositionCategory,
           position_name: resolvedPositionName,
           hours: (Number(row.total_regular_hours) || 0).toString(),
