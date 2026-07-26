@@ -13,6 +13,7 @@ import {
   type TimesheetListFilters,
   type PaginatedTimesheetsResponse,
   sendTimesheetEmails,
+  deleteTimesheet,
 } from "../../../services/api/timesheet";
 import type { TimesheetPaginationMeta } from "../../../services/types/timesheet";
 
@@ -68,6 +69,8 @@ export interface UseTimesheetsListResult {
   handleNextPage: () => void;
   handleCancelDelete: () => void;
   handleConfirmDelete: () => Promise<void>;
+  handleDeleteTimesheet: (timesheet: TimesheetListItem) => void;
+  handleViewTimesheet: (timesheet: TimesheetListItem) => void;
   sendEmailToJobseeker: (timesheetId: string, jobseekerName: string) => Promise<void>;
   handleEditTimesheet: (timesheet: TimesheetListItem) => void;
 }
@@ -230,9 +233,32 @@ export function useTimesheetsList(t: TimesheetsListT): UseTimesheetsListResult {
     setDeleteError(null);
   }, []);
 
-  const handleConfirmDelete = useCallback(async () => {
-    // Placeholder until delete API wired — modal kept for parity with prior UI shell
+  const handleDeleteTimesheet = useCallback((timesheet: TimesheetListItem) => {
+    setTimesheetToDelete(timesheet);
+    setDeleteError(null);
+    setIsDeleteModalOpen(true);
   }, []);
+
+  const handleConfirmDelete = useCallback(async () => {
+    if (!timesheetToDelete || !timesheetToDelete.id) return;
+    setDeleteError(null);
+    try {
+      await deleteTimesheet(timesheetToDelete.id);
+      setIsDeleteModalOpen(false);
+      setTimesheetToDelete(null);
+      setMessage(
+        t("bulkTimesheetManagement.messages.deleteSuccess", {
+          invoiceNumber: timesheetToDelete.invoice_number || "",
+        })
+      );
+      window.setTimeout(() => setMessage(null), 4000);
+      void fetchTimesheets();
+    } catch (err) {
+      setDeleteError(
+        err instanceof Error ? err.message : "Failed to delete timesheet"
+      );
+    }
+  }, [timesheetToDelete, fetchTimesheets, t]);
 
   const sendEmailToJobseeker = useCallback(
     async (timesheetId: string, jobseekerName: string) => {
@@ -268,6 +294,15 @@ export function useTimesheetsList(t: TimesheetsListT): UseTimesheetsListResult {
       }
     },
     [t]
+  );
+
+  const handleViewTimesheet = useCallback(
+    (timesheet: TimesheetListItem) => {
+      if (timesheet.id) {
+        navigate(`/timesheet-management/view/${timesheet.id}`);
+      }
+    },
+    [navigate]
   );
 
   const handleEditTimesheet = useCallback(
@@ -329,6 +364,8 @@ export function useTimesheetsList(t: TimesheetsListT): UseTimesheetsListResult {
     handleNextPage,
     handleCancelDelete,
     handleConfirmDelete,
+    handleDeleteTimesheet,
+    handleViewTimesheet,
     sendEmailToJobseeker,
     handleEditTimesheet,
   };
