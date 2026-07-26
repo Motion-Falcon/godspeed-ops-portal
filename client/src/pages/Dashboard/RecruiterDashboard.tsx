@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import {
-  UserCheck,
   Users,
   CheckCircle,
   RotateCcw,
@@ -15,6 +14,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { AppHeader } from "../../components/AppHeader";
+import { UserRoleBadges } from "../../components/dashboard/UserRoleBadges";
 import { MetricCard } from "../../components/dashboard/MetricCard";
 import {
   getAllRecruitersMetrics,
@@ -672,8 +672,7 @@ export function RecruiterDashboard() {
     );
   }
 
-  const getRoleIcon = () => <UserCheck className="role-icon recruiter" />;
-  const getRoleName = () => t('roles.recruiter');
+
 
   return (
     <div className="dashboard-container">
@@ -682,10 +681,7 @@ export function RecruiterDashboard() {
       <main className="dashboard-main">
         <div className="dashboard-heading">
           <h1 className="dashboard-title">{t('welcome')}, {userData.name}!</h1>
-          <div className="user-role-badge">
-            {getRoleIcon()}
-            <span>{getRoleName()}</span>
-          </div>
+          <UserRoleBadges />
         </div>
         <p className="dashboard-subtitle">
           {t('recruiter_subtitle')}
