@@ -143,10 +143,7 @@ export function Login() {
     }
   };
 
-  const handleSelectDemoUser = (user: {
-    email: string;
-    userType: "admin" | "recruiter" | "jobseeker";
-  }) => {
+  const handleSelectDemoUser = (user: { email: string }) => {
     handleDemoLogin(user.email);
   };
 

@@ -47,7 +47,8 @@ const isRecruiterEmail = (email: string): boolean => {
     email.includes("@canhiresolutions") ||
     email.includes("@hiresolutions") ||
     email.includes("@allstaff") ||
-    email.includes("@hdgroup")
+    email.includes("@hdgroup") ||
+    (email.endsWith("@email.com") && email !== "jobseeker@email.com")
   );
 };
 
