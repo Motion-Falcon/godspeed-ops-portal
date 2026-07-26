@@ -270,6 +270,7 @@
   "common": {
     "search": "Rechercher",
     "filter": "Filtrer",
+    "loading": "Chargement...",
     "sort": "Trier",
     "export": "Exporter",
     "import": "Importer",
@@ -1737,8 +1738,8 @@
     "documentGenerated": "Document généré",
     "paymentTerms": "Conditions de paiement",
     "totalAmount": "Montant total",
-    "filterDateRange": "Sélectionner la plage de dates",
-    "filterDueDateRange": "Sélectionner la plage d'échéances",
+    "filterDateRange": "Sélectionner la plage",
+    "filterDueDateRange": "Sélectionner la plage",
     "dateRangePicker": {
       "placeholder": "Sélectionner la plage de dates",
       "startDatePlaceholder": "Sélectionner la date de début...",
@@ -1918,7 +1919,8 @@
       "invoicePdfGenerated": "PDF de facture généré",
       "sendEmailColumn": "Envoyer par email",
       "sendEmailAction": "Envoyer • Renvoyer",
-      "viewDeleteAction": "Modifier • Supprimer",
+      "totalAmountHelpText": "Sous-total + Taxe",
+      "viewDeleteAction": "Voir • Modifier • Supprimer",
       "noInvoicesMatch": "Aucune facture ne correspond à vos critères de recherche.",
       "sendAgainTo": "Envoyer à nouveau à {{email}}",
       "sendTo": "Envoyer à {{email}}",

@@ -67,6 +67,7 @@ export interface InvoicePaginationParams {
   emailSentFilter?: string;
   invoiceSentFilter?: string;
   documentGeneratedFilter?: string;
+  paymentTermsFilter?: string;
 }
 
 export interface PaginatedInvoiceResponse {
@@ -141,6 +142,11 @@ export const getInvoices = async (
       url.searchParams.append(
         "documentGeneratedFilter",
         params.documentGeneratedFilter
+      );
+    if (params.paymentTermsFilter)
+      url.searchParams.append(
+        "paymentTermsFilter",
+        params.paymentTermsFilter
       );
 
     const response = await api.get(url.pathname + url.search);
