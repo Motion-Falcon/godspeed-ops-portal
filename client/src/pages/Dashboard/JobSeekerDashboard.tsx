@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import {
-  User as UserIcon,
   CheckCircle,
   RotateCcw,
   Calendar,
@@ -11,6 +10,7 @@ import { supabase } from "../../lib/supabaseClient";
 import "../../styles/components/header.css";
 import "../../styles/pages/Dashboard.css";
 import { AppHeader } from "../../components/AppHeader";
+import { UserRoleBadges } from "../../components/dashboard/UserRoleBadges";
 import { ProfileCompletion } from "../../components/dashboard/ProfileCompletion";
 import { MetricCard } from "../../components/dashboard/MetricCard";
 import { getJobseekerMetrics } from "../../services/api/jobseekerMetrics";
@@ -263,10 +263,7 @@ export function JobSeekerDashboard() {
       <main className="dashboard-main">
         <div className="dashboard-heading">
           <h1 className="dashboard-title">{t('welcome')}, {userData.name}!</h1>
-          <div className="user-role-badge">
-            <UserIcon className="role-icon jobseeker" />
-            <span>{t('roles.jobseeker')}</span>
-          </div>
+          <UserRoleBadges />
         </div>
         <p className="dashboard-subtitle">
           {t('jobseeker_subtitle')}

@@ -5,12 +5,12 @@ import { useNavigate } from 'react-router-dom';
 import { 
   User, 
   Mail, 
-  Shield, 
   UserCheck, 
   Clock, 
   Key,
   KeyRound
 } from 'lucide-react';
+import { UserRoleBadges } from '../components/dashboard/UserRoleBadges';
 import '../styles/pages/userProfile.css';
 
 interface UserDetails {
@@ -69,32 +69,6 @@ export function UserProfile() {
     }
   };
 
-  const getRoleDisplayName = (role: string) => {
-    switch (role.toLowerCase()) {
-      case 'admin':
-        return 'Administrator';
-      case 'recruiter':
-        return 'Recruiter';
-      case 'jobseeker':
-        return 'Job Seeker';
-      default:
-        return role;
-    }
-  };
-
-  const getRoleBadgeClass = (role: string) => {
-    switch (role.toLowerCase()) {
-      case 'admin':
-        return 'role-badge admin';
-      case 'recruiter':
-        return 'role-badge recruiter';
-      case 'jobseeker':
-        return 'role-badge jobseeker';
-      default:
-        return 'role-badge';
-    }
-  };
-
   if (isLoading) {
     return (
       <div className="user-profile-page">
@@ -138,10 +112,7 @@ export function UserProfile() {
             </div>
             <div className="profile-basic-info">
               <h1 className="profile-name">{userDetails.name}</h1>
-              <div className={getRoleBadgeClass(userDetails.userType)}>
-                <Shield size={14} />
-                <span>{getRoleDisplayName(userDetails.userType)}</span>
-              </div>
+              <UserRoleBadges />
             </div>
           </div>
 
@@ -201,6 +172,13 @@ export function UserProfile() {
                 <Key size={18} />
                 Account Information
               </h3>
+
+              <div className="detail-row">
+                <label>Assigned User Role(s)</label>
+                <div className="detail-value">
+                  <UserRoleBadges />
+                </div>
+              </div>
 
               <div className="detail-row">
                 <label>Account Created</label>
