@@ -299,6 +299,7 @@ router.get(
         emailSentFilter = "",
         invoiceSentFilter = "",
         documentGeneratedFilter = "",
+        paymentTermsFilter = "",
       } = req.query as {
         page?: string;
         limit?: string;
@@ -311,11 +312,18 @@ router.get(
         emailSentFilter?: string;
         invoiceSentFilter?: string;
         documentGeneratedFilter?: string;
+        paymentTermsFilter?: string;
       };
 
       const pageNum = parseInt(page);
       const limitNum = parseInt(limit);
       const offset = (pageNum - 1) * limitNum;
+      // Fetch matching client IDs for client-related filters
+      const clientIdsMap = await getMatchingClientIds(
+        searchTerm,
+        clientFilter,
+        clientEmailFilter
+      );
 
       // Build the base query with joins for related data
       let baseQuery = supabase.from("invoices").select(`
@@ -339,7 +347,8 @@ router.get(
         emailSentFilter,
         invoiceSentFilter,
         documentGeneratedFilter,
-      });
+        paymentTermsFilter,
+      }, clientIdsMap);
 
       // Get total count (unfiltered for user's access level)
       let totalCountQuery = supabase
@@ -385,16 +394,17 @@ router.get(
         emailSentFilter,
         invoiceSentFilter,
         documentGeneratedFilter,
-      });
+        paymentTermsFilter,
+      }, clientIdsMap);
 
       const { count: filteredCount, error: filteredCountError } =
         await filteredCountQuery;
 
       if (filteredCountError) {
-        console.error("Error getting filtered count:", filteredCountError);
+        console.error("Error getting filtered count:", JSON.stringify(filteredCountError, null, 2));
         return res
           .status(500)
-          .json({ error: "Failed to get filtered count of invoices" });
+          .json({ error: "Failed to get filtered count of invoices", details: filteredCountError.message });
       }
 
       // Apply pagination and execute main query
@@ -403,8 +413,8 @@ router.get(
         .order("created_at", { ascending: false });
 
       if (error) {
-        console.error("Error fetching invoices:", error);
-        return res.status(500).json({ error: "Failed to fetch invoices" });
+        console.error("Error fetching invoices:", JSON.stringify(error, null, 2));
+        return res.status(500).json({ error: "Failed to fetch invoices", details: error.message });
       }
 
       if (!invoices || invoices.length === 0) {
@@ -461,6 +471,52 @@ router.get(
 );
 
 /**
+ * Helper to get matching client IDs for client-related filters
+ */
+async function getMatchingClientIds(
+  searchTerm?: string,
+  clientFilter?: string,
+  clientEmailFilter?: string
+): Promise<{
+  searchClientIds?: string[];
+  filterClientIds?: string[];
+  emailClientIds?: string[];
+}> {
+  let searchClientIds: string[] | undefined;
+  let filterClientIds: string[] | undefined;
+  let emailClientIds: string[] | undefined;
+
+  if (searchTerm && searchTerm.trim().length > 0) {
+    const term = searchTerm.trim();
+    const { data } = await supabase
+      .from("clients")
+      .select("id")
+      .or(`company_name.ilike.%${term}%,short_code.ilike.%${term}%,email_address1.ilike.%${term}%`);
+    searchClientIds = (data || []).map((c) => c.id);
+  }
+
+  if (clientFilter && clientFilter.trim().length > 0) {
+    const term = clientFilter.trim();
+    const { data } = await supabase
+      .from("clients")
+      .select("id")
+      .or(`company_name.ilike.%${term}%,short_code.ilike.%${term}%`);
+    filterClientIds = (data || []).map((c) => c.id);
+  }
+
+  if (clientEmailFilter && clientEmailFilter.trim().length > 0) {
+    const term = clientEmailFilter.trim();
+    const { data } = await supabase
+      .from("clients")
+      .select("id")
+      .ilike("email_address1", `%${term}%`);
+    emailClientIds = (data || []).map((c) => c.id);
+  }
+
+  return { searchClientIds, filterClientIds, emailClientIds };
+}
+
+/**
  * Helper function to apply filters to a Supabase query
  */
 function applyInvoiceFilters(
@@ -475,6 +531,12 @@ function applyInvoiceFilters(
     emailSentFilter?: string;
     invoiceSentFilter?: string;
     documentGeneratedFilter?: string;
+    paymentTermsFilter?: string;
+  },
+  clientIdsMap?: {
+    searchClientIds?: string[];
+    filterClientIds?: string[];
+    emailClientIds?: string[];
   }
 ) {
   const {
@@ -487,28 +549,41 @@ function applyInvoiceFilters(
     emailSentFilter,
     invoiceSentFilter,
     documentGeneratedFilter,
+    paymentTermsFilter,
   } = filters;
 
   // Global search across multiple fields
   if (searchTerm && searchTerm.trim().length > 0) {
     const searchTermTrimmed = searchTerm.trim();
-    query = query.or(
-      `invoice_number.ilike.%${searchTermTrimmed}%,clients.company_name.ilike.%${searchTermTrimmed}%,clients.short_code.ilike.%${searchTermTrimmed}%,clients.email_address1.ilike.%${searchTermTrimmed}%`
-    );
+    const searchClientIds = clientIdsMap?.searchClientIds || [];
+    if (searchClientIds.length > 0) {
+      query = query.or(
+        `invoice_number.ilike.%${searchTermTrimmed}%,client_id.in.(${searchClientIds.join(",")})`
+      );
+    } else {
+      query = query.ilike("invoice_number", `%${searchTermTrimmed}%`);
+    }
   }
 
   // Individual column filters
   if (clientFilter && clientFilter.trim().length > 0) {
-    query = query.or(
-      `clients.company_name.ilike.%${clientFilter.trim()}%,clients.short_code.ilike.%${clientFilter.trim()}%`
-    );
+    const filterClientIds = clientIdsMap?.filterClientIds || [];
+    if (filterClientIds.length > 0) {
+      query = query.in("client_id", filterClientIds);
+    } else {
+      query = query.eq("client_id", "00000000-0000-0000-0000-000000000000");
+    }
   }
+
   if (clientEmailFilter && clientEmailFilter.trim().length > 0) {
-    query = query.ilike(
-      "clients.email_address1",
-      `%${clientEmailFilter.trim()}%`
-    );
+    const emailClientIds = clientIdsMap?.emailClientIds || [];
+    if (emailClientIds.length > 0) {
+      query = query.in("client_id", emailClientIds);
+    } else {
+      query = query.eq("client_id", "00000000-0000-0000-0000-000000000000");
+    }
   }
+
   if (invoiceNumberFilter && invoiceNumberFilter.trim().length > 0) {
     query = query.ilike("invoice_number", `%${invoiceNumberFilter.trim()}%`);
   }
@@ -523,8 +598,6 @@ function applyInvoiceFilters(
     query = query.eq("email_sent", emailSentBool);
   }
   if (invoiceSentFilter && invoiceSentFilter.trim().length > 0) {
-    // If you have a separate field for invoice sent, filter here. Otherwise, skip or map to email_sent.
-    // For now, map to email_sent for demonstration.
     const invoiceSentBool = invoiceSentFilter.toLowerCase() === "true";
     query = query.eq("email_sent", invoiceSentBool);
   }
@@ -532,6 +605,11 @@ function applyInvoiceFilters(
     const documentGeneratedBool =
       documentGeneratedFilter.toLowerCase() === "true";
     query = query.eq("document_generated", documentGeneratedBool);
+  }
+  if (paymentTermsFilter && paymentTermsFilter.trim().length > 0) {
+    query = query.contains("invoice_data", {
+      paymentTerms: paymentTermsFilter.trim(),
+    });
   }
 
   return query;
