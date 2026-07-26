@@ -84,6 +84,8 @@ export function TimesheetList() {
             sendingJobseekerEmail={list.sendingJobseekerEmail}
             onSendEmail={list.sendEmailToJobseeker}
             onEditTimesheet={list.handleEditTimesheet}
+            onDeleteTimesheet={list.handleDeleteTimesheet}
+            onViewTimesheet={list.handleViewTimesheet}
           />
           {!list.loading && list.pagination.totalPages > 1 && (
             <TimesheetListPaginationBottom

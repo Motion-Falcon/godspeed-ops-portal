@@ -186,6 +186,8 @@
     },
     "messages": {
       "failedToFetch": "Failed to fetch bulk timesheets",
+      "deleteSuccess": "Timesheet #{{invoiceNumber}} deleted successfully.",
+      "failedToDelete": "Failed to delete timesheet.",
       "emailSentTo": "Email sent successfully to {{name}}",
       "failedToSendEmail": "Failed to send email to {{name}}",
       "noBulkTimesheets": "No bulk timesheets found matching your search criteria",

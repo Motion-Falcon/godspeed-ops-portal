@@ -1,0 +1,158 @@
+.timesheet-view-page-container {
+  display: flex;
+  flex-direction: column;
+  color: var(--text);
+  font-family: var(--font-family);
+  margin-left: 68px;
+  margin-top: 60px;
+  min-height: calc(100vh - 60px);
+}
+
+.timesheet-view-loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  width: 100%;
+  min-height: calc(100vh - 160px);
+  padding: 2rem;
+}
+
+.timesheet-view-content {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-width: 1280px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.timesheet-view-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.timesheet-view-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 1.5rem;
+}
+
+@media (max-width: 1024px) {
+  .timesheet-view-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.timesheet-view-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius, 10px);
+  box-shadow: var(--card-shadow, 0 1px 3px rgba(0, 0, 0, 0.05));
+  padding: 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.timesheet-view-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.timesheet-view-card-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text);
+}
+
+.timesheet-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1.25rem;
+}
+
+.timesheet-meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.timesheet-meta-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.timesheet-meta-value {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.timesheet-daily-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.5rem;
+}
+
+.timesheet-daily-table th,
+.timesheet-daily-table td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.timesheet-daily-table th {
+  background: var(--background);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.timesheet-pay-summary-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.timesheet-pay-summary-table td {
+  padding: 0.6rem 0;
+  border-bottom: 1px dashed var(--border);
+  font-size: 0.9rem;
+}
+
+.timesheet-pay-summary-table tr:last-child td {
+  border-bottom: none;
+}
+
+.timesheet-pay-summary-label {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.timesheet-pay-summary-value {
+  text-align: right;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.timesheet-grand-total-row td {
+  font-size: 1.1rem !important;
+  font-weight: 700 !important;
+  color: var(--primary) !important;
+  border-top: 2px solid var(--border);
+  padding-top: 0.75rem !important;
+}
