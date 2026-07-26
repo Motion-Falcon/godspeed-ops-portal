@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { AppHeader } from "../../components/AppHeader";
 import {
   CustomDropdown,
@@ -18,6 +18,7 @@ import {
   CheckCircle,
   Eye,
   ClipboardList,
+  Pencil,
 } from "lucide-react";
 import { getClients, ClientData, getClient } from "../../services/api/client";
 import { getClientPositions, PositionData } from "../../services/api/position";
@@ -134,6 +135,7 @@ export function InvoiceManagement() {
   const { user } = useAuth();
   const { t } = useLanguage();
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
 
   // Combined supplier and PO options with translation
   const COMBINED_OPTIONS = [
@@ -151,8 +153,9 @@ export function InvoiceManagement() {
     },
   ];
 
-  // Edit mode state
+  // Edit / View mode state
   const [isEditMode, setIsEditMode] = useState(false);
+  const [isViewMode, setIsViewMode] = useState(false);
   const [editingInvoiceId, setEditingInvoiceId] = useState<string | null>(null);
 
   // State for client selection
@@ -1885,14 +1888,18 @@ export function InvoiceManagement() {
     }
   };
 
-  // Initialize edit mode when invoice ID is present in query params
+  // Initialize edit/view mode when invoice ID is present in query params
   useEffect(() => {
     const invoiceId = searchParams.get("id");
+    const mode = searchParams.get("mode");
     if (invoiceId && invoiceId.trim() !== "") {
-      setIsEditMode(true);
+      const viewOnly = mode === "view";
+      setIsViewMode(viewOnly);
+      setIsEditMode(!viewOnly);
       setEditingInvoiceId(invoiceId);
       fetchInvoiceForEdit(invoiceId);
     } else {
+      setIsViewMode(false);
       setIsEditMode(false);
       setEditingInvoiceId(null);
     }
@@ -1902,7 +1909,9 @@ export function InvoiceManagement() {
     <div className="invoice-page-container">
       <AppHeader
         title={
-          isEditMode
+          isViewMode
+            ? t("invoiceManagement.viewInvoice") || "View Client Invoice"
+            : isEditMode
             ? t("navigation.editClientInvoice")
             : t("navigation.invoiceManagement")
         }
@@ -3047,51 +3056,71 @@ export function InvoiceManagement() {
 
             {/* Generate Invoice Section */}
             <div className="timesheet-action-section">
-              <button
-                className={`button ${
-                  isGeneratingInvoice ||
-                  !selectedClient ||
-                  !invoiceNumber ||
-                  lineItems.length === 0 ||
-                  !lineItems.some(
-                    (item) =>
-                      parseFloat(item.hours) > 0 &&
-                      parseFloat(item.regularBillRate) > 0
-                  )
-                    ? "disabled"
-                    : ""
-                }`}
-                onClick={() => {
-                  handleInvoiceSubmit();
-                }}
-                disabled={
-                  isGeneratingInvoice ||
-                  !selectedClient ||
-                  !invoiceNumber ||
-                  lineItems.length === 0 ||
-                  !lineItems.some(
-                    (item) =>
-                      parseFloat(item.hours) > 0 &&
-                      parseFloat(item.regularBillRate) > 0
-                  )
-                }
-              >
-                {isGeneratingInvoice ? (
-                  <>
-                    <Loader2 size={16} className="timesheet-loading-spinner" />
-                    {isEditMode
-                      ? t("invoiceManagement.updating")
-                      : t("invoiceManagement.generating")}
-                  </>
-                ) : (
-                  <>
-                    <Plus size={16} />
-                    {isEditMode
-                      ? t("invoiceManagement.updateInvoice")
-                      : t("invoiceManagement.generateInvoice")}
-                  </>
-                )}
-              </button>
+              {isViewMode ? (
+                <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+                  <button
+                    className="button secondary"
+                    onClick={() => navigate("/invoice-management/list")}
+                  >
+                    {t("buttons.back") || "Back to List"}
+                  </button>
+                  <button
+                    className="button primary button-icon"
+                    onClick={() =>
+                      navigate(`/invoice-management/create?id=${editingInvoiceId}`)
+                    }
+                  >
+                    <Pencil size={16} />
+                    {t("invoiceManagement.editInvoice") || "Edit Invoice"}
+                  </button>
+                </div>
+              ) : (
+                <button
+                  className={`button ${
+                    isGeneratingInvoice ||
+                    !selectedClient ||
+                    !invoiceNumber ||
+                    lineItems.length === 0 ||
+                    !lineItems.some(
+                      (item) =>
+                        parseFloat(item.hours) > 0 &&
+                        parseFloat(item.regularBillRate) > 0
+                    )
+                      ? "disabled"
+                      : ""
+                  }`}
+                  onClick={() => {
+                    handleInvoiceSubmit();
+                  }}
+                  disabled={
+                    isGeneratingInvoice ||
+                    !selectedClient ||
+                    !invoiceNumber ||
+                    lineItems.length === 0 ||
+                    !lineItems.some(
+                      (item) =>
+                        parseFloat(item.hours) > 0 &&
+                        parseFloat(item.regularBillRate) > 0
+                    )
+                  }
+                >
+                  {isGeneratingInvoice ? (
+                    <>
+                      <Loader2 size={16} className="timesheet-loading-spinner" />
+                      {isEditMode
+                        ? t("invoiceManagement.updating")
+                        : t("invoiceManagement.generating")}
+                    </>
+                  ) : (
+                    <>
+                      <Plus size={16} />
+                      {isEditMode
+                        ? t("invoiceManagement.updateInvoice")
+                        : t("invoiceManagement.generateInvoice")}
+                    </>
+                  )}
+                </button>
+              )}
             </div>
           </>
         )}

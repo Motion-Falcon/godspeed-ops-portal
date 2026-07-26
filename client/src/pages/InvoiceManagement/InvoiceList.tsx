@@ -9,6 +9,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Mail,
+  Eye,
 } from "lucide-react";
 import {
   getInvoices,
@@ -21,6 +22,7 @@ import { AppHeader } from "../../components/AppHeader";
 import { ConfirmationModal } from "../../components/ConfirmationModal";
 import { DateRangePicker } from "../../components/DateRangePicker";
 import { useLanguage } from "../../contexts/language/language-provider";
+import { PAYMENT_TERMS } from "../../constants/formOptions";
 import "../../styles/pages/InvoiceManagement.css";
 
 interface PaginationInfo {
@@ -73,6 +75,7 @@ export function InvoiceList() {
   const [emailSentFilter, setEmailSentFilter] = useState("");
   const [invoiceSentFilter, setInvoiceSentFilter] = useState("");
   const [documentGeneratedFilter, setDocumentGeneratedFilter] = useState("");
+  const [paymentTermsFilter, setPaymentTermsFilter] = useState("");
 
   // Pagination state
   const [pagination, setPagination] = useState<PaginationInfo>({
@@ -115,6 +118,7 @@ export function InvoiceList() {
     setEmailSentFilter("");
     setInvoiceSentFilter("");
     setDocumentGeneratedFilter("");
+    setPaymentTermsFilter("");
     setPagination((prev) => ({ ...prev, page: 1 }));
   };
 
@@ -157,6 +161,7 @@ export function InvoiceList() {
         emailSentFilter: emailSentFilter,
         invoiceSentFilter: invoiceSentFilter,
         documentGeneratedFilter: documentGeneratedFilter,
+        paymentTermsFilter: paymentTermsFilter,
       };
       const response = await getInvoices(params);
       setInvoices(response.invoices);
@@ -180,6 +185,7 @@ export function InvoiceList() {
     emailSentFilter,
     invoiceSentFilter,
     documentGeneratedFilter,
+    paymentTermsFilter,
   ]);
 
   // Debounced fetch effect
@@ -207,6 +213,7 @@ export function InvoiceList() {
     emailSentFilter,
     invoiceSentFilter,
     documentGeneratedFilter,
+    paymentTermsFilter,
   ]);
 
   // --- New: Initialize filters from query params on mount ---
@@ -223,6 +230,9 @@ export function InvoiceList() {
     setEmailSentFilter(params.get("emailSent") || "");
     setInvoiceSentFilter(params.get("invoiceSent") || "");
     setDocumentGeneratedFilter(params.get("documentGenerated") || "");
+    setPaymentTermsFilter(
+      params.get("paymentTerms") || params.get("paymentTermsFilter") || ""
+    );
     // Example: How to use filter params in the URL
     //
     //   /invoice-management/list?searchTerm=Acme&invoiceNumber=INV-123&client=Acme%20Corp&clientEmail=acme%40email.com&dateRangeStart=2024-07-01&dateRangeEnd=2024-07-31&dueDateStart=2024-08-01&dueDateEnd=2024-08-31&emailSent=true&invoiceSent=true&documentGenerated=true
@@ -237,6 +247,10 @@ export function InvoiceList() {
   };
 
   const handleViewInvoice = (id: string) => {
+    navigate(`/invoice-management/view/${id}`);
+  };
+
+  const handleEditInvoice = (id: string) => {
     navigate(`/invoice-management/create?id=${id}`);
   };
 
@@ -516,7 +530,7 @@ export function InvoiceList() {
                           endDate={dateRangeEnd}
                           onStartChange={setDateRangeStart}
                           onEndChange={setDateRangeEnd}
-                          placeholder={t("invoiceManagement.filterDateRange") || "Select Date Range"}
+                          placeholder={t("invoiceManagement.filterDateRange") || "Select Range"}
                         />
                       </div>
                     </div>
@@ -535,28 +549,31 @@ export function InvoiceList() {
                           endDate={dueDateEnd}
                           onStartChange={setDueDateStart}
                           onEndChange={setDueDateEnd}
-                          placeholder={t("invoiceManagement.filterDueDateRange") || "Select Due Date Range"}
+                          placeholder={t("invoiceManagement.filterDueDateRange") || "Select Range"}
                         />
                       </div>
                     </div>
                   </th>
                   <th>
-                    <div
-                      className="column-filter"
-                      style={{ alignItems: "center" }}
-                    >
+                    <div className="column-filter">
                       <div className="column-title">
                         {t("invoiceManagement.paymentTerms") || "Payment Terms"}
                       </div>
                       <div className="column-search">
-                        <div className="actions-info">
-                          <span
-                            className="actions-help-text"
-                            style={{ visibility: "hidden" }}
-                          >
-                            -
-                          </span>
-                        </div>
+                        <select
+                          value={paymentTermsFilter}
+                          onChange={(e) => setPaymentTermsFilter(e.target.value)}
+                          className="column-search-input"
+                        >
+                          <option value="">
+                            {t("invoiceManagement.filters.all") || "All"}
+                          </option>
+                          {PAYMENT_TERMS.map((term) => (
+                            <option key={term} value={term}>
+                              {term}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                     </div>
                   </th>
@@ -570,11 +587,8 @@ export function InvoiceList() {
                       </div>
                       <div className="column-search">
                         <div className="actions-info">
-                          <span
-                            className="actions-help-text"
-                            style={{ visibility: "hidden" }}
-                          >
-                            -
+                          <span className="actions-help-text">
+                            {t("invoiceManagement.list.totalAmountHelpText") || "Subtotal + Tax"}
                           </span>
                         </div>
                       </div>
@@ -680,6 +694,7 @@ export function InvoiceList() {
                           {/* Actions skeleton - needs special styling */}
                           <td className="skeleton-cell">
                             <div className="skeleton-actions">
+                              <div className="skeleton-icon skeleton-action-btn"></div>
                               <div className="skeleton-icon skeleton-action-btn"></div>
                               <div className="skeleton-icon skeleton-action-btn"></div>
                             </div>
@@ -794,9 +809,19 @@ export function InvoiceList() {
                         <td className="actions-cell">
                           <div className="action-buttons">
                             <button
-                              className="action-icon-btn edit-btn"
+                              className="action-icon-btn view-btn"
                               onClick={() =>
                                 handleViewInvoice(String(invoice.id))
+                              }
+                              title={t("invoiceManagement.viewInvoice")}
+                              aria-label={t("invoiceManagement.viewInvoice")}
+                            >
+                              <Eye size={16} />
+                            </button>
+                            <button
+                              className="action-icon-btn edit-btn"
+                              onClick={() =>
+                                handleEditInvoice(String(invoice.id))
                               }
                               title={t("invoiceManagement.editInvoiceDetails")}
                               aria-label={t("invoiceManagement.editInvoice")}
