@@ -22,15 +22,10 @@
 | `/invoice-management` | `InvoiceManagement` | Create invoice (same UI as `/create`) |
 | `/invoice-management/create` | `InvoiceManagement` | Create invoice |
 | `/invoice-management/create?id={uuid}` | `InvoiceManagement` | Edit existing invoice (`?id` query) |
+| `/invoice-management/view/:id` | `InvoiceView` | Dedicated read-only invoice view & detail page |
 | `/invoice-management/list` | `InvoiceList` | Paginated invoice list |
 
-**Menu:** [`client/src/components/HamburgerMenu.tsx`](../client/src/components/HamburgerMenu.tsx) — Financial submenu links to create and list.
-
-**Related (outside invoice management UI):**
-- [`client/src/pages/Reports/InvoiceReport.tsx`](../client/src/pages/Reports/InvoiceReport.tsx) at `/reports/invoice` — read-only invoice report (different roles: `REPORTS_ROLES`).
-- [`server/src/routes/invoiceMetrics.ts`](../server/src/routes/invoiceMetrics.ts) — dashboard metrics linking to list.
-
-**Gaps:** No read-only “view” route; edit opens the full form. `/invoice-management` and `/invoice-management/create` are duplicates with no behavioral difference.
+**Notes:** `/invoice-management/view/:id` provides a full read-only detail view including line items, attachments, tax summary, signed PDF preview link, and direct email trigger. `/invoice-management` and `/invoice-management/create` are duplicate routes mounting the create UI.
 
 ### Backend routes ([`server/src/index.ts`](../server/src/index.ts) mounts `/api/invoices`)
 
@@ -315,6 +310,7 @@ List send disabled when: no email, or `!documentGenerated`, or already sending. 
 - Manual line items with tax and OT calculations
 - Supplier/PO rows on invoice and PDF
 - Create and edit with DB persistence
+- Dedicated read-only invoice view page (`InvoiceView.tsx`) with PDF preview and status summary
 - Client-side PDF generation and Supabase upload
 - Document metadata PATCH
 - Attachment upload and inclusion in email
@@ -326,7 +322,6 @@ List send disabled when: no email, or `!documentGenerated`, or already sending. 
 
 ### Partial / incomplete
 
-- **No read-only invoice view** — edit form only
 - **Due date filters** — state/URL only, not sent to API or rendered in UI
 - **`emailSentFilter`** — no UI; redundant with invoice emailed column
 - **`invoiceSentFilter`** — labeled “invoice emailed” but backend comment says it maps to `email_sent` (no separate “invoice sent” field)

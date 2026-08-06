@@ -39,6 +39,7 @@ flowchart LR
 | Routes (UI) | [`client/src/App.tsx`](../client/src/App.tsx) |
 | Access control | [`client/src/constants/accessControl.ts`](../client/src/constants/accessControl.ts) |
 | Single entry page | [`client/src/pages/TimesheetManagement/TimesheetManagement.tsx`](../client/src/pages/TimesheetManagement/TimesheetManagement.tsx) |
+| Read-only view page | [`client/src/pages/TimesheetManagement/TimesheetView.tsx`](../client/src/pages/TimesheetManagement/TimesheetView.tsx) |
 | Bulk by client | [`client/src/pages/TimesheetManagement/BulkTimesheetManagement.tsx`](../client/src/pages/TimesheetManagement/BulkTimesheetManagement.tsx) |
 | Bulk by jobseeker | [`client/src/pages/TimesheetManagement/BulkTimesheetJobseekerManagement.tsx`](../client/src/pages/TimesheetManagement/BulkTimesheetJobseekerManagement.tsx) |
 | All timesheets list | [`client/src/pages/TimesheetManagement/TimesheetList.tsx`](../client/src/pages/TimesheetManagement/TimesheetList.tsx) |
@@ -47,9 +48,11 @@ flowchart LR
 | Week/prefill helpers | [`client/src/pages/TimesheetManagement/functions/timesheetWeek.ts`](../client/src/pages/TimesheetManagement/functions/timesheetWeek.ts) |
 | Client API | [`client/src/services/api/timesheet.ts`](../client/src/services/api/timesheet.ts) |
 | Server routes | [`server/src/routes/timesheet.routes.ts`](../server/src/routes/timesheet.routes.ts) |
+| Server controller | [`server/src/controllers/timesheet.controller.ts`](../server/src/controllers/timesheet.controller.ts) |
 | Server service | [`server/src/services/timesheet.service.ts`](../server/src/services/timesheet.service.ts) |
+| Versioning service | [`server/src/services/timesheet.version.ts`](../server/src/services/timesheet.version.ts) |
 | Email builders | [`server/src/services/timesheet.email.ts`](../server/src/services/timesheet.email.ts), [`server/src/email-templates/timesheet-html.ts`](../server/src/email-templates/timesheet-html.ts), [`server/src/email-templates/timesheet-txt.ts`](../server/src/email-templates/timesheet-txt.ts) |
-| DB schema | [`server/src/db/migration_v2/005_timesheets.sql`](../server/src/db/migration_v2/005_timesheets.sql), [`018_hybrid_payment_timesheets.sql`](../server/src/db/migration_v2/018_hybrid_payment_timesheets.sql) |
+| DB schema | [`server/src/db/migration_v2/005_timesheets.sql`](../server/src/db/migration_v2/005_timesheets.sql), [`018_hybrid_payment_timesheets.sql`](../server/src/db/migration_v2/018_hybrid_payment_timesheets.sql), [`024_timesheets_bulk_jobseeker.sql`](../server/src/db/migration_v2/024_timesheets_bulk_jobseeker.sql), [`025_timesheets_tax_amount.sql`](../server/src/db/migration_v2/025_timesheets_tax_amount.sql) |
 | i18n | [`client/src/contexts/language/locales/en/timesheet.json`](../client/src/contexts/language/locales/en/timesheet.json), [`fr/timesheet.json`](../client/src/contexts/language/locales/fr/timesheet.json) |
 
 ---
@@ -489,6 +492,7 @@ French locale file exists: [`client/src/contexts/language/locales/fr/timesheet.j
 | Feature | Status |
 |---------|--------|
 | Single timesheet create/update | **Fully working** |
+| Dedicated read-only view page (`TimesheetView.tsx`) | **Fully working** |
 | Cascade selection + existing data load | **Fully working** |
 | Daily hours + live payroll preview | **Fully working** |
 | Hybrid SIN + cash/e-Transfer split | **Fully working** |
