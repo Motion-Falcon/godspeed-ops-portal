@@ -24,7 +24,7 @@
 
 1. **Timesheets & Payroll** — Weekly Timesheet, Deduction Report  
 2. **Sales & Invoices** — Invoice Report, Sales Report, Rate List, Margin Report  
-3. **Printing & Clients** — Envelope Printing (Position Details), Clients  
+3. **Printing & Clients** — Envelope Printing (Position Details), Envelope Printing (By Due Date), Clients  
 
 **User sees:** Header, subtitle, category headings, cards with icon/title/description; click navigates to report route.
 
@@ -64,7 +64,7 @@
 
 ---
 
-### 1.3 Individual reports (all eight working)
+### 1.3 Individual reports (all nine working)
 
 #### Weekly Timesheet
 - **Route:** `/reports/weekly-timesheet` — [`client/src/pages/Reports/WeeklyTimesheet.tsx`](../client/src/pages/Reports/WeeklyTimesheet.tsx)
@@ -122,6 +122,15 @@
 - **Columns:** Sequence, SR no (short code + week ending + sequence), city, list, week ending, client, sales person, short code, province, pay cycle, jobseeker ID/docs/name/phone/email, billing email, pay method, position, hours/OT, rates, amounts, tax, invoice #/date, payment due, currency; inactive flags
 - **CSV:** `Envelope Printing Report.csv` — **works**
 - **Smart behavior:** Matches timesheet lines to invoices; builds envelope serial numbers; payment due date computation
+
+#### Envelope Printing (By Due Date)
+- **Route:** `/reports/envelope-printing-by-due-date` — [`EnvelopePrintingByDueDateReport.tsx`](../client/src/pages/Reports/EnvelopePrintingByDueDateReport.tsx)
+- **API:** `POST /api/reports/envelope-printing-by-due-date`
+- **Required:** At least one client
+- **Optional:** Payment due date range, list name, pay cycle
+- **Columns:** Sequence, SR no, invoice #, city, list, week ending, client, sales person, short code, work province, pay cycle, jobseeker ID, license/passport, jobseeker name, phone, email, billing email, pay method, position category, position name, hours/OT, pay/bill rates, total pay/bill, tax, invoice date, payment due date, currency
+- **CSV:** `Envelope Printing By Due Date Report.csv` — **works**
+- **Smart behavior:** Groups timesheets and envelope batches by invoice payment due date for financial distribution workflows
 
 #### Clients Report
 - **Route:** `/reports/clients` — [`ClientsReport.tsx`](../client/src/pages/Reports/ClientsReport.tsx)
