@@ -193,10 +193,18 @@ export function buildTimesheetRowsForPayroll(
       if (input.cashDeductionPct > 0) {
         cashDeductionAmount = basePay * (input.cashDeductionPct / 100);
       }
-    } else if (input.paymentMethod === "Corporation-Direct Deposit") {
+    } else if (
+      input.paymentMethod === "Corporation-Direct Deposit" ||
+      input.paymentMethod === "Corporation-Cheque" ||
+      (input.paymentMethod && input.paymentMethod.includes("Corporation"))
+    ) {
       const taxRate = parseHstGstPercentage(input.hstGst);
       if (taxRate > 0) {
-        taxAmount = basePay * (taxRate / 100);
+        const taxableBase = Math.max(
+          0,
+          basePay + input.bonusAmount - input.deductionAmount
+        );
+        taxAmount = taxableBase * (taxRate / 100);
       }
     }
     const totalJobseekerPay =

@@ -81,6 +81,11 @@ export function useBulkTimesheetForms({
       }
 
       if (!cancelled) {
+        built.sort((a, b) => {
+          const nameA = mapAssignmentToJobseeker(a.assignment)?.name || "";
+          const nameB = mapAssignmentToJobseeker(b.assignment)?.name || "";
+          return nameA.localeCompare(nameB, undefined, { sensitivity: "base" });
+        });
         setRows(built);
       }
     };

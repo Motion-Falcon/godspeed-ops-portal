@@ -158,7 +158,10 @@ export function useTimesheetSelection() {
               .join(" - "),
             value: jobseeker,
           };
-        }),
+        })
+        .sort((a, b) =>
+          a.label.localeCompare(b.label, undefined, { sensitivity: "base" })
+        ),
     [jobseekers]
   );
 
