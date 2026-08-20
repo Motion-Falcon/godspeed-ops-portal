@@ -200,10 +200,7 @@ export function EnvelopePrintingReport() {
     setClientLoading(true);
     getClients({ limit: 10000 })
       .then((res) => {
-        const backendClients = res.clients;
-        setClients(backendClients);
-        // Set default selection to all clients
-        setSelectedClients(backendClients);
+        setClients(res.clients);
       })
       .catch(() => setClients([]))
       .finally(() => setClientLoading(false));
@@ -214,13 +211,8 @@ export function EnvelopePrintingReport() {
       .then((opts) => {
         const names = opts.map((o) => o.name);
         setAvailableListNames(names);
-        setSelectedListNames(names);
       })
       .catch(() => setAvailableListNames([]));
-  }, []);
-
-  useEffect(() => {
-    setSelectedPayCycles([...PAY_CYCLES]);
   }, []);
 
   useEffect(() => {

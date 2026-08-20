@@ -188,16 +188,10 @@ export function EnvelopePrintingByDueDateReport() {
     setClientLoading(true);
     getClients({ limit: 10000 })
       .then((res) => {
-        const backendClients = res.clients;
-        setClients(backendClients);
-        setSelectedClients(backendClients);
+        setClients(res.clients);
       })
       .catch(() => setClients([]))
       .finally(() => setClientLoading(false));
-  }, []);
-
-  useEffect(() => {
-    setSelectedPayCycles([...PAY_CYCLES]);
   }, []);
 
   useEffect(() => {
