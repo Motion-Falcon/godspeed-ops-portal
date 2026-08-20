@@ -394,7 +394,7 @@ export function EnvelopePrintingReport() {
                 placeholder={t("reports.placeholders.selectListName")}
                 multiSelect={true}
                 showSelectAll={true}
-                searchable={false}
+                searchable={true}
                 icon={<List size={16} />}
                 emptyMessage={t("reports.emptyMessages.noListNames")}
                 maxVisibleTagsOverride={5}
