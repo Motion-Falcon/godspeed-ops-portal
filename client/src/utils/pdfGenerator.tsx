@@ -220,7 +220,10 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   footer: {
-    marginTop: 10,
+    position: "absolute",
+    bottom: 20,
+    left: 30,
+    right: 30,
     fontSize: 8,
     color: colors.secondary,
   },
@@ -358,11 +361,10 @@ const InvoicePDFDocument: React.FC<{ data: InvoiceData }> = ({ data }) => {
     return acc;
   }, {} as Record<string, { count: number; totalHours: number }>);
 
-  // Maximum line items capacity per page considering line wrapping and summary section height
-  const FIRST_PAGE_MAX_WITH_SUMMARY = 4;
-  const FIRST_PAGE_MAX_NO_SUMMARY = 6;
-  const CONTINUATION_MAX_WITH_SUMMARY = 7;
-  const CONTINUATION_MAX_NO_SUMMARY = 12;
+  // Calculate how many rows can fit on the first page (accounting for header space)
+  const FIRST_PAGE_ROWS = 10;
+  // Calculate how many rows can fit on continuation pages (more space available)
+  const CONTINUATION_PAGE_ROWS = 17;
 
   // Calculate pagination
   const pages: Array<{ items: typeof data.lineItems; isLastPage: boolean }> =
@@ -371,49 +373,18 @@ const InvoicePDFDocument: React.FC<{ data: InvoiceData }> = ({ data }) => {
   let isFirstPage = true;
 
   while (remainingItems.length > 0) {
-    if (isFirstPage) {
-      if (remainingItems.length <= FIRST_PAGE_MAX_WITH_SUMMARY) {
-        pages.push({
-          items: remainingItems,
-          isLastPage: true,
-        });
-        remainingItems = [];
-      } else {
-        pages.push({
-          items: remainingItems.slice(0, FIRST_PAGE_MAX_NO_SUMMARY),
-          isLastPage: false,
-        });
-        remainingItems = remainingItems.slice(FIRST_PAGE_MAX_NO_SUMMARY);
-      }
-      isFirstPage = false;
-    } else {
-      if (remainingItems.length <= CONTINUATION_MAX_WITH_SUMMARY) {
-        pages.push({
-          items: remainingItems,
-          isLastPage: true,
-        });
-        remainingItems = [];
-      } else {
-        const countToTake = CONTINUATION_MAX_NO_SUMMARY;
-        if (
-          remainingItems.length <= countToTake &&
-          remainingItems.length > CONTINUATION_MAX_WITH_SUMMARY
-        ) {
-          const takeCount = CONTINUATION_MAX_NO_SUMMARY - 5;
-          pages.push({
-            items: remainingItems.slice(0, takeCount),
-            isLastPage: false,
-          });
-          remainingItems = remainingItems.slice(takeCount);
-        } else {
-          pages.push({
-            items: remainingItems.slice(0, countToTake),
-            isLastPage: false,
-          });
-          remainingItems = remainingItems.slice(countToTake);
-        }
-      }
-    }
+    const rowsForThisPage = isFirstPage
+      ? FIRST_PAGE_ROWS
+      : CONTINUATION_PAGE_ROWS;
+    const itemsForThisPage = remainingItems.slice(0, rowsForThisPage);
+    remainingItems = remainingItems.slice(rowsForThisPage);
+
+    pages.push({
+      items: itemsForThisPage,
+      isLastPage: remainingItems.length === 0,
+    });
+
+    isFirstPage = false;
   }
 
   const totalPages = pages.length;
