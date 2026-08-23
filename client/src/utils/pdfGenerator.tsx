@@ -282,17 +282,42 @@ const COMPANY_INFO = {
   gst: "GST/HST No. 825183387",
 };
 
-// Helper function to format date with ordinal suffix
+// Helper function to format date with ordinal suffix without timezone shift
 const formatDateWithOrdinal = (dateString: string): string => {
-  const date = new Date(dateString);
-  const day = date.getDate();
-  const month = date.toLocaleDateString("en-US", { month: "short" });
-  const year = date.getFullYear();
+  if (!dateString) return "";
+
+  let day: number;
+  let monthStr: string;
+  let year: number;
+
+  if (dateString.includes("-")) {
+    const parts = dateString.split("T")[0].split("-");
+    if (parts.length === 3) {
+      year = parseInt(parts[0], 10);
+      const monthIdx = parseInt(parts[1], 10) - 1;
+      day = parseInt(parts[2], 10);
+      const monthNames = [
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+      ];
+      monthStr = monthNames[monthIdx] || "";
+    } else {
+      const date = new Date(dateString);
+      day = date.getUTCDate();
+      monthStr = date.toLocaleDateString("en-US", { month: "short", timeZone: "UTC" });
+      year = date.getUTCFullYear();
+    }
+  } else {
+    const date = new Date(dateString);
+    day = date.getUTCDate();
+    monthStr = date.toLocaleDateString("en-US", { month: "short", timeZone: "UTC" });
+    year = date.getUTCFullYear();
+  }
 
   // Get ordinal suffix
-  const suffix = (day: number) => {
-    if (day > 3 && day < 21) return "th";
-    switch (day % 10) {
+  const suffix = (d: number) => {
+    if (d > 3 && d < 21) return "th";
+    switch (d % 10) {
       case 1:
         return "st";
       case 2:
@@ -304,7 +329,7 @@ const formatDateWithOrdinal = (dateString: string): string => {
     }
   };
 
-  return `${day}${suffix(day)} ${month} ${year}`;
+  return `${day}${suffix(day)} ${monthStr} ${year}`;
 };
 
 // Interfaces
