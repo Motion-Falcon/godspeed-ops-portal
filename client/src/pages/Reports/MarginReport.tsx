@@ -5,6 +5,9 @@ import { useLanguage } from "../../contexts/language/language-provider";
 import { Loader2, Calendar } from "lucide-react";
 import "../../styles/pages/CommonReportsStyles.css";
 import { exportToCSV } from '../../utils/csvExport';
+import { useColumnSearch } from "../../hooks/useColumnSearch";
+import { ReportTableToolbar } from "../../components/ReportTableToolbar";
+import { ColumnSearchInput } from "../../components/ColumnSearchInput";
 
 // Format date utility function
 const formatDate = (dateString: string | undefined) => {
@@ -61,6 +64,20 @@ export function MarginReport() {
   const [loading, setLoading] = useState(false);
   const [reportRows, setReportRows] = useState<MarginReportRow[]>([]);
   const [error, setError] = useState<string | null>(null);
+
+  const {
+    columnFilters,
+    setColumnFilter,
+    clearAllFilters,
+    hasActiveFilters,
+    filteredData: searchedReportRows,
+    totalCount,
+    filteredCount,
+  } = useColumnSearch(reportRows, (row, columnKey) => {
+    const colDef = tableColumns.find(c => c.key === columnKey);
+    const val = row[columnKey as keyof MarginReportRow];
+    return colDef?.format ? colDef.format(val) : String(val ?? '');
+  });
 
   // Fetch report when filters change
   useEffect(() => {
@@ -131,30 +148,29 @@ export function MarginReport() {
         </div>
 
         {reportRows.length > 0 && (
-          <div className="csv-download-section">
-            <button
-              className="button"
-              onClick={() => {
-                const csvData = reportRows.map((row, index) => {
-                  const csvRow: Record<string, unknown> = {
-                    [t("reports.columns.serialNumber") || "S.No."]: index + 1,
-                  };
-                  csvColumns.forEach(col => {
-                    const val = row[col.key as keyof typeof row];
-                    csvRow[col.label] = col.format ? col.format(val) : (val !== undefined && val !== null ? String(val) : 'N/A');
-                  });
-                  return csvRow;
+          <ReportTableToolbar
+            hasActiveFilters={hasActiveFilters}
+            totalCount={totalCount}
+            filteredCount={filteredCount}
+            onClearSearch={clearAllFilters}
+            onDownloadCSV={() => {
+              const csvData = searchedReportRows.map((row, index) => {
+                const csvRow: Record<string, unknown> = {
+                  [t("reports.columns.serialNumber") || "S.No."]: index + 1,
+                };
+                csvColumns.forEach(col => {
+                  const val = row[col.key as keyof typeof row];
+                  csvRow[col.label] = col.format ? col.format(val) : (val !== undefined && val !== null ? String(val) : 'N/A');
                 });
-                exportToCSV(
-                  csvData,
-                  'Margin Report.csv',
-                  [t("reports.columns.serialNumber") || "S.No.", ...csvColumns.map(col => col.label)]
-                );
-              }}
-            >
-              {t('reports.states.downloadCSV')}
-            </button>
-          </div>
+                return csvRow;
+              });
+              exportToCSV(
+                csvData,
+                'Margin Report.csv',
+                [t("reports.columns.serialNumber") || "S.No.", ...csvColumns.map(col => col.label)]
+              );
+            }}
+          />
         )}
 
         <div className="report-table-container timesheet-selection-bar">
@@ -169,20 +185,36 @@ export function MarginReport() {
               <thead>
                 <tr>
                   {tableColumns.map(col => (
-                    <th key={col.key}>{col.label}</th>
+                    <th key={col.key} className="th-header-cell">
+                      <div className="column-header-content">
+                        <span className="column-header-title">{col.label}</span>
+                        <ColumnSearchInput
+                          value={columnFilters[col.key] || ''}
+                          onChange={(val) => setColumnFilter(col.key, val)}
+                        />
+                      </div>
+                    </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {reportRows.map((row, idx) => (
-                  <tr key={idx}>
-                    {tableColumns.map((col, i) => {
-                      const val = row[col.key as keyof typeof row];
-                      const displayValue = col.format ? col.format(val) : (val !== undefined && val !== null ? String(val) : 'N/A');
-                      return <td key={i}>{displayValue}</td>;
-                    })}
+                {searchedReportRows.length === 0 ? (
+                  <tr>
+                    <td colSpan={tableColumns.length} className="empty-table-cell">
+                      {t('reports.states.noMatchingRecords') || 'No matching records found.'}
+                    </td>
                   </tr>
-                ))}
+                ) : (
+                  searchedReportRows.map((row, idx) => (
+                    <tr key={idx}>
+                      {tableColumns.map((col, i) => {
+                        const val = row[col.key as keyof typeof row];
+                        const displayValue = col.format ? col.format(val) : (val !== undefined && val !== null ? String(val) : 'N/A');
+                        return <td key={i}>{displayValue}</td>;
+                      })}
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           )}

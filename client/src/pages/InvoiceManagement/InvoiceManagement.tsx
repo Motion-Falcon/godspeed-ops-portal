@@ -131,6 +131,65 @@ interface TimesheetData {
   salesTax?: string;
 }
 
+// Helper to parse date string like "8/2/2026" or "2026-08-02" into YYYY-MM-DD format for date input without timezone shift
+const formatToInputDate = (dateStr: string): string => {
+  if (!dateStr) return "";
+  if (dateStr.includes("-")) {
+    return dateStr.split("T")[0];
+  }
+  if (dateStr.includes("/")) {
+    const parts = dateStr.split("/");
+    if (parts.length === 3) {
+      const month = parts[0].padStart(2, "0");
+      const day = parts[1].padStart(2, "0");
+      const year = parts[2];
+      return `${year}-${month}-${day}`;
+    }
+  }
+  const dateObj = new Date(dateStr);
+  if (isNaN(dateObj.getTime())) return "";
+  const year = dateObj.getUTCFullYear();
+  const month = String(dateObj.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(dateObj.getUTCDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+// Helper to extract timesheet date range from invoice data or line items
+const extractTimesheetDateRange = (invData: any): { startDate: string; endDate: string } => {
+  const topStart = (invData?.invoiceData?.timesheetStartDate || invData?.timesheetStartDate) as string;
+  const topEnd = (invData?.invoiceData?.timesheetEndDate || invData?.timesheetEndDate) as string;
+  if (topStart && topEnd) {
+    return { startDate: formatToInputDate(topStart), endDate: formatToInputDate(topEnd) };
+  }
+
+  // Fallback: try parsing from line items description (e.g. "Work period: 8/2/2026 - 8/8/2026")
+  const timesheets = invData?.invoiceData?.timesheets || invData?.timesheets;
+  if (Array.isArray(timesheets) && timesheets.length > 0) {
+    for (const ts of timesheets) {
+      if (ts.description) {
+        const match = ts.description.match(/Work period:\s*([0-9\/\-]+)\s*-\s*([0-9\/\-]+)/i);
+        if (match && match[1] && match[2]) {
+          const parsedStart = formatToInputDate(match[1]);
+          const parsedEnd = formatToInputDate(match[2]);
+          if (parsedStart && parsedEnd) {
+            return { startDate: parsedStart, endDate: parsedEnd };
+          }
+        }
+      }
+      // Or check weekStartDate / weekEndDate on timesheets if valid
+      if (ts.weekStartDate && ts.weekEndDate) {
+        const parsedStart = formatToInputDate(ts.weekStartDate);
+        const parsedEnd = formatToInputDate(ts.weekEndDate);
+        if (parsedStart && parsedEnd) {
+          return { startDate: parsedStart, endDate: parsedEnd };
+        }
+      }
+    }
+  }
+
+  return { startDate: formatToInputDate(topStart) || "", endDate: formatToInputDate(topEnd) || "" };
+};
+
 export function InvoiceManagement() {
   const { user } = useAuth();
   const { t } = useLanguage();
@@ -479,8 +538,20 @@ export function InvoiceManagement() {
         ) {
           timesheet.bulkBreakdown.forEach((item, index) => {
             const key = `${timesheet.id}_${item.position_id}_${index}`;
-            const itemTotalHours =
+            let itemTotalHours =
               (Number(item.regular_hours) || 0) + (Number(item.overtime_hours) || 0);
+
+            const topLevelTotal =
+              (timesheet.totalRegularHours || 0) +
+              (timesheet.totalOvertimeHours || 0);
+
+            if (
+              timesheet.bulkBreakdown?.length === 1 &&
+              topLevelTotal > 0 &&
+              itemTotalHours !== topLevelTotal
+            ) {
+              itemTotalHours = topLevelTotal;
+            }
 
             if (!groupedData[key]) {
               groupedData[key] = {
@@ -1274,9 +1345,9 @@ export function InvoiceManagement() {
                   : undefined,
                 salesTax: item.salesTax,
                 description: item.description,
-                weekEndDate: dueDate,
+                weekEndDate: timesheetEndDate || dueDate,
                 invoiceNumber: invoiceNumber,
-                weekStartDate: invoiceDate,
+                weekStartDate: timesheetStartDate || invoiceDate,
                 regularBillRate: regularBillRate,
                 overtimeBillRate: overtimeBillRate,
                 regularPayRate: regularPayRate,
@@ -1303,6 +1374,8 @@ export function InvoiceManagement() {
             messageOnInvoice: messageOnInvoice,
             termsOnInvoice: termsOnInvoice,
             paymentTerms: selectedTerms,
+            timesheetStartDate: timesheetStartDate || undefined,
+            timesheetEndDate: timesheetEndDate || undefined,
             // summary and document are intentionally omitted
           },
         };
@@ -1356,8 +1429,8 @@ export function InvoiceManagement() {
             return {
               id: item.id,
               invoiceNumber: invoiceNumber,
-              weekStartDate: invoiceDate, // Using invoice date as reference
-              weekEndDate: dueDate, // Using due date as reference
+              weekStartDate: timesheetStartDate || invoiceDate,
+              weekEndDate: timesheetEndDate || dueDate,
               totalRegularHours: regularHours,
               totalOvertimeHours: overtimeHours,
               regularBillRate: regularBillRate,
@@ -1402,6 +1475,8 @@ export function InvoiceManagement() {
           supplierPOItems: supplierPOItems,
           messageOnInvoice: messageOnInvoice,
           termsOnInvoice: termsOnInvoice,
+          timesheetStartDate: timesheetStartDate || undefined,
+          timesheetEndDate: timesheetEndDate || undefined,
           subtotal: subtotal,
           totalTax: totalTax,
           totalHst: totalHST,
@@ -1753,6 +1828,12 @@ export function InvoiceManagement() {
         (invoiceData.invoiceData?.termsOnInvoice as string) || ""
       );
       setNotes(invoiceData.notes || "");
+
+      // Populate timesheet date range
+      const { startDate: extractedStart, endDate: extractedEnd } =
+        extractTimesheetDateRange(invoiceData);
+      setTimesheetStartDate(extractedStart);
+      setTimesheetEndDate(extractedEnd);
 
       // Set client data
       if (invoiceData.clientId) {

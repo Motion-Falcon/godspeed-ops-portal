@@ -63,16 +63,35 @@ function invoiceLineMatchesJobseekerPosition(
     jobseekerProfileId?: string;
     position?: { positionId?: string };
     positionId?: string;
+    weekStartDate?: string;
+    week_start_date?: string;
+    weekEndDate?: string;
+    week_end_date?: string;
   },
   jobseekerProfileId: string,
-  positionId: string
+  positionId: string,
+  weekStartDate?: string,
+  weekEndDate?: string
 ): boolean {
   const lineProfileId =
     line.jobseekerProfile?.jobseekerProfileId ?? line.jobseekerProfileId;
   const linePositionId = line.position?.positionId ?? line.positionId;
-  return (
-    lineProfileId === jobseekerProfileId && linePositionId === positionId
-  );
+
+  if (lineProfileId !== jobseekerProfileId || linePositionId !== positionId) {
+    return false;
+  }
+
+  const lineWeekStart = line.weekStartDate || line.week_start_date;
+  const lineWeekEnd = line.weekEndDate || line.week_end_date;
+
+  if (weekStartDate && lineWeekStart && weekStartDate !== lineWeekStart) {
+    return false;
+  }
+  if (weekEndDate && lineWeekEnd && weekEndDate !== lineWeekEnd) {
+    return false;
+  }
+
+  return true;
 }
 
 function resolveEnvelopeInvoice(
@@ -82,7 +101,9 @@ function resolveEnvelopeInvoice(
     invoice_number?: string;
     invoice_date?: string;
     invoice_data?: { timesheets?: unknown[] };
-  }>
+  }>,
+  weekStartDate?: string,
+  weekEndDate?: string
 ): EnvelopeInvoiceLookup | null {
   let best: EnvelopeInvoiceLookup | null = null;
   let bestDate = "";
@@ -93,13 +114,19 @@ function resolveEnvelopeInvoice(
       jobseekerProfileId?: string;
       position?: { positionId?: string };
       positionId?: string;
+      weekStartDate?: string;
+      week_start_date?: string;
+      weekEndDate?: string;
+      week_end_date?: string;
     }>;
 
     const hasLine = lines.some((line) =>
       invoiceLineMatchesJobseekerPosition(
         line,
         jobseekerProfileId,
-        positionId
+        positionId,
+        weekStartDate,
+        weekEndDate
       )
     );
 
@@ -1251,7 +1278,10 @@ function buildEnvelopeItemsForRow(
     jobseeker_name: `${jp.first_name || ""} ${jp.last_name || ""}`.trim(),
     phone_number: jp.mobile || "",
     email_id: jp.email || "",
-    billing_email: jp.billing_email || "",
+    billing_email:
+      jp.billing_email && String(jp.billing_email).trim() !== ""
+        ? String(jp.billing_email).trim()
+        : jp.email || "",
     currency: client.currency || "",
     invoice_number: matchedInvoice?.invoice_number ?? "",
     invoice_date: matchedInvoice?.invoice_date ?? "",
@@ -1663,7 +1693,9 @@ router.post(
         const matchedInvoice = resolveEnvelopeInvoice(
           row.jobseeker_profile_id,
           row.position_id,
-          invoicesByClient[clientId] || []
+          invoicesByClient[clientId] || [],
+          row.week_start_date,
+          row.week_end_date
         );
 
         const paymentDueDate = computePaymentDueDate(
@@ -1905,7 +1937,9 @@ router.post(
         const matchedInvoice = resolveEnvelopeInvoice(
           row.jobseeker_profile_id,
           row.position_id,
-          invoicesByClient[clientId] || []
+          invoicesByClient[clientId] || [],
+          row.week_start_date,
+          row.week_end_date
         );
 
         const items = buildEnvelopeItemsForRow(

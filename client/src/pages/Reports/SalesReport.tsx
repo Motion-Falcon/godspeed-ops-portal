@@ -10,6 +10,9 @@ import { JobSeekerProfile } from "../../types/jobseeker";
 import { formatDate as formatWeekDate } from "../TimesheetManagement/functions/weekUtils";
 import "../../styles/pages/CommonReportsStyles.css";
 import { exportToCSV } from '../../utils/csvExport';
+import { useColumnSearch } from "../../hooks/useColumnSearch";
+import { ReportTableToolbar } from "../../components/ReportTableToolbar";
+import { ColumnSearchInput } from "../../components/ColumnSearchInput";
 
 // Define the columns and headers as used in the UI table
 const getTableColumns = (t: (key: string) => string): { key: string; label: string; format?: (val: unknown, row?: Record<string, unknown>) => string }[] => [
@@ -66,6 +69,28 @@ export function SalesReport() {
   const [loading, setLoading] = useState(false);
   const [reportRows, setReportRows] = useState<SalesReportRow[]>([]);
   const [error, setError] = useState<string | null>(null);
+
+  const {
+    columnFilters,
+    setColumnFilter,
+    clearAllFilters,
+    hasActiveFilters,
+    filteredData: searchedReportRows,
+    totalCount,
+    filteredCount,
+  } = useColumnSearch(reportRows, (row, columnKey) => {
+    if (columnKey === 'status') {
+      const clientStatus = row.client_is_inactive ? 'Client Inactive' : 'Client Active';
+      const jsStatus = row.jobseeker_is_inactive ? 'JS Inactive' : 'JS Active';
+      return `${clientStatus} / ${jsStatus}`;
+    }
+    if (columnKey === 'from_to_date') {
+      return `${formatWeekDate(String(row.from_date))} - ${formatWeekDate(String(row.to_date))}`;
+    }
+    const colDef = tableColumns.find(c => c.key === columnKey);
+    const val = row[columnKey as keyof SalesReportRow];
+    return colDef?.format ? colDef.format(val, row as unknown as Record<string, unknown>) : String(val ?? '');
+  });
 
   // Fetch clients and jobseekers on mount
   useEffect(() => {
@@ -259,39 +284,38 @@ export function SalesReport() {
           </div>
         </div>
         {reportRows.length > 0 && (
-          <div className="csv-download-section">
-            <button
-              className="button"
-              onClick={() => {
-                // Prepare CSV data to match the table exactly
-                const statusLabel = t('reports.columns.status');
-                const csvData = reportRows.map((row, index) => {
-                  const csvRow: Record<string, unknown> = {
-                    [t("reports.columns.serialNumber") || "S.No."]: index + 1,
-                  };
-                  const clientStatus = row.client_is_inactive ? 'Client Inactive' : 'Client Active';
-                  const jsStatus = row.jobseeker_is_inactive ? 'JS Inactive' : 'JS Active';
-                  csvRow[statusLabel] = `${clientStatus} / ${jsStatus}`;
-                  csvColumns.forEach(col => {
-                    if (col.key === 'from_to_date') {
-                      csvRow[col.label] = col.format ? col.format(undefined, row as unknown as Record<string, unknown>) : '';
-                    } else {
-                      const val = row[col.key as keyof typeof row];
-                      csvRow[col.label] = col.format ? col.format(val) : (val !== undefined && val !== null ? String(val) : 'N/A');
-                    }
-                  });
-                  return csvRow;
+          <ReportTableToolbar
+            hasActiveFilters={hasActiveFilters}
+            totalCount={totalCount}
+            filteredCount={filteredCount}
+            onClearSearch={clearAllFilters}
+            onDownloadCSV={() => {
+              // Prepare CSV data to match the table exactly
+              const statusLabel = t('reports.columns.status');
+              const csvData = searchedReportRows.map((row, index) => {
+                const csvRow: Record<string, unknown> = {
+                  [t("reports.columns.serialNumber") || "S.No."]: index + 1,
+                };
+                const clientStatus = row.client_is_inactive ? 'Client Inactive' : 'Client Active';
+                const jsStatus = row.jobseeker_is_inactive ? 'JS Inactive' : 'JS Active';
+                csvRow[statusLabel] = `${clientStatus} / ${jsStatus}`;
+                csvColumns.forEach(col => {
+                  if (col.key === 'from_to_date') {
+                    csvRow[col.label] = col.format ? col.format(undefined, row as unknown as Record<string, unknown>) : '';
+                  } else {
+                    const val = row[col.key as keyof typeof row];
+                    csvRow[col.label] = col.format ? col.format(val) : (val !== undefined && val !== null ? String(val) : 'N/A');
+                  }
                 });
-                exportToCSV(
-                  csvData,
-                  'Sales Report.csv',
-                  [t("reports.columns.serialNumber") || "S.No.", statusLabel, ...csvColumns.map(col => col.label)]
-                );
-              }}
-            >
-              {t('reports.states.downloadCSV')}
-            </button>
-          </div>
+                return csvRow;
+              });
+              exportToCSV(
+                csvData,
+                'Sales Report.csv',
+                [t("reports.columns.serialNumber") || "S.No.", statusLabel, ...csvColumns.map(col => col.label)]
+              );
+            }}
+          />
         )}
         <div className="report-table-container timesheet-selection-bar">
           {loading ? (
@@ -304,37 +328,61 @@ export function SalesReport() {
             <table className="common-table">
               <thead>
                 <tr>
-                  <th>{t('reports.columns.status')}</th>
+                  <th className="th-header-cell">
+                    <div className="column-header-content">
+                      <span className="column-header-title">{t('reports.columns.status')}</span>
+                      <ColumnSearchInput
+                        value={columnFilters['status'] || ''}
+                        onChange={(val) => setColumnFilter('status', val)}
+                      />
+                    </div>
+                  </th>
                   {tableColumns.map(col => (
-                    <th key={col.key}>{col.label}</th>
+                    <th key={col.key} className="th-header-cell">
+                      <div className="column-header-content">
+                        <span className="column-header-title">{col.label}</span>
+                        <ColumnSearchInput
+                          value={columnFilters[col.key] || ''}
+                          onChange={(val) => setColumnFilter(col.key, val)}
+                        />
+                      </div>
+                    </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {reportRows.map((row, idx) => (
-                  <tr key={idx} className={(row.client_is_inactive || row.jobseeker_is_inactive) ? 'inactive-row' : ''}>
-                    <td className="status-cell">
-                      {row.client_is_inactive
-                        ? <span className="inactive-badge inactive-badge-sm">Client Inactive</span>
-                        : <span className="active-badge">Client Active</span>
-                      }
-                      {row.jobseeker_is_inactive
-                        ? <span className="inactive-badge inactive-badge-sm">JS Inactive</span>
-                        : <span className="active-badge">JS Active</span>
-                      }
+                {searchedReportRows.length === 0 ? (
+                  <tr>
+                    <td colSpan={tableColumns.length + 1} className="empty-table-cell">
+                      {t('reports.states.noMatchingRecords') || 'No matching records found.'}
                     </td>
-                    {tableColumns.map((col, i) => {
-                      if (col.key === 'from_to_date') {
-                        const displayValue = col.format ? col.format(undefined, row as unknown as Record<string, unknown>) : '';
-                        return <td key={i}>{displayValue}</td>;
-                      } else {
-                        const val = row[col.key as keyof typeof row];
-                        const displayValue = col.format ? col.format(val) : (val !== undefined && val !== null ? String(val) : 'N/A');
-                        return <td key={i}>{displayValue}</td>;
-                      }
-                    })}
                   </tr>
-                ))}
+                ) : (
+                  searchedReportRows.map((row, idx) => (
+                    <tr key={idx} className={(row.client_is_inactive || row.jobseeker_is_inactive) ? 'inactive-row' : ''}>
+                      <td className="status-cell">
+                        {row.client_is_inactive
+                          ? <span className="inactive-badge inactive-badge-sm">Client Inactive</span>
+                          : <span className="active-badge">Client Active</span>
+                        }
+                        {row.jobseeker_is_inactive
+                          ? <span className="inactive-badge inactive-badge-sm">JS Inactive</span>
+                          : <span className="active-badge">JS Active</span>
+                        }
+                      </td>
+                      {tableColumns.map((col, i) => {
+                        if (col.key === 'from_to_date') {
+                          const displayValue = col.format ? col.format(undefined, row as unknown as Record<string, unknown>) : '';
+                          return <td key={i}>{displayValue}</td>;
+                        } else {
+                          const val = row[col.key as keyof typeof row];
+                          const displayValue = col.format ? col.format(val) : (val !== undefined && val !== null ? String(val) : 'N/A');
+                          return <td key={i}>{displayValue}</td>;
+                        }
+                      })}
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           )}
