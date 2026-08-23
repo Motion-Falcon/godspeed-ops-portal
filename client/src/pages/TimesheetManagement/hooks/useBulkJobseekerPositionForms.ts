@@ -109,16 +109,30 @@ export function useBulkJobseekerPositionForms({
                     row.position = position;
                     const ctx = payrollCtxForPosition(position, jobseeker);
                     if (ctx) {
+                        const topLevelReg = bulkTimesheet.total_regular_hours || 0;
+                        const topLevelOt = bulkTimesheet.total_overtime_hours || 0;
+                        const isSingleBreakdown = bulkTimesheet.bulk_breakdown.length === 1;
+                        const isOutOfSync = isSingleBreakdown && topLevelReg > 0 && item.regular_hours !== topLevelReg;
+
+                        const regHours = isOutOfSync ? topLevelReg : (item.regular_hours || 0);
+                        const otHours = isOutOfSync ? topLevelOt : (item.overtime_hours || 0);
+                        const jsPay = isOutOfSync ? (bulkTimesheet.total_jobseeker_pay || item.total_jobseeker_pay) : (item.total_jobseeker_pay || 0);
+                        const clBill = isOutOfSync ? (bulkTimesheet.total_client_bill || item.total_client_bill) : (item.total_client_bill || 0);
+
+                        const entriesToUse = isOutOfSync && Array.isArray(bulkTimesheet.daily_hours) && bulkTimesheet.daily_hours.length > 0
+                          ? bulkTimesheet.daily_hours.map(dh => ({ date: dh.date, hours: dh.hours, overtimeHours: 0 }))
+                          : (item.entries || []);
+
                         row.form = {
                             positionId: position.id,
                             invoiceNumber: bulkTimesheet.invoice_number || "",
                             weekStartDate: bulkTimesheet.week_start_date,
                             weekEndDate: bulkTimesheet.week_end_date,
-                            entries: item.entries || [],
-                            totalRegularHours: item.regular_hours || 0,
-                            totalOvertimeHours: item.overtime_hours || 0,
-                            jobseekerPay: item.total_jobseeker_pay || 0,
-                            clientBill: item.total_client_bill || 0,
+                            entries: entriesToUse,
+                            totalRegularHours: regHours,
+                            totalOvertimeHours: otHours,
+                            jobseekerPay: jsPay,
+                            clientBill: clBill,
                             bonusAmount: item.bonus_amount || 0,
                             deductionAmount: item.deduction_amount || 0,
                             notes: item.notes || "",
