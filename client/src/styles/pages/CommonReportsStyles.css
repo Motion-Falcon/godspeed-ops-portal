@@ -64,6 +64,119 @@
   width: fit-content;
 }
 
+/* Report Table Toolbar & Search styles */
+.report-table-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 1rem 0;
+  flex-wrap: wrap;
+}
+
+.report-table-toolbar .toolbar-left-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.csv-download-btn {
+  width: fit-content !important;
+  max-width: max-content;
+}
+
+.search-csv-info-badge {
+  font-size: 0.8125rem;
+  color: #374151;
+  background-color: #f3f4f6;
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+}
+
+.reset-search-btn-right {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  width: fit-content !important;
+}
+
+/* Table Header Column Search Styles */
+.common-table th.th-header-cell {
+  vertical-align: top;
+  padding: 0.5rem 0.6rem !important;
+}
+
+.column-header-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.column-header-title {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.column-header-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-width: 80px;
+}
+
+.column-header-search .column-search-icon {
+  position: absolute;
+  left: 6px;
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+.column-header-search .column-search-input {
+  width: 100%;
+  height: 26px;
+  padding: 2px 20px 2px 22px;
+  border: 1px solid var(--border, #d1d5db);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 400;
+  background-color: var(--background, #ffffff);
+  color: var(--foreground, #111827);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.column-header-search .column-search-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.column-header-search .column-search-clear {
+  position: absolute;
+  right: 4px;
+  background: transparent;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  border-radius: 50%;
+}
+
+.column-header-search .column-search-clear:hover {
+  color: #374151;
+  background-color: #e5e7eb;
+}
+
 /* Truncated column styles */
 .common-table .address-column,
 .common-table .notes-column {
@@ -73,4 +186,14 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* Empty table cell style when search yields 0 rows */
+.common-table td.empty-table-cell {
+  text-align: center;
+  padding: 2.5rem 1rem !important;
+  color: #6b7280;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  background-color: var(--background, #ffffff);
 }

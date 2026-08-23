@@ -16,6 +16,9 @@ import { formatDate as formatWeekDate } from "../TimesheetManagement/functions/w
 import { PAY_CYCLES } from "../../constants/formOptions";
 import { exportToCSV } from "../../utils/csvExport";
 import { getDropdownOptions } from "../../services/api/dropdownOptions";
+import { useColumnSearch } from "../../hooks/useColumnSearch";
+import { ReportTableToolbar } from "../../components/ReportTableToolbar";
+import { ColumnSearchInput } from "../../components/ColumnSearchInput";
 
 const formatCurrency = (value: unknown): string => {
   if (value === undefined || value === null || value === "" || value === "N/A") {
@@ -91,7 +94,15 @@ const getTableColumns = (
     format: (val) => formatPhoneNumber(val),
   },
   { key: "email_id", label: t("reports.columns.emailId") },
-  { key: "billing_email", label: t("reports.columns.billingEmail") },
+  {
+    key: "billing_email",
+    label: t("reports.columns.billingEmail"),
+    format: (val, row) => {
+      const billing = String(val ?? "").trim();
+      if (billing) return billing;
+      return String(row?.email_id ?? "").trim();
+    },
+  },
   { key: "pay_method", label: t("reports.columns.payMethod") },
   { key: "position_category", label: t("reports.columns.positionCategory") },
   { key: "position_name", label: t("reports.columns.positionName") },
@@ -195,6 +206,21 @@ export function EnvelopePrintingReport() {
   const [loading, setLoading] = useState(false);
   const [reportRows, setReportRows] = useState<EnvelopePrintingReportRow[]>([]);
   const [error, setError] = useState<string | null>(null);
+
+  const {
+    columnFilters,
+    setColumnFilter,
+    clearAllFilters,
+    hasActiveFilters,
+    filteredData: searchedReportRows,
+    totalCount,
+    filteredCount,
+  } = useColumnSearch(reportRows, (row, columnKey) => {
+    if (columnKey === 'report_generated_date') return new Date().toLocaleDateString();
+    const colDef = tableColumns.find(c => c.key === columnKey);
+    const val = row[columnKey as keyof EnvelopePrintingReportRow];
+    return colDef?.format ? colDef.format(val, row) : String(val ?? '');
+  });
 
   useEffect(() => {
     setClientLoading(true);
@@ -437,62 +463,61 @@ export function EnvelopePrintingReport() {
           </div>
         </div>
         {reportRows.length > 0 && (
-          <div className="csv-download-section">
-            <button
-              className="button"
-              onClick={() => {
-                const reportGeneratedDate = new Date().toLocaleDateString();
-                const sortedRows = [...reportRows].sort((a, b) => {
-                  const clientA = (a.client_name || "").toLowerCase();
-                  const clientB = (b.client_name || "").toLowerCase();
-                  if (clientA < clientB) return -1;
-                  if (clientA > clientB) return 1;
-                  const nameA = (a.jobseeker_name || "").toLowerCase();
-                  const nameB = (b.jobseeker_name || "").toLowerCase();
-                  if (nameA < nameB) return -1;
-                  if (nameA > nameB) return 1;
-                  return 0;
-                });
-                const csvData = sortedRows.map((row, index) => {
-                  const newSequenceNumber = index + 1;
-                  const newSrNo = row.sr_no
-                    ? `${row.sr_no.substring(0, row.sr_no.lastIndexOf('-') + 1)}${String(newSequenceNumber).padStart(3, '0')}`
-                    : `NA-NA-${String(newSequenceNumber).padStart(3, '0')}`;
+          <ReportTableToolbar
+            hasActiveFilters={hasActiveFilters}
+            totalCount={totalCount}
+            filteredCount={filteredCount}
+            onClearSearch={clearAllFilters}
+            onDownloadCSV={() => {
+              const reportGeneratedDate = new Date().toLocaleDateString();
+              const sortedRows = [...searchedReportRows].sort((a, b) => {
+                const clientA = (a.client_name || "").toLowerCase();
+                const clientB = (b.client_name || "").toLowerCase();
+                if (clientA < clientB) return -1;
+                if (clientA > clientB) return 1;
+                const nameA = (a.jobseeker_name || "").toLowerCase();
+                const nameB = (b.jobseeker_name || "").toLowerCase();
+                if (nameA < nameB) return -1;
+                if (nameA > nameB) return 1;
+                return 0;
+              });
+              const csvData = sortedRows.map((row, index) => {
+                const newSequenceNumber = index + 1;
+                const newSrNo = row.sr_no
+                  ? `${row.sr_no.substring(0, row.sr_no.lastIndexOf('-') + 1)}${String(newSequenceNumber).padStart(3, '0')}`
+                  : `NA-NA-${String(newSequenceNumber).padStart(3, '0')}`;
 
-                  const csvRow: Record<string, unknown> = {};
-                  csvColumns.forEach((col) => {
-                    if (col.key === "report_generated_date") return;
-                    let val: unknown = row[col.key as keyof EnvelopePrintingReportRow];
-                    if (col.key === "sequence_number") {
-                      val = newSequenceNumber;
-                    } else if (col.key === "sr_no") {
-                      val = newSrNo;
-                    }
-                    csvRow[col.label] = col.format
-                      ? col.format(val, row)
-                      : val !== undefined && val !== null
-                      ? String(val)
-                      : "N/A";
-                  });
-                  // Add report generated date at the end
-                  csvRow[
-                    t("reports.columns.reportGeneratedDate") ||
-                      "Report Generated Date"
-                  ] = reportGeneratedDate;
-                  return csvRow;
+                const csvRow: Record<string, unknown> = {};
+                csvColumns.forEach((col) => {
+                  if (col.key === "report_generated_date") return;
+                  let val: unknown = row[col.key as keyof EnvelopePrintingReportRow];
+                  if (col.key === "sequence_number") {
+                    val = newSequenceNumber;
+                  } else if (col.key === "sr_no") {
+                    val = newSrNo;
+                  }
+                  csvRow[col.label] = col.format
+                    ? col.format(val, row)
+                    : val !== undefined && val !== null
+                    ? String(val)
+                    : "N/A";
                 });
-                exportToCSV(csvData, "Envelope Printing Report.csv", [
-                  ...csvColumns
-                    .filter((col) => col.key !== "report_generated_date")
-                    .map((col) => col.label),
+                // Add report generated date at the end
+                csvRow[
                   t("reports.columns.reportGeneratedDate") ||
-                    "Report Generated Date",
-                ]);
-              }}
-            >
-              {t("reports.states.downloadCSV")}
-            </button>
-          </div>
+                    "Report Generated Date"
+                ] = reportGeneratedDate;
+                return csvRow;
+              });
+              exportToCSV(csvData, "Envelope Printing Report.csv", [
+                ...csvColumns
+                  .filter((col) => col.key !== "report_generated_date")
+                  .map((col) => col.label),
+                t("reports.columns.reportGeneratedDate") ||
+                  "Report Generated Date",
+              ]);
+            }}
+          />
         )}
         <div className="report-table-container timesheet-selection-bar">
           {loading ? (
@@ -509,30 +534,46 @@ export function EnvelopePrintingReport() {
               <thead>
                 <tr>
                   {tableColumns.map((col) => (
-                    <th key={col.key}>{col.label}</th>
+                    <th key={col.key} className="th-header-cell">
+                      <div className="column-header-content">
+                        <span className="column-header-title">{col.label}</span>
+                        <ColumnSearchInput
+                          value={columnFilters[col.key] || ''}
+                          onChange={(val) => setColumnFilter(col.key, val)}
+                        />
+                      </div>
+                    </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {reportRows.map((row, idx) => (
-                  <tr key={idx} className={(row.client_is_inactive || row.jobseeker_is_inactive) ? 'inactive-row' : ''}>
-                    {tableColumns.map((col, i) => {
-                      let displayValue: string;
-                      if (col.key === "report_generated_date") {
-                        displayValue = new Date().toLocaleDateString();
-                      } else {
-                        const val =
-                          row[col.key as keyof EnvelopePrintingReportRow];
-                        displayValue = col.format
-                          ? col.format(val, row)
-                          : val !== undefined && val !== null
-                          ? String(val)
-                          : "N/A";
-                      }
-                      return <td key={i}>{displayValue}</td>;
-                    })}
+                {searchedReportRows.length === 0 ? (
+                  <tr>
+                    <td colSpan={tableColumns.length} className="empty-table-cell">
+                      {t("reports.states.noMatchingRecords") || "No matching records found."}
+                    </td>
                   </tr>
-                ))}
+                ) : (
+                  searchedReportRows.map((row, idx) => (
+                    <tr key={idx} className={(row.client_is_inactive || row.jobseeker_is_inactive) ? 'inactive-row' : ''}>
+                      {tableColumns.map((col, i) => {
+                        let displayValue: string;
+                        if (col.key === "report_generated_date") {
+                          displayValue = new Date().toLocaleDateString();
+                        } else {
+                          const val =
+                            row[col.key as keyof EnvelopePrintingReportRow];
+                          displayValue = col.format
+                            ? col.format(val, row)
+                            : val !== undefined && val !== null
+                            ? String(val)
+                            : "N/A";
+                        }
+                        return <td key={i}>{displayValue}</td>;
+                      })}
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           )}
