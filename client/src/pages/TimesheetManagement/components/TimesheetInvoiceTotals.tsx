@@ -68,19 +68,19 @@ export function TimesheetInvoiceTotals({
           </div>
         </div>
       )}
-      {timesheet.bonusAmount > 0 && (
+      {Number(timesheet.bonusAmount) > 0 && (
         <div className="timesheet-total-line">
           <div className="timesheet-total-label">{tf("bonus")}:</div>
           <div className="timesheet-total-value">
-            +${timesheet.bonusAmount.toFixed(2)}
+            +${Number(timesheet.bonusAmount).toFixed(2)}
           </div>
         </div>
       )}
-      {timesheet.deductionAmount > 0 && (
+      {Number(timesheet.deductionAmount) > 0 && (
         <div className="timesheet-total-line">
           <div className="timesheet-total-label">{tf("deduction")}:</div>
           <div className="timesheet-total-value">
-            -${timesheet.deductionAmount.toFixed(2)}
+            -${Number(timesheet.deductionAmount).toFixed(2)}
           </div>
         </div>
       )}
