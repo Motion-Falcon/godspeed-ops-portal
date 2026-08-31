@@ -162,10 +162,17 @@ const extractTimesheetDateRange = (invData: any): { startDate: string; endDate: 
     return { startDate: formatToInputDate(topStart), endDate: formatToInputDate(topEnd) };
   }
 
-  // Fallback: try parsing from line items description (e.g. "Work period: 8/2/2026 - 8/8/2026")
+  // Fallback: try parsing from saved timesheets
   const timesheets = invData?.invoiceData?.timesheets || invData?.timesheets;
   if (Array.isArray(timesheets) && timesheets.length > 0) {
     for (const ts of timesheets) {
+      if (ts.weekStartDate && ts.weekEndDate) {
+        const parsedStart = formatToInputDate(ts.weekStartDate);
+        const parsedEnd = formatToInputDate(ts.weekEndDate);
+        if (parsedStart && parsedEnd) {
+          return { startDate: parsedStart, endDate: parsedEnd };
+        }
+      }
       if (ts.description) {
         const match = ts.description.match(/Work period:\s*([0-9\/\-]+)\s*-\s*([0-9\/\-]+)/i);
         if (match && match[1] && match[2]) {
@@ -174,14 +181,6 @@ const extractTimesheetDateRange = (invData: any): { startDate: string; endDate: 
           if (parsedStart && parsedEnd) {
             return { startDate: parsedStart, endDate: parsedEnd };
           }
-        }
-      }
-      // Or check weekStartDate / weekEndDate on timesheets if valid
-      if (ts.weekStartDate && ts.weekEndDate) {
-        const parsedStart = formatToInputDate(ts.weekStartDate);
-        const parsedEnd = formatToInputDate(ts.weekEndDate);
-        if (parsedStart && parsedEnd) {
-          return { startDate: parsedStart, endDate: parsedEnd };
         }
       }
     }
