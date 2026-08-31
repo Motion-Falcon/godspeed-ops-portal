@@ -531,6 +531,7 @@ export function InvoiceManagement() {
       > = {};
 
       const deductionItems: InvoiceLineItem[] = [];
+      const bonusItems: InvoiceLineItem[] = [];
 
       response.timesheets.forEach((timesheet: TimesheetFromAPI) => {
         if (
@@ -539,6 +540,7 @@ export function InvoiceManagement() {
           timesheet.bulkBreakdown.length > 0
         ) {
           let breakdownDeductionProcessed = false;
+          let breakdownBonusProcessed = false;
           timesheet.bulkBreakdown.forEach((item, index) => {
             const key = `${timesheet.id}_${item.position_id}_${index}`;
             let itemTotalHours =
@@ -598,6 +600,25 @@ export function InvoiceManagement() {
             groupedData[key].totalHours += itemTotalHours;
             groupedData[key].timesheetIds.push(timesheet.id);
 
+            // Check item level bonus
+            const itemBonus = Number(item.bonus_amount) || 0;
+            if (itemBonus > 0) {
+              breakdownBonusProcessed = true;
+              bonusItems.push({
+                id: `bonus_${timesheet.id}_${item.position_id}_${index}_${Date.now()}`,
+                position: groupedData[key].position,
+                jobseeker: groupedData[key].jobseeker,
+                description: "Bonus",
+                hours: "1",
+                regularBillRate: itemBonus.toString(),
+                regularPayRate: "0",
+                premiumPayRate: "0",
+                salesTax: "13.00% [ON]",
+                totalRegularHours: 1,
+                totalOvertimeHours: 0,
+              });
+            }
+
             // Check item level deduction
             const itemDeduction = Number(item.deduction_amount) || 0;
             if (itemDeduction > 0) {
@@ -617,6 +638,48 @@ export function InvoiceManagement() {
               });
             }
           });
+
+          // Fallback if top-level bonus exists on bulk timesheet but wasn't in items
+          const topLevelBonus = Number(timesheet.bonusAmount) || 0;
+          if (!breakdownBonusProcessed && topLevelBonus > 0) {
+            const firstPositionId = timesheet.bulkBreakdown[0]?.position_id || timesheet.position.id;
+            const fullPosition =
+              positions.find((p) => p.id === firstPositionId) || {
+                id: firstPositionId,
+                positionCode: timesheet.bulkBreakdown[0]?.position_code || timesheet.position.positionCode || "",
+                positionNumber: timesheet.bulkBreakdown[0]?.position_code || timesheet.position.positionNumber || "",
+                title: timesheet.bulkBreakdown[0]?.position_title || timesheet.position.title || "",
+                regularPayRate: timesheet.regularPayRate.toString(),
+                premiumPayRate: (timesheet.premiumPayRate || 0).toString(),
+                billRate: timesheet.regularBillRate.toString(),
+                markup: "0",
+              };
+            const jobseeker: AssignedJobseeker = {
+              id: timesheet.jobseekerProfileId,
+              candidateId: timesheet.jobseekerUserId,
+              firstName: timesheet.jobseekerProfile.firstName,
+              lastName: timesheet.jobseekerProfile.lastName,
+              email: timesheet.jobseekerProfile.email,
+              employeeId: timesheet.jobseekerProfile.employeeId,
+              status: "active",
+              startDate: timesheet.weekStartDate,
+              endDate: timesheet.weekEndDate,
+            };
+
+            bonusItems.push({
+              id: `bonus_${timesheet.id}_top_${Date.now()}`,
+              position: fullPosition,
+              jobseeker,
+              description: "Bonus",
+              hours: "1",
+              regularBillRate: topLevelBonus.toString(),
+              regularPayRate: "0",
+              premiumPayRate: "0",
+              salesTax: "13.00% [ON]",
+              totalRegularHours: 1,
+              totalOvertimeHours: 0,
+            });
+          }
 
           // Fallback if top-level deduction exists on bulk timesheet but wasn't in items
           const topLevelDeduction = Number(timesheet.deductionAmount) || 0;
@@ -707,6 +770,23 @@ export function InvoiceManagement() {
             timesheet.totalRegularHours + timesheet.totalOvertimeHours;
           groupedData[key].timesheetIds.push(timesheet.id);
 
+          const bonusAmt = Number(timesheet.bonusAmount) || 0;
+          if (bonusAmt > 0) {
+            bonusItems.push({
+              id: `bonus_${timesheet.id}_${Date.now()}`,
+              position: groupedData[key].position,
+              jobseeker: groupedData[key].jobseeker,
+              description: "Bonus",
+              hours: "1",
+              regularBillRate: bonusAmt.toString(),
+              regularPayRate: "0",
+              premiumPayRate: "0",
+              salesTax: "13.00% [ON]",
+              totalRegularHours: 1,
+              totalOvertimeHours: 0,
+            });
+          }
+
           const deductionAmt = Number(timesheet.deductionAmount) || 0;
           if (deductionAmt > 0) {
             deductionItems.push({
@@ -755,7 +835,7 @@ export function InvoiceManagement() {
         }
       );
 
-      const newLineItems: InvoiceLineItem[] = [...workLineItems, ...deductionItems];
+      const newLineItems: InvoiceLineItem[] = [...workLineItems, ...bonusItems, ...deductionItems];
 
       // Update positions state with unique positions from timesheets
       const uniquePositions: PositionData[] = Array.from(

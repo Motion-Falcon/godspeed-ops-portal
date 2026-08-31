@@ -410,22 +410,22 @@ export function TimesheetView() {
                       <td className="timesheet-pay-summary-value">${timesheet.overtime_pay_rate?.toFixed(2)}/hr</td>
                     </tr>
                   )}
-                  {timesheet.bonus_amount ? (
+                  {Number(timesheet.bonus_amount) > 0 ? (
                     <tr>
                       <td className="timesheet-pay-summary-label">Bonus</td>
-                      <td className="timesheet-pay-summary-value">+${timesheet.bonus_amount.toFixed(2)}</td>
+                      <td className="timesheet-pay-summary-value">+${Number(timesheet.bonus_amount).toFixed(2)}</td>
                     </tr>
                   ) : null}
-                  {timesheet.deduction_amount ? (
+                  {Number(timesheet.deduction_amount) > 0 ? (
                     <tr>
                       <td className="timesheet-pay-summary-label">Deduction</td>
-                      <td className="timesheet-pay-summary-value">-${timesheet.deduction_amount.toFixed(2)}</td>
+                      <td className="timesheet-pay-summary-value">-${Number(timesheet.deduction_amount).toFixed(2)}</td>
                     </tr>
                   ) : null}
-                  {timesheet.tax_amount ? (
+                  {Number(timesheet.tax_amount) > 0 ? (
                     <tr>
                       <td className="timesheet-pay-summary-label">Tax (HST/GST)</td>
-                      <td className="timesheet-pay-summary-value">+${timesheet.tax_amount.toFixed(2)}</td>
+                      <td className="timesheet-pay-summary-value">+${Number(timesheet.tax_amount).toFixed(2)}</td>
                     </tr>
                   ) : null}
                   <tr className="timesheet-grand-total-row">
