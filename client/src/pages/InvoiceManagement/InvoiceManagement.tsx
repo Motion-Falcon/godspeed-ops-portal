@@ -530,12 +530,15 @@ export function InvoiceManagement() {
         }
       > = {};
 
+      const deductionItems: InvoiceLineItem[] = [];
+
       response.timesheets.forEach((timesheet: TimesheetFromAPI) => {
         if (
           timesheet.isBulk &&
           Array.isArray(timesheet.bulkBreakdown) &&
           timesheet.bulkBreakdown.length > 0
         ) {
+          let breakdownDeductionProcessed = false;
           timesheet.bulkBreakdown.forEach((item, index) => {
             const key = `${timesheet.id}_${item.position_id}_${index}`;
             let itemTotalHours =
@@ -594,7 +597,68 @@ export function InvoiceManagement() {
 
             groupedData[key].totalHours += itemTotalHours;
             groupedData[key].timesheetIds.push(timesheet.id);
+
+            // Check item level deduction
+            const itemDeduction = Number(item.deduction_amount) || 0;
+            if (itemDeduction > 0) {
+              breakdownDeductionProcessed = true;
+              deductionItems.push({
+                id: `deduction_${timesheet.id}_${item.position_id}_${index}_${Date.now()}`,
+                position: groupedData[key].position,
+                jobseeker: groupedData[key].jobseeker,
+                description: "Deduction",
+                hours: "1",
+                regularBillRate: (-itemDeduction).toString(),
+                regularPayRate: "0",
+                premiumPayRate: "0",
+                salesTax: "0.00% [ZERO RATED]",
+                totalRegularHours: 1,
+                totalOvertimeHours: 0,
+              });
+            }
           });
+
+          // Fallback if top-level deduction exists on bulk timesheet but wasn't in items
+          const topLevelDeduction = Number(timesheet.deductionAmount) || 0;
+          if (!breakdownDeductionProcessed && topLevelDeduction > 0) {
+            const firstPositionId = timesheet.bulkBreakdown[0]?.position_id || timesheet.position.id;
+            const fullPosition =
+              positions.find((p) => p.id === firstPositionId) || {
+                id: firstPositionId,
+                positionCode: timesheet.bulkBreakdown[0]?.position_code || timesheet.position.positionCode || "",
+                positionNumber: timesheet.bulkBreakdown[0]?.position_code || timesheet.position.positionNumber || "",
+                title: timesheet.bulkBreakdown[0]?.position_title || timesheet.position.title || "",
+                regularPayRate: timesheet.regularPayRate.toString(),
+                premiumPayRate: (timesheet.premiumPayRate || 0).toString(),
+                billRate: timesheet.regularBillRate.toString(),
+                markup: "0",
+              };
+            const jobseeker: AssignedJobseeker = {
+              id: timesheet.jobseekerProfileId,
+              candidateId: timesheet.jobseekerUserId,
+              firstName: timesheet.jobseekerProfile.firstName,
+              lastName: timesheet.jobseekerProfile.lastName,
+              email: timesheet.jobseekerProfile.email,
+              employeeId: timesheet.jobseekerProfile.employeeId,
+              status: "active",
+              startDate: timesheet.weekStartDate,
+              endDate: timesheet.weekEndDate,
+            };
+
+            deductionItems.push({
+              id: `deduction_${timesheet.id}_top_${Date.now()}`,
+              position: fullPosition,
+              jobseeker,
+              description: "Deduction",
+              hours: "1",
+              regularBillRate: (-topLevelDeduction).toString(),
+              regularPayRate: "0",
+              premiumPayRate: "0",
+              salesTax: "0.00% [ZERO RATED]",
+              totalRegularHours: 1,
+              totalOvertimeHours: 0,
+            });
+          }
         } else {
           // One line item per timesheet row (hybrid pay uses multiple rows per week)
           const key = timesheet.id;
@@ -642,11 +706,28 @@ export function InvoiceManagement() {
           groupedData[key].totalHours +=
             timesheet.totalRegularHours + timesheet.totalOvertimeHours;
           groupedData[key].timesheetIds.push(timesheet.id);
+
+          const deductionAmt = Number(timesheet.deductionAmount) || 0;
+          if (deductionAmt > 0) {
+            deductionItems.push({
+              id: `deduction_${timesheet.id}_${Date.now()}`,
+              position: groupedData[key].position,
+              jobseeker: groupedData[key].jobseeker,
+              description: "Deduction",
+              hours: "1",
+              regularBillRate: (-deductionAmt).toString(),
+              regularPayRate: "0",
+              premiumPayRate: "0",
+              salesTax: "0.00% [ZERO RATED]",
+              totalRegularHours: 1,
+              totalOvertimeHours: 0,
+            });
+          }
         }
       });
 
       // Convert grouped data to line items
-      const newLineItems: InvoiceLineItem[] = Object.values(groupedData).map(
+      const workLineItems: InvoiceLineItem[] = Object.values(groupedData).map(
         (data, index) => {
           // Find position with overtime data
           const fullPosition =
@@ -673,6 +754,8 @@ export function InvoiceManagement() {
           };
         }
       );
+
+      const newLineItems: InvoiceLineItem[] = [...workLineItems, ...deductionItems];
 
       // Update positions state with unique positions from timesheets
       const uniquePositions: PositionData[] = Array.from(
