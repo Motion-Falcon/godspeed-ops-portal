@@ -160,7 +160,7 @@ export function TimesheetInvoiceSummary({
         );
       })()}
 
-      {timesheet.bonusAmount > 0 && (
+      {Number(timesheet.bonusAmount) > 0 && (
         <div className="timesheet-invoice-line-item">
           <div className="timesheet-col-description">
             <div className="timesheet-item-title">{tf("bonus")}</div>
@@ -168,12 +168,12 @@ export function TimesheetInvoiceSummary({
           <div className="timesheet-col-hours">-</div>
           <div className="timesheet-col-rate">-</div>
           <div className="timesheet-col-amount">
-            ${timesheet.bonusAmount.toFixed(2)}
+            +${Number(timesheet.bonusAmount).toFixed(2)}
           </div>
         </div>
       )}
 
-      {timesheet.deductionAmount > 0 && (
+      {Number(timesheet.deductionAmount) > 0 && (
         <div className="timesheet-invoice-line-item">
           <div className="timesheet-col-description">
             <div className="timesheet-item-title">{tf("deduction")}</div>
@@ -181,7 +181,7 @@ export function TimesheetInvoiceSummary({
           <div className="timesheet-col-hours">-</div>
           <div className="timesheet-col-rate">-</div>
           <div className="timesheet-col-amount">
-            -${timesheet.deductionAmount.toFixed(2)}
+            -${Number(timesheet.deductionAmount).toFixed(2)}
           </div>
         </div>
       )}
