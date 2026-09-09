@@ -6,20 +6,35 @@ interface TimesheetDailyHoursGridProps {
   entries: TimesheetDayEntry[];
   getDayName: (isoDate: string) => string;
   onHoursChange: (date: string, hours: number) => void;
+  isSubcategory?: boolean;
+  subcategoryPosition?: string | string[] | null;
 }
 
 export function TimesheetDailyHoursGrid({
   entries,
   getDayName,
   onHoursChange,
+  isSubcategory,
+  subcategoryPosition,
 }: TimesheetDailyHoursGridProps) {
   const tf = useTimesheetFormTranslation();
+
+  const isSubcat = Boolean(isSubcategory);
+  const subcatLabel = Array.isArray(subcategoryPosition)
+    ? subcategoryPosition.join(", ")
+    : String(subcategoryPosition || "").trim();
+  const isMiles = isSubcat && subcatLabel.toLowerCase().startsWith("miles");
+  const title = isMiles
+    ? "Daily Miles"
+    : isSubcat
+    ? `Daily Units (${subcatLabel || "Subcategory"})`
+    : tf("dailyHours");
 
   return (
     <div className="timesheet-hours-section">
       <h4 className="timesheet-hours-title">
         <Clock size={16} />
-        {tf("dailyHours")}
+        {title}
       </h4>
       <div className="timesheet-days-grid">
         {entries.map((entry) => (
