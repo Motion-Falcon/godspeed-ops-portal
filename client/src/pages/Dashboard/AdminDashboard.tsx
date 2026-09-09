@@ -16,6 +16,8 @@ import {
   MinusCircle,
   Clock,
   Timer,
+  Navigation,
+  Layers,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { AppHeader } from "../../components/AppHeader";
@@ -405,9 +407,10 @@ function MetricGrid({
   className = "",
   redirectToValue,
 }: MetricGridProps) {
+  const displayCount = Math.max(gridSize || 0, metricsState.data.length);
   return (
     <div className={`metrics-grid compact ${className}`}>
-      {Array.from({ length: gridSize }, (_, index) => {
+      {Array.from({ length: displayCount }, (_, index) => {
         const metric = metricsState.data[index];
         const isExpanded = metric ? expandedGraphs.has(metric.id) : false;
         console.log(metric?.redirectTo);
@@ -666,6 +669,8 @@ export function AdminDashboard() {
     total_deduction: { color: "#EF4444", icon: <MinusCircle size={20} /> },
     total_regular_hours: { color: "#3B82F6", icon: <Clock size={20} /> },
     total_overtime_hours: { color: "#8B5CF6", icon: <Timer size={20} /> },
+    total_miles_logged: { color: "#06B6D4", icon: <Navigation size={20} /> },
+    total_non_hourly_units: { color: "#F43F5E", icon: <Layers size={20} /> },
   };
 
   // Helper to map TimesheetMetric to MetricData
@@ -937,7 +942,7 @@ export function AdminDashboard() {
               onMetricClick={handleMetricClick}
               onToggleGraph={handleToggleGraph}
               onRetry={fetchTimesheetMetrics}
-              gridSize={6}
+              gridSize={timesheetMetricData.length || 8}
               size="sm"
               className="position-metrics"
               redirectToValue="/timesheet-management"

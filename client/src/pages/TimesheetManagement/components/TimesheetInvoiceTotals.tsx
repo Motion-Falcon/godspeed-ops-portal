@@ -36,10 +36,34 @@ export function TimesheetInvoiceTotals({
         )
       : 0;
 
+  const isSubcat = Boolean(
+    (position as any)?.isSubcategory || (position as any)?.is_subcategory
+  );
+  const subcatLabel = Array.isArray(
+    (position as any)?.subcategoryPosition ??
+      (position as any)?.subcategory_position
+  )
+    ? (
+        (position as any)?.subcategoryPosition ??
+        (position as any)?.subcategory_position
+      ).join(", ")
+    : String(
+        (position as any)?.subcategoryPosition ??
+          (position as any)?.subcategory_position ??
+          ""
+      ).trim();
+  const isMiles = isSubcat && subcatLabel.toLowerCase().startsWith("miles");
+
+  const totalQuantityLabel = isMiles
+    ? "Total Miles:"
+    : isSubcat
+    ? `Total Units (${subcatLabel || "Subcategory"}):`
+    : `${tf("totalHours")}:`;
+
   return (
     <>
       <div className="timesheet-total-line">
-        <div className="timesheet-total-label">{tf("totalHours")}:</div>
+        <div className="timesheet-total-label">{totalQuantityLabel}</div>
         <div className="timesheet-total-value">
           {(timesheet.totalRegularHours + timesheet.totalOvertimeHours).toFixed(
             1
