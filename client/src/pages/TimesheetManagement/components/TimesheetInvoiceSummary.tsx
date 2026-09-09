@@ -32,6 +32,37 @@ export function TimesheetInvoiceSummary({
 
   const positionOt = selectedPosition as PositionWithOvertime;
 
+  const isSubcat = Boolean(
+    (selectedPosition as any)?.isSubcategory ||
+      (selectedPosition as any)?.is_subcategory
+  );
+  const subcatLabel = Array.isArray(
+    (selectedPosition as any)?.subcategoryPosition ??
+      (selectedPosition as any)?.subcategory_position
+  )
+    ? (
+        (selectedPosition as any)?.subcategoryPosition ??
+        (selectedPosition as any)?.subcategory_position
+      ).join(", ")
+    : String(
+        (selectedPosition as any)?.subcategoryPosition ??
+          (selectedPosition as any)?.subcategory_position ??
+          ""
+      ).trim();
+  const isMiles = isSubcat && subcatLabel.toLowerCase().startsWith("miles");
+
+  const regularLineTitle = isMiles
+    ? "Total Miles"
+    : isSubcat
+    ? `Total Units (${subcatLabel || "Subcategory"})`
+    : tf("totalRegularHours");
+
+  const regularLineSubtitle = isMiles
+    ? "Logged mileage"
+    : isSubcat
+    ? "Logged units"
+    : tf("standardWorkHours");
+
   return (
     <div className="timesheet-invoice-table-body">
       {(() => {
@@ -100,10 +131,10 @@ export function TimesheetInvoiceSummary({
             <div className="timesheet-invoice-line-item">
               <div className="timesheet-col-description">
                 <div className="timesheet-item-title">
-                  {tf("totalRegularHours")}
+                  {regularLineTitle}
                 </div>
                 <div className="timesheet-item-subtitle">
-                  {tf("standardWorkHours")}
+                  {regularLineSubtitle}
                   {premiumPayRate > 0 &&
                     tf("inclPremium", {
                       rate: selectedPosition.premiumPayRate || "0",
