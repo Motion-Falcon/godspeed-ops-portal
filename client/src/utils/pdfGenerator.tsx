@@ -6,9 +6,7 @@ import {
   View,
   StyleSheet,
   pdf,
-  Image,
 } from "@react-pdf/renderer";
-import canhireLogo from "../assets/logos/canhire-logo-fulllength.png";
 
 // Color scheme
 const colors = {
@@ -30,26 +28,22 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "flex-end",
     marginBottom: 10,
     paddingBottom: 10,
     borderBottomWidth: 2,
     borderBottomColor: colors.primary,
   },
-  logoSection: {
-    flexDirection: "column",
-    width: "40%",
-    justifyContent: "center",
-  },
-  logoPlaceholder: {
-    width: 185,
-    height: 40,
-    objectFit: "contain",
-  },
   companyInfo: {
     flexDirection: "column",
-    width: "55%",
     alignItems: "flex-end",
+  },
+  companyName: {
+    fontSize: 11,
+    fontWeight: "bold",
+    color: colors.secondary,
+    textAlign: "right",
+    marginBottom: 2,
   },
   companyDetails: {
     fontSize: 10,
@@ -276,10 +270,10 @@ const styles = StyleSheet.create({
 
 // Company information
 const COMPANY_INFO = {
-  name: "Hire Solutions O/A 17417292 Canada Inc",
-  address: "30 Kennedy Rd S",
-  address2: "Brampton, ON, L6W 3E2",
-  gst: "GST/HST No. 72724 0764 RT0001",
+  name: "CanHire Solution O/A 2695049 Ontario Inc",
+  address: "207-3465 Rebecca St",
+  address2: "Oakville ON L6L 0H3",
+  gst: "GST/HST No. 795288877",
 };
 
 // Helper function to format date with ordinal suffix without timezone shift
@@ -422,13 +416,9 @@ const InvoicePDFDocument: React.FC<{ data: InvoiceData }> = ({ data }) => {
           {pageIndex === 0 && (
             <>
               <View style={styles.header}>
-                <View style={styles.logoSection}>
-                  <Image src={canhireLogo} style={styles.logoPlaceholder} />
-                </View>
                 <View style={styles.companyInfo}>
+                  <Text style={styles.companyName}>{COMPANY_INFO.name}</Text>
                   <Text style={styles.companyDetails}>
-                    {COMPANY_INFO.name}
-                    {"\n"}
                     {COMPANY_INFO.address}
                     {"\n"}
                     {COMPANY_INFO.address2}
