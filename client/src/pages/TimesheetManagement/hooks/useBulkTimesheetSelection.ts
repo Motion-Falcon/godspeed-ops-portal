@@ -10,6 +10,14 @@ import { generateWeekOptions } from "../functions/weekUtils";
 import { mapPositionsFromApiResponse } from "../functions/mapClientPositions";
 import type { ClientPosition } from "../types";
 
+function getAssignmentEmployeeName(assignment: AssignmentRecord): string {
+  const profile = assignment.jobseekerProfile;
+  if (!profile) return "";
+  const first = profile.first_name?.trim() ?? "";
+  const last = profile.last_name?.trim() ?? "";
+  return `${first} ${last}`.trim() || profile.email || "Unknown";
+}
+
 export function useBulkTimesheetSelection() {
   const [clients, setClients] = useState<ClientData[]>([]);
   const [selectedClient, setSelectedClient] = useState<ClientData | null>(null);
@@ -68,7 +76,12 @@ export function useBulkTimesheetSelection() {
     setAssignmentsLoading(true);
     try {
       const response = await getPositionAssignments(positionId);
-      setAssignedJobseekers(response.assignments || []);
+      const sortedAssignments = (response.assignments || []).slice().sort((a, b) => {
+        const nameA = getAssignmentEmployeeName(a);
+        const nameB = getAssignmentEmployeeName(b);
+        return nameA.localeCompare(nameB, undefined, { sensitivity: "base" });
+      });
+      setAssignedJobseekers(sortedAssignments);
     } catch {
       setAssignedJobseekers([]);
     } finally {

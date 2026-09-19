@@ -1,0 +1,213 @@
+{
+  "reports": {
+    "title": "Reports",
+    "subtitle": "Access and generate various reports to gain insights into your organization. Select a report type below to get started.",
+    "portal": "Reports Portal",
+    "categories": {
+      "timesheetsPayroll": "Timesheets & Payroll",
+      "salesInvoices": "Sales & Invoices",
+      "printingClients": "Printing & Clients"
+    },
+    "types": {
+      "weeklyTimesheet": {
+        "title": "Weekly Timesheet",
+        "description": "View and export weekly timesheet summaries for all users."
+      },
+      "deductionReport": {
+        "title": "Deduction Report",
+        "description": "Review and export deduction details for payroll and compliance."
+      },
+      "invoiceReport": {
+        "title": "Invoice Report",
+        "description": "Generate and review invoice reports for clients and jobseekers."
+      },
+      "salesReport": {
+        "title": "Sales Report",
+        "description": "Analyze sales data and trends across your organization."
+      },
+      "rateList": {
+        "title": "Rate List",
+        "description": "View and export the current rate list for all services and positions."
+      },
+      "marginReport": {
+        "title": "Margin Report",
+        "description": "Review margin analysis and profitability across clients and services."
+      },
+      "envelopePrinting": {
+        "title": "Envelope Printing (Position Details)",
+        "description": "Print envelopes with detailed position information for selected users."
+      },
+      "envelopePrintingByDueDate": {
+        "title": "Envelope Printing (By Due Date)",
+        "description": "Print envelopes with detailed position information filtered by payment due date."
+      },
+      "clients": {
+        "title": "Clients",
+        "description": "View and export client lists and details."
+      }
+    },
+    "filters": {
+      "jobSeeker": "Job Seeker",
+      "clients": "Clients",
+      "weekPeriods": "Week Periods",
+      "payCycle": "Pay Cycle",
+      "listName": "List Name",
+      "clientManager": "Client Manager",
+      "paymentMethod": "Payment Method",
+      "terms": "Terms",
+      "jobseekers": "Jobseekers",
+      "salesPerson": "Sales Person",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "dueDate": "Payment Due Date"
+    },
+    "placeholders": {
+      "selectJobSeeker": "Select job seeker...",
+      "selectClients": "Select clients...",
+      "selectWeekPeriods": "Select week periods...",
+      "selectPayCycle": "Select pay cycle...",
+      "selectListName": "Select list name...",
+      "selectClientManagers": "Select client managers...",
+      "selectPaymentMethods": "Select payment methods...",
+      "selectTerms": "Select terms...",
+      "selectJobseekers": "Select jobseekers (default: Select All)...",
+      "selectSalesPersons": "Select sales persons (default: Select All)...",
+      "selectClientsOptional": "Select clients (optional)...",
+      "selectNone": "Select (None)",
+      "searchTable": "Search table results...",
+      "searchColumn": "Filter..."
+    },
+    "emptyMessages": {
+      "noJobSeekers": "No job seekers found",
+      "noClients": "No clients found",
+      "noJobseekers": "No jobseekers found",
+      "noSalesPersons": "No sales persons found",
+      "noClientManagers": "No client managers found",
+      "noPaymentMethods": "No payment methods found",
+      "noTerms": "No terms found",
+      "noListNames": "No list names found",
+      "noPayCycles": "No pay cycles found"
+    },
+    "states": {
+      "loading": "Loading...",
+      "downloadCSV": "Download CSV",
+      "noDataFound": "No data found for selected filters.",
+      "noRateData": "No rate data found for selected filters.",
+      "noInvoiceData": "No invoice data found for selected date range.",
+      "noMarginData": "No margin data found for selected date range.",
+      "noDeductionData": "No deduction data found for selected date range.",
+      "noClientsData": "No clients data found for selected filters.",
+      "noMatchingRecords": "No matching records found."
+    },
+    "buttons": {
+      "clearSearch": "Clear Search"
+    },
+    "notes": {
+      "autoGenerate": "Report will auto-generate as soon as you select a client and date range. Additional filters will further refine the results.",
+      "dateFilter": "The date filter is applied on the",
+      "invoiceDate": "invoice date"
+    },
+    "columns": {
+      "serialNumber": "S.No.",
+      "sequenceNumber": "#",
+      "srNo": "SR. NO.",
+      "weekPeriod": "Week Period",
+      "jobseekerNumber": "Jobseeker #",
+      "positionNumber": "Position #",
+      "positionDetail": "Position Detail",
+      "regularHours": "Reg. Hrs",
+      "overtimeHours": "OT. Hrs",
+      "regularPay": "Reg. Pay",
+      "overtimePay": "OT Pay",
+      "totalPay": "Total Pay",
+      "bonus": "Bonus",
+      "deduction": "Deduction",
+      "cashDeduction": "Cash Deduction",
+      "companyName": "Company Name",
+      "listName": "List Name",
+      "name": "Name",
+      "mobile": "Mobile",
+      "email": "Email",
+      "positionCategory": "Position Category",
+      "clientManager": "Client Manager",
+      "regularBillRate": "Reg. Bill Rate",
+      "overtimeBillRate": "OT Bill Rate",
+      "currency": "Currency",
+      "paymentMethod": "Payment Method",
+      "payCycle": "Pay Cycle",
+      "notes": "Notes",
+      "createdAt": "Created At",
+      "timesheetNumber": "Timesheet #",
+      "clientName": "Client Name",
+      "positionDetails": "Position Details",
+      "billRate": "Bill Rate",
+      "payRate": "Pay Rate",
+      "premiumPayRate": "Premium Pay Rate",
+      "overtimeAfterHours": "Overtime after how many hours",
+      "overtimeBillRateCol": "Overtime Bill Rate",
+      "overtimePayRate": "Overtime Pay Rate",
+      "contactPerson": "Contact Person",
+      "salesPersonCol": "Sales Person",
+      "invoiceNumber": "Invoice #",
+      "fromToDate": "From & To (date)",
+      "invoiceDate": "Invoice Date",
+      "paymentDueDate": "Payment Due Date",
+      "dueDate": "Due Date",
+      "terms": "Terms",
+      "itemPosition": "Item/Position",
+      "jobseekerNumberCol": "Jobseeker #",
+      "nameOfJobseeker": "Name of jobseeker",
+      "description": "Description",
+      "hours": "Hours",
+      "amount": "Amount",
+      "discount": "Discount",
+      "taxRate": "Tax Rate (%)",
+      "gstHst": "GST/HST",
+      "total": "Total",
+      "city": "City",
+      "weekEnding": "Week Ending",
+      "shortCode": "Short Code",
+      "workProvince": "Work Province",
+      "jobseekerId": "Jobseeker ID",
+      "licenseNumber": "License No.",
+      "passportNumber": "Passport No.",
+      "jobseekerName": "Jobseeker Name",
+      "phoneNumber": "Phone Number",
+      "emailId": "Email ID",
+      "billingEmail": "Billing Email",
+      "payMethod": "Pay Method",
+      "positionName": "Position Name",
+      "totalAmount": "Total Amount",
+      "hstGst": "HST/GST",
+      "lineAmount": "Line Amount",
+      "totalBilledAmount": "Total Billed Amount",
+      "paidAmount": "Paid Amount",
+      "cashAmount": "Cash",
+      "corporationChequeAmount": "Corporation-Cheque",
+      "corporationDirectDepositAmount": "Corporation-Direct Deposit",
+      "eTransferAmount": "e-Transfer",
+      "directDepositAmount": "Direct Deposit",
+      "chequeAmount": "Cheque",
+      "marginAmount": "Margin Amount",
+      "marginPercentage": "Margin %",
+      "accountingPerson": "Accounting Person",
+      "jobseekerDeductions": "Jobseeker(s) & Deducted Amount",
+      "totalDeductionsAmount": "Total Deductions Amount",
+      "billingName": "Billing Name",
+      "contactPersonName": "Contact Person",
+      "emailAddress": "Email Address",
+      "address": "Address",
+      "preferredPaymentMethod": "Payment Method",
+      "paymentCycle": "Payment Cycle",
+      "emailSent": "Email Sent",
+      "emailSentDate": "Email Sent Date",
+      "reportGeneratedDate": "Report Generated Date",
+      "status": "Status"
+    },
+    "info": {
+      "defaultDateRange": "Default date range: Last 1 month",
+      "singleDateRange": "Showing timesheets due on this exact date",
+      "csvFiltered": "Exporting {{count}} search-filtered records"
+    }
+  }
+}

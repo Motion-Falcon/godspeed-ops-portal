@@ -7,6 +7,9 @@ import { useLanguage } from "../../contexts/language/language-provider";
 import { Loader2, Building } from "lucide-react";
 import "../../styles/pages/CommonReportsStyles.css";
 import { exportToCSV } from '../../utils/csvExport';
+import { useColumnSearch } from "../../hooks/useColumnSearch";
+import { ReportTableToolbar } from "../../components/ReportTableToolbar";
+import { ColumnSearchInput } from "../../components/ColumnSearchInput";
 
 // Define the columns for the rate list report
 const getTableColumns = (t: (key: string) => string): { key: string; label: string; format?: (val: unknown) => string }[] => [
@@ -48,6 +51,23 @@ export function RateList() {
   const [loading, setLoading] = useState(false);
   const [reportRows, setReportRows] = useState<RateListRow[]>([]);
   const [error, setError] = useState<string | null>(null);
+
+  const {
+    columnFilters,
+    setColumnFilter,
+    clearAllFilters,
+    hasActiveFilters,
+    filteredData: searchedReportRows,
+    totalCount,
+    filteredCount,
+  } = useColumnSearch(reportRows, (row, columnKey) => {
+    if (columnKey === 'status') {
+      return row.client_is_inactive ? 'Inactive' : 'Active';
+    }
+    const colDef = tableColumns.find(c => c.key === columnKey);
+    const val = row[columnKey as keyof RateListRow];
+    return colDef?.format ? colDef.format(val) : String(val ?? '');
+  });
 
   // Fetch clients on mount
   useEffect(() => {
@@ -129,32 +149,31 @@ export function RateList() {
         </div>
 
         {reportRows.length > 0 && (
-          <div className="csv-download-section">
-            <button
-              className="button"
-              onClick={() => {
-                const statusLabel = t('reports.columns.status');
-                const csvData = reportRows.map((row, index) => {
-                  const csvRow: Record<string, unknown> = {
-                    [t("reports.columns.serialNumber") || "S.No."]: index + 1,
-                  };
-                  csvRow[statusLabel] = row.client_is_inactive ? 'Inactive' : 'Active';
-                  csvColumns.forEach(col => {
-                    const val = row[col.key as keyof typeof row];
-                    csvRow[col.label] = col.format ? col.format(val) : (val !== undefined && val !== null ? String(val) : 'N/A');
-                  });
-                  return csvRow;
+          <ReportTableToolbar
+            hasActiveFilters={hasActiveFilters}
+            totalCount={totalCount}
+            filteredCount={filteredCount}
+            onClearSearch={clearAllFilters}
+            onDownloadCSV={() => {
+              const statusLabel = t('reports.columns.status');
+              const csvData = searchedReportRows.map((row, index) => {
+                const csvRow: Record<string, unknown> = {
+                  [t("reports.columns.serialNumber") || "S.No."]: index + 1,
+                };
+                csvRow[statusLabel] = row.client_is_inactive ? 'Inactive' : 'Active';
+                csvColumns.forEach(col => {
+                  const val = row[col.key as keyof typeof row];
+                  csvRow[col.label] = col.format ? col.format(val) : (val !== undefined && val !== null ? String(val) : 'N/A');
                 });
-                exportToCSV(
-                  csvData,
-                  'Rate List.csv',
-                  [t("reports.columns.serialNumber") || "S.No.", statusLabel, ...csvColumns.map(col => col.label)]
-                );
-              }}
-            >
-              {t('reports.states.downloadCSV')}
-            </button>
-          </div>
+                return csvRow;
+              });
+              exportToCSV(
+                csvData,
+                'Rate List.csv',
+                [t("reports.columns.serialNumber") || "S.No.", statusLabel, ...csvColumns.map(col => col.label)]
+              );
+            }}
+          />
         )}
 
         <div className="report-table-container timesheet-selection-bar">
@@ -168,28 +187,52 @@ export function RateList() {
             <table className="common-table">
               <thead>
                 <tr>
-                  <th>{t('reports.columns.status')}</th>
+                  <th className="th-header-cell">
+                    <div className="column-header-content">
+                      <span className="column-header-title">{t('reports.columns.status')}</span>
+                      <ColumnSearchInput
+                        value={columnFilters['status'] || ''}
+                        onChange={(val) => setColumnFilter('status', val)}
+                      />
+                    </div>
+                  </th>
                   {tableColumns.map(col => (
-                    <th key={col.key}>{col.label}</th>
+                    <th key={col.key} className="th-header-cell">
+                      <div className="column-header-content">
+                        <span className="column-header-title">{col.label}</span>
+                        <ColumnSearchInput
+                          value={columnFilters[col.key] || ''}
+                          onChange={(val) => setColumnFilter(col.key, val)}
+                        />
+                      </div>
+                    </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {reportRows.map((row, idx) => (
-                  <tr key={idx} className={row.client_is_inactive ? 'inactive-row' : ''}>
-                    <td className="status-cell">
-                      {row.client_is_inactive
-                        ? <span className="inactive-badge inactive-badge-sm">Inactive</span>
-                        : <span className="active-badge">Active</span>
-                      }
+                {searchedReportRows.length === 0 ? (
+                  <tr>
+                    <td colSpan={tableColumns.length + 1} className="empty-table-cell">
+                      {t('reports.states.noMatchingRecords') || 'No matching records found.'}
                     </td>
-                    {tableColumns.map((col, i) => {
-                      const val = row[col.key as keyof typeof row];
-                      const displayValue = col.format ? col.format(val) : (val !== undefined && val !== null ? String(val) : 'N/A');
-                      return <td key={i}>{displayValue}</td>;
-                    })}
                   </tr>
-                ))}
+                ) : (
+                  searchedReportRows.map((row, idx) => (
+                    <tr key={idx} className={row.client_is_inactive ? 'inactive-row' : ''}>
+                      <td className="status-cell">
+                        {row.client_is_inactive
+                          ? <span className="inactive-badge inactive-badge-sm">Inactive</span>
+                          : <span className="active-badge">Active</span>
+                        }
+                      </td>
+                      {tableColumns.map((col, i) => {
+                        const val = row[col.key as keyof typeof row];
+                        const displayValue = col.format ? col.format(val) : (val !== undefined && val !== null ? String(val) : 'N/A');
+                        return <td key={i}>{displayValue}</td>;
+                      })}
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           )}

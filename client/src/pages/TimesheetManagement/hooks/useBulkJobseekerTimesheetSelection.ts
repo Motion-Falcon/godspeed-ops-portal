@@ -132,7 +132,10 @@ export function useBulkJobseekerTimesheetSelection() {
               .join(" — "),
             value: profile,
           };
-        }),
+        })
+        .sort((a, b) =>
+          a.label.localeCompare(b.label, undefined, { sensitivity: "base" })
+        ),
     [jobseekers]
   );
 

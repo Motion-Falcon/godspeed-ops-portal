@@ -44,11 +44,11 @@ router.get(
   authorizeRoles(["admin", "recruiter"]),
   async (req: Request, res: Response) => {
     try {
-      // Get all timesheets (optionally, add time range filtering)
+      // Get all timesheets with position subcategory information
       const { data: timesheets, error } = await supabase
         .from("timesheets")
         .select(
-          "id, total_jobseeker_pay, bonus_amount, deduction_amount, total_regular_hours, total_overtime_hours, created_at"
+          "id, total_jobseeker_pay, bonus_amount, deduction_amount, total_regular_hours, total_overtime_hours, created_at, positions(is_subcategory, subcategory_position)"
         );
 
       if (error) {
@@ -63,6 +63,8 @@ router.get(
       let totalDeduction = 0;
       let totalRegularHours = 0;
       let totalOvertimeHours = 0;
+      let totalMilesLogged = 0;
+      let totalNonHourlyUnits = 0;
 
       // For historical data (by month)
       const monthlyStats: { [key: string]: any } = {};
@@ -79,6 +81,8 @@ router.get(
           totalDeduction: 0,
           totalRegularHours: 0,
           totalOvertimeHours: 0,
+          totalMilesLogged: 0,
+          totalNonHourlyUnits: 0,
           month: monthKey,
         };
       }
@@ -97,18 +101,35 @@ router.get(
           totalDeduction: 0,
           totalRegularHours: 0,
           totalOvertimeHours: 0,
+          totalMilesLogged: 0,
+          totalNonHourlyUnits: 0,
           month: currentMonthKey,
         };
       }
 
       // Process assignments and populate monthly stats
       timesheets?.forEach((ts: any) => {
+        const isSubcategory = Boolean(ts.positions?.is_subcategory);
+        const subcatLabel = String(ts.positions?.subcategory_position || "").trim().toLowerCase();
+        const isMiles = isSubcategory && subcatLabel.startsWith("miles");
+
+        const regVal = Number(ts.total_regular_hours) || 0;
+        const otVal = Number(ts.total_overtime_hours) || 0;
+
         totalTimesheets++;
         totalJobseekerPay += Number(ts.total_jobseeker_pay) || 0;
         totalBonusPaid += Number(ts.bonus_amount) || 0;
         totalDeduction += Number(ts.deduction_amount) || 0;
-        totalRegularHours += Number(ts.total_regular_hours) || 0;
-        totalOvertimeHours += Number(ts.total_overtime_hours) || 0;
+
+        // Segregate labor hours from subcategory mileage/allowances
+        if (!isSubcategory) {
+          totalRegularHours += regVal;
+          totalOvertimeHours += otVal;
+        } else if (isMiles) {
+          totalMilesLogged += regVal;
+        } else {
+          totalNonHourlyUnits += regVal;
+        }
 
         // Historical by month
         const monthKey = ts.created_at ? new Date(ts.created_at).toISOString().slice(0, 7) : "unknown";
@@ -117,8 +138,14 @@ router.get(
           monthlyStats[monthKey].totalJobseekerPay += Number(ts.total_jobseeker_pay) || 0;
           monthlyStats[monthKey].totalBonusPaid += Number(ts.bonus_amount) || 0;
           monthlyStats[monthKey].totalDeduction += Number(ts.deduction_amount) || 0;
-          monthlyStats[monthKey].totalRegularHours += Number(ts.total_regular_hours) || 0;
-          monthlyStats[monthKey].totalOvertimeHours += Number(ts.total_overtime_hours) || 0;
+          if (!isSubcategory) {
+            monthlyStats[monthKey].totalRegularHours += regVal;
+            monthlyStats[monthKey].totalOvertimeHours += otVal;
+          } else if (isMiles) {
+            monthlyStats[monthKey].totalMilesLogged += regVal;
+          } else {
+            monthlyStats[monthKey].totalNonHourlyUnits += regVal;
+          }
         }
       });
 
@@ -132,7 +159,7 @@ router.get(
           const monthName = date.toLocaleDateString("en-US", { month: "short" });
           return {
             period: monthName,
-            value: month[field] || 0,
+            value: Math.round((month[field] || 0) * 100) / 100,
             date: date,
           };
         });
@@ -153,8 +180,8 @@ router.get(
         {
           id: "total_jobseeker_pay",
           label: "Total Jobseeker Pay",
-          currentValue: totalJobseekerPay,
-          previousValue: monthlyArray.length > 1 ? monthlyArray[monthlyArray.length - 2].totalJobseekerPay : 0,
+          currentValue: Math.round(totalJobseekerPay * 100) / 100,
+          previousValue: monthlyArray.length > 1 ? Math.round((monthlyArray[monthlyArray.length - 2].totalJobseekerPay || 0) * 100) / 100 : 0,
           unit: "currency",
           formatType: "currency",
           description: "Sum of all jobseeker pay from timesheets",
@@ -163,8 +190,8 @@ router.get(
         {
           id: "total_bonus_paid",
           label: "Total Bonus Paid",
-          currentValue: totalBonusPaid,
-          previousValue: monthlyArray.length > 1 ? monthlyArray[monthlyArray.length - 2].totalBonusPaid : 0,
+          currentValue: Math.round(totalBonusPaid * 100) / 100,
+          previousValue: monthlyArray.length > 1 ? Math.round((monthlyArray[monthlyArray.length - 2].totalBonusPaid || 0) * 100) / 100 : 0,
           unit: "currency",
           formatType: "currency",
           description: "Sum of all bonuses paid from timesheets",
@@ -173,8 +200,8 @@ router.get(
         {
           id: "total_deduction",
           label: "Total Deduction",
-          currentValue: totalDeduction,
-          previousValue: monthlyArray.length > 1 ? monthlyArray[monthlyArray.length - 2].totalDeduction : 0,
+          currentValue: Math.round(totalDeduction * 100) / 100,
+          previousValue: monthlyArray.length > 1 ? Math.round((monthlyArray[monthlyArray.length - 2].totalDeduction || 0) * 100) / 100 : 0,
           unit: "currency",
           formatType: "currency",
           description: "Sum of all deductions from timesheets",
@@ -183,22 +210,42 @@ router.get(
         {
           id: "total_regular_hours",
           label: "Total Regular Hours",
-          currentValue: totalRegularHours,
-          previousValue: monthlyArray.length > 1 ? monthlyArray[monthlyArray.length - 2].totalRegularHours : 0,
+          currentValue: Math.round(totalRegularHours * 100) / 100,
+          previousValue: monthlyArray.length > 1 ? Math.round((monthlyArray[monthlyArray.length - 2].totalRegularHours || 0) * 100) / 100 : 0,
           unit: "hours",
           formatType: "number",
-          description: "Sum of all regular hours from timesheets",
+          description: "Sum of all regular labor hours from timesheets (excludes subcategories)",
           historicalData: formatHistoricalData("totalRegularHours"),
         },
         {
           id: "total_overtime_hours",
           label: "Total Overtime Hours",
-          currentValue: totalOvertimeHours,
-          previousValue: monthlyArray.length > 1 ? monthlyArray[monthlyArray.length - 2].totalOvertimeHours : 0,
+          currentValue: Math.round(totalOvertimeHours * 100) / 100,
+          previousValue: monthlyArray.length > 1 ? Math.round((monthlyArray[monthlyArray.length - 2].totalOvertimeHours || 0) * 100) / 100 : 0,
           unit: "hours",
           formatType: "number",
-          description: "Sum of all overtime hours from timesheets",
+          description: "Sum of all overtime labor hours from timesheets",
           historicalData: formatHistoricalData("totalOvertimeHours"),
+        },
+        {
+          id: "total_miles_logged",
+          label: "Total Miles Logged",
+          currentValue: Math.round(totalMilesLogged * 100) / 100,
+          previousValue: monthlyArray.length > 1 ? Math.round((monthlyArray[monthlyArray.length - 2].totalMilesLogged || 0) * 100) / 100 : 0,
+          unit: "miles",
+          formatType: "number",
+          description: "Total miles driven from mileage subcategory timesheets",
+          historicalData: formatHistoricalData("totalMilesLogged"),
+        },
+        {
+          id: "total_non_hourly_units",
+          label: "Total Allowance / Stop Units",
+          currentValue: Math.round(totalNonHourlyUnits * 100) / 100,
+          previousValue: monthlyArray.length > 1 ? Math.round((monthlyArray[monthlyArray.length - 2].totalNonHourlyUnits || 0) * 100) / 100 : 0,
+          unit: "units",
+          formatType: "number",
+          description: "Total non-hourly units (stops, layovers, meal credits) from subcategory timesheets",
+          historicalData: formatHistoricalData("totalNonHourlyUnits"),
         },
       ];
 

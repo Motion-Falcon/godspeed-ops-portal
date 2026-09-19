@@ -130,20 +130,32 @@ export async function submitWeeklyTimesheets({
       bulk_breakdown
     };
 
-    const inv = await generateInvoiceNumber();
-    const result = await createTimesheet({
-      ...partial,
-      invoice_number: inv,
-    });
-    results.push(result);
-    createdCount += 1;
+    const existingBulkId =
+      bulkRows.find((r: any) => r.form?.existingTimesheetId)?.form
+        ?.existingTimesheetId ||
+      timesheetsToProcess.find((t: any) => t.existingTimesheetId)
+        ?.existingTimesheetId;
+
+    if (existingBulkId) {
+      const result = await updateTimesheet(existingBulkId, partial);
+      results.push(result);
+      updatedCount += 1;
+    } else {
+      const inv = await generateInvoiceNumber();
+      const result = await createTimesheet({
+        ...partial,
+        invoice_number: inv,
+      });
+      results.push(result);
+      createdCount += 1;
+    }
 
     let emailCount = 0;
     if (anyEmailSent) emailCount = 1;
 
     return {
       results,
-      updatedCount: 0,
+      updatedCount,
       createdCount,
       emailCount,
     };

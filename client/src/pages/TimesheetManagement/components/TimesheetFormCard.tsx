@@ -50,6 +50,22 @@ export function TimesheetFormCard({
 }: TimesheetFormCardProps) {
   const tf = useTimesheetFormTranslation();
 
+  const isSubcat = Boolean(
+    selectedPosition?.isSubcategory ||
+      (selectedPosition as any)?.is_subcategory
+  );
+  const subcatLabel = String(
+    selectedPosition?.subcategoryPosition ||
+      (selectedPosition as any)?.subcategory_position ||
+      ""
+  ).trim();
+  const isMiles = isSubcat && subcatLabel.toLowerCase().startsWith("miles");
+  const colUnitHeader = isMiles
+    ? "MILES"
+    : isSubcat
+    ? "QTY / UNITS"
+    : tf("colHours");
+
   return (
     <div className="timesheet-assignment-card">
       <TimesheetUnifiedHeader
@@ -65,6 +81,8 @@ export function TimesheetFormCard({
           entries={timesheet.entries}
           getDayName={getDayName}
           onHoursChange={onHoursChange}
+          isSubcategory={selectedPosition?.isSubcategory}
+          subcategoryPosition={selectedPosition?.subcategoryPosition}
         />
 
         <TimesheetPayAdjustments
@@ -83,7 +101,7 @@ export function TimesheetFormCard({
         <div className="timesheet-invoice-table">
           <div className="timesheet-invoice-table-header">
             <div className="timesheet-col-description">{tf("description")}</div>
-            <div className="timesheet-col-hours">{tf("colHours")}</div>
+            <div className="timesheet-col-hours">{colUnitHeader}</div>
             <div className="timesheet-col-rate">{tf("rate")}</div>
             <div className="timesheet-col-amount">{tf("amount")}</div>
           </div>

@@ -36,10 +36,34 @@ export function TimesheetInvoiceTotals({
         )
       : 0;
 
+  const isSubcat = Boolean(
+    (position as any)?.isSubcategory || (position as any)?.is_subcategory
+  );
+  const subcatLabel = Array.isArray(
+    (position as any)?.subcategoryPosition ??
+      (position as any)?.subcategory_position
+  )
+    ? (
+        (position as any)?.subcategoryPosition ??
+        (position as any)?.subcategory_position
+      ).join(", ")
+    : String(
+        (position as any)?.subcategoryPosition ??
+          (position as any)?.subcategory_position ??
+          ""
+      ).trim();
+  const isMiles = isSubcat && subcatLabel.toLowerCase().startsWith("miles");
+
+  const totalQuantityLabel = isMiles
+    ? "Total Miles:"
+    : isSubcat
+    ? `Total Units (${subcatLabel || "Subcategory"}):`
+    : `${tf("totalHours")}:`;
+
   return (
     <>
       <div className="timesheet-total-line">
-        <div className="timesheet-total-label">{tf("totalHours")}:</div>
+        <div className="timesheet-total-label">{totalQuantityLabel}</div>
         <div className="timesheet-total-value">
           {(timesheet.totalRegularHours + timesheet.totalOvertimeHours).toFixed(
             1
@@ -68,19 +92,19 @@ export function TimesheetInvoiceTotals({
           </div>
         </div>
       )}
-      {timesheet.bonusAmount > 0 && (
+      {Number(timesheet.bonusAmount) > 0 && (
         <div className="timesheet-total-line">
           <div className="timesheet-total-label">{tf("bonus")}:</div>
           <div className="timesheet-total-value">
-            +${timesheet.bonusAmount.toFixed(2)}
+            +${Number(timesheet.bonusAmount).toFixed(2)}
           </div>
         </div>
       )}
-      {timesheet.deductionAmount > 0 && (
+      {Number(timesheet.deductionAmount) > 0 && (
         <div className="timesheet-total-line">
           <div className="timesheet-total-label">{tf("deduction")}:</div>
           <div className="timesheet-total-value">
-            -${timesheet.deductionAmount.toFixed(2)}
+            -${Number(timesheet.deductionAmount).toFixed(2)}
           </div>
         </div>
       )}

@@ -200,6 +200,14 @@ export function BulkTimesheetManagement() {
     !hoursLoading &&
     rows.length > 0;
 
+  const currentPos = clientPosition || selectedPosition;
+  const isPosSubcat = !!currentPos?.isSubcategory;
+  const isPosMiles = isPosSubcat && String(currentPos?.subcategoryPosition || "").toLowerCase().startsWith("miles");
+  const rawSubcat = currentPos?.subcategoryPosition;
+  const posSubcatLabel = Array.isArray(rawSubcat) ? (rawSubcat[0] || "Units") : (rawSubcat ? String(rawSubcat) : "Units");
+  const posColUnitHeader = isPosMiles ? "MILES" : isPosSubcat ? "QTY / UNITS" : tf("colHours");
+  const posRateSuffix = isPosMiles ? "/mi" : isPosSubcat ? "/unit" : "";
+
   return (
     <div className="bulk-timesheet-page-container timesheet-page-container">
       {/* Full-screen loader overlay */}
@@ -726,7 +734,7 @@ export function BulkTimesheetManagement() {
                         <div className="timesheet-col-description">
                           {tf("description")}
                         </div>
-                        <div className="timesheet-col-hours">{tf("colHours")}</div>
+                        <div className="timesheet-col-hours">{posColUnitHeader}</div>
                         <div className="timesheet-col-rate">{tf("rate")}</div>
                         <div className="timesheet-col-amount">{tf("amount")}</div>
                       </div>
@@ -761,7 +769,7 @@ export function BulkTimesheetManagement() {
                     <div className="timesheet-col-description">
                       {t("timesheetForm.finalSummary")}
                     </div>
-                    <div className="timesheet-col-hours">Hours</div>
+                    <div className="timesheet-col-hours">{posColUnitHeader}</div>
                     <div className="timesheet-col-rate">Rate</div>
                     <div className="timesheet-col-amount">Amount</div>
                   </div>
@@ -769,14 +777,18 @@ export function BulkTimesheetManagement() {
                     <div className="timesheet-invoice-line-item">
                       <div className="timesheet-col-description">
                         <div className="timesheet-item-title">
-                          {t("timesheetForm.totalRegularHours")}
+                          {isPosMiles
+                            ? "Total Miles Logged"
+                            : isPosSubcat
+                              ? `Total Units (${posSubcatLabel})`
+                              : t("timesheetForm.totalRegularHours")}
                         </div>
                       </div>
                       <div className="timesheet-col-hours">
-                        {grandTotalRegularHours.toFixed(2)}
+                        {grandTotalRegularHours.toFixed(2)}{isPosMiles ? " mi" : ""}
                       </div>
                       <div className="timesheet-col-rate">
-                        ${(parseFloat(selectedPosition?.regularPayRate || "0") + parseFloat((selectedPosition as PositionWithOvertime)?.premiumPayRate || "0")).toFixed(2)}
+                        ${(parseFloat(selectedPosition?.regularPayRate || "0") + parseFloat((selectedPosition as PositionWithOvertime)?.premiumPayRate || "0")).toFixed(2)}{posRateSuffix}
                       </div>
                       <div className="timesheet-col-amount">
                         $
@@ -786,7 +798,7 @@ export function BulkTimesheetManagement() {
                         ).toFixed(2)}
                       </div>
                     </div>
-                    {grandTotalOvertimeHours > 0 && (
+                    {!isPosSubcat && grandTotalOvertimeHours > 0 && (
                       <div className="timesheet-invoice-line-item">
                         <div className="timesheet-col-description">
                           <div className="timesheet-item-title">
@@ -823,12 +835,18 @@ export function BulkTimesheetManagement() {
                   <div className="timesheet-invoice-totals">
                     <div className="timesheet-total-line">
                       <div className="timesheet-total-label">
-                        {t("timesheetForm.grandTotalHours")}:
+                        {isPosMiles
+                          ? "Total Miles:"
+                          : isPosSubcat
+                            ? `Total Units (${posSubcatLabel}):`
+                            : `${t("timesheetForm.grandTotalHours")}:`}
                       </div>
                       <div className="timesheet-total-value">
-                        {(
-                          grandTotalRegularHours + grandTotalOvertimeHours
-                        ).toFixed(2)}
+                        {isPosMiles
+                          ? `${grandTotalRegularHours.toFixed(2)} mi`
+                          : isPosSubcat
+                            ? grandTotalRegularHours.toFixed(2)
+                            : (grandTotalRegularHours + grandTotalOvertimeHours).toFixed(2)}
                       </div>
                     </div>
                     {grandTotalBonus > 0 && (

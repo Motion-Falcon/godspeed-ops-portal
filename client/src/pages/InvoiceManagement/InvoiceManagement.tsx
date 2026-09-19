@@ -131,6 +131,64 @@ interface TimesheetData {
   salesTax?: string;
 }
 
+// Helper to parse date string like "8/2/2026" or "2026-08-02" into YYYY-MM-DD format for date input without timezone shift
+const formatToInputDate = (dateStr: string): string => {
+  if (!dateStr) return "";
+  if (dateStr.includes("-")) {
+    return dateStr.split("T")[0];
+  }
+  if (dateStr.includes("/")) {
+    const parts = dateStr.split("/");
+    if (parts.length === 3) {
+      const month = parts[0].padStart(2, "0");
+      const day = parts[1].padStart(2, "0");
+      const year = parts[2];
+      return `${year}-${month}-${day}`;
+    }
+  }
+  const dateObj = new Date(dateStr);
+  if (isNaN(dateObj.getTime())) return "";
+  const year = dateObj.getUTCFullYear();
+  const month = String(dateObj.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(dateObj.getUTCDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+// Helper to extract timesheet date range from invoice data or line items
+const extractTimesheetDateRange = (invData: any): { startDate: string; endDate: string } => {
+  const topStart = (invData?.invoiceData?.timesheetStartDate || invData?.timesheetStartDate) as string;
+  const topEnd = (invData?.invoiceData?.timesheetEndDate || invData?.timesheetEndDate) as string;
+  if (topStart && topEnd) {
+    return { startDate: formatToInputDate(topStart), endDate: formatToInputDate(topEnd) };
+  }
+
+  // Fallback: try parsing from saved timesheets
+  const timesheets = invData?.invoiceData?.timesheets || invData?.timesheets;
+  if (Array.isArray(timesheets) && timesheets.length > 0) {
+    for (const ts of timesheets) {
+      if (ts.weekStartDate && ts.weekEndDate) {
+        const parsedStart = formatToInputDate(ts.weekStartDate);
+        const parsedEnd = formatToInputDate(ts.weekEndDate);
+        if (parsedStart && parsedEnd) {
+          return { startDate: parsedStart, endDate: parsedEnd };
+        }
+      }
+      if (ts.description) {
+        const match = ts.description.match(/Work period:\s*([0-9\/\-]+)\s*-\s*([0-9\/\-]+)/i);
+        if (match && match[1] && match[2]) {
+          const parsedStart = formatToInputDate(match[1]);
+          const parsedEnd = formatToInputDate(match[2]);
+          if (parsedStart && parsedEnd) {
+            return { startDate: parsedStart, endDate: parsedEnd };
+          }
+        }
+      }
+    }
+  }
+
+  return { startDate: formatToInputDate(topStart) || "", endDate: formatToInputDate(topEnd) || "" };
+};
+
 export function InvoiceManagement() {
   const { user } = useAuth();
   const { t } = useLanguage();
@@ -471,16 +529,33 @@ export function InvoiceManagement() {
         }
       > = {};
 
+      const deductionItems: InvoiceLineItem[] = [];
+      const bonusItems: InvoiceLineItem[] = [];
+
       response.timesheets.forEach((timesheet: TimesheetFromAPI) => {
         if (
           timesheet.isBulk &&
           Array.isArray(timesheet.bulkBreakdown) &&
           timesheet.bulkBreakdown.length > 0
         ) {
+          let breakdownDeductionProcessed = false;
+          let breakdownBonusProcessed = false;
           timesheet.bulkBreakdown.forEach((item, index) => {
             const key = `${timesheet.id}_${item.position_id}_${index}`;
-            const itemTotalHours =
+            let itemTotalHours =
               (Number(item.regular_hours) || 0) + (Number(item.overtime_hours) || 0);
+
+            const topLevelTotal =
+              (timesheet.totalRegularHours || 0) +
+              (timesheet.totalOvertimeHours || 0);
+
+            if (
+              timesheet.bulkBreakdown?.length === 1 &&
+              topLevelTotal > 0 &&
+              itemTotalHours !== topLevelTotal
+            ) {
+              itemTotalHours = topLevelTotal;
+            }
 
             if (!groupedData[key]) {
               groupedData[key] = {
@@ -523,7 +598,129 @@ export function InvoiceManagement() {
 
             groupedData[key].totalHours += itemTotalHours;
             groupedData[key].timesheetIds.push(timesheet.id);
+
+            // Check item level bonus
+            const itemBonus = Number(item.bonus_amount) || 0;
+            if (itemBonus > 0) {
+              breakdownBonusProcessed = true;
+              bonusItems.push({
+                id: `bonus_${timesheet.id}_${item.position_id}_${index}_${Date.now()}`,
+                position: groupedData[key].position,
+                jobseeker: groupedData[key].jobseeker,
+                description: "Bonus",
+                hours: "1",
+                regularBillRate: itemBonus.toString(),
+                regularPayRate: "0",
+                premiumPayRate: "0",
+                salesTax: "13.00% [ON]",
+                totalRegularHours: 1,
+                totalOvertimeHours: 0,
+              });
+            }
+
+            // Check item level deduction
+            const itemDeduction = Number(item.deduction_amount) || 0;
+            if (itemDeduction > 0) {
+              breakdownDeductionProcessed = true;
+              deductionItems.push({
+                id: `deduction_${timesheet.id}_${item.position_id}_${index}_${Date.now()}`,
+                position: groupedData[key].position,
+                jobseeker: groupedData[key].jobseeker,
+                description: "Deduction",
+                hours: "1",
+                regularBillRate: (-itemDeduction).toString(),
+                regularPayRate: "0",
+                premiumPayRate: "0",
+                salesTax: "0.00% [ZERO RATED]",
+                totalRegularHours: 1,
+                totalOvertimeHours: 0,
+              });
+            }
           });
+
+          // Fallback if top-level bonus exists on bulk timesheet but wasn't in items
+          const topLevelBonus = Number(timesheet.bonusAmount) || 0;
+          if (!breakdownBonusProcessed && topLevelBonus > 0) {
+            const firstPositionId = timesheet.bulkBreakdown[0]?.position_id || timesheet.position.id;
+            const fullPosition =
+              positions.find((p) => p.id === firstPositionId) || {
+                id: firstPositionId,
+                positionCode: timesheet.bulkBreakdown[0]?.position_code || timesheet.position.positionCode || "",
+                positionNumber: timesheet.bulkBreakdown[0]?.position_code || timesheet.position.positionNumber || "",
+                title: timesheet.bulkBreakdown[0]?.position_title || timesheet.position.title || "",
+                regularPayRate: timesheet.regularPayRate.toString(),
+                premiumPayRate: (timesheet.premiumPayRate || 0).toString(),
+                billRate: timesheet.regularBillRate.toString(),
+                markup: "0",
+              };
+            const jobseeker: AssignedJobseeker = {
+              id: timesheet.jobseekerProfileId,
+              candidateId: timesheet.jobseekerUserId,
+              firstName: timesheet.jobseekerProfile.firstName,
+              lastName: timesheet.jobseekerProfile.lastName,
+              email: timesheet.jobseekerProfile.email,
+              employeeId: timesheet.jobseekerProfile.employeeId,
+              status: "active",
+              startDate: timesheet.weekStartDate,
+              endDate: timesheet.weekEndDate,
+            };
+
+            bonusItems.push({
+              id: `bonus_${timesheet.id}_top_${Date.now()}`,
+              position: fullPosition,
+              jobseeker,
+              description: "Bonus",
+              hours: "1",
+              regularBillRate: topLevelBonus.toString(),
+              regularPayRate: "0",
+              premiumPayRate: "0",
+              salesTax: "13.00% [ON]",
+              totalRegularHours: 1,
+              totalOvertimeHours: 0,
+            });
+          }
+
+          // Fallback if top-level deduction exists on bulk timesheet but wasn't in items
+          const topLevelDeduction = Number(timesheet.deductionAmount) || 0;
+          if (!breakdownDeductionProcessed && topLevelDeduction > 0) {
+            const firstPositionId = timesheet.bulkBreakdown[0]?.position_id || timesheet.position.id;
+            const fullPosition =
+              positions.find((p) => p.id === firstPositionId) || {
+                id: firstPositionId,
+                positionCode: timesheet.bulkBreakdown[0]?.position_code || timesheet.position.positionCode || "",
+                positionNumber: timesheet.bulkBreakdown[0]?.position_code || timesheet.position.positionNumber || "",
+                title: timesheet.bulkBreakdown[0]?.position_title || timesheet.position.title || "",
+                regularPayRate: timesheet.regularPayRate.toString(),
+                premiumPayRate: (timesheet.premiumPayRate || 0).toString(),
+                billRate: timesheet.regularBillRate.toString(),
+                markup: "0",
+              };
+            const jobseeker: AssignedJobseeker = {
+              id: timesheet.jobseekerProfileId,
+              candidateId: timesheet.jobseekerUserId,
+              firstName: timesheet.jobseekerProfile.firstName,
+              lastName: timesheet.jobseekerProfile.lastName,
+              email: timesheet.jobseekerProfile.email,
+              employeeId: timesheet.jobseekerProfile.employeeId,
+              status: "active",
+              startDate: timesheet.weekStartDate,
+              endDate: timesheet.weekEndDate,
+            };
+
+            deductionItems.push({
+              id: `deduction_${timesheet.id}_top_${Date.now()}`,
+              position: fullPosition,
+              jobseeker,
+              description: "Deduction",
+              hours: "1",
+              regularBillRate: (-topLevelDeduction).toString(),
+              regularPayRate: "0",
+              premiumPayRate: "0",
+              salesTax: "0.00% [ZERO RATED]",
+              totalRegularHours: 1,
+              totalOvertimeHours: 0,
+            });
+          }
         } else {
           // One line item per timesheet row (hybrid pay uses multiple rows per week)
           const key = timesheet.id;
@@ -571,11 +768,45 @@ export function InvoiceManagement() {
           groupedData[key].totalHours +=
             timesheet.totalRegularHours + timesheet.totalOvertimeHours;
           groupedData[key].timesheetIds.push(timesheet.id);
+
+          const bonusAmt = Number(timesheet.bonusAmount) || 0;
+          if (bonusAmt > 0) {
+            bonusItems.push({
+              id: `bonus_${timesheet.id}_${Date.now()}`,
+              position: groupedData[key].position,
+              jobseeker: groupedData[key].jobseeker,
+              description: "Bonus",
+              hours: "1",
+              regularBillRate: bonusAmt.toString(),
+              regularPayRate: "0",
+              premiumPayRate: "0",
+              salesTax: "13.00% [ON]",
+              totalRegularHours: 1,
+              totalOvertimeHours: 0,
+            });
+          }
+
+          const deductionAmt = Number(timesheet.deductionAmount) || 0;
+          if (deductionAmt > 0) {
+            deductionItems.push({
+              id: `deduction_${timesheet.id}_${Date.now()}`,
+              position: groupedData[key].position,
+              jobseeker: groupedData[key].jobseeker,
+              description: "Deduction",
+              hours: "1",
+              regularBillRate: (-deductionAmt).toString(),
+              regularPayRate: "0",
+              premiumPayRate: "0",
+              salesTax: "0.00% [ZERO RATED]",
+              totalRegularHours: 1,
+              totalOvertimeHours: 0,
+            });
+          }
         }
       });
 
       // Convert grouped data to line items
-      const newLineItems: InvoiceLineItem[] = Object.values(groupedData).map(
+      const workLineItems: InvoiceLineItem[] = Object.values(groupedData).map(
         (data, index) => {
           // Find position with overtime data
           const fullPosition =
@@ -602,6 +833,8 @@ export function InvoiceManagement() {
           };
         }
       );
+
+      const newLineItems: InvoiceLineItem[] = [...workLineItems, ...bonusItems, ...deductionItems];
 
       // Update positions state with unique positions from timesheets
       const uniquePositions: PositionData[] = Array.from(
@@ -1274,9 +1507,9 @@ export function InvoiceManagement() {
                   : undefined,
                 salesTax: item.salesTax,
                 description: item.description,
-                weekEndDate: dueDate,
+                weekEndDate: timesheetEndDate || dueDate,
                 invoiceNumber: invoiceNumber,
-                weekStartDate: invoiceDate,
+                weekStartDate: timesheetStartDate || invoiceDate,
                 regularBillRate: regularBillRate,
                 overtimeBillRate: overtimeBillRate,
                 regularPayRate: regularPayRate,
@@ -1303,6 +1536,8 @@ export function InvoiceManagement() {
             messageOnInvoice: messageOnInvoice,
             termsOnInvoice: termsOnInvoice,
             paymentTerms: selectedTerms,
+            timesheetStartDate: timesheetStartDate || undefined,
+            timesheetEndDate: timesheetEndDate || undefined,
             // summary and document are intentionally omitted
           },
         };
@@ -1356,8 +1591,8 @@ export function InvoiceManagement() {
             return {
               id: item.id,
               invoiceNumber: invoiceNumber,
-              weekStartDate: invoiceDate, // Using invoice date as reference
-              weekEndDate: dueDate, // Using due date as reference
+              weekStartDate: timesheetStartDate || invoiceDate,
+              weekEndDate: timesheetEndDate || dueDate,
               totalRegularHours: regularHours,
               totalOvertimeHours: overtimeHours,
               regularBillRate: regularBillRate,
@@ -1402,6 +1637,8 @@ export function InvoiceManagement() {
           supplierPOItems: supplierPOItems,
           messageOnInvoice: messageOnInvoice,
           termsOnInvoice: termsOnInvoice,
+          timesheetStartDate: timesheetStartDate || undefined,
+          timesheetEndDate: timesheetEndDate || undefined,
           subtotal: subtotal,
           totalTax: totalTax,
           totalHst: totalHST,
@@ -1753,6 +1990,12 @@ export function InvoiceManagement() {
         (invoiceData.invoiceData?.termsOnInvoice as string) || ""
       );
       setNotes(invoiceData.notes || "");
+
+      // Populate timesheet date range
+      const { startDate: extractedStart, endDate: extractedEnd } =
+        extractTimesheetDateRange(invoiceData);
+      setTimesheetStartDate(extractedStart);
+      setTimesheetEndDate(extractedEnd);
 
       // Set client data
       if (invoiceData.clientId) {

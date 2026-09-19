@@ -72,6 +72,16 @@ export function BulkJobseekerPositionCard({
     payrollCtx && form ? getPayrollPreviewRows(form, payrollCtx) : [];
 
   const showPayDetails = Boolean(form && position);
+  const isSubcategory = Boolean(position?.isSubcategory);
+  const subcatLabel = String(position?.subcategoryPosition || "").trim();
+  const isMiles = isSubcategory && subcatLabel.toLowerCase().startsWith("miles");
+  const dailyTitle = isMiles
+    ? "Daily Miles"
+    : isSubcategory
+    ? `Daily Units (${subcatLabel || "Subcategory"})`
+    : t("timesheetForm.dailyHours");
+  const rateUnit = isMiles ? "/mi" : isSubcategory ? "/unit" : "/h";
+  const colUnitHeader = isMiles ? "MILES" : isSubcategory ? "QTY / UNITS" : tf("colHours");
 
   const removeButton = (variant: "floating" | "pay-header") => (
     <button
@@ -122,46 +132,45 @@ export function BulkJobseekerPositionCard({
           <div className="timesheet-hours-adjustments-container bulk-position-hours-block">
             <div className="timesheet-hours-section">
               <h4 className="timesheet-hours-title">
-                {t("timesheetForm.dailyHours")}
+                {dailyTitle}
               </h4>
-              <div className="timesheet-days-grid">
-                {form.entries.map((entry) => (
-                  <div key={entry.date} className="timesheet-day-entry">
-                    <label className="timesheet-day-label">
-                      <div className="timesheet-day-name">
-                        {new Date(entry.date).toLocaleDateString("en-CA", {
-                          weekday: "short",
-                        })}
-                      </div>
-                      <div className="timesheet-day-date">({entry.date})</div>
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="99"
-                      step="0.5"
-                      value={entry.hours === 0 ? "" : entry.hours}
-                      onChange={(e) => {
-                        const rawValue = e.target.value;
-                        if (rawValue === "") {
-                          updateEntry(row.rowId, entry.date, 0);
-                          return;
-                        }
-                        const [intPart, decPart] = rawValue.split(".");
-                        let limitedValue = rawValue;
-                        if (decPart && decPart.length > 2) {
-                          limitedValue = `${intPart}.${decPart.slice(0, 2)}`;
-                        }
-                        const hours = parseFloat(limitedValue) || 0;
-                        updateEntry(row.rowId, entry.date, hours);
-                      }}
-                      placeholder="0.00"
-                      className="timesheet-hours-input"
-                    />
-                  </div>
-                ))}
+                <div className="timesheet-days-grid">
+                  {form.entries.map((entry) => (
+                    <div key={entry.date} className="timesheet-day-entry">
+                      <label className="timesheet-day-label">
+                        <div className="timesheet-day-name">
+                          {new Date(entry.date).toLocaleDateString("en-CA", {
+                            weekday: "short",
+                          })}
+                        </div>
+                        <div className="timesheet-day-date">({entry.date})</div>
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        {...(!isSubcategory ? { max: "99", step: "0.5" } : { step: "0.01" })}
+                        value={entry.hours === 0 ? "" : entry.hours}
+                        onChange={(e) => {
+                          const rawValue = e.target.value;
+                          if (rawValue === "") {
+                            updateEntry(row.rowId, entry.date, 0);
+                            return;
+                          }
+                          const [intPart, decPart] = rawValue.split(".");
+                          let limitedValue = rawValue;
+                          if (decPart && decPart.length > 2) {
+                            limitedValue = `${intPart}.${decPart.slice(0, 2)}`;
+                          }
+                          const hours = parseFloat(limitedValue) || 0;
+                          updateEntry(row.rowId, entry.date, hours);
+                        }}
+                        placeholder="0.00"
+                        className="timesheet-hours-input"
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
 
             <div className="timesheet-hours-section adjustments-section">
               <h4 className="timesheet-hours-title timesheet-pay-adjustments-title">
@@ -253,7 +262,7 @@ export function BulkJobseekerPositionCard({
                     $
                     {position.regularPayRate ||
                       t("bulkTimesheetManagement.constants.na")}
-                    /h
+                    {rateUnit}
                   </span>
                 </div>
                 {parseFloat(position.premiumPayRate || "0") > 0 && (
@@ -262,7 +271,7 @@ export function BulkJobseekerPositionCard({
                       {t("timesheetForm.premiumPayRate")}
                     </span>
                     <span className="timesheet-pay-value">
-                      ${position.premiumPayRate}/h
+                      ${position.premiumPayRate}{rateUnit}
                     </span>
                   </div>
                 )}
@@ -340,7 +349,7 @@ export function BulkJobseekerPositionCard({
                   <div className="timesheet-col-description">
                     {tf("description")}
                   </div>
-                  <div className="timesheet-col-hours">{tf("colHours")}</div>
+                  <div className="timesheet-col-hours">{colUnitHeader}</div>
                   <div className="timesheet-col-rate">{tf("rate")}</div>
                   <div className="timesheet-col-amount">{tf("amount")}</div>
                 </div>

@@ -149,13 +149,6 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
   // Select All logic
   const allSelected =
     multiSelect && options.length > 0 && selectedOptions.length === options.length;
-  const handleSelectAll = () => {
-    if (allSelected) {
-      onSelect([]);
-    } else {
-      onSelect(options);
-    }
-  };
 
   return (
     <div className={`custom-dropdown ${className}`} ref={dropdownRef}>
@@ -231,20 +224,36 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
             </div>
           ) : filteredOptions.length > 0 ? (
             <div className="custom-dropdown-options">
-              {/* Select All Option */}
+              {/* Select All and Deselect All Options */}
               {multiSelect && showSelectAll && (
-                <div
-                  className={`custom-dropdown-option${allSelected ? ' selected' : ''}`}
-                  onClick={handleSelectAll}
-                  style={{ fontWeight: 600 }}
-                >
-                  <div className="custom-dropdown-option-content">
-                    <div className="custom-dropdown-option-label">
-                      {allSelected ? 'Deselect All' : 'Select All'}
+                <>
+                  <div
+                    className={`custom-dropdown-option ${allSelected ? 'selected' : ''}`}
+                    onClick={() => {
+                      onSelect(options);
+                      setSearchTerm("");
+                    }}
+                    style={{ fontWeight: 600 }}
+                  >
+                    <div className="custom-dropdown-option-content">
+                      <div className="custom-dropdown-option-label">Select All</div>
                     </div>
+                    {allSelected && <span className="custom-dropdown-option-check">✔</span>}
                   </div>
-                  {allSelected && <span className="custom-dropdown-option-check">✔</span>}
-                </div>
+                  <div
+                    className={`custom-dropdown-option ${selectedOptions.length === 0 ? 'selected' : ''}`}
+                    onClick={() => {
+                      onSelect([]);
+                      setSearchTerm("");
+                    }}
+                    style={{ fontWeight: 600 }}
+                  >
+                    <div className="custom-dropdown-option-content">
+                      <div className="custom-dropdown-option-label">Deselect All</div>
+                    </div>
+                    {selectedOptions.length === 0 && <span className="custom-dropdown-option-check">✔</span>}
+                  </div>
+                </>
               )}
               {filteredOptions.map((option) => {
                 const isSelected = multiSelect
