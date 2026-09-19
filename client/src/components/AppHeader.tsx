@@ -13,7 +13,7 @@ import '../styles/components/header.css';
 
 // Company data
 const companies = [
-  { name: 'Hire Solutions Ops', logo: canHireIconLogo, url: 'https://app.hiresolutions.ca' },
+  { name: 'CanHire Solutions Ops', logo: canHireIconLogo, url: 'https://app.hiresolutions.ca' },
   { name: 'All Staff Inc. Ops', logo: allStaffIconLogo, url: 'https://app.allstaff.ca' },
   { name: 'Godspeed Ops', logo: godspeedIconLogo, url: 'https://app.godspeedxp.com' }
 ];
@@ -74,12 +74,12 @@ export function AppHeader({
       setShowToast(false);
     }
   }, [statusMessage]);
-  
+
   // Log state changes for debugging
   useEffect(() => {
     console.log('Menu state changed:', menuOpen);
     menuOpenRef.current = menuOpen;
-    
+
     // Skip checking on initial render
     if (isInitialMount.current) {
       isInitialMount.current = false;
@@ -136,8 +136,8 @@ export function AppHeader({
                 >
                   <div className="trigger-content">
                     <div className="current-portal">
-                      <img 
-                        src={hdGroupIconLogo} 
+                      <img
+                        src={hdGroupIconLogo}
                         alt="HD Group Logo"
                         className="portal-logo"
                       />
@@ -148,14 +148,14 @@ export function AppHeader({
                     </div>
                     <div className="switcher-actions">
                       <RefreshCcw size={14} className="refresh-icon" />
-                      <ChevronDown 
-                        size={14} 
+                      <ChevronDown
+                        size={14}
                         className={`chevron ${companySwitcherOpen ? 'rotated' : ''}`}
                       />
                     </div>
                   </div>
                 </button>
-                
+
                 {companySwitcherOpen && (
                   <div className="portal-switcher-dropdown">
                     <div className="dropdown-header">
@@ -169,8 +169,8 @@ export function AppHeader({
                           onClick={() => handleCompanySelect(company.url)}
                         >
                           <div className="option-content">
-                            <img 
-                              src={company.logo} 
+                            <img
+                              src={company.logo}
                               alt={company.name}
                               className="portal-logo"
                             />
@@ -191,7 +191,7 @@ export function AppHeader({
           </div>
         </div>
       </header>
-      
+
       <Toast
         message={statusMessage || ''}
         type={statusType}
@@ -203,10 +203,10 @@ export function AppHeader({
       <div className="page-title-container">
         <h1 className="page-title">{title}</h1>
       </div>
-      
+
       {/* Render the hamburger menu outside of the header for proper positioning */}
       {!hideHamburgerMenu && (
-        <HamburgerMenu isOpen={menuOpen} onClose={closeMenu} onOpen={toggleMenu}/>
+        <HamburgerMenu isOpen={menuOpen} onClose={closeMenu} onOpen={toggleMenu} />
       )}
     </div>
   );
