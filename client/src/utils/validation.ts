@@ -1,6 +1,8 @@
 /**
  * Shared validation utilities for form validation
  */
+import { getTodayInCanada, parseCalendarParts } from "./dateUtils";
+
 
 /**
  * Log validation messages only in development
@@ -94,39 +96,38 @@ export function validateDOB(dob: string): {isValid: boolean, errorMessage?: stri
   
   logValidation(`DOB validation - value: ${dob}`);
   
-  // Create date at noon to avoid timezone issues
-  const selectedDate = new Date(dob);
-  selectedDate.setHours(12, 0, 0, 0);
-  
-  const today = new Date();
-  today.setHours(12, 0, 0, 0);
-  
-  logValidation(`DOB validation - Selected: ${selectedDate.toISOString()}, Today: ${today.toISOString()}`);
-  
+  const dobParts = parseCalendarParts(dob);
+  if (!dobParts) {
+    return {
+      isValid: false,
+      errorMessage: "Invalid date format"
+    };
+  }
+
+  const todayStr = getTodayInCanada();
+  const dobStr = `${dobParts.year}-${String(dobParts.month).padStart(2, "0")}-${String(dobParts.day).padStart(2, "0")}`;
+
+  logValidation(`DOB validation - Selected: ${dobStr}, Canada Today: ${todayStr}`);
+
   // Check if date is in the future
-  if (selectedDate > today) {
+  if (dobStr > todayStr) {
     logValidation('DOB ERROR: Date is in the future');
     return { 
       isValid: false, 
       errorMessage: "Date of birth cannot be in the future" 
     };
   }
-  
-  // Calculate the minimum DOB date (18 years ago)
-  const minAge = 18;
-  const minDobDate = new Date();
-  minDobDate.setFullYear(today.getFullYear() - minAge);
-  minDobDate.setHours(12, 0, 0, 0);
-  
-  // Check if person is at least 18 years old
-  if (selectedDate > minDobDate) {
+
+  // Calculate the maximum valid DOB date (must be born on or before this date to be at least 18)
+  const maxDobStr = getMaxDobDate();
+  if (maxDobStr && dobStr > maxDobStr) {
     logValidation('DOB ERROR: Person is not at least 18 years old');
     return { 
       isValid: false, 
       errorMessage: "Must be at least 18 years old" 
     };
   }
-  
+
   logValidation('DOB validation passed');
   return { isValid: true };
 }
@@ -167,10 +168,13 @@ export function validateUCI(uci: string | number): {isValid: boolean, errorMessa
  * @returns {string} Date string in ISO format (YYYY-MM-DD)
  */
 export function getMaxDobDate(): string {
-  const today = new Date();
-  today.setFullYear(today.getFullYear() - 18);
-  return today.toISOString().split('T')[0];
+  const todayStr = getTodayInCanada();
+  const parts = parseCalendarParts(todayStr);
+  if (!parts) return "";
+  const maxYear = parts.year - 18;
+  return `${maxYear}-${String(parts.month).padStart(2, "0")}-${String(parts.day).padStart(2, "0")}`;
 }
+
 
 /**
  * Validate a Canadian phone number

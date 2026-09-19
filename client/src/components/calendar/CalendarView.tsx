@@ -4,6 +4,7 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 import moment from 'moment';
 import { CalendarEvent } from '../../services/api/calendar';
 import { useLanguage } from '../../contexts/language/language-provider';
+import { parseCalendarDate } from '../../utils/dateUtils';
 import './CalendarView.css';
 
 // Setup the localizer for react-big-calendar
@@ -36,12 +37,13 @@ export function CalendarView({
   const [view, setView] = useState<View>('month');
   const [date, setDate] = useState(new Date());
 
-  // Transform events for react-big-calendar (convert string dates to Date objects)
+  // Transform events for react-big-calendar (convert string dates to Date objects safely)
   const calendarEvents: CalendarEventWithDates[] = events.map(event => ({
     ...event,
-    start: new Date(event.start),
-    end: new Date(event.end),
+    start: parseCalendarDate(event.start) || new Date(event.start),
+    end: parseCalendarDate(event.end) || new Date(event.end),
   }));
+
 
   // Handle view changes
   const handleViewChange = useCallback((newView: View) => {

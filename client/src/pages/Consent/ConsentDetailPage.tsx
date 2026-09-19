@@ -23,6 +23,7 @@ import { AppHeader } from "../../components/AppHeader";
 import { ConfirmationModal } from "../../components/ConfirmationModal";
 import PDFViewerModal from "../../components/PDFViewerModal";
 import { ConsentRecordDetailModal } from "./ConsentRecordDetailModal";
+import { formatCalendarDate, formatDateTimeCanada } from "../../utils/dateUtils";
 import { supabase } from "../../lib/supabaseClient";
 import { useLanguage } from "../../contexts/language/language-provider";
 import "../../styles/components/CommonTable.css";
@@ -88,12 +89,12 @@ export function ConsentDetailPage() {
 
   const formatDate = (dateString?: string): string => {
     if (!dateString) return t("consent.common.notAvailable");
-    try {
-      return new Date(dateString).toLocaleDateString();
-    } catch {
-      return t("consent.common.notAvailable");
+    if (dateString.includes("T")) {
+      return formatDateTimeCanada(dateString, { year: "numeric", month: "short", day: "numeric" });
     }
+    return formatCalendarDate(dateString);
   };
+
 
   const getStatusIcon = (status: string) => {
     switch (status) {

@@ -17,6 +17,7 @@ import { getJobseekerMetrics } from "../../services/api/jobseekerMetrics";
 import { MetricData } from "../../components/dashboard/types";
 import { useNavigate } from "react-router-dom";
 import { useLanguage } from '../../contexts/language/language-provider';
+import { formatDateTimeCanada } from "../../utils/dateUtils";
 
 interface UserData {
   id: string;
@@ -113,10 +114,15 @@ export function JobSeekerDashboard() {
         email: user.email,
         name: user.user_metadata?.name || t('common.user'),
         userType: user.user_metadata?.user_type || "jobseeker",
-        createdAt: new Date(user.created_at).toLocaleDateString(),
+        createdAt: formatDateTimeCanada(user.created_at, {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        }),
         lastSignIn: user.last_sign_in_at
-          ? new Date(user.last_sign_in_at).toLocaleString()
+          ? formatDateTimeCanada(user.last_sign_in_at)
           : t('dashboard.firstLogin'),
+
       });
 
       fetchUserProfileId(user.id);

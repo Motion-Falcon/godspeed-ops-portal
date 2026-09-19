@@ -1,6 +1,7 @@
 import Handlebars from "handlebars";
 import { toNum } from "./timesheet-email-numeric.js";
 import { wrapInLayout, ensureHelpers, S, getPortalName, textFooter, ACCENT_BLUE } from "./_layout.js";
+import { formatCalendarDate, formatCanadaDate } from "../utils/dateUtils.js";
 
 ensureHelpers();
 
@@ -136,7 +137,7 @@ export function timesheetHtmlTemplate(vars: Record<string, any>): string {
 
   const dailyRows = vars.daily_hours
     ? vars.daily_hours.map((day: any) => ({
-        date: new Date(day.date).toLocaleDateString(),
+        date: formatCalendarDate(day.date, typeof day.date === "string" ? day.date : ""),
         hours: day.hours || 0,
       }))
     : [];
@@ -164,7 +165,9 @@ export function timesheetHtmlTemplate(vars: Record<string, any>): string {
     showTax: taxAmt > 0,
     showCashDed: cashDedPct > 0,
     dailyRows,
-    generated_date: vars.generated_date || new Date().toLocaleDateString(),
+    generated_date: vars.generated_date
+      ? (typeof vars.generated_date === "string" && vars.generated_date.includes("-") ? formatCanadaDate(vars.generated_date) : vars.generated_date)
+      : formatCanadaDate(new Date()),
   };
 
   const body = compiledBody(data);

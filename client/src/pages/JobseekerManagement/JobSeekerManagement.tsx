@@ -23,6 +23,7 @@ import { JobSeekerProfile } from "../../types/jobseeker";
 import { ConfirmationModal } from "../../components/ConfirmationModal";
 import { AppHeader } from "../../components/AppHeader";
 import { EXPERIENCE_LEVELS } from "../../constants/formOptions";
+import { formatDateTimeCanada } from "../../utils/dateUtils";
 import { useLanguage } from "../../contexts/language/language-provider";
 import { getClickableRowProps } from "../../hooks/useClickableTableRow";
 import { hasAnyExactAccessRole } from "../../lib/auth";
@@ -772,8 +773,13 @@ export function JobSeekerManagement() {
                           {profile.experience}
                         </td>
                         <td className="date-cell">
-                          {new Date(profile.createdAt).toLocaleDateString()}
+                          {formatDateTimeCanada(profile.createdAt, {
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                          })}
                         </td>
+
                         <td className="actions-cell">
                           <div className="action-buttons">
                             <button

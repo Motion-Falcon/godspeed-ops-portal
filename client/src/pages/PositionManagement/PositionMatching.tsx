@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/language/language-provider";
 import { hasAnyExactAccessRole } from "../../lib/auth";
+import { formatCalendarDate, formatDateTimeCanada } from "../../utils/dateUtils";
 import Lottie from "lottie-react";
 import {
   Users,
@@ -1062,9 +1063,7 @@ export function PositionMatching() {
                             <Calendar size={14} />
                             <span>
                               <strong>{t("positionMatching.details.startDate")}:</strong>{" "}
-                              {new Date(
-                                selectedPosition.startDate
-                              ).toLocaleDateString()}
+                              {formatCalendarDate(selectedPosition.startDate)}
                             </span>
                           </div>
                         )}
@@ -1073,12 +1072,11 @@ export function PositionMatching() {
                             <Clock size={14} />
                             <span>
                               <strong>{t("positionMatching.details.created")}:</strong>{" "}
-                              {new Date(
-                                selectedPosition.createdAt
-                              ).toLocaleDateString()}
+                              {formatDateTimeCanada(selectedPosition.createdAt)}
                             </span>
                           </div>
                         )}
+
                       </div>
                       <div className="meta-group">
                         <div className="meta-row">
@@ -1121,12 +1119,11 @@ export function PositionMatching() {
                             <Calendar size={14} />
                             <span>
                               <strong>{t("positionMatching.details.endDate")}:</strong>{" "}
-                              {new Date(
-                                selectedPosition.endDate
-                              ).toLocaleDateString()}
+                              {formatCalendarDate(selectedPosition.endDate)}
                             </span>
                           </div>
                         )}
+
                       </div>
                     </div>
                   </div>

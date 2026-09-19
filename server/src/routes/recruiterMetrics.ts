@@ -1,5 +1,6 @@
 import { Router, Request, Response } from "express";
 import { authenticateToken, authorizeRoles } from "../middleware/auth.js";
+import { formatMonthName } from "../utils/dateUtils.js";
 import { createClient } from "@supabase/supabase-js";
 import dotenv from "dotenv";
 
@@ -176,14 +177,11 @@ router.get(
         return monthlyArray
           .reverse() // Oldest to newest for charts
           .map((month: ClientMonthlyStats) => {
-            const date = new Date(month.month + "-01");
-            const monthName = date.toLocaleDateString("en-US", {
-              month: "short",
-            });
+            const monthName = formatMonthName(month.month);
             return {
               period: monthName,
               value: (month[field] as number) || 0,
-              date: date,
+              date: month.month,
             };
           });
       };
@@ -347,14 +345,11 @@ router.get(
         return monthlyArray
           .reverse() // Oldest to newest for charts
           .map((month: ClientMonthlyStats) => {
-            const date = new Date(month.month + "-01");
-            const monthName = date.toLocaleDateString("en-US", {
-              month: "short",
-            });
+            const monthName = formatMonthName(month.month);
             return {
               period: monthName,
               value: (month[field] as number) || 0,
-              date: date,
+              date: month.month,
             };
           });
       };
@@ -554,14 +549,11 @@ router.get(
         return monthlyArray
           .reverse() // Oldest to newest for charts
           .map((month: PositionMonthlyStats) => {
-            const date = new Date(month.month + "-01");
-            const monthName = date.toLocaleDateString("en-US", {
-              month: "short",
-            });
+            const monthName = formatMonthName(month.month);
             return {
               period: monthName,
               value: (month[field] as number) || 0,
-              date: date,
+              date: month.month,
             };
           });
       };
@@ -814,14 +806,11 @@ router.get(
         return monthlyArray
           .reverse() // Oldest to newest for charts
           .map((month: PositionMonthlyStats) => {
-            const date = new Date(month.month + "-01");
-            const monthName = date.toLocaleDateString("en-US", {
-              month: "short",
-            });
+            const monthName = formatMonthName(month.month);
             return {
               period: monthName,
               value: (month[field] as number) || 0,
-              date: date,
+              date: month.month,
             };
           });
       };
@@ -1062,14 +1051,11 @@ router.get(
         return monthlyArray
           .reverse() // Oldest to newest for charts
           .map((month: MonthlyStats) => {
-            const date = new Date(month.month + "-01");
-            const monthName = date.toLocaleDateString("en-US", {
-              month: "short",
-            });
+            const monthName = formatMonthName(month.month);
             return {
               period: monthName,
               value: (month[field] as number) || 0,
-              date: date,
+              date: month.month,
             };
           });
       };

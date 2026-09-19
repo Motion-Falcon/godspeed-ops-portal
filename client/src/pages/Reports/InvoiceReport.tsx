@@ -10,14 +10,7 @@ import { exportToCSV } from '../../utils/csvExport';
 import { useColumnSearch } from "../../hooks/useColumnSearch";
 import { ReportTableToolbar } from "../../components/ReportTableToolbar";
 import { ColumnSearchInput } from "../../components/ColumnSearchInput";
-
-// Format date utility function
-const formatDate = (dateString: string | undefined) => {
-  if (!dateString || dateString === "N/A") return "N/A";
-  const date = new Date(dateString);
-  if (isNaN(date.getTime())) return "N/A";
-  return date.toLocaleDateString();
-};
+import { formatCalendarDate, formatDateTimeCanada } from "../../utils/dateUtils";
 
 // Define the columns for the invoice report
 const getTableColumns = (t: (key: string) => string): { key: string; label: string; format?: (val: unknown) => string }[] => [
@@ -25,24 +18,28 @@ const getTableColumns = (t: (key: string) => string): { key: string; label: stri
   { key: 'client_name', label: t('reports.columns.clientName'), format: (val) => String(val ?? '') },
   { key: 'contact_person', label: t('reports.columns.contactPerson'), format: (val) => String(val ?? '') },
   { key: 'terms', label: t('reports.columns.terms'), format: (val) => String(val ?? '') },
-  { key: 'invoice_date', label: t('reports.columns.invoiceDate'), format: (val) => formatDate(String(val ?? '')) },
-  { key: 'due_date', label: t('reports.columns.dueDate'), format: (val) => formatDate(String(val ?? '')) },
+  { key: 'invoice_date', label: t('reports.columns.invoiceDate'), format: (val) => formatCalendarDate(String(val ?? '')) },
+  { key: 'due_date', label: t('reports.columns.dueDate'), format: (val) => formatCalendarDate(String(val ?? '')) },
   { key: 'total_amount', label: t('reports.columns.totalAmount'), format: (val) => val ? `$${val}` : 'N/A' },
   { key: 'currency', label: t('reports.columns.currency'), format: (val) => String(val ?? '') },
   { key: 'email_sent', label: t('reports.columns.emailSent'), format: (val) => String(val ?? '') },
-  { key: 'email_sent_date', label: t('reports.columns.emailSentDate'), format: (val) => formatDate(String(val ?? '')) },
+  { key: 'email_sent_date', label: t('reports.columns.emailSentDate'), format: (val) => formatDateTimeCanada(String(val ?? '')) },
 ];
 
 // For CSV export
 const getCsvColumns = (tableColumns: ReturnType<typeof getTableColumns>) => tableColumns.map(col => ({
   ...col,
   format: (val: unknown) => {
-    if (col.key === 'invoice_date' || col.key === 'due_date' || col.key === 'email_sent_date') {
-      return formatDate(String(val ?? ''));
+    if (col.key === 'invoice_date' || col.key === 'due_date') {
+      return formatCalendarDate(String(val ?? ''));
+    }
+    if (col.key === 'email_sent_date') {
+      return formatDateTimeCanada(String(val ?? ''));
     }
     if (col.key === 'total_amount') {
       return val ? `$${val}` : 'N/A';
     }
+
     return String(val ?? '');
   }
 }));

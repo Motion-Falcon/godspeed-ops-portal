@@ -46,6 +46,12 @@ import { useLanguage } from "../../contexts/language/language-provider";
 import { supabase } from "../../lib/supabaseClient";
 import { getPositionDisplayTitle } from "../../utils/positionDisplay";
 import {
+  formatCalendarDate,
+  formatCalendarDateRange,
+  getTodayInCanada,
+  addDaysToDateStr,
+} from "../../utils/dateUtils";
+import {
   generateInvoicePDF as generatePDF,
   InvoiceData as PDFInvoiceData,
 } from "../../utils/pdfGenerator.tsx";
@@ -306,15 +312,8 @@ export function InvoiceManagement() {
     fetchAllJobseekers();
 
     // Set default invoice date to today (Canadian timezone)
-    const today = new Date();
-    // Convert to Canadian timezone and format as YYYY-MM-DD
-    const canadianDateString = today.toLocaleDateString("en-CA", {
-      timeZone: "America/Toronto",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    });
-    setInvoiceDate(canadianDateString);
+    setInvoiceDate(getTodayInCanada());
+
 
     // Initialize with one empty line item
     addLineItem();
@@ -465,21 +464,14 @@ export function InvoiceManagement() {
   const calculateDueDate = (invoiceDate: string, terms: string) => {
     if (!invoiceDate || !terms) return;
 
-    const startDate = new Date(invoiceDate);
-    let dueDate = new Date(startDate);
-
     if (terms === "Due on Receipt") {
-      // Same as invoice date
-      dueDate = new Date(startDate);
+      setDueDate(invoiceDate);
     } else if (terms.startsWith("Net ")) {
-      // Extract number of days from terms (e.g., "Net 15" -> 15)
-      const days = parseInt(terms.replace("Net ", ""));
+      const days = parseInt(terms.replace("Net ", ""), 10);
       if (!isNaN(days)) {
-        dueDate.setDate(startDate.getDate() + days);
+        setDueDate(addDaysToDateStr(invoiceDate, days));
       }
     }
-
-    setDueDate(dueDate.toISOString().split("T")[0]);
   };
 
   // Fetch and populate timesheets for the selected date range
@@ -588,12 +580,12 @@ export function InvoiceManagement() {
                 regularPayRate: Number(item.regular_pay_rate) || 0,
                 premiumPayRate: 0,
                 timesheetIds: [],
-                description: `Work period: ${new Date(
-                  timesheet.weekStartDate
-                ).toLocaleDateString()} - ${new Date(
+                description: `Work period: ${formatCalendarDateRange(
+                  timesheet.weekStartDate,
                   timesheet.weekEndDate
-                ).toLocaleDateString()}`,
+                )}`,
               };
+
             }
 
             groupedData[key].totalHours += itemTotalHours;
@@ -756,12 +748,12 @@ export function InvoiceManagement() {
               regularPayRate: timesheet.regularPayRate,
               premiumPayRate: timesheet.premiumPayRate || 0,
               timesheetIds: [],
-              description: `Work period: ${new Date(
-                timesheet.weekStartDate
-              ).toLocaleDateString()} - ${new Date(
+              description: `Work period: ${formatCalendarDateRange(
+                timesheet.weekStartDate,
                 timesheet.weekEndDate
-              ).toLocaleDateString()}`,
+              )}`,
             };
+
           }
 
           // Aggregate hours
@@ -2441,11 +2433,7 @@ export function InvoiceManagement() {
                     </span>
                     <span className="timesheet-detail-value">
                       {invoiceDate
-                        ? new Date(invoiceDate).toLocaleDateString("en-CA", {
-                            year: "numeric",
-                            month: "short",
-                            day: "numeric",
-                          })
+                        ? formatCalendarDate(invoiceDate)
                         : t("invoiceManagement.notSet")}
                     </span>
                   </div>
@@ -2455,14 +2443,11 @@ export function InvoiceManagement() {
                     </span>
                     <span className="timesheet-detail-value">
                       {dueDate
-                        ? new Date(dueDate).toLocaleDateString("en-CA", {
-                            year: "numeric",
-                            month: "short",
-                            day: "numeric",
-                          })
+                        ? formatCalendarDate(dueDate)
                         : t("invoiceManagement.notCalculated")}
                     </span>
                   </div>
+
                   <div className="timesheet-detail-item">
                     <span className="timesheet-detail-label">
                       {t("invoiceManagement.payCycle")}

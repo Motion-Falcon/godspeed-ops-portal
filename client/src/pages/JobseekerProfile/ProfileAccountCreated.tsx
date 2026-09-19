@@ -7,6 +7,7 @@ import {
   profileUsesCashDeductionField,
 } from '../../lib/hybridPayrollSplit';
 import '../../styles/pages/JobseekerProfileStyles.css';
+import { formatCalendarDate } from '../../utils/dateUtils';
 
 // Define a profile type based on the Supabase DB fields
 interface JobseekerProfile {
@@ -122,22 +123,9 @@ export function ProfileAccountCreated() {
 
   // Helper function to format date
   const formatDate = (dateString?: string | null) => {
-    if (!dateString) return t('profileAccountCreated.na');
-    try {
-      let date = new Date(dateString);
-      if (!isNaN(date.getTime())) {
-        return date.toLocaleDateString();
-      }
-      const datePart = dateString.split('T')[0];
-      date = new Date(datePart + 'T00:00:00Z');
-       if (!isNaN(date.getTime())) {
-         return date.toLocaleDateString();
-       }
-    } catch (e) {
-       console.warn(`Failed to parse date: ${dateString}`, e);
-    }
-    return dateString;
+    return formatCalendarDate(dateString, "short", t('profileAccountCreated.na'));
   };
+
 
   // Helper function to render detail items
   const renderDetailItem = (label: string, value?: string | number | boolean | null) => {

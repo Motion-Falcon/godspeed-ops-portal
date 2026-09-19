@@ -9,6 +9,7 @@ import {
   isHybridPaymentMethod,
   profileUsesCashDeduction,
 } from "../utils/paymentMethods.js";
+import { getTodayInCanada, addDaysToDateStr } from "../utils/dateUtils.js";
 
 dotenv.config();
 
@@ -648,12 +649,7 @@ function applyFilters(
 
   // SIN Expiry filter
   if (sinExpiryFilter && sinExpiryFilter.trim().length > 0) {
-    const filterDate = new Date(sinExpiryFilter);
-    const nextDay = new Date(filterDate);
-    nextDay.setDate(nextDay.getDate() + 1);
-    query = query
-      .gte("sin_expiry", filterDate.toISOString())
-      .lt("sin_expiry", nextDay.toISOString());
+    query = query.eq("sin_expiry", sinExpiryFilter.trim());
   }
 
   // Work Permit UCI filter
@@ -663,86 +659,63 @@ function applyFilters(
 
   // Work Permit Expiry filter
   if (workPermitExpiryFilter && workPermitExpiryFilter.trim().length > 0) {
-    const filterDate = new Date(workPermitExpiryFilter);
-    const nextDay = new Date(filterDate);
-    nextDay.setDate(nextDay.getDate() + 1);
-    query = query
-      .gte("work_permit_expiry", filterDate.toISOString())
-      .lt("work_permit_expiry", nextDay.toISOString());
+    query = query.eq("work_permit_expiry", workPermitExpiryFilter.trim());
   }
 
   // SIN Expiry Status filter
   if (sinExpiryStatusFilter && sinExpiryStatusFilter !== "all") {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const todayStr = getTodayInCanada();
 
     switch (sinExpiryStatusFilter) {
       case "expired":
-        query = query.lt("sin_expiry", today.toISOString());
+        query = query.lt("sin_expiry", todayStr);
         break;
       case "expiring-30":
-        const in30Days = new Date(today);
-        in30Days.setDate(in30Days.getDate() + 30);
         query = query
-          .gte("sin_expiry", today.toISOString())
-          .lte("sin_expiry", in30Days.toISOString());
+          .gte("sin_expiry", todayStr)
+          .lte("sin_expiry", addDaysToDateStr(todayStr, 30));
         break;
       case "expiring-60":
-        const in60Days = new Date(today);
-        in60Days.setDate(in60Days.getDate() + 60);
         query = query
-          .gte("sin_expiry", today.toISOString())
-          .lte("sin_expiry", in60Days.toISOString());
+          .gte("sin_expiry", todayStr)
+          .lte("sin_expiry", addDaysToDateStr(todayStr, 60));
         break;
       case "expiring-90":
-        const in90Days = new Date(today);
-        in90Days.setDate(in90Days.getDate() + 90);
         query = query
-          .gte("sin_expiry", today.toISOString())
-          .lte("sin_expiry", in90Days.toISOString());
+          .gte("sin_expiry", todayStr)
+          .lte("sin_expiry", addDaysToDateStr(todayStr, 90));
         break;
       case "expiring-after-90":
-        const after90Days = new Date(today);
-        after90Days.setDate(after90Days.getDate() + 90);
-        query = query.gt("sin_expiry", after90Days.toISOString());
+        query = query.gt("sin_expiry", addDaysToDateStr(todayStr, 90));
         break;
     }
   }
 
   // Work Permit Expiry Status filter
   if (workPermitExpiryStatusFilter && workPermitExpiryStatusFilter !== "all") {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const todayStr = getTodayInCanada();
 
     switch (workPermitExpiryStatusFilter) {
       case "expired":
-        query = query.lt("work_permit_expiry", today.toISOString());
+        query = query.lt("work_permit_expiry", todayStr);
         break;
       case "expiring-30":
-        const in30Days = new Date(today);
-        in30Days.setDate(in30Days.getDate() + 30);
         query = query
-          .gte("work_permit_expiry", today.toISOString())
-          .lte("work_permit_expiry", in30Days.toISOString());
+          .gte("work_permit_expiry", todayStr)
+          .lte("work_permit_expiry", addDaysToDateStr(todayStr, 30));
         break;
       case "expiring-60":
-        const in60Days = new Date(today);
-        in60Days.setDate(in60Days.getDate() + 60);
         query = query
-          .gte("work_permit_expiry", today.toISOString())
-          .lte("work_permit_expiry", in60Days.toISOString());
+          .gte("work_permit_expiry", todayStr)
+          .lte("work_permit_expiry", addDaysToDateStr(todayStr, 60));
         break;
       case "expiring-90":
-        const in90Days = new Date(today);
-        in90Days.setDate(in90Days.getDate() + 90);
         query = query
-          .gte("work_permit_expiry", today.toISOString())
-          .lte("work_permit_expiry", in90Days.toISOString());
+          .gte("work_permit_expiry", todayStr)
+          .lte("work_permit_expiry", addDaysToDateStr(todayStr, 90));
         break;
       case "expiring-after-90":
-        const after90Days = new Date(today);
-        after90Days.setDate(after90Days.getDate() + 90);
-        query = query.gt("work_permit_expiry", after90Days.toISOString());
+        query = query.gt("work_permit_expiry", addDaysToDateStr(todayStr, 90));
         break;
     }
   }

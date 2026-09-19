@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { UserRoleBadges } from '../components/dashboard/UserRoleBadges';
 import '../styles/pages/userProfile.css';
+import { formatDateTimeCanada } from '../utils/dateUtils';
 
 interface UserDetails {
   id: string;
@@ -54,20 +55,15 @@ export function UserProfile() {
 
   const formatDate = (dateString: string | undefined) => {
     if (!dateString) return 'Not available';
-    
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    } catch (error) {
-      return 'Invalid date';
-    }
+    return formatDateTimeCanada(dateString, {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }, 'Invalid date');
   };
+
 
   if (isLoading) {
     return (

@@ -24,6 +24,7 @@ import {
   sendTimesheetEmails,
 } from "../../services/api/timesheet";
 import type { TimesheetWithJoins } from "../../services/types/timesheet";
+import { formatDateTimeCanada } from "../../utils/dateUtils";
 import "../../styles/pages/TimesheetView.css";
 
 export function TimesheetView() {
@@ -262,8 +263,9 @@ export function TimesheetView() {
                   <div className="timesheet-meta-item">
                     <span className="timesheet-meta-label">Created At</span>
                     <span className="timesheet-meta-value">
-                      {new Date(timesheet.created_at).toLocaleDateString()}
+                      {formatDateTimeCanada(timesheet.created_at)}
                     </span>
+
                   </div>
                 )}
               </div>

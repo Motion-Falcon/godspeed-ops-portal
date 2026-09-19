@@ -8,12 +8,7 @@ import { exportToCSV } from '../../utils/csvExport';
 import { useColumnSearch } from "../../hooks/useColumnSearch";
 import { ReportTableToolbar } from "../../components/ReportTableToolbar";
 import { ColumnSearchInput } from "../../components/ColumnSearchInput";
-
-// Format date utility function
-const formatDate = (dateString: string | undefined) => {
-  if (!dateString) return "N/A";
-  return new Date(dateString).toLocaleDateString();
-};
+import { formatCalendarDate } from "../../utils/dateUtils";
 
 // Define the columns for the deduction report
 const getTableColumns = (t: (key: string) => string): { key: string; label: string; format?: (val: unknown) => string }[] => [
@@ -23,7 +18,7 @@ const getTableColumns = (t: (key: string) => string): { key: string; label: stri
   { key: 'total_amount', label: t('reports.columns.totalAmount'), format: (val) => val ? `$${val}` : 'N/A' },
   { key: 'jobseeker_deductions', label: t('reports.columns.jobseekerDeductions'), format: (val) => String(val ?? '') },
   { key: 'total_deductions_amount', label: t('reports.columns.totalDeductionsAmount'), format: (val) => val ? `-$${val}` : 'N/A' },
-  { key: 'invoice_date', label: t('reports.columns.invoiceDate'), format: (val) => formatDate(String(val ?? '')) },
+  { key: 'invoice_date', label: t('reports.columns.invoiceDate'), format: (val) => formatCalendarDate(String(val ?? '')) },
 ];
 
 // For CSV export
@@ -31,8 +26,9 @@ const getCsvColumns = (tableColumns: ReturnType<typeof getTableColumns>) => tabl
   ...col,
   format: (val: unknown) => {
     if (col.key === 'invoice_date') {
-      return formatDate(String(val ?? ''));
+      return formatCalendarDate(String(val ?? ''));
     }
+
     if (col.key === 'total_amount' || col.key === 'total_deductions_amount') {
       return val ? `$${val}` : 'N/A';
     }

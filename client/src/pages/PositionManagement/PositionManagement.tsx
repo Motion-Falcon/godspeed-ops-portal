@@ -23,6 +23,7 @@ import { getClickableRowProps } from "../../hooks/useClickableTableRow";
 import { useAuth } from "../../contexts/AuthContext";
 import { hasAnyExactAccessRole } from "../../lib/auth";
 import { DELETE_POSITION_ROLES } from "../../constants/accessControl";
+import { formatCalendarDate } from "../../utils/dateUtils";
 import "../../styles/pages/PositionManagement.css";
 import "../../styles/components/header.css";
 import "../../styles/components/CommonTable.css";
@@ -323,9 +324,9 @@ export function PositionManagement() {
 
   // Format date for display
   const formatDate = (dateString: string | undefined) => {
-    if (!dateString) return t("positionManagement.nA");
-    return new Date(dateString).toLocaleDateString();
+    return formatCalendarDate(dateString, "short", t("positionManagement.nA"));
   };
+
 
   return (
     <div className="page-container">

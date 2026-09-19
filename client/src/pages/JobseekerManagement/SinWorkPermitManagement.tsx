@@ -20,6 +20,7 @@ import { getClickableRowProps } from "../../hooks/useClickableTableRow";
 import "../../styles/pages/JobSeekerManagement.css";
 import "../../styles/components/header.css";
 import "../../styles/components/CommonTable.css";
+import { formatCalendarDate, getTodayInCanada, parseCalendarParts } from "../../utils/dateUtils";
 
 // Extended interface to include the SIN and Work Permit fields
 interface SinWorkPermitProfile extends JobSeekerProfile {
@@ -44,15 +45,16 @@ const calculateDaysUntilExpiry = (expiryDate: string | null | undefined): number
   if (!expiryDate) return null;
 
   try {
-    const expiry = new Date(expiryDate);
-    const today = new Date();
+    const expiryParts = parseCalendarParts(expiryDate);
+    const todayParts = parseCalendarParts(getTodayInCanada());
+    if (!expiryParts || !todayParts) return null;
 
-    // Reset time to start of day for accurate day calculation
-    expiry.setHours(0, 0, 0, 0);
-    today.setHours(0, 0, 0, 0);
+    // Use UTC noon to calculate day difference without DST or timezone shifts
+    const expiryUtc = Date.UTC(expiryParts.year, expiryParts.month - 1, expiryParts.day, 12, 0, 0);
+    const todayUtc = Date.UTC(todayParts.year, todayParts.month - 1, todayParts.day, 12, 0, 0);
 
-    const timeDiff = expiry.getTime() - today.getTime();
-    const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+    const diffMs = expiryUtc - todayUtc;
+    const daysDiff = Math.round(diffMs / (1000 * 3600 * 24));
 
     return daysDiff;
   } catch (error) {
@@ -304,13 +306,9 @@ export function SinWorkPermitManagement() {
 
   // Format date for display
   const formatDate = (dateString?: string) => {
-    if (!dateString) return t('sinWorkPermitManagement.na');
-    try {
-      return new Date(dateString).toLocaleDateString();
-    } catch {
-      return t('sinWorkPermitManagement.na');
-    }
+    return formatCalendarDate(dateString, "short", t('sinWorkPermitManagement.na'));
   };
+
 
   return (
     <div className="page-container">

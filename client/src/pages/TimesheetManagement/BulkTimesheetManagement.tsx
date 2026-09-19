@@ -12,7 +12,8 @@ import { mapAssignmentToJobseeker } from "./functions/mapAssignmentToJobseeker";
 import "../../styles/pages/BulkTimesheetManagement.css";
 import "../../styles/pages/TimesheetManagement.css";
 import { getPositionDisplayTitle } from "../../utils/positionDisplay";
-import { formatDate } from "./functions/weekUtils";
+import { formatDate, getWeekEndDate } from "./functions/weekUtils";
+import { getDayOfWeekCanada } from "../../utils/dateUtils";
 import { getPayrollPreviewRows } from "./functions/timesheetCalculations";
 import { TimesheetInvoiceSummary } from "./components/TimesheetInvoiceSummary";
 import { TimesheetInvoiceTotals } from "./components/TimesheetInvoiceTotals";
@@ -423,15 +424,9 @@ export function BulkTimesheetManagement() {
                       {selectedWeekStart ? (
                         <>
                           {formatDate(selectedWeekStart)} -{" "}
-                          {formatDate(
-                            new Date(
-                              new Date(selectedWeekStart).getTime() +
-                                6 * 24 * 60 * 60 * 1000
-                            )
-                              .toISOString()
-                              .split("T")[0]
-                          )}
+                          {formatDate(getWeekEndDate(selectedWeekStart))}
                         </>
+
                       ) : (
                         t("bulkTimesheetManagement.constants.na")
                       )}
@@ -516,10 +511,7 @@ export function BulkTimesheetManagement() {
                           <div key={entry.date} className="timesheet-day-entry">
                             <label className="timesheet-day-label">
                               <div className="timesheet-day-name">
-                                {new Date(entry.date).toLocaleDateString(
-                                  "en-CA",
-                                  { weekday: "short" }
-                                )}
+                                {getDayOfWeekCanada(entry.date)}
                               </div>
                               <div className="timesheet-day-date">
                                 ({entry.date})

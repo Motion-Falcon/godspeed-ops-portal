@@ -21,6 +21,11 @@ import "../../styles/pages/ClientView.css";
 import "../../styles/pages/PositionManagement.css";
 import "../../styles/components/header.css";
 import { normalizeSubcategoryPositionArray } from "../../utils/positionDisplay";
+import {
+  formatCalendarDate,
+  formatDateTimeCanada,
+  parseCalendarParts,
+} from "../../utils/dateUtils";
 
 interface ExtendedPositionData extends PositionData {
   [key: string]: unknown;
@@ -120,12 +125,10 @@ export function PositionView() {
   // Format date with type checking
   const formatDate = (dateString?: string | null) => {
     if (!dateString) return "N/A";
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleDateString();
-    } catch (e) {
-      return "N/A";
+    if (dateString.includes("T")) {
+      return formatDateTimeCanada(dateString);
     }
+    return formatCalendarDate(dateString);
   };
 
   // Format date range to show duration
@@ -135,20 +138,22 @@ export function PositionView() {
   ) => {
     if (!startDate) return t("positionManagement.nA");
 
-    const start = new Date(startDate);
-    const formattedStart = start.toLocaleDateString();
+    const formattedStart = formatCalendarDate(startDate);
 
     if (!endDate) return `${formattedStart} (${t("positionManagement.ongoing")})`;
 
-    const end = new Date(endDate);
-    const formattedEnd = end.toLocaleDateString();
+    const formattedEnd = formatCalendarDate(endDate);
 
     // Calculate duration in days
-    const durationMs = end.getTime() - start.getTime();
-    const durationDays = Math.ceil(durationMs / (1000 * 60 * 60 * 24));
+    const startParts = parseCalendarParts(startDate);
+    const endParts = parseCalendarParts(endDate);
+    const start = startParts ? new Date(startParts.year, startParts.month - 1, startParts.day) : new Date();
+    const end = endParts ? new Date(endParts.year, endParts.month - 1, endParts.day) : new Date();
+    const durationDays = Math.max(0, Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
 
     return `${formattedStart} to ${formattedEnd} (${durationDays} ${t("positionManagement.days")})`;
   };
+
 
   const renderDetailItem = (
     label: string,

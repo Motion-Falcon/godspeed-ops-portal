@@ -21,6 +21,7 @@ import {
 import "../../styles/pages/PositionManagement.css";
 import "../../styles/components/header.css";
 import "../../styles/components/CommonTable.css";
+import { formatCalendarDate, formatDateTimeCanada } from "../../utils/dateUtils";
 
 // Enhanced interface for PositionDraft to include creator/updater info
 // interface PositionDraft {
@@ -229,9 +230,9 @@ export function PositionDrafts() {
 
   // Format date for display
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleString();
+    return formatDateTimeCanada(dateString);
   };
+
 
   // Helper to format user information
   const formatUserInfo = (
@@ -610,10 +611,11 @@ export function PositionDrafts() {
                           <div className="date-with-icon">
                             <Clock size={12} />
                             <span>
-                              {new Date(draft.startDate).toLocaleDateString()}
+                              {formatCalendarDate(draft.startDate)}
                             </span>
                           </div>
                         )}
+
                       </td>
                       <td>
                         {draft.createdAt && (

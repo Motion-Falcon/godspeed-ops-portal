@@ -9,6 +9,7 @@ import {
   Image,
 } from "@react-pdf/renderer";
 import godspeedLogo from "../assets/logos/allstaff-logo.png";
+import { formatCalendarDate } from "./dateUtils";
 
 // Color scheme
 const colors = {
@@ -468,13 +469,13 @@ const InvoicePDFDocument: React.FC<{ data: InvoiceData }> = ({ data }) => {
                   <View style={styles.invoiceDetailItem}>
                     <Text style={styles.invoiceDetailLabel}>Invoice Date:</Text>
                     <Text style={styles.invoiceDetailValue}>
-                      {new Date(data.invoiceDate).toLocaleDateString()}
+                      {formatCalendarDate(data.invoiceDate)}
                     </Text>
                   </View>
                   <View style={styles.invoiceDetailItem}>
                     <Text style={styles.invoiceDetailLabel}>Due Date:</Text>
                     <Text style={styles.invoiceDetailValue}>
-                      {new Date(data.dueDate).toLocaleDateString()}
+                      {formatCalendarDate(data.dueDate)}
                     </Text>
                   </View>
                   <View style={styles.invoiceDetailItem}>

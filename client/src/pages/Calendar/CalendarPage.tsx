@@ -48,14 +48,18 @@ export function CalendarPage() {
       setLoading(true);
       setError(null);
       
-      // Get the month range for the currently viewed date
-      const startOfMonth = new Date(viewedDate.getFullYear(), viewedDate.getMonth(), 1);
-      const endOfMonth = new Date(viewedDate.getFullYear(), viewedDate.getMonth() + 1, 0);
+      // Get the month range for the currently viewed date safely without UTC shift
+      const year = viewedDate.getFullYear();
+      const month = viewedDate.getMonth() + 1;
+      const lastDay = new Date(year, month, 0).getDate();
+      const startDate = `${year}-${String(month).padStart(2, "0")}-01`;
+      const endDate = `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
       
       const response = await getCalendarEvents({
-        startDate: startOfMonth.toISOString().split('T')[0],
-        endDate: endOfMonth.toISOString().split('T')[0]
+        startDate,
+        endDate,
       });
+
       
       setEvents(response.events);
     } catch (err) {

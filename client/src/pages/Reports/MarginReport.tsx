@@ -8,12 +8,7 @@ import { exportToCSV } from '../../utils/csvExport';
 import { useColumnSearch } from "../../hooks/useColumnSearch";
 import { ReportTableToolbar } from "../../components/ReportTableToolbar";
 import { ColumnSearchInput } from "../../components/ColumnSearchInput";
-
-// Format date utility function
-const formatDate = (dateString: string | undefined) => {
-  if (!dateString) return "N/A";
-  return new Date(dateString).toLocaleDateString();
-};
+import { formatCalendarDate } from "../../utils/dateUtils";
 
 // Define the columns for the margin report
 const getTableColumns = (t: (key: string) => string): { key: string; label: string; format?: (val: unknown) => string }[] => [
@@ -30,7 +25,7 @@ const getTableColumns = (t: (key: string) => string): { key: string; label: stri
   { key: 'paid_amount_cheque', label: t('reports.columns.chequeAmount'), format: (val) => `$${val ?? '0.00'}` },
   { key: 'margin_amount', label: t('reports.columns.marginAmount'), format: (val) => val ? `$${val}` : 'N/A' },
   { key: 'margin_percentage', label: t('reports.columns.marginPercentage'), format: (val) => String(val ?? '') },
-  { key: 'invoice_date', label: t('reports.columns.invoiceDate'), format: (val) => formatDate(String(val ?? '')) },
+  { key: 'invoice_date', label: t('reports.columns.invoiceDate'), format: (val) => formatCalendarDate(String(val ?? '')) },
 ];
 
 // For CSV export
@@ -38,8 +33,9 @@ const getCsvColumns = (tableColumns: ReturnType<typeof getTableColumns>) => tabl
   ...col,
   format: (val: unknown) => {
     if (col.key === 'invoice_date') {
-      return formatDate(String(val ?? ''));
+      return formatCalendarDate(String(val ?? ''));
     }
+
     if (
       col.key === 'total_billed_amount' ||
       col.key === 'paid_amount' ||

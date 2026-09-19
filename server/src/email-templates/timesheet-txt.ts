@@ -1,5 +1,6 @@
 import { toNum } from "./timesheet-email-numeric.js";
 import { getPortalName, textFooter } from "./_layout.js";
+import { formatCalendarDate, formatCanadaDate } from "../utils/dateUtils.js";
 
 export function timesheetTextTemplate(vars: Record<string, any>): string {
   const isUpdated = vars.is_updated || false;
@@ -23,7 +24,7 @@ export function timesheetTextTemplate(vars: Record<string, any>): string {
 
   const dailyLines = vars.daily_hours
     ? vars.daily_hours
-        .map((day: any) => `  ${new Date(day.date).toLocaleDateString()}: ${day.hours || 0} hrs`)
+        .map((day: any) => `  ${formatCalendarDate(day.date, typeof day.date === "string" ? day.date : "")}: ${day.hours || 0} hrs`)
         .join("\n")
     : "  No hours recorded";
 
@@ -33,7 +34,7 @@ export function timesheetTextTemplate(vars: Record<string, any>): string {
     `${titlePrefix}TIMESHEET SUMMARY`,
     ``,
     `Timesheet: #${vars.invoice_number || "N/A"}`,
-    `Generated: ${vars.generated_date || new Date().toLocaleDateString()}`,
+    `Generated: ${vars.generated_date ? (typeof vars.generated_date === "string" && vars.generated_date.includes("-") ? formatCanadaDate(vars.generated_date) : vars.generated_date) : formatCanadaDate(new Date())}`,
     ``,
     `Jobseeker: ${vars.jobseeker_name || "N/A"} (${vars.jobseeker_email || "N/A"})`,
     `Position: ${vars.position_title || "N/A"}`,

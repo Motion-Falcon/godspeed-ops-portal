@@ -10,6 +10,7 @@ import { getPayrollPreviewRows } from "../functions/timesheetCalculations";
 import { useTimesheetFormTranslation } from "../hooks/useTimesheetFormTranslation";
 import { TimesheetInvoiceSummary } from "./TimesheetInvoiceSummary";
 import { TimesheetInvoiceTotals } from "./TimesheetInvoiceTotals";
+import { getDayOfWeekCanada } from "../../../utils/dateUtils";
 import type {
   BulkPositionRow,
   ClientPosition,
@@ -139,10 +140,9 @@ export function BulkJobseekerPositionCard({
                     <div key={entry.date} className="timesheet-day-entry">
                       <label className="timesheet-day-label">
                         <div className="timesheet-day-name">
-                          {new Date(entry.date).toLocaleDateString("en-CA", {
-                            weekday: "short",
-                          })}
+                          {getDayOfWeekCanada(entry.date)}
                         </div>
+
                         <div className="timesheet-day-date">({entry.date})</div>
                       </label>
                       <input

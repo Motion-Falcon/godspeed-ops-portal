@@ -18,6 +18,7 @@ import { exportToCSV } from "../../utils/csvExport";
 import { useColumnSearch } from "../../hooks/useColumnSearch";
 import { ReportTableToolbar } from "../../components/ReportTableToolbar";
 import { ColumnSearchInput } from "../../components/ColumnSearchInput";
+import { formatCalendarDate, getTodayInCanada } from "../../utils/dateUtils";
 
 
 const formatCurrency = (value: unknown): string => {
@@ -168,7 +169,7 @@ const getTableColumns = (
   {
     key: "report_generated_date",
     label: t("reports.columns.reportGeneratedDate") || "Report Generated Date",
-    format: () => new Date().toLocaleDateString(),
+    format: () => formatCalendarDate(getTodayInCanada()),
   },
 ];
 
@@ -182,9 +183,9 @@ export function EnvelopePrintingByDueDateReport() {
   const csvColumns = getCsvColumns(tableColumns);
 
   const getDefaultDate = () => {
-    const today = new Date();
-    return today.toISOString().split("T")[0];
+    return getTodayInCanada();
   };
+
 
   const [clients, setClients] = useState<ClientData[]>([]);
   const [selectedClients, setSelectedClients] = useState<ClientData[]>([]);
@@ -204,7 +205,7 @@ export function EnvelopePrintingByDueDateReport() {
     totalCount,
     filteredCount,
   } = useColumnSearch(reportRows, (row, columnKey) => {
-    if (columnKey === 'report_generated_date') return new Date().toLocaleDateString();
+    if (columnKey === 'report_generated_date') return formatCalendarDate(getTodayInCanada());
     const colDef = tableColumns.find(c => c.key === columnKey);
     const val = row[columnKey as keyof EnvelopePrintingReportRow];
     return colDef?.format ? colDef.format(val, row) : String(val ?? '');
@@ -383,7 +384,7 @@ export function EnvelopePrintingByDueDateReport() {
             filteredCount={filteredCount}
             onClearSearch={clearAllFilters}
             onDownloadCSV={() => {
-              const reportGeneratedDate = new Date().toLocaleDateString();
+              const reportGeneratedDate = formatCalendarDate(getTodayInCanada());
               const sortedRows = [...searchedReportRows].sort((a, b) => {
                 const clientA = (a.client_name || "").toLowerCase();
                 const clientB = (b.client_name || "").toLowerCase();
@@ -472,7 +473,7 @@ export function EnvelopePrintingByDueDateReport() {
                       {tableColumns.map((col, i) => {
                         let displayValue: string;
                         if (col.key === "report_generated_date") {
-                          displayValue = new Date().toLocaleDateString();
+                          displayValue = formatCalendarDate(getTodayInCanada());
                         } else {
                           const val =
                             row[col.key as keyof EnvelopePrintingReportRow];

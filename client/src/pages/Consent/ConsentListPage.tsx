@@ -8,6 +8,7 @@ import { useLanguage } from '../../contexts/language/language-provider';
 import { getClickableRowProps } from '../../hooks/useClickableTableRow';
 import '../../styles/components/CommonTable.css';
 import '../../styles/pages/ConsentListAndDetailPage.css';
+import { formatCalendarDate, formatDateTimeCanada } from '../../utils/dateUtils';
 
 interface PaginationInfo {
   page: number;
@@ -63,12 +64,13 @@ export function ConsentListPage() {
   };
 
   const formatDate = (dateString: string): string => {
-    try {
-      return new Date(dateString).toLocaleDateString();
-    } catch {
-      return 'N/A';
+    if (!dateString) return 'N/A';
+    if (dateString.includes("T")) {
+      return formatDateTimeCanada(dateString, { year: "numeric", month: "short", day: "numeric" });
     }
+    return formatCalendarDate(dateString);
   };
+
 
   const getUploaderName = (document: ConsentDocument): string => {
     if (document.uploader?.name && document.uploader?.email) {

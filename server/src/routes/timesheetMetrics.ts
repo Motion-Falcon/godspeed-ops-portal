@@ -1,5 +1,6 @@
 import { Router, Request, Response } from "express";
 import { authenticateToken, authorizeRoles } from "../middleware/auth.js";
+import { formatMonthName } from "../utils/dateUtils.js";
 import { createClient } from "@supabase/supabase-js";
 import dotenv from "dotenv";
 
@@ -155,12 +156,11 @@ router.get(
       // Helper to format historical data
       const formatHistoricalData = (field: keyof typeof monthlyArray[0]) => {
         return monthlyArray.map((month: any) => {
-          const date = new Date(month.month + "-01");
-          const monthName = date.toLocaleDateString("en-US", { month: "short" });
+          const monthName = formatMonthName(month.month);
           return {
             period: monthName,
             value: Math.round((month[field] || 0) * 100) / 100,
-            date: date,
+            date: month.month,
           };
         });
       };

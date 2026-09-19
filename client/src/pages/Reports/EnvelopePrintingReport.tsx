@@ -19,6 +19,7 @@ import { getDropdownOptions } from "../../services/api/dropdownOptions";
 import { useColumnSearch } from "../../hooks/useColumnSearch";
 import { ReportTableToolbar } from "../../components/ReportTableToolbar";
 import { ColumnSearchInput } from "../../components/ColumnSearchInput";
+import { formatCalendarDate, getTodayInCanada, addDaysToDateStr } from "../../utils/dateUtils";
 
 const formatCurrency = (value: unknown): string => {
   if (value === undefined || value === null || value === "" || value === "N/A") {
@@ -168,7 +169,7 @@ const getTableColumns = (
   {
     key: "report_generated_date",
     label: t("reports.columns.reportGeneratedDate") || "Report Generated Date",
-    format: () => new Date().toLocaleDateString(),
+    format: () => formatCalendarDate(getTodayInCanada()),
   },
 ];
 
@@ -183,15 +184,13 @@ export function EnvelopePrintingReport() {
 
   // Calculate default dates: end date = today, start date = 1 month ago
   const getDefaultDates = () => {
-    const today = new Date();
-    const oneMonthAgo = new Date();
-    oneMonthAgo.setMonth(today.getMonth() - 1);
-
+    const today = getTodayInCanada();
     return {
-      endDate: today.toISOString().split("T")[0],
-      startDate: oneMonthAgo.toISOString().split("T")[0],
+      endDate: today,
+      startDate: addDaysToDateStr(today, -30),
     };
   };
+
 
   const defaultDates = getDefaultDates();
 
@@ -216,7 +215,7 @@ export function EnvelopePrintingReport() {
     totalCount,
     filteredCount,
   } = useColumnSearch(reportRows, (row, columnKey) => {
-    if (columnKey === 'report_generated_date') return new Date().toLocaleDateString();
+    if (columnKey === 'report_generated_date') return formatCalendarDate(getTodayInCanada());
     const colDef = tableColumns.find(c => c.key === columnKey);
     const val = row[columnKey as keyof EnvelopePrintingReportRow];
     return colDef?.format ? colDef.format(val, row) : String(val ?? '');
@@ -469,7 +468,7 @@ export function EnvelopePrintingReport() {
             filteredCount={filteredCount}
             onClearSearch={clearAllFilters}
             onDownloadCSV={() => {
-              const reportGeneratedDate = new Date().toLocaleDateString();
+              const reportGeneratedDate = formatCalendarDate(getTodayInCanada());
               const sortedRows = [...searchedReportRows].sort((a, b) => {
                 const clientA = (a.client_name || "").toLowerCase();
                 const clientB = (b.client_name || "").toLowerCase();
@@ -559,7 +558,7 @@ export function EnvelopePrintingReport() {
                       {tableColumns.map((col, i) => {
                         let displayValue: string;
                         if (col.key === "report_generated_date") {
-                          displayValue = new Date().toLocaleDateString();
+                          displayValue = formatCalendarDate(getTodayInCanada());
                         } else {
                           const val =
                             row[col.key as keyof EnvelopePrintingReportRow];

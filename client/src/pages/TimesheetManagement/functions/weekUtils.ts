@@ -1,4 +1,10 @@
 // Utility to generate week options (start and end dates) for the past 52 weeks
+import {
+  formatCalendarDate,
+  addDaysToDateStr,
+  getTodayInCanada,
+  parseCalendarParts,
+} from "../../../utils/dateUtils";
 
 export interface WeekOption {
   value: string; // week start date (YYYY-MM-DD)
@@ -10,16 +16,21 @@ export interface WeekOption {
  */
 export function generateWeekOptions(): WeekOption[] {
   const options: WeekOption[] = [];
-  const today = new Date();
+  const todayStr = getTodayInCanada();
+  const parts = parseCalendarParts(todayStr);
+  const baseDate = parts
+    ? new Date(parts.year, parts.month - 1, parts.day, 12, 0, 0)
+    : new Date();
 
   for (let i = 0; i < 52; i++) {
-    const currentDate = new Date(today);
-    currentDate.setDate(today.getDate() - i * 7);
+    const currentDate = new Date(baseDate);
+    currentDate.setDate(baseDate.getDate() - i * 7);
     const dayOfWeek = currentDate.getDay(); // 0 = Sunday
     const weekStart = new Date(currentDate);
     weekStart.setDate(currentDate.getDate() - dayOfWeek);
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekStart.getDate() + 6);
+
     const startStr =
       weekStart.getFullYear() +
       "-" +
@@ -32,6 +43,7 @@ export function generateWeekOptions(): WeekOption[] {
       String(weekEnd.getMonth() + 1).padStart(2, "0") +
       "-" +
       String(weekEnd.getDate()).padStart(2, "0");
+
     options.push({
       value: startStr,
       label: `${formatDate(startStr)} - ${formatDate(endStr)}`,
@@ -42,34 +54,22 @@ export function generateWeekOptions(): WeekOption[] {
 
 /**
  * Formats a date string (YYYY-MM-DD) to a readable format (e.g., 'Apr 7, 2024').
+ * Uses centralized timezone-safe calendar date formatter.
  */
 export function formatDate(dateString: string): string {
-  const [year, month, day] = dateString.split("-").map(Number);
-  const date = new Date(year, month - 1, day);
-  return date.toLocaleDateString("en-CA", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+  return formatCalendarDate(dateString, "short");
 }
 
-/** Sunday-based week end (start + 6 days), formatted YYYY-MM-DD. */
+/** Sunday-based week end (start + 6 days), formatted YYYY-MM-DD without timezone shifts. */
 export function getWeekEndDate(weekStartDate: string): string {
-  const weekEnd = new Date(weekStartDate);
-  weekEnd.setDate(weekEnd.getDate() + 6);
-  return weekEnd.toISOString().split("T")[0];
+  return addDaysToDateStr(weekStartDate, 6);
 }
 
-/** Seven consecutive dates starting at weekStartDate (YYYY-MM-DD each). */
+/** Seven consecutive dates starting at weekStartDate (YYYY-MM-DD each) without timezone shifts. */
 export function generateWeekDates(weekStartDate: string): string[] {
   const dates: string[] = [];
-  const startDate = new Date(weekStartDate);
-
   for (let i = 0; i < 7; i++) {
-    const date = new Date(startDate);
-    date.setDate(startDate.getDate() + i);
-    dates.push(date.toISOString().split("T")[0]);
+    dates.push(addDaysToDateStr(weekStartDate, i));
   }
-
   return dates;
 }

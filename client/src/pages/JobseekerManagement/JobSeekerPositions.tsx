@@ -20,6 +20,7 @@ import '../../styles/pages/JobSeekerPositions.css';
 import '../../styles/components/header.css';
 import { EMPLOYMENT_TYPES, POSITION_CATEGORIES } from '../../constants/formOptions';
 import { useLanguage } from '../../contexts/language/language-provider';
+import { formatCalendarDate, parseCalendarParts } from '../../utils/dateUtils';
 
 /**
  * FILTER IMPLEMENTATION NOTES:
@@ -218,14 +219,17 @@ export function JobSeekerPositions() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
+    return formatCalendarDate(dateString);
   };
 
   const formatDuration = (startDate: string, endDate?: string) => {
-    const start = new Date(startDate);
-    const end = endDate ? new Date(endDate) : new Date();
+    const startParts = parseCalendarParts(startDate);
+    const endParts = parseCalendarParts(endDate);
+    const start = startParts ? new Date(startParts.year, startParts.month - 1, startParts.day) : new Date();
+    const end = endParts ? new Date(endParts.year, endParts.month - 1, endParts.day) : new Date();
     const diffTime = Math.abs(end.getTime() - start.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
     
     if (diffDays < 30) {
       return diffDays === 1 

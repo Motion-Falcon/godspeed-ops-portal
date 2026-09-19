@@ -1,5 +1,6 @@
 import axios from "axios";
 import { api, API_URL, clearCacheFor } from "./index";
+import { formatCalendarDate, formatDateTimeCanada } from "../../utils/dateUtils";
 
 // Invoice management API functions
 export interface InvoiceData {
@@ -522,13 +523,13 @@ export const createInvoiceFromFrontendData = async (frontendData: {
 export const formatInvoiceForDisplay = (invoice: InvoiceData) => {
   return {
     ...invoice,
-    formattedInvoiceDate: new Date(invoice.invoiceDate).toLocaleDateString(),
-    formattedDueDate: new Date(invoice.dueDate).toLocaleDateString(),
+    formattedInvoiceDate: formatCalendarDate(invoice.invoiceDate),
+    formattedDueDate: formatCalendarDate(invoice.dueDate),
     formattedCreatedAt: invoice.createdAt
-      ? new Date(invoice.createdAt).toLocaleDateString()
+      ? formatDateTimeCanada(invoice.createdAt)
       : null,
     formattedUpdatedAt: invoice.updatedAt
-      ? new Date(invoice.updatedAt).toLocaleDateString()
+      ? formatDateTimeCanada(invoice.updatedAt)
       : null,
     formattedGrandTotal: `$${invoice.grandTotal.toFixed(2)}`,
     formattedSubtotal: `$${invoice.subtotal.toFixed(2)}`,
@@ -542,3 +543,4 @@ export const formatInvoiceForDisplay = (invoice: InvoiceData) => {
         (invoice.status?.slice(1) || "") || "Draft",
   };
 };
+

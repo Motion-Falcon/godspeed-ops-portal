@@ -16,6 +16,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { AppHeader } from "../../components/AppHeader";
 import { UserRoleBadges } from "../../components/dashboard/UserRoleBadges";
 import { MetricCard } from "../../components/dashboard/MetricCard";
+import { formatDateTimeCanada } from "../../utils/dateUtils";
 import {
   getAllRecruitersMetrics,
   getRecruiterMetrics,
@@ -633,10 +634,15 @@ export function RecruiterDashboard() {
         email: user.email,
         name: user.user_metadata?.name || t('common.user'),
         userType: user.user_metadata?.user_type || "recruiter",
-        createdAt: new Date(user.created_at).toLocaleDateString(),
+        createdAt: formatDateTimeCanada(user.created_at, {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        }),
         lastSignIn: user.last_sign_in_at
-          ? new Date(user.last_sign_in_at).toLocaleString()
+          ? formatDateTimeCanada(user.last_sign_in_at)
           : t('dashboard.firstLogin'),
+
       });
     }
   }, [user, isRecruiter, t]);

@@ -7,7 +7,7 @@ import { CustomDropdown, DropdownOption } from "../../components/CustomDropdown"
 import { useLanguage } from "../../contexts/language/language-provider";
 import { Loader2, Calendar, User, Building } from "lucide-react";
 import { JobSeekerProfile } from "../../types/jobseeker";
-import { generateWeekOptions, formatDate as formatWeekDate } from "../TimesheetManagement/functions/weekUtils";
+import { generateWeekOptions, formatDate as formatWeekDate, getWeekEndDate } from "../TimesheetManagement/functions/weekUtils";
 import { PAY_CYCLES } from "../../constants/formOptions";
 import "../../styles/pages/CommonReportsStyles.css";
 import { exportToCSV } from '../../utils/csvExport';
@@ -193,10 +193,7 @@ export function WeeklyTimesheet() {
   }));
   const weekDropdownOptions: DropdownOption[] = weekOptions.map((w) => {
     const start = w.value;
-    const startDate = new Date(start);
-    const endDate = new Date(startDate);
-    endDate.setDate(startDate.getDate() + 6);
-    const end = endDate.toISOString().split("T")[0];
+    const end = getWeekEndDate(start);
     return {
       id: start + "_" + end,
       label: w.label,
