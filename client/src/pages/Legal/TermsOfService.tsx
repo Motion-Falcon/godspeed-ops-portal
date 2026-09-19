@@ -12,7 +12,7 @@ export function TermsOfService() {
   return (
     <div className="legal-page-container">
       <div className="legal-page-content">
-        <button 
+        <button
           onClick={handleGoBack}
           className="legal-page-back-link"
         >
@@ -26,7 +26,7 @@ export function TermsOfService() {
             {t('legal.effectiveDate')}: 09.09.2025
           </p>
           <p className="legal-page-company">
-            {t('legal.company')}: Hire Solutions
+            {t('legal.company')}: CanHire Solution
           </p>
         </div>
 
@@ -40,7 +40,7 @@ export function TermsOfService() {
           </p>
 
           <h2>1. Scope of Services</h2>
-          <h3>1.1. Hire Solutions provides an online platform for:</h3>
+          <h3>1.1. CanHire Solution provides an online platform for:</h3>
           <ul>
             <li>Candidate sourcing, screening, and placement.</li>
             <li>HR consulting and advisory services.</li>
@@ -83,10 +83,10 @@ export function TermsOfService() {
             <li>Provide accurate job descriptions and hiring requirements.</li>
             <li>Use candidate information strictly for lawful hiring purposes.</li>
             <li>Not discriminate based on race, gender, religion, disability, or other protected
-            grounds per the Canadian Human Rights Act and Employment Equity Act.</li>
+              grounds per the Canadian Human Rights Act and Employment Equity Act.</li>
           </ul>
           <p>
-            <strong>4.2.</strong> Employers are solely responsible for final hiring decisions. Hire Solutions is
+            <strong>4.2.</strong> Employers are solely responsible for final hiring decisions. CanHire Solution is
             not liable for employment outcomes, workplace behaviour, or performance of hired
             candidates.
           </p>
@@ -146,7 +146,7 @@ export function TermsOfService() {
           <h2>9. Intellectual Property</h2>
           <p>
             <strong>9.1.</strong> All content on our Website and platform — including text, graphics, trademarks, and
-            software — remains the property of Hire Solutions.
+            software — remains the property of CanHire Solution.
           </p>
           <p>
             <strong>9.2.</strong> Users may not copy, redistribute, reverse engineer, or exploit our intellectual
@@ -168,14 +168,14 @@ export function TermsOfService() {
           <ul>
             <li>We disclaim any warranties (express or implied).</li>
             <li>We are not responsible for employment outcomes, losses, reputational damage,
-            or indirect liabilities.</li>
+              or indirect liabilities.</li>
             <li>Our liability is limited to direct damages not exceeding the fees paid to us in the
-            past six months.</li>
+              past six months.</li>
           </ul>
 
           <h2>12. Indemnification</h2>
-          <h3>12.1. You agree to indemnify and hold Hire Solutions, its directors, employees, and
-          affiliates harmless from any claims, damages, or expenses arising from your:</h3>
+          <h3>12.1. You agree to indemnify and hold CanHire Solution, its directors, employees, and
+            affiliates harmless from any claims, damages, or expenses arising from your:</h3>
           <ul>
             <li>Use of the Services.</li>
             <li>Violation of these Terms.</li>
@@ -227,9 +227,9 @@ export function TermsOfService() {
             <h3>17. Contact Information</h3>
             <div className="legal-page-contact-info">
               <p>For any questions or concerns regarding these Terms, please contact:</p>
-              <p><strong>Hire Solutions</strong></p>
+              <p><strong>CanHire Solution</strong></p>
               <p>240 Humberline Dr, Etobicoke ON, M9W 5X1</p>
-              <p>accounts@hiresolutions.ca</p>
+              <p>accounts@canhiresolutions.ca</p>
             </div>
           </div> */}
         </div>

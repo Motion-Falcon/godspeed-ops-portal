@@ -74,12 +74,12 @@ export function AppHeader({
       setShowToast(false);
     }
   }, [statusMessage]);
-  
+
   // Log state changes for debugging
   useEffect(() => {
     console.log('Menu state changed:', menuOpen);
     menuOpenRef.current = menuOpen;
-    
+
     // Skip checking on initial render
     if (isInitialMount.current) {
       isInitialMount.current = false;
@@ -136,26 +136,26 @@ export function AppHeader({
                 >
                   <div className="trigger-content">
                     <div className="current-portal">
-                      <img 
-                        src={canHireIconLogo} 
-                        alt="Hire Solutions Logo"
+                      <img
+                        src={canHireIconLogo}
+                        alt="CanHire Solution Logo"
                         className="portal-logo"
                       />
                       <div className="portal-info">
                         <span className="portal-label">Portal</span>
-                        <span className="portal-name">Hire Solutions Ops</span>
+                        <span className="portal-name">CanHire Solution Ops</span>
                       </div>
                     </div>
                     <div className="switcher-actions">
                       <RefreshCcw size={14} className="refresh-icon" />
-                      <ChevronDown 
-                        size={14} 
+                      <ChevronDown
+                        size={14}
                         className={`chevron ${companySwitcherOpen ? 'rotated' : ''}`}
                       />
                     </div>
                   </div>
                 </button>
-                
+
                 {companySwitcherOpen && (
                   <div className="portal-switcher-dropdown">
                     <div className="dropdown-header">
@@ -169,8 +169,8 @@ export function AppHeader({
                           onClick={() => handleCompanySelect(company.url)}
                         >
                           <div className="option-content">
-                            <img 
-                              src={company.logo} 
+                            <img
+                              src={company.logo}
                               alt={company.name}
                               className="portal-logo"
                             />
@@ -191,7 +191,7 @@ export function AppHeader({
           </div>
         </div>
       </header>
-      
+
       <Toast
         message={statusMessage || ''}
         type={statusType}
@@ -203,10 +203,10 @@ export function AppHeader({
       <div className="page-title-container">
         <h1 className="page-title">{title}</h1>
       </div>
-      
+
       {/* Render the hamburger menu outside of the header for proper positioning */}
       {!hideHamburgerMenu && (
-        <HamburgerMenu isOpen={menuOpen} onClose={closeMenu} onOpen={toggleMenu}/>
+        <HamburgerMenu isOpen={menuOpen} onClose={closeMenu} onOpen={toggleMenu} />
       )}
     </div>
   );

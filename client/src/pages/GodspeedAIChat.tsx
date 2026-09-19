@@ -9,11 +9,11 @@ export function GodspeedAIChat() {
 
   return (
     <div className="godspeed-ai-chat-container">
-      <AppHeader 
-        title="Hire Solutions AI Chat" 
+      <AppHeader
+        title="CanHire Solution AI Chat"
         hideHamburgerMenu={false}
       />
-      
+
       <main className="ai-chat-main">
         <div className="ai-chat-content">
           <IframeViewer

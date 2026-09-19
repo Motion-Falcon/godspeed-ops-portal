@@ -7,8 +7,8 @@
   "recruiter": "Recruteur",
   "jobseeker": "Chercheur d'emploi",
   "admin_subtitle": "Supervisez les opérations de la plateforme et gérez les analyses du recrutement à l'échelle du système",
-  "recruiter_subtitle": "Gérez l'acquisition de talents avec les outils de recrutement ultra-rapides de Hire Solutions",
-  "jobseeker_subtitle": "Découvrez des opportunités à la vitesse Hire Solutions grâce à notre système intelligent de correspondance d'emploi",
+  "recruiter_subtitle": "Gérez l'acquisition de talents avec les outils de recrutement ultra-rapides de CanHire Solution",
+  "jobseeker_subtitle": "Découvrez des opportunités à la vitesse CanHire Solution grâce à notre système intelligent de correspondance d'emploi",
   "navigation": {
     "home": "Accueil",
     "about": "À propos",
@@ -57,7 +57,7 @@
     "consentTemplates": "Modèles de consentement",
     "myProfile": "Mon profil",
     "myPositions": "Mes postes",
-    "aiChat": "Chat IA Hire Solutions",
+    "aiChat": "Chat IA CanHire Solution",
     "calendar": "Tableau de Bord des Horaires"
   },
   "buttons": {
@@ -301,7 +301,7 @@
     "select": "Sélectionner",
     "deselect": "Désélectionner",
     "language": "Langue",
-    "godspeedLogo": "Logo Hire Solutions",
+    "godspeedLogo": "Logo CanHire Solution",
     "user": "Utilisateur",
     "client": "Client",
     "notAvailable": "N/D",
@@ -608,7 +608,7 @@
     "hidePassword": "Masquer le mot de passe",
     "showPassword": "Afficher le mot de passe",
     "alreadyHaveAccount": "Vous avez déjà un compte ?",
-    "brandDescription": "Élevez votre gestion des talents avec les workflows intelligents de Hire Solutions et des systèmes ultra-rapides conçus pour connecter les bonnes personnes aux bonnes opportunités."
+    "brandDescription": "Élevez votre gestion des talents avec les workflows intelligents de CanHire Solution et des systèmes ultra-rapides conçus pour connecter les bonnes personnes aux bonnes opportunités."
   },
   "twoFactor": {
     "error": {
@@ -1702,7 +1702,7 @@
     }
   },
   "app": {
-    "name": "Portail Ops Hire Solutions"
+    "name": "Portail Ops CanHire Solution"
   },
   "invoiceManagement": {
     "title": "Gestion des factures",

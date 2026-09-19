@@ -529,19 +529,19 @@ export function Signup() {
 
           <div className="terms-privacy-notice">
             {t('auth.termsPrivacyNotice')}{' '}
-            <a 
-              href="/terms-of-service" 
-              target="_blank" 
-              rel="noopener noreferrer" 
+            <a
+              href="/terms-of-service"
+              target="_blank"
+              rel="noopener noreferrer"
               className="auth-link"
             >
               {t('auth.termsOfService')}
             </a>
             {' '}{t('common.and')}{' '}
-            <a 
-              href="/privacy-policy" 
-              target="_blank" 
-              rel="noopener noreferrer" 
+            <a
+              href="/privacy-policy"
+              target="_blank"
+              rel="noopener noreferrer"
               className="auth-link"
             >
               {t('auth.privacyPolicy')}
@@ -553,7 +553,7 @@ export function Signup() {
       {/* Company Branding Column */}
       <div className="auth-column brand">
         <div className="toggle-container">
-        <LanguageToggle /> <ThemeToggle />
+          <LanguageToggle /> <ThemeToggle />
         </div>
         <div className="brand-content">
           <div className="brand-logo">
@@ -564,21 +564,21 @@ export function Signup() {
             />
           </div>
           <h2 className="brand-title">
-            Hire Solutions <span className="gradient-text">Operations</span>
+            CanHire Solution <span className="gradient-text">Operations</span>
           </h2>
           <p className="brand-description">
             {t('signup.brandDescription')}
           </p>
         </div>
       </div>
-      
+
       {/* Motion Falcon Footer - Right Bottom */}
       <div className="motion-falcon-footer right">
         <span>Powered by</span>
-        <img 
-          src={motionFalconLogo} 
-          alt="Motion Falcon" 
-          className="motion-falcon-logo" 
+        <img
+          src={motionFalconLogo}
+          alt="Motion Falcon"
+          className="motion-falcon-logo"
         />
         <span>Motion Falcon</span>
       </div>

@@ -12,7 +12,7 @@ export function PrivacyPolicy() {
   return (
     <div className="legal-page-container">
       <div className="legal-page-content">
-        <button 
+        <button
           onClick={handleGoBack}
           className="legal-page-back-link"
         >
@@ -26,22 +26,22 @@ export function PrivacyPolicy() {
             {t('legal.effectiveDate')}: 09.09.2025
           </p>
           <p className="legal-page-company">
-            {t('legal.company')}: Hire Solutions ("Company," "we," "our," "us")
+            {t('legal.company')}: CanHire Solution ("Company," "we," "our," "us")
           </p>
         </div>
 
         <div className="legal-page-body">
           <p>
-            Hire Solutions is committed to protecting the privacy and personal information of all 
-            individuals who use our website and Services. This Privacy Policy explains how we 
-            collect, use, disclose, and safeguard personal information in compliance with the 
-            Personal Information Protection and Electronic Documents Act (PIPEDA) and other 
+            CanHire Solution is committed to protecting the privacy and personal information of all
+            individuals who use our website and Services. This Privacy Policy explains how we
+            collect, use, disclose, and safeguard personal information in compliance with the
+            Personal Information Protection and Electronic Documents Act (PIPEDA) and other
             applicable Canadian laws.
           </p>
 
           <h2>1. Information We Collect</h2>
           <p>We may collect and process the following types of personal information:</p>
-          
+
           <h3>1.1. Contact Information</h3>
           <ul>
             <li>Name</li>
@@ -72,13 +72,13 @@ export function PrivacyPolicy() {
             <li>Meeting legal and regulatory requirements.</li>
           </ul>
           <p>
-            We will not use personal information for unrelated or unauthorized purposes without 
+            We will not use personal information for unrelated or unauthorized purposes without
             obtaining consent.
           </p>
 
           <h2>3. Consent</h2>
           <p>
-            By submitting your information, you consent to the collection, use, and disclosure of 
+            By submitting your information, you consent to the collection, use, and disclosure of
             personal information as outlined in this Policy.
           </p>
           <ul>
@@ -86,7 +86,7 @@ export function PrivacyPolicy() {
             <li>Employers/Clients consent when providing company or HR-related details for recruitment services.</li>
           </ul>
           <p>
-            You may withdraw consent at any time by contacting us (see Section 10). However, 
+            You may withdraw consent at any time by contacting us (see Section 10). However,
             withdrawing consent may affect our ability to provide Services.
           </p>
 
@@ -98,7 +98,7 @@ export function PrivacyPolicy() {
             <li>Service providers who assist with IT hosting, data storage, or communications (bound by confidentiality agreements).</li>
           </ul>
           <p>
-            We will not sell, rent, or trade personal information to third parties for marketing 
+            We will not sell, rent, or trade personal information to third parties for marketing
             purposes.
           </p>
 
@@ -110,7 +110,7 @@ export function PrivacyPolicy() {
 
           <h2>6. Data Security</h2>
           <p>
-            We take appropriate technical and organizational safeguards to protect collected 
+            We take appropriate technical and organizational safeguards to protect collected
             information, including:
           </p>
           <ul>
@@ -119,7 +119,7 @@ export function PrivacyPolicy() {
             <li>Regular monitoring for unauthorized access or disclosure.</li>
           </ul>
           <p>
-            While we implement strong security measures, no electronic transmission or storage 
+            While we implement strong security measures, no electronic transmission or storage
             can be guaranteed 100% secure.
           </p>
 
@@ -134,15 +134,15 @@ export function PrivacyPolicy() {
 
           <h2>8. Children's Privacy</h2>
           <p>
-            Our Services are not designed for individuals under 18 years of age. We do not 
-            knowingly collect or process personal information of minors without parental/legal 
+            Our Services are not designed for individuals under 18 years of age. We do not
+            knowingly collect or process personal information of minors without parental/legal
             guardian consent.
           </p>
 
           <h2>9. International Data Transfers</h2>
           <p>
-            Where information is stored or processed outside of Canada (e.g., cloud servers), it may 
-            be subject to foreign laws. We ensure third-party service providers uphold comparable 
+            Where information is stored or processed outside of Canada (e.g., cloud servers), it may
+            be subject to foreign laws. We ensure third-party service providers uphold comparable
             standards of data protection.
           </p>
 
@@ -150,9 +150,9 @@ export function PrivacyPolicy() {
             <h3>10. Contact Us</h3>
             <div className="legal-page-contact-info">
               <p>For privacy-related inquiries, corrections, or withdrawal of consent, please contact:</p>
-              <p><strong>Hire Solutions</strong></p>
+              <p><strong>CanHire Solution</strong></p>
               <p>240 Humberline Dr, Etobicoke ON, M9W 5X1</p>
-              <p>accounts@hiresolutions.ca</p>
+              <p>accounts@canhiresolutions.ca</p>
               <p>
                 We will respond within a reasonable timeframe, in accordance with Canadian privacy 
                 legislation.
@@ -162,7 +162,7 @@ export function PrivacyPolicy() {
 
           <h2>11. Updates to Privacy Policy</h2>
           <p>
-            We may update this Policy periodically to reflect legal changes or operational needs. 
+            We may update this Policy periodically to reflect legal changes or operational needs.
             Updates will be posted on our Website, and "Effective Date" will be revised.
           </p>
         </div>
