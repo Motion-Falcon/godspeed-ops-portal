@@ -513,7 +513,7 @@ Activity feed distinguishes `onboarding_reminder` vs `email_invitation` in Recen
 **Shown on:** Admin and Recruiter dashboards only (`showCompanySwitcher={true}`).
 
 **Behavior:** Displays "AllStaff Ops" as current portal. Dropdown opens **external URLs** in new tabs:
-- Hire Solutions Ops → `https://app.hiresolutions.ca`
+- CanHire Solutions Ops → `https://app.hiresolutions.ca`
 - Godspeed Ops → `https://app.godspeedxp.com`
 - HD Group Ops → `https://app.hdgroup.ca`
 
